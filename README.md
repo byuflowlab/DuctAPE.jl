@@ -1,4 +1,4 @@
-# DuctTAPE (Ducted Two-dimensional AeroPropulsor Evaluation)
+# DuctTAPE (**Duct**ed **T**wo-dimensional **A**ero**P**ropulsor **E**valuation)
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://flow.byu.edu/DuctTAPE.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://flow.byu.edu/DuctTAPE.jl/dev)
