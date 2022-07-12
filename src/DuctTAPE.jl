@@ -1,10 +1,14 @@
 module DuctTAPE
 
 # - DEPENDENCIES
-# using FLOWFoil #panels for walls/hub
-using FLOWMath #akima splines
-using ForwardDiff #newton method
-using IterativeSolvers #SOR solver
+using FLOWFoil
+ff = FLOWFoil #panels for walls/hub
+using FLOWMath
+fm = FLOWMath #akima splines
+# using ForwardDiff
+# fd = ForwardDiff #newton method
+# using IterativeSolvers
+# is = IterativeSolvers #SOR solver
 
 # - EXPORTS
 
@@ -13,5 +17,8 @@ using IterativeSolvers #SOR solver
 #FUNCTIONS
 
 # - INCLUDED FILES
+include("types.jl")
+include("initilize.jl")
+include("duct.jl")
 
 end

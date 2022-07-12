@@ -1,5 +1,20 @@
-*.jl.*.cov
+# Mac finder files and hidden folders
+.DS_Store
+*/.DS_Store
+
+# other
+*.key
+*.idraw
+*.png
+
+# julia
 *.jl.cov
+*.jl.*.cov
 *.jl.mem
-/Manifest.toml
-/docs/build/
+
+docs/build/
+docs/site/
+_*
+
+Manifest.toml
+
