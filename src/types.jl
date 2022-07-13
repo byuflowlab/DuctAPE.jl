@@ -132,15 +132,20 @@ end
     GridOptions{TF,TI,TM}
 
 **Fields:**
+ - `num_xinlet_stations::Integer` : number of elements from inlet to duct (unused)
+ - `num_xduct_stations::Integer` : Number of elements along duct wall/hub
+ - `num_radial_stations::Integer` : Number of radial stations (equal to number of rotor blade elements used in analysis)
+ - `inlet_length::Float` : inlet length (unused)
  - `wake_length::Float` : length of wake behind duct
+ - `wake_expansion_factor::Float` : expansion factor to apply to wake grid
 """
 struct GridOptions{TF,TI}
     num_xinlet_stations::TI
     num_xduct_stations::TI
-    num_xwake_stations::TI
     num_radial_stations::TI
     inlet_length::TF
     wake_length::TF
+    wake_expansion_factor::TF
     # wakerelax::TB
 end
 

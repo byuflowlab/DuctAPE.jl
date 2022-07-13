@@ -90,9 +90,19 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
     xd = range(duct_range[1], duct_range[2]; length=numxd)
 
     # wake spacing
-    #TODO add expansion factor for wake
-    numxw = grid_options.num_xwake_stations
-    xw = range(wake_range[1], wake_range[2]; length=numxw)
+    xdsize = xd[end] - xd[end - 1] #length of last element on duct spacing
+    xw = [xdsize + wake_range[1]] #make first wake element same size as last duct element
+    xwidx = 1 #initialize index
+    #TODO: this method doesn't guarentee the actual prescribed wake length, but should get close
+    while xw[end] < wake_range[2]
+        xdsize *= grid_options.wake_expansion_factor
+        push!(xw, xw[xwidx] + xdsize)
+        xwidx += 1
+    end
+    numxw = length(xw)
+
+    #alternate option: equal spacing
+    # xw = range(wake_range[1], wake_range[2]; length=numxw)
 
     # put all the x stations together
     numxall = numxi + numxd + numxw
@@ -195,21 +205,231 @@ function initialize_grid()
 end
 
 """
-    relax_grid(x_grid_points, r_grid_points)
+    relax_grid(xg, rg)
 
 Relax grid using elliptic grid solver.
 
 **Arguments:**
- - `x_grid_points::Matrix{Float64}` : Initial x grid points guess
- - `r_grid_points::Matrix{Float64}` : Initial r grid points guess
+ - `xg::Matrix{Float64}` : Initial x grid points guess
+ - `rg::Matrix{Float64}` : Initial r grid points guess
 
 **Returns:**
  - `x_relax_points::Matrix{Float64}` : Relaxed x grid points guess
  - `r_relax_points::Matrix{Float64}` : Relaxed r grid points guess
 """
-function relax_grid(x_grid_points, r_grid_points)
+function relax_grid(xg, rg, nx, nr; max_iterations=-1)
 
-    # initialize arrays
+    # initialize output and computation arrays
+    xr = [xg[i, j] for i in 1:nx, j in 1:nr]
+    rr = [rg[i, j] for i in 1:nx, j in 1:nr]
+    D = [0.0 for i in 1:2, j in 1:nx]
 
-    return nothing
+    #set up relaxation factors
+    if max_iterations > 0
+        relaxfactor1 = 1.0
+        relaxfactor2 = 1.1
+        relaxfactor3 = 1.4
+    else
+        relaxfactor1 = 1.0
+        relaxfactor2 = 1.0
+        relaxfactor3 = 1.0
+        max_iterations = 1
+    end
+
+    relaxfactor = relaxfactor1
+
+    #dfdc code does this, not sure how it's used yet:
+    rpos = [0.0 for i in 1:nr]
+    for j in 2:nr
+        rpos[j] = rg[1, j]^2 - rg[1, j - 1]^2 + rpos[j - 1]
+    end
+
+    # Get the x positions along the wall (used later for various ratios compared to internal points as they move)
+    xall = xg[:, 1]
+
+    #next dfdc goes to AXELL function
+    #skip over most of the stuff since the intlet and walls don't get relaxed
+
+    for iterate in 1:max_iterations
+
+        #loop over interior streamlines:
+        for j in 2:(nr - 1)
+            #rename indices for convenience
+            jm1 = j - 1
+            jp1 = j + 1
+
+            ## -- Relax Outlet -- ##
+            #outlet may or may not be a vertical line after relaxation...
+
+            xej = xg[end, j]
+            xem1j = xg[end - 1, j]
+            xem2j = xg[end - 2, j]
+
+            rej = rg[end, j]
+            rem1j = rg[end - 1, j]
+            rem2j = rg[ende - 2, j]
+
+            xarc = xg[end, jp1] - xg[end, jm1] #x arc distance between j+1 and j-1 radial positions
+            rarc = rg[end, jp1] - rg[end, jm1] #r arc distances between j+1 and j-1 radial positions
+
+            xhat = vectx / sqrt(vectx^2 + vectr^2) # normalized x component of arc length (x direction)
+            rhat = dy / sqrt(vectx^2 + vectr^2) # normalized r component of arc length (r direction)
+
+            dxem1wall = xall[end] - xall[end - 1]
+            dxem2wall = xall[end - 1] - xall[end - 2]
+
+            #ratios of x and r spacing comparing current interior r position vs wall x position
+            dxem1dxwall = (xej - xem1j) / dxem1wall
+            dxem2dxwall = (xem1j - xem2j) / dxem2wall
+            drem1drwall = (rej - rem1j) / dxem1wall
+            drem2drwall = (rem1j - rem2j) / dxem2wall
+
+            #2nd-order 3-point difference to get tangential velocity
+            rez =
+                xhat * (
+                    dxem1dxwall +
+                    dxem1wall * (dxem1dxwall - dxem2dxwall) / (dxem1wall + dxem2wall)
+                ) +
+                rhat * (
+                    drem1dxwall +
+                    dxem1wall * (drem1dxwall - drem2dxwall) / (dxem1wall + dxem2wall)
+                )
+
+            xi_xij = xhat * (1.0 / dxem1wall + 1.0 / (dxem1wall + dxem2wall))
+            xi_rij = rhat * (1.0 / dxem1wall + 1.0 / (dxem1wall + dxem2wall))
+            xi_arc = xi_xij * xhat + xi_rij * rhat
+
+            arcrelax = 1.0 * relaxfactor
+            darc = -arcrelax * rez / xi_arc
+
+            ## -- Relax points on the jth streamline -- ##
+            #TODO:NEED TO RECONCILE WRITTEN THEORY WITH CODE...
+
+            for i in 2:(nx - 1)
+                #rename indices for convenience
+                im1 = i - 1
+                ip1 = i + 1
+
+                ravgplus = 0.5 * (r[i, j] + r[i, r + 1])
+                ravgminus = 0.5 * (r[i, j] + r[i, j - 1])
+                ravg = 0.5 * (ravgplus + ravgminus)
+
+                dximinus = xall[i] - xall[i - 1]
+                dxiplus = xall[i + 1] - xall[i]
+                dxiavg = 0.5 * (dxijm1 + dxijp1)
+
+                detaminus = rpos[j] - rpos[j - 1]
+                detaplus = rpos[j + 1] - rpos[j]
+                detaavg = 0.5(detaminus + detaplus)
+
+                x_eta = 0.5 * (xg[i, j + 1] - xg[i, j - 1]) / detaavg
+                r_eta = 0.5 * (rg[i, j + 1] - rg[i, j - 1]) / detaavg
+                x_xi = 0.5 * (xg[i + 1, j] - xg[i - 1, j]) / dxiavg
+                r_xi = 0.5 * (rg[i + 1, j] - rg[i - 1, j]) / dxiavg
+
+                alpha = x_eta^2 + r_eta^2
+                beta = x_eta * x_xi + r_eta * r_xi
+                gamma = x_xi^2 + r_xi^2
+                J = r_eta * x_xi - x_eta * r_xi
+
+                ximinuscoeff = detaminus * detaplus / (dximinus * dxiavg)
+                xipluscoeff = detaminus * detaplus / (dxiplus * dxiavg)
+                etaminuscoeff = detaplus / detavg * ravgminus / ravg
+                etapluscoeff = detaminus / detavg * ravgplus / ravg
+
+                A =
+                    alpha * (ximinuscoeff + xipluscoeff) +
+                    gamma * (etaminuscoeff + etapluscoeff)
+
+                if i == 2
+                    B = 0
+                else
+                    B = -alpha * ximinuscoeff
+                end
+
+                C[i] = -alpha * xipluscoeff
+
+                dxdxieta =
+                    detaminus *
+                    detaplus *
+                    (
+                        xg[i + 1, j + 1] - xg[i - 1, j + 1] - xg[i + 1, j - 1] +
+                        xg[i - 1, j - 1]
+                    ) / (4.0 * dxiavg * detaavg)
+
+                drdxieta =
+                    detaminus *
+                    detaplus *
+                    (
+                        rg[i + 1, j + 1] - rg[i - 1, j + 1] - rg[i + 1, j - 1] +
+                        rg[i - 1, j - 1]
+                    ) / (4.0 * dxiavg * detaavg)
+
+                x_xixi =
+                    (xg[i + 1, j] - xg[i, j]) * xipluscoeff -
+                    (xg[i, j] - xg[i - 1, j]) * ximinuscoeff
+
+                x_etaeta =
+                    (xg[i, j + 1] - xg[i, j]) * etapluscoeff -
+                    (xg[i, j] - xg[i, j - 1]) * etaminuscoeff
+
+                D[1, i] =
+                    alpha * x_xixi - 2.0 * beta * dxdxieta + gamma * x_etaeta -
+                    beta * r_xi * x_eta * detaminus * detaplus / ravg
+
+                r_xixi =
+                    (rg[i + 1, j] - rg[i, j]) * xipluscoeff -
+                    (rg[i, j] - rg[i - 1, j]) * ximinuscoeff
+
+                r_etaeta =
+                    (rg[i, j + 1] - rg[i, j]) * etapluscoeff -
+                    (rg[i, j] - rg[i, j - 1]) * etaminuscoeff
+
+                D[2, i] =
+                    alpha * r_xixi - 2.0 * beta * drdxieta + gamma * r_etaeta -
+                    beta * r_xi * r_eta * detaminus * detaplus / ravg
+
+                ainv = 1.0 / (A - B * C[i - 1])
+                C[i] += ainv
+                D[1, i] = (D[1, i] - B * D[1, i - 1]) * ainv
+                D[2, i] = (D[2, i] - B * D[2, i - 1]) * ainv
+            end #for i
+
+            D[1, end] = 0.0
+            D[2, end] = 0.0
+
+            for ib in 2:(xn - 1)
+                i = xn - ib + 1
+                D[1, i] = D[1, i] - C[i] * D[1, i + p]
+                D[2, i] = D[2, i] - C[i] * D[2, i + p]
+
+                xr[i, j] = xg[i, j] + relaxfactor * D[1, i]
+                rr[i, j] = rg[i, j] + relaxfactor * D[2, i]
+
+                ad1 = abs(D[1, i])
+                ad2 = abs(D[2, i])
+                dmax = maximum(dmax, ad1, ad2)
+            end #for i
+        end #for j
+
+        if dmax < tol * dxy
+            return xr, rr
+        else
+            relaxfactor = relaxfactor1
+
+            if dmax < dset1 * dxy
+                relaxfactor = relaxfactor2
+            end
+
+            if dmax < dset2 * dxy
+                relaxfactor = relaxfactor3
+            end
+
+            if dmax < dset3 * dxy
+                return xr, rr
+            end
+        end
+    end
+
+    return xr, rr
 end
