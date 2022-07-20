@@ -32,24 +32,9 @@ Get grid boundary and initial interior points.
 """
 function generate_grid_points(duct, rotors, grid_options; debug=false)
 
-    # --- Define Grid Edge Locations
+    # --- RENAME THINGS FOR CONVENIENCE
 
-    # - Get forward x edge location of forward most rotor plane
-    #TODO: need to figure out how to define rotor plane (quarter chord after rotation?)
-    # if duct only, include inlet
-    if isempty(rotors)
-        xfront = duct.LEx - grid_options.inlet_length * duct.chord
-
-        #else front of grid is foremost rotor plane
-    else
-        xfront = minimum([rotors[i].xlocation for i in length(rotors)])
-    end
-
-    # - Get rear x edge on wake_length input and duct chord
-    #wake starts at duct trailing edge and extends the input wake_length relative to duct chord.
-    xrear = duct.TEx + duct.chord * grid_options.wake_length
-
-    # - Get inner r edges using cobination of hub geometry and TE.
+    # Rename HUB Geometry for convenience
     hubx = duct.hubxcoordinates
     hubr = duct.hubrcoordinates
     hubspline = fm.Akima(hubx, hubr)
@@ -58,7 +43,7 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
     hubTEx = hubx[end]
     hubTEr = hubr[end]
 
-    # - Get outer r edges using combination of wall geometry and TE
+    # Rename WALL Geometry for convenience
     wallx = duct.wallinnerxcoordinates
     wallr = duct.wallinnerrcoordinates
     wallspline = fm.Akima(wallx, wallr)
@@ -67,31 +52,78 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
     wallTEx = wallx[end]
     wallTEr = wallr[end]
 
-    # --- Get x-ranges
-    inlet_range = [xfront; duct.LEx]
-    duct_range = [duct.LEx; duct.TEx]
-    wake_range = [duct.TEx; xrear]
-
-    # --- Define Grid Spacings
-    #TODO: start with simple linear spacing, add refinement capabilities later.
-    #radial spacing
+    # Rename options for convenience
     nr = grid_options.num_radial_stations
 
-    # inlet spacing
-    numxi = grid_options.num_xinlet_stations
-    if inlet_range[1] < inlet_range[2] && grid_options.inlet_length > 0.0
+    # --- SETUP/FIND BOUNDARY GEOMETRY
+
+    # -- Get foremost boundaries
+    if isempty(rotors)
+        #find foremost x coordinate
+        xfront = duct.LEx - grid_options.inlet_length * duct.chord
+        #define radius of disk
+        R = wallLEr - hubLEr
+        #TODO: add functionality for user explicit definition of radial positions at some point.
+        radial_stations_front = range(hubLEr, wallLEr; length=nr)
+    else
+        #find foremorst x coordinate
+        xfront = minimum([rotors[i].xlocation for i in length(rotors)])
+        #get annulus radius
+        if xfront < wallx[1]
+rtip = wallLEr
+elseif xfront > wallx[end]
+    rtip = wallTEr
+else
+    rtip = wallspline(xfront)
+end
+
+if xfront < hubx[1] || xfront > hubx[end]
+    rhub = 0.0
+        else
+            rhub = hubspline(xfront)
+    end
+    R = rtip-rhub
+        #define radial stations for foremost rotor TODO: add functionality for explicit user definition
+        radial_stations_front = range(rhub,rtip; length=nr)
+    end
+
+    #get radial station step size for later use
+    dr = radial_stations_front[2] - radial_stations_front[1]
+
+    # -- Get rear boundary
+    #wake starts at duct trailing edge and extends the input wake_length relative to duct chord.
+    xrear = duct.TEx + duct.chord * grid_options.wake_length
+
+    # -- Get x-ranges for inner and outer boundaries
+    inlet_range = [xfront; duct.LEx]
+    duct_range = [max(duct.LEx, xfront); duct.TEx]
+    wake_range = [duct.TEx; xrear]
+
+    # --- DEFINE X GRID SPACING PIECES
+
+    # -- Get inlet spacing if applicable
+    if inlet_range[1] < inlet_range[2] && grid_options.inlet_length > 0.0 && isempty(rotors)
+        #number of inlet x stations
+        numxi = round(Int, (inlet_range[2] - inlet_range[1]) / (1.0 * dr))
+
+        #inlet x stations
         xi = range(inlet_range[1], inlet_range[2]; length=numxi)
     else
+        numxi = 0
         xi = []
     end
 
-    #duct spacing
-    numxd = grid_options.num_xduct_stations
-    xd = range(duct_range[1], duct_range[2]; length=numxd)
+    # -- Get duct spacing
 
-    # wake spacing
-    xdsize = xd[end] - xd[end - 1] #length of last element on duct spacing
-    xw = [xdsize + wake_range[1]] #make first wake element same size as last duct element
+
+    #number of duct x stations
+    nd = round(Int, (duct_range[2] - duct_range[1]) / (1.0 * dr))
+    #duct x stations
+    xd = range(duct_range[1], duct_range[2]; length=nd)
+
+    # -- Get wake spacing
+    xdsize = deepcopy(dr) #length of last element on duct spacing
+    xw = [xdsize + duct_range[2]] #make first wake element same size as last duct element
     xwidx = 1 #initialize index
     #TODO: this method doesn't guarentee the actual prescribed wake length, but should get close
     while xw[end] < wake_range[2]
@@ -101,77 +133,90 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
     end
     numxw = length(xw)
 
-    #alternate option: equal spacing
-    # xw = range(wake_range[1], wake_range[2]; length=numxw)
+    ##alternate option for wake spacing: equal spacing
+    #numxw = round(Int, (wake_range[2] - wake_range[1]) / dr)
+    #xw = range(wake_range[1], wake_range[2]; length=numxw)[2:end]
 
     # put all the x stations together
-    numxall = numxi + numxd + numxw
-    xall = [xi; xd; xw]
+    xstations = [xi[1:(end - 1)]; xd; xw[1:end]]
+    #get number of x stations
+    nx = length(xstations)
 
-    # --- Define Grid Points
-
+    # --- DEFINE R STATION LOCATIONS ALONG INNER/OUTER BOUNDARIES
     # -- Get radial locations of outer boundary
-    router = [0.0 for i in 1:numxall]
-    for i in 1:numxall
-        if xall[i] < wallLEx
+    router = [0.0 for i in 1:nx]
+    for i in 1:nx
+        if xstations[i] < wallLEx
             router[i] = wallLEr
-        elseif xall[i] < wallTEx
-            router[i] = wallspline(xall[i])
+        elseif xstations[i] < wallTEx
+            router[i] = wallspline(xstations[i])
         else
             router[i] = wallTEr
         end
     end
 
     # -- Get radial locations of inner boundary
-    rinner = [0.0 for i in 1:numxall]
-    for i in 1:numxall
-        if xall[i] < hubLEx
+    rinner = [0.0 for i in 1:nx]
+    for i in 1:nx
+        if xstations[i] < hubLEx
             rinner[i] = hubLEr
-        elseif xall[i] < hubTEx
-            rinner[i] = hubspline(xall[i])
+        elseif xstations[i] < hubTEx
+            rinner[i] = hubspline(xstations[i])
         else
             rinner[i] = hubTEr
         end
     end
 
-    # --- Define Grid Points
+    # --- INITIALIZE GRID POINTS
     #initialize grid matrix
-    x_grid_points = [0.0 for i in 1:length(xall), j in 1:nr]
-    r_grid_points = [0.0 for i in 1:length(xall), j in 1:nr]
+    x_grid_points = [0.0 for i in 1:length(xstations), j in 1:nr]
+    r_grid_points = [0.0 for i in 1:length(xstations), j in 1:nr]
 
-    #Start with points on rotor plane from hub to wall
+    #first column of radial grid points are radial stations of foremost rotor
+    r_grid_points[1, :] = collect(radial_stations_front)
+
+    #first column of x grid points are all the x position of the foremost rotor
     x_grid_points[1, :] .= xfront
-    r_grid_points[1, :] = collect(range(hubr[1], wallr[1]; length=nr))
 
-    x_grid_points[:, 1] = xall
-    x_grid_points[:, end] = xall
+    #first and last rows of points from setup above
+    x_grid_points[:, 1] = xstations
+    x_grid_points[:, end] = xstations
     r_grid_points[:, 1] = rinner
     r_grid_points[:, end] = router
 
+    # --- DEFINE INNER GRID POINTS
+
+    # -- Set up grid definition Loop
+    #Get area of foremost rotor annulus
+    rotorarea = pi * (router[1]^2 - rinner[1]^2)
+
+    #get the annulus area of the radial stations
+    drotorarea = [
+        pi * (r_grid_points[1, j + 1]^2 - r_grid_points[1, j]^2) for j in 1:(nr - 1)
+    ]
+
+    #get areas of subsequent annuli
+    localarea = [pi * (r_grid_points[i, end]^2 - r_grid_points[i, 1]^2) for i in 1:nx]
+
     # March conservation of mass along x-direction to get grid points.
-    #get the annulus area at the rotor plane
-    rotorarea = pi * (wallr[1]^2 - hubr[1]^2)
-    for i in 2:length(xall) #for each x station after the rotor plane
+    for i in 2:nx #for each x station after the rotor plane
 
         #get the x,r coordinates at the x stations
-        xwall = xall[i]
-        xhub = xall[i]
-        rwall = router[i]
-        rhub = rinner[i]
+        xwall = x_grid_points[i, end]
+        xhub = x_grid_points[i, 1]
+        rwall = r_grid_points[i, end]
+        rhub = r_grid_points[i, 1]
 
         # get the area of the annulus at the current x station
-        xarea = pi * (rwall^2 - rhub^2)
+        # localarea = pi * (rwall^2 - rhub^2)
 
         for j in 2:(nr - 1) #for each radial station between the hub and wall
 
-            # get the annulus area at the current x station between the current radial stations
-            darea = pi * (r_grid_points[1, j]^2 - r_grid_points[1, j - 1]^2)
-
-            #calculate ratio of current annulus and rotor annulus areas
-            arearatio = darea / rotorarea
+            #get local change in area using conservation of mass
+            dlocalarea = (drotorarea[j - 1] * localarea[i]) / rotorarea
 
             #define radial grid point based on conservation of mass
-            r_grid_points[i, j] = sqrt(arearatio * xarea / pi + r_grid_points[i, j - 1]^2)
+            r_grid_points[i, j] = sqrt(dlocalarea / pi + r_grid_points[i, j - 1]^2)
 
             #NOTE that the rest of the loop only does something if xs aren't the same like they are now.
             #calculate ratio for weighted average
@@ -182,26 +227,7 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
         end # for radial stations
     end # for x stations
 
-    return x_grid_points, r_grid_points
-end
-
-"""
-    initialize_grid()
-
-Initialize grid via zero-thrust, unit freestream solution.
-
-**Arguments:**
-
-**Returns:**
- - `grid::DuctTAPE.Grid` : Grid Object
-"""
-function initialize_grid()
-
-    # get initial grid points
-    #
-    # relax grid
-    #
-    return grid
+    return x_grid_points, r_grid_points, nx, nr
 end
 
 """
@@ -210,21 +236,23 @@ end
 Relax grid using elliptic grid solver.
 
 **Arguments:**
- - `xg::Matrix{Float64}` : Initial x grid points guess
+- `xg::Matrix{Float64}` : Initial x grid points guess
  - `rg::Matrix{Float64}` : Initial r grid points guess
 
 **Returns:**
  - `x_relax_points::Matrix{Float64}` : Relaxed x grid points guess
  - `r_relax_points::Matrix{Float64}` : Relaxed r grid points guess
 """
-function relax_grid(xg, rg, nx, nr; max_iterations=-1)
+function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=false)
 
     # initialize output and computation arrays
-    xr = [xg[i, j] for i in 1:nx, j in 1:nr]
-    rr = [rg[i, j] for i in 1:nx, j in 1:nr]
-    D = [0.0 for i in 1:2, j in 1:nx]
+    xr = [xg[i, j] for i in 1:nxi, j in 1:neta]
+    rr = [rg[i, j] for i in 1:nxi, j in 1:neta]
+    C = [0.0 for i in 1:nxi]
+    D = [0.0 for i in 1:2, j in 1:nxi]
 
     #set up relaxation factors
+    #TODO: how are these decided?
     if max_iterations > 0
         relaxfactor1 = 1.0
         relaxfactor2 = 1.1
@@ -238,22 +266,44 @@ function relax_grid(xg, rg, nx, nr; max_iterations=-1)
 
     relaxfactor = relaxfactor1
 
-    #dfdc code does this, not sure how it's used yet:
-    rpos = [0.0 for i in 1:nr]
-    for j in 2:nr
-        rpos[j] = rg[1, j]^2 - rg[1, j - 1]^2 + rpos[j - 1]
+    # convergence tolerances for each phase
+    # #TODO: where do these come from?
+    dset1 = 1e-1
+    dset2 = 5e-3
+    dset3 = 5e-7
+
+    #initialize streamline values (used to calculate derivatives later)
+    eta = [0.0 for i in 1:neta]
+    for j in 2:neta
+        # DFDC comment for this is roughly: streamline values (axisymmetric streamfunction). eta(j) = (j-1)**2 gives uniform spacing in r
+        # not sure why it doesn't match the actual expression though.
+        eta[j] = rg[1, j]^2 - rg[1, j - 1]^2 + eta[j - 1]
     end
 
-    # Get the x positions along the wall (used later for various ratios compared to internal points as they move)
-    xall = xg[:, 1]
+    # Get the x positions along the x axis (used later for various ratios compared to internal points as they move)
+    # TODO: make sure this is the right dimension
+    xi = [xr[i, 1] for i in 1:nxi]
+    # Get the r positions along the inner radial boundary
+    hubrstations = [rr[i, 1] for i in 1:nxi]
+
+    # used as scaling for tolerance
+    dxy = max(
+        xr[1, 1], rr[1, 1], abs(xi[end] - xi[1]), abs(hubrstations[end] - hubrstations[1])
+    )
 
     #next dfdc goes to AXELL function
     #skip over most of the stuff since the intlet and walls don't get relaxed
 
     for iterate in 1:max_iterations
+        if verbose
+            println("iteration $iterate")
+        end
+
+        #initialize max step
+        dmax = 0.0
 
         #loop over interior streamlines:
-        for j in 2:(nr - 1)
+        for j in 2:(neta - 1)
             #rename indices for convenience
             jm1 = j - 1
             jp1 = j + 1
@@ -261,175 +311,217 @@ function relax_grid(xg, rg, nx, nr; max_iterations=-1)
             ## -- Relax Outlet -- ##
             #outlet may or may not be a vertical line after relaxation...
 
-            xej = xg[end, j]
-            xem1j = xg[end - 1, j]
-            xem2j = xg[end - 2, j]
+            #rename outlet points for convenience
+            xej = xr[end, j]
+            xem1j = xr[end - 1, j]
+            xem2j = xr[end - 2, j]
 
             rej = rg[end, j]
             rem1j = rg[end - 1, j]
-            rem2j = rg[ende - 2, j]
+            rem2j = rg[end - 2, j]
 
-            xarc = xg[end, jp1] - xg[end, jm1] #x arc distance between j+1 and j-1 radial positions
-            rarc = rg[end, jp1] - rg[end, jm1] #r arc distances between j+1 and j-1 radial positions
+            #x arc distance between j+1 and j-1 radial positions of outlet
+            xarc = xr[end, jp1] - xr[end, jm1]
+            #r arc distances between j+1 and j-1 radial positions of outlet
+            rarc = rg[end, jp1] - rg[end, jm1]
+            # normalized x component of arc length (x direction) of current position on outlet
+            xhat = xarc / sqrt(xarc^2 + rarc^2)
+            # normalized r component of arc length (r direction) of current position on outlet
+            rhat = rarc / sqrt(xarc^2 + rarc^2)
 
-            xhat = vectx / sqrt(vectx^2 + vectr^2) # normalized x component of arc length (x direction)
-            rhat = dy / sqrt(vectx^2 + vectr^2) # normalized r component of arc length (r direction)
+            #xi distance between outlet and second to last xi station before outlet
+            dxem1 = xi[end] - xi[end - 1]
+            #xi distance along inner bound between second and third to last xi stations before outlet.
+            dxem2 = xi[end - 1] - xi[end - 2]
 
-            dxem1wall = xall[end] - xall[end - 1]
-            dxem2wall = xall[end - 1] - xall[end - 2]
-
-            #ratios of x and r spacing comparing current interior r position vs wall x position
-            dxem1dxwall = (xej - xem1j) / dxem1wall
-            dxem2dxwall = (xem1j - xem2j) / dxem2wall
-            drem1drwall = (rej - rem1j) / dxem1wall
-            drem2drwall = (rem1j - rem2j) / dxem2wall
+            #ratios of x and r spacing comparing current interior r position vs inner bound x position
+            dxem1dxinb = (xej - xem1j) / dxem1
+            dxem2dxinb = (xem1j - xem2j) / dxem2
+            drem1dxinb = (rej - rem1j) / dxem1
+            drem2dxinb = (rem1j - rem2j) / dxem2
 
             #2nd-order 3-point difference to get tangential velocity
+            #TODO: figure out what is happening here.
             rez =
-                xhat * (
-                    dxem1dxwall +
-                    dxem1wall * (dxem1dxwall - dxem2dxwall) / (dxem1wall + dxem2wall)
-                ) +
-                rhat * (
-                    drem1dxwall +
-                    dxem1wall * (drem1dxwall - drem2dxwall) / (dxem1wall + dxem2wall)
-                )
+                xhat * (dxem1dxinb + dxem1 * (dxem1dxinb - dxem2dxinb) / (dxem1 + dxem2)) +
+                rhat * (drem1dxinb + dxem1 * (drem1dxinb - drem2dxinb) / (dxem1 + dxem2))
 
-            xi_xij = xhat * (1.0 / dxem1wall + 1.0 / (dxem1wall + dxem2wall))
-            xi_rij = rhat * (1.0 / dxem1wall + 1.0 / (dxem1wall + dxem2wall))
-            xi_arc = xi_xij * xhat + xi_rij * rhat
+            x_xij = xhat * (1.0 / dxem1 + 1.0 / (dxem1 + dxem2))
+            x_rij = rhat * (1.0 / dxem1 + 1.0 / (dxem1 + dxem2))
+            x_xi = x_xij * xhat + x_rij * rhat
 
-            arcrelax = 1.0 * relaxfactor
-            darc = -arcrelax * rez / xi_arc
+            outletrelax = 1.0 * relaxfactor
+            doutlet = -outletrelax * rez / x_xi
+
+            xr[end, j] += doutlet * xhat
+            rr[end, j] += doutlet * rhat
+
+            ## -- END Outlet Relaxation -- ##
 
             ## -- Relax points on the jth streamline -- ##
             #TODO:NEED TO RECONCILE WRITTEN THEORY WITH CODE...
 
-            for i in 2:(nx - 1)
+            #march down xi direction
+            for i in 2:(nxi - 1)
+
                 #rename indices for convenience
                 im1 = i - 1
                 ip1 = i + 1
 
-                ravgplus = 0.5 * (r[i, j] + r[i, r + 1])
-                ravgminus = 0.5 * (r[i, j] + r[i, j - 1])
+                #TODO: What are all these and why are they needed for derivatives?
+                ravgplus = 0.5 * (rr[i, j] + rr[i, j + 1])
+                ravgminus = 0.5 * (rr[i, j] + rr[i, j - 1])
                 ravg = 0.5 * (ravgplus + ravgminus)
 
-                dximinus = xall[i] - xall[i - 1]
-                dxiplus = xall[i + 1] - xall[i]
-                dxiavg = 0.5 * (dxijm1 + dxijp1)
+                dximinus = xi[i] - xi[i - 1]
+                dxiplus = xi[i + 1] - xi[i]
+                dxiavg = 0.5 * (dximinus + dxiplus)
 
-                detaminus = rpos[j] - rpos[j - 1]
-                detaplus = rpos[j + 1] - rpos[j]
+                detaminus = eta[j] - eta[j - 1]
+                detaplus = eta[j + 1] - eta[j]
                 detaavg = 0.5(detaminus + detaplus)
 
-                x_eta = 0.5 * (xg[i, j + 1] - xg[i, j - 1]) / detaavg
-                r_eta = 0.5 * (rg[i, j + 1] - rg[i, j - 1]) / detaavg
-                x_xi = 0.5 * (xg[i + 1, j] - xg[i - 1, j]) / dxiavg
-                r_xi = 0.5 * (rg[i + 1, j] - rg[i - 1, j]) / dxiavg
+                # - Calculate 1st Derivatives
+                x_eta = 0.5 * (xr[i, j + 1] - xr[i, j - 1]) / detaavg
+                r_eta = 0.5 * (rr[i, j + 1] - rr[i, j - 1]) / detaavg
+                x_xi = 0.5 * (xr[i + 1, j] - xr[i - 1, j]) / dxiavg
+                r_xi = 0.5 * (rr[i + 1, j] - rr[i - 1, j]) / dxiavg
 
+                #alpha, beta, and gamma as defined in theory doc.
                 alpha = x_eta^2 + r_eta^2
                 beta = x_eta * x_xi + r_eta * r_xi
                 gamma = x_xi^2 + r_xi^2
-                J = r_eta * x_xi - x_eta * r_xi
+                # J = r_eta * x_xi - x_eta * r_xi
 
+                #TODO: What are these coefficients? why are they needed for derivatives?
                 ximinuscoeff = detaminus * detaplus / (dximinus * dxiavg)
                 xipluscoeff = detaminus * detaplus / (dxiplus * dxiavg)
-                etaminuscoeff = detaplus / detavg * ravgminus / ravg
-                etapluscoeff = detaminus / detavg * ravgplus / ravg
+                etaminuscoeff = detaplus / detaavg * ravgminus / ravg
+                etapluscoeff = detaminus / detaavg * ravgplus / ravg
 
+                #TODO: what are A, B, and C?  Are they involved in SLOR stuff?
                 A =
                     alpha * (ximinuscoeff + xipluscoeff) +
                     gamma * (etaminuscoeff + etapluscoeff)
 
                 if i == 2
-                    B = 0
+                    B = 0 #TODO: Why?
                 else
                     B = -alpha * ximinuscoeff
                 end
 
                 C[i] = -alpha * xipluscoeff
 
-                dxdxieta =
+                # - Calculate 2nd Derivatives
+                x_xieta =
                     detaminus *
                     detaplus *
                     (
-                        xg[i + 1, j + 1] - xg[i - 1, j + 1] - xg[i + 1, j - 1] +
-                        xg[i - 1, j - 1]
+                        xr[i + 1, j + 1] - xr[i - 1, j + 1] - xr[i + 1, j - 1] +
+                        xr[i - 1, j - 1]
                     ) / (4.0 * dxiavg * detaavg)
 
-                drdxieta =
+                r_xieta =
                     detaminus *
                     detaplus *
                     (
-                        rg[i + 1, j + 1] - rg[i - 1, j + 1] - rg[i + 1, j - 1] +
-                        rg[i - 1, j - 1]
+                        rr[i + 1, j + 1] - rr[i - 1, j + 1] - rr[i + 1, j - 1] +
+                        rr[i - 1, j - 1]
                     ) / (4.0 * dxiavg * detaavg)
 
                 x_xixi =
-                    (xg[i + 1, j] - xg[i, j]) * xipluscoeff -
-                    (xg[i, j] - xg[i - 1, j]) * ximinuscoeff
+                    (xr[i + 1, j] - xr[i, j]) * xipluscoeff -
+                    (xr[i, j] - xr[i - 1, j]) * ximinuscoeff
 
                 x_etaeta =
-                    (xg[i, j + 1] - xg[i, j]) * etapluscoeff -
-                    (xg[i, j] - xg[i, j - 1]) * etaminuscoeff
-
-                D[1, i] =
-                    alpha * x_xixi - 2.0 * beta * dxdxieta + gamma * x_etaeta -
-                    beta * r_xi * x_eta * detaminus * detaplus / ravg
+                    (xr[i, j + 1] - xr[i, j]) * etapluscoeff -
+                    (xr[i, j] - xr[i, j - 1]) * etaminuscoeff
 
                 r_xixi =
-                    (rg[i + 1, j] - rg[i, j]) * xipluscoeff -
-                    (rg[i, j] - rg[i - 1, j]) * ximinuscoeff
+                    (rr[i + 1, j] - rr[i, j]) * xipluscoeff -
+                    (rr[i, j] - rr[i - 1, j]) * ximinuscoeff
 
                 r_etaeta =
-                    (rg[i, j + 1] - rg[i, j]) * etapluscoeff -
-                    (rg[i, j] - rg[i, j - 1]) * etaminuscoeff
+                    (rr[i, j + 1] - rr[i, j]) * etapluscoeff -
+                    (rr[i, j] - rr[i, j - 1]) * etaminuscoeff
+
+                #D's look to be from eqns 92 and 93 in theory doc, but don't actually match up completely.  They don't even match up with the notes in the code...
+                D[1, i] =
+                    alpha * x_xixi - 2.0 * beta * x_xieta + gamma * x_etaeta -
+                    beta * r_xi * x_eta * detaminus * detaplus / ravg
 
                 D[2, i] =
-                    alpha * r_xixi - 2.0 * beta * drdxieta + gamma * r_etaeta -
+                    alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
                     beta * r_xi * r_eta * detaminus * detaplus / ravg
 
+                # is this part of the SLOR solution?  Probably want to find out what the successive line over relaxation method actually is in theory...
                 ainv = 1.0 / (A - B * C[i - 1])
-                C[i] += ainv
+                C[i] *= ainv
                 D[1, i] = (D[1, i] - B * D[1, i - 1]) * ainv
                 D[2, i] = (D[2, i] - B * D[2, i - 1]) * ainv
-            end #for i
+            end #for i (streamwise stations)
 
-            D[1, end] = 0.0
-            D[2, end] = 0.0
+            # Is this the rest of the SLOR stuff?  again, need to find out what the method is.
+            for ib in 2:(nxi - 1)
+                i = nxi - ib + 1
 
-            for ib in 2:(xn - 1)
-                i = xn - ib + 1
-                D[1, i] = D[1, i] - C[i] * D[1, i + p]
-                D[2, i] = D[2, i] - C[i] * D[2, i + p]
+                D[1, i] -= C[i] * D[1, i + 1]
+                D[2, i] -= C[i] * D[2, i + 1]
 
-                xr[i, j] = xg[i, j] + relaxfactor * D[1, i]
-                rr[i, j] = rg[i, j] + relaxfactor * D[2, i]
+                xr[i, j] += relaxfactor * D[1, i]
+                rr[i, j] += relaxfactor * D[2, i]
 
                 ad1 = abs(D[1, i])
                 ad2 = abs(D[2, i])
-                dmax = maximum(dmax, ad1, ad2)
-            end #for i
-        end #for j
 
+                dmax = max(dmax, ad1, ad2)
+            end #for ib
+        end #for j (radial stations)
+
+        # -- Update relaxation factors
+        #TODO: need to figure out how the dset numbers and relaxation factors are chosen.  Why are they the values that they are? Does it have something to do with the SLOR setup?
         if dmax < tol * dxy
             return xr, rr
-        else
-            relaxfactor = relaxfactor1
+        end
 
-            if dmax < dset1 * dxy
-                relaxfactor = relaxfactor2
-            end
+        relaxfactor = relaxfactor1
 
-            if dmax < dset2 * dxy
-                relaxfactor = relaxfactor3
-            end
+        if dmax < dset1 * dxy
+            relaxfactor = relaxfactor2
+        end
 
-            if dmax < dset3 * dxy
-                return xr, rr
-            end
+        if dmax < dset2 * dxy
+            relaxfactor = relaxfactor3
+        end
+
+        if dmax < dset3 * dxy
+            return xr, rr
         end
     end
 
     return xr, rr
+end
+
+"""
+    initialize_grid(duct, rotors, grid_options; max_iterations=-1, tol=1e-9)
+
+Initialize grid via zero-thrust, unit freestream solution.
+
+**Arguments:**
+- `duct::DuctTAPE.Duct` : Duct Geometry Object
+- `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
+- `grid_options::DuctTAPE.GridOptions` : Grid options object
+
+**Returns:**
+ - `grid::DuctTAPE.Grid` : Grid Object
+"""
+function initialize_grid(duct, rotors, grid_options; max_iterations=-1, tol=1e-9)
+
+    # get initial grid points
+    xg, rg, nx, nr = generate_grid_points(duct, rotors, grid_options)
+
+    # relax grid
+    xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
+
+    return Grid(xr, rr, nx, nr)
 end
