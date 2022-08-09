@@ -70,21 +70,21 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
         xfront = minimum([rotors[i].xlocation for i in length(rotors)])
         #get annulus radius
         if xfront < wallx[1]
-rtip = wallLEr
-elseif xfront > wallx[end]
-    rtip = wallTEr
-else
-    rtip = wallspline(xfront)
-end
+            rtip = wallLEr
+        elseif xfront > wallx[end]
+            rtip = wallTEr
+        else
+            rtip = wallspline(xfront)
+        end
 
-if xfront < hubx[1] || xfront > hubx[end]
-    rhub = 0.0
+        if xfront < hubx[1] || xfront > hubx[end]
+            rhub = 0.0
         else
             rhub = hubspline(xfront)
-    end
-    R = rtip-rhub
+        end
+        R = rtip - rhub
         #define radial stations for foremost rotor TODO: add functionality for explicit user definition
-        radial_stations_front = range(rhub,rtip; length=nr)
+        radial_stations_front = range(rhub, rtip; length=nr)
     end
 
     #get radial station step size for later use
@@ -114,7 +114,6 @@ if xfront < hubx[1] || xfront > hubx[end]
     end
 
     # -- Get duct spacing
-
 
     #number of duct x stations
     nd = round(Int, (duct_range[2] - duct_range[1]) / (1.0 * dr))
@@ -281,7 +280,6 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
     end
 
     # Get the x positions along the x axis (used later for various ratios compared to internal points as they move)
-    # TODO: make sure this is the right dimension
     xi = [xr[i, 1] for i in 1:nxi]
     # Get the r positions along the inner radial boundary
     hubrstations = [rr[i, 1] for i in 1:nxi]
@@ -309,7 +307,6 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
             jp1 = j + 1
 
             ## -- Relax Outlet -- ##
-            #outlet may or may not be a vertical line after relaxation...
 
             #rename outlet points for convenience
             xej = xr[end, j]
@@ -350,8 +347,8 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
             x_rij = rhat * (1.0 / dxem1 + 1.0 / (dxem1 + dxem2))
             x_xi = x_xij * xhat + x_rij * rhat
 
-            outletrelax = 1.0 * relaxfactor
-            doutlet = -outletrelax * rez / x_xi
+            # outletrelax = 1.0 * relaxfactor
+            doutlet = -relaxfactor * rez / x_xi
 
             xr[end, j] += doutlet * xhat
             rr[end, j] += doutlet * rhat
@@ -379,13 +376,13 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
 
                 detaminus = eta[j] - eta[j - 1]
                 detaplus = eta[j + 1] - eta[j]
-                detaavg = 0.5(detaminus + detaplus)
+                detaavg = 0.5 * (detaminus + detaplus)
 
-                # - Calculate 1st Derivatives
-                x_eta = 0.5 * (xr[i, j + 1] - xr[i, j - 1]) / detaavg
-                r_eta = 0.5 * (rr[i, j + 1] - rr[i, j - 1]) / detaavg
-                x_xi = 0.5 * (xr[i + 1, j] - xr[i - 1, j]) / dxiavg
-                r_xi = 0.5 * (rr[i + 1, j] - rr[i - 1, j]) / dxiavg
+                # - Calculate 1st Derivatives (non-uniform spacing)
+                x_eta = (xr[i, j + 1] - xr[i, j - 1]) / (2.0* detaavg)
+                r_eta = (rr[i, j + 1] - rr[i, j - 1]) / (2.0* detaavg)
+                x_xi = (xr[i + 1, j] - xr[i - 1, j]) / (2.0*dxiavg)
+                r_xi = (rr[i + 1, j] - rr[i - 1, j]) / (2.0*dxiavg)
 
                 #alpha, beta, and gamma as defined in theory doc.
                 alpha = x_eta^2 + r_eta^2
@@ -393,13 +390,61 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                 gamma = x_xi^2 + r_xi^2
                 # J = r_eta * x_xi - x_eta * r_xi
 
-                #TODO: What are these coefficients? why are they needed for derivatives?
+                # - Calculate 2nd Derivatives
+
+                #Used in calculating second derivatives with non-constant intervals.
                 ximinuscoeff = detaminus * detaplus / (dximinus * dxiavg)
                 xipluscoeff = detaminus * detaplus / (dxiplus * dxiavg)
                 etaminuscoeff = detaplus / detaavg * ravgminus / ravg
                 etapluscoeff = detaminus / detaavg * ravgplus / ravg
 
-                #TODO: what are A, B, and C?  Are they involved in SLOR stuff?
+
+                x_xixi =
+                    (xr[i + 1, j] - xr[i, j]) * xipluscoeff -
+                    (xr[i, j] - xr[i - 1, j]) * ximinuscoeff
+
+                x_etaeta =
+                    (xr[i, j + 1] - xr[i, j]) * etapluscoeff -
+                    (xr[i, j] - xr[i, j - 1]) * etaminuscoeff
+
+                x_xieta =
+                    detaminus *
+                    detaplus *
+                    (
+                        xr[i + 1, j + 1] - xr[i - 1, j + 1] - xr[i + 1, j - 1] +
+                        xr[i - 1, j - 1]
+                    ) / (4.0 * dxiavg * detaavg)
+
+                r_xixi =
+                    (rr[i + 1, j] - rr[i, j]) * xipluscoeff -
+                    (rr[i, j] - rr[i - 1, j]) * ximinuscoeff
+
+                r_etaeta =
+                    (rr[i, j + 1] - rr[i, j]) * etapluscoeff -
+                    (rr[i, j] - rr[i, j - 1]) * etaminuscoeff
+
+
+
+                r_xieta =
+                    detaminus *
+                    detaplus *
+                    (
+                        rr[i + 1, j + 1] - rr[i - 1, j + 1] - rr[i + 1, j - 1] +
+                        rr[i - 1, j - 1]
+                    ) / (4.0 * dxiavg * detaavg)
+
+                #D's look to be from eqns 92 and 93 in theory doc, but don't actually match up completely.  They don't even match up with the notes in the code...
+                D[1, i] =
+                    alpha * x_xixi - 2.0 * beta * x_xieta + gamma * x_etaeta -
+                    beta * r_xi * x_eta * detaminus * detaplus / ravg
+
+                D[2, i] =
+                    alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
+                    beta * r_xi * r_eta * detaminus * detaplus / ravg
+
+
+                    #SLOR Stuff
+                #TODO: what are A, B, and C?
                 A =
                     alpha * (ximinuscoeff + xipluscoeff) +
                     gamma * (etaminuscoeff + etapluscoeff)
@@ -412,65 +457,25 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
 
                 C[i] = -alpha * xipluscoeff
 
-                # - Calculate 2nd Derivatives
-                x_xieta =
-                    detaminus *
-                    detaplus *
-                    (
-                        xr[i + 1, j + 1] - xr[i - 1, j + 1] - xr[i + 1, j - 1] +
-                        xr[i - 1, j - 1]
-                    ) / (4.0 * dxiavg * detaavg)
-
-                r_xieta =
-                    detaminus *
-                    detaplus *
-                    (
-                        rr[i + 1, j + 1] - rr[i - 1, j + 1] - rr[i + 1, j - 1] +
-                        rr[i - 1, j - 1]
-                    ) / (4.0 * dxiavg * detaavg)
-
-                x_xixi =
-                    (xr[i + 1, j] - xr[i, j]) * xipluscoeff -
-                    (xr[i, j] - xr[i - 1, j]) * ximinuscoeff
-
-                x_etaeta =
-                    (xr[i, j + 1] - xr[i, j]) * etapluscoeff -
-                    (xr[i, j] - xr[i, j - 1]) * etaminuscoeff
-
-                r_xixi =
-                    (rr[i + 1, j] - rr[i, j]) * xipluscoeff -
-                    (rr[i, j] - rr[i - 1, j]) * ximinuscoeff
-
-                r_etaeta =
-                    (rr[i, j + 1] - rr[i, j]) * etapluscoeff -
-                    (rr[i, j] - rr[i, j - 1]) * etaminuscoeff
-
-                #D's look to be from eqns 92 and 93 in theory doc, but don't actually match up completely.  They don't even match up with the notes in the code...
-                D[1, i] =
-                    alpha * x_xixi - 2.0 * beta * x_xieta + gamma * x_etaeta -
-                    beta * r_xi * x_eta * detaminus * detaplus / ravg
-
-                D[2, i] =
-                    alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
-                    beta * r_xi * r_eta * detaminus * detaplus / ravg
-
-                # is this part of the SLOR solution?  Probably want to find out what the successive line over relaxation method actually is in theory...
                 ainv = 1.0 / (A - B * C[i - 1])
                 C[i] *= ainv
                 D[1, i] = (D[1, i] - B * D[1, i - 1]) * ainv
                 D[2, i] = (D[2, i] - B * D[2, i - 1]) * ainv
             end #for i (streamwise stations)
 
-            # Is this the rest of the SLOR stuff?  again, need to find out what the method is.
+            # Rest of SLOR Stuff
+            # run through streamline backwards?
             for ib in 2:(nxi - 1)
                 i = nxi - ib + 1
 
                 D[1, i] -= C[i] * D[1, i + 1]
                 D[2, i] -= C[i] * D[2, i + 1]
 
+                #over relaxation step?
                 xr[i, j] += relaxfactor * D[1, i]
                 rr[i, j] += relaxfactor * D[2, i]
 
+                # stuff for convergence checking
                 ad1 = abs(D[1, i])
                 ad2 = abs(D[2, i])
 
