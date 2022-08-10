@@ -113,13 +113,13 @@ default(;
     #     camera,
     #     clims,
     color_palette=[
-        RGB(0, 46 / 255, 93 / 255), #BYU Blue
-        RGB(155 / 255, 0, 0), #"BYU" Red
-        RGB(128 / 255, 128 / 255, 128 / 255), #Middle Gray
-        RGB(162 / 255, 277 / 255, 162 / 255), #Light Green
-        RGB(243 / 255, 2090 / 255, 243 / 255), #Pink
-        RGB(205 / 255, 179 / 255, 0.0), #Yellow
-        RGB(161 / 255, 161 / 255, 226 / 255), #Purple
+        RGB(0.0, 46.0 / 255.0, 93.0 / 255.0), #BYU Blue
+        RGB(155.0 / 255.0, 0.0, 0.0), #"BYU" Red
+        RGB(128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0), #Middle Gray
+        RGB(162.0 / 255.0, 227.0 / 255.0, 162.0 / 255.0), #Light Green
+        RGB(243.0 / 255.0, 209.0 / 255.0, 243.0 / 255.0), #Pink
+        RGB(205.0 / 255.0, 179.0 / 255.0, 0.0), #Yellow
+        RGB(161.0 / 255.0, 161.0 / 255.0, 226.0 / 255.0), #Purple
     ],
     #     colorbar,
     #     colorbar_continuous_values,
