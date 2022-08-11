@@ -101,12 +101,12 @@ chord2 = [
 
 beta2 = [92.711; 91.739; 91.228; 90.868; 90.638; 90.441; 90.124; 89.583; 88.955; 88.388] #90 degrees is along the axial direction
 
-#drag object data
-dragpts = 4 #number of points defining drag object
-
-dragx = [0.04; 0.04; 0.04; 0.04]
-dragr = [0.06; 0.08; 0.1; 0.12]
-dragcda = [0.04; 0.035; 0.03; 0.03]
+#TODO: DON'T USE DRAG OBJECT FOR NOW, ADD LATER IF ACTUALLY NEEDED FOR YOUR APPLICATIONS
+##drag object data
+#dragpts = 4 #number of points defining drag object
+#dragx = [0.04; 0.04; 0.04; 0.04]
+#dragr = [0.06; 0.08; 0.1; 0.12]
+#dragcda = [0.04; 0.035; 0.03; 0.03]
 
 #duct and hub geometry
 #TODO: probably need to reverse these, but maybe not...
