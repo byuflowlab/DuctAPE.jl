@@ -1,7 +1,7 @@
 #=
 Types and Functions related to the wake grid
 
-Author: Judd Mehr,
+Authors: Judd Mehr,
 
 Process Notes:
 1. Define paneling on duct and hub

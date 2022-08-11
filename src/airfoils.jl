@@ -1,5 +1,7 @@
 #=
 Types and functions related to airfoil data not included in CCBlade, i.e., airfoil data defined with an additional parameter related to cascades.
+
+Formatting copied directly from CCBlade source code.
 =#
 
 """

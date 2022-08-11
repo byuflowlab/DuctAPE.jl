@@ -2,7 +2,7 @@
 
 Solver Functions
 
-Author: Judd Mehr,
+Authors: Judd Mehr,
 
 Procedure:
 Iteration setup:
@@ -27,9 +27,42 @@ Streamline grid update (after Newton convergence)
 
 =#
 
+#############################
+##### ----- TYPES ----- #####
+#############################
+
+"""
+    OperatingConditions{TVI,TVR,TF}
+
+**Fields:**
+ - `vinf::Array{Float}` : Array of freestream velocities
+ - `vref::Array{Float}` : Array of reference velocities
+ - `rho::Float` : air density value
+ - `vso::Float` : speed of sound value
+ - `mu::Float` : air viscosity value
+"""
+struct OperatingConditions{TVI,TVR,TF}
+    vinf::TVI
+    vref::TVR
+    rho::TF
+    vso::TF
+    mu::TF
+    # boundarylayer::TB
+end
+
+"""
+"""
+struct Outputs{TTt,TTd,TTr,TPt,TPr,TQt,TQr}
+    totalthrust::TTt
+    ductthrust::TTd
+    rotorthrusts::TTr #array
+    totalpower::TPt
+    rotorpowers::TPr #array
+    totaltorque::TQt
+    rotortorques::TQr #array
+end
 
 #######################################
 ##### ----- ITERATION SETUP ----- #####
 #######################################
-
 

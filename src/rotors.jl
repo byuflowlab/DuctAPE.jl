@@ -1,5 +1,7 @@
 #=
 Types and Functions related to rotors
+
+Authors: Judd Mehr,
 =#
 
 """

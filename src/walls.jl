@@ -1,5 +1,7 @@
 #=
 Types and Functions pertaining to duct walls (hub, duct)
+
+Authors: Judd Mehr,
 =#
 
 """
