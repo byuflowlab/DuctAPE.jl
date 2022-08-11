@@ -118,6 +118,8 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
 
     # --- SETUP/FIND BOUNDARY GEOMETRY
 
+#TODO: need to update grid generation so that the grid lines up with all of the rotors (need to figure out how to space things between the rotors and behind the last rotor to make the grid pretty even)
+
     # -- Get foremost boundaries
     if isempty(rotors)
         #find foremost x coordinate
