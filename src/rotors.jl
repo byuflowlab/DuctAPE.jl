@@ -2,7 +2,6 @@
 Types and Functions related to rotors
 =#
 
-
 """
     Rotor{TF, TI, TA, TC, TT, TAF, TR, TM}
 
@@ -21,7 +20,7 @@ TODO: need to add any other geometry that might be needed for rotors.
  - `stationcascade::Array{Float}` : array of cascade parameter (TODO, need to find out what this is) at radial stations defining rotor blade
  - `stationmach::Array{Float}` : array of mach numbers at radial stations defining rotor blade (currently unsupported).
 """
-struct Rotor{TF,TI,TR,TC,TT,TS,TRa,TAF,TRe,TCa,TM}
+struct Rotor{TF,TI,TR,TC,TT,TS,TRa,TAF,TRe,TCa,TM,TRpm}
     xlocation::TF
     numblades::TI
     radialstations::TR
@@ -33,4 +32,11 @@ struct Rotor{TF,TI,TR,TC,TT,TS,TRa,TAF,TRe,TCa,TM}
     stationreynolds::TRe
     stationcascade::TCa
     stationmach::TM #TODO: need to add compressibility corrections to solver before this can be used.
+    rpm::TRpm
+end
+
+"""
+"""
+function blade_section_gamma(W, chord, cl)
+    return 0.5 * W * chord * cl #eqn 75 in dfdc docs
 end
