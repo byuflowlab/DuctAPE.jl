@@ -26,3 +26,10 @@ Streamline grid update (after Newton convergence)
 5. Begin again at “Iteration setup”
 
 =#
+
+
+#######################################
+##### ----- ITERATION SETUP ----- #####
+#######################################
+
+

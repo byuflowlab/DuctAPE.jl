@@ -1,5 +1,5 @@
 #=
-Functions for Grid Initialization
+Types and Functions related to the wake grid
 
 Author: Judd Mehr,
 
@@ -15,6 +15,67 @@ Process Notes:
 9. Relax grid with SLOR (InterativeSolvers) using vx0i, vr0i for Neumann BCs
 
 =#
+
+"""
+    GridOptions{TF,TI}
+
+**Fields:**
+ - `num_radial_stations::Integer` : Number of radial stations (equal to number of rotor blade elements used in analysis)
+ - `inlet_length::Float` : inlet length (unused)
+ - `wake_length::Float` : length of wake behind duct relative to chord length
+ - `wake_expansion_factor::Float` : expansion factor to apply to wake grid generation
+"""
+struct GridOptions{TF,TI}
+    num_radial_stations::TI
+    inlet_length::TF
+    wake_length::TF
+    wake_expansion_factor::TF
+    # wakerelax::TB
+end
+
+"""
+    Grid{TF,TI}
+
+Grid Object
+
+**Fields:**
+ - `x_grid_points::Matrix{Float}` : 2D Array of x grid points
+ - `r_grid_points::Matrix{Float}` : 2D Array of radial grid points
+ - `nx::Int` : number of x stations
+ - `nr::Int` : number of radial stations
+"""
+struct Grid{TF,TI}
+    x_grid_points::TF
+    r_grid_points::TF
+    nx::TI
+    nr::TI
+end
+
+"""
+    defineGridOptions(
+        num_radial_stations;
+        inlet_length=0.5,
+        wake_length=1.0,
+        wake_expansion_factor=1.1
+    )
+
+Constructor function for the GridOptions object.
+
+**Required Argument:**
+ - `num_radial_stations::Integer` : Number of radial stations (equal to number of rotor blade elements used in analysis)
+
+**Keyword Arguments:**
+ - `inlet_length::Float` : inlet length (unused)
+ - `wake_length::Float` : length of wake behind duct in terms of chord length
+ - `wake_expansion_factor::Float` : expansion factor to apply to wake grid generation
+"""
+function defineGridOptions(
+    num_radial_stations; inlet_length=0.5, wake_length=1.0, wake_expansion_factor=1.1
+)
+    return GridOptions(
+        num_radial_stations, inlet_length, wake_length, wake_expansion_factor
+    )
+end
 
 """
     generate_grid_points(duct, rotors, grid_options, debug=false)
@@ -379,10 +440,10 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                 detaavg = 0.5 * (detaminus + detaplus)
 
                 # - Calculate 1st Derivatives (non-uniform spacing)
-                x_eta = (xr[i, j + 1] - xr[i, j - 1]) / (2.0* detaavg)
-                r_eta = (rr[i, j + 1] - rr[i, j - 1]) / (2.0* detaavg)
-                x_xi = (xr[i + 1, j] - xr[i - 1, j]) / (2.0*dxiavg)
-                r_xi = (rr[i + 1, j] - rr[i - 1, j]) / (2.0*dxiavg)
+                x_eta = (xr[i, j + 1] - xr[i, j - 1]) / (2.0 * detaavg)
+                r_eta = (rr[i, j + 1] - rr[i, j - 1]) / (2.0 * detaavg)
+                x_xi = (xr[i + 1, j] - xr[i - 1, j]) / (2.0 * dxiavg)
+                r_xi = (rr[i + 1, j] - rr[i - 1, j]) / (2.0 * dxiavg)
 
                 #alpha, beta, and gamma as defined in theory doc.
                 alpha = x_eta^2 + r_eta^2
@@ -397,7 +458,6 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                 xipluscoeff = detaminus * detaplus / (dxiplus * dxiavg)
                 etaminuscoeff = detaplus / detaavg * ravgminus / ravg
                 etapluscoeff = detaminus / detaavg * ravgplus / ravg
-
 
                 x_xixi =
                     (xr[i + 1, j] - xr[i, j]) * xipluscoeff -
@@ -423,8 +483,6 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                     (rr[i, j + 1] - rr[i, j]) * etapluscoeff -
                     (rr[i, j] - rr[i, j - 1]) * etaminuscoeff
 
-
-
                 r_xieta =
                     detaminus *
                     detaplus *
@@ -442,8 +500,7 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                     alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
                     beta * r_xi * r_eta * detaminus * detaplus / ravg
 
-
-                    #SLOR Stuff
+                #SLOR Stuff
                 #TODO: what are A, B, and C?
                 A =
                     alpha * (ximinuscoeff + xipluscoeff) +

@@ -1,6 +1,5 @@
 #=
-Rotor and associated component definition functions
-TODO: consider just adding the cascade parameter stuff to what ccblade already does and using CCBlade functionality since it's basically the same.
+Types and functions related to airfoil data not included in CCBlade, i.e., airfoil data defined with an additional parameter related to cascades.
 =#
 
 """
