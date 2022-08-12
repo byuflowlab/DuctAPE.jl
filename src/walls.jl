@@ -31,6 +31,13 @@ struct DuctGeometry{TA,TF}
 end
 
 """
+"""
+struct DuctSplines{TSD,TSH}
+    wallinnerspline::TSD
+    hubspline::TSH
+end
+
+"""
     defineDuctGeometry(
         wallinnerxcoordinates,
         wallinnerrcoordinates,
@@ -101,6 +108,10 @@ function defineDuctGeometry(
         hubrcoordinates = [0.0 for i in 1:length(wallinnerxcoordinates)]
     end
 
+    #TODO: create wall spline fields
+    wallinnerspline = FLOWMath.Akima(wallinnerxcoordinates,wallinnerrcoordinates)
+    hubspline = FLOWMath.Akima(hubxcoordinates,hubrcoordinates)
+
     return DuctGeometry(
         wallinnerxcoordinates,
         wallinnerrcoordinates,
@@ -111,7 +122,8 @@ function defineDuctGeometry(
         LEx,
         TEx,
         chord,
-    )
+    ),
+    DuctSplines(wallinnerspline, hubspline)
 end
 
 """
