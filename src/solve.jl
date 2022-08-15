@@ -6,8 +6,12 @@ Authors: Judd Mehr,
 
 Procedure:
 Iteration setup:
+gengeom does the paneling definitions
 1. Define paneling on grid streamsurfaces, define source drag panels
+really not sure what does this. could be gengeom, rotorinitbld, and setgrdflow, it's just not explicitly done.  There are no axijs or similar in the dfdc code.
 2. Evaluate at body panels, rotor blade stations, source drag panels: axij , arij , aij, bxij , brij ,bij
+
+convgthbg covers at least the rest of this including the newton iteration:
 3. Set initial guess for Γk
 4. Set corresponding Γ ̃ and H ̃ fields
 5. Set initial guess for γi using (41) and (42)
@@ -18,6 +22,35 @@ One Newton iteration:
 3. Solve Newton system for δΓk, δσi
 4. Update Γk, σi
 
+---------------------------------------------------------
+dfdc steps:
+- Load file
+- go to oper menu does the following:
+    - preallocates arrays, save some convenience stuff (IGNORE THIS FOR NOW)
+    - calls gengeom function (see below)
+    - initializes plotting stuff (IGNORE)
+    - waits for user input, if exec: (see line 961 in oper.f)
+        - call rotinitbld
+        - call setgrdflow
+        - call convgthbg (solver for gamma_theta)
+        - call tqcalc (solves thrust and torque and stuff)
+        - call rotrprt (saves rotor state, probably IGNORE)
+
+GENGEOM:
+- adjusts walls paneling as needed (IGNORE)
+- sets drag objects (IGNORE for now)
+- initializes rotors
+- initializes grid
+- sets up rotor wake elements on grid
+- sets up "pointers" (this seems to simply be book keeping? or are these the axij etc. coefficients?)
+
+ROTORINTBLD:
+
+SETGRDFLOW:
+
+CONVGTHBG:
+
+TQCALC:
 =#
 
 #############################

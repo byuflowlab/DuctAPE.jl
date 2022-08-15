@@ -122,6 +122,7 @@ function initialize_rotor(
         tipgap,
         chords,
         twists,
+        skews,
         rakes,
         airfoils,
         reynolds,
@@ -166,6 +167,7 @@ end
 
 """
 need to set up source and vortex lines representing starting points of rotor wakes.
+have this function called by a more global function that holds all the source and vortex lines.
 """
 function initialize_rotor_wake() end
 
