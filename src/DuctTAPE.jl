@@ -5,6 +5,7 @@ using FLOWFoil
 ff = FLOWFoil #panels for walls/hub
 using FLOWMath
 fm = FLOWMath #akima splines
+using Statistics
 # using ForwardDiff
 # fd = ForwardDiff #newton method
 # using IterativeSolvers
@@ -18,7 +19,8 @@ fm = FLOWMath #akima splines
 
 # - INCLUDED FILES
 include("types.jl")
-include("initilize.jl")
-include("duct.jl")
-
+include("walls.jl")
+include("rotors.jl")
+include("wakegrid.jl")
+include("solve.jl")
 end

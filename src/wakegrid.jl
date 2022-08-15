@@ -4,7 +4,7 @@ Types and Functions related to the wake grid
 Authors: Judd Mehr,
 
 Process Notes:
-1. Define paneling on duct and hub
+1. Define paneling on ductgeometry and hub
 2. Evaluate for panel control points
 3. Assemble abarij, augmented with Kutta condition
 4. Solve for gammabar0i
@@ -15,6 +15,10 @@ Process Notes:
 9. Relax grid with SLOR (InterativeSolvers) using vx0i, vr0i for Neumann BCs
 
 =#
+
+#######################################
+##### ----- COMPOSITE TYPES ----- #####
+#######################################
 
 """
     GridOptions{TF,TI}
@@ -50,6 +54,10 @@ struct Grid{TF,TI}
     nx::TI
     nr::TI
 end
+
+#################################
+##### ----- FUNCTIONS ----- #####
+#################################
 
 """
     defineGridOptions(
@@ -91,23 +99,23 @@ Get grid boundary and initial interior points.
  - `x_grid_points::Matrix{Float64,2}` : 2D Array of x grid points
  - `r_grid_points::Matrix{Float64,2}` : 2D Array of r grid points
 """
-function generate_grid_points(duct, rotors, grid_options; debug=false)
+function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; debug=false)
 
     # --- RENAME THINGS FOR CONVENIENCE
 
     # Rename HUB Geometry for convenience
-    hubx = duct.hubxcoordinates
-    hubr = duct.hubrcoordinates
-    hubspline = fm.Akima(hubx, hubr)
+    hubspline = ductsplines.hubspline
+    hubx = ductgeometry.hubxcoordinates
+    hubr = ductgeometry.hubrcoordinates
     hubLEx = hubx[1]
     hubLEr = hubr[1]
     hubTEx = hubx[end]
     hubTEr = hubr[end]
 
     # Rename WALL Geometry for convenience
-    wallx = duct.wallinnerxcoordinates
-    wallr = duct.wallinnerrcoordinates
-    wallspline = fm.Akima(wallx, wallr)
+    wallspline = ductsplines.wallinnerspline
+    wallx = ductgeometry.wallinnerxcoordinates
+    wallr = ductgeometry.wallinnerrcoordinates
     wallLEx = wallx[1]
     wallLEr = wallr[1]
     wallTEx = wallx[end]
@@ -115,52 +123,69 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
 
     # Rename options for convenience
     nr = grid_options.num_radial_stations
+    for i in 1:length(rotors)
+        if rotors[i].radialstations != nothing
+            @assert nr == length(rotors[i].radialstations)
+        end
+    end
 
     # --- SETUP/FIND BOUNDARY GEOMETRY
 
-#TODO: need to update grid generation so that the grid lines up with all of the rotors (need to figure out how to space things between the rotors and behind the last rotor to make the grid pretty even)
+    #TODO: need to update grid generation so that the grid lines up with all of the rotors (need to figure out how to space things between the rotors and behind the last rotor to make the grid pretty even)
 
     # -- Get foremost boundaries
     if isempty(rotors)
         #find foremost x coordinate
-        xfront = duct.LEx - grid_options.inlet_length * duct.chord
+        xfront = ductgeometry.LEx - grid_options.inlet_length * ductgeometry.chord
         #define radius of disk
         R = wallLEr - hubLEr
         #TODO: add functionality for user explicit definition of radial positions at some point.
         radial_stations_front = range(hubLEr, wallLEr; length=nr)
     else
         #find foremorst x coordinate
-        xfront = minimum([rotors[i].xlocation for i in length(rotors)])
-        #get annulus radius
-        if xfront < wallx[1]
-            rtip = wallLEr
-        elseif xfront > wallx[end]
-            rtip = wallTEr
-        else
-            rtip = wallspline(xfront)
-        end
+        xfront, rotoridx = findmin([rotors[i].xlocation for i in length(rotors)])
 
-        if xfront < hubx[1] || xfront > hubx[end]
-            rhub = 0.0
+        if rotors[rotoridx].radialstations == nothing
+            #get annulus radius
+            if xfront < wallx[1]
+                rtip = wallLEr
+            elseif xfront > wallx[end]
+                rtip = wallTEr
+            else
+                rtip = wallspline(xfront)
+            end
+
+            if xfront < hubx[1] || xfront > hubx[end]
+                rhub = 0.0
+            else
+                rhub = hubspline(xfront)
+            end
+            R = rtip - rhub
+            #define radial stations for foremost rotor TODO: add functionality for explicit user definition
+            radial_stations_front = range(rhub, rtip; length=nr)
         else
-            rhub = hubspline(xfront)
+            radial_stations_front = rotor[rotoridx].radialstations
+            R = rotor[rotoridx].radialstations[end] - rotor[rotoridx].radialstations[1]
         end
-        R = rtip - rhub
-        #define radial stations for foremost rotor TODO: add functionality for explicit user definition
-        radial_stations_front = range(rhub, rtip; length=nr)
     end
 
     #get radial station step size for later use
-    dr = radial_stations_front[2] - radial_stations_front[1]
+    dr = Statistics.mean(radial_stations_front[2:end] .- radial_stations_front[1:(end - 1)])
 
     # -- Get rear boundary
-    #wake starts at duct trailing edge and extends the input wake_length relative to duct chord.
-    xrear = duct.TEx + duct.chord * grid_options.wake_length
+    #wake starts at ductgeometry trailing edge and extends the input wake_length relative to ductgeometry chord.
+    xrear = ductgeometry.TEx + ductgeometry.chord * grid_options.wake_length
 
     # -- Get x-ranges for inner and outer boundaries
-    inlet_range = [xfront; duct.LEx]
-    duct_range = [max(duct.LEx, xfront); duct.TEx]
-    wake_range = [duct.TEx; xrear]
+    inlet_range = [xfront; ductgeometry.LEx]
+    duct_range = unique(
+        [
+            max(ductgeometry.LEx, xfront)
+            sort([rotors[i].xlocation for i in 1:length(rotors)])
+            ductgeometry.TEx
+        ],
+    )
+    wake_range = [ductgeometry.TEx; xrear]
 
     # --- DEFINE X GRID SPACING PIECES
 
@@ -176,19 +201,34 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
         xi = []
     end
 
-    # -- Get duct spacing
+    # -- Get ductgeometry spacing
 
-    #number of duct x stations
-    nd = round(Int, (duct_range[2] - duct_range[1]) / (1.0 * dr))
-    #duct x stations
-    xd = range(duct_range[1], duct_range[2]; length=nd)
+    #initialize
+    nd = 0
+    xd = []
+    for i in 1:(length(duct_range) - 1)
+
+        #number of ductgeometry x stations
+        ndtemp = round(Int, (duct_range[i + 1] - duct_range[i]) / (1.0 * dr))
+
+        #ductgeometry x stations
+        if ndtemp >= 1
+            nd += ndtemp
+            xd = [xd; range(duct_range[i], duct_range[i + 1]; length=ndtemp)]
+        end
+    end
+
+    #get unique items in xd to remove any overlapping stations
+    xd = unique(xd)
 
     # -- Get wake spacing
-    xdsize = deepcopy(dr) #length of last element on duct spacing
-    xw = [xdsize + duct_range[2]] #make first wake element same size as last duct element
+    #TODO: decide if you need to have the grid land right on the trailing edge of the shorter wall/hub.  Right now you land right on the TE of the longest one, but not on the shorter one.
+
+    xdsize = deepcopy(dr) #length of last element on ductgeometry spacing
+    xw = [xdsize + duct_range[end]] #make first wake element same size as last ductgeometry element
     xwidx = 1 #initialize index
     #TODO: this method doesn't guarentee the actual prescribed wake length, but should get close
-    while xw[end] < wake_range[2]
+    while xw[end] < wake_range[end]
         xdsize *= grid_options.wake_expansion_factor
         push!(xw, xw[xwidx] + xdsize)
         xwidx += 1
@@ -200,7 +240,7 @@ function generate_grid_points(duct, rotors, grid_options; debug=false)
     #xw = range(wake_range[1], wake_range[2]; length=numxw)[2:end]
 
     # put all the x stations together
-    xstations = [xi[1:(end - 1)]; xd; xw[1:end]]
+    xstations = unique([xi; xd; xw])
     #get number of x stations
     nx = length(xstations)
 
@@ -567,22 +607,25 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
 end
 
 """
-    initialize_grid(duct, rotors, grid_options; max_iterations=-1, tol=1e-9)
+    initialize_grid(ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9)
 
 Initialize grid via zero-thrust, unit freestream solution.
 
 **Arguments:**
-- `duct::DuctTAPE.Duct` : Duct Geometry Object
+- `ductgeometry::DuctTAPE.DuctGeometry` : ductgeometry Geometry Object
+ - `ductsplines::DuctTAPE.DuctSplines` : ductsplines object
 - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
 - `grid_options::DuctTAPE.GridOptions` : Grid options object
 
 **Returns:**
  - `grid::DuctTAPE.Grid` : Grid Object
 """
-function initialize_grid(duct, rotors, grid_options; max_iterations=-1, tol=1e-9)
+function initialize_grid(
+    ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9
+)
 
     # get initial grid points
-    xg, rg, nx, nr = generate_grid_points(duct, rotors, grid_options)
+    xg, rg, nx, nr = generate_grid_points(ductgeometry, ductsplines, rotors, grid_options)
 
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
