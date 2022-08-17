@@ -87,7 +87,8 @@ function initialize_rotor(
 
     #Set up radial stations if not defined by user.
     if radialstations != nothing
-        @assert numstations == length(radialstations)
+        #make sure that the radial stations that are defined meet the requirements to not break stuff...
+        @assert numstations == length(radialstations) && ismonotonic(radialstations) && all(>=(0),radialstations)
     else
         #use linear spacing. user can define custom spacing otherwise
         radialstations = collect(range(0.0, 1.0 - tipgap; length=nstations))
@@ -145,7 +146,7 @@ function initialize_blade(DuctSplines, Rotor)
 
     #unpack splines for convenience
     wallspline = DuctSplines.wallinnerspline
-    hubspline = DuctSPlines.hubspline
+    hubspline = DuctSplines.hubspline
 
     #find r-position of wall and hub at rotor location
     rhub = hubspline(Rotor.xlocation)
@@ -155,8 +156,11 @@ function initialize_blade(DuctSplines, Rotor)
     #use linear transform to go from non-dim to dimensional range
     rdim =
         rhub .+
-        (rhub - rtip) / (Rotor.radialstations[2] - Rotor.radialstations[1]) .*
+        (rtip - rhub) / (Rotor.radialstations[end] - Rotor.radialstations[1]) .*
         (Rotor.radialstations .- Rotor.radialstations[1])
+
+    # check that the rotor radial positions are all positive and that the array is monotonic to avoid issues including hanging in wake grid generation
+    @assert ismonotonic(rdim) && all(>=(0), rdim)
 
     #calculate swept area
     sweptannulus = pi * (rtip^2 - rhub^2)

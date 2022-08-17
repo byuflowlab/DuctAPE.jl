@@ -19,6 +19,7 @@ using Statistics
 
 # - INCLUDED FILES
 include("types.jl")
+include("utils.jl")
 include("walls.jl")
 include("rotors.jl")
 include("wakegrid.jl")

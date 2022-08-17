@@ -142,8 +142,12 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         #TODO: add functionality for user explicit definition of radial positions at some point.
         radial_stations_front = range(hubLEr, wallLEr; length=nr)
     else
+
         #find foremorst x coordinate
-        xfront, rotoridx = findmin([rotors[i].xlocation for i in length(rotors)])
+        xfront, rotoridx = findmin([rotors[i].xlocation for i in 1:length(rotors)])
+
+        #get blade from foremost rotor
+        blade = initialize_blade(ductsplines, rotors[rotoridx])
 
         if rotors[rotoridx].radialstations == nothing
             #get annulus radius
@@ -164,8 +168,8 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
             #define radial stations for foremost rotor TODO: add functionality for explicit user definition
             radial_stations_front = range(rhub, rtip; length=nr)
         else
-            radial_stations_front = rotor[rotoridx].radialstations
-            R = rotor[rotoridx].radialstations[end] - rotor[rotoridx].radialstations[1]
+            radial_stations_front = blade.rdim
+            R = blade.rdim[end] - blade.rdim[1]
         end
     end
 
