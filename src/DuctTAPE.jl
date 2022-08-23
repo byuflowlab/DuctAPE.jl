@@ -1,8 +1,8 @@
 module DuctTAPE
 
 # - DEPENDENCIES
-using FLOWFoil
-ff = FLOWFoil #panels for walls/hub
+# using FLOWFoil
+# ff = FLOWFoil #panels for walls/hub
 using FLOWMath
 fm = FLOWMath #akima splines
 using Statistics
