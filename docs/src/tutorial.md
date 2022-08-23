@@ -16,7 +16,7 @@ We'll go ahead and load that file and grab pieces of it as we go.
 
 ```@example geom
 # --- WALL GEOMETRY DEFINITION
-include("../../data/dfdc/dstestr2_case.jl")
+include("../../data/dfdc/dstestr2_case.jl");
 
 ```
 

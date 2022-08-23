@@ -459,3 +459,5 @@ ductr = [
     0.158441
     0.158439
 ]
+
+println("DFDC Example Case Information Loaded")
