@@ -47,12 +47,18 @@ Grid Object
  - `r_grid_points::Matrix{Float}` : 2D Array of radial grid points
  - `nx::Int` : number of x stations
  - `nr::Int` : number of radial stations
+ - `wallTEidx::Int` : index of duct wall trailing edge x location
+ - `hubTEidx::Int` : index of hub wall trailing edge x location
+ - `rotoridxs::Array{Int}` : array of indices of rotor x locations
 """
-struct Grid{TF,TI}
+struct Grid{TF,TI,TA}
     x_grid_points::TF
     r_grid_points::TF
     nx::TI
     nr::TI
+    wallTEidx::TI
+    hubTEidx::TI
+    rotoridxs::TA
 end
 
 #################################
@@ -85,8 +91,9 @@ function defineGridOptions(
     )
 end
 
+#TODO: add capabilities for rotor rake at some point.  The code should be able to handle it already, just need to introduce separate hub/wall xlocations and set the first xr points along the rotor quarter chord points.
 """
-    generate_grid_points(duct, rotors, grid_options, debug=false)
+    generate_grid_points(ductgeometry, ductsplines, rotors, grid_options, debug=false)
 
 Get grid boundary and initial interior points.
 
@@ -183,12 +190,17 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     # -- Get x-ranges for inner and outer boundaries
     inlet_range = [xfront; ductgeometry.LEx]
     duct_range = unique(
-        [
-            max(ductgeometry.LEx, xfront)
-            sort([rotors[i].xlocation for i in 1:length(rotors)])
-            ductgeometry.TEx
-        ],
+        sort(
+            [
+                max(ductgeometry.LEx, xfront)
+                sort([rotors[i].xlocation for i in 1:length(rotors)])
+                hubTEx
+                wallTEx
+                ductgeometry.TEx
+            ],
+        ),
     )
+
     wake_range = [ductgeometry.TEx; xrear]
 
     # --- DEFINE X GRID SPACING PIECES
@@ -210,15 +222,19 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     #initialize
     nd = 0
     xd = []
+
     for i in 1:(length(duct_range) - 1)
 
         #number of ductgeometry x stations
-        ndtemp = round(Int, (duct_range[i + 1] - duct_range[i]) / (1.0 * dr))
+        ndtemp = ceil(Int, (duct_range[i + 1] - duct_range[i]) / (1.0 * dr))
 
         #ductgeometry x stations
-        if ndtemp >= 1
+        if ndtemp > 1
             nd += ndtemp
             xd = [xd; range(duct_range[i], duct_range[i + 1]; length=ndtemp)]
+        elseif ndtemp <= 1
+            nd += 1
+            xd = [xd; duct_range[i + 1]]
         end
     end
 
@@ -333,17 +349,37 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         end # for radial stations
     end # for x stations
 
-    return x_grid_points, r_grid_points, nx, nr
+    ## -- GET INDEX OF TE POINTS -- ##
+    if wallTEx < xstations[1]
+        wallTEidx = 1
+    else
+        wallTEidx = findfirst(x -> x == wallTEx, xstations)
+    end
+    hubTEidx = findfirst(x -> x == hubTEx, xstations)
+
+    ## -- GET INDICES OF ROTOR X LOCATIONS --##
+    rotoridxs = [0 for i in 1:length(rotors)]
+    for i=1:length(rotors)
+        rotoridxs[i] = findfirst(x -> x ==rotors[i].xlocation,xstations)
+    end
+
+    return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs
 end
 
 """
-    relax_grid(xg, rg)
+    relax_grid(xg, rg, nxi, neta; max_iterations, tol)
 
 Relax grid using elliptic grid solver.
 
 **Arguments:**
-- `xg::Matrix{Float64}` : Initial x grid points guess
+ - `xg::Matrix{Float64}` : Initial x grid points guess
  - `rg::Matrix{Float64}` : Initial r grid points guess
+ - `nxi::Int` : number of xi (x) stations in the grid
+ - `neta::Int` : number of eta (r) stations in the grid
+
+**Keyword Arguments:**
+ - `max_iterations::Int` : maximum number of iterations to run, default=100
+ - `tol::Float` : convergence tolerance, default = 1e-9
 
 **Returns:**
  - `x_relax_points::Matrix{Float64}` : Relaxed x grid points guess
@@ -589,6 +625,9 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
         # -- Update relaxation factors
         #TODO: need to figure out how the dset numbers and relaxation factors are chosen.  Why are they the values that they are? Does it have something to do with the SLOR setup?
         if dmax < tol * dxy
+            if verbose
+                println("iterations = ", iterate)
+            end
             return xr, rr
         end
 
@@ -603,10 +642,16 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
         end
 
         if dmax < dset3 * dxy
+            if verbose
+                println("iterations = ", iterate)
+            end
             return xr, rr
         end
     end
 
+    if verbose
+        println("iterations = ", iterate)
+    end
     return xr, rr
 end
 
@@ -616,23 +661,29 @@ end
 Initialize grid via zero-thrust, unit freestream solution.
 
 **Arguments:**
-- `ductgeometry::DuctTAPE.DuctGeometry` : ductgeometry Geometry Object
+ - `ductgeometry::DuctTAPE.DuctGeometry` : ductgeometry Geometry Object
  - `ductsplines::DuctTAPE.DuctSplines` : ductsplines object
-- `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
-- `grid_options::DuctTAPE.GridOptions` : Grid options object
+ - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
+ - `grid_options::DuctTAPE.GridOptions` : Grid options object
+
+**Keyword Arguments:**
+ - `max_iterations::Int` : maximum number of iterations to run, default=100
+ - `tol::Float` : convergence tolerance, default = 1e-9
 
 **Returns:**
  - `grid::DuctTAPE.Grid` : Grid Object
 """
 function initialize_grid(
-    ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9
+    ductgeometry, ductsplines, rotors, grid_options; max_iterations=100, tol=1e-9
 )
 
     # get initial grid points
-    xg, rg, nx, nr = generate_grid_points(ductgeometry, ductsplines, rotors, grid_options)
+    xg, rg, nx, nr, wallTEidx, hubTEidx, rotoridxs = generate_grid_points(
+        ductgeometry, ductsplines, rotors, grid_options
+    )
 
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
 
-    return Grid(xr, rr, nx, nr)
+    return Grid(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs)
 end

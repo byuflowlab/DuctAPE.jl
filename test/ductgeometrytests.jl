@@ -44,18 +44,18 @@ end
     rotors = [
         DuctTAPE.Rotor(
             0.0,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
@@ -63,18 +63,18 @@ end
     rotors = [
         DuctTAPE.Rotor(
             0.25,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
@@ -82,18 +82,18 @@ end
     rotors = [
         DuctTAPE.Rotor(
             0.5,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
@@ -101,18 +101,18 @@ end
     rotors = [
         DuctTAPE.Rotor(
             0.75,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
@@ -120,41 +120,39 @@ end
     rotors = [
         DuctTAPE.Rotor(
             1.0,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
 
     @test true == true
 
-    #Test that nothing breaks depending on how big the duct and hub are relative to each other
-
     rotors = [
         DuctTAPE.Rotor(
             0.25,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     duct = DuctTAPE.defineDuctGeometry(
@@ -175,7 +173,6 @@ end
         0.5 .* hubcoordinates[:, 1],
         0.5 .* hubcoordinates[:, 2],
     )
-    grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
 
     @test true == true
 
@@ -184,25 +181,24 @@ end
     rotors = [
         DuctTAPE.Rotor(
             0.5,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     duct = DuctTAPE.defineDuctGeometry(
         innerwallx,
         innerwallr,
         outerwallx,
-        outerwallr,
         0.25 .+ hubcoordinates[:, 1],
         hubcoordinates[:, 2],
     )
@@ -211,18 +207,18 @@ end
     rotors = [
         DuctTAPE.Rotor(
             0.25,
+            10,
+            range(0, 1; length=10),
+            0.0,
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
+            range(0, 1; length=10),
             nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ),
     ]
     duct = DuctTAPE.defineDuctGeometry(
@@ -247,3 +243,4 @@ end
 
     @test true == true
 end
+

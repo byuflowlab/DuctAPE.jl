@@ -2,54 +2,43 @@
 
 ## Setting up Duct Geometry
 
-You can define whatever geometry you'd like, and you could do so manually if you wanted.
-For this example, however, we're going to use the airfoil geometry generation and manimulation functions available in FLOWFoil.jl.
-In this example, we'll simply use the NACA 4-series airfoil function.
+For this example, we are going to set up an example available in the DFDC source files.
+We have taken one of the case files and transcribed it into a julia file located in the [data directory](../../data/dfdc/dstestr2_case.jl).
 
 ```@setup geom
-using FLOWFoil
 using DuctTAPE
 using Plots
 include("plots_default.jl")
 plot(xlabel="x", ylabel="r")
 ```
 
-For the wall geometry, we'll use a NACA 4420 airfoil that we'll flip over and then adjust the angle of attack and shift up from the center axis.
-We'll also split the inner and outer portions of the duct wall for later use.
+We'll go ahead and load that file and grab pieces of it as we go.
+
 ```@example geom
 # --- WALL GEOMETRY DEFINITION
-xwall, ywall = FLOWFoil.naca4(4, 4, 20)
-wallcoords = [xwall -ywall]
-wallangle = 8.0
-walllocation = [0.0; 0.75]
-FLOWFoil.position_coordinates(wallcoords, 1.0, wallangle, walllocation)
-wallx = wallcoords[:, 1]
-wallr = wallcoords[:, 2]
-outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(wallx, wallr)
-plot!(innerwallx,innerwallr,aspectratio=:equal)
-plot!(outerwallx,outerwallr,linestyle=:dash, color=1)
+include("../../data/dfdc/dstestr2_case.jl")
+
 ```
 
-Similarly for the hub geometry, we'll use a NACA 2410, but just use the top half of the airfoil and keep it at the center axis by using the `split_wall()` function:
+The geometry is defined for a complete airfoil as the duct wall.
+We actually want to split the duct wall coordinates for easier navigation as we set up the flow field.
 
 ```@docs
 DuctTAPE.split_wall
 ```
 
-We'll also scale it down and shift it back using FLOWFoil functionality.
-
 ```@example geom
-# --- HUB GEOMETRY DEFINITION
-_, hubxcoordinates, _, hubrcoordinates = FLOWFoil.naca4(2, 4, 10; split=true)
-hubcoordinates = [hubxcoordinates hubrcoordinates]
-FLOWFoil.position_coordinates(hubcoordinates, 0.8, 0.0, [0.25; 0.0])
-hubx = hubcoordinates[:, 1]
-hubr = hubcoordinates[:, 2]
+# - Split Wall Coordinates
+innerwallx, innerwallr, outerwallx, outerwallr = DuctTAPE.split_wall(ductx, ductr)
 
-plot!(hubx,hubr,color=2)
+# - Plot Geometry
+plot!(innerwallx,innerwallr,aspectratio=:equal)
+plot!(outerwallx,outerwallr,linestyle=:dash)
+plot!(hubx,hubr,linestyle=:dash, color=2)
 ```
 
-Up to this point, we have not used any functionality of the DuctTAPE package.  It should be remembered, therefore, that the user can define any wall and hub geometry they want, using whatever methods they want, as long as the geometry can be input into the DuctGeometry struct:
+
+Now we want to put all the geometry together in a `DuctGeometry` object.
 
 ```@docs
 DuctTAPE.DuctGeometry
@@ -57,16 +46,18 @@ DuctTAPE.defineDuctGeometry
 ```
 
 Using the `defineDuctGeometry` contructor function, we can input our wall and hub geometries and let the leading and trailing edges and chord length be calculated automatically.
+Note that this function also outputs a spline object for the inner duct wall and the hub wall.
+These splines are used throughout the initialization process to help with rotor placement.
 
 ```@example geom
 # --- DEFINE DUCT OBJECT
-duct = DuctTAPE.defineDuctGeometry(
+duct, ductsplines = DuctTAPE.defineDuctGeometry(
     innerwallx,
     innerwallr,
     outerwallx,
     outerwallr,
-    hubcoordinates[:, 1],
-    hubcoordinates[:, 2],
+    hubx,
+    hubr
 )
 ```
 
@@ -81,13 +72,27 @@ DuctTAPE.Rotor
 ```
 
 Note that we want to create an array, even if we only have one rotor.  When we initialize the grid, it will expect an array.
+Also, our rotor object has more fields than are used in the original dfdc, for now, we'll set the section skew, rake, reynolds, airfoil, solidity, and mach to nothing.
+
 ```@example geom
-# --- GENERATE ROTOR OBJECT
-rotor_x_location = 0.5
-rotors = [DuctTAPE.Rotor(rotor_x_location, nothing, nothing, nothing, nothing, nothing)]
+# --- GENERATE ROTOR OBJECT ARRAY
+
+#generate rotor object
+rotor1 = DuctTAPE.Rotor(xdisk1, nblade1, 0.0, chord1, beta1, nothing, nothing, nothing, nothing, nothing, nothing, rpm)
+
+#generate stator object (rpm is zero for stator)
+rotor2 = DuctTAPE.Rotor(xdisk2, nblade2, 0.0, chord2, beta2, nothing, nothing, nothing, nothing, nothing, nothing, 0.0)
+
+#assemble array
+rotors = [rotor1; rotor2]
 ```
 
-We can next define some grid options
+We can next define some grid options.
+
+!!! note
+    The number of radial stations set for grid options must match the number of radial stations defined for the rotor objects.
+    Furthermore, the rotors must have the same number of radial stations defined.
+
 
 ```@docs
 DuctTAPE.GridOptions
@@ -125,3 +130,8 @@ plot!(xg', rg', color=3, linewidth=0.5)
     However, in the case that there is no overlap in the x-positions of the wall and hub, problems may occur later in the solver.
     In addition if the rotor is positioned somewhere not between the wall and hub, for example, if the rotor is out in front of the duct, then if a solution is found, it will likely be inaccurate.
     And finally, things will break if the hub and wall overlap in the radial direction, in other words, if the duct is blocked.
+
+
+## System Paneling
+
+

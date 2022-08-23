@@ -17,8 +17,10 @@ Authors: Judd Mehr,
  - `LEx::Float` : x-position of leading edge
  - `TEx::Float` : x-position of trailing edge
  - `chord::Float` : chord length
+ - `wallbluntTE::Bool` : flag for blunt trailing edge on wall
+ - `hubbluntTE::Bool` : flag for blunt trailing edge on hub
 """
-struct DuctGeometry{TA,TF}
+struct DuctGeometry{TA,TF,TB}
     wallinnerxcoordinates::TA
     wallinnerrcoordinates::TA
     wallouterxcoordinates::TA
@@ -28,6 +30,8 @@ struct DuctGeometry{TA,TF}
     LEx::TF
     TEx::TF
     chord::TF
+    wallbluntTE::TB
+    hubbluntTE::TB
 end
 
 """
@@ -78,6 +82,7 @@ function defineDuctGeometry(
     LEx=nothing,
     TEx=nothing,
     chord=nothing,
+    bluntTEtol=1e-9,
 )
     if TEx == nothing
         TEx = maximum([hubxcoordinates; wallinnerxcoordinates])
@@ -108,9 +113,33 @@ function defineDuctGeometry(
         hubrcoordinates = [0.0 for i in 1:length(wallinnerxcoordinates)]
     end
 
+    if hubrcoordinates == nothing
+        @warn("no r coordinates defined for hub, setting r coordinates to zero")
+        hubrcoordinates = [0.0 for i in 1:length(hubxcoordinates)]
+    end
+
+    #check of blunt trailing edges
+    wallTEdist = sqrt(
+        (wallinnerxcoordinates[end] - wallouterxcoordinates[1])^2 +
+        (wallinnerrcoordinates[end] - wallouterrcoordinates[1])^2,
+    )
+    hubTEdist = hubrcoordinates[end]
+
+    if wallTEdist >= bluntTEtol
+        wallbluntTE = true
+    else
+        wallbluntTE = false
+    end
+
+    if hubTEdist >= bluntTEtol
+        hubbluntTE = true
+    else
+        hubbluntTE = false
+    end
+
     #TODO: create wall spline fields
-    wallinnerspline = FLOWMath.Akima(wallinnerxcoordinates,wallinnerrcoordinates)
-    hubspline = FLOWMath.Akima(hubxcoordinates,hubrcoordinates)
+    wallinnerspline = FLOWMath.Akima(wallinnerxcoordinates, wallinnerrcoordinates)
+    hubspline = FLOWMath.Akima(hubxcoordinates, hubrcoordinates)
 
     return DuctGeometry(
         wallinnerxcoordinates,
@@ -122,6 +151,8 @@ function defineDuctGeometry(
         LEx,
         TEx,
         chord,
+        wallbluntTE,
+        hubbluntTE,
     ),
     DuctSplines(wallinnerspline, hubspline)
 end

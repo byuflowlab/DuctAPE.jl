@@ -1,21 +1,21 @@
 #=
-Types and functions related to airfoil data not included in CCBlade, i.e., airfoil data defined with an additional parameter related to cascades.
+Types and functions related to airfoil data not included in CCBlade, i.e., airfoil data defined with an additional parameter related to solidity.
 
 Formatting copied directly from CCBlade source code.
 =#
 
 """
 overload `parsefile` function from CCBlade
-assumes cascade parameter after mach number
+assumes solidity parameter after mach number
 """
-function parsefile(filename, radians, cascade)
+function parsefile(filename, radians, solidity)
     alpha = Float64[]
     cl = Float64[]
     cd = Float64[]
     info = ""
     Re = 1.0
     Mach = 1.0
-    CAS = 1.0
+    solidity = 1.0
 
     open(filename) do f
 
@@ -23,8 +23,8 @@ function parsefile(filename, radians, cascade)
         info = readline(f)
         Re = parse(Float64, readline(f))
         Mach = parse(Float64, readline(f))
-        if cascade
-            CAS = parse(Float64, readline(f))
+        if solidity
+            solidity = parse(Float64, readline(f))
         end
 
         for line in eachline(f)
@@ -39,22 +39,22 @@ function parsefile(filename, radians, cascade)
         alpha *= pi / 180.0
     end
 
-    if cascade
-        return info, Re, Mach, CAS, alpha, cl, cd
+    if solidity
+        return info, Re, Mach, solidity, alpha, cl, cd
     else
         return info, Re, Mach, alpha, cl, cd
     end
 end
 
 """
-overload `writefile` function from CCBlade to include cascade parameter in file header
+overload `writefile` function from CCBlade to include solidity parameter in file header
 """
-function writefile(filename, info, Re, Mach, CAS, alpha, cl, cd, radians)
+function writefile(filename, info, Re, Mach, solidity, alpha, cl, cd, radians)
     open(filename, "w") do f
         @printf(f, "%s\n", info)
         @printf(f, "%.17g\n", Re)
         @printf(f, "%.17g\n", Mach)
-        @printf(f, "%.17g\n", CAS)
+        @printf(f, "%.17g\n", solidity)
 
         factor = 1.0
         if !radians
@@ -70,22 +70,22 @@ function writefile(filename, info, Re, Mach, CAS, alpha, cl, cd, radians)
 end
 
 #=
-Add CCBlade-like airfoil types and functions for cascade parameter
+Add CCBlade-like airfoil types and functions for solidity parameter
 =#
 """
-    AlphaCASAF(alpha, CAS, cl, cd, info, Mach)
-    AlphaCASAF(alpha, CAS, cl, cd, info)
-    AlphaCASAF(alpha, CAS, cl, cd)
-    read_AlphaCASAF(filenames::Vector{String}; radians=true)
+    AlphaSolidityAF(alpha, solidity, cl, cd, info, Mach)
+    AlphaSolidityAF(alpha, solidity, cl, cd, info)
+    AlphaSolidityAF(alpha, solidity, cl, cd)
+    read_AlphaSolidityAF(filenames::Vector{String}; radians=true)
 
 Airfoil data that varies with angle of attack and Reynolds number.
 Data is fit with a recursive Akima spline.
 
 **Arguments**
 - `alpha::Vector{Float64}`: angles of attack
-- `CAS::Vector{Float64}`: Cascade parameter
-- `cl::Matrix{Float64}`: lift coefficients where cl[i, j] corresponds to alpha[i], CAS[j]
-- `cd::Matrix{Float64}`: drag coefficients where cd[i, j] corresponds to alpha[i], CAS[j]
+- `solidity::Vector{Float64}`: solidity parameter
+- `cl::Matrix{Float64}`: lift coefficients where cl[i, j] corresponds to alpha[i], solidity[j]
+- `cd::Matrix{Float64}`: drag coefficients where cd[i, j] corresponds to alpha[i], solidity[j]
 - `info::String`: a description of this airfoil data (just informational)
 - `Mach::Float64`: Mach number data was taken at (just informational)
 
@@ -97,58 +97,58 @@ filenames with one file per Reynolds number.
 - `filenames::Vector{String}`: name/path of files to read in, each at a different Reynolds number in ascending order
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct AlphaCASAF{TF,TS} <: AFType
+struct AlphaSolidityAF{TF,TS} <: AFType
     alpha::Vector{TF}
-    CAS::Vector{TF}
+    solidity::Vector{TF}
     cl::Matrix{TF}
     cd::Matrix{TF}
     info::TS # not used except for info in file
     Mach::TF # not used except for info in file
 end
 
-AlphaCASAF(alpha, CAS, cl, cd, info) = AlphaCASAF(alpha, CAS, cl, cd, info, 0.0)
-function AlphaCASAF(alpha, CAS, cl, cd)
-    return AlphaCASAF(alpha, CAS, cl, cd, "CCBlade generated airfoil", 0.0)
+AlphaSolidityAF(alpha, solidity, cl, cd, info) = AlphaSolidityAF(alpha, solidity, cl, cd, info, 0.0)
+function AlphaSolidityAF(alpha, solidity, cl, cd)
+    return AlphaSolidityAF(alpha, solidity, cl, cd, "CCBlade generated airfoil", 0.0)
 end
 
-function AlphaCASAF(filenames::Vector{String}; radians=true)
-    info, CAS1, Mach, alpha, cl1, cd1 = parsefile(filenames[1], radians)  # assumes common alpha across files, also common info and common Mach
+function AlphaSolidityAF(filenames::Vector{String}; radians=true)
+    info, solidity1, Mach, alpha, cl1, cd1 = parsefile(filenames[1], radians)  # assumes common alpha across files, also common info and common Mach
     nalpha = length(alpha)
     ncond = length(filenames)
 
     cl = Array{Float64}(undef, nalpha, ncond)
     cd = Array{Float64}(undef, nalpha, ncond)
-    CAS = Array{Float64}(undef, ncond)
+    solidity = Array{Float64}(undef, ncond)
     cl[:, 1] = cl1
     cd[:, 1] = cd1
-    CAS[1] = CAS1
+    solidity[1] = solidity1
 
     # iterate over remaining files
     for i in 2:ncond
-        _, _, _, CASi, _, cli, cdi = parsefile(filenames[i], radians)
+        _, _, _, solidityi, _, cli, cdi = parsefile(filenames[i], radians)
         cl[:, i] = cli
         cd[:, i] = cdi
-        CAS[i] = CASi
+        solidity[i] = solidityi
     end
 
-    return AlphaCASAF(alpha, CAS, cl, cd, info, Mach)
+    return AlphaSolidityAF(alpha, solidity, cl, cd, info, Mach)
 end
 
-function afeval(af::AlphaCASAF, alpha, CAS, Mach)
-    cl = FLOWMath.interp2d(FLOWMath.akima, af.alpha, af.CAS, af.cl, [alpha], [CAS])[1]
-    cd = FLOWMath.interp2d(FLOWMath.akima, af.alpha, af.CAS, af.cd, [alpha], [CAS])[1]
+function afeval(af::AlphaSolidityAF, alpha, solidity, Mach)
+    cl = FLOWMath.interp2d(FLOWMath.akima, af.alpha, af.solidity, af.cl, [alpha], [solidity])[1]
+    cd = FLOWMath.interp2d(FLOWMath.akima, af.alpha, af.solidity, af.cd, [alpha], [solidity])[1]
 
     return cl, cd
 end
 
-function write_af(filenames, af::AlphaCASAF; radians=true)
-    for i in 1:length(af.CAS)
+function write_af(filenames, af::AlphaSolidityAF; radians=true)
+    for i in 1:length(af.solidity)
         writefile(
             filenames[i],
             af.info,
             af.Re,
             af.Mach,
-            af.CAS[i],
+            af.solidity[i],
             af.alpha,
             af.cl[:, i],
             af.cd[:, i],
@@ -159,77 +159,77 @@ function write_af(filenames, af::AlphaCASAF; radians=true)
 end
 
 """
-    AlphaReCASAF(alpha, Re, CAS, cl, cd, info)
-    AlphaReCASAF(alpha, Re, CAS, cl, cd)
-    AlphaReCASAF(filenames::Matrix{String}; radians=true)
+    AlphaResolidityAF(alpha, Re, solidity, cl, cd, info)
+    AlphaResolidityAF(alpha, Re, solidity, cl, cd)
+    AlphaResolidityAF(filenames::Matrix{String}; radians=true)
 
-Airfoil data that varies with angle of attack, Reynolds number, and CAS number.
+Airfoil data that varies with angle of attack, Reynolds number, and solidity number.
 Data is fit with a recursive Akima spline.
 
 **Arguments**
 - `alpha::Vector{Float64}`: angles of attack
 - `Re::Vector{Float64}`: Reynolds numbers
-- `CAS::Vector{Float64}`: CAS numbers
-- `cl::Array{Float64}`: lift coefficients where cl[i, j, k] corresponds to alpha[i], Re[j], CAS[k]
-- `cd::Array{Float64}`: drag coefficients where cd[i, j, k] corresponds to alpha[i], Re[j], CAS[k]
+- `solidity::Vector{Float64}`: solidity numbers
+- `cl::Array{Float64}`: lift coefficients where cl[i, j, k] corresponds to alpha[i], Re[j], solidity[k]
+- `cd::Array{Float64}`: drag coefficients where cd[i, j, k] corresponds to alpha[i], Re[j], solidity[k]
 - `info::String`: a description of this airfoil data (just informational)
 
-or files with one per Re/CAS combination
+or files with one per Re/solidity combination
 
 **Arguments**
-- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to Re[i] CAS[j] with Reynolds number and CAS number in ascending order.
+- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to Re[i] solidity[j] with Reynolds number and solidity number in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct AlphaReCASAF{TF,TS} <: AFType
+struct AlphaResolidityAF{TF,TS} <: AFType
     alpha::Vector{TF}
     Re::Vector{TF}
-    CAS::Vector{TF}
+    solidity::Vector{TF}
     cl::Array{TF}
     cd::Array{TF}
     info::TS
 end
 
-function AlphaReCASAF(alpha, Re, CAS, cl, cd)
-    return AlphaReCASAF(alpha, Re, CAS, cl, cd, "CCBlade generated airfoil")
+function AlphaResolidityAF(alpha, Re, solidity, cl, cd)
+    return AlphaResolidityAF(alpha, Re, solidity, cl, cd, "CCBlade generated airfoil")
 end
 
-function AlphaReCASAF(filenames::Matrix{String}; radians=true)
+function AlphaResolidityAF(filenames::Matrix{String}; radians=true)
     info, _, _, _, alpha, _, _ = parsefile(filenames[1, 1], radians)  # assumes common alpha and info across files
     nalpha = length(alpha)
-    nRe, nCAS = size(filenames)
+    nRe, nsolidity = size(filenames)
 
-    cl = Array{Float64}(undef, nalpha, nRe, nCAS)
-    cd = Array{Float64}(undef, nalpha, nRe, nCAS)
+    cl = Array{Float64}(undef, nalpha, nRe, nsolidity)
+    cd = Array{Float64}(undef, nalpha, nRe, nsolidity)
     Re = Array{Float64}(undef, nRe)
-    CAS = Array{Float64}(undef, nCAS)
+    solidity = Array{Float64}(undef, nsolidity)
 
-    for j in 1:nCAS
+    for j in 1:nsolidity
         for i in 1:nRe
-            _, Rei, _, CASj, _, clij, cdij = parsefile(filenames[i, j], radians)
+            _, Rei, _, solidityj, _, clij, cdij = parsefile(filenames[i, j], radians)
             cl[:, i, j] = clij
             cd[:, i, j] = cdij
             Re[i] = Rei
-            CAS[j] = CASj  # NOTE: probably should add check to prevent user error here.
+            solidity[j] = solidityj  # NOTE: probably should add check to prevent user error here.
         end
     end
 
-    return AlphaReCASAF(alpha, Re, CAS, cl, cd, info)
+    return AlphaResolidityAF(alpha, Re, solidity, cl, cd, info)
 end
 
-function afeval(af::AlphaReCASAF, alpha, Re, CAS)
+function afeval(af::AlphaResolidityAF, alpha, Re, solidity)
     cl = FLOWMath.interp3d(
-        FLOWMath.akima, af.alpha, af.Re, af.CAS, af.cl, [alpha], [Re], [CAS]
+        FLOWMath.akima, af.alpha, af.Re, af.solidity, af.cl, [alpha], [Re], [solidity]
     )[1]
     cd = FLOWMath.interp3d(
-        FLOWMath.akima, af.alpha, af.Re, af.CAS, af.cd, [alpha], [Re], [CAS]
+        FLOWMath.akima, af.alpha, af.Re, af.solidity, af.cd, [alpha], [Re], [solidity]
     )[1]
 
     return cl, cd
 end
 
-function write_af(filenames, af::AlphaReCASAF; radians=true)
+function write_af(filenames, af::AlphaResolidityAF; radians=true)
     nre = length(af.Re)
-    nm = length(af.CAS)
+    nm = length(af.solidity)
 
     for i in 1:nre
         for j in 1:nm
@@ -238,7 +238,7 @@ function write_af(filenames, af::AlphaReCASAF; radians=true)
                 af.info,
                 af.Re[i],
                 af.Mach,
-                af.CAS[j],
+                af.solidity[j],
                 af.alpha,
                 af.cl[:, i, j],
                 af.cd[:, i, j],
@@ -251,9 +251,9 @@ function write_af(filenames, af::AlphaReCASAF; radians=true)
 end
 
 """
-    AlphaReMachCASAF(alpha, Re, Mach, CAS, cl, cd, info)
-    AlphaReMachCASAF(alpha, Re, Mach, CAS, cl, cd)
-    AlphaReMachCASAF(filenames::Matrix{String}; radians=true)
+    AlphaReMachsolidityAF(alpha, Re, Mach, solidity, cl, cd, info)
+    AlphaReMachsolidityAF(alpha, Re, Mach, solidity, cl, cd)
+    AlphaReMachsolidityAF(filenames::Matrix{String}; radians=true)
 
 Airfoil data that varies with angle of attack, Reynolds number, and Mach number.
 Data is fit with a recursive Akima spline.
@@ -262,7 +262,7 @@ Data is fit with a recursive Akima spline.
 - `alpha::Vector{Float64}`: angles of attack
 - `Re::Vector{Float64}`: Reynolds numbers
 - `Mach::Vector{Float64}`: Mach numbers
-- `CAS::Vector{Float64}` : cascade parameters
+- `solidity::Vector{Float64}` : Solidity parameter
 - `cl::Array{Float64}`: lift coefficients where cl[i, j, k] corresponds to alpha[i], Re[j], Mach[k]
 - `cd::Array{Float64}`: drag coefficients where cd[i, j, k] corresponds to alpha[i], Re[j], Mach[k]
 - `info::String`: a description of this airfoil data (just informational)
@@ -273,80 +273,80 @@ or files with one per Re/Mach combination
 - `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to Re[i] Mach[j] with Reynolds number and Mach number in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct AlphaReMachCASAF{TF,TS} <: AFType
+struct AlphaReMachsolidityAF{TF,TS} <: AFType
     alpha::Vector{TF}
     Re::Vector{TF}
     Mach::Vector{TF}
-    CAS::Vector{TF}
+    solidity::Vector{TF}
     cl::Array{TF}
     cd::Array{TF}
     info::TS
 end
 
-function AlphaReMachCASAF(alpha, Re, Mach, CAS, cl, cd)
-    return AlphaReMachCASAF(alpha, Re, Mach, CAS, cl, cd, "CCBlade generated airfoil")
+function AlphaReMachsolidityAF(alpha, Re, Mach, solidity, cl, cd)
+    return AlphaReMachsolidityAF(alpha, Re, Mach, solidity, cl, cd, "CCBlade generated airfoil")
 end
 
-function AlphaReMachCASAF(filenames::Matrix{String}; radians=true)
+function AlphaReMachsolidityAF(filenames::Matrix{String}; radians=true)
     info, _, _, _, alpha, _, _ = parsefile(filenames[1, 1], radians)  # assumes common alpha and info across files
     nalpha = length(alpha)
-    nRe, nMach, nCAS = size(filenames)
+    nRe, nMach, nsolidity = size(filenames)
 
     cl = Array{Float64}(undef, nalpha, nRe, nMach)
     cd = Array{Float64}(undef, nalpha, nRe, nMach)
     Re = Array{Float64}(undef, nRe)
     Mach = Array{Float64}(undef, nMach)
-    CAS = Array{Float64}(undef, nCAS)
+    solidity = Array{Float64}(undef, nsolidity)
 
-    for k in 1:nCAS
+    for k in 1:nsolidity
         for j in 1:nMach
             for i in 1:nRe
-                _, Rei, Machj, CASk, _, clij, cdij = parsefile(filenames[i, j], radians)
+                _, Rei, Machj, solidityk, _, clij, cdij = parsefile(filenames[i, j], radians)
                 cl[:, i, j] = clij
                 cd[:, i, j] = cdij
                 Re[i] = Rei
                 Mach[j] = Machj  # NOTE: probably should add check to prevent user error here.
-                CAS[k] = CASk
+                solidity[k] = solidityk
             end
         end
     end
 
-    return AlphaReMachCASAF(alpha, Re, Mach, CAS, cl, cd, info)
+    return AlphaReMachsolidityAF(alpha, Re, Mach, solidity, cl, cd, info)
 end
 
-function afeval(af::AlphaReMachCASAF, alpha, Re, Mach, CAS)
+function afeval(af::AlphaReMachsolidityAF, alpha, Re, Mach, solidity)
     cl = FLOWMath.interp4d(
         FLOWMath.akima,
         af.alpha,
         af.Re,
         af.Mach,
-        af.CAS,
+        af.solidity,
         af.cl,
         [alpha],
         [Re],
         [Mach],
-        [CAS],
+        [solidity],
     )[1]
     cd = FLOWMath.interp4d(
         FLOWMath.akima,
         af.alpha,
         af.Re,
         af.Mach,
-        af.CAS,
+        af.solidity,
         af.cd,
         [alpha],
         [Re],
         [Mach],
-        [CAS],
+        [solidity],
     )[1]
 
     return cl, cd
 end
 
-function write_af(filenames, af::AlphaReMachCASAF; radians=true)
+function write_af(filenames, af::AlphaReMachsolidityAF; radians=true)
     nre = length(af.Re)
     nm = length(af.Mach)
-    nc = length(af.CAS)
+    nc = length(af.solidity)
 
     for k in 1:nc
         for i in 1:nre
@@ -356,7 +356,7 @@ function write_af(filenames, af::AlphaReMachCASAF; radians=true)
                     af.info,
                     af.Re[i],
                     af.Mach[j],
-                    af.CAS[k],
+                    af.solidity[k],
                     af.alpha,
                     af.cl[:, i, j],
                     af.cd[:, i, j],

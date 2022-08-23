@@ -15,28 +15,28 @@ Authors: Judd Mehr,
  - `xlocation::Float` : x location of rotor plane
  - `numblades::Int` : number of rotor blades
  - `radialstations::Array{Float}` : array of radial stations defining rotor blade, non-dimensional with hub=0, tip=1
- - `stationchords::Array{Float}` : array of chord lengths at radial stations defining rotor blade
- - `stationtwists::Array{Float}` : array of twist values (in degrees) at radial stations defining rotor blade
- - `stationskews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade
- - `stationrakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade
- - `stationairfoils::Array{Airfoil}` : array of airfoil data objects at radial stations defining rotor blade
- - `stationreynolds::Array{Float}` : array of reynolds numbers at radial stations defining rotor blade
- - `stationcascade::Array{Float}` : array of cascade parameter (TODO, need to find out what this is) at radial stations defining rotor blade
- - `stationmach::Array{Float}` : array of mach numbers at radial stations defining rotor blade (currently unsupported).
+ - `chords::Array{Float}` : array of chord lengths at radial stations defining rotor blade
+ - `twists::Array{Float}` : array of twist values (in degrees) at radial stations defining rotor blade
+ - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade
+ - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade
+ - `airfoils::Array{Airfoil}` : array of airfoil data objects at radial stations defining rotor blade
+ - `reynolds::Array{Float}` : array of reynolds numbers at radial stations defining rotor blade
+ - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade
+ - `machs::Array{Float}` : array of machs numbers at radial stations defining rotor blade (currently unsupported).
 """
-struct Rotor{TF,TI,TR,TG,TC,TT,TS,TRa,TAF,TRe,TCa,TM,TRpm}
+struct Rotor{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TRe,TSo,TM,TRpm}
     xlocation::TF
     numblades::TI
     radialstations::TR
     tipgap::TG
-    stationchords::TC
-    stationtwists::TT
-    stationskews::TS
-    stationrakes::TRa
-    stationairfoils::TAF
-    stationreynolds::TRe
-    stationcascade::TCa
-    stationmach::TM #TODO: need to add compressibility corrections to solver before this can be used.
+    chords::TC
+    twists::TT
+    skews::TSk
+    rakes::TRa
+    airfoils::TAF
+    reynolds::TRe
+    solidities::TSo
+    machs::TM #TODO: need to add compressibility corrections to solver before this can be used.
     rpm::TRpm
 end
 
@@ -81,14 +81,16 @@ function initialize_rotor(
     skews=nothing,
     rakes=nothing,
     reynolds=nothing,
-    cascade=nothing,
-    mach=nothing,
+    solidities=nothing,
+    machs=nothing,
 )
 
     #Set up radial stations if not defined by user.
     if radialstations != nothing
         #make sure that the radial stations that are defined meet the requirements to not break stuff...
-        @assert numstations == length(radialstations) && ismonotonic(radialstations) && all(>=(0),radialstations)
+        @assert numstations == length(radialstations) &&
+            ismonotonic(radialstations) &&
+            all(>=(0), radialstations)
     else
         #use linear spacing. user can define custom spacing otherwise
         radialstations = collect(range(0.0, 1.0 - tipgap; length=nstations))
@@ -107,12 +109,12 @@ function initialize_rotor(
         reynolds = [0.0 for i in 1:numstations]
     end
 
-    if cascade == nothing
-        cascade = [0.0 for i in 1:numstations]
+    if solidities == nothing
+        solidities = [0.0 for i in 1:numstations]
     end
 
-    if mach == nothing
-        mach = [0.0 for i in 1:numstations]
+    if machs == nothing
+        machs = [0.0 for i in 1:numstations]
     end
 
     #Define Rotor Object
@@ -127,8 +129,8 @@ function initialize_rotor(
         rakes,
         airfoils,
         reynolds,
-        cascade,
-        mach,
+        solidities,
+        machs,
         rpm,
     )
 end
@@ -149,7 +151,7 @@ function initialize_blade(DuctSplines, Rotor)
     hubspline = DuctSplines.hubspline
 
     #find r-position of wall and hub at rotor location
-    rhub = hubspline(Rotor.xlocation)
+    rhub = max(0.0, hubspline(Rotor.xlocation))
     rtip = wallspline(Rotor.xlocation)
 
     #get dimensional radial station locations
@@ -174,6 +176,83 @@ need to set up source and vortex lines representing starting points of rotor wak
 have this function called by a more global function that holds all the source and vortex lines.
 """
 function initialize_rotor_wake() end
+
+"""
+since wake relaxes and is not aligned with aft rotor radial stations, need to reinterpolate rotor based on updated radial stations
+"""
+function reinterpolate_rotor!(wakegrid, rotor, rotoridx)
+
+    #rename things for convenience
+    gridxs = wakegrid.x_grid_points
+    gridrs = wakegrid.r_grid_points
+    nr = length(rotor.radialstations)
+    new_rad_stash = gridxs[rotoridx, :]
+
+    ## -- Calculate New Section Properties -- ##
+
+    # update chords
+    if rotor.chords != nothing
+        new_chords = FLOWMath.Akima(rotor.radialstations, rotor.chords)
+        for i in 1:nr
+            rotor.chords[i] = new_chords(new_rad_stash[i])
+        end
+    end
+
+    # update twists
+    if rotor.twists != nothing
+        new_twists = FLOWMath.Akima(rotor.radialstations, rotor.twists)
+        for i in 1:nr
+            rotor.twists[i] = new_twists(new_rad_stash[i])
+        end
+    end
+
+    # updates skews
+    if rotor.twists != nothing
+        new_skews = FLOWMath.Akima(rotor.radialstations, rotor.skews)
+        for i in 1:nr
+            rotor.skews[i] = new_skews(new_rad_stash[i])
+        end
+    end
+
+    # update rakes
+    if rotor.rakes != nothing
+        new_rakes = FLOWMath.Akima(rotor.radialstations, rotor.rakes)
+        for i in 1:nr
+            rotor.rakes[i] = new_rakes(new_rad_stash[i])
+        end
+    end
+
+    # update reynolds
+    if rotor.reynolds != nothing
+        new_reynolds = FLOWMath.Akima(rotor.radialstations, rotor.reynolds)
+        for i in 1:nr
+            rotor.reynolds[i] = new_reynolds(new_rad_stash[i])
+        end
+    end
+
+    # update solidity
+    if rotor.solidities != nothing
+        new_solidities = FLOWMath.Akima(rotor.radialstations, rotor.solidities)
+        for i in 1:nr
+            rotor.solidities[i] = new_solidities(new_rad_stash[i])
+        end
+    end
+
+    # update machs
+    if rotor.machs != nothing
+        new_machs = FLOWMath.Akima(rotor.radialstations, rotor.machs)
+        for i in 1:nr
+            rotor.machs[i] = new_mach(new_rad_stash[i])
+        end
+    end
+
+    # update radial stations at the end after using both old and new for splines
+    for i in 1:nr
+        rotor.radialstations[i] = new_rad_stash[i]
+    end
+
+    return nothing
+end
 
 ##################################
 ##### ----- FOR SOLVER ----- #####
