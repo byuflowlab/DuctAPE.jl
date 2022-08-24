@@ -35,6 +35,7 @@ default(;
     legend=false, # include legend true/false
     grid=false, # background grid true/false
     gridlinewidth=0.5,
+    margin = 10mm,
 )
 
 plot(xlabel="x", ylabel="r")
