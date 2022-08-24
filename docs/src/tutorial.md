@@ -8,6 +8,35 @@ We have taken one of the case files and transcribed it into a julia file located
 ```@setup geom
 using DuctTAPE
 using Plots
+
+default()
+default(;
+    fontfamily="Palatino Roman",
+    size=(800, 600), #it appears that 100 ≈ 1inch in LaTeX
+    fillalpha=0.125,
+    fillcolor=RGB(128 / 255, 128 / 255, 128 / 255),
+    linewidth=1.0,
+    markerstrokealpha=0,
+    annotationfontfamily="Palatino Roman",
+    annotationfontsize=10,
+    background_color_inside=nothing,
+    background_color_legend=nothing,
+    background_color_subplot=nothing,
+    color_palette=[
+        RGB(0.0, 46.0 / 255.0, 93.0 / 255.0), #BYU Blue
+        RGB(155.0 / 255.0, 0.0, 0.0), #"BYU" Red
+        RGB(128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0), #Middle Gray
+        RGB(162.0 / 255.0, 227.0 / 255.0, 162.0 / 255.0), #Light Green
+        RGB(243.0 / 255.0, 209.0 / 255.0, 243.0 / 255.0), #Pink
+        RGB(205.0 / 255.0, 179.0 / 255.0, 0.0), #Yellow
+        RGB(161.0 / 255.0, 161.0 / 255.0, 226.0 / 255.0), #Purple
+    ],
+    foreground_color_legend=nothing,
+    legend=false, # include legend true/false
+    grid=false, # background grid true/false
+    gridlinewidth=0.5,
+)
+
 plot(xlabel="x", ylabel="r")
 ```
 
