@@ -131,6 +131,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     wallLEx = wallx[1]
     wallLEr = wallr[1]
     wallTEx = wallx[end]
+    println("wallx: ", wallx)
     wallTEr = wallr[end]
 
     # Rename options for convenience
@@ -156,10 +157,13 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     else
 
         #find foremorst x coordinate
-        xfront, rotoridx = findmin([rotors[i].xlocation for i in 1:length(rotors)])
+        xfront = rotors[1].xlocation * ductgeometry.chord
+        rotoridx = 1 #findmin([rotors[i].xlocation for i in 1:length(rotors)])
+
+
 
         #get blade from foremost rotor
-        blade = initialize_blade(ductsplines, rotors[rotoridx])
+        blade = initialize_blade_dimensions(ductgeometry, ductsplines, rotors[rotoridx])
 
         if rotors[rotoridx].radialstations == nothing
             #get annulus radius
@@ -198,13 +202,18 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         sort(
             [
                 max(ductgeometry.LEx, xfront)
-                sort([rotors[i].xlocation for i in 1:length(rotors)])
+                sort([rotors[i].xlocation*ductgeometry.chord for i in 1:length(rotors)])
                 hubTEx
                 wallTEx
-                ductgeometry.TEx
             ],
         ),
     )
+
+    println("xfront: ", xfront)
+    println("LEx: ", ductgeometry.LEx)
+    println("hubTEx: ", hubTEx)
+    println("wallTEx: ", wallTEx)
+    println("xduct: ", duct_range)
 
     wake_range = [ductgeometry.TEx; xrear]
 
@@ -365,8 +374,10 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     ## -- GET INDICES OF ROTOR X LOCATIONS --##
     rotoridxs = [0 for i in 1:length(rotors)]
     for i=1:length(rotors)
-        rotoridxs[i] = findfirst(x -> x ==rotors[i].xlocation,xstations)
+        rotoridxs[i] = findfirst(x -> x ==rotors[i].xlocation*ductgeometry.chord,xstations)
     end
+
+    println("xstations: ", xstations)
 
     return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs
 end

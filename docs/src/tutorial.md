@@ -29,7 +29,7 @@ DuctTAPE.split_wall
 
 ```@example geom
 # - Split Wall Coordinates
-innerwallx, outerwallx, innerwallr, outerwallr = DuctTAPE.split_wall(ductx, ductr)
+outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
 
 # - Plot Geometry
 plot!(innerwallx, innerwallr, aspectratio=:equal)
@@ -68,7 +68,7 @@ The `ductgeometry` and `ductsplines` objects now contains all the geometry infor
 For the sake of this example, we're going to define a rotor object that has a location only (we won't need the rest of the rotor defnition yet).
 
 ```@docs
-DuctTAPE.Rotor
+DuctTAPE.RotorGeometry
 ```
 
 Note that we want to create an array, even if we only have one rotor.  When we initialize the grid, it will expect an array.
@@ -78,10 +78,10 @@ Also, our rotor object has more fields than are used in the original dfdc, for n
 # --- GENERATE ROTOR OBJECT ARRAY
 
 #generate rotor object
-rotor1 = DuctTAPE.Rotor(xdisk1, nblade1, rnondim1, 0.0, chord1, beta1, nothing, nothing, nothing, nothing, nothing, nothing, rpm)
+rotor1 = DuctTAPE.RotorGeometry(xdisk1, nblade1, rnondim1, 0.0, chord1, beta1, nothing, nothing, nothing, nothing, rpm)
 
 #generate stator object (rpm is zero for stator)
-rotor2 = DuctTAPE.Rotor(xdisk2, nblade2, rnondim2, 0.0, chord2, beta2, nothing, nothing, nothing, nothing, nothing, nothing, 0.0)
+rotor2 = DuctTAPE.RotorGeometry(xdisk2, nblade2, rnondim2, 0.0, chord2, beta2, nothing, nothing, nothing, nothing, 0.0)
 
 #assemble array
 rotors = [rotor1; rotor2]
@@ -120,6 +120,8 @@ xg = grid.x_grid_points
 rg = grid.r_grid_points
 nx = grid.nx
 nr = grid.nr
+
+xg, rg, nx, nr = DuctTAPE.generate_grid_points(ductgeometry, ductsplines, rotors, grid_options)
 
 plot!(xg, rg, color=3, linewidth=0.5)
 plot!(xg', rg', color=3, linewidth=0.5)

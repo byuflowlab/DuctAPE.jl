@@ -24,7 +24,7 @@ Authors: Judd Mehr,
  - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade, chord/distance between blade sections
  - `rpm::Float` : RPM of rotor
 """
-struct RotorGeometry{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TRe,TSo,TM,TRpm}
+struct RotorGeometry{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TSo,TRpm}
     xlocation::TF
     numblades::TI
     radialstations::TR
@@ -50,7 +50,7 @@ end
  - `sweptannulus::Float` : area of blade swept annulus
  - `sweptarea::Float` : area of blade tip swept disk
 """
-struct Blade{TF,TR,TC,TT}
+struct BladeDimensions{TF,TR,TC,TT}
     hubr::TF
     tipr::TF
     rdim::TR
@@ -140,23 +140,26 @@ function initialize_rotor_geometry(
 end
 
 """
-    initialize_blade_dimensions(DuctSplines, Rotor)
+    initialize_blade_dimensions(ductsplines, Rotor)
 
 Initilialize needed blade information for various calculations during the solution process.
 
 **Arguments:**
- - `DuctSplines::DuctTAPE.DuctSplines` : DuctSplines object containing splines for duct wall and hub
+ - `ductsplines::DuctTAPE.ductsplines` : ductsplines object containing splines for duct wall and hub
  - `Rotor::DuctTAPE.Rotor` : Rotor object for which to define blade information
 """
-function initialize_blade_dimensions(DuctSplines, Rotor)
+function initialize_blade_dimensions(ductgeometry, ductsplines, Rotor)
 
     #unpack splines for convenience
-    wallspline = DuctSplines.wallinnerspline
-    hubspline = DuctSplines.hubspline
+    wallspline = ductsplines.wallinnerspline
+    hubspline = ductsplines.hubspline
 
     #find r-position of wall and hub at rotor location
-    rhub = max(0.0, hubspline(Rotor.xlocation))
-    rtip = wallspline(Rotor.xlocation)
+    rhub = max(0.0, hubspline(Rotor.xlocation*ductgeometry.chord))
+    rtip = wallspline(Rotor.xlocation*ductgeometry.chord)
+
+    println("rhub: ", rhub)
+    println("rtip: ", rtip)
 
     #get dimensional radial station locations
     #use linear transform to go from non-dim to dimensional range
@@ -165,6 +168,12 @@ function initialize_blade_dimensions(DuctSplines, Rotor)
         (rtip - rhub) / (Rotor.radialstations[end] - Rotor.radialstations[1]) .*
         (Rotor.radialstations .- Rotor.radialstations[1])
 
+    # dimensional chords
+    cdim = Rotor.chords .* rtip
+
+    #twists are unchanged
+    tdim = Rotor.twists
+
     # check that the rotor radial positions are all positive and that the array is monotonic to avoid issues including hanging in wake grid generation
     @assert ismonotonic(rdim) && all(>=(0), rdim)
 
@@ -172,7 +181,7 @@ function initialize_blade_dimensions(DuctSplines, Rotor)
     sweptannulus = pi * (rtip^2 - rhub^2)
     sweptarea = pi * rtip^2
 
-    return BladeDimensions(rhub, rtip, rdim, sweptannulus, sweptarea)
+    return BladeDimensions(rhub, rtip, rdim, cdim, tdim, sweptannulus, sweptarea)
 end
 
 #FOR initialize_blade_aero: in re-write, can probably use ccblade like this.
@@ -341,7 +350,6 @@ function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, r
     rotor_relative_axial_velocities,
     rotor_relative_radial_velocities,
     rotor_relative_tangential_velocities
-
 end
 
 """

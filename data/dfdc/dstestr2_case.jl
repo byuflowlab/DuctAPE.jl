@@ -64,7 +64,7 @@ chord1 = [
     0.043111
     0.042424
     0.041981
-]
+   ]./rdim1[end]
 
 beta1 = [70.828; 59.758; 51.707; 46.429; 42.209; 38.766; 35.897; 33.457; 31.337; 29.453] #twist angle degrees
 
@@ -99,7 +99,7 @@ chord2 = [
     0.053608
     0.052918
     0.052256
-]
+   ]./rdim2[end]
 
 beta2 = [92.711; 91.739; 91.228; 90.868; 90.638; 90.441; 90.124; 89.583; 88.955; 88.388] #90 degrees is along the axial direction
 
@@ -112,7 +112,7 @@ beta2 = [92.711; 91.739; 91.228; 90.868; 90.638; 90.441; 90.124; 89.583; 88.955;
 
 #duct and hub geometry
 #TODO: probably need to reverse these, but maybe not...
-hubx = [
+hubx = reverse([
     0.306379
     0.304411
     0.299968
@@ -175,9 +175,9 @@ hubx = [
     0.000817
     0.000219
     0.000000
-]
+   ])
 
-hubr = [
+hubr = reverse([
     0.035928
     0.036660
     0.038174
@@ -240,7 +240,7 @@ hubr = [
     0.006233
     0.003268
     0.000000
-]
+   ])
 
 ductx = [
     0.304542
@@ -351,7 +351,7 @@ ductx = [
     0.301211
     0.304466
 ]
-ductx = reverse(ductx)
+# ductx = reverse(ductx)
 
 ductr = [
     0.159526
@@ -462,7 +462,7 @@ ductr = [
     0.158441
     0.158439
 ]
-ductr = reverse(ductr)
+# ductr = reverse(ductr)
 
 c = maximum([ductx;hubx]) - minimum([ductx;hubx])
 xdisk1 /= c

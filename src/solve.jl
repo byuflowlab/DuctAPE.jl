@@ -258,7 +258,7 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     for i in 1:length(rotors)
 
         #create a blade object for each rotor (to get dimensional radial data)
-        blade = initialize_blade(ductsplines, rotors[i])
+        blade = initialize_blade(ductgeometry, ductsplines, rotors[i])
 
         #loop through each of the radial stations
         for j in 1:(numrs - 1)
