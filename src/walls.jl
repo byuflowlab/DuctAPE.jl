@@ -162,7 +162,7 @@ end
 
 Splits full airfoil coordinates into upper and lower halves.
 
-Only works based geometry.  Splits at lowest x-value, does not split based on stagnation point.
+Only works based on geometry.  Splits at lowest x-value, does not split based on stagnation point.
 
 **Arguments:**
  - `x::Array{Float}` : Array of x-coordinates, assumed to start at the bottom trailing edge and proceed clockwise

@@ -9,22 +9,22 @@ Authors: Judd Mehr,
 #############################
 
 """
-    Rotor{TF, TI, TA, TC, TT, TAF, TR, TM}
+    RotorGeometry{TF, TI, TA, TC, TT, TAF, TR, TM}
 
 **Fields:**
- - `xlocation::Float` : x location of rotor plane
+ - `xlocation::Float` : x location of rotor plane, non-dimensional based on duct chord (max TE location - min LE location of hub/wall)
  - `numblades::Int` : number of rotor blades
  - `radialstations::Array{Float}` : array of radial stations defining rotor blade, non-dimensional with hub=0, tip=1
- - `chords::Array{Float}` : array of chord lengths at radial stations defining rotor blade
+ - `tipgap::Float` : gap between blade tip and duct wall (not implemented yet)
+ - `chords::Array{Float}` : array of chord lengths at radial stations defining rotor blade, non-dimensional based on blade tip radius
  - `twists::Array{Float}` : array of twist values (in degrees) at radial stations defining rotor blade
- - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade
- - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade
+ - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only, the solver can't use this information)
+ - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only right now. it may be implemented into the grid initialization functions later.)
  - `airfoils::Array{Airfoil}` : array of airfoil data objects at radial stations defining rotor blade
- - `reynolds::Array{Float}` : array of reynolds numbers at radial stations defining rotor blade
- - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade
- - `machs::Array{Float}` : array of machs numbers at radial stations defining rotor blade (currently unsupported).
+ - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade, chord/distance between blade sections
+ - `rpm::Float` : RPM of rotor
 """
-struct Rotor{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TRe,TSo,TM,TRpm}
+struct RotorGeometry{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TRe,TSo,TM,TRpm}
     xlocation::TF
     numblades::TI
     radialstations::TR
@@ -34,28 +34,44 @@ struct Rotor{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TRe,TSo,TM,TRpm}
     skews::TSk
     rakes::TRa
     airfoils::TAF
-    reynolds::TRe
     solidities::TSo
-    machs::TM #TODO: need to add compressibility corrections to solver before this can be used.
     rpm::TRpm
 end
 
 """
-    Blade{TF, TA}
+    BladeDimensions{TF, TA}
 
 **Fields:**
  - `rhub::Float` : hub radius (dimensional)
  - `rtip::Float` : tip radius (dimensional)
  - `rdim::Array{Float}` : array of dimensional radial stations
+ - `cdim::Array{Float}` : array of dimensional chords
+ - `tdim::Array{Float}` : array of twists (already dimensional in rotorgeometry)
  - `sweptannulus::Float` : area of blade swept annulus
  - `sweptarea::Float` : area of blade tip swept disk
 """
-struct Blade{TF,TA}
+struct Blade{TF,TR,TC,TT}
     hubr::TF
     tipr::TF
-    rdim::TA
+    rdim::TR
+    cdim::TC
+    tdim::TT
     sweptannulus::TF
     sweptarea::TF
+end
+
+"""
+"""
+struct BladeAero{TRe,TMa,TCl,TCd,TM,TG,TW,TVa,TVt}
+    reynolds::TRe
+    mach::TMa
+    cl::TCl
+    cd::TCd
+    cm::TM
+    Gamma::TG
+    W::TW
+    vax::TVa
+    vtan::TVt
 end
 
 ######################################
@@ -68,7 +84,7 @@ also get dimensional rotor blade section locations. These should inform the wake
 
 if rotor rake is present, need to redo parts of grid initialization (and check that the unused portions of the code work now) to account for different x-locations of start of wake.  NOTE: not sure if rake will work with this solver. Need to think about that more before implementing.
 """
-function initialize_rotor(
+function initialize_rotor_geometry(
     xlocation,
     numblades,
     numstations,
@@ -80,9 +96,7 @@ function initialize_rotor(
     tipgap=0.0, #non-dimensional relative to blade length
     skews=nothing,
     rakes=nothing,
-    reynolds=nothing,
     solidities=nothing,
-    machs=nothing,
 )
 
     #Set up radial stations if not defined by user.
@@ -105,20 +119,12 @@ function initialize_rotor(
         rakes = [0.0 for i in 1:numstations]
     end
 
-    if reynolds == nothing
-        reynolds = [0.0 for i in 1:numstations]
-    end
-
     if solidities == nothing
         solidities = [0.0 for i in 1:numstations]
     end
 
-    if machs == nothing
-        machs = [0.0 for i in 1:numstations]
-    end
-
     #Define Rotor Object
-    return Rotor(
+    return RotorGeometry(
         xlocation,
         numblades,
         radialstations,
@@ -128,15 +134,13 @@ function initialize_rotor(
         skews,
         rakes,
         airfoils,
-        reynolds,
         solidities,
-        machs,
         rpm,
     )
 end
 
 """
-    initialize_blade(DuctSplines, Rotor)
+    initialize_blade_dimensions(DuctSplines, Rotor)
 
 Initilialize needed blade information for various calculations during the solution process.
 
@@ -144,7 +148,7 @@ Initilialize needed blade information for various calculations during the soluti
  - `DuctSplines::DuctTAPE.DuctSplines` : DuctSplines object containing splines for duct wall and hub
  - `Rotor::DuctTAPE.Rotor` : Rotor object for which to define blade information
 """
-function initialize_blade(DuctSplines, Rotor)
+function initialize_blade_dimensions(DuctSplines, Rotor)
 
     #unpack splines for convenience
     wallspline = DuctSplines.wallinnerspline
@@ -168,7 +172,216 @@ function initialize_blade(DuctSplines, Rotor)
     sweptannulus = pi * (rtip^2 - rhub^2)
     sweptarea = pi * rtip^2
 
-    return Blade(rhub, rtip, rdim, sweptannulus, sweptarea)
+    return BladeDimensions(rhub, rtip, rdim, sweptannulus, sweptarea)
+end
+
+#FOR initialize_blade_aero: in re-write, can probably use ccblade like this.
+### -- SET UP CCBLADE CALL
+## ccblade rotor object from blade dimensions
+#ccb_rotor = ccb.Rotor(blade[i].rhub, blade[i].rtip, nbld)
+
+## ccblade blade section object from blade data
+#ccb_sections =
+#    ccb.Section.(blade[i].rdim, blade[i].cdim, blade[i].tdim, rotors[i].airfoils)
+
+## ccblade operating point object using calculated average axial velocity and induced tangential velocity.
+## TODO: for some reason, the tangential velocity varies across the blade, but the axial velocity is taken as an average.  FIGURE OUT HOW TO USE CCBLADE OUT.U AND OUT.V TO MAKE THIS BETTER.
+#ccb_op = ccb.OperatingPoint(
+#    [average_axial_velocity for i in 1:length(induced_tangential_velocity)],
+#    induced_tangential_velocity,
+#    freestream.rho;
+#    mu=freestream.mu,
+#    asound=freestream.asound,
+#)
+
+## solve ccblade problem
+#ccb_out = ccb.solve.(Ref(ccb_rotor), ccb_section, ccb_op)
+
+##get thrust
+#thrust, _ = ccb.thrusttorque(ccb_rotor, ccb_sections, ccb_out)
+
+### - Apply CCBlade Outputs
+
+## set B*circulation values on rotor sections
+#b_circ_rotor[i, :] = 0.5 .* ccb_out.cl .* ccb_out.W .* blade[i].cdim .* nbld
+
+"""
+pretty much just use CCBlade and then do some stuff with the outputs...
+"""
+function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, rlx=0.5)
+
+    ## -- INITIALIZE VARIABLES -- ##
+
+    # average axial velocity
+    average_axial_velocity = freestream.vinf
+
+    # B*Gamma at grid points
+    b_gamma_grid = [0.0 for i in length(wakegrid[:, 1]), j in length(wakegrid[1, :])]
+
+    # B*gamma at rotor stations
+    b_circ_rotor = [0.0 for i in length(rotors), j in length(rotors[i].radialstations)]
+
+    # DeltaH values at rotor stations
+    delta_enthalpy_grid = [0.0 for i in length(wakegrid[:, 1]), j in length(wakegrid[1, :])]
+
+    #Induced velocities at rotor stations
+    rotor_induced_axial_velocites = [
+        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
+    ]
+    rotor_induced_radial_velocites = [
+        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
+    ]
+    rotor_induced_tangential_velocities = [
+        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
+    ]
+
+    for i in 1:numrotors
+
+        #rename for convenience
+        nbld = rotors[i].numblades
+        yrc = rotorpanels[i].panel_centers
+        yrp = blade.rdim
+        omege = get_omega(rotors[i].rpm)
+
+        # set up input velocities
+        induced_axial_velocity = average_axial_velocity - freestream.vinf
+
+        #iterate to find induced axial velocity
+        for iter in 1:niter
+            total_thrust = 0.0
+
+            for r in 1:(nr - 1)
+                xi = yrc[r][2] / blade[i].rtip
+                dr = yrp[r + 1] - yrp[r]
+
+                if i == 1
+                    induced_tangential_velocity = 0.0
+                else
+                    induced_tangential_velocity =
+                        b_gamma_grid[wakegrid.rotoridxs[i] - 1, :] ./
+                        (2.0 * pi .* getindex.(rotorpanels[i].panel_centers, 2)) #bgamg is B*Gamma values at grid points just in front of rotor.
+                    #TODO: it seems that the b*gamma values here are not aligned with the panel centers, since we have the grid centers along the grid lines, not between them at the rotor section centers... THIS WILL LIKELY LEAD TO INDEXING ERRORS SOMEWHERE
+                end #if first rotor
+
+                SI = freestream.vinf + induced_axial_velocity
+                CI = induced_tangential_velocity - yrc[r] * omega
+
+                W = sqrt(CI^2 + SI^2)
+                phi = atan(SI, -CI)
+                alpha = blade.twist[r] - phi
+                reynolds = blade.cdim[r] * abs(W) * freestream.rho / freestream.mu
+                mach = W / freestream.asound
+
+                #don't actually need these since using custom airfoil data inputs
+                # section_sigma = nbld * blade.cdim[r] / (2.0 * pi * yrc[r])
+                # section_stagr = 0.5*pi - blade.twist[r]
+
+                cl, cd = get_clcd(alpha, reynolds, mach, rotor[i].solidities, r) #TODO: make this function that calls afeval from ccblade.
+
+                b_circ_new = 0.5 * cl * W * blade.cdim[r] * nblds
+                b_circ_old = b_circ_rotor[i, r]
+                b_circ_change = b_circ_new - b_circ_old
+                b_circ_rotor[i, r] += rlx * b_circ_change #under relaxation
+
+                total_thrust -= b_circ_rotor[i, r] * freestream.rho * CI * dr
+
+                #TODO: where in the world is UVINFL getting its contents??
+                wwa, wwt = uvinfl(yrc[r])
+
+                # set rotor slipstream velocities
+                rotor_induced_axial_velocites[i, r] = induced_axial_velocity
+                rotor_induced_radial_velocites[i, r] = 0.0
+                rotor_induced_tangential_velocities[i, r] =
+                    CI + yrc[r] * omega + b_circ_rotor[i, r] / (2.0 * pi * yrc[r])
+            end #for rotor panel centers
+
+            #TODO: add for non-zero tipgap
+            #if rotors[i].tipgap != 0.0
+            #    b_circ_rotor[i,end] = 0.0
+            #end
+
+            #update induced and average axial velocities
+            vhsq = thrust / (freestream.rho * blade[i].sweptarea) #0.5V^2 (v half square) from thrust equation: T = 0.5*rho*A*(vout^2 - vin^2)
+            if i == 1
+                induced_axial_velocity =
+                    -0.5 * freestream.vinf + sqrt((0.5 * freestream.vinf)^2 + vhsq)
+            else
+                SI = freestream.vinf + induced_axial_velocity
+                induced_axial_velocity += -0.5 * SI + sqrt((0.5 * SI)^2 + vhsq)
+            end
+        end #for iterations
+
+        average_axial_velocity = induced_axial_velocity + freestream.vinf
+
+        # update grid circulation
+        update_grid_circulation!(
+            b_gamma_grid,
+            b_circ_rotor[i, :],
+            delta_enthalpy_grid,
+            omega,
+            wakegrid.rotoridxs[i],
+        )
+    end #for numrotors
+
+    rotor_absolute_axial_velocities, rotor_absolute_radial_velocities, rotor_absolute_tangential_velocities, rotor_relative_axial_velocities, rotor_relative_radial_velocities, rotor_relative_tangential_velocities = set_rotor_velocities(
+        rotor_induced_axial_velocites,
+        rotor_induced_radial_velocites,
+        rotor_induced_tangential_velocities,
+    )
+
+    return b_gamma_grid,
+    b_circ_rotor,
+    delta_enthalpy_grid,
+    rotor_induced_axial_velocites,
+    rotor_induced_radial_velocites,
+    rotor_induced_tangential_velocities,
+    rotor_absolute_axial_velocities,
+    rotor_absolute_radial_velocities,
+    rotor_absolute_tangential_velocities,
+    rotor_relative_axial_velocities,
+    rotor_relative_radial_velocities,
+    rotor_relative_tangential_velocities
+
+end
+
+"""
+"""
+function update_grid_circulation!(
+    b_gamma_grid, b_circ_rotor, delta_enthalpy_grid, omega, rotoridx
+)
+
+    #rename for convenience
+    nx, nr = size(b_gamma_grid) #TODO: this might be backwards...
+
+    #loop through radial locations
+    for i in 1:(nr - 1)
+
+        #circulation jump across rotor disk
+        b_gamma_grid_change = b_circ_rotor[i]
+
+        #enthalpy jump across rotor disk
+        delta_enthalpy_grid_change = omega * b_circ_rotor[i] / (2.0 * pi)
+
+        #convect changes downstream from current rotor index
+        for j in rotoridx:(nx - 1)
+            b_gamma_grid[i, j] += b_gamma_grid_change
+            delta_enthalpy_grid += delta_enthalpy_grid_change
+        end
+    end
+    return nothing
+end
+
+"""
+"""
+function get_omega(rpm)
+    return rpm * pi / 30
+end
+
+"""
+See line 301 in rotoper.f
+"""
+function set_rotor_velocities(vax, vrad, vtan)
+    return vaxabs, vradabs, vtanabs, vaxrel, vradrel, vtanrel
 end
 
 """

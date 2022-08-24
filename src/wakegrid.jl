@@ -108,6 +108,11 @@ Get grid boundary and initial interior points.
 """
 function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; debug=false)
 
+    #check that rotors are in the correct order
+    for i=1:length(rotors)-1
+        @assert rotors[i].xlocation < rotors[i+1].xlocation
+    end
+
     # --- RENAME THINGS FOR CONVENIENCE
 
     # Rename HUB Geometry for convenience
