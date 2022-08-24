@@ -8,7 +8,6 @@ We have taken one of the case files and transcribed it into a julia file located
 ```@setup geom
 using DuctTAPE
 using Plots
-include("plots_default.jl")
 plot(xlabel="x", ylabel="r")
 ```
 
