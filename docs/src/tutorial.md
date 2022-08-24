@@ -29,12 +29,12 @@ DuctTAPE.split_wall
 
 ```@example geom
 # - Split Wall Coordinates
-innerwallx, innerwallr, outerwallx, outerwallr = DuctTAPE.split_wall(ductx, ductr)
+innerwallx, outerwallx, innerwallr, outerwallr = DuctTAPE.split_wall(ductx, ductr)
 
 # - Plot Geometry
-plot!(innerwallx,innerwallr,aspectratio=:equal)
-plot!(outerwallx,outerwallr,linestyle=:dash)
-plot!(hubx,hubr,linestyle=:dash, color=2)
+plot!(innerwallx, innerwallr, aspectratio=:equal)
+plot!(outerwallx, outerwallr, linestyle=:dash, color=1)
+plot!(hubx, hubr, color=2)
 ```
 
 
@@ -51,7 +51,7 @@ These splines are used throughout the initialization process to help with rotor 
 
 ```@example geom
 # --- DEFINE DUCT OBJECT
-duct, ductsplines = DuctTAPE.defineDuctGeometry(
+ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
     innerwallx,
     innerwallr,
     outerwallx,
@@ -61,7 +61,7 @@ duct, ductsplines = DuctTAPE.defineDuctGeometry(
 )
 ```
 
-The `duct` object now contains all the geometry information we'll need.
+The `ductgeometry` and `ductsplines` objects now contains all the geometry information we'll need.
 
 ## Wake Grid Initialization
 
@@ -78,10 +78,10 @@ Also, our rotor object has more fields than are used in the original dfdc, for n
 # --- GENERATE ROTOR OBJECT ARRAY
 
 #generate rotor object
-rotor1 = DuctTAPE.Rotor(xdisk1, nblade1, 0.0, chord1, beta1, nothing, nothing, nothing, nothing, nothing, nothing, rpm)
+rotor1 = DuctTAPE.Rotor(xdisk1, nblade1, rnondim1, 0.0, chord1, beta1, nothing, nothing, nothing, nothing, nothing, nothing, rpm)
 
 #generate stator object (rpm is zero for stator)
-rotor2 = DuctTAPE.Rotor(xdisk2, nblade2, 0.0, chord2, beta2, nothing, nothing, nothing, nothing, nothing, nothing, 0.0)
+rotor2 = DuctTAPE.Rotor(xdisk2, nblade2, rnondim2, 0.0, chord2, beta2, nothing, nothing, nothing, nothing, nothing, nothing, 0.0)
 
 #assemble array
 rotors = [rotor1; rotor2]
@@ -114,7 +114,7 @@ DuctTAPE.Grid
 
 ```@example geom
 # --- INITIALIZE GRID
-grid = DuctTAPE.initialize_grid(duct, rotors, grid_options)
+grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
 
 xg = grid.x_grid_points
 rg = grid.r_grid_points
@@ -124,6 +124,7 @@ nr = grid.nr
 plot!(xg, rg, color=3, linewidth=0.5)
 plot!(xg', rg', color=3, linewidth=0.5)
 ```
+
 
 !!! note
     This process should be relatively robust in that most combinations of wall and hub and rotor position should generate a grid.

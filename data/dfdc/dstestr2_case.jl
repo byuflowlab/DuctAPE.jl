@@ -39,7 +39,7 @@ nblade1 = 6 #number of blades
 nrsta1 = 11 #number of radial stations
 nrdata1 = 10 #number of section data points
 
-r1 = [
+rdim1 = [
     0.050494
     0.061571
     0.072648
@@ -51,6 +51,7 @@ r1 = [
     0.13911
     0.15019
 ]
+rnondim1 = 1.0 / (rdim1[end] - rdim1[1]) .* (rdim1 .- rdim1[1])
 
 chord1 = [
     0.056234
@@ -73,7 +74,7 @@ nblade2 = 9 #number of blades
 nrsta2 = 11 #number of radial stations
 nrdata2 = 10 #number of section data points
 
-r2 = [
+rdim2 = [
     0.050488
     0.061734
     0.072981
@@ -85,6 +86,7 @@ r2 = [
     0.14077
     0.15213
 ]
+rnondim2 = 1.0 / (rdim2[end] - rdim2[1]) .* (rdim2 .- rdim2[1])
 
 chord2 = [
     0.058025
@@ -349,6 +351,7 @@ ductx = [
     0.301211
     0.304466
 ]
+ductx = reverse(ductx)
 
 ductr = [
     0.159526
@@ -459,5 +462,10 @@ ductr = [
     0.158441
     0.158439
 ]
+ductr = reverse(ductr)
+
+c = maximum([ductx;hubx]) - minimum([ductx;hubx])
+xdisk1 /= c
+xdisk2 /= c
 
 println("DFDC Example Case Information Loaded")
