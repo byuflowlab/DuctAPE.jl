@@ -155,11 +155,8 @@ function initialize_blade_dimensions(ductgeometry, ductsplines, Rotor)
     hubspline = ductsplines.hubspline
 
     #find r-position of wall and hub at rotor location
-    rhub = max(0.0, hubspline(Rotor.xlocation*ductgeometry.chord))
-    rtip = wallspline(Rotor.xlocation*ductgeometry.chord)
-
-    println("rhub: ", rhub)
-    println("rtip: ", rtip)
+    rhub = max(0.0, hubspline(Rotor.xlocation * ductgeometry.chord))
+    rtip = wallspline(Rotor.xlocation * ductgeometry.chord)
 
     #get dimensional radial station locations
     #use linear transform to go from non-dim to dimensional range
@@ -257,72 +254,106 @@ function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, r
 
         #iterate to find induced axial velocity
         for iter in 1:niter
+
+            #initialize total thrust for current rotor
             total_thrust = 0.0
 
             for r in 1:(nr - 1)
-                xi = yrc[r][2] / blade[i].rtip
-                dr = yrp[r + 1] - yrp[r]
+                # xi = yrc[r][2] / blade[i].rtip #not needed due to custom airfoil data inputs
 
                 if i == 1
+                    #if first rotor, nothing has induced a tangential velocity yet
                     induced_tangential_velocity = 0.0
                 else
+                    # if not the first rotor, then previous rotors have induced tangential velocities. Find the value one grid station in front of the current rotor.
                     induced_tangential_velocity =
                         b_gamma_grid[wakegrid.rotoridxs[i] - 1, :] ./
-                        (2.0 * pi .* getindex.(rotorpanels[i].panel_centers, 2)) #bgamg is B*Gamma values at grid points just in front of rotor.
-                    #TODO: it seems that the b*gamma values here are not aligned with the panel centers, since we have the grid centers along the grid lines, not between them at the rotor section centers... THIS WILL LIKELY LEAD TO INDEXING ERRORS SOMEWHERE
+                        (2.0 * pi .* getindex.(rotorpanels[i].panel_centers, 2))
+                    #TODO: it seems that the b*Gamma values here are not aligned with the panel centers, since we have the grid centers along the grid lines, not between them at the rotor section centers... THIS WILL LIKELY LEAD TO INDEXING ERRORS SOMEWHERE
                 end #if first rotor
 
-                SI = freestream.vinf + induced_axial_velocity
-                CI = induced_tangential_velocity - yrc[r] * omega
+                # Sum up velocity components to get totals in axial and tangential directions
+                # TODO: for some reason the axial velocity is not sectional, but averaged. Not sure why that works when the sectional tangential comonents are used. Perhaps since this isn't applying the duct influence at this point, we can't know the sectional axial components.
+                average_axial_velocity = freestream.vinf + induced_axial_velocity
+                total_section_tangential_velocity =
+                    induced_tangential_velocity - yrc[r] * omega
 
-                W = sqrt(CI^2 + SI^2)
-                phi = atan(SI, -CI)
+                # calculate inflow velocity
+                W = sqrt(total_section_tangential_velocity^2 + average_axial_velocity^2)
+
+                #get inflow angle
+                phi = atan(average_axial_velocity, -total_section_tangential_velocity)
+
+                #get angle of attack
                 alpha = blade.twist[r] - phi
+
+                #calculate reynolds number
                 reynolds = blade.cdim[r] * abs(W) * freestream.rho / freestream.mu
+
+                #caluclate mach number
                 mach = W / freestream.asound
 
                 #don't actually need these since using custom airfoil data inputs
                 # section_sigma = nbld * blade.cdim[r] / (2.0 * pi * yrc[r])
                 # section_stagr = 0.5*pi - blade.twist[r]
 
-                cl, cd = get_clcd(alpha, reynolds, mach, rotor[i].solidities, r) #TODO: make this function that calls afeval from ccblade.
+                # get airfoil data
+                cl, cd = get_clcd(alpha, reynolds, mach, rotor[i].solidities[r]) #TODO: make this function that calls afeval from ccblade.
 
+                # update rotor section circulation
                 b_circ_new = 0.5 * cl * W * blade.cdim[r] * nblds
                 b_circ_old = b_circ_rotor[i, r]
                 b_circ_change = b_circ_new - b_circ_old
                 b_circ_rotor[i, r] += rlx * b_circ_change #under relaxation
 
-                total_thrust -= b_circ_rotor[i, r] * freestream.rho * CI * dr
+                # blade section length
+                dr = yrp[r + 1] - yrp[r]
+
+                #total thrust
+                total_thrust -=
+                    b_circ_rotor[i, r] *
+                    freestream.rho *
+                    total_section_tangential_velocity *
+                    dr
 
                 #TODO: where in the world is UVINFL getting its contents??
-                wwa, wwt = uvinfl(yrc[r])
+                # TODO: should be able to test other parts without this until can figure out what it is and what it does.  It doesn't seem to do any thing here, but likely initialzies the wwa and wwt arrays for later.  probably will end up returning wwa and wwt.
+                # wwa, wwt = uvinfl(yrc[r])
 
                 # set rotor slipstream velocities
                 rotor_induced_axial_velocites[i, r] = induced_axial_velocity
                 rotor_induced_radial_velocites[i, r] = 0.0
                 rotor_induced_tangential_velocities[i, r] =
-                    CI + yrc[r] * omega + b_circ_rotor[i, r] / (2.0 * pi * yrc[r])
+                    total_section_tangential_velocity +
+                    yrc[r] * omega +
+                    b_circ_rotor[i, r] / (2.0 * pi * yrc[r])
             end #for rotor panel centers
 
-            #TODO: add for non-zero tipgap
+            #TODO: add for non-zero tipgap, assumes you added another section at the "end" of the rotor where the gap is. basically you'll need a panel that contributes nothing between the rotor tip and the duct wall.
             #if rotors[i].tipgap != 0.0
             #    b_circ_rotor[i,end] = 0.0
             #end
 
-            #update induced and average axial velocities
-            vhsq = thrust / (freestream.rho * blade[i].sweptarea) #0.5V^2 (v half square) from thrust equation: T = 0.5*rho*A*(vout^2 - vin^2)
+            #update induced and average axial velocities using momentum theory
+            vhsq = thrust / (freestream.rho * blade[i].sweptarea) #0.5V^2 (v half square, where V is related to the induced axial velocity) from thrust equation: T = 0.5*rho*A*(vout^2 - vin^2)
             if i == 1
+                #if at the first rotor, then vinf will be main component
                 induced_axial_velocity =
                     -0.5 * freestream.vinf + sqrt((0.5 * freestream.vinf)^2 + vhsq)
             else
-                SI = freestream.vinf + induced_axial_velocity
-                induced_axial_velocity += -0.5 * SI + sqrt((0.5 * SI)^2 + vhsq)
+                # if not at first rotor, first rotor will have added to vinf
+                average_axial_velocity = freestream.vinf + induced_axial_velocity
+                induced_axial_velocity +=
+                    -0.5 * average_axial_velocity +
+                    sqrt((0.5 * average_axial_velocity)^2 + vhsq)
             end
         end #for iterations
 
+        #update average_axial_velocity so that next rotor will see correct induced velocity.
+        #TODO: this seems overly complicated for a julia implementation.  Probably could go back and simplify/clean things up since scoping rules are different than Fortran.
         average_axial_velocity = induced_axial_velocity + freestream.vinf
 
-        # update grid circulation
+        # update grid circulation values
         update_grid_circulation!(
             b_gamma_grid,
             b_circ_rotor[i, :],
@@ -332,12 +363,14 @@ function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, r
         )
     end #for numrotors
 
+    # calculate absolute and relative velocity components on rotor sections
     rotor_absolute_axial_velocities, rotor_absolute_radial_velocities, rotor_absolute_tangential_velocities, rotor_relative_axial_velocities, rotor_relative_radial_velocities, rotor_relative_tangential_velocities = set_rotor_velocities(
         rotor_induced_axial_velocites,
         rotor_induced_radial_velocites,
         rotor_induced_tangential_velocities,
     )
 
+    #return all the initialized rotor aero arrays
     return b_gamma_grid,
     b_circ_rotor,
     delta_enthalpy_grid,
@@ -428,7 +461,7 @@ function reinterpolate_rotor!(wakegrid, rotor, rotoridx)
     end
 
     # updates skews
-    if rotor.twists != nothing
+    if rotor.skews != nothing
         new_skews = FLOWMath.Akima(rotor.radialstations, rotor.skews)
         for i in 1:nr
             rotor.skews[i] = new_skews(new_rad_stash[i])
@@ -443,27 +476,11 @@ function reinterpolate_rotor!(wakegrid, rotor, rotoridx)
         end
     end
 
-    # update reynolds
-    if rotor.reynolds != nothing
-        new_reynolds = FLOWMath.Akima(rotor.radialstations, rotor.reynolds)
-        for i in 1:nr
-            rotor.reynolds[i] = new_reynolds(new_rad_stash[i])
-        end
-    end
-
     # update solidity
     if rotor.solidities != nothing
         new_solidities = FLOWMath.Akima(rotor.radialstations, rotor.solidities)
         for i in 1:nr
             rotor.solidities[i] = new_solidities(new_rad_stash[i])
-        end
-    end
-
-    # update machs
-    if rotor.machs != nothing
-        new_machs = FLOWMath.Akima(rotor.radialstations, rotor.machs)
-        for i in 1:nr
-            rotor.machs[i] = new_mach(new_rad_stash[i])
         end
     end
 

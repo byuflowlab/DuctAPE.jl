@@ -17,8 +17,8 @@ default(;
     fillalpha=0.125,
     fillcolor=RGB(128 / 255, 128 / 255, 128 / 255),
     linewidth=1.0,
-    markerstrokealpha=0,
     annotationfontfamily="Palatino Roman",
+    markerstrokewidth=0.1,
     annotationfontsize=10,
     background_color_inside=nothing,
     background_color_legend=nothing,
@@ -102,16 +102,40 @@ DuctTAPE.RotorGeometry
 ```
 
 Note that we want to create an array, even if we only have one rotor.  When we initialize the grid, it will expect an array.
-Also, our rotor object has more fields than are used in the original dfdc, for now, we'll set the section skew, rake, reynolds, airfoil, solidity, and mach to nothing.
+Also, our rotor object has more fields than are used in the original dfdc, for now, we'll set the section skew, rake, airfoil, and solidity to nothing.
 
 ```@example geom
-# --- GENERATE ROTOR OBJECT ARRAY
+# -- GENERATE ROTOR OBJECT ARRAY
 
 #generate rotor object
-rotor1 = DuctTAPE.RotorGeometry(xdisk1, nblade1, rnondim1, 0.0, chord1, beta1, nothing, nothing, nothing, nothing, rpm)
+rotor1 = DuctTAPE.RotorGeometry(
+    xdisk1,
+    nblade1,
+    rnondim1,
+    0.0,
+    chord1,
+    beta1,
+    nothing,
+    nothing,
+    nothing,
+    nothing,
+    rpm,
+)
 
 #generate stator object (rpm is zero for stator)
-rotor2 = DuctTAPE.RotorGeometry(xdisk2, nblade2, rnondim2, 0.0, chord2, beta2, nothing, nothing, nothing, nothing, 0.0)
+rotor2 = DuctTAPE.RotorGeometry(
+    xdisk2,
+    nblade2,
+    rnondim2,
+    0.0,
+    chord2,
+    beta2,
+    nothing,
+    nothing,
+    nothing,
+    nothing,
+    0.0,
+)
 
 #assemble array
 rotors = [rotor1; rotor2]
@@ -131,7 +155,7 @@ DuctTAPE.defineGridOptions
 
 ```@example geom
 # --- SET GRID OPTIONS
-num_radial_stations = 10
+num_radial_stations = length(rnondim1)
 grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 ```
 
@@ -144,15 +168,17 @@ DuctTAPE.Grid
 
 ```@example geom
 # --- INITIALIZE GRID
-grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+wakegrid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
 
-xg = grid.x_grid_points
-rg = grid.r_grid_points
-nx = grid.nx
-nr = grid.nr
+xg = wakegrid.x_grid_points
+rg = wakegrid.r_grid_points
+nx = wakegrid.nx
+nr = wakegrid.nr
 
-xg, rg, nx, nr = DuctTAPE.generate_grid_points(ductgeometry, ductsplines, rotors, grid_options)
-
+plot(xlabel="x", ylabel="r",aspectratio=:equal)
+plot!(ductgeometry.wallinnerxcoordinates, ductgeometry.wallinnerrcoordinates, color=1)
+plot!(ductgeometry.wallouterxcoordinates, ductgeometry.wallouterrcoordinates, color=1, linestyle=:dash)
+plot!(ductgeometry.hubxcoordinates, ductgeometry.hubrcoordinates, color=2)
 plot!(xg, rg, color=3, linewidth=0.5)
 plot!(xg', rg', color=3, linewidth=0.5)
 ```
@@ -168,3 +194,174 @@ plot!(xg', rg', color=3, linewidth=0.5)
 ## System Paneling
 
 
+```@setup geom
+# --- DEFINE DUCT OBJECT
+ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    innerwallx[1:4:end],
+    innerwallr[1:4:end],
+    outerwallx[1:4:end],
+    outerwallr[1:4:end],
+    hubx[1:4:end],
+    hubr[1:4:end]
+)
+# -- GENERATE ROTOR OBJECT ARRAY
+
+#generate rotor object
+rotor1 = DuctTAPE.RotorGeometry(
+    xdisk1,
+    nblade1,
+    rnondim1[1:2:end],
+    0.0,
+    chord1[1:2:end],
+    beta1[1:2:end],
+    nothing,
+    nothing,
+    nothing,
+    nothing,
+    rpm,
+)
+
+#generate stator object (rpm is zero for stator)
+rotor2 = DuctTAPE.RotorGeometry(
+    xdisk2,
+    nblade2,
+    rnondim2[1:2:end],
+    0.0,
+    chord2[1:2:end],
+    beta2[1:2:end],
+    nothing,
+    nothing,
+    nothing,
+    nothing,
+    0.0,
+)
+
+#assemble array
+rotors = [rotor1; rotor2]
+
+# --- SET GRID OPTIONS
+num_radial_stations = length(rnondim1[1:2:end])
+grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
+
+
+# --- INITIALIZE GRID
+wakegrid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+
+xg = wakegrid.x_grid_points
+rg = wakegrid.r_grid_points
+nx = wakegrid.nx
+nr = wakegrid.nr
+
+```
+
+
+
+```@example geom
+# Get paneling of various objects
+
+wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(
+    ductgeometry, ductsplines, rotors, wakegrid
+)
+```
+
+```@example geom
+
+# PLOT PANELS
+
+plot(; xlabel="x", ylabel="r", aspectratio=:equal, legend=true, label="")
+
+# wall panels:
+for i in 1:length(wall_panels.panel_edges_x)
+    plot!(
+        [wall_panels.panel_edges_x[i][1]; wall_panels.panel_edges_x[i][2]],
+        [wall_panels.panel_edges_r[i][1]; wall_panels.panel_edges_r[i][2]];
+        color=1,
+        linewidth=0.5,
+        markershape=:diamond,
+        markersize=2,
+        label="",
+    )
+end
+
+scatter!(
+    getindex.(wall_panels.panel_centers, 1),
+    getindex.(wall_panels.panel_centers, 2);
+    color=1,
+    markersize=3,
+    markershape=:circle,
+    label="wall panel centers",
+)
+
+#hub panels:
+for i in 1:length(hub_panels.panel_edges_x)
+    plot!(
+        [hub_panels.panel_edges_x[i][1]; hub_panels.panel_edges_x[i][2]],
+        [hub_panels.panel_edges_r[i][1]; hub_panels.panel_edges_r[i][2]];
+        markersize=2,
+        markershape=:diamond,
+        color=2,
+        linewidth=0.5,
+        label="",
+    )
+end
+
+scatter!(
+    getindex.(hub_panels.panel_centers, 1),
+    getindex.(hub_panels.panel_centers, 2);
+    markersize=3,
+    markershape=:circle,
+    color=2,
+    label="hub panel centers",
+)
+
+# println("wpc: ", wake_panels.panel_centers)
+#vortex sheet panels
+for i in 1:length(wake_panels.panel_centers)
+    plot!(
+        [wake_panels.panel_edges_x[i][1]; wake_panels.panel_edges_x[i][2]],
+        [wake_panels.panel_edges_r[i][1]; wake_panels.panel_edges_r[i][2]];
+        markersize=2,
+        markershape=:diamond,
+        color=3,
+        linewidth=0.5,
+        label="",
+    )
+end
+
+scatter!(
+    getindex.(wake_panels.panel_centers, 1),
+    getindex.(wake_panels.panel_centers, 2);
+    markersize=3,
+    markershape=:circle,
+    color=3,
+    label="vortex sheet panel centers",
+)
+
+#rotor source panels:
+for i in 1:length(rotor_source_panels.panel_centers)
+    plot!(
+        [
+            rotor_source_panels.panel_edges_x[i][1]
+            rotor_source_panels.panel_edges_x[i][2]
+        ],
+        [
+            rotor_source_panels.panel_edges_r[i][1]
+            rotor_source_panels.panel_edges_r[i][2]
+        ];
+        markersize=2,
+        markershape=:diamond,
+        color=4,
+        linewidth=0.5,
+        label="",
+    )
+end
+
+scatter!(
+    getindex.(rotor_source_panels.panel_centers, 1),
+    getindex.(rotor_source_panels.panel_centers, 2);
+    markersize=3,
+    markershape=:circle,
+    color=4,
+    label="rotor source panel centers",
+)
+```

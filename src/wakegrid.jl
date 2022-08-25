@@ -131,7 +131,6 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     wallLEx = wallx[1]
     wallLEr = wallr[1]
     wallTEx = wallx[end]
-    println("wallx: ", wallx)
     wallTEr = wallr[end]
 
     # Rename options for convenience
@@ -208,12 +207,6 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
             ],
         ),
     )
-
-    println("xfront: ", xfront)
-    println("LEx: ", ductgeometry.LEx)
-    println("hubTEx: ", hubTEx)
-    println("wallTEx: ", wallTEx)
-    println("xduct: ", duct_range)
 
     wake_range = [ductgeometry.TEx; xrear]
 
@@ -376,8 +369,6 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     for i=1:length(rotors)
         rotoridxs[i] = findfirst(x -> x ==rotors[i].xlocation*ductgeometry.chord,xstations)
     end
-
-    println("xstations: ", xstations)
 
     return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs
 end

@@ -212,12 +212,11 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
             #define trailing edge panel if needed
             #
             hub_panel_edge_x[i] = (
-                ductgeometry.hubxcoordinates[end], ductgeometry.hubxcoordinates[1]
+                                   ductgeometry.hubxcoordinates[end], ductgeometry.hubxcoordinates[end]
             )
 
             hub_panel_edge_r[i] = (
-                ductgeometry.hubrcoordinates[end], ductgeometry.hubrcoordinates[1]
-            )
+                ductgeometry.hubrcoordinates[end], 0.0)
 
         else
             # get the x geometry coordinates and set as the panel edges
@@ -258,7 +257,7 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     for i in 1:length(rotors)
 
         #create a blade object for each rotor (to get dimensional radial data)
-        blade = initialize_blade(ductgeometry, ductsplines, rotors[i])
+        blade = initialize_blade_dimensions(ductgeometry, ductsplines, rotors[i])
 
         #loop through each of the radial stations
         for j in 1:(numrs - 1)

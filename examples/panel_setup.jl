@@ -1,82 +1,116 @@
 include("geometry_setup.jl")
 
-function setup_panels()
+function setup_panels(; plotpanels=false)
 
-    # Get initial geometry and wake grid
-    ductgeometry, ductsplines, rotors, wakegrid = initialize_geometry(; hubscale=0.75)
+    # get initial geometry and wake grid
+    ductgeometry, ductsplines, rotors, wakegrid = initialize_geometry()
 
-    # Get paneling of various objects
+    # get paneling of various objects
     wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(
         ductgeometry, ductsplines, rotors, wakegrid
     )
 
-    # PLOT PANELS
+    # plot panels
+    if plotpanels
+        plot(; xlabel="x", ylabel="r", aspectratio=:equal, legend=true, label="")
 
-    figure(2, figsize=(6,4))
-    clf()
+        # wall panels:
+        for i in 1:length(wall_panels.panel_edges_x)
+            plot!(
+                [wall_panels.panel_edges_x[i][1]; wall_panels.panel_edges_x[i][2]],
+                [wall_panels.panel_edges_r[i][1]; wall_panels.panel_edges_r[i][2]];
+                color=1,
+                linewidth=0.5,
+                markershape=:diamond,
+                markersize=1,
+                label="",
+            )
+        end
 
-    # println("wallp:")
-    # display(wake_panels.panel_centers)
-    # display(wake_panels.panel_edges_x)
-    # display(wake_panels.panel_edges_r)
-
-    # wall panels:
-    for i in 1:length(wall_panels.panel_edges_x)
-        plot(wall_panels.panel_edges_x[i], wall_panels.panel_edges_r[i], "+-C0")
-    end
-
-    plot(
-        getindex.(wall_panels.panel_centers, 1),
-        getindex.(wall_panels.panel_centers, 2),
-        "oC0";
-        label="wall panels",
-    )
-
-    #hub panels:
-    for i in 1:length(hub_panels.panel_edges_x)
-        plot(hub_panels.panel_edges_x[i], hub_panels.panel_edges_r[i], "+-C1")
-    end
-    plot(
-        getindex.(hub_panels.panel_centers, 1),
-        getindex.(hub_panels.panel_centers, 2),
-        "oC1";
-        label="hub panels",
-    )
-
-    # println("wpc: ", wake_panels.panel_centers)
-    #vortex sheet panels
-    for i in 1:length(wake_panels.panel_centers)
-        plot(wake_panels.panel_edges_x[i], wake_panels.panel_edges_r[i], "+-C2")
-    end
-    plot(
-        getindex.(wake_panels.panel_centers, 1),
-        getindex.(wake_panels.panel_centers, 2),
-        "oC2";
-        label="vortex sheet panels",
-    )
-
-    #rotor source panels:
-    for i in 1:length(rotor_source_panels.panel_centers)
-        plot(
-            rotor_source_panels.panel_edges_x[i],
-            rotor_source_panels.panel_edges_r[i],
-            "+-C3",
+        scatter!(
+            getindex.(wall_panels.panel_centers, 1),
+            getindex.(wall_panels.panel_centers, 2);
+            color=1,
+            markersize=1,
+            markershape=:circle,
+            label="wall panel centers",
         )
+
+        #hub panels:
+        for i in 1:length(hub_panels.panel_edges_x)
+            plot!(
+                [hub_panels.panel_edges_x[i][1]; hub_panels.panel_edges_x[i][2]],
+                [hub_panels.panel_edges_r[i][1]; hub_panels.panel_edges_r[i][2]];
+                markersize=1,
+                markershape=:diamond,
+                color=2,
+                linewidth=0.5,
+                label="",
+            )
+        end
+
+        scatter!(
+            getindex.(hub_panels.panel_centers, 1),
+            getindex.(hub_panels.panel_centers, 2);
+            markersize=1,
+            markershape=:circle,
+            color=2,
+            label="hub panel centers",
+        )
+
+        # println("wpc: ", wake_panels.panel_centers)
+        #vortex sheet panels
+        for i in 1:length(wake_panels.panel_centers)
+            plot!(
+                [wake_panels.panel_edges_x[i][1]; wake_panels.panel_edges_x[i][2]],
+                [wake_panels.panel_edges_r[i][1]; wake_panels.panel_edges_r[i][2]];
+                markersize=1,
+                markershape=:diamond,
+                color=3,
+                linewidth=0.5,
+                label="",
+            )
+        end
+
+        scatter!(
+            getindex.(wake_panels.panel_centers, 1),
+            getindex.(wake_panels.panel_centers, 2);
+            markersize=1,
+            markershape=:circle,
+            color=3,
+            label="vortex sheet panel centers",
+        )
+
+        #rotor source panels:
+        for i in 1:length(rotor_source_panels.panel_centers)
+            plot!(
+                [
+                    rotor_source_panels.panel_edges_x[i][1]
+                    rotor_source_panels.panel_edges_x[i][2]
+                ],
+                [
+                    rotor_source_panels.panel_edges_r[i][1]
+                    rotor_source_panels.panel_edges_r[i][2]
+                ];
+                markersize=1,
+                markershape=:diamond,
+                color=4,
+                linewidth=0.5,
+                label="",
+            )
+        end
+
+        scatter!(
+            getindex.(rotor_source_panels.panel_centers, 1),
+            getindex.(rotor_source_panels.panel_centers, 2);
+            markersize=1,
+            markershape=:circle,
+            color=4,
+            label="rotor source panel centers",
+        )
+
+        savefig("examples/test_panels.pdf")
     end
-    plot(
-        getindex.(rotor_source_panels.panel_centers, 1),
-        getindex.(rotor_source_panels.panel_centers, 2),
-        "oC3";
-        label="rotor source panels",
-    )
-
-    axis("equal")
-    legend()
-
-    savefig("examples/test_panels.png"; bbox_inches="tight")
 
     return nothing
 end
-
-setup_panels()
-
