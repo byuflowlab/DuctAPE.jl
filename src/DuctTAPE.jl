@@ -25,5 +25,6 @@ include("utils.jl")
 include("walls.jl")
 include("rotors.jl")
 include("wakegrid.jl")
+include("panels.jl")
 include("solve.jl")
 end

@@ -79,32 +79,40 @@ function setup_panels(ductgeometry, ductsplines, rotors, wakegrid; plotpanels=fa
         )
 
         #rotor source panels:
-        for i in 1:length(rotor_source_panels.panel_centers)
-            plot!(
-                [
-                    rotor_source_panels.panel_edges_x[i][1]
-                    rotor_source_panels.panel_edges_x[i][2]
-                ],
-                [
-                    rotor_source_panels.panel_edges_r[i][1]
-                    rotor_source_panels.panel_edges_r[i][2]
-                ];
+        for r in 1:length(rotor_source_panels)
+            for i in 1:length(rotor_source_panels[r].panel_centers)
+                plot!(
+                    [
+                        rotor_source_panels[r].panel_edges_x[i][1]
+                        rotor_source_panels[r].panel_edges_x[i][2]
+                    ],
+                    [
+                        rotor_source_panels[r].panel_edges_r[i][1]
+                        rotor_source_panels[r].panel_edges_r[i][2]
+                    ];
+                    markersize=1,
+                    markershape=:diamond,
+                    color=4,
+                    linewidth=0.5,
+                    label="",
+                )
+            end
+
+            if r == 1
+                lab = "rotor source panel centers"
+            else
+                lab = ""
+            end
+
+            scatter!(
+                getindex.(rotor_source_panels[r].panel_centers, 1),
+                getindex.(rotor_source_panels[r].panel_centers, 2);
                 markersize=1,
-                markershape=:diamond,
+                markershape=:circle,
                 color=4,
-                linewidth=0.5,
-                label="",
+                label=lab,
             )
         end
-
-        scatter!(
-            getindex.(rotor_source_panels.panel_centers, 1),
-            getindex.(rotor_source_panels.panel_centers, 2);
-            markersize=1,
-            markershape=:circle,
-            color=4,
-            label="rotor source panel centers",
-        )
 
         savefig("examples/test_panels.pdf")
     end

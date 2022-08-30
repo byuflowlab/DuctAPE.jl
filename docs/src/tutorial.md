@@ -396,32 +396,60 @@ scatter!(
 )
 
 #rotor source panels:
-for i in 1:length(rotor_source_panels.panel_centers)
-    plot!(
-        [
-            rotor_source_panels.panel_edges_x[i][1]
-            rotor_source_panels.panel_edges_x[i][2]
-        ],
-        [
-            rotor_source_panels.panel_edges_r[i][1]
-            rotor_source_panels.panel_edges_r[i][2]
-        ];
-        markersize=2,
-        markershape=:diamond,
+    for i in 1:length(rotor_source_panels[1].panel_centers)
+        plot!(
+            [
+                rotor_source_panels[1].panel_edges_x[i][1]
+                rotor_source_panels[1].panel_edges_x[i][2]
+            ],
+            [
+                rotor_source_panels[1].panel_edges_r[i][1]
+                rotor_source_panels[1].panel_edges_r[i][2]
+            ];
+            markersize=2,
+            markershape=:diamond,
+            color=4,
+            linewidth=0.5,
+            label="",
+        )
+    end
+
+    scatter!(
+        getindex.(rotor_source_panels[1].panel_centers, 1),
+        getindex.(rotor_source_panels[1].panel_centers, 2);
+        markersize=3,
+        markershape=:circle,
         color=4,
-        linewidth=0.5,
+        label="rotor source panel centers",
+    )
+
+
+    for i in 1:length(rotor_source_panels[2].panel_centers)
+        plot!(
+            [
+                rotor_source_panels[2].panel_edges_x[i][1]
+                rotor_source_panels[2].panel_edges_x[i][2]
+            ],
+            [
+                rotor_source_panels[2].panel_edges_r[i][1]
+                rotor_source_panels[2].panel_edges_r[i][2]
+            ];
+            markersize=2,
+            markershape=:diamond,
+            color=4,
+            linewidth=0.5,
+            label="",
+        )
+    end
+
+    scatter!(
+        getindex.(rotor_source_panels[2].panel_centers, 1),
+        getindex.(rotor_source_panels[2].panel_centers, 2);
+        markersize=3,
+        markershape=:circle,
+        color=4,
         label="",
     )
-end
-
-scatter!(
-    getindex.(rotor_source_panels.panel_centers, 1),
-    getindex.(rotor_source_panels.panel_centers, 2);
-    markersize=3,
-    markershape=:circle,
-    color=4,
-    label="rotor source panel centers",
-)
 ```
 
 

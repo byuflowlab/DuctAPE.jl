@@ -38,7 +38,7 @@ struct GridOptions{TF,TI}
 end
 
 """
-    WakeGrid{TF,TI}
+    WakeGrid{TF,TI,TA,TW,TH}
 
 Grid Object
 
