@@ -1,9 +1,6 @@
-include("geometry_setup.jl")
-
-function setup_panels(; plotpanels=false)
-
-    # get initial geometry and wake grid
-    ductgeometry, ductsplines, rotors, wakegrid = initialize_geometry()
+"""
+"""
+function setup_panels(ductgeometry, ductsplines, rotors, wakegrid; plotpanels=false)
 
     # get paneling of various objects
     wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(
@@ -112,5 +109,5 @@ function setup_panels(; plotpanels=false)
         savefig("examples/test_panels.pdf")
     end
 
-    return nothing
+    return wall_panels, hub_panels, rotor_source_panels, wake_panels
 end
