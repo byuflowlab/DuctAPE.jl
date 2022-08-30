@@ -1,28 +1,4 @@
-include("../data/dfdc/dstestr2_case.jl");
-
-@testset "Grid Geometry" begin
-
-    # - Split Wall Coordinates
-    outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
-
-    # -- DEFINE DUCT OBJECT
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
-        innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
-    )
-
-    grid_options = DuctTAPE.defineGridOptions(10)
-
-    grid = DuctTAPE.generate_grid_points(ductgeometry, ductsplines, [], grid_options)
-
-    # Test to make sure there's no compilation errors for now.
-    @test grid == grid
-
-    #TODO; probably want to put together more basic unit tests to check ins and outs and such.
-    #TODO: instead of going directly for full dfdc example, just define a simple square volume with flat walls.  You could probably just make it 1x1 or 2x2 or something small so you can put in exactly what the values for everything should be.
-
-end
-
-@testset "Grid Relaxation Stability" begin
+@testset "Paneling Tests:" begin
 
     # - Split Wall Coordinates
     outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
@@ -74,10 +50,15 @@ end
     num_radial_stations = length(rnondim1)
     grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
-    grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+    wakegrid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+
+    # get paneling of various objects
+    wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(
+        ductgeometry, ductsplines, rotors, wakegrid
+    )
 
     # Test to make sure there's no compilation errors for now.
-    @test grid == grid
+    @test true
 
-    #TODO; probably want to put together more basic unit tests to check ins and outs and such.
+    #TODO: add unit tests for the various pieces of the paneling procedure.  May need to break it up into several functions.
 end

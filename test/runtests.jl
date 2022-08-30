@@ -1,9 +1,7 @@
-using DuctTAPE
 using Test
-using DuctTAPE.FLOWFoil
 
-@testset "DuctTAPE.jl" begin
-    # Write your tests here.
-end
+println("Compiling Package")
+using DuctTAPE
 
 include("ductgeometrytests.jl")
+include("paneltests.jl")
