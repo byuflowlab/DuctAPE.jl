@@ -160,10 +160,9 @@ function initialize_blade_dimensions(ductgeometry, ductsplines, Rotor)
 
     #get dimensional radial station locations
     #use linear transform to go from non-dim to dimensional range
-    rdim =
-        rhub .+
-        (rtip - rhub) / (Rotor.radialstations[end] - Rotor.radialstations[1]) .*
-        (Rotor.radialstations .- Rotor.radialstations[1])
+    rdim = lintran(
+        rhub, rtip, Rotor.radialstations[1], Rotor.radialstations[end], Rotor.radialstations
+    )
 
     # dimensional chords
     cdim = Rotor.chords .* rtip

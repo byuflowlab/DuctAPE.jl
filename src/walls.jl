@@ -36,8 +36,9 @@ end
 
 """
 """
-struct DuctSplines{TSD,TSH}
-    wallinnerspline::TSD
+struct DuctSplines{TSDi,TSDo,TSH}
+    wallinnerspline::TSDi
+    wallouterspline::TSDo
     hubspline::TSH
 end
 
@@ -105,6 +106,17 @@ function defineDuctGeometry(
         ) #TODO: originally had this as a warning, but the wake caclulation currently hangs in an infinite loop if there is no overlap.  This could probably be fixed, but also probably doesn't need to be if optimization constraints are placed properly
     end
 
+    #flip things as needed:
+    if wallinnerxcoordinates[1] > wallinnerxcoordinates[end]
+        wallinnerxcoordinates = reverse(wallinnerxcoordinates)
+        wallinnerrcoordinates = reverse(wallinnerrcoordinates)
+    end
+
+    if wallouterxcoordinates[1] > wallouterxcoordinates[end]
+        wallouterxcoordinates = reverse(wallouterxcoordinates)
+        wallouterrcoordinates = reverse(wallouterrcoordinates)
+    end
+
     if hubxcoordinates == nothing
         if hubrcoordinates != nothing
             @warn("no x coordinates defined for hub, overwriting r coordinates to zero")
@@ -139,6 +151,9 @@ function defineDuctGeometry(
 
     #TODO: create wall spline fields
     wallinnerspline = FLOWMath.Akima(wallinnerxcoordinates, wallinnerrcoordinates)
+
+    wallouterspline = FLOWMath.Akima(wallouterxcoordinates, wallouterrcoordinates)
+
     hubspline = FLOWMath.Akima(hubxcoordinates, hubrcoordinates)
 
     return DuctGeometry(
@@ -154,7 +169,7 @@ function defineDuctGeometry(
         wallbluntTE,
         hubbluntTE,
     ),
-    DuctSplines(wallinnerspline, hubspline)
+    DuctSplines(wallinnerspline, wallouterspline, hubspline)
 end
 
 """

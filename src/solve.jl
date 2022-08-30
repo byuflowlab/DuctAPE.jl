@@ -105,7 +105,23 @@ end
 ##### ----- ITERATION SETUP ----- #####
 #######################################
 
+
 """
+    generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
+
+Generate panel edges and centers.
+
+**Arguments:**
+ - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry object
+ - `ductsplines::DuctTAPE.DuctSplines` : Duct Splines object
+ - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
+ - `wakegrid::DuctTAPE.WakeGrid` : Wake Grid object
+
+**Returns:**
+ - `wall_panels::DuctTAPE.Panels` : Panels object for duct wall
+ - `hub_panels::DuctTAPE.Panels` : Panels object for hub
+ - `wake_panels::DuctTAPE.Panels` : Panels object for vortex wake sheets
+ - `rotor_source_panels::Array{DuctTAPE.Panels}` : Array of Panels objects for each rotor
 """
 function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 
@@ -114,7 +130,7 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 
     # - number of hub geometry panels
     #take number of xcoordinates for the hub and subtract the last one to get the number of panels
-    numhubpan = length(ductgeometry.hubxcoordinates) - 1
+    numhubpan = length(wakegrid.hub_xstations) - 1
 
     #if the hub has a blunt trailing edge. need to add another panel.
     if ductgeometry.hubbluntTE
@@ -123,9 +139,7 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 
     # - number of wall geometry panels
     #take the number of x coordinates for the inner and outer wall geometry and subtract the last point from each to get the number of panels for the whole airfoil
-    numwallpan =
-        length(ductgeometry.wallinnerxcoordinates) +
-        length(ductgeometry.wallouterxcoordinates) - 2
+    numwallpan = 2 * length(wakegrid.wall_xstations) - 2
 
     #add another panel if the duct wall has a blunt trailing edge.
     #TODO: need to add bluntTE stuff to gridgeometry object creating function.
@@ -162,17 +176,16 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     wall_panel_center = [(0.0, 0.0) for i in 1:numwallpan]
 
     # need to combine the inner and outer geometry coordinates
-    wallxcoordinates = [
-        ductgeometry.wallouterxcoordinates[1:(end - 1)]
-        ductgeometry.wallinnerxcoordinates
-    ] #TODO: need to make sure this is the correct direction. (what is the correct direction??)
-    #TODO: also need to make sure that the inner and outer coordinates match up correctly (is LE and LE for both?) THIS IS A USER INPUT!!! PROBABLY NEED TO ADD CHECKS/CORRECTIONS FOR INCORRECT INPUT
+    # TODO: the user input decides what order things are in.  Need to make sure that the splines are defined in the correct directions, so probably need to add some checks at the point of the ductgeometry generation.
+    wallinnerxcoordinates = wakegrid.wall_xstations
+    wallouterxcoordinates = wakegrid.wall_xstations
+    wallxcoordinates = [reverse(wallinnerxcoordinates)[1:(end - 1)]; wallouterxcoordinates]
 
     #similar for r coordinates
-    wallrcoordinates = [
-        ductgeometry.wallouterrcoordinates[1:(end - 1)]
-        ductgeometry.wallinnerrcoordinates
-    ]
+    wallinnerrcoordinates = ductsplines.wallinnerspline(wallinnerxcoordinates)
+    wallouterrcoordinates = ductsplines.wallouterspline(wallouterxcoordinates)
+    wallrcoordinates = [reverse(wallinnerrcoordinates)[1:(end - 1)]; wallouterrcoordinates]
+    #TODO: need to make sure this is the correct direction. (what is the correct direction??)
 
     # loop through the total number of wall coordinates
     for i in 1:numwallpan
@@ -206,28 +219,26 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     hub_panel_edge_r = [(0.0, 0.0) for i in 1:numhubpan]
     hub_panel_center = [(0.0, 0.0) for i in 1:numhubpan]
 
+    hubxcoordinates = wakegrid.hub_xstations
+
+    #similar for r coordinates
+    hubrcoordinates = ductsplines.hubspline(hubxcoordinates)
+
     #loop through hub panel count
     for i in 1:numhubpan
         if ductgeometry.hubbluntTE && i == numhubpan
             #define trailing edge panel if needed
             #
-            hub_panel_edge_x[i] = (
-                                   ductgeometry.hubxcoordinates[end], ductgeometry.hubxcoordinates[end]
-            )
+            hub_panel_edge_x[i] = (hubxcoordinates[end], hubxcoordinates[end])
 
-            hub_panel_edge_r[i] = (
-                ductgeometry.hubrcoordinates[end], 0.0)
+            hub_panel_edge_r[i] = (hubrcoordinates[end], 0.0)
 
         else
             # get the x geometry coordinates and set as the panel edges
-            hub_panel_edge_x[i] = (
-                ductgeometry.hubxcoordinates[i], ductgeometry.hubxcoordinates[i + 1]
-            )
+            hub_panel_edge_x[i] = (hubxcoordinates[i], hubxcoordinates[i + 1])
 
             #similar for r coordinates
-            hub_panel_edge_r[i] = (
-                ductgeometry.hubrcoordinates[i], ductgeometry.hubrcoordinates[i + 1]
-            )
+            hub_panel_edge_r[i] = (hubrcoordinates[i], hubrcoordinates[i + 1])
         end
 
         #no mater the case, get the average of the x and r coordinates to set the center points of the panels

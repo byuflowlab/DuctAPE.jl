@@ -38,7 +38,7 @@ struct GridOptions{TF,TI}
 end
 
 """
-    Grid{TF,TI}
+    WakeGrid{TF,TI}
 
 Grid Object
 
@@ -51,7 +51,7 @@ Grid Object
  - `hubTEidx::Int` : index of hub wall trailing edge x location
  - `rotoridxs::Array{Int}` : array of indices of rotor x locations
 """
-struct Grid{TF,TI,TA}
+struct WakeGrid{TF,TI,TA,TW,TH}
     x_grid_points::TF
     r_grid_points::TF
     nx::TI
@@ -59,6 +59,8 @@ struct Grid{TF,TI,TA}
     wallTEidx::TI
     hubTEidx::TI
     rotoridxs::TA
+    wall_xstations::TW
+    hub_xstations::TH
 end
 
 #################################
@@ -125,7 +127,8 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     hubTEr = hubr[end]
 
     # Rename WALL Geometry for convenience
-    wallspline = ductsplines.wallinnerspline
+    innerwallspline = ductsplines.wallinnerspline
+    outerwallspline = ductsplines.wallouterspline
     wallx = ductgeometry.wallinnerxcoordinates
     wallr = ductgeometry.wallinnerrcoordinates
     wallLEx = wallx[1]
@@ -171,7 +174,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
             elseif xfront > wallx[end]
                 rtip = wallTEr
             else
-                rtip = wallspline(xfront)
+                rtip = innerwallspline(xfront)
             end
 
             if xfront < hubx[1] || xfront > hubx[end]
@@ -278,7 +281,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         if xstations[i] < wallLEx
             router[i] = wallLEr
         elseif xstations[i] < wallTEx
-            router[i] = wallspline(xstations[i])
+            router[i] = innerwallspline(xstations[i])
         else
             router[i] = wallTEr
         end
@@ -370,7 +373,46 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         rotoridxs[i] = findfirst(x -> x ==rotors[i].xlocation*ductgeometry.chord,xstations)
     end
 
-    return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs
+    ## -- GET X STATIONS FOR WALL AND HUB PANELING -- ##
+
+
+    #get average step in x direction from rotors to end of duct
+    dx = Statistics.mean(xd[2:end] .- xd[1:end-1])
+
+    # get number of panels from wall LE to rotor location
+    nxwall = ceil(Int, 1.5*(xfront - wallLEx) / (dx))
+
+    # get x stations in front of rotor for wall
+    if nxwall > 1
+        xwallcos = cosinespace(nxwall)
+
+        xwall = lintran(wallLEx, xfront, xwallcos[1], xwallcos[end], xwallcos)
+    # xwall = range(wallLEx, xfront, length=nxwall)
+else
+    xwall = wallLEx
+end
+
+
+    #put xstations together
+    wall_xstations = unique([xwall; xd[1:findlast(x->x<=hubTEx,xd)]])
+
+
+    # get number of panels from hub LE to rotor location
+    nxhub = ceil(Int, 1.5*(xfront - hubLEx) / (dx))
+
+    # get x stations in front of rotor for hub
+    if nxhub > 1
+        xhubcos = cosinespace(nxhub)
+        xhub = lintran(hubLEx, xfront, xhubcos[1], xhubcos[end], xhubcos)
+    # xhub = range(hubLEx, xfront, length=nxhub)
+else
+    xhub = hubLEx
+end
+
+    #put xstations together
+    hub_xstations = unique([xhub; xd[1:findlast(x->x<=hubTEx,xd)]])
+
+    return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations
 end
 
 """
@@ -678,19 +720,19 @@ Initialize grid via zero-thrust, unit freestream solution.
  - `tol::Float` : convergence tolerance, default = 1e-9
 
 **Returns:**
- - `grid::DuctTAPE.Grid` : Grid Object
+ - `WakeGrid::DuctTAPE.WakeGrid` : WakeGrid Object
 """
 function initialize_grid(
     ductgeometry, ductsplines, rotors, grid_options; max_iterations=100, tol=1e-9
 )
 
     # get initial grid points
-    xg, rg, nx, nr, wallTEidx, hubTEidx, rotoridxs = generate_grid_points(
+    xg, rg, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = generate_grid_points(
         ductgeometry, ductsplines, rotors, grid_options
     )
 
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
 
-    return Grid(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs)
+    return WakeGrid(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations)
 end

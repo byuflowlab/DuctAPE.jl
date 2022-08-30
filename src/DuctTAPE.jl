@@ -6,6 +6,8 @@ module DuctTAPE
 using FLOWMath
 fm = FLOWMath #akima splines
 using Statistics
+using CCBlade
+ccb = CCBlade
 # using ForwardDiff
 # fd = ForwardDiff #newton method
 # using IterativeSolvers
