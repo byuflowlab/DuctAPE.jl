@@ -19,8 +19,10 @@ lwkrlx = false #don't continuously relax wake
 #constant along blade
 a0 = 0.0 #zero lift angle in degrees
 dclda = 6.28 #lift slope angle = 2pi
-clmax = 1.5 #max lift coeff
-clmin = -1.0 #min lift coeff
+clmax1 = 1.5 #max lift coeff
+clmax2 = 1.0 #max lift coeff
+clmin1 = -1.0 #min lift coeff
+clmin2 = -1.5 #min lift coeff
 dcldastall = 0.5 #lift slope at stall?
 dclstall = 0.2 #TODO what is this?
 cmconst = 0.0 #moment coeff
