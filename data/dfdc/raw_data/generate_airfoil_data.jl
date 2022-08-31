@@ -329,6 +329,8 @@ cds15e6 = clcd15e6sp(cls)
 clcd2e6sp = Akima(clcd2e6[:, 2], clcd2e6[:, 1])
 cds2e6 = clcd2e6sp(cls)
 
+alphas *= pi/180.0
+
 f = open("disk1_re5e5.dat", "w+")
 write(f, "DFDC Disk 1 Airfoil\n")
 write(f, "100000.0\n")
@@ -682,6 +684,8 @@ cds15e6 = clcd15e6sp(cls)
 
 clcd2e6sp = Akima(clcd2e6[:, 2], clcd2e6[:, 1])
 cds2e6 = clcd2e6sp(cls)
+
+alphas *= pi/180.0
 
 f = open("disk2_re5e5.dat", "w+")
 write(f, "DFDC Disk 2 Airfoil\n")
