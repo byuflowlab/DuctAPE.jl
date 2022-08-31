@@ -3,5 +3,5 @@ using Test
 println("Compiling Package")
 using DuctTAPE
 
-include("ductgeometrytests.jl")
+include("initialization_tests.jl")
 include("paneltests.jl")
