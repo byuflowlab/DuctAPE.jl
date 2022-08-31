@@ -391,7 +391,7 @@ Return lift and drag coefficients based on airfoil object type and flow conditio
  - `alpha::Float` : angle of attack in degrees
  - `reynolds::Float` : Reynolds number
  - `mach::Float` : Mach number
- - `solidity::Float` : Solidity factor (local chord length over distance between radial blade stations on adjacent blades). Set to `nothing` if not being used.
+ - `solidity::Float` : Solidity factor (local chord length over distance between radial blade stations on adjacent blades). Set to -1 if not being used.
 
 **Returns:**
  - `cl::Float` : section lift coefficient
@@ -403,7 +403,7 @@ function get_clcd(af, alpha, reynolds, mach, solidity)
     alpha *= pi / 180.0
 
     # if solidity undefined, use CCBlade functions
-    if solidity == nothing
+    if solidity == -1.0
         return ccb.afeval(af, alpha, reynolds, mach)
     else
         #if solidity is defined, need to use custom functions

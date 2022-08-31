@@ -2,18 +2,6 @@
 Types and Functions related to the wake grid
 
 Authors: Judd Mehr,
-
-Process Notes:
-1. Define paneling on ductgeometry and hub
-2. Evaluate for panel control points
-3. Assemble abarij, augmented with Kutta condition
-4. Solve for gammabar0i
-5. Set initial streamfunction grid
-6. Evaluate vx0i, vr0i at grid boundaries
-7. use vx0i, vr0i to get equipotential lines
-8. Set Q1 = 0
-9. Relax grid with SLOR (InterativeSolvers) using vx0i, vr0i for Neumann BCs
-
 =#
 
 #######################################
@@ -64,17 +52,10 @@ struct WakeGridGeometry{TF,TI,TA,TW,TH}
 end
 
 
-"""
-"""
-struct WakeGridAero{TG, TC, TH}
-    b_gamma_grid::TG
-    b_circ_rotor::TC
-    delta_enthalpy_grid::TH
-end
 
 
 #################################
-##### ----- FUNCTIONS ----- #####
+##### ----- GEOMETRY ----- ######
 #################################
 
 """
@@ -746,3 +727,4 @@ function initialize_grid(
 
     return WakeGridGeometry(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations)
 end
+

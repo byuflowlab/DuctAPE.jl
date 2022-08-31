@@ -57,28 +57,9 @@ CONVGTHBG:
 TQCALC:
 =#
 
-#############################
-##### ----- TYPES ----- #####
-#############################
-
-"""
-    OperatingConditions{TVI,TVR,TF}
-
-**Fields:**
- - `vinf::Array{Float}` : Array of freestream velocities
- - `vref::Array{Float}` : Array of reference velocities
- - `rho::Float` : air density value
- - `vso::Float` : speed of sound value
- - `mu::Float` : air viscosity value
-"""
-struct OperatingConditions{TVI,TVR,TF}
-    vinf::TVI
-    vref::TVR
-    rho::TF
-    vso::TF
-    mu::TF
-    # boundarylayer::TB
-end
+#######################################
+##### ----- COMPOSITE TYPES ----- #####
+#######################################
 
 """
 """

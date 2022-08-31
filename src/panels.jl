@@ -14,6 +14,16 @@ struct Panels{TPEx,TPEr,TPC,TPT}
 end
 
 """
+"""
+struct PanelSystem{TW,TH,TR,TW}
+    wall_panels::TW
+    hub_panels::TH
+    wake_panels::TW
+    rotor_source_panels::TR
+    #drag_panels::TD
+end
+
+"""
     generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 
 Generate panel edges and centers.
@@ -295,3 +305,17 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     #return the 3 types of panel objects.
     return wall_panels, hub_panels, wake_panels, rotor_source_panels
 end
+
+"""
+"""
+function generate_panel_system(ductgeometry, ductsplines, rotors, wakegrid)
+
+    #generate individual panel objects
+    wall_panels, hub_panels, wake_panels, rotor_source_panels = generate_paneling(
+        ductgeometry, ductsplines, rotors, wakegrid
+    )
+
+    #return panel system containing all panel objects
+    return PanelSystem(wall_panels, hub_panels, wake_panels, rotor_source_panels)
+end
+
