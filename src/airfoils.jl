@@ -4,6 +4,8 @@ Types and functions related to airfoil data not included in CCBlade, i.e., airfo
 Formatting copied directly from CCBlade source code.
 =#
 
+using Printf: @printf
+
 """
 overload `parsefile` function from CCBlade
 assumes solidity parameter after mach number
@@ -106,7 +108,9 @@ struct AlphaSolidityAF{TF,TS} <: AFType
     Mach::TF # not used except for info in file
 end
 
-AlphaSolidityAF(alpha, solidity, cl, cd, info) = AlphaSolidityAF(alpha, solidity, cl, cd, info, 0.0)
+function AlphaSolidityAF(alpha, solidity, cl, cd, info)
+    return AlphaSolidityAF(alpha, solidity, cl, cd, info, 0.0)
+end
 function AlphaSolidityAF(alpha, solidity, cl, cd)
     return AlphaSolidityAF(alpha, solidity, cl, cd, "CCBlade generated airfoil", 0.0)
 end
@@ -134,9 +138,13 @@ function AlphaSolidityAF(filenames::Vector{String}; radians=true)
     return AlphaSolidityAF(alpha, solidity, cl, cd, info, Mach)
 end
 
-function afeval(af::AlphaSolidityAF, alpha, solidity, Mach)
-    cl = FLOWMath.interp2d(FLOWMath.akima, af.alpha, af.solidity, af.cl, [alpha], [solidity])[1]
-    cd = FLOWMath.interp2d(FLOWMath.akima, af.alpha, af.solidity, af.cd, [alpha], [solidity])[1]
+function afeval(af::AlphaSolidityAF, alpha, Re, Mach, solidity)
+    cl = FLOWMath.interp2d(
+        FLOWMath.akima, af.alpha, af.solidity, af.cl, [alpha], [solidity]
+    )[1]
+    cd = FLOWMath.interp2d(
+        FLOWMath.akima, af.alpha, af.solidity, af.cd, [alpha], [solidity]
+    )[1]
 
     return cl, cd
 end
@@ -284,7 +292,9 @@ struct AlphaReMachsolidityAF{TF,TS} <: AFType
 end
 
 function AlphaReMachsolidityAF(alpha, Re, Mach, solidity, cl, cd)
-    return AlphaReMachsolidityAF(alpha, Re, Mach, solidity, cl, cd, "CCBlade generated airfoil")
+    return AlphaReMachsolidityAF(
+        alpha, Re, Mach, solidity, cl, cd, "CCBlade generated airfoil"
+    )
 end
 
 function AlphaReMachsolidityAF(filenames::Matrix{String}; radians=true)
@@ -301,7 +311,9 @@ function AlphaReMachsolidityAF(filenames::Matrix{String}; radians=true)
     for k in 1:nsolidity
         for j in 1:nMach
             for i in 1:nRe
-                _, Rei, Machj, solidityk, _, clij, cdij = parsefile(filenames[i, j], radians)
+                _, Rei, Machj, solidityk, _, clij, cdij = parsefile(
+                    filenames[i, j], radians
+                )
                 cl[:, i, j] = clij
                 cd[:, i, j] = cdij
                 Re[i] = Rei
@@ -367,4 +379,34 @@ function write_af(filenames, af::AlphaReMachsolidityAF; radians=true)
     end
 
     return nothing
+end
+
+"""
+    get_clcd(af, alpha, reynolds, mach, solidity)
+
+Return lift and drag coefficients based on airfoil object type and flow conditions.
+
+**Arguments:**
+ - `af::AFType` : Airfoil object either of a CCBlade airfoil type or custom type (custom if solidity information is included).
+ - `alpha::Float` : angle of attack in degrees
+ - `reynolds::Float` : Reynolds number
+ - `mach::Float` : Mach number
+ - `solidity::Float` : Solidity factor (local chord length over distance between radial blade stations on adjacent blades). Set to `nothing` if not being used.
+
+**Returns:**
+ - `cl::Float` : section lift coefficient
+ - `cd::Float` : section drag coefficient
+"""
+function get_clcd(af, alpha, reynolds, mach, solidity)
+
+    #convert alpha to radians
+    alpha *= pi / 180.0
+
+    # if solidity undefined, use CCBlade functions
+    if solidity == nothing
+        return ccb.afeval(af, alpha, reynolds, mach)
+    else
+        #if solidity is defined, need to use custom functions
+        return afeval(af, alpha, reynolds, mach, solidity)
+    end
 end

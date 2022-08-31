@@ -38,9 +38,9 @@ struct GridOptions{TF,TI}
 end
 
 """
-    WakeGrid{TF,TI,TA,TW,TH}
+    WakeGridGeometry{TF,TI,TA,TW,TH}
 
-Grid Object
+Wake grid geometry object
 
 **Fields:**
  - `x_grid_points::Matrix{Float}` : 2D Array of x grid points
@@ -51,7 +51,7 @@ Grid Object
  - `hubTEidx::Int` : index of hub wall trailing edge x location
  - `rotoridxs::Array{Int}` : array of indices of rotor x locations
 """
-struct WakeGrid{TF,TI,TA,TW,TH}
+struct WakeGridGeometry{TF,TI,TA,TW,TH}
     x_grid_points::TF
     r_grid_points::TF
     nx::TI
@@ -62,6 +62,16 @@ struct WakeGrid{TF,TI,TA,TW,TH}
     wall_xstations::TW
     hub_xstations::TH
 end
+
+
+"""
+"""
+struct WakeGridAero{TG, TC, TH}
+    b_gamma_grid::TG
+    b_circ_rotor::TC
+    delta_enthalpy_grid::TH
+end
+
 
 #################################
 ##### ----- FUNCTIONS ----- #####
@@ -720,7 +730,7 @@ Initialize grid via zero-thrust, unit freestream solution.
  - `tol::Float` : convergence tolerance, default = 1e-9
 
 **Returns:**
- - `WakeGrid::DuctTAPE.WakeGrid` : WakeGrid Object
+ - `WakeGrid::DuctTAPE.WakeGridGeometry` : WakeGridGeometry Object
 """
 function initialize_grid(
     ductgeometry, ductsplines, rotors, grid_options; max_iterations=100, tol=1e-9
@@ -734,5 +744,5 @@ function initialize_grid(
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
 
-    return WakeGrid(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations)
+    return WakeGridGeometry(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations)
 end

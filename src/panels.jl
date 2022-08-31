@@ -22,7 +22,7 @@ Generate panel edges and centers.
  - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry object
  - `ductsplines::DuctTAPE.DuctSplines` : Duct Splines object
  - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
- - `wakegrid::DuctTAPE.WakeGrid` : Wake Grid object
+ - `wakegrid::DuctTAPE.WakeGridGeometry` : Wake Grid object
 
 **Returns:**
  - `wall_panels::DuctTAPE.Panels` : Panels object for duct wall

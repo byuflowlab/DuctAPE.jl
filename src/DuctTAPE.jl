@@ -23,6 +23,7 @@ ccb = CCBlade
 include("types.jl")
 include("utils.jl")
 include("walls.jl")
+include("airfoils.jl")
 include("rotors.jl")
 include("wakegrid.jl")
 include("panels.jl")

@@ -132,8 +132,8 @@ function defineDuctGeometry(
 
     #check of blunt trailing edges
     wallTEdist = sqrt(
-        (wallinnerxcoordinates[end] - wallouterxcoordinates[1])^2 +
-        (wallinnerrcoordinates[end] - wallouterrcoordinates[1])^2,
+        (wallinnerxcoordinates[end] - wallouterxcoordinates[end])^2 +
+        (wallinnerrcoordinates[end] - wallouterrcoordinates[end])^2,
     )
     hubTEdist = hubrcoordinates[end]
 

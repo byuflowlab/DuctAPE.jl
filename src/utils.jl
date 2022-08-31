@@ -21,3 +21,7 @@ function cosinespace(n)
     theta = range(0, pi / 2; length=n)
     return cos.(theta)
 end
+
+function get_omega(rpm)
+    return rpm * pi / 30.0
+end

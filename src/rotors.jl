@@ -74,6 +74,20 @@ struct BladeAero{TRe,TMa,TCl,TCd,TM,TG,TW,TVa,TVt}
     vtan::TVt
 end
 
+"""
+"""
+struct RotorVelocities{TA}
+    induced_axial_velocities::TA
+    induced_radial_velocities::TA
+    induced_tangential_velocities::TA
+    absolute_axial_velocities::TA
+    absolute_radial_velocities::TA
+    absolute_tangential_velocities::TA
+    relative_axial_velocities::TA
+    relative_radial_velocities::TA
+    relative_tangential_velocities::TA
+end
+
 ######################################
 ##### ----- INITIALIZATION ----- #####
 ######################################
@@ -230,15 +244,7 @@ function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, r
     delta_enthalpy_grid = [0.0 for i in length(wakegrid[:, 1]), j in length(wakegrid[1, :])]
 
     #Induced velocities at rotor stations
-    rotor_induced_axial_velocites = [
-        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
-    ]
-    rotor_induced_radial_velocites = [
-        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
-    ]
-    rotor_induced_tangential_velocities = [
-        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
-    ]
+    rotor_velocities = Array{RotorVelocities}(undef,length(rotors))
 
     for i in 1:numrotors
 
@@ -292,12 +298,15 @@ function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, r
                 #caluclate mach number
                 mach = W / freestream.asound
 
-                #don't actually need these since using custom airfoil data inputs
+                #don't actually need these since using custom airfoil data inputs, also the solidity (section_sigma) is already in the rotor objects (TODO: though will need to be added to the re-interpolate rotor function )
                 # section_sigma = nbld * blade.cdim[r] / (2.0 * pi * yrc[r])
-                # section_stagr = 0.5*pi - blade.twist[r]
+                # section_stagr = 0.5*pi - blade.twist[r] #this is only used for some sort of fit from a book for applying a correction for cascades. It won't be needed if cascade data is used in the first place.
 
-                # get airfoil data
-                cl, cd = get_clcd(alpha, reynolds, mach, rotor[i].solidities[r]) #TODO: make this function that calls afeval from ccblade.
+                # get airfoil data using CCBlade or similar functions.
+                # NOTE: this does not include any corrections at this point. including dfdc corrections for solidity, prandtl-glauert, etc.  Assumes any airfoil data used contains any solidity/mach dependencies required.
+                cl, cd = get_clcd(
+                    rotors[i].airfoils[r], alpha, reynolds, mach, rotor[i].solidities[r]
+                )
 
                 # update rotor section circulation
                 b_circ_new = 0.5 * cl * W * blade.cdim[r] * nblds
@@ -315,8 +324,7 @@ function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, r
                     total_section_tangential_velocity *
                     dr
 
-                #TODO: where in the world is UVINFL getting its contents??
-                # TODO: should be able to test other parts without this until can figure out what it is and what it does.  It doesn't seem to do any thing here, but likely initialzies the wwa and wwt arrays for later.  probably will end up returning wwa and wwt.
+                # wwa and wwt seem to be additional inflow values based on some sort of velocity input file for dfdc. It's probably safe to keep them as zero for now and set them to zero in functions where they are used (probably default inputs)
                 # wwa, wwt = uvinfl(yrc[r])
 
                 # set rotor slipstream velocities
@@ -360,28 +368,20 @@ function initialize_blade_aero(rotors, blades, wakegrid, freestream; niter=10, r
             omega,
             wakegrid.rotoridxs[i],
         )
+
+        # calculate absolute and relative velocity components on rotor sections
+        rotor_velocities[i] = set_rotor_velocities(
+            rotor_induced_axial_velocites,
+            rotor_induced_radial_velocites,
+            rotor_induced_tangential_velocities,
+            freestream.vinf,
+            omega,
+            blade.radialstations,
+        )
     end #for numrotors
 
-    # calculate absolute and relative velocity components on rotor sections
-    rotor_absolute_axial_velocities, rotor_absolute_radial_velocities, rotor_absolute_tangential_velocities, rotor_relative_axial_velocities, rotor_relative_radial_velocities, rotor_relative_tangential_velocities = set_rotor_velocities(
-        rotor_induced_axial_velocites,
-        rotor_induced_radial_velocites,
-        rotor_induced_tangential_velocities,
-    )
-
     #return all the initialized rotor aero arrays
-    return b_gamma_grid,
-    b_circ_rotor,
-    delta_enthalpy_grid,
-    rotor_induced_axial_velocites,
-    rotor_induced_radial_velocites,
-    rotor_induced_tangential_velocities,
-    rotor_absolute_axial_velocities,
-    rotor_absolute_radial_velocities,
-    rotor_absolute_tangential_velocities,
-    rotor_relative_axial_velocities,
-    rotor_relative_radial_velocities,
-    rotor_relative_tangential_velocities
+    return GridAero(b_gamma_grid, b_circ_rotor, delta_enthalpy_grid), rotor_velocities
 end
 
 """
@@ -408,20 +408,71 @@ function update_grid_circulation!(
             delta_enthalpy_grid += delta_enthalpy_grid_change
         end
     end
-    return nothing
-end
 
-"""
-"""
-function get_omega(rpm)
-    return rpm * pi / 30
+    return nothing
 end
 
 """
 See line 301 in rotoper.f
 """
-function set_rotor_velocities(vax, vrad, vtan)
-    return vaxabs, vradabs, vtanabs, vaxrel, vradrel, vtanrel
+function set_rotor_velocities(
+    vax, vrad, vtan, vinf, omega, radialstations, wwa=0.0, wwt=0.0, vfac=1.0
+)
+
+    #notes:
+    # 1 = axial
+    # 2 = radial
+    # 3 = tangential
+    #
+
+    numstations = length(radialstations)
+
+    for i in 1:numstations
+
+        ## -- Absolute Velocities
+
+        #tangential
+        vtanabs[i] = vtan[i] + wwt
+
+        #axial
+        vaxabs[i] = (vax[i] + vinf + wwa) * vfac #TODO what is a BB entry? seems vfac is defined there.
+
+        #radial
+        vradabs[i] = vrad[i]
+
+        #flow angle?
+        vma = sqrt(vax[i]^2 + vrad[i]^2)
+        vva = sqrt(vma^2 + vtan[i]^2)
+        if vtan[i] != 0.0
+            phi_absolute = atan(vma, -vtan[i])
+        else
+            phi_absolute = 0.5 * pi
+        end
+
+        ## -- Relative Velocities
+
+        #tangential
+        vtanrel[i] = vtanabs[i] - omega * radialstations[i]
+
+        #axial
+        vaxrel[i] = vaxabs[i]
+
+        #radial
+        vradrel[i] = vradabs[i]
+
+        #flow angle?
+        vmr = sqrt(vaxrel[i]^2 + vradrel[i]^2)
+        vvr = sqrt(vmr^2 + vtanrel[i]^2)
+        if vtanrel[i] != 0.0
+            phi_relative = atan2(vmr, -vtanrel[i])
+        else
+            phi_relative = 0.5 * pi
+        end
+    end
+
+    return RotorVelocities(
+        vax, vrad, vtan, vaxabs, vradabs, vtanabs, vaxrel, vradrel, vtanrel
+    )
 end
 
 """
