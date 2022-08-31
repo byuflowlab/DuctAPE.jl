@@ -152,7 +152,7 @@ end
     @test isapprox(bladedims.sweptarea, pi)
 end
 
-@testset "Complex Grid Geometry" begin
+@testset "Example Duct Geometry" begin
 
     # - Split Wall Coordinates
     outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
@@ -170,7 +170,7 @@ end
     @test grid == grid
 end
 
-@testset "Complex Grid Relaxation Stability" begin
+@testset "Example Grid Geometry" begin
 
     # - Split Wall Coordinates
     outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
