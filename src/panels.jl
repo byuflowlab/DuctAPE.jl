@@ -15,8 +15,8 @@ end
 
 """
 """
-struct PanelSystem{TW,TH,TR,TW}
-    wall_panels::TW
+struct PanelSystem{TD,TH,TW,TR}
+    wall_panels::TD
     hub_panels::TH
     wake_panels::TW
     rotor_source_panels::TR

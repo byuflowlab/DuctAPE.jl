@@ -100,7 +100,7 @@ end
         datapath * "disk1_re2e6.dat",
     ])
 
-    cl, cd = DuctTAPE.get_clcd(af1, 5.0, 1.5e6, 0.0, nothing)
+    cl, cd = DuctTAPE.get_clcd(af1, 5.0, 1.5e6, 0.0, -1.0)
     cldata = 0.5465618348626059
     cddata = 0.02635818567589299
 
