@@ -205,7 +205,7 @@ With options set, rotor location chosen, and the wall and hub geometry available
 
 ```@docs
 DuctTAPE.initialize_grid
-DuctTAPE.WakeGrid
+DuctTAPE.WakeGridGeometry
 ```
 
 ```@example geom
@@ -217,16 +217,27 @@ rg = wakegrid.r_grid_points
 nx = wakegrid.nx
 nr = wakegrid.nr
 
-plot(xlabel="x", ylabel="r",aspectratio=:equal)
-plot!(ductgeometry.wallinnerxcoordinates, ductgeometry.wallinnerrcoordinates, color=1, linewidth=2)
-plot!(ductgeometry.wallouterxcoordinates, ductgeometry.wallouterrcoordinates, color=1, linestyle=:dash, linewidth=2)
-plot!(ductgeometry.hubxcoordinates, ductgeometry.hubrcoordinates, color=2, linewidth=2)
+plot(; xlabel="x", ylabel="r", aspectratio=:equal)
+plot!(
+    ductgeometry.wallinnerxcoordinates,
+    ductgeometry.wallinnerrcoordinates;
+    color=1,
+    linewidth=2,
+)
+plot!(
+    ductgeometry.wallouterxcoordinates,
+    ductgeometry.wallouterrcoordinates;
+    color=1,
+    linestyle=:dash,
+    linewidth=2,
+)
+plot!(ductgeometry.hubxcoordinates, ductgeometry.hubrcoordinates; color=2, linewidth=2)
 
-plot!(rotor1.xlocation.*ductgeometry.chord*ones(nr), blade1.rdim, color=4, linewidth=2)
-plot!(rotor2.xlocation.*ductgeometry.chord*ones(nr), blade2.rdim, color=4, linewidth=2)
+plot!(rotor1.xlocation .* ductgeometry.chord * ones(nr), blade1.rdim; color=4, linewidth=2)
+plot!(rotor2.xlocation .* ductgeometry.chord * ones(nr), blade2.rdim; color=4, linewidth=2)
 
-plot!(xg, rg, color=3, linewidth=0.5)
-plot!(xg', rg', color=3, linewidth=0.5)
+plot!(xg, rg; color=3, linewidth=0.5)
+plot!(xg', rg'; color=3, linewidth=0.5)
 ```
 
 
