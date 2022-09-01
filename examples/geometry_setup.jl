@@ -145,7 +145,7 @@ end
 #    )
 
 #    # Generate initialized grid points
-#    grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+#    grid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
 
 #    #extract grid points
 #    xg = grid.x_grid_points

@@ -72,7 +72,7 @@ end
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
 
     #test everything together
-    grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, [], grid_options)
+    grid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, [], grid_options)
 
     @test xr == x_grid_points
     @test rr == r_grid_points
@@ -222,7 +222,7 @@ end
     num_radial_stations = length(rnondim1)
     grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
-    grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+    grid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
 
     # Test to make sure there's no compilation errors for now.
     @test grid == grid

@@ -50,7 +50,7 @@
     num_radial_stations = length(rnondim1)
     grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
-    wakegrid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+    wakegrid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
 
     # get paneling of various objects
     wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(

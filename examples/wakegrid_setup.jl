@@ -14,7 +14,7 @@ function setup_wakegrid(ductgeometry, ductsplines, rotors; plotgrid=false)
     # grid = relax_grid(xg, rg, nx, nr)
 
     # Generate initialized grid points (generates and relaxes grid points in one function)
-    grid = DuctTAPE.initialize_grid(ductgeometry, ductsplines, rotors, grid_options)
+    grid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
 
     if plotgrid
         #extract grid points
