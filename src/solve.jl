@@ -52,7 +52,28 @@ SETGRDFLOW:
 - simply sets up grid flow data from circulation and entropy on rotors
 
 CONVGTHBG:
-- much more involved.  Lots of steps including linear system setup and solution.
+- Set Up
+    - initialize velocities (VMAVGINIT)
+    - generate gamma_theta solution (GTHCALC)
+    - update wake gamma values
+    - Solve system for initialized right hand side (GAMSOLV)
+- for number of iterations
+    - call VMAVGCALC (update velocities)
+    - call GTHCALC (update gamma_thetas)
+    - use CSOR to update wake gammas
+    - call GAMSOLV (systems solve)
+    (repeat until number of iterations is met or system converges)
+    - call UPDROTVEL (update rotor velocities)
+
+VMAVGINIT:
+
+VMAVGCALC:
+
+GTHCALC:
+
+GAMSOLV:
+
+UPDROTVEL:
 
 TQCALC:
 =#
@@ -91,7 +112,20 @@ end
 need to get all the a's and b's (coefficient matrices) for the walls and rotors.
 Not quite sure where this is done in dfdc, but the functions talking about pointers might be a good place to start (e.g. dfdcsubs.f line 1770)
 """
-function initialize_linear_system() end
+function initialize_system()
+
+    #see VMAGINIT(VAVGINIT)
+    #
+    #see GTHCALC(GAMTH)
+    #
+    #update wake gamma from ouputs of gthcalc stuff
+    #
+    #see GAMSOLV
+    #
+    # Create some sort of system object, make sure convergence flag is defaulted to false.
+    #TODO: figure out what to return
+    return system
+end
 
 ####################################
 ##### ----- NEWTON SOLVE ----- #####
@@ -100,4 +134,30 @@ function initialize_linear_system() end
 """
 probably don't need to do things the way they are done in dfdc. There are better ways in julia.  Probably use the LinearSolve.jl package and whatever other packages convenient to get the derivatives as needed.
 """
-function solve_linear_system() end
+function solve_system(; niter=100)
+
+    #initialize system
+    system = initialize_system()
+
+    #iterate
+    for iter in 1:niter
+
+        #see VMAVGCALC
+
+        #see GTHCALC
+
+        #"updated wake gamma using CSOR"
+
+        #see GAMSOLV
+
+        #return with true convergence flag if converged
+        if converged
+            #update rotor velocities, see UPDROTVEL
+            system.converged = true
+            return system
+        end
+    end
+
+    #return current system including a false convergence flag.
+    return system
+end
