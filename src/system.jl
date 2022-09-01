@@ -45,16 +45,18 @@ end
 **Fields:**
  - `b_gamma_grid::Matrix{Float}` : B*Γ values on wake grid
  - `delta_enthalpy_grid::Matrix{Float}` : ΔH (enthalpy) values on wake grid
- - `delta_enthalpy_grid::Matrix{Float}` : ΔS (entropy) values on wake grid
+ - `delta_entropy_grid::Matrix{Float}` : ΔS (entropy) values on wake grid
  - `b_circ_rotors::Array{Array{Float}}` : B*γ values at rotor blades (one array per rotor in increasing order of x location)
- - `sigma_rotors::Array{Array{Float}}` : σ (source strength) values at rotor blades (one array per rotor in increasing order of x location)
+ - `rotor_source_strengths::Array{Array{Float}}` : σ (source strength) values at rotor blades (one array per rotor in increasing order of x location)
+ - `control_point_velocities::Matrix{Float}` : velocities at control points
 """
-struct SystemAero{TG,TH,TS,TC,TR}
+struct SystemAero{TG,TH,TS,TC,TR,TV}
     b_gamma_grid::TG
     delta_enthalpy_grid::TH
-    delta_enthalpy_grid::TS
+    delta_entropy_grid::TS
     b_circ_rotors::TC
-    sigma_rotors::TR
+    rotor_source_strengths::TR
+    control_point_velocities::TV
 end
 
 ####################################
@@ -129,8 +131,10 @@ function initialize_system_aerodynamics(
     # B*gamma at rotor stations
     b_circ_rotors = [0.0 for i in length(rotors), j in length(rotors[i].radialstations)]
 
-    # sigma at rotor stations
-    sigma_rotors = [0.0 for i in length(rotors), j in length(rotors[i].radialstations)]
+    # rotor_source_strengths at rotor stations
+    rotor_source_strengths = [
+        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
+    ]
 
     #Induced velocities at rotor stations
     rotor_velocities = Array{RotorVelocities}(undef, length(rotors))
@@ -276,16 +280,121 @@ function initialize_system_aerodynamics(
         delta_enthalpy_grid,
         delta_entropy_grid,
         [b_circ_rotors[i, :] for i in numrotors],
-        sigma_rotors,
+        rotor_source_strengths,
     ),
     rotor_velocities
 end
 
 """
+    set_grid_aero!(
+        b_gamma_grid,
+        delta_enthalpy_grid,
+        delta_entropy_grid,
+        b_circ_rotors,
+        rotor_source_strengths,
+        control_point_velocities,
+        omegas,
+        rotoridxs,
+    )
+
 sets grid aero data from rotor disk jump data
-(doesn't set entropy)
+
+**Arguments:**
+ - `b_gamma_grid::Matrix{Float}` : B*Γ values on wake grid
+ - `delta_enthalpy_grid::Matrix{Float}` : ΔH (enthalpy) values on wake grid
+ - `delta_entropy_grid::Matrix{Float}` : ΔS (entropy) values on wake grid
+ - `b_circ_rotors::Array{Array{Float}}` : B*γ values at rotor blades (one array per rotor in increasing order of x location)
+ - `rotor_source_strengths::Array{Array{Float}}` : σ (source strength) values at rotor blades (one array per rotor in increasing order of x location)
+ - `control_point_velocities::Matrix{Float}` : velocities at control points
+ - `omegas::Array{Float}` : rotation rate (rad/s) of the rotors
+ - `rotoridxs::Array{Int}` : x-indicies of rotor locations
+
+## Other Dispatches:
+
+    set_grid_aero!(grid_aerodynamics, omegas, rotoridxs)
+
+Same, but inputs are mostly contained in grid_aerodynamics object.
+
+**Unique Arguments:**
+- `grid_aerodynamics::DuctTAPE.SystemAero` : circulations, source strengths, velocities, etc. of system grid.
+
+
+    set_grid_aero!(b_gamma_grid, b_circ_rotor, delta_enthalpy_grid, omega, rotoridx)
+
+Doesn't set entropy on grid (used in initializing rotor aerodynamics).
+Also only does one rotor at a time (so inputs are for only a single rotor).
 """
-function set_grid_aero!(b_gamma_grid, b_circ_rotor, delta_enthalpy_grid, omega, rotoridx)
+function set_grid_aero!(
+    b_gamma_grid,
+    delta_enthalpy_grid,
+    delta_entropy_grid,
+    b_circ_rotors,
+    rotor_source_strengths,
+    control_point_velocities,
+    omegas,
+    rotoridxs,
+)
+
+    #rename for convenience
+    nx, nr = size(b_gamma_grid)
+
+    for r in 1:length(rotors)
+        for j in 1:nr
+
+            #circulation jump across rotor disk
+            b_gamma_grid_change = b_circ_rotors[r, j]
+
+            #enthalpy jump across rotor disk
+            delta_enthalpy_grid_change = omegas[r] * b_circ_rotors[r, j] / (2.0 * pi)
+
+            #entropy jump across rotor disk (from rotor drag sources)
+            #TODO: the index in question here is the index of the control point on the rotor at the station, j, we are at.
+            meridional_velocity = sqrt(
+                control_point_velocities[WHAT_INDEX, 1]^2 +
+                control_point_velocities[WHAT_INDEX, 2]^2,
+            )
+            #TODO: the index in question here will be the indexs of the panel edges on either side of the rotor control point (these should be the rotor_source_panels since we're talking about source strengths here)
+            sigma_avg =
+                0.5 *
+                (rotor_source_strengths[WHAT_INDEX] + rotor_source_strengths[WHAT_INDEX])
+            delta_entropy_grid_change = meridional_velocity * sigma_avg
+
+            #convect changes downstream from current rotor index
+            for i in rotoridxs[r]:(nx - 1)
+                b_gamma_grid[i, j] += b_gamma_grid_change
+                delta_enthalpy_grid[i, j] += delta_enthalpy_grid_change
+                delta_entropy_grid[i, j] += delta_entropy_grid_change
+            end
+        end
+    end
+    return nothing
+end
+
+function set_grid_aero!(grid_aerodynamics, omegas, rotoridxs)
+
+    #rename for convenience
+    b_gamma_grid = grid_aerodynamics.b_gamma_grid
+    b_circ_rotors = grid_aerodynamics.b_circ_rotors
+    delta_enthalpy_grid = grid_aerodynamics.delta_enthalpy_grid
+    delta_entropy_grid = grid_aerodynamics.delta_entropy_grid
+    control_point_velocities = grid_aerodynamics.control_point_velocities
+    rotor_source_strengths = grid_aerodynamics.rotor_source_strengths
+
+    set_grid_aero!(
+        b_gamma_grid,
+        b_circ_rotors,
+        delta_enthalpy_grid,
+        delta_entropy_grid,
+        control_point_velocities,
+        rotor_source_strengths,
+        omegas,
+        rotoridxs,
+    )
+
+    return nothing
+end
+
+function set_grid_aero!(b_gamma_grid, delta_enthalpy_grid, b_circ_rotor, omega, rotoridx)
 
     #rename for convenience
     nx, nr = size(b_gamma_grid)
@@ -307,78 +416,3 @@ function set_grid_aero!(b_gamma_grid, b_circ_rotor, delta_enthalpy_grid, omega, 
 
     return nothing
 end
-
-"""
-sets grid aero data from rotor disk jump data for all rotors
-(sets entropy too)
-"""
-function set_grid_aero!(
-    b_gamma_grid,
-    b_circ_rotors,
-    delta_enthalpy_grid,
-    delta_entropy_grid,
-    controlpoint_velocity,
-    sigma,
-    omegas,
-    rotoridxs,
-)
-
-    #rename for convenience
-    nx, nr = size(b_gamma_grid)
-
-    for r in 1:length(rotors)
-        for j in 1:nr
-
-            #circulation jump across rotor disk
-            b_gamma_grid_change = b_circ_rotors[r, j]
-
-            #enthalpy jump across rotor disk
-            delta_enthalpy_grid_change = omegas[r] * b_circ_rotors[r, j] / (2.0 * pi)
-
-            #entropy jump across rotor disk (from rotor drag sources)
-            #TODO: the index in question here is the index of the control point on the rotor at the station, j, we are at.
-            meridional_velocity = sqrt(
-                controlpoint_velocity[WHAT_INDEX, 1]^2 +
-                controlpoint_velocity[WHAT_INDEX, 2]^2,
-            )
-            #TODO: the index in question here will be the indexs of the panel edges on either side of the rotor control point (these should be the rotor_source_panels since we're talking about source strengths here)
-            sigma_avg = 0.5 * (sigma[WHAT_INDEX] + sigma[WHAT_INDEX])
-            delta_entropy_grid_change = meridional_velocity * sigma_avg
-
-            #convect changes downstream from current rotor index
-            for i in rotoridxs[r]:(nx - 1)
-                b_gamma_grid[i, j] += b_gamma_grid_change
-                delta_enthalpy_grid[i, j] += delta_enthalpy_grid_change
-                delta_entropy_grid[i, j] += delta_entropy_grid_change
-            end
-        end
-    end
-    return nothing
-end
-
-"""
-"""
-function set_grid_aero!(grid_aerodynamics, omegas, rotoridxs)
-
-    #rename for convenience
-    b_gamma_grid = grid_aerodynamics.b_gamma_grid
-    b_circ_rotors = grid_aerodynamics.b_circ_rotors
-    delta_enthalpy_grid = grid_aerodynamics.delta_enthalpy_grid
-    delta_entropy_grid = grid_aerodynamics.delta_entropy_grid
-    controlpoint_velocity = grid_aerodynamics.controlpoint_velocity
-    sigma_rotors = grid_aerodynamics.sigma_rotors
-
-    set_grid_aero!(
-        b_gamma_grid,
-        b_circ_rotors,
-        delta_enthalpy_grid,
-        delta_entropy_grid,
-        controlpoint_velocity,
-        sigma,
-        omegas,
-        rotoridxs,
-    )
-
-    return nothing
-end
-

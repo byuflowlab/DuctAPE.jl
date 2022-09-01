@@ -555,6 +555,7 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
 
             ## -- Relax points on the jth streamline -- ##
             #TODO:NEED TO RECONCILE WRITTEN THEORY WITH CODE...
+            #TODO: can all the derivatives be replaced with FLOWMath or similar?
 
             #march down xi direction
             for i in 2:(nxi - 1)
@@ -563,15 +564,12 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                 im1 = i - 1
                 ip1 = i + 1
 
-                #TODO: What are all these and why are they needed for derivatives?
-                ravgplus = 0.5 * (rr[i, j] + rr[i, j + 1])
-                ravgminus = 0.5 * (rr[i, j] + rr[i, j - 1])
-                ravg = 0.5 * (ravgplus + ravgminus)
-
+                #part of the first derivative calculations
                 dximinus = xi[i] - xi[i - 1]
                 dxiplus = xi[i + 1] - xi[i]
                 dxiavg = 0.5 * (dximinus + dxiplus)
 
+                #part of the first derivative calculations
                 detaminus = eta[j] - eta[j - 1]
                 detaplus = eta[j + 1] - eta[j]
                 detaavg = 0.5 * (detaminus + detaplus)
@@ -591,19 +589,26 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                 # - Calculate 2nd Derivatives
 
                 #Used in calculating second derivatives with non-constant intervals.
+                ravgplus = 0.5 * (rr[i, j] + rr[i, j + 1])
+                ravgminus = 0.5 * (rr[i, j] + rr[i, j - 1])
+                ravg = 0.5 * (ravgplus + ravgminus)
+
                 ximinuscoeff = detaminus * detaplus / (dximinus * dxiavg)
                 xipluscoeff = detaminus * detaplus / (dxiplus * dxiavg)
                 etaminuscoeff = detaplus / detaavg * ravgminus / ravg
                 etapluscoeff = detaminus / detaavg * ravgplus / ravg
 
+                #x_ξξ
                 x_xixi =
                     (xr[i + 1, j] - xr[i, j]) * xipluscoeff -
                     (xr[i, j] - xr[i - 1, j]) * ximinuscoeff
 
+                #x_ηη
                 x_etaeta =
                     (xr[i, j + 1] - xr[i, j]) * etapluscoeff -
                     (xr[i, j] - xr[i, j - 1]) * etaminuscoeff
 
+                #x_ξη
                 x_xieta =
                     detaminus *
                     detaplus *
@@ -612,14 +617,17 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                         xr[i - 1, j - 1]
                     ) / (4.0 * dxiavg * detaavg)
 
+                #r_ξξ
                 r_xixi =
                     (rr[i + 1, j] - rr[i, j]) * xipluscoeff -
                     (rr[i, j] - rr[i - 1, j]) * ximinuscoeff
 
+                #r_ηη
                 r_etaeta =
                     (rr[i, j + 1] - rr[i, j]) * etapluscoeff -
                     (rr[i, j] - rr[i, j - 1]) * etaminuscoeff
 
+                #r_ξη
                 r_xieta =
                     detaminus *
                     detaplus *
@@ -638,6 +646,7 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
                     beta * r_xi * r_eta * detaminus * detaplus / ravg
 
                 #SLOR Stuff
+                #TODO: replace with linearsolve package?
                 #TODO: what are A, B, and C?
                 A =
                     alpha * (ximinuscoeff + xipluscoeff) +

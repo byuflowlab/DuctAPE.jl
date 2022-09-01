@@ -169,10 +169,9 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     #loop through hub panel count
     for i in 1:numhubpan
         if ductgeometry.hubbluntTE && i == numhubpan
-            #define trailing edge panel if needed
-            #
-            hub_panel_edge_x[i] = (hubxcoordinates[end], hubxcoordinates[end])
 
+            #define trailing edge panel if needed
+            hub_panel_edge_x[i] = (hubxcoordinates[end], hubxcoordinates[end])
             hub_panel_edge_r[i] = (hubrcoordinates[end], 0.0)
 
         else

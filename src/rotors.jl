@@ -198,15 +198,17 @@ function initialize_rotor_geometry(
         radialstations = collect(range(0.0, 1.0 - tipgap; length=nstations))
     end
 
-    #if none of the following are set, set them to zeros
+    #if skews aren't set, set them to zeros
     if skews == nothing
         skews = [0.0 for i in 1:numstations]
     end
 
+    #if rakes aren't set, set them to zeros
     if rakes == nothing
         rakes = [0.0 for i in 1:numstations]
     end
 
+    # if solidities is nothing, set to -1's to flag airfoil functions later.
     if solidities == nothing
         solidities = [-1.0 for i in 1:numstations]
     end
@@ -248,6 +250,8 @@ function reinterpolate_rotor!(wakegrid, rotor, rotoridx)
     new_rad_stash = gridxs[rotoridx, :]
 
     ## -- Calculate New Section Properties -- ##
+
+    #TODO: none of this will be nothing at this point (probably), can probably simplify and clean up this function.
 
     # update chords
     if rotor.chords != nothing
@@ -367,6 +371,7 @@ function set_rotor_velocities(
     # 2 = radial
     # 3 = tangential
 
+    # get number of stations for convenience
     numstations = length(radialstations)
 
     for i in 1:numstations

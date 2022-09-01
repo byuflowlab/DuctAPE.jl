@@ -20,5 +20,6 @@ include("airfoils.jl")
 include("rotors.jl")
 include("wakegrid.jl")
 include("panels.jl")
+include("system.jl")
 include("solve.jl")
 end

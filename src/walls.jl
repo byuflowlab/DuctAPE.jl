@@ -90,7 +90,7 @@ Note, if hub x and r coordinates are not set, the x coordinates for the inner wa
  - `LEx::Float` : x-position of manually defined leading edge.  Set to foremost x-coordinate of duct and hub geometry otherwise.
  - `TEx::Float` : x-position of mannually defined trailing edge.  Set to the rear-most x-coordinate of duct and hub geometry otherwise.
  - `chord::Float` : manuall defined chord length.  Set to difference between leading and trailing edges otherwise.
- - `bluntTEtol::Float` : tolerance for how close trailing edge points need to be before being considered a blunt trailing edge. (relative to chord)
+ - `bluntTEtol::Float` : tolerance for how close trailing edge points need to be before being considered a blunt trailing edge.
 """
 function defineDuctGeometry(
     wallinnerxcoordinates,
@@ -136,6 +136,7 @@ function defineDuctGeometry(
         wallouterrcoordinates = reverse(wallouterrcoordinates)
     end
 
+    #if not hub coordinates are provided match the x coordinates with the wall
     if hubxcoordinates == nothing
         if hubrcoordinates != nothing
             @warn("no x coordinates defined for hub, overwriting r coordinates to zero")
@@ -144,18 +145,20 @@ function defineDuctGeometry(
         hubrcoordinates = [0.0 for i in 1:length(wallinnerxcoordinates)]
     end
 
+    #add zeros for hub r coordinates if nothing is provided
     if hubrcoordinates == nothing
         @warn("no r coordinates defined for hub, setting r coordinates to zero")
         hubrcoordinates = [0.0 for i in 1:length(hubxcoordinates)]
     end
 
-    #check of blunt trailing edges
+    #check if blunt trailing edges
     wallTEdist = sqrt(
         (wallinnerxcoordinates[end] - wallouterxcoordinates[end])^2 +
         (wallinnerrcoordinates[end] - wallouterrcoordinates[end])^2,
     )
     hubTEdist = hubrcoordinates[end]
 
+    #set blunt trailing edge flags
     if wallTEdist >= bluntTEtol
         wallbluntTE = true
     else
@@ -168,11 +171,9 @@ function defineDuctGeometry(
         hubbluntTE = false
     end
 
-    #TODO: create wall spline fields
+    # create wall spline fields
     wallinnerspline = FLOWMath.Akima(wallinnerxcoordinates, wallinnerrcoordinates)
-
     wallouterspline = FLOWMath.Akima(wallouterxcoordinates, wallouterrcoordinates)
-
     hubspline = FLOWMath.Akima(hubxcoordinates, hubrcoordinates)
 
     return DuctGeometry(
