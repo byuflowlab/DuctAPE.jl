@@ -13,7 +13,7 @@ function ismonotonic(A)
     current = A[1]
     for i in 2:length(A)
         newval = A[i]
-        isless(current, newval) && return false
+        isless(newval, current) && return false
         current = newval
     end
     return true
