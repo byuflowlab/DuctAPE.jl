@@ -14,7 +14,6 @@ ccb = CCBlade
 # is = IterativeSolvers #SOR solver
 
 # - INCLUDED FILES
-include("types.jl")
 include("utils.jl")
 include("walls.jl")
 include("airfoils.jl")
