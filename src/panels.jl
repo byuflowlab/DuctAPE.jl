@@ -4,16 +4,42 @@ Functions for paneling system
 Authors: Judd Mehr,
 =#
 
+###############################
+##### ----- EXPORTS ----- #####
+###############################
+
+## -- TYPES
+
+export PanelSystem, Panels
+
+## -- FUNCTIONS
+
+export generate_paneling, generate_panel_system
+
 """
+    Panels{TPEx,TPEr,TPC,TPT}
+
+**Fields:**
+ - `panel_edges_x::Array{Array{Float}}` : Array of sets of x locations for panel edges
+ - `panel_edges_r::Array{Array{Float}}` : Array of sets of r locations for panel edges
+ - `panel_edges_centers::Array{Array{Float}}` : Array of sets of x,r locations for panel centers
+ - `panel_tyes::Array{String}` : Array of panel types (for use in assembling linear system)
 """
 struct Panels{TPEx,TPEr,TPC,TPT}
     panel_edges_x::TPEx
     panel_edges_r::TPEr
     panel_centers::TPC
-    panel_type::TPT
+    panel_types::TPT
 end
 
 """
+    PanelSystem{TD,TH,TW,TR}
+
+**Fields:**
+ - `wall_panels::DuctTAPE.Panels` : panels defining duct wall airfoil
+ - `hub_panels::DuctTAPE.Panels` : panels defining hub
+ - `wake_panels::DuctTAPE.Panels` : panels defining rotor wake vortex sheets
+ - `rotor_source_panels::DuctTAPE.Panels` : panels defining rotor drag source panels
 """
 struct PanelSystem{TD,TH,TW,TR}
     wall_panels::TD
@@ -307,6 +333,18 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 end
 
 """
+    generate_panel_system(ductgeometry, ductsplines, rotors, wakegrid)
+
+Put all the various panel objects together for convenience.
+
+**Arguments:**
+ - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry object
+ - `ductsplines::DuctTAPE.DuctSplines` : Duct Splines object
+ - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
+ - `wakegrid::DuctTAPE.WakeGridGeometry` : Wake Grid object
+
+**Returns:**
+ - `panelsystem::DuctTAPE.PanelSystem` : All System Panels
 """
 function generate_panel_system(ductgeometry, ductsplines, rotors, wakegrid)
 

@@ -4,26 +4,39 @@ Types and Functions related to rotors
 Authors: Judd Mehr,
 =#
 
-#######################################
-##### ----- COMPOSITE TYPES ----- #####
-#######################################
+###############################
+##### ----- EXPORTS ----- #####
+###############################
 
-"""
-    RotorGeometry{TF, TI, TA, TC, TT, TAF, TR, TM}
+## -- TYPES
 
-**Fields:**
- - `xlocation::Float` : x location of rotor plane, non-dimensional based on duct chord (max TE location - min LE location of hub/wall)
- - `numblades::Int` : number of rotor blades
- - `radialstations::Array{Float}` : array of radial stations defining rotor blade, non-dimensional with hub=0, tip=1
- - `tipgap::Float` : gap between blade tip and duct wall (not implemented yet)
- - `chords::Array{Float}` : array of chord lengths at radial stations defining rotor blade, non-dimensional based on blade tip radius
- - `twists::Array{Float}` : array of twist values (in degrees) at radial stations defining rotor blade
- - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only, the solver can't use this information)
- - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only right now. it may be implemented into the grid initialization functions later.)
- - `airfoils::Array{Airfoil}` : array of airfoil data objects at radial stations defining rotor blade
- - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade, chord/distance between blade sections
- - `rpm::Float` : RPM of rotor
-"""
+export RotorGeometry, BladeDimensions
+
+## -- FUNCTIONS
+
+export initialize_rotor_geometry,
+    initialize_blade_dimensions,
+
+    #######################################
+    ##### ----- COMPOSITE TYPES ----- #####
+    #######################################
+
+    """
+        RotorGeometry{TF, TI, TA, TC, TT, TAF, TR, TM}
+
+    **Fields:**
+     - `xlocation::Float` : x location of rotor plane, non-dimensional based on duct chord (max TE location - min LE location of hub/wall)
+     - `numblades::Int` : number of rotor blades
+     - `radialstations::Array{Float}` : array of radial stations defining rotor blade, non-dimensional with hub=0, tip=1
+     - `tipgap::Float` : gap between blade tip and duct wall (not implemented yet)
+     - `chords::Array{Float}` : array of chord lengths at radial stations defining rotor blade, non-dimensional based on blade tip radius
+     - `twists::Array{Float}` : array of twist values (in degrees) at radial stations defining rotor blade
+     - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only, the solver can't use this information)
+     - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only right now. it may be implemented into the grid initialization functions later.)
+     - `airfoils::Array{Airfoil}` : array of airfoil data objects at radial stations defining rotor blade
+     - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade, chord/distance between blade sections
+     - `rpm::Float` : RPM of rotor
+    """
 struct RotorGeometry{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TSo,TRpm}
     xlocation::TF
     numblades::TI
@@ -61,6 +74,21 @@ struct BladeDimensions{TF,TR,TC,TT}
 end
 
 """
+    BladeAero{TRe,TMa,TCl,TCd,TM,TG,TW,TVa,TVt}
+
+Blade aerodynamic values.
+TODO: unsure where to put these, or if they even need to be put anywhere.
+
+**Fields:**
+ - `reynolds::Array{Float}` : local section reynolds numbers
+ - `mach::Array{Float}` : local section mach numbers
+ - `cl::Array{Float}` : local section coefficients of lift
+ - `cd::Array{Float}` : local section coefficients of drag
+ - `cm::Array{Float}` : local section coefficients of moment
+ - `Gamma::Array{Float}` : local section circulations
+ - `W::Array{Float}` : local inflow velocity
+ - `vax::Array{Float}` : local axial velocity
+ - `vtan::Array{Float}` : local tangential velocity
 """
 struct BladeAero{TRe,TMa,TCl,TCd,TM,TG,TW,TVa,TVt}
     reynolds::TRe
@@ -75,6 +103,19 @@ struct BladeAero{TRe,TMa,TCl,TCd,TM,TG,TW,TVa,TVt}
 end
 
 """
+    RotorVelocities{TA}
+
+**Fields:**
+ - `induced_axial_velocities::Array{Float}` : local section induced axial velocities
+ - `induced_radial_velocities::Array{Float}` : local section induced radial velocities
+ - `induced_tangential_velocities::Array{Float}` : local section induced tangential (circumferential) velocities
+ - `absolute_axial_velocities::Array{Float}` : local section absolute axial velocities
+ - `absolute_radial_velocities::Array{Float}` : local section absolute radial velocities
+ - `absolute_tangential_velocities::Array{Float}` : local section absolute tangential velocities
+ - `relative_axial_velocities::Array{Float}` : local section relative axial velocities
+ - `relative_radial_velocities::Array{Float}` : local section relative radial velocities
+ - `relative_tangential_velocities::Array{Float}` : local section relateive tangential velocities
+ - `circulation::Array{Float}` : local section circulations
 """
 struct RotorVelocities{TA}
     induced_axial_velocities::TA
@@ -94,10 +135,43 @@ end
 ###############################################
 
 """
+    function initialize_rotor_geometry(
+        xlocation,
+        numblades,
+        numstations,
+        chords,
+        twists,
+        airfoils,
+        rpm;
+        radialstations=nothing,
+        tipgap=0.0, #non-dimensional relative to blade length
+        skews=nothing,
+        rakes=nothing,
+        solidities=nothing,
+    )
 
-also get dimensional rotor blade section locations. These should inform the wake grid generation function. NOTE: definitely need to start wake generation with rotor locations as well as LE/TE location of hub/duct.  Grid should line up with each of those.
+Initialize non-dimensional rotor geometry and other relative information.
 
 if rotor rake is present, need to redo parts of grid initialization (and check that the unused portions of the code work now) to account for different x-locations of start of wake.  NOTE: not sure if rake will work with this solver. Need to think about that more before implementing.
+
+**Arguments:**
+ - `xlocation::Float` : x location of rotor relative to duct chord
+ - `numblades::Float` : number of rotor blades
+ - `numstations::Float` : number of radial stations (the length of the below sectional properties)
+ - `chords::Array{Float}` : array of section chord lengths (relative to blade tip radius)
+ - `twists::Array{Float}` : array of section twists (90 degrees is aligned with the axial direction) in degrees
+ - `airfoils::Array{AFType}` : airfoil objects at each section
+ - `rpm::Float` : RPM of rotor
+
+**Keyword Arguments:**
+ - `radialstations::Array{Float}` : non-dimensional radial stations (0 = hub radius, 1 = tip radius)
+ - `tipgap::Float` : non-dimensional relative to blade length (Not implemented yet)
+ - `skews::Array{Float}` : sectional skew distance relative to tip radius (not implemented yet)
+ - `rakes::Array{Float}` : sectional rake distances relative to tip radius (not implemented yet)
+ - `solidities::Array{Float} or Nothing` : sectional rotor solidities, if using.
+
+**Returns:**
+ - `rotorgeometry::DuctTAPE.RotorGeometry` : Rotor geometry object
 """
 function initialize_rotor_geometry(
     xlocation,
@@ -155,7 +229,16 @@ function initialize_rotor_geometry(
 end
 
 """
-since wake relaxes and is not aligned with aft rotor radial stations, need to reinterpolate rotor based on updated radial stations
+    reinterpolate_rotor!(wakegrid, rotor, rotoridx)
+
+Since the wake grid relaxes and is not aligned with aft rotor radial stations, this function reinterpolates rotor data based on updated radial stations.
+
+(The `rotor` inputs is the only one updated by this function.)
+
+**Arguments:**
+ - `wakegrid::DuctTAPE.WakeGridGeometry` : wake grid geometry object
+ - `rotor::DuctTAPE.RotorGeometry` : the rotor geometry to update
+ - `rotoridx::Int` : index in the x direction for where the rotor lies on the wake grid
 """
 function reinterpolate_rotor!(wakegrid, rotor, rotoridx)
 
@@ -257,13 +340,30 @@ function initialize_blade_dimensions(ductgeometry, ductsplines, Rotor)
 end
 
 """
-See line 301 in rotoper.f
+    set_rotor_velocities(
+        vax, vrad, vtan, vinf, omega, radialstations, wwa=0.0, wwt=0.0, vfac=1.0
+    )
+
+Define RotorVelocities object.
+
+**Arguments:**
+ - `vax::Array{Float}` : axial velocities
+ - `vrad::Array{Float}` : radial velocities
+ - `vtan::Array{Float}` : tangential velocities
+ - `vinf::Array{Float}` : freestream velocity
+ - `omega::Float` : rotation rate in rad/s
+ - `wwa::Array{Float} : user defined additional axial velocity (unused)
+ - `wwt::Array{Float} : user defined additional tangential velocity (unused)
+ - `vfac::Float` : user defined velocity factor (unused)
+
+**Returns:**
+ - `rotorvelocities::DuctTAPE.RotorVelocities` : induced, absolute, and relative velocities along rotor blades.
 """
 function set_rotor_velocities(
     vax, vrad, vtan, vinf, omega, radialstations, wwa=0.0, wwt=0.0, vfac=1.0
 )
 
-    #notes:
+    #notes: in dfdc, the following indicies are defined as
     # 1 = axial
     # 2 = radial
     # 3 = tangential
@@ -323,6 +423,17 @@ end
 ##################################
 
 """
+    blade_section_gamma(W, chord, cl)
+
+Calculate section circulation.
+
+**Arguments:**
+ - `W::Float` : Inflow velocity
+ - `chord::Float` : section chord length
+ - `cl::Float` : section lift coefficient
+
+**Returns:**
+ - `gamma::Float` : section circulation
 """
 function blade_section_gamma(W, chord, cl)
     return 0.5 * W * chord * cl #eqn 75 in dfdc docs

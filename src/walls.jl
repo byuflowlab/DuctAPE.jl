@@ -4,6 +4,18 @@ Types and Functions pertaining to duct walls (hub, duct)
 Authors: Judd Mehr,
 =#
 
+###############################
+##### ----- EXPORTS ----- #####
+###############################
+
+## -- TYPES
+
+export DuctGeometry, DuctSplines
+
+## -- FUNCTIONS
+
+export defineDuctGeometry, split_wall
+
 """
     DuctGeometry{TA,TF}
 
@@ -35,6 +47,11 @@ struct DuctGeometry{TA,TF,TB}
 end
 
 """
+TODO: move the contents of DuctSplines into DuctGeometry to simplify inputs/outputs throughout code.
+
+ - `wallinnerspline::FLOWMath.Akima` : Spline of inner coordinates of duct wall
+ - `wallouterspline::FLOWMath.Akima` : Spline of outer coordinates of duct wall
+ - `hubspline::FLOWMath.Akima` : Spline of hub coordinates
 """
 struct DuctSplines{TSDi,TSDo,TSH}
     wallinnerspline::TSDi
@@ -53,6 +70,7 @@ end
         LEx=nothing,
         TEx=nothing,
         chord=nothing,
+        bluntTEtol=1e-9,
     )
 
 Constructor function for the DuctGeometry Object.
@@ -72,6 +90,7 @@ Note, if hub x and r coordinates are not set, the x coordinates for the inner wa
  - `LEx::Float` : x-position of manually defined leading edge.  Set to foremost x-coordinate of duct and hub geometry otherwise.
  - `TEx::Float` : x-position of mannually defined trailing edge.  Set to the rear-most x-coordinate of duct and hub geometry otherwise.
  - `chord::Float` : manuall defined chord length.  Set to difference between leading and trailing edges otherwise.
+ - `bluntTEtol::Float` : tolerance for how close trailing edge points need to be before being considered a blunt trailing edge. (relative to chord)
 """
 function defineDuctGeometry(
     wallinnerxcoordinates,

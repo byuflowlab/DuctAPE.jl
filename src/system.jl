@@ -4,6 +4,18 @@ Types and Functions Related to the Ducted Rotor System
 Authors: Judd Mehr,
 =#
 
+###############################
+##### ----- EXPORTS ----- #####
+###############################
+
+## -- TYPES
+
+export OperatingConditions
+
+## -- FUNCTIONS
+
+export initialize_system_aerodynamics
+
 #######################################
 ##### ----- COMPOSITE TYPES ----- #####
 #######################################
@@ -28,6 +40,14 @@ struct OperatingConditions{TVI,TVR,TF}
 end
 
 """
+    SystemAero{TG,TH,TS,TC,TR}
+
+**Fields:**
+ - `b_gamma_grid::Matrix{Float}` : B*Γ values on wake grid
+ - `delta_enthalpy_grid::Matrix{Float}` : ΔH (enthalpy) values on wake grid
+ - `delta_enthalpy_grid::Matrix{Float}` : ΔS (entropy) values on wake grid
+ - `b_circ_rotors::Array{Array{Float}}` : B*γ values at rotor blades (one array per rotor in increasing order of x location)
+ - `sigma_rotors::Array{Array{Float}}` : σ (source strength) values at rotor blades (one array per rotor in increasing order of x location)
 """
 struct SystemAero{TG,TH,TS,TC,TR}
     b_gamma_grid::TG
@@ -72,6 +92,21 @@ end
 #b_circ_rotors[i, :] = 0.5 .* ccb_out.cl .* ccb_out.W .* blade[i].cdim .* nbld
 
 """
+    initialize_system_aerodynamics(
+        rotors, blades, wakegrid, freestream; niter=10, rlx=0.5
+    )
+
+Initialize system aerodynamics for rotors and wakes.
+
+**Arguments:**
+ - `rotors::Array{DuctTAPE.RotorGeometry}` : array of rotor geometries
+ - `blades::Array{DuctTAPE.BladeDimensions}` : array of dimensional blade geometries
+ - `wakegrid::DuctTAPE.WakeGridGeometry` : wake grid geometry
+ - `freestream::DuctTAPE.OperatingConditions` : freestream information
+
+**Returns:**
+ - `systemaero::DuctTAPE.SystemAero` : aerodynamic values for rotor sections and wake grid
+ - `rotorvelocities::DuctTAPE.RotorVelocities` : velocities along rotor blades
 """
 function initialize_system_aerodynamics(
     rotors, blades, wakegrid, freestream; niter=10, rlx=0.5

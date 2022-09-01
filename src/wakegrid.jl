@@ -4,6 +4,18 @@ Types and Functions related to the wake grid
 Authors: Judd Mehr,
 =#
 
+###############################
+##### ----- EXPORTS ----- #####
+###############################
+
+## -- TYPES
+
+export GridOptions, WakeGridGeometry
+
+## -- FUNCTIONS
+
+export defineGridOptions, initialize_wakegrid
+
 #######################################
 ##### ----- COMPOSITE TYPES ----- #####
 #######################################
@@ -38,6 +50,8 @@ Wake grid geometry object
  - `wallTEidx::Int` : index of duct wall trailing edge x location
  - `hubTEidx::Int` : index of hub wall trailing edge x location
  - `rotoridxs::Array{Int}` : array of indices of rotor x locations
+ - `wall_xstations::Array{Int}` : array of indicies on which duct wall is present in grid
+ - `hub_xstations::Array{Int}` : array of indicies on which hub is present in grid
 """
 struct WakeGridGeometry{TF,TI,TA,TW,TH}
     x_grid_points::TF
@@ -58,6 +72,7 @@ end
 ##### ----- GEOMETRY ----- ######
 #################################
 
+#TODO: instead of matching, the rotor inputs should be interpolated for the number of radial stations, and the updated rotor object should be used.
 """
     defineGridOptions(
         num_radial_stations;
@@ -91,7 +106,7 @@ end
 Get grid boundary and initial interior points.
 
 **Arguments:**
- - `duct::DuctTAPE.Duct` : Duct Object.
+ - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry Object.
  - `rotors::Array{DuctTAPE.Rotor}` : Array of Rotor objects
  - `grid_options::DuctTAPE.GridOptions` : GridOptions object
 
@@ -696,7 +711,7 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
 end
 
 """
-    initialize_grid(ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9)
+    initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9)
 
 Initialize grid via zero-thrust, unit freestream solution.
 
@@ -711,9 +726,9 @@ Initialize grid via zero-thrust, unit freestream solution.
  - `tol::Float` : convergence tolerance, default = 1e-9
 
 **Returns:**
- - `WakeGrid::DuctTAPE.WakeGridGeometry` : WakeGridGeometry Object
+ - `wakegridgeometry::DuctTAPE.WakeGridGeometry` : WakeGridGeometry Object
 """
-function initialize_grid(
+function initialize_wakegrid(
     ductgeometry, ductsplines, rotors, grid_options; max_iterations=100, tol=1e-9
 )
 

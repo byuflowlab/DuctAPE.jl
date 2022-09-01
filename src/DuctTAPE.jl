@@ -13,12 +13,6 @@ ccb = CCBlade
 # using IterativeSolvers
 # is = IterativeSolvers #SOR solver
 
-# - EXPORTS
-
-#TYPES
-
-#FUNCTIONS
-
 # - INCLUDED FILES
 include("types.jl")
 include("utils.jl")
