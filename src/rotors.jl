@@ -14,29 +14,28 @@ export RotorGeometry, BladeDimensions
 
 ## -- FUNCTIONS
 
-export initialize_rotor_geometry,
-    initialize_blade_dimensions,
+export initialize_rotor_geometry, initialize_blade_dimensions
 
-    #######################################
-    ##### ----- COMPOSITE TYPES ----- #####
-    #######################################
+#######################################
+##### ----- COMPOSITE TYPES ----- #####
+#######################################
 
-    """
-        RotorGeometry{TF, TI, TA, TC, TT, TAF, TR, TM}
+"""
+    RotorGeometry{TF, TI, TA, TC, TT, TAF, TR, TM}
 
-    **Fields:**
-     - `xlocation::Float` : x location of rotor plane, non-dimensional based on duct chord (max TE location - min LE location of hub/wall)
-     - `numblades::Int` : number of rotor blades
-     - `radialstations::Array{Float}` : array of radial stations defining rotor blade, non-dimensional with hub=0, tip=1
-     - `tipgap::Float` : gap between blade tip and duct wall (not implemented yet)
-     - `chords::Array{Float}` : array of chord lengths at radial stations defining rotor blade, non-dimensional based on blade tip radius
-     - `twists::Array{Float}` : array of twist values (in degrees) at radial stations defining rotor blade
-     - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only, the solver can't use this information)
-     - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only right now. it may be implemented into the grid initialization functions later.)
-     - `airfoils::Array{Airfoil}` : array of airfoil data objects at radial stations defining rotor blade
-     - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade, chord/distance between blade sections
-     - `rpm::Float` : RPM of rotor
-    """
+**Fields:**
+ - `xlocation::Float` : x location of rotor plane, non-dimensional based on duct chord (max TE location - min LE location of hub/wall)
+ - `numblades::Int` : number of rotor blades
+ - `radialstations::Array{Float}` : array of radial stations defining rotor blade, non-dimensional with hub=0, tip=1
+ - `tipgap::Float` : gap between blade tip and duct wall (not implemented yet)
+ - `chords::Array{Float}` : array of chord lengths at radial stations defining rotor blade, non-dimensional based on blade tip radius
+ - `twists::Array{Float}` : array of twist values (in degrees) at radial stations defining rotor blade
+ - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only, the solver can't use this information)
+ - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only right now. it may be implemented into the grid initialization functions later.)
+ - `airfoils::Array{Airfoil}` : array of airfoil data objects at radial stations defining rotor blade
+ - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade, chord/distance between blade sections
+ - `rpm::Float` : RPM of rotor
+"""
 struct RotorGeometry{TF,TI,TR,TG,TC,TT,TSk,TRa,TAF,TSo,TRpm}
     xlocation::TF
     numblades::TI
