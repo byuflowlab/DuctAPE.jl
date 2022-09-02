@@ -65,9 +65,6 @@ struct WakeGridGeometry{TF,TI,TA,TW,TH}
     hub_xstations::TH
 end
 
-
-
-
 #################################
 ##### ----- GEOMETRY ----- ######
 #################################
@@ -117,8 +114,8 @@ Get grid boundary and initial interior points.
 function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; debug=false)
 
     #check that rotors are in the correct order
-    for i=1:length(rotors)-1
-        @assert rotors[i].xlocation < rotors[i+1].xlocation
+    for i in 1:(length(rotors) - 1)
+        @assert rotors[i].xlocation < rotors[i + 1].xlocation
     end
 
     # --- RENAME THINGS FOR CONVENIENCE
@@ -168,8 +165,6 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         xfront = rotors[1].xlocation * ductgeometry.chord
         rotoridx = 1 #findmin([rotors[i].xlocation for i in 1:length(rotors)])
 
-
-
         #get blade from foremost rotor
         blade = initialize_blade_dimensions(ductgeometry, ductsplines, rotors[rotoridx])
 
@@ -210,7 +205,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         sort(
             [
                 max(ductgeometry.LEx, xfront)
-                sort([rotors[i].xlocation*ductgeometry.chord for i in 1:length(rotors)])
+                sort([rotors[i].xlocation * ductgeometry.chord for i in 1:length(rotors)])
                 hubTEx
                 wallTEx
             ],
@@ -375,50 +370,51 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
 
     ## -- GET INDICES OF ROTOR X LOCATIONS --##
     rotoridxs = [0 for i in 1:length(rotors)]
-    for i=1:length(rotors)
-        rotoridxs[i] = findfirst(x -> x ==rotors[i].xlocation*ductgeometry.chord,xstations)
+    for i in 1:length(rotors)
+        rotoridxs[i] = findfirst(
+            x -> x == rotors[i].xlocation * ductgeometry.chord, xstations
+        )
     end
 
     ## -- GET X STATIONS FOR WALL AND HUB PANELING -- ##
 
-
     #get average step in x direction from rotors to end of duct
-    dx = Statistics.mean(xd[2:end] .- xd[1:end-1])
+    dx = Statistics.mean(xd[2:end] .- xd[1:(end - 1)])
 
     # get number of panels from wall LE to rotor location
-    nxwall = ceil(Int, 1.5*(xfront - wallLEx) / (dx))
+    nxwall = ceil(Int, 1.5 * (xfront - wallLEx) / (dx))
 
     # get x stations in front of rotor for wall
     if nxwall > 1
         xwallcos = cosinespace(nxwall)
 
         xwall = lintran(wallLEx, xfront, xwallcos[1], xwallcos[end], xwallcos)
-    # xwall = range(wallLEx, xfront, length=nxwall)
-else
-    xwall = wallLEx
-end
-
+        # xwall = range(wallLEx, xfront, length=nxwall)
+    else
+        xwall = wallLEx
+    end
 
     #put xstations together
-    wall_xstations = unique([xwall; xd[1:findlast(x->x<=hubTEx,xd)]])
-
+    wall_xstations = unique([xwall; xd[1:findlast(x -> x <= hubTEx, xd)]])
 
     # get number of panels from hub LE to rotor location
-    nxhub = ceil(Int, 1.5*(xfront - hubLEx) / (dx))
+    nxhub = ceil(Int, 1.5 * (xfront - hubLEx) / (dx))
 
     # get x stations in front of rotor for hub
     if nxhub > 1
         xhubcos = cosinespace(nxhub)
         xhub = lintran(hubLEx, xfront, xhubcos[1], xhubcos[end], xhubcos)
-    # xhub = range(hubLEx, xfront, length=nxhub)
-else
-    xhub = hubLEx
-end
+        # xhub = range(hubLEx, xfront, length=nxhub)
+    else
+        xhub = hubLEx
+    end
 
     #put xstations together
-    hub_xstations = unique([xhub; xd[1:findlast(x->x<=hubTEx,xd)]])
+    hub_xstations = unique([xhub; xd[1:findlast(x -> x <= hubTEx, xd)]])
 
-    return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations
+    return x_grid_points,
+    r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations,
+    hub_xstations
 end
 
 """
@@ -749,6 +745,7 @@ function initialize_wakegrid(
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
 
-    return WakeGridGeometry(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations)
+    return WakeGridGeometry(
+        xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations
+    )
 end
-
