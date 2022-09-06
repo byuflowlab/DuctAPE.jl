@@ -1,90 +1,7 @@
 #=
-
-Solver Functions
+Functions for paneling system
 
 Authors: Judd Mehr,
-
-Procedure:
-Iteration setup:
-gengeom does the paneling definitions
-1. Define paneling on grid streamsurfaces, define source drag panels
-
-This could be the gsys function in solve.f (line 330ish)
-2. Evaluate at body panels, rotor blade stations, source drag panels: axij , arij , aij, bxij , brij ,bij
-
-convgthbg appears to cover at least the rest of this including the newton iteration:
-3. Set initial guess for Γk
-4. Set corresponding Γ ̃ and H ̃ fields
-5. Set initial guess for γi using (41) and (42)
-6. Set initial σi = 0
-
-One Newton iteration:
-1. Using current Γk, σi, evaluate γi, vxi , vri , vθi , V⃗i and derivatives w.r.t. Γk, σi 2. Evaluate residuals of equations (75), (73), (74), and derivatives w.r.t. Γk, σi
-3. Solve Newton system for δΓk, δσi
-4. Update Γk, σi
-
----------------------------------------------------------
-dfdc steps:
-- Load file
-- go to oper menu does the following:
-    - preallocates arrays, save some convenience stuff (IGNORE THIS FOR NOW)
-    - calls gengeom function (see below)
-    - initializes plotting stuff (IGNORE)
-    - waits for user input, if exec: (see line 961 in oper.f)
-        - call rotinitbld
-        - call setgrdflow
-        - call convgthbg (solver for gamma_theta)
-        - call tqcalc (solves thrust and torque and stuff)
-        - call rotrprt (saves rotor state, probably IGNORE)
-
-GENGEOM:
-- adjusts walls paneling as needed (IGNORE)
-- sets drag objects (IGNORE for now)
-- initializes rotors [done]
-- initializes grid [done]
-- sets up wake elements on grid [done]
-- sets up control points and "pointers" (this seems to simply be book keeping) TODO: need to figure out best way to do book keeping in julia since big global arrays/indices are not going to be good.
-
-ROTORINTBLD:
-- not too many pieces.  Just sets up reasonable initial blade circulations using momentum theory (does iterate to get self-induced stuff)
-
-SETGRDFLOW:
-- simply sets up grid flow data from circulation and entropy on rotors
-
-CONVGTHBG:
-- Set Up
-    - initialize velocities (VMAVGINIT)
-    - generate gamma_theta solution (GTHCALC)
-    - update wake gamma values
-    - Solve system for initialized right hand side (GAMSOLV)
-- for number of iterations
-    - start at line 631 in rotoper.f
-
-VMAVGINIT:
-- very simple, just put guesses for vm_average on grid (dfdc doesn't do this very well, see todos in your implementation.
-
-VMAVGCALC:
-
-GTHCALC:
-- calculate gamma_i's on vortex sheet wakes using eqn 45 from dfdc docs
-
-GAMSOLV:
-- CVPGEN (set up book keeping?)
-- QAIC (this should be where all the coefficients are generated)
-- SYSP (more book keeping?)
-- GSYS (setup and factor system)
-- SETROTORSRC (set rotor drag source strengths)
-- SETDRGOBJSRC (same for drag objects, ignore for now)
-- VMAVGINIT
-- GSOLVE (solve based on Qinf, sigmas, and gamma_theta)
-- QCSUM (get velocities at control points)
-- QCPFOR (calculate cp's and forces on surfaces)
-- SETGRDFLW (put data onto grid
-- STGFIND (find stagnation points)
-
-UPDROTVEL:
-
-TQCALC:
 =#
 
 ###############################
@@ -93,113 +10,201 @@ TQCALC:
 
 ## -- TYPES
 
-export Outputs
+export PanelSystem, Panels
 
 ## -- FUNCTIONS
 
-#######################################
-##### ----- COMPOSITE TYPES ----- #####
-#######################################
+export generate_paneling, generate_panel_system
 
 """
+    Panels{TPEx,TPEr,TPC,TPT}
+
+**Fields:**
+ - `panel_edges_x::Array{Array{Float}}` : Array of sets of x locations for panel edges
+ - `panel_edges_r::Array{Array{Float}}` : Array of sets of r locations for panel edges
+ - `panel_edges_centers::Array{Array{Float}}` : Array of sets of x,r locations for panel centers
+ - `panel_tyes::Array{String}` : Array of panel types (for use in assembling linear system)
 """
-struct Outputs{TTt,TTd,TTr,TPt,TPr,TQt,TQr}
-    totalthrust::TTt
-    ductthrust::TTd
-    rotorthrusts::TTr #array
-    totalpower::TPt
-    rotorpowers::TPr #array
-    totaltorque::TQt
-    rotortorques::TQr #array
-end
-
-#######################################
-##### ----- ITERATION SETUP ----- #####
-#######################################
-
-"""
-need to get all the a's and b's (coefficient matrices) for the walls and rotors.
-Not quite sure where this is done in dfdc, but the functions talking about pointers might be a good place to start (e.g. dfdcsubs.f line 1770)
-"""
-function initialize_system()
-
-    # Initialize Rotor and Wake Aerodynamics
-
-    system_aero, rotor_velocities, initial_vaxial_average = initialize_system_aerodynamics(
-        rotors, blades, wakegrid, freestream; niter=10, rlx=0.5
-    )
-
-    # Initialize average V_m
-    vm_average = initialize_vm_average(initial_vaxial_average)
-
-    #see calculate gamma_theta_i values on wake vortex sheet panesl
-    gamma_theta_wakes = calculate_gamma_theta(system_aero, vm_average)
-
-    #NOTE: gamth = gth after this point in dfdc
-    #
-    #see GAMSOLV
-    #
-    # Create some sort of system object, make sure convergence flag is defaulted to false.
-    #TODO: figure out what to return
-    return system
+struct Panels{TPEx,TPEr,TPC,TPT}
+    panel_edges_x::TPEx
+    panel_edges_r::TPEr
+    panel_centers::TPC
+    panel_types::TPT
 end
 
 """
-this is gamsolv at line 32 in solve.f in dfdc
+    PanelSystem{TD,TH,TW,TR}
+
+**Fields:**
+ - `wall_panels::DuctTAPE.Panels` : panels defining duct wall airfoil
+ - `hub_panels::DuctTAPE.Panels` : panels defining hub
+ - `wake_panels::DuctTAPE.Panels` : panels defining rotor wake vortex sheets
+ - `rotor_source_panels::DuctTAPE.Panels` : panels defining rotor drag source panels
 """
-function solve_inviscid_panel()
-
-    #CVPGEN (unneeded?)
-
-    #QAIC (AIC matrix for velocities at control points)
-
-    #SYSP (unneeded?)
-
-    #GSYS (set up and factor system
-
-    #SETROTORSRC (set rotor drag source strengths from velocities)
-
-    #SETDRGOBJSRC (ignore for now)
-
-    #GSOLVE (solve system)
-
-    #QCSUM (get velocities at control points)
-
-    #SCPFOR (get cps on surfaces and forces
-
-    #SETGRDFLW (place flow information on wake grid)
-
-    #STGFIND (find stagnation points
-
-    return nothing
+struct PanelSystem{TD,TH,TW,TR}
+    wall_panels::TD
+    hub_panels::TH
+    wake_panels::TW
+    rotor_source_panels::TR
+    #drag_panels::TD
 end
 
-####################################
-##### ----- NEWTON SOLVE ----- #####
-####################################
-
 """
-probably don't need to do things the way they are done in dfdc. There are better ways in julia.  Probably use the LinearSolve.jl package and whatever other packages convenient to get the derivatives as needed.
+    generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
+
+Generate panel edges and centers.
+
+**Arguments:**
+ - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry object
+ - `ductsplines::DuctTAPE.DuctSplines` : Duct Splines object
+ - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
+ - `wakegrid::DuctTAPE.WakeGridGeometry` : Wake Grid object
+
+**Returns:**
+ - `wall_panels::DuctTAPE.Panels` : Panels object for duct wall
+ - `hub_panels::DuctTAPE.Panels` : Panels object for hub
+ - `wake_panels::DuctTAPE.Panels` : Panels object for vortex wake sheets
+ - `rotor_source_panels::Array{DuctTAPE.Panels}` : Array of Panels objects for each rotor
 """
-function solve_system(; niter=100)
+function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 
-    #initialize system
-    system = initialize_system()
+    ## -- INITIALIZE ARRAYS -- ##
+    # i.e. Count number of panels
 
-    #iterate
-    for iter in 1:niter
+    # - number of hub geometry panels
+    #take number of xcoordinates for the hub and subtract the last one to get the number of panels
+    numhubpan = length(wakegrid.hub_xstations) - 1
 
-        #return with true convergence flag if converged
-        if converged
-            #update rotor velocities, see UPDROTVEL
-            system.converged = true
-            return system
-        end
+    #if the hub has a blunt trailing edge. need to add another panel.
+    if ductgeometry.hubbluntTE
+        numhubpan += 1
     end
 
-    #return current system including a false convergence flag.
-    return system
-end
+    # - number of wall geometry panels
+    #take the number of x coordinates for the inner and outer wall geometry and subtract the last point from each to get the number of panels for the whole airfoil
+    numwallpan = 2 * length(wakegrid.wall_xstations) - 2
+
+    #add another panel if the duct wall has a blunt trailing edge.
+    if ductgeometry.wallbluntTE
+        numwallpan += 1
+    end
+
+    # - number of rotor source panels
+    #rename num_radial_stations for convenience
+    numrs = length(rotors[1].radialstations)
+
+    #number of rotor panels is going to be the number of rotors multiplied by one fewer than the number of radial stations
+    numrotorsourcepan = numrs - 1
+
+    # - number of wake panels
+    # TODO: need to make sure that panels don't double up for multiple rotors
+    #each internal (not hub/tip) rotor radial station sheds a vortex sheet that extends to the end of the grid.
+    numrotorwakepan = (numrs - 2) * (wakegrid.nx - 1)
+
+    #the hub sheds a vortex sheet from its trailing edge to the end of the grid.
+    numhubTEwakepan = wakegrid.nx - wakegrid.hubTEidx
+
+    #the duct wall also sheds a vortex sheet from its trailing edge to the end of the grid.
+    numwallTEwakepan = wakegrid.nx - wakegrid.wallTEidx
+
+    # - number of drag object source panels (TODO LATER)
+
+    ## -- GET PANEL EDGES, CENTERS AND TYPES -- ##
+
+    # - wall panels
+    #initialize from counts above.
+    wall_panel_edge_x = [(0.0, 0.0) for i in 1:numwallpan]
+    wall_panel_edge_r = [(0.0, 0.0) for i in 1:numwallpan]
+    wall_panel_center = [(0.0, 0.0) for i in 1:numwallpan]
+
+    # need to combine the inner and outer geometry coordinates
+    # TODO: the user input decides what order things are in.  Need to make sure that the splines are defined in the correct directions, so probably need to add some checks at the point of the ductgeometry generation.
+    wallinnerxcoordinates = wakegrid.wall_xstations
+    wallouterxcoordinates = wakegrid.wall_xstations
+    wallxcoordinates = [reverse(wallinnerxcoordinates)[1:(end - 1)]; wallouterxcoordinates]
+
+    #similar for r coordinates
+    wallinnerrcoordinates = ductsplines.wallinnerspline(wallinnerxcoordinates)
+    wallouterrcoordinates = ductsplines.wallouterspline(wallouterxcoordinates)
+    wallrcoordinates = [reverse(wallinnerrcoordinates)[1:(end - 1)]; wallouterrcoordinates]
+    #TODO: need to make sure this is the correct direction. (what is the correct direction??)
+
+    # loop through the total number of wall coordinates
+    for i in 1:numwallpan
+        if ductgeometry.wallbluntTE && i == numwallpan
+
+            #create the trailing edge panel if needed
+            wall_panel_edge_x[i] = (wallxcoordinates[end], wallxcoordinates[1])
+
+            wall_panel_edge_r[i] = (wallrcoordinates[end], wallrcoordinates[1])
+
+        else
+            #get the x coordinates from the geometry and save as the panel edges.
+            wall_panel_edge_x[i] = (wallxcoordinates[i], wallxcoordinates[i + 1])
+
+            #similar for r coordinates
+            wall_panel_edge_r[i] = (wallrcoordinates[i], wallrcoordinates[i + 1])
+        end
+
+        #no matter what case, get the average of the x and r coordinates to find the center point on the panel.
+        wall_panel_center[i] = (
+            sum(wall_panel_edge_x[i]) / 2.0, sum(wall_panel_edge_r[i]) / 2.0
+        )
+    end
+
+    # create wall panels object
+    wall_panels = Panels(wall_panel_edge_x, wall_panel_edge_r, wall_panel_center, "w")
+
+    # - hub panels
+    #initialize from counts above
+    hub_panel_edge_x = [(0.0, 0.0) for i in 1:numhubpan]
+    hub_panel_edge_r = [(0.0, 0.0) for i in 1:numhubpan]
+    hub_panel_center = [(0.0, 0.0) for i in 1:numhubpan]
+
+    hubxcoordinates = wakegrid.hub_xstations
+
+    #similar for r coordinates
+    hubrcoordinates = ductsplines.hubspline(hubxcoordinates)
+
+    #loop through hub panel count
+    for i in 1:numhubpan
+        if ductgeometry.hubbluntTE && i == numhubpan
+
+            #define trailing edge panel if needed
+            hub_panel_edge_x[i] = (hubxcoordinates[end], hubxcoordinates[end])
+            hub_panel_edge_r[i] = (hubrcoordinates[end], 0.0)
+
+        else
+            # get the x geometry coordinates and set as the panel edges
+            hub_panel_edge_x[i] = (hubxcoordinates[i], hubxcoordinates[i + 1])
+
+            #similar for r coordinates
+            hub_panel_edge_r[i] = (hubrcoordinates[i], hubrcoordinates[i + 1])
+        end
+
+        #no mater the case, get the average of the x and r coordinates to set the center points of the panels
+        hub_panel_center[i] = (
+            sum(hub_panel_edge_x[i]) / 2.0, sum(hub_panel_edge_r[i]) / 2.0
+        )
+    end
+
+    # create the hub panels object
+    hub_panels = Panels(hub_panel_edge_x, hub_panel_edge_r, hub_panel_center, "w")
+
+    # - rotor source panels
+    rotor_source_panels = Array{Panels}(undef, 2)
+
+    #rename pertinent values for convenience
+    rotoridxs = wakegrid.rotoridxs
+    gridxs = wakegrid.x_grid_points
+    gridrs = wakegrid.r_grid_points
+
+    #loop through each rotor
+    for i in 1:length(rotors)
+
+        #initialze based on the counts above
+        rotor_panel_edge_x = [(0.0, 0.0) for j in 1:numrotorsourcepan]
+        rotor_panel_edge_r = [(0.0, 0.0) for j in 1:numrotorsourcepan]
         rotor_panel_center = [(0.0, 0.0) for j in 1:numrotorsourcepan]
 
         #create a blade object for each rotor (to get dimensional radial data)
@@ -350,4 +355,3 @@ function generate_panel_system(ductgeometry, ductsplines, rotors, wakegrid)
     #return panel system containing all panel objects
     return PanelSystem(wall_panels, hub_panels, wake_panels, rotor_source_panels)
 end
-
