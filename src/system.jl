@@ -109,6 +109,7 @@ Initialize system aerodynamics for rotors and wakes.
 **Returns:**
  - `systemaero::DuctTAPE.SystemAero` : aerodynamic values for rotor sections and wake grid
  - `rotorvelocities::DuctTAPE.RotorVelocities` : velocities along rotor blades
+ - `average_axial_velocity::Float` : initial guess for average axial velocity in the wakes
 """
 function initialize_system_aerodynamics(
     rotors, blades, wakegrid, freestream; niter=10, rlx=0.5
@@ -117,6 +118,7 @@ function initialize_system_aerodynamics(
     ## -- INITIALIZE VARIABLES -- ##
 
     # average axial velocity
+    #TODO: this would likely be a better guess for initialization (see system_initializaiton function for initializing vmavg) if it was a vector such that the effects of each rotor covered only the sections applied to them.  Right now, the final velocity (after the last rotor) is applied everywhere at initialization.
     average_axial_velocity = freestream.vinf
 
     # B*Gamma at grid points
@@ -282,7 +284,8 @@ function initialize_system_aerodynamics(
         [b_circ_rotors[i, :] for i in numrotors],
         rotor_source_strengths,
     ),
-    rotor_velocities
+    rotor_velocities,
+    average_axial_velocity
 end
 
 """
@@ -415,4 +418,146 @@ function set_grid_aero!(b_gamma_grid, delta_enthalpy_grid, b_circ_rotor, omega, 
     end
 
     return nothing
+end
+
+"""
+TODO: this would be much better if in the system aero initialization function, the average axial velocity variable was saved before/after each rotor. therefore before rotor 1, everythign would be vinf, then after rotor 1, you'd have vinf + the induced velcity, then for subsequent rotors you add the additional induced velocities.
+There's also not really any need to do things in a loop here like in dfdc, everything can just be defined directly using the rotoridxs indices, etc.
+"""
+function initialize_vm_average(initial_guesses, wakegrid, vinf)
+
+    #get indices for convenience
+    nx, nr = size(wakegrid.x_grid_points)
+
+    vm_average = [0.0 for i in 1:nx, j in 1:nr]
+
+    for i in 1:nx
+        for j in 1:nr
+            if j == 1 || j == nr
+                vm_average[i, j] = 0.5 * (initial_guesses + vinf)
+            else
+                vm_average[i, j] = initial_guesses
+            end
+        end
+    end
+
+    return vm_average
+end
+
+"""
+gamma_theta values at panel centers
+uses eqn 45 in dfdc theory
+"""
+function calculate_gamma_theta(system_aero, wakegrid, vm_average)
+
+    #rename for convenience
+    nx_grid, nr_grid = size(wakegrid.x_grid_points)
+    b_gamma_grid = system_aero.b_gamma_grid
+    delta_enthalpy_grid = system_aero.delta_enthalpy_grid
+
+    # initialize gamma_theta
+    gamma_theta = [0.0 for i in 1:nx_grid, j in 1:nr_grid]
+
+    #set gamma_theta on wakes between walls
+    for r in 2:(numradialstations - 1) #loop through internal rotor radial stations (between walls)
+        for x in 1:nx_grid #loop through wake panels (assume wake starts at first rotor
+
+            #H is ΔH2 - ΔH1, (where ΔH is constant on rotor panels, i.e., between vortex wakes)
+            H = (delta_enthalpy_grid[x, r], delta_enthalpy_grid[x, r - 1])
+
+            #similar for Gamma
+            Gamma = (b_gamma_grid[x, r], b_gamma_grid[x, r - 1])
+
+            #use the r at the location we care about (radial station where wake is generated from)
+            r = wakegridgeometry.r_grid_points[x, r]
+
+            #similar for vm_average
+            vmavg = vm_average[x, r]
+
+            #get gamma_i on vortex wake panel edge
+            gamma_theta[x, r] = calc_gamma_i(H, Gamma, r, vmavg)
+        end
+    end
+
+    #set gamma_theta on hub trailing edge wake
+    for x in (wakegrid.hubTEidx):nx_grid
+
+        #no enthalpy jump across wall
+        H = (0.0, 0.0)
+
+        #no Gamma inside wall
+        Gamma = (0.0, b_gamma_grid[x, 1])
+
+        #r is wall r
+        r = wakegridgeometry.r_grid_points[x, 1]
+
+        #similar for vm_average
+        vmavg = vm_average[x, 1]
+
+        #get gamma_i on hub TE wake
+        gamma_theta[x, 1] = calc_gamma_i(H, Gamma, r, vmavg)
+    end
+
+    #Taper gamma_theta along hub wall from full value at start of TE wake to start of rotor wake
+    for x in 1:(wakegrid.hubTEidx - 1)
+        taper = 1.0 - (wakegrid.hubTEidx - (x - 1)) / wakegrid.hubTEidx
+        gamma_theta[x, 1] = gamma_theta[hubTEidx, 1] * taper
+    end
+
+    #set gamma_theta on duct trailing edge wake
+    for x in (wakegrid.hubTEidx):nx_grid
+
+        #no enthalpy jump across wall
+        H = (delta_enthalpy_grid[x, nr_grid - 1], 0.0)
+
+        #no Gamma inside wall
+        Gamma = (b_gamma_grid[x, nr_grid - 1], 0.0)
+
+        #r is wall r
+        r = wakegridgeometry.r_grid_points[x, nr_grid - 1]
+
+        #similar for vm_average
+        vmavg = vm_average[x, nr_grid - 1]
+
+        #get gamma_i on duct wall TE wake
+        gamma_theta[x, end] = calc_gamma_i(H, Gamma, r, vmavg)
+    end
+
+    #Taper gamma_theta along hub wall from full value at start of TE wake to start of rotor wake
+    for x in 1:(wakegrid.wallTEidx - 1)
+        taper = 1.0 - (wakegrid.wallTEidx - (x - 1)) / wakegrid.wallTEidx
+        gamma_theta[x, end] = gamma_theta[wallTEidx, end] * taper
+    end
+
+    #return gamma_theta
+    return gamma_theta
+end
+
+"""
+equation 45 in dfdc theory
+"""
+function calc_gamma_i(H, Gamma, r, vmavg)
+    if vmag == 0.0
+        #don't divide by zero...
+        return 0.0
+    else
+        return ((H[2] - H[1]) - 0.5 * (Gamma[2]^2 - Gamma[1]^2) / (2.0 * pi * r)^2) / vmag
+    end
+end
+
+"""
+see qaic.f
+"""
+function get_aerodynmic_influence_coefficients(
+    control_points,
+    panel_edges,
+    wall_vorticities,
+    source_strengths,
+    wake_vorticities,
+    vinf,
+    alpha,
+)
+    return control_point_velocities,
+    velocity_wall_jacobian, velocity_source_jacobian,
+    velocity_wake_jacobian
 end

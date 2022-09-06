@@ -58,20 +58,29 @@ CONVGTHBG:
     - update wake gamma values
     - Solve system for initialized right hand side (GAMSOLV)
 - for number of iterations
-    - call VMAVGCALC (update velocities)
-    - call GTHCALC (update gamma_thetas)
-    - use CSOR to update wake gammas
-    - call GAMSOLV (systems solve)
-    (repeat until number of iterations is met or system converges)
-    - call UPDROTVEL (update rotor velocities)
+    - start at line 631 in rotoper.f
 
 VMAVGINIT:
+- very simple, just put guesses for vm_average on grid (dfdc doesn't do this very well, see todos in your implementation.
 
 VMAVGCALC:
 
 GTHCALC:
+- calculate gamma_i's on vortex sheet wakes using eqn 45 from dfdc docs
 
 GAMSOLV:
+- CVPGEN (set up book keeping?)
+- QAIC (this should be where all the coefficients are generated)
+- SYSP (more book keeping?)
+- GSYS (setup and factor system)
+- SETROTORSRC (set rotor drag source strengths)
+- SETDRGOBJSRC (same for drag objects, ignore for now)
+- VMAVGINIT
+- GSOLVE (solve based on Qinf, sigmas, and gamma_theta)
+- QCSUM (get velocities at control points)
+- QCPFOR (calculate cp's and forces on surfaces)
+- SETGRDFLW (put data onto grid
+- STGFIND (find stagnation points)
 
 UPDROTVEL:
 
@@ -114,17 +123,57 @@ Not quite sure where this is done in dfdc, but the functions talking about point
 """
 function initialize_system()
 
-    #see VMAGINIT(VAVGINIT)
-    #
-    #see GTHCALC(GAMTH)
-    #
-    #update wake gamma from ouputs of gthcalc stuff
+    # Initialize Rotor and Wake Aerodynamics
+
+    system_aero, rotor_velocities, initial_vaxial_average = initialize_system_aerodynamics(
+        rotors, blades, wakegrid, freestream; niter=10, rlx=0.5
+    )
+
+    # Initialize average V_m
+    vm_average = initialize_vm_average(initial_vaxial_average)
+
+    #see calculate gamma_theta_i values on wake vortex sheet panesl
+    gamma_theta_wakes = calculate_gamma_theta(system_aero, vm_average)
+
+    #NOTE: gamth = gth after this point in dfdc
     #
     #see GAMSOLV
     #
     # Create some sort of system object, make sure convergence flag is defaulted to false.
     #TODO: figure out what to return
     return system
+end
+
+"""
+this is gamsolv at line 32 in solve.f in dfdc
+"""
+function solve_inviscid_panel()
+
+    #CVPGEN (unneeded?)
+
+    #QAIC (AIC matrix for velocities at control points)
+
+    #SYSP (unneeded?)
+
+    #GSYS (set up system)
+
+    #LUDCMP (factor system to LU format)
+
+    #SETROTORSRC (set rotor drag source strengths from velocities)
+
+    #SETDRGOBJSRC (ignore for now)
+
+    #GSOLVE (solve system)
+
+    #QCSUM (get velocities at control points)
+
+    #SCPFOR (get cps on surfaces and forces
+
+    #SETGRDFLW (place flow information on wake grid)
+
+    #STGFIND (find stagnation points
+
+    return nothing
 end
 
 ####################################
@@ -141,14 +190,6 @@ function solve_system(; niter=100)
 
     #iterate
     for iter in 1:niter
-
-        #see VMAVGCALC
-
-        #see GTHCALC
-
-        #"updated wake gamma using CSOR"
-
-        #see GAMSOLV
 
         #return with true convergence flag if converged
         if converged
