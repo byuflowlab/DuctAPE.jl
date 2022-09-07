@@ -114,7 +114,6 @@ end
  - `relative_axial_velocities::Array{Float}` : local section relative axial velocities
  - `relative_radial_velocities::Array{Float}` : local section relative radial velocities
  - `relative_tangential_velocities::Array{Float}` : local section relateive tangential velocities
- - `circulation::Array{Float}` : local section circulations
 """
 struct RotorVelocities{TA}
     induced_axial_velocities::TA
@@ -126,7 +125,6 @@ struct RotorVelocities{TA}
     relative_axial_velocities::TA
     relative_radial_velocities::TA
     relative_tangential_velocities::TA
-    circulation::TA
 end
 
 ###############################################
@@ -158,7 +156,7 @@ if rotor rake is present, need to redo parts of grid initialization (and check t
  - `numblades::Float` : number of rotor blades
  - `numstations::Float` : number of radial stations (the length of the below sectional properties)
  - `chords::Array{Float}` : array of section chord lengths (relative to blade tip radius)
- - `twists::Array{Float}` : array of section twists (90 degrees is aligned with the axial direction) in degrees
+ - `twists::Array{Float}` : array of section twists (0 degrees is aligned with the axial direction) in degrees
  - `airfoils::Array{AFType}` : airfoil objects at each section
  - `rpm::Float` : RPM of rotor
 
@@ -371,6 +369,14 @@ function set_rotor_velocities(
     # 2 = radial
     # 3 = tangential
 
+    # Initialize Outputs
+    vtanabs = [0.0 for i in 1:length(vtan)]
+    vaxabs = [0.0 for i in 1:length(vax)]
+    vradabs = [0.0 for i in 1:length(vrad)]
+    vtanrel = [0.0 for i in 1:length(vtan)]
+    vaxrel = [0.0 for i in 1:length(vax)]
+    vradrel = [0.0 for i in 1:length(vrad)]
+
     # get number of stations for convenience
     numstations = length(radialstations)
 
@@ -411,7 +417,7 @@ function set_rotor_velocities(
         vmr = sqrt(vaxrel[i]^2 + vradrel[i]^2)
         vvr = sqrt(vmr^2 + vtanrel[i]^2)
         if vtanrel[i] != 0.0
-            phi_relative = atan2(vmr, -vtanrel[i])
+            phi_relative = atan(vmr, -vtanrel[i])
         else
             phi_relative = 0.5 * pi
         end

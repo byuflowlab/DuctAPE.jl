@@ -46,7 +46,7 @@ Calculates sine spaced points from 0 to pi/2 (viz. sin(theta), theta ∈ [0, pi/
 **Arguments:**
  - `n::Int` : Number of points to calculate
 
-**Returns::
+**Returns:**
  - `pts::Array{Float}` : Array of sine spaced points
 """
 function sinespace(n)
@@ -62,7 +62,7 @@ Calculates cosine spaced points from 0 to pi/2 (viz. cosin(theta), theta ∈ [0,
 **Arguments:**
  - `n::Int` : Number of points to calculate
 
-**Returns::
+**Returns:**
  - `pts::Array{Float}` : Array of cosine spaced points
 """
 function cosinespace(n)

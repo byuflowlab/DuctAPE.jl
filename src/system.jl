@@ -10,7 +10,7 @@ Authors: Judd Mehr,
 
 ## -- TYPES
 
-export OperatingConditions
+export Freestream
 
 ## -- FUNCTIONS
 
@@ -21,22 +21,21 @@ export initialize_system_aerodynamics
 #######################################
 
 """
-    OperatingConditions{TVI,TVR,TF}
+    Freestream{TVI,TVR,TF}
 
 **Fields:**
- - `vinf::Array{Float}` : Array of freestream velocities
- - `vref::Array{Float}` : Array of reference velocities
- - `rho::Float` : air density value
- - `vso::Float` : speed of sound value
- - `mu::Float` : air viscosity value
+ - `vinf::Float` : Freestream velocities
+ - `vref::Float` : Reference velocities
+ - `rho::Float` : Air density value
+ - `vso::Float` : Speed of sound value
+ - `mu::Float` : Air dynamic viscosity value
 """
-struct OperatingConditions{TVI,TVR,TF}
+struct Freestream{TVI,TVR,TF}
     vinf::TVI
     vref::TVR
     rho::TF
     vso::TF
     mu::TF
-    # boundarylayer::TB
 end
 
 """
@@ -65,7 +64,7 @@ end
 
 #FOR initialize_system_aerodynamics: in re-write, can probably use ccblade like this.
 ### -- SET UP CCBLADE CALL
-## ccblade rotor object from blade dimensions
+## ccblade rotor object from blades dimensions
 #ccb_rotor = ccb.Rotor(blade[i].rhub, blade[i].rtip, nbld)
 
 ## ccblade blade section object from blade data
@@ -79,7 +78,7 @@ end
 #    induced_tangential_velocity,
 #    freestream.rho;
 #    mu=freestream.mu,
-#    asound=freestream.asound,
+#    asound=freestream.vso,
 #)
 
 ## solve ccblade problem
@@ -104,7 +103,7 @@ Initialize system aerodynamics for rotors and wakes.
  - `rotors::Array{DuctTAPE.RotorGeometry}` : array of rotor geometries
  - `blades::Array{DuctTAPE.BladeDimensions}` : array of dimensional blade geometries
  - `wakegrid::DuctTAPE.WakeGridGeometry` : wake grid geometry
- - `freestream::DuctTAPE.OperatingConditions` : freestream information
+ - `freestream::DuctTAPE.Freestream` : freestream information
 
 **Returns:**
  - `systemaero::DuctTAPE.SystemAero` : aerodynamic values for rotor sections and wake grid
@@ -112,7 +111,7 @@ Initialize system aerodynamics for rotors and wakes.
  - `average_axial_velocity::Float` : initial guess for average axial velocity in the wakes
 """
 function initialize_system_aerodynamics(
-    rotors, blades, wakegrid, freestream; niter=10, rlx=0.5
+    rotors, blades, wakegrid, rotorpanels, freestream; niter=10, rlx=0.5
 )
 
     ## -- INITIALIZE VARIABLES -- ##
@@ -121,21 +120,40 @@ function initialize_system_aerodynamics(
     #TODO: this would likely be a better guess for initialization (see system_initializaiton function for initializing vmavg) if it was a vector such that the effects of each rotor covered only the sections applied to them.  Right now, the final velocity (after the last rotor) is applied everywhere at initialization.
     average_axial_velocity = freestream.vinf
 
+    #rename for convenience
+    numrotors = length(rotors)
+
     # B*Gamma at grid points
-    b_gamma_grid = [0.0 for i in length(wakegrid[:, 1]), j in length(wakegrid[1, :])]
+    b_gamma_grid = [
+        0.0 for i in 1:length(wakegrid.x_grid_points[:, 1]),
+        j in 1:length(wakegrid.x_grid_points[1, :])
+    ]
 
     # DeltaH values across wake
-    delta_enthalpy_grid = [0.0 for i in length(wakegrid[:, 1]), j in length(wakegrid[1, :])]
+    delta_enthalpy_grid = [
+        0.0 for i in 1:length(wakegrid.x_grid_points[:, 1]),
+        j in 1:length(wakegrid.x_grid_points[1, :])
+    ]
 
     # DeltaS values across wake
-    delta_entropy_grid = [0.0 for i in length(wakegrid[:, 1]), j in length(wakegrid[1, :])]
+    delta_entropy_grid = [
+        0.0 for i in 1:length(wakegrid.x_grid_points[:, 1]),
+        j in 1:length(wakegrid.x_grid_points[1, :])
+    ]
+
+    #control point velocities
+    #TODO: is this just wake grid values?
+    control_point_velocities = [
+        0.0 for i in 1:(length(wakegrid.x_grid_points[:, 1]) - 1),
+        j in 1:(length(wakegrid.x_grid_points[1, :]) - 1)
+    ]
 
     # B*gamma at rotor stations
-    b_circ_rotors = [0.0 for i in length(rotors), j in length(rotors[i].radialstations)]
+    b_circ_rotors = [0.0 for i in 1:numrotors, j in 1:length(rotors[1].radialstations)]
 
     # rotor_source_strengths at rotor stations
     rotor_source_strengths = [
-        0.0 for i in length(rotors), j in length(rotors[i].radialstations)
+        0.0 for i in 1:numrotors, j in 1:length(rotors[1].radialstations)
     ]
 
     #Induced velocities at rotor stations
@@ -145,12 +163,18 @@ function initialize_system_aerodynamics(
 
         #rename for convenience
         nbld = rotors[i].numblades
-        yrc = rotorpanels[i].panel_centers
-        yrp = blade.rdim
-        omege = get_omega(rotors[i].rpm)
+        yrc = getindex.(rotorpanels[i].panel_centers, 2)
+        yrp = blades[i].rdim
+        omega = get_omega(rotors[i].rpm)
+        nr = length(rotors[i].radialstations)
 
         # set up input velocities
         induced_axial_velocity = average_axial_velocity - freestream.vinf
+
+        #initialize output velocities
+        rotor_induced_axial_velocites = [0.0 for r in 1:nr]
+        rotor_induced_radial_velocites = [0.0 for r in 1:nr]
+        rotor_induced_tangential_velocities = [0.0 for r in 1:nr]
 
         #iterate to find induced axial velocity
         for iter in 1:niter
@@ -159,7 +183,7 @@ function initialize_system_aerodynamics(
             total_thrust = 0.0
 
             for r in 1:(nr - 1)
-                # xi = yrc[r][2] / blade[i].rtip #not needed due to custom airfoil data inputs
+                # xi = yrc[r] / blade[i].rtip #not needed due to custom airfoil data inputs
 
                 if i == 1
                     #if first rotor, nothing has induced a tangential velocity yet
@@ -167,9 +191,7 @@ function initialize_system_aerodynamics(
                 else
                     # if not the first rotor, then previous rotors have induced tangential velocities. Find the value one grid station in front of the current rotor.
                     induced_tangential_velocity =
-                        b_gamma_grid[wakegrid.rotoridxs[i] - 1, :] ./
-                        (2.0 * pi .* getindex.(rotorpanels[i].panel_centers, 2))
-                    #TODO: it seems that the b*Gamma values here are not aligned with the panel centers, since we have the grid centers along the grid lines, not between them at the rotor section centers... THIS WILL LIKELY LEAD TO INDEXING ERRORS SOMEWHERE
+                        b_gamma_grid[wakegrid.rotoridxs[i] - 1, r] / (2.0 * pi .* yrc[r])
                 end #if first rotor
 
                 # Sum up velocity components to get totals in axial and tangential directions
@@ -185,31 +207,31 @@ function initialize_system_aerodynamics(
                 phi = atan(average_axial_velocity, -total_section_tangential_velocity)
 
                 #get angle of attack
-                alpha = blade.twist[r] - phi
+                alpha = blades[i].tdim[r] - phi
 
                 #calculate reynolds number
-                reynolds = blade.cdim[r] * abs(W) * freestream.rho / freestream.mu
+                reynolds = blades[i].cdim[r] * abs(W) * freestream.rho / freestream.mu
 
                 #caluclate mach number
-                mach = W / freestream.asound
+                mach = W / freestream.vso
 
                 #don't actually need these since using custom airfoil data inputs, also the solidity (section_sigma) is already in the rotor objects (TODO: though will need to be added to the re-interpolate rotor function )
-                # section_sigma = nbld * blade.cdim[r] / (2.0 * pi * yrc[r])
-                # section_stagr = 0.5*pi - blade.twist[r] #this is only used for some sort of fit from a book for applying a correction for cascades. It won't be needed if cascade data is used in the first place.
+                # section_sigma = nbld * blades.cdim[r] / (2.0 * pi * yrc[r])
+                # section_stagr = 0.5*pi - blades.twist[r] #this is only used for some sort of fit from a book for applying a correction for cascades. It won't be needed if cascade data is used in the first place.
 
                 # get airfoil data using CCBlade or similar functions.
                 # NOTE: this does not include any corrections at this point. including dfdc corrections for solidity, prandtl-glauert, etc.  Assumes any airfoil data used contains any solidity/mach dependencies required.
                 cl, cd = get_clcd(
-                    rotors[i].airfoils[r], alpha, reynolds, mach, rotor[i].solidities[r]
+                    rotors[i].airfoils[r], alpha, reynolds, mach, rotors[i].solidities[r]
                 )
 
                 # update rotor section circulation
-                b_circ_new = 0.5 * cl * W * blade.cdim[r] * nblds
+                b_circ_new = 0.5 * cl * W * blades[i].cdim[r] * nbld
                 b_circ_old = b_circ_rotors[i, r]
                 b_circ_change = b_circ_new - b_circ_old
                 b_circ_rotors[i, r] += rlx * b_circ_change #under relaxation
 
-                # blade section length
+                # blades section length
                 dr = yrp[r + 1] - yrp[r]
 
                 #total thrust
@@ -223,9 +245,9 @@ function initialize_system_aerodynamics(
                 # wwa, wwt = uvinfl(yrc[r])
 
                 # set rotor slipstream velocities
-                rotor_induced_axial_velocites[i, r] = induced_axial_velocity
-                rotor_induced_radial_velocites[i, r] = 0.0
-                rotor_induced_tangential_velocities[i, r] =
+                rotor_induced_axial_velocites[r] = induced_axial_velocity
+                rotor_induced_radial_velocites[r] = 0.0
+                rotor_induced_tangential_velocities[r] =
                     total_section_tangential_velocity +
                     yrc[r] * omega +
                     b_circ_rotors[i, r] / (2.0 * pi * yrc[r])
@@ -237,7 +259,7 @@ function initialize_system_aerodynamics(
             #end
 
             #update induced and average axial velocities using momentum theory
-            vhsq = thrust / (freestream.rho * blade[i].sweptarea) #0.5V^2 (v half square, where V is related to the induced axial velocity) from thrust equation: T = 0.5*rho*A*(vout^2 - vin^2)
+            vhsq = total_thrust / (freestream.rho * blades[i].sweptarea) #0.5V^2 (v half square, where V is related to the induced axial velocity) from thrust equation: T = 0.5*rho*A*(vout^2 - vin^2)
             if i == 1
                 #if at the first rotor, then vinf will be main component
                 induced_axial_velocity =
@@ -245,6 +267,7 @@ function initialize_system_aerodynamics(
             else
                 # if not at first rotor, first rotor will have added to vinf
                 average_axial_velocity = freestream.vinf + induced_axial_velocity
+
                 induced_axial_velocity +=
                     -0.5 * average_axial_velocity +
                     sqrt((0.5 * average_axial_velocity)^2 + vhsq)
@@ -256,10 +279,10 @@ function initialize_system_aerodynamics(
         average_axial_velocity = induced_axial_velocity + freestream.vinf
 
         # initialize/update grid circulation and enthalpy values based on rotor circulation
-        update_grid_circulation!(
+        set_grid_aero!(
             b_gamma_grid,
-            b_circ_rotors[i, :],
             delta_enthalpy_grid,
+            b_circ_rotors[i, :],
             omega,
             wakegrid.rotoridxs[i],
         )
@@ -271,7 +294,7 @@ function initialize_system_aerodynamics(
             rotor_induced_tangential_velocities,
             freestream.vinf,
             omega,
-            blade.radialstations,
+            blades[i].rdim,
         )
     end #for numrotors
 
@@ -281,8 +304,9 @@ function initialize_system_aerodynamics(
         b_gamma_grid,
         delta_enthalpy_grid,
         delta_entropy_grid,
-        [b_circ_rotors[i, :] for i in numrotors],
+        [b_circ_rotors[i, :] for i in 1:numrotors],
         rotor_source_strengths,
+        control_point_velocities,
     ),
     rotor_velocities,
     average_axial_velocity
@@ -398,6 +422,7 @@ function set_grid_aero!(grid_aerodynamics, omegas, rotoridxs)
 end
 
 function set_grid_aero!(b_gamma_grid, delta_enthalpy_grid, b_circ_rotor, omega, rotoridx)
+    #This function is analogous to ROTBG2GRD in dfdc inigrid.f line 434
 
     #rename for convenience
     nx, nr = size(b_gamma_grid)

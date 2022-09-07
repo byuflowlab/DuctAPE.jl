@@ -212,6 +212,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         ),
     )
 
+
     wake_range = [ductgeometry.TEx; xrear]
 
     # --- DEFINE X GRID SPACING PIECES
@@ -245,7 +246,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
             xd = [xd; range(duct_range[i], duct_range[i + 1]; length=ndtemp)]
         elseif ndtemp <= 1
             nd += 1
-            xd = [xd; duct_range[i + 1]]
+            xd = [xd; duct_range[i]; duct_range[i + 1]]
         end
     end
 
@@ -412,9 +413,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     #put xstations together
     hub_xstations = unique([xhub; xd[1:findlast(x -> x <= hubTEx, xd)]])
 
-    return x_grid_points,
-    r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations,
-    hub_xstations
+    return x_grid_points,    r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations,    hub_xstations
 end
 
 """
