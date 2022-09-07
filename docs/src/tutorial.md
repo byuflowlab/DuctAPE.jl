@@ -105,6 +105,12 @@ Note that we want to create an array, even if we only have one rotor.  When we i
 Also, our rotor object has more fields than are used in the original dfdc, for now, we'll set the section skew, rake, and solidity to nothing.
 For the airfoils, we will use the [CCBlade.jl](https://flow.byu.edu/CCBlade.jl/stable/reference/#CCBlade.AlphaReAF) functionality and for our case here, define our airfoils as `ccb.AlphaReAF` objects (where CCBlade has been included in the DuctTAPE package and renamed 'ccb') using data files from digitized dfdc plots.
 
+We can define rotor objects directly, or we can use the `initialize_rotor_geometry` function to help us.
+
+```@docs
+DuctTAPE.initialize_rotor_geometry
+```
+
 ```@example geom
 # -- GENERATE ROTOR OBJECT ARRAY
 
@@ -127,22 +133,19 @@ af2 = DuctTAPE.ccb.AlphaReAF([
     datapath * "disk2_re2e6.dat",
 ])
 
-#generate rotor object
-rotor1 = DuctTAPE.RotorGeometry(
+#generate rotor object using initialization function
+rotor1 = DuctTAPE.initialize_rotor_geometry(
     xdisk1, #x position of rotor
-    nblade1, #number of blades
-    rnondim1, #radial stations
-    0.0, #tip gap
+    nblade1, # number of blades
+    length(rnondim1), #number of radial stations
     chord1, #chords
     beta1, #twists
-    nothing, #skews
-    nothing, #rakes
-    fill(af1,length(rnondim1)), #airfoils
-    nothing, #solidities
-    rpm, #RPM
+    fill(af1, length(rnondim1)), #airfoils
+    rpm; #RPM
+    radialstations=rnondim1 #radial station locations
 )
 
-#generate stator object (rpm is zero for stator)
+#generate stator object (rpm is zero for stator) using direct definition
 rotor2 = DuctTAPE.RotorGeometry(
     xdisk2, #x position of rotor
     nblade2, #number of blades
@@ -150,10 +153,10 @@ rotor2 = DuctTAPE.RotorGeometry(
     0.0, #tip gap
     chord2, #chords
     beta2, #twists
-    nothing, #skews
-    nothing, #rakes
-    fill(af2,length(rnondim2)), #airfoils
-    nothing, #solidities
+    zeros(length(rnondim2)), #skews
+    zeros(length(rnondim2)), #rakes
+    fill(af2, length(rnondim2)), #airfoils
+    -1 .* ones(Int, length(rnondim2)), #solidities
     0.0, #RPM
 )
 
@@ -173,8 +176,9 @@ DuctTAPE.initialize_blade_dimensions
 blade1 = DuctTAPE.initialize_blade_dimensions(ductgeometry, ductsplines, rotor1)
 blade2 = DuctTAPE.initialize_blade_dimensions(ductgeometry, ductsplines, rotor2)
 
-nr = length(blade1.rdim)
+blades = [blade1; blade2]
 
+nr = length(blade1.rdim)
 plot!(rotor1.xlocation.*ductgeometry.chord*ones(nr), blade1.rdim, color=4, linewidth=2)
 plot!(rotor2.xlocation.*ductgeometry.chord*ones(nr), blade2.rdim, color=4, linewidth=2)
 
@@ -263,8 +267,53 @@ DuctTAPE.generate_paneling
 ```
 
 For our case here, we are going to use a rough sampling of the geometry data in order to more clearly see the paneling.
+The generated panels will be contained in `Panels` objects.
 
-```@setup geom
+```@docs
+DuctTAPE.Panels
+```
+
+```@setup rough
+using DuctTAPE
+using Plots
+using Measures
+
+default()
+default(;
+    fontfamily="Palatino Roman",
+    size=(800, 600), #it appears that 100 ≈ 1inch in LaTeX
+    fillalpha=0.125,
+    fillcolor=RGB(128 / 255, 128 / 255, 128 / 255),
+    linewidth=1.0,
+    annotationfontfamily="Palatino Roman",
+    markerstrokewidth=0.1,
+    annotationfontsize=10,
+    background_color_inside=nothing,
+    background_color_legend=nothing,
+    background_color_subplot=nothing,
+    color_palette=[
+        RGB(0.0, 46.0 / 255.0, 93.0 / 255.0), #BYU Blue
+        RGB(155.0 / 255.0, 0.0, 0.0), #"BYU" Red
+        RGB(128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0), #Middle Gray
+        RGB(162.0 / 255.0, 227.0 / 255.0, 162.0 / 255.0), #Light Green
+        RGB(243.0 / 255.0, 209.0 / 255.0, 243.0 / 255.0), #Pink
+        RGB(205.0 / 255.0, 179.0 / 255.0, 0.0), #Yellow
+        RGB(161.0 / 255.0, 161.0 / 255.0, 226.0 / 255.0), #Purple
+    ],
+    foreground_color_legend=nothing,
+    legend=false, # include legend true/false
+    grid=false, # background grid true/false
+    gridlinewidth=0.5,
+    margin = 10mm,
+)
+
+plot(xlabel="x", ylabel="r", aspectratio=:equal)
+
+include("../../data/dfdc/dstestr2_case.jl");
+
+# - Split Wall Coordinates
+outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
+
 # --- DEFINE DUCT OBJECT
 ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
     innerwallx[1:4:end],
@@ -326,7 +375,7 @@ nr = wakegrid.nr
 
 
 
-```@example geom
+```@example rough
 # Get paneling of various objects
 
 wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(
@@ -334,8 +383,7 @@ wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_pa
 )
 ```
 
-```@example geom
-
+```@example rough
 # PLOT PANELS
 
 plot(; xlabel="x", ylabel="r", aspectratio=:equal, legend=true, label="")
@@ -468,3 +516,55 @@ The paneling for the rotor sources and the vortex wake sheets is based directly 
 The paneling of the duct wall and hub are set such that the panels aft of the foremost rotor also align perfectly with the wake grid.
 The points in front of the foremost rotor are set using cosine spacing such that the last panel before the foremost rotor is roughly similar in length to the average of the panel lenghts in the remainder of the duct.
 (Note that the estimation process for this is not particularly robust at this point.)
+
+We could also get all the various panels into a single object using the `PanelSystem` object and associated `generate_panel_system` function.
+
+```@docs
+DuctTAPE.PanelSystem
+DuctTAPE.generate_panel_system
+```
+
+
+## Initializing Rotor Aerodynamics
+Now that we have all the geometry set up, we're ready to start initializing the aerodynamics of our system.
+We first will define the freestream conditions by defining a `Freestream` object.
+
+```@docs
+DuctTAPE.Freestream
+```
+
+```@example geom
+#define freestream object from example case values
+freestream = DuctTAPE.Freestream(vinf, vref, rho, vso, rmu)
+```
+
+After we have created a freestream object, we can initialize the rotor aerodynamics (circulations and velocities) as well as initialize the rotor influence on the rotor wake grid aerodynamics.
+We'll do so using the `initialize_system_aerodynamics` function.
+
+```@docs
+DuctTAPE.initialize_system_aerodynamics
+```
+
+The returns of this function include the `SystemAero` object and the `RotorVelocities` object (see below), as well as an average axial velocity that is used later.
+
+```@docs
+DuctTAPE.SystemAero
+DuctTAPE.RotorVelocities
+```
+
+```@setup geom
+# Get paneling of various objects
+wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(
+    ductgeometry, ductsplines, rotors, wakegrid
+)
+```
+
+```@example geom
+# initialize rotor and associated grid aerodynamics
+system_aero, rotor_velocities, average_axial_velocity = initialize_system_aerodynamics(
+    rotors, blades, wakegrid, rotor_source_panels, freestream)
+```
+
+Please note that the initialization that takes place here is soley based on the rotor aerodynamics.  At this point, we have not taken into account the duct influence and the wake has only been initialized with some of the rotor influence.
+To be specific, the entropy and control point velocities are set to zeros in this function as they will be properly initialized later.
+The circulations, velocities, and enthalpies initialized thus far are soley based on the rotors and simply provide a first guesss so we have somewhere to start in our solution process.
