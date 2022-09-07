@@ -68,7 +68,7 @@ chord1 = [
     0.041981
    ]./rdim1[end]
 
-beta1 = [70.828; 59.758; 51.707; 46.429; 42.209; 38.766; 35.897; 33.457; 31.337; 29.453] #twist angle degrees
+beta1 = 90.0 .- [70.828; 59.758; 51.707; 46.429; 42.209; 38.766; 35.897; 33.457; 31.337; 29.453] #twist angle degrees
 
 # stator data
 xdisk2 = 0.22 #x position of rotor
@@ -103,7 +103,7 @@ chord2 = [
     0.052256
    ]./rdim2[end]
 
-beta2 = [92.711; 91.739; 91.228; 90.868; 90.638; 90.441; 90.124; 89.583; 88.955; 88.388] #90 degrees is along the axial direction
+beta2 = 90.0 .- [92.711; 91.739; 91.228; 90.868; 90.638; 90.441; 90.124; 89.583; 88.955; 88.388] #90 degrees is along the axial direction
 
 #TODO: DON'T USE DRAG OBJECT FOR NOW, ADD LATER IF ACTUALLY NEEDED FOR YOUR APPLICATIONS
 ##drag object data
