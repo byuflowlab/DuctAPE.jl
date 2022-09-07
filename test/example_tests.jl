@@ -110,35 +110,6 @@ end
         datapath * "disk1_re2e6.dat",
     ])
 
-    rs = [0.0; 0.25; 0.5; 0.75; 1.0]
-    chords = [0.1; 0.1; 0.1; 0.1; 0.1]
-    twists = [90.0; 80.0; 75.0; 72.5; 71.25]                 #test rotor and blade definitions.
-    rotor = DuctTAPE.RotorGeometry(
-        0.5, 5, rs, 0.0, chords, twists, nothing, nothing, fill(af1, 5), nothing, 2000
-    )
-
-    # nothing really to test, this is a direct definition...
-    @test rotor == rotor
-
-    outerwallx = [0; 0.5; 1]
-    innerwallx = outerwallx
-    outerwallr = [1; 1.5; 1]
-    innerwallr = [1.0; 1; 1]
-    hubx = outerwallx
-    hubr = [0; 0; 0.0]
-
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
-        innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
-    )
-
-    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, ductsplines, rotor)
-
-    @test bladedims.hubr == 0.0
-    @test bladedims.tipr == 1.0
-    @test bladedims.rdim == rs
-    @test bladedims.tdim == twists
-    @test isapprox(bladedims.sweptannulus, pi)
-    @test isapprox(bladedims.sweptarea, pi)
 end
 
 @testset "Example Paneling Tests:" begin
