@@ -18,20 +18,7 @@ function setup_rotors(; datapath="data/dfdc/airfoils/")
         datapath * "disk2_re2e6.dat",
     ])
 
-    ##generate rotor object
-    #rotor1 = DuctTAPE.RotorGeometry(
-    #    xdisk1, #x position of rotor
-    #    nblade1, #number of blades
-    #    rnondim1, #radial stations
-    #    0.0, #tip gap
-    #    chord1, #chords
-    #    beta1, #twists
-    #    nothing, #skews
-    #    nothing, #rakes
-    #    fill(af1, length(rnondim1)), #airfoils
-    #    -1 .* ones(Int, length(rnondim1)), #solidities
-    #    rpm, #RPM
-    #)
+    #generate rotor object using initialization function
     rotor1 = initialize_rotor_geometry(
         xdisk1, #x position of rotor
         nblade1, # number of blades
@@ -43,7 +30,7 @@ function setup_rotors(; datapath="data/dfdc/airfoils/")
         radialstations=rnondim1, #radial station locations
     )
 
-    #generate stator object (rpm is zero for stator)
+    #generate stator object (rpm is zero for stator) using direct definition
     rotor2 = DuctTAPE.RotorGeometry(
         xdisk2, #x position of rotor
         nblade2, #number of blades
