@@ -423,6 +423,7 @@ function set_rotor_velocities(
         end
     end
 
+    #TODO: do we need to return these inflow angles as well??
     return RotorVelocities(
         vax, vrad, vtan, vaxabs, vradabs, vtanabs, vaxrel, vradrel, vtanrel
     )

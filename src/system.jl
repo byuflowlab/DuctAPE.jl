@@ -5,19 +5,19 @@ Authors: Judd Mehr,
 =#
 
 ###############################
-##### ----- EXPORTS ----- #####
+##### - EXPORTS - #####
 ###############################
 
-## -- TYPES
+##  TYPES
 
 export Freestream
 
-## -- FUNCTIONS
+##  FUNCTIONS
 
 export initialize_system_aerodynamics
 
 #######################################
-##### ----- COMPOSITE TYPES ----- #####
+##### - COMPOSITE TYPES - #####
 #######################################
 
 """
@@ -59,11 +59,11 @@ struct SystemAero{TG,TH,TS,TC,TR,TV}
 end
 
 ####################################
-##### ----- AERODYNAMICS ----- #####
+##### - AERODYNAMICS - #####
 ####################################
 
 #FOR initialize_system_aerodynamics: in re-write, can probably use ccblade like this.
-### -- SET UP CCBLADE CALL
+###  SET UP CCBLADE CALL
 ## ccblade rotor object from blades dimensions
 #ccb_rotor = ccb.Rotor(blade[i].rhub, blade[i].rtip, nbld)
 
@@ -114,7 +114,7 @@ function initialize_system_aerodynamics(
     rotors, blades, wakegrid, rotorpanels, freestream; niter=10, rlx=0.5
 )
 
-    ## -- INITIALIZE VARIABLES -- ##
+    ##  INITIALIZE VARIABLES  ##
 
     # average axial velocity
     #TODO: this would likely be a better guess for initialization (see system_initializaiton function for initializing vmavg) if it was a vector such that the effects of each rotor covered only the sections applied to them.  Right now, the final velocity (after the last rotor) is applied everywhere at initialization.
@@ -190,6 +190,7 @@ function initialize_system_aerodynamics(
                     induced_tangential_velocity = 0.0
                 else
                     # if not the first rotor, then previous rotors have induced tangential velocities. Find the value one grid station in front of the current rotor.
+                    # comes from: v_θ = Γ/2πr
                     induced_tangential_velocity =
                         b_gamma_grid[wakegrid.rotoridxs[i] - 1, r] / (2.0 * pi .* yrc[r])
                 end #if first rotor
@@ -226,7 +227,7 @@ function initialize_system_aerodynamics(
                 )
 
                 # update rotor section circulation
-                b_circ_new = 0.5 * cl * W * blades[i].cdim[r] * nbld
+                b_circ_new = 0.5 * cl * W * blades[i].cdim[r] * nbld #eqn 1.82?
                 b_circ_old = b_circ_rotors[i, r]
                 b_circ_change = b_circ_new - b_circ_old
                 b_circ_rotors[i, r] += rlx * b_circ_change #under relaxation
@@ -372,6 +373,7 @@ function set_grid_aero!(
             b_gamma_grid_change = b_circ_rotors[r, j]
 
             #enthalpy jump across rotor disk
+            #from eqn 1.28
             delta_enthalpy_grid_change = omegas[r] * b_circ_rotors[r, j] / (2.0 * pi)
 
             #entropy jump across rotor disk (from rotor drag sources)
@@ -384,6 +386,8 @@ function set_grid_aero!(
             sigma_avg =
                 0.5 *
                 (rotor_source_strengths[WHAT_INDEX] + rotor_source_strengths[WHAT_INDEX])
+
+            #from eqn 1.29??
             delta_entropy_grid_change = meridional_velocity * sigma_avg
 
             #convect changes downstream from current rotor index
@@ -433,6 +437,7 @@ function set_grid_aero!(b_gamma_grid, delta_enthalpy_grid, b_circ_rotor, omega, 
         b_gamma_grid_change = b_circ_rotor[j]
 
         #enthalpy jump across rotor disk
+        #from eqn 1.28
         delta_enthalpy_grid_change = omega * b_circ_rotor[j] / (2.0 * pi)
 
         #convect changes downstream from current rotor index
@@ -572,8 +577,12 @@ end
 
 """
 see qaic.f
+call qaic1 for each control point
+call qaic1 again for something if closed body? (not sure what this is doing)
+
+in qaic1, call panaic
 """
-function get_aerodynmic_influence_coefficients(
+function compute_controlpoint_velocities(
     control_points,
     panel_edges,
     wall_vorticities,
@@ -582,7 +591,269 @@ function get_aerodynmic_influence_coefficients(
     vinf,
     alpha,
 )
+
+    #zero out control point velocities
+
+    #Get velocities induced by wall (duct and hub) panels and rotor source panels (call panaic stuff)
+
+    #Add velocities induced by wake vortex panels (line 215 in qaic.f)
+
+    #do trailing edge panel calculations and such (see 280ish in qaic.f) (also consider moving to a different place)
+
+    #Add freestream to velocity field
+
     return control_point_velocities,
     velocity_wall_jacobian, velocity_source_jacobian,
     velocity_wake_jacobian
+end
+
+"""
+see panaic line 31 in aic.f
+"""
+function calculate_wall_and_blade_induced_velocity!(control_point_velocities, gamma_wall, gamma_hub, sigma_blades)
+
+    # call lamp function
+
+    # calculate velocity
+
+    return nothing
+end
+
+#TODO: YOU ARE HERE: get the below functions fully into julia (get ins and outs figured out along with what they all do...
+"""
+see lampc in lamp.f
+"""
+function lampshade_influences(; romtol=1e-6)
+
+    #TODO: consider replace romberg stuff with gauss-legendre quadrature
+    #TODO: note that there is a singularity that needs to be delt with, so maybe wait to update integration method until later.
+
+    # lampshade meridional length^2
+    DELSQ = (X1 - X2)^2 + (R1 - R2)^2
+
+    # reference length for convergence tolerance
+    REFL = 0.5 * (R1 + R2)
+
+    # field point is assumed to be at midpoint
+    XF = 0.5 * (X1 + X2)
+    RF = 0.5 * (R1 + R2)
+
+    # evaluate integrals on increasingly fine grids
+    #     (start with two intervals to avoid landing right on the midpoint)
+    for IROM in 1:NROMX
+        NT = 2^IROM
+
+        UG1I[IROM] = 0.0
+        VG1I[IROM] = 0.0
+        UG2I[IROM] = 0.0
+        VG2I[IROM] = 0.0
+        US1I[IROM] = 0.0
+        VS1I[IROM] = 0.0
+        US2I[IROM] = 0.0
+        VS2I[IROM] = 0.0
+
+        # visit the midpoints of each of the NT intervals
+        for IT in 1:NT
+            T = (IT - 0.5) / NT
+            TB = 1.0 - T
+
+            DT = 1.0 / NT
+
+            XT = X1 * TB + X2 * T
+            RT = R1 * TB + R2 * T
+
+            #TODO: write ring function find out returns
+            RING!(XT, RT, XF, RF, UGT, VGT, UST, VST)
+
+            # singular parts of velocities in the limit  XT,RT -> XF,RF
+            DSQ = (XT - XF)^2 + (RT - RF)^2
+            UGA =
+                (RT - RF) / (4.0 * pi * DSQ) -
+                0.5 * log(DSQ / (64.0 * RF^2)) / (8.0 * pi * RF)
+            VGA = -(XT - XF) / (4.0 * pi * DSQ)
+            USA = -(XT - XF) / (4.0 * pi * DSQ)
+            VSA = -(RT - RF) / (4.0 * pi * DSQ) - 0.5 * log(DSQ / RF^2) / (8.0 * pi * RF)
+
+            # accumulate integrals, with singular parts (at t=0.5) removed
+            UG1I[IROM] = UG1I[IROM] + DT * (UGT * TB - UGA)
+            VG1I[IROM] = VG1I[IROM] + DT * (VGT * TB - VGA)
+            UG2I[IROM] = UG2I[IROM] + DT * (UGT * T - UGA)
+            VG2I[IROM] = VG2I[IROM] + DT * (VGT * T - VGA)
+            US1I[IROM] = US1I[IROM] + DT * (UST * TB - USA)
+            VS1I[IROM] = VS1I[IROM] + DT * (VST * TB - VSA)
+            US2I[IROM] = US2I[IROM] + DT * (UST * T - USA)
+            VS2I[IROM] = VS2I[IROM] + DT * (VST * T - VSA)
+        end
+        # Romberg sequence using all previous grid results
+        for KROM in IROM:-1:2
+            # weight needed to cancel lowest-order error terms in KROM level
+            W = 2.0^(2 * (IROM - KROM + 1))
+            WM1 = W - 1.0
+
+            # put Richardson extrapolation for KROM level into KROM-1 level
+            UG1I[KROM - 1] = (W * UG1I[KROM] - UG1I[KROM - 1]) / WM1
+            VG1I[KROM - 1] = (W * VG1I[KROM] - VG1I[KROM - 1]) / WM1
+            UG2I[KROM - 1] = (W * UG2I[KROM] - UG2I[KROM - 1]) / WM1
+            VG2I[KROM - 1] = (W * VG2I[KROM] - VG2I[KROM - 1]) / WM1
+            US1I[KROM - 1] = (W * US1I[KROM] - US1I[KROM - 1]) / WM1
+            VS1I[KROM - 1] = (W * VS1I[KROM] - VS1I[KROM - 1]) / WM1
+            US2I[KROM - 1] = (W * US2I[KROM] - US2I[KROM - 1]) / WM1
+            VS2I[KROM - 1] = (W * VS2I[KROM] - VS2I[KROM - 1]) / WM1
+        end
+
+        if IROM > 1
+            #- compare the best-current and best-previous integrals
+            ERRUG1 = UG1I[1] - UG1I[2]
+            ERRVG1 = VG1I[1] - VG1I[2]
+            ERRUG2 = UG2I[1] - UG2I[2]
+            ERRVG2 = VG2I[1] - VG2I[2]
+            ERRUS1 = US1I[1] - US1I[2]
+            ERRVS1 = VS1I[1] - VS1I[2]
+            ERRUS2 = US2I[1] - US2I[2]
+            ERRVS2 = VS2I[1] - VS2I[2]
+
+            ERR = max(
+                abs(ERRUG1),
+                abs(ERRVG1),
+                abs(ERRUG2),
+                abs(ERRVG2),
+                abs(ERRUS1),
+                abs(ERRVS1),
+                abs(ERRUS2),
+                abs(ERRVS2),
+            )
+
+            if ERR * REFL < ROMTOL
+                convergence = false
+            end
+        end #if
+    end #for
+
+    DELSQ = (X1 - X2)^2 + (R1 - R2)^2
+    DELS = sqrt(DELSQ)
+
+    # analytically-integrated singular parts which were removed
+    UGAI = (1.0 + log(16.0 * RF / DELS)) / (4.0 * pi * RF)
+    VGAI = 0.0
+    USAI = 0.0
+    VSAI = (1.0 + log(2.0 * RF / DELS)) / (4.0 * pi * RF)
+
+    # return final results, with removed parts added back on
+    UG1 = (UG1I[1] + UGAI * 0.5) * DELS
+    VG1 = (VG1I[1] + VGAI * 0.5) * DELS
+    UG2 = (UG2I[1] + UGAI * 0.5) * DELS
+    VG2 = (VG2I[1] + VGAI * 0.5) * DELS
+    US1 = (US1I[1] + USAI * 0.5) * DELS
+    VS1 = (VS1I[1] + VSAI * 0.5) * DELS
+    US2 = (US2I[1] + USAI * 0.5) * DELS
+    VS2 = (VS2I[1] + VSAI * 0.5) * DELS
+
+    return UG, US
+end
+
+"""
+
+
+     Computes the velocities induced by a vortex/source ring
+     located at XV with radius RV with unit circulation
+     and unit source/length density.
+
+     Adapted from routines provided by J. Kerwin.
+
+  Input:
+     XV,RV  x,r of the ring
+     XF,RF  x,r of the field point
+
+  Output:
+     UX,UR  velocity at XF,RF for unit circulation (+ counterclockwise)
+     SX,SR  velocity at XF,RF for unit source/perimeter
+
+"""
+function RING!(XV, RV, XF, RF, UX, UR, SX, SR)
+    if RV <= 0.0
+        # zero-radius ring
+        UX = 0.0
+        UR = 0.0
+        SX = 0.0
+        SR = 0.0
+        return nothing
+    end
+
+    # this fails if R=1 and X=0  (on the ring itself)
+    R = RF / RV
+    X = (XV - XF) / RV
+
+    if R == 1.0 && X == 0.0
+        UX = 0.0
+        UR = 0.0
+        SX = 0.0
+        SR = 0.0
+        return nothing
+    end
+
+    if RF == 0.0
+        # Control Point on the axis
+        UX = 1.0 / sqrt(1.0 + X^2)^3 / (2.0 * RV)
+        UR = 0.0
+        SX = -X / sqrt(1.0 + X^2)^3 / (2.0 * RV)
+        SR = 0.0
+
+    else
+        # Control Point not on X-axis
+        XRP = X^2 + (1.0 + R)^2
+        XRM = X^2 + (1.0 - R)^2
+
+        SRP = sqrt(XRP)
+
+        AK = XRM / XRP
+        ELLEK!(AK, ELE, ELK)
+
+        F = 2.0 / XRM
+
+        UX = (1.0 / SRP) * (ELK - ELE * (1.0 + F * (R - 1.0))) / (2.0 * PI * RV)
+        UR = (X / (SRP * R)) * (ELK - ELE * (1.0 + F * R)) / (2.0 * PI * RV)
+
+        SX = (X / SRP) * (-ELE * F) / (2.0 * PI * RV)
+        SR = (1.0 / (SRP * R)) * (ELK - ELE * (1.0 + F * (R - R * R))) / (2.0 * PI * RV)
+
+        #streamfunction due to vortex
+        #       PSI = ((1.0 - 2.0*XRP*R)*ELK - ELE)*RV / (2.0*PI*sqrt(XRP))
+    end
+
+    return nothing
+end
+
+"""
+
+ELLIPTIC FUNCTIONS ROUTINE
+
+Adapted from routines provided by J. Kerwin.
+
+Input
+     AK     elliptic-integral argument
+
+Output
+     ELE    complete elliptic integral of the second kind
+     ELK    complete elliptic integral of the first  kind
+
+"""
+function ELLEK!(AK, ELE, ELK)
+    ALK = -log(AK)
+
+    ELE = 1.00000000000
+    +(0.44325141463 + (0.06260601220 + (0.04757383546 + 0.01736506451 * AK) * AK) * AK) * AK
+    +(
+        (0.24998368310 + (0.09200180037 + (0.04069697526 + 0.00526449639 * AK) * AK) * AK) *
+        AK,
+    ) * ALK
+
+    ELK = 1.38629436112
+    +(0.09666344259 + (0.03590092383 + (0.03742563713 + 0.01451196212 * AK) * AK) * AK) * AK
+    +(
+        0.50000000000 +
+        (0.12498593597 + (0.06880248576 + (0.03328355346 + 0.00441787012 * AK) * AK) * AK) *
+        AK,
+    ) * ALK
+
+    return nothing
 end
