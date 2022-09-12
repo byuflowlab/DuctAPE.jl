@@ -17,18 +17,20 @@ export PanelSystem, Panels
 export generate_paneling, generate_panel_system
 
 """
-    Panels{TPEx,TPEr,TPC,TPT}
+    Panels{TPEx,TPEr,TPC,TPN,TPT}
 
 **Fields:**
- - `panel_edges_x::Array{Array{Float}}` : Array of sets of x locations for panel edges
- - `panel_edges_r::Array{Array{Float}}` : Array of sets of r locations for panel edges
- - `panel_edges_centers::Array{Array{Float}}` : Array of sets of x,r locations for panel centers
+ - `panel_edges_x::Array{Tuple{Float, Float}}` : Array of sets of x locations for panel edges
+ - `panel_edges_r::Array{Tuple{Float, Float}}` : Array of sets of r locations for panel edges
+ - `panel_centers::Array{Tuple{Float, Float}}` : Array of sets of x,r locations for panel centers
+ - `panel_normals::Array{Tuple{Float, Float}}` : Array of panel unit normal vectors
  - `panel_tyes::Array{String}` : Array of panel types (for use in assembling linear system)
 """
-struct Panels{TPEx,TPEr,TPC,TPT}
+struct Panels{TPEx,TPEr,TPC,TPN,TPT}
     panel_edges_x::TPEx
     panel_edges_r::TPEr
     panel_centers::TPC
+    panel_normals::TPN
     panel_types::TPT
 end
 
@@ -116,6 +118,7 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     wall_panel_edge_x = [(0.0, 0.0) for i in 1:numwallpan]
     wall_panel_edge_r = [(0.0, 0.0) for i in 1:numwallpan]
     wall_panel_center = [(0.0, 0.0) for i in 1:numwallpan]
+    wall_panel_normal = [(0.0, 0.0) for i in 1:numwallpan]
 
     # need to combine the inner and outer geometry coordinates
     # TODO: the user input decides what order things are in.  Need to make sure that the splines are defined in the correct directions, so probably need to add some checks at the point of the ductgeometry generation.
@@ -150,16 +153,23 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
         wall_panel_center[i] = (
             sum(wall_panel_edge_x[i]) / 2.0, sum(wall_panel_edge_r[i]) / 2.0
         )
+
+        # calculate unit normal vectors on panels
+        # #TODO: It's important that the panels are defined in the correct direction, otherwise, these normals will be the wrong directions.  need to figure out which way dfdc wants it.
+        wall_panel_normal[i] = calc_normal(wall_panel_edge_x[i], wall_panel_edge_r[i])
     end
 
     # create wall panels object
-    wall_panels = Panels(wall_panel_edge_x, wall_panel_edge_r, wall_panel_center, "w")
+    wall_panels = Panels(
+        wall_panel_edge_x, wall_panel_edge_r, wall_panel_center, wall_panel_normal, "w"
+    )
 
     # - hub panels
     #initialize from counts above
     hub_panel_edge_x = [(0.0, 0.0) for i in 1:numhubpan]
     hub_panel_edge_r = [(0.0, 0.0) for i in 1:numhubpan]
     hub_panel_center = [(0.0, 0.0) for i in 1:numhubpan]
+    hub_panel_normal = [(0.0, 0.0) for i in 1:numhubpan]
 
     hubxcoordinates = wakegrid.hub_xstations
 
@@ -186,10 +196,15 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
         hub_panel_center[i] = (
             sum(hub_panel_edge_x[i]) / 2.0, sum(hub_panel_edge_r[i]) / 2.0
         )
+
+        #calculate unit normals on panels
+        hub_panel_normal[i] = calc_normal(hub_panel_edge_x[i], hub_panel_edge_r[i])
     end
 
     # create the hub panels object
-    hub_panels = Panels(hub_panel_edge_x, hub_panel_edge_r, hub_panel_center, "w")
+    hub_panels = Panels(
+        hub_panel_edge_x, hub_panel_edge_r, hub_panel_center, hub_panel_normal, "w"
+    )
 
     # - rotor source panels
     rotor_source_panels = Array{Panels}(undef, 2)
@@ -206,6 +221,7 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
         rotor_panel_edge_x = [(0.0, 0.0) for j in 1:numrotorsourcepan]
         rotor_panel_edge_r = [(0.0, 0.0) for j in 1:numrotorsourcepan]
         rotor_panel_center = [(0.0, 0.0) for j in 1:numrotorsourcepan]
+        rotor_panel_normal = [(0.0, 0.0) for j in 1:numrotorsourcepan]
 
         #create a blade object for each rotor (to get dimensional radial data)
         blade = initialize_blade_dimensions(ductgeometry, ductsplines, rotors[i])
@@ -224,6 +240,11 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
             rotor_panel_center[j] = (
                 sum(rotor_panel_edge_x[j]) / 2.0, sum(rotor_panel_edge_r[j]) / 2.0
             )
+
+            #calculate unit normals on panels
+            rotor_panel_normal[i] = calc_normal(
+                rotor_panel_edge_x[i], rotor_panel_edge_r[i]
+            )
         end
 
         if i > 1
@@ -234,7 +255,11 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 
         # create the rotor source panels object
         rotor_source_panels[i] = Panels(
-            rotor_panel_edge_x, rotor_panel_edge_r, rotor_panel_center, "s"
+            rotor_panel_edge_x,
+            rotor_panel_edge_r,
+            rotor_panel_center,
+            rotor_panel_normal,
+            "s",
         )
     end
 
@@ -247,6 +272,7 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
     wake_panel_edge_x = [(0.0, 0.0) for i in 1:numwakepan]
     wake_panel_edge_r = [(0.0, 0.0) for i in 1:numwakepan]
     wake_panel_center = [(0.0, 0.0) for i in 1:numwakepan]
+    wake_panel_normal = [(0.0, 0.0) for i in 1:numwakepan]
 
     #loop through the hub trailing edge vortex sheet panels first.
     for i in 1:(numhubTEwakepan)
@@ -268,6 +294,9 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
         wake_panel_center[i] = (
             sum(wake_panel_edge_x[i]) / 2.0, sum(wake_panel_edge_r[i]) / 2.0
         )
+
+        #calculate unit normals on panels
+        wake_panel_normal[i] = calc_normal(wake_panel_edge_x[i], wake_panel_edge_r[i])
     end
 
     #create a custom index for going forward since there's not an easier way to count.
@@ -292,6 +321,11 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
             #again, average for centers
             wake_panel_center[wpanidx] = (
                 sum(wake_panel_edge_x[wpanidx]) / 2.0, sum(wake_panel_edge_r[wpanidx]) / 2.0
+            )
+
+            #calculate unit normals on panels
+            wake_panel_normal[wpanidx] = calc_normal(
+                wake_panel_edge_x[wpanidx], wake_panel_edge_r[wpanidx]
             )
 
             #update custom index
@@ -320,12 +354,19 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
             sum(wake_panel_edge_x[wpanidx]) / 2.0, sum(wake_panel_edge_r[wpanidx]) / 2.0
         )
 
+        #calculate unit normals on panels
+        wake_panel_normal[wpanidx] = calc_normal(
+            wake_panel_edge_x[wpanidx], wake_panel_edge_r[wpanidx]
+        )
+
         # increment custom index
         wpanidx += 1
     end
 
     # create wake (vortex sheet) panels object
-    wake_panels = Panels(wake_panel_edge_x, wake_panel_edge_r, wake_panel_center, "v")
+    wake_panels = Panels(
+        wake_panel_edge_x, wake_panel_edge_r, wake_panel_center, wake_panel_normal, "v"
+    )
 
     #return the 3 types of panel objects.
     return wall_panels, hub_panels, wake_panels, rotor_source_panels

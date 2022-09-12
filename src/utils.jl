@@ -84,3 +84,44 @@ Calculates rad/s from RPM
 function get_omega(rpm)
     return rpm * pi / 30.0
 end
+
+"""
+    calc_normal(xs, rs)
+
+Calculate unit normal vector of panel with edges defined by xs and rs.
+
+Returns (0.0, 0.0) if panel has zero length.
+
+**Arguments:**
+ - `xs::Tuple{Float, Float}` : x-coordinates of panel edges
+ - `rs::Tuple{Float, Float}` : r-coordinates of panel edges
+
+**Keyword Arguments:**
+ - `return_tangent::Bool` : if true, return tangent vector (as tuple) as a second output.
+
+**Returns:**
+ - `panel_normal::Tuple{Float}` : unit normal vector (x, r) of panel.
+"""
+function calc_normal(xs, rs; return_tangent=false)
+
+    ## Calculate Tangent Vector
+
+    #get panel vector
+    dx = xs[2] - xs[1]
+    dr = rs[2] - rs[1]
+    d = [dx; dr]
+
+    #get panel length
+    dmag = sqrt(dx^2 + dr^2)
+
+    #calculate unit tangent (set to zero if panel length is zero)
+    tangent = (dmag == 0.0) ? [0.0; 0.0] : (d / dmag)
+
+    if return_tangent
+        #if asked for, return the tangent too.
+        return (-tangent[2], tangent[1]), (tangent[1], tangent[2])
+    else
+        # return unit normal vector as tuple to match panel types.
+        return (-tangent[2], tangent[1])
+    end
+end

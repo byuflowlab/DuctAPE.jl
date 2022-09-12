@@ -352,6 +352,8 @@ end
     @test rotor_source_panels[1].panel_centers == [(0.5, 0.25); (0.5, 0.75)]
     #TODO: add wake panel test
 
+    #TODO: need to add test for unit normals once you figure out which direction they are supposed to go.
+
 end
 
 @testset "Basic System Initialization Tests" begin
