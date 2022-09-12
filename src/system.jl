@@ -190,7 +190,7 @@ function initialize_system_aerodynamics(
                     induced_tangential_velocity = 0.0
                 else
                     # if not the first rotor, then previous rotors have induced tangential velocities. Find the value one grid station in front of the current rotor.
-                    # comes from: v_θ = Γ/2πr
+                    # comes from: v_θ = Γ/2πr, eqn 48 (or really 70 and 71) in dfdc docs
                     induced_tangential_velocity =
                         b_gamma_grid[wakegrid.rotoridxs[i] - 1, r] / (2.0 * pi .* yrc[r])
                 end #if first rotor
@@ -263,6 +263,7 @@ function initialize_system_aerodynamics(
             vhsq = total_thrust / (freestream.rho * blades[i].sweptarea) #0.5V^2 (v half square, where V is related to the induced axial velocity) from thrust equation: T = 0.5*rho*A*(vout^2 - vin^2)
             if i == 1
                 #if at the first rotor, then vinf will be main component
+                #NOTE: this is not in the dfdc documentation. Looks to simply be a first guess to set up the system before the solver can be called.
                 induced_axial_velocity =
                     -0.5 * freestream.vinf + sqrt((0.5 * freestream.vinf)^2 + vhsq)
             else
@@ -387,7 +388,7 @@ function set_grid_aero!(
                 0.5 *
                 (rotor_source_strengths[WHAT_INDEX] + rotor_source_strengths[WHAT_INDEX])
 
-            #from eqn 1.29??
+            #TODO: this doesn't seem to match either entropy expression in dfdc docs.
             delta_entropy_grid_change = meridional_velocity * sigma_avg
 
             #convect changes downstream from current rotor index
@@ -564,7 +565,7 @@ function calculate_gamma_theta(system_aero, wakegrid, vm_average)
 end
 
 """
-equation 45 in dfdc theory
+equation 45 (or 61) in dfdc theory
 """
 function calc_gamma_i(H, Gamma, r, vmavg)
     if vmag == 0.0

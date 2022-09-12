@@ -439,8 +439,8 @@ end
 Calculate section circulation.
 
 **Arguments:**
- - `W::Float` : Inflow velocity
- - `chord::Float` : section chord length
+ - `W::Float` : Inflow velocity magnitude
+ - `chord::Float` : dimensional section chord length
  - `cl::Float` : section lift coefficient
 
 **Returns:**
@@ -448,5 +448,24 @@ Calculate section circulation.
 """
 function blade_section_gamma(W, chord, cl)
     return 0.5 * W * chord * cl #eqn 75 in dfdc docs
+end
+
+"""
+    blade_section_sigma(W, chord, cd, B, R)
+
+Calculate section source strength.
+
+**Arguments:**
+ - `W::Float` : Inflow velocity magnitude
+ - `chord::Float` : dimensional section chord length
+ - `cl::Float` : section lift coefficient
+ - `B::Int` : number of rotor blades
+ - `r::Float` : dimensional radial position of blade element
+
+**Returns:**
+ - `sigma::Float` : section source strength
+"""
+function blade_section_sigma(W, chord, cd, B, r)
+    return B/(4.0*pi*r) * W * chord * cd #eqn 73 in dfdc docs
 end
 
