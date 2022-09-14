@@ -109,6 +109,12 @@ Initialize system aerodynamics for rotors and wakes.
  - `systemaero::DuctTAPE.SystemAero` : aerodynamic values for rotor sections and wake grid
  - `rotorvelocities::DuctTAPE.RotorVelocities` : velocities along rotor blades
  - `Vm_avg::Float` : initial guess for average axial velocity in the wakes
+
+# Notes:
+This function starts by initializing the rotor operating point from a constant freestream.
+An iteration using momentum theory is performed to find the self-induced tangential velocities on the rotor.
+`set_grid_aero` is called at the end to initialize the circulation and enthalpy values on the wake grid (the entropy values are set to zero for now and are initialized later).
+`set_rotor_velocities` is also called at the end of this function to save the various rotor velocities.
 """
 function initialize_system_aerodynamics(
     rotors, blades, wakegrid, rotorpanels, freestream; niter=10, rlx=0.5
@@ -326,7 +332,9 @@ end
         rotoridxs,
     )
 
-sets grid aero data from rotor disk jump data
+Sets grid aero data from rotor disk jump data
+
+Aero data includes the three "tilde" values in the DFDC theory: circulation (Gamma), enthalpy (H), and entropy (S), which are all defined based on rotor values, then carried downstream at each wake station, summing up effects from each rotor.
 
 **Arguments:**
  - `b_gamma_grid::Matrix{Float}` : B*Γ values on wake grid
@@ -352,6 +360,11 @@ Same, but inputs are mostly contained in grid_aerodynamics object.
 
 Doesn't set entropy on grid (used in initializing rotor aerodynamics).
 Also only does one rotor at a time (so inputs are for only a single rotor).
+
+
+# TODOs:
+- probably actually want to have a initialize_grid_aero function for initialization, then an update function for later use.
+That way, things can be broken up a bit better so that not everything has to be done in the initialize_system_aerodynamics function (or maybe that can run everything, but the current content can be broken out into smaller functions for testing).
 """
 function set_grid_aero!(
     b_gamma_grid,
