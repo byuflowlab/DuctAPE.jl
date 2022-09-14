@@ -74,7 +74,7 @@ end
 ## ccblade operating point object using calculated average axial velocity and induced tangential velocity.
 ## TODO: for some reason, the tangential velocity varies across the blade, but the axial velocity is taken as an average.  FIGURE OUT HOW TO USE CCBLADE OUT.U AND OUT.V TO MAKE THIS BETTER.
 #ccb_op = ccb.OperatingPoint(
-#    [average_axial_velocity for i in 1:length(induced_tangential_velocity)],
+#    [Vm_avg for i in 1:length(induced_tangential_velocity)],
 #    induced_tangential_velocity,
 #    freestream.rho;
 #    mu=freestream.mu,
@@ -108,7 +108,7 @@ Initialize system aerodynamics for rotors and wakes.
 **Returns:**
  - `systemaero::DuctTAPE.SystemAero` : aerodynamic values for rotor sections and wake grid
  - `rotorvelocities::DuctTAPE.RotorVelocities` : velocities along rotor blades
- - `average_axial_velocity::Float` : initial guess for average axial velocity in the wakes
+ - `Vm_avg::Float` : initial guess for average axial velocity in the wakes
 """
 function initialize_system_aerodynamics(
     rotors, blades, wakegrid, rotorpanels, freestream; niter=10, rlx=0.5
@@ -116,9 +116,9 @@ function initialize_system_aerodynamics(
 
     ##  INITIALIZE VARIABLES  ##
 
-    # average axial velocity
+    # average meridional velocity
     #TODO: this would likely be a better guess for initialization (see system_initializaiton function for initializing vmavg) if it was a vector such that the effects of each rotor covered only the sections applied to them.  Right now, the final velocity (after the last rotor) is applied everywhere at initialization.
-    average_axial_velocity = freestream.vinf
+    Vm_avg = freestream.vinf
 
     #rename for convenience
     numrotors = length(rotors)
@@ -169,7 +169,7 @@ function initialize_system_aerodynamics(
         nr = length(rotors[i].radialstations)
 
         # set up input velocities
-        induced_axial_velocity = average_axial_velocity - freestream.vinf
+        induced_axial_velocity = Vm_avg - freestream.vinf
 
         #initialize output velocities
         rotor_induced_axial_velocites = [0.0 for r in 1:nr]
@@ -197,15 +197,15 @@ function initialize_system_aerodynamics(
 
                 # Sum up velocity components to get totals in axial and tangential directions
                 # TODO: for some reason the axial velocity is not sectional, but averaged. Not sure why that works when the sectional tangential comonents are used. Perhaps since this isn't applying the duct influence at this point, we can't know the sectional axial components.
-                average_axial_velocity = freestream.vinf + induced_axial_velocity
+                Vm_avg = freestream.vinf + induced_axial_velocity
                 total_section_tangential_velocity =
                     induced_tangential_velocity - yrc[r] * omega
 
                 # calculate inflow velocity
-                W = sqrt(total_section_tangential_velocity^2 + average_axial_velocity^2)
+                W = sqrt(total_section_tangential_velocity^2 + Vm_avg^2)
 
                 #get inflow angle
-                phi = atan(average_axial_velocity, -total_section_tangential_velocity)
+                phi = atan(Vm_avg, -total_section_tangential_velocity)
 
                 #get angle of attack
                 alpha = blades[i].tdim[r] - phi
@@ -268,17 +268,17 @@ function initialize_system_aerodynamics(
                     -0.5 * freestream.vinf + sqrt((0.5 * freestream.vinf)^2 + vhsq)
             else
                 # if not at first rotor, first rotor will have added to vinf
-                average_axial_velocity = freestream.vinf + induced_axial_velocity
+                Vm_avg = freestream.vinf + induced_axial_velocity
 
                 induced_axial_velocity +=
-                    -0.5 * average_axial_velocity +
-                    sqrt((0.5 * average_axial_velocity)^2 + vhsq)
+                    -0.5 * Vm_avg +
+                    sqrt((0.5 * Vm_avg)^2 + vhsq)
             end
         end #for iterations
 
-        #update average_axial_velocity so that next rotor will see correct induced velocity.
+        #update Vm_avg so that next rotor will see correct induced velocity.
         #TODO: this seems overly complicated for a julia implementation.  Probably could go back and simplify/clean things up since scoping rules are different than Fortran.
-        average_axial_velocity = induced_axial_velocity + freestream.vinf
+        Vm_avg = induced_axial_velocity + freestream.vinf
 
         # initialize/update grid circulation and enthalpy values based on rotor circulation
         set_grid_aero!(
@@ -311,7 +311,7 @@ function initialize_system_aerodynamics(
         control_point_velocities,
     ),
     rotor_velocities,
-    average_axial_velocity
+    Vm_avg
 end
 
 """
@@ -378,10 +378,9 @@ function set_grid_aero!(
             delta_enthalpy_grid_change = omegas[r] * b_circ_rotors[r, j] / (2.0 * pi)
 
             #entropy jump across rotor disk (from rotor drag sources)
-            #TODO: the index in question here is the index of the control point on the rotor at the station, j, we are at.
             meridional_velocity = sqrt(
-                control_point_velocities[WHAT_INDEX, 1]^2 +
-                control_point_velocities[WHAT_INDEX, 2]^2,
+                control_point_velocities[rotoridxs[r], j][1]^2 +
+                control_point_velocities[rotoridxs[r], j][2]^2,
             )
             #TODO: the index in question here will be the indexs of the panel edges on either side of the rotor control point (these should be the rotor_source_panels since we're talking about source strengths here)
             sigma_avg =

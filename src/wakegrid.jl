@@ -254,7 +254,6 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     xd = unique(xd)
 
     # -- Get wake spacing
-    #TODO: decide if you need to have the grid land right on the trailing edge of the shorter wall/hub.  Right now you land right on the TE of the longest one, but not on the shorter one.
 
     xdsize = deepcopy(dr) #length of last element on ductgeometry spacing
     xw = [xdsize + duct_range[end]] #make first wake element same size as last ductgeometry element
@@ -413,7 +412,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     #put xstations together
     hub_xstations = unique([xhub; xd[1:findlast(x -> x <= hubTEx, xd)]])
 
-    return x_grid_points,    r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations,    hub_xstations
+    return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations
 end
 
 """
@@ -731,6 +730,12 @@ Initialize grid via zero-thrust, unit freestream solution.
 
 **Returns:**
  - `wakegridgeometry::DuctTAPE.WakeGridGeometry` : WakeGridGeometry Object
+
+# NOTES:
+- The grid is designed such that the grid spacing in the axial direction will line up with the rotor positions as well as the trailing edge positions of the duct wall and hub (as well as the leading edge positions if they happen to be behind a rotor, which is not advised).
+- In addition, the grid axial spacing is taken to be as close as possible to the radial spacing, which is defined directly from the rotor radial station positions.
+- The wake spacing is started at the average of the axial spacing inside the duct area and then expanded by an expansion factor that can be defined by the user and is set to 1.1 by default.  This means that the end of the wake will actually not lie directly at the length input by the user (default 2x duct chord), but should be close enough.
+- If more than one rotor is being analyzed, the rotor radial stations have more than likely changed for aft rotors.  Therefore, rotor information for all but the foremost rotor are reinterpolated so that rotor stations line up with wake grid stations.
 """
 function initialize_wakegrid(
     ductgeometry, ductsplines, rotors, grid_options; max_iterations=100, tol=1e-9

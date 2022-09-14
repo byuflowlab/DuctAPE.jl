@@ -54,7 +54,7 @@ end
 """
     generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 
-Generate panel edges and centers.
+Generate panel edges, centers, and unit normals.
 
 **Arguments:**
  - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry object
@@ -67,6 +67,12 @@ Generate panel edges and centers.
  - `hub_panels::DuctTAPE.Panels` : Panels object for hub
  - `wake_panels::DuctTAPE.Panels` : Panels object for vortex wake sheets
  - `rotor_source_panels::Array{DuctTAPE.Panels}` : Array of Panels objects for each rotor
+
+# NOTES:
+- The paneling for the rotor sources and the vortex wake sheets is based directly on the wake grid.
+- The paneling of the duct wall and hub are set such that the panels aft of the foremost rotor also align perfectly with the wake grid.
+- The wall panels in front of the foremost rotor are set using cosine spacing such that the last panel before the foremost rotor is roughly similar in length to the average of the panel lengths in the remainder of the duct.
+(Note that the estimation process for this is not particularly robust at this point.)
 """
 function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
 

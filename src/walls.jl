@@ -89,8 +89,12 @@ Note, if hub x and r coordinates are not set, the x coordinates for the inner wa
 **Keyword Arguments:**
  - `LEx::Float` : x-position of manually defined leading edge.  Set to foremost x-coordinate of duct and hub geometry otherwise.
  - `TEx::Float` : x-position of mannually defined trailing edge.  Set to the rear-most x-coordinate of duct and hub geometry otherwise.
- - `chord::Float` : manuall defined chord length.  Set to difference between leading and trailing edges otherwise.
+ - `chord::Float` : manually defined chord length.  Set to difference between leading and trailing edges otherwise.
  - `bluntTEtol::Float` : tolerance for how close trailing edge points need to be before being considered a blunt trailing edge.
+
+# Notes
+The wall inner and outer and hub coordinates are all saved from leading to trailing edge (this helps with splining things later).
+It is assumed that the wall is similar to an airfoil that may or may not have a blunt trailing edge.
 """
 function defineDuctGeometry(
     wallinnerxcoordinates,

@@ -149,8 +149,6 @@ end
 
 Initialize non-dimensional rotor geometry and other relative information.
 
-if rotor rake is present, need to redo parts of grid initialization (and check that the unused portions of the code work now) to account for different x-locations of start of wake.  NOTE: not sure if rake will work with this solver. Need to think about that more before implementing.
-
 **Arguments:**
  - `xlocation::Float` : x location of rotor relative to duct chord
  - `numblades::Float` : number of rotor blades
@@ -169,6 +167,8 @@ if rotor rake is present, need to redo parts of grid initialization (and check t
 
 **Returns:**
  - `rotorgeometry::DuctTAPE.RotorGeometry` : Rotor geometry object
+
+# TODOs: if rotor rake is present, need to redo parts of grid initialization (and check that the unused portions of the code work now) to account for different x-locations of start of wake.  NOTE: not sure if rake will work with this solver. Need to think about that more before implementing.
 """
 function initialize_rotor_geometry(
     xlocation,
