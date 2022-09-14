@@ -253,11 +253,6 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
             )
         end
 
-        if i > 1
-            #TODO: Decide if it's better to do this here, or elsewhere.  Needs to be after any grid relaxation happens.
-            # if more than one rotor, the rotor radial stations have more than likely changed, for aft rotors, and rotor information needs to be reinterpolated accordingly
-            reinterpolate_rotor!(wakegrid, rotors[i], rotoridxs[i])
-        end
 
         # create the rotor source panels object
         rotor_source_panels[i] = Panels(

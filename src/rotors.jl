@@ -239,13 +239,11 @@ Since the wake grid relaxes and is not aligned with aft rotor radial stations, t
  - `rotor::DuctTAPE.RotorGeometry` : the rotor geometry to update
  - `rotoridx::Int` : index in the x direction for where the rotor lies on the wake grid
 """
-function reinterpolate_rotor!(wakegrid, rotor, rotoridx)
+function reinterpolate_rotor!(gridxs, gridrs, rotor, rotoridx)
 
     #rename things for convenience
-    gridxs = wakegrid.x_grid_points
-    gridrs = wakegrid.r_grid_points
     nr = length(rotor.radialstations)
-    new_rad_stash = gridxs[rotoridx, :]
+    new_rad_stash = gridrs[rotoridx, :]
 
     ## -- Calculate New Section Properties -- ##
 

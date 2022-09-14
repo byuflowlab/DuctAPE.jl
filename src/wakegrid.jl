@@ -749,6 +749,12 @@ function initialize_wakegrid(
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
 
+    for i=1:length(rotors)
+        if i > 1
+            reinterpolate_rotor!(xr, rr, rotors[i], rotoridxs[i])
+        end
+    end
+
     return WakeGridGeometry(
         xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations
     )
