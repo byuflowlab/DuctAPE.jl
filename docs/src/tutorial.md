@@ -251,11 +251,6 @@ plot!(xg', rg'; color=3, linewidth=0.5)
     In addition if the rotor is positioned somewhere not between the wall and hub, for example, if the rotor is out in front of the duct, then if a solution is found, it will likely be inaccurate.
     And finally, things will break if the hub and wall overlap in the radial direction, in other words, if the duct is blocked.
 
-As can be seen in the plot above, there are a few features of the wake grid that deserve mention for the user's information.
-First, the grid is designed such that the grid spacing in the axial direction will line up with the rotor positions as well as the trailing edge positions of the duct wall and hub (as well as the leading edge positions if they happen to be behind a rotor, which is not advised).
-In addition, the grid axial spacing is taken to be as close as possible to the radial spacing, which is defined directly from the rotor radial station positions.
-The wake spacing is started at the average of the axial spacing inside the duct area and then expanded by an expansion factor that can be defined by the user and is set to 1.1 by default.  This means that the end of the wake will actually not lie directly at the length input by the user (default 2x duct chord), but should be close enough.
-
 
 ## System Paneling
 
@@ -512,10 +507,6 @@ scatter!(
 ```
 
 
-The paneling for the rotor sources and the vortex wake sheets is based directly on the wake grid initialized in the previous section (remember that we used a rougher dataset here for visual clarity).
-The paneling of the duct wall and hub are set such that the panels aft of the foremost rotor also align perfectly with the wake grid.
-The points in front of the foremost rotor are set using cosine spacing such that the last panel before the foremost rotor is roughly similar in length to the average of the panel lenghts in the remainder of the duct.
-(Note that the estimation process for this is not particularly robust at this point.)
 
 We could also get all the various panels into a single object using the `PanelSystem` object and associated `generate_panel_system` function.
 
