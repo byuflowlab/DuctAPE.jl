@@ -526,6 +526,7 @@ function calculate_gamma_theta(system_aero, wakegrid, vm_average)
     for x in (wakegrid.hubTEidx):nx_grid
 
         #no enthalpy jump across wall
+        #TODO: why is this not (0.0, delta_enthalpy_grid[x,1])?
         H = (0.0, 0.0)
 
         #no Gamma inside wall
@@ -542,6 +543,7 @@ function calculate_gamma_theta(system_aero, wakegrid, vm_average)
     end
 
     #Taper gamma_theta along hub wall from full value at start of TE wake to start of rotor wake
+    #TODO: is this really necessary?  What does it do?
     for x in 1:(wakegrid.hubTEidx - 1)
         taper = 1.0 - (wakegrid.hubTEidx - (x - 1)) / wakegrid.hubTEidx
         gamma_theta[x, 1] = gamma_theta[hubTEidx, 1] * taper
@@ -557,6 +559,7 @@ function calculate_gamma_theta(system_aero, wakegrid, vm_average)
         Gamma = (b_gamma_grid[x, nr_grid - 1], 0.0)
 
         #r is wall r
+        #TODO: why is it nr-1 then? should it not be nr?
         r = wakegridgeometry.r_grid_points[x, nr_grid - 1]
 
         #similar for vm_average
@@ -567,6 +570,7 @@ function calculate_gamma_theta(system_aero, wakegrid, vm_average)
     end
 
     #Taper gamma_theta along hub wall from full value at start of TE wake to start of rotor wake
+    #TODO: again, why is this done?
     for x in 1:(wakegrid.wallTEidx - 1)
         taper = 1.0 - (wakegrid.wallTEidx - (x - 1)) / wakegrid.wallTEidx
         gamma_theta[x, end] = gamma_theta[wallTEidx, end] * taper
