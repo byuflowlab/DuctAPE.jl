@@ -1,4 +1,4 @@
-# Full Setup and Solution Overview
+# Solver Overview
 
 ## Setup
 
@@ -12,9 +12,10 @@
 1. [Get first guess wake vortex sheet strengths](#8-get-first-guess-wake-vortex-sheet-strengths)
 1. [Calculate velocities and coefficients](#9-calculate-velocities-and-coefficients)
 1. [Calculate blade section source strengths](#10-calculate-blade-section-source-strengths)
-1. [Get initial solution for $\overline{\gamma}$]
-1. [Update control point velocities]
-1. [Update grid flow data]
+1. [Calculate blade section source strengths](#11-calculate-blade-section-source-strengths)
+1. [Get initial solution for $\overline{\gamma}$](#12-get-initial-solution-for-overlinegamma)
+1. [Update control point velocities](#13-update-control-point-velocities-sum-influence-of-wall-panels-wake-panels-and-freestream)
+1. [Update grid flow data](#14-update-grid-flow-data)
 
 Once we have an initial solution set, we're ready to start the interative solution process.
 
@@ -132,7 +133,6 @@ _DFDC: see QAIC in qaic.f starting on line 31_
 DuctTAPE: TODO
 
 Notes:
-- Second biggest question here. What is being calculated?
 
 ### **10. Calculate influence matrix (LHS of system)**
 
@@ -141,7 +141,7 @@ _DFDC: see GSYS in system.f (line 328)_
 DuctTAPE: TODO
 
 Notes:
-- Biggest question also here, what is the system
+
 
 ### **11. Calculate blade section source strengths**
 
@@ -151,7 +151,6 @@ DuctTAPE: TODO
 
 Notes:
 - Inputs: control point velocities and wake circulations
-- probably also propogate source strengths onto wake grid
 
 ### **12. Get initial solution for $\overline{\gamma}$**
 
@@ -160,7 +159,7 @@ _DFDC: see GSOLVE in system.f (line 1504)_
 DuctTAPE: TODO
 
 Notes:
-- Biggest question here: what is the system? Are we actually just solving for $\overline{\gamma}$
+
 
 ### **13. Update control point velocities (sum influence of wall panels, wake** panels, and freestream)
 
@@ -169,7 +168,6 @@ _DFDC: see QCSUM in system.f (line 1795)_
 DuctTAPE: TODO
 
 Notes:
-- Another question: are the control points just on the walls and blades? or are they on the wakes too?
 
 
 ### **14. Update grid flow data**

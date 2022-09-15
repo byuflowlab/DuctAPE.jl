@@ -632,241 +632,241 @@ function calculate_wall_and_blade_induced_velocity!(control_point_velocities, ga
     return nothing
 end
 
-#TODO: YOU ARE HERE: get the below functions fully into julia (get ins and outs figured out along with what they all do...
-"""
-see lampc in lamp.f
-"""
-function lampshade_influences(; romtol=1e-6)
+#DFDC Functions for finding velocities.
+#"""
+#see lampc in lamp.f
+#"""
+#function lampshade_influences(; romtol=1e-6)
 
-    #TODO: consider replace romberg stuff with gauss-legendre quadrature
-    #TODO: note that there is a singularity that needs to be delt with, so maybe wait to update integration method until later.
+#    #TODO: consider replace romberg stuff with gauss-legendre quadrature
+#    #TODO: note that there is a singularity that needs to be delt with, so maybe wait to update integration method until later.
 
-    # lampshade meridional length^2
-    DELSQ = (X1 - X2)^2 + (R1 - R2)^2
+#    # lampshade meridional length^2
+#    DELSQ = (X1 - X2)^2 + (R1 - R2)^2
 
-    # reference length for convergence tolerance
-    REFL = 0.5 * (R1 + R2)
+#    # reference length for convergence tolerance
+#    REFL = 0.5 * (R1 + R2)
 
-    # field point is assumed to be at midpoint
-    XF = 0.5 * (X1 + X2)
-    RF = 0.5 * (R1 + R2)
+#    # field point is assumed to be at midpoint
+#    XF = 0.5 * (X1 + X2)
+#    RF = 0.5 * (R1 + R2)
 
-    # evaluate integrals on increasingly fine grids
-    #     (start with two intervals to avoid landing right on the midpoint)
-    for IROM in 1:NROMX
-        NT = 2^IROM
+#    # evaluate integrals on increasingly fine grids
+#    #     (start with two intervals to avoid landing right on the midpoint)
+#    for IROM in 1:NROMX
+#        NT = 2^IROM
 
-        UG1I[IROM] = 0.0
-        VG1I[IROM] = 0.0
-        UG2I[IROM] = 0.0
-        VG2I[IROM] = 0.0
-        US1I[IROM] = 0.0
-        VS1I[IROM] = 0.0
-        US2I[IROM] = 0.0
-        VS2I[IROM] = 0.0
+#        UG1I[IROM] = 0.0
+#        VG1I[IROM] = 0.0
+#        UG2I[IROM] = 0.0
+#        VG2I[IROM] = 0.0
+#        US1I[IROM] = 0.0
+#        VS1I[IROM] = 0.0
+#        US2I[IROM] = 0.0
+#        VS2I[IROM] = 0.0
 
-        # visit the midpoints of each of the NT intervals
-        for IT in 1:NT
-            T = (IT - 0.5) / NT
-            TB = 1.0 - T
+#        # visit the midpoints of each of the NT intervals
+#        for IT in 1:NT
+#            T = (IT - 0.5) / NT
+#            TB = 1.0 - T
 
-            DT = 1.0 / NT
+#            DT = 1.0 / NT
 
-            XT = X1 * TB + X2 * T
-            RT = R1 * TB + R2 * T
+#            XT = X1 * TB + X2 * T
+#            RT = R1 * TB + R2 * T
 
-            #TODO: write ring function find out returns
-            RING!(XT, RT, XF, RF, UGT, VGT, UST, VST)
+#            #TODO: write ring function find out returns
+#            RING!(XT, RT, XF, RF, UGT, VGT, UST, VST)
 
-            # singular parts of velocities in the limit  XT,RT -> XF,RF
-            DSQ = (XT - XF)^2 + (RT - RF)^2
-            UGA =
-                (RT - RF) / (4.0 * pi * DSQ) -
-                0.5 * log(DSQ / (64.0 * RF^2)) / (8.0 * pi * RF)
-            VGA = -(XT - XF) / (4.0 * pi * DSQ)
-            USA = -(XT - XF) / (4.0 * pi * DSQ)
-            VSA = -(RT - RF) / (4.0 * pi * DSQ) - 0.5 * log(DSQ / RF^2) / (8.0 * pi * RF)
+#            # singular parts of velocities in the limit  XT,RT -> XF,RF
+#            DSQ = (XT - XF)^2 + (RT - RF)^2
+#            UGA =
+#                (RT - RF) / (4.0 * pi * DSQ) -
+#                0.5 * log(DSQ / (64.0 * RF^2)) / (8.0 * pi * RF)
+#            VGA = -(XT - XF) / (4.0 * pi * DSQ)
+#            USA = -(XT - XF) / (4.0 * pi * DSQ)
+#            VSA = -(RT - RF) / (4.0 * pi * DSQ) - 0.5 * log(DSQ / RF^2) / (8.0 * pi * RF)
 
-            # accumulate integrals, with singular parts (at t=0.5) removed
-            UG1I[IROM] = UG1I[IROM] + DT * (UGT * TB - UGA)
-            VG1I[IROM] = VG1I[IROM] + DT * (VGT * TB - VGA)
-            UG2I[IROM] = UG2I[IROM] + DT * (UGT * T - UGA)
-            VG2I[IROM] = VG2I[IROM] + DT * (VGT * T - VGA)
-            US1I[IROM] = US1I[IROM] + DT * (UST * TB - USA)
-            VS1I[IROM] = VS1I[IROM] + DT * (VST * TB - VSA)
-            US2I[IROM] = US2I[IROM] + DT * (UST * T - USA)
-            VS2I[IROM] = VS2I[IROM] + DT * (VST * T - VSA)
-        end
-        # Romberg sequence using all previous grid results
-        for KROM in IROM:-1:2
-            # weight needed to cancel lowest-order error terms in KROM level
-            W = 2.0^(2 * (IROM - KROM + 1))
-            WM1 = W - 1.0
+#            # accumulate integrals, with singular parts (at t=0.5) removed
+#            UG1I[IROM] = UG1I[IROM] + DT * (UGT * TB - UGA)
+#            VG1I[IROM] = VG1I[IROM] + DT * (VGT * TB - VGA)
+#            UG2I[IROM] = UG2I[IROM] + DT * (UGT * T - UGA)
+#            VG2I[IROM] = VG2I[IROM] + DT * (VGT * T - VGA)
+#            US1I[IROM] = US1I[IROM] + DT * (UST * TB - USA)
+#            VS1I[IROM] = VS1I[IROM] + DT * (VST * TB - VSA)
+#            US2I[IROM] = US2I[IROM] + DT * (UST * T - USA)
+#            VS2I[IROM] = VS2I[IROM] + DT * (VST * T - VSA)
+#        end
+#        # Romberg sequence using all previous grid results
+#        for KROM in IROM:-1:2
+#            # weight needed to cancel lowest-order error terms in KROM level
+#            W = 2.0^(2 * (IROM - KROM + 1))
+#            WM1 = W - 1.0
 
-            # put Richardson extrapolation for KROM level into KROM-1 level
-            UG1I[KROM - 1] = (W * UG1I[KROM] - UG1I[KROM - 1]) / WM1
-            VG1I[KROM - 1] = (W * VG1I[KROM] - VG1I[KROM - 1]) / WM1
-            UG2I[KROM - 1] = (W * UG2I[KROM] - UG2I[KROM - 1]) / WM1
-            VG2I[KROM - 1] = (W * VG2I[KROM] - VG2I[KROM - 1]) / WM1
-            US1I[KROM - 1] = (W * US1I[KROM] - US1I[KROM - 1]) / WM1
-            VS1I[KROM - 1] = (W * VS1I[KROM] - VS1I[KROM - 1]) / WM1
-            US2I[KROM - 1] = (W * US2I[KROM] - US2I[KROM - 1]) / WM1
-            VS2I[KROM - 1] = (W * VS2I[KROM] - VS2I[KROM - 1]) / WM1
-        end
+#            # put Richardson extrapolation for KROM level into KROM-1 level
+#            UG1I[KROM - 1] = (W * UG1I[KROM] - UG1I[KROM - 1]) / WM1
+#            VG1I[KROM - 1] = (W * VG1I[KROM] - VG1I[KROM - 1]) / WM1
+#            UG2I[KROM - 1] = (W * UG2I[KROM] - UG2I[KROM - 1]) / WM1
+#            VG2I[KROM - 1] = (W * VG2I[KROM] - VG2I[KROM - 1]) / WM1
+#            US1I[KROM - 1] = (W * US1I[KROM] - US1I[KROM - 1]) / WM1
+#            VS1I[KROM - 1] = (W * VS1I[KROM] - VS1I[KROM - 1]) / WM1
+#            US2I[KROM - 1] = (W * US2I[KROM] - US2I[KROM - 1]) / WM1
+#            VS2I[KROM - 1] = (W * VS2I[KROM] - VS2I[KROM - 1]) / WM1
+#        end
 
-        if IROM > 1
-            #- compare the best-current and best-previous integrals
-            ERRUG1 = UG1I[1] - UG1I[2]
-            ERRVG1 = VG1I[1] - VG1I[2]
-            ERRUG2 = UG2I[1] - UG2I[2]
-            ERRVG2 = VG2I[1] - VG2I[2]
-            ERRUS1 = US1I[1] - US1I[2]
-            ERRVS1 = VS1I[1] - VS1I[2]
-            ERRUS2 = US2I[1] - US2I[2]
-            ERRVS2 = VS2I[1] - VS2I[2]
+#        if IROM > 1
+#            #- compare the best-current and best-previous integrals
+#            ERRUG1 = UG1I[1] - UG1I[2]
+#            ERRVG1 = VG1I[1] - VG1I[2]
+#            ERRUG2 = UG2I[1] - UG2I[2]
+#            ERRVG2 = VG2I[1] - VG2I[2]
+#            ERRUS1 = US1I[1] - US1I[2]
+#            ERRVS1 = VS1I[1] - VS1I[2]
+#            ERRUS2 = US2I[1] - US2I[2]
+#            ERRVS2 = VS2I[1] - VS2I[2]
 
-            ERR = max(
-                abs(ERRUG1),
-                abs(ERRVG1),
-                abs(ERRUG2),
-                abs(ERRVG2),
-                abs(ERRUS1),
-                abs(ERRVS1),
-                abs(ERRUS2),
-                abs(ERRVS2),
-            )
+#            ERR = max(
+#                abs(ERRUG1),
+#                abs(ERRVG1),
+#                abs(ERRUG2),
+#                abs(ERRVG2),
+#                abs(ERRUS1),
+#                abs(ERRVS1),
+#                abs(ERRUS2),
+#                abs(ERRVS2),
+#            )
 
-            if ERR * REFL < ROMTOL
-                convergence = false
-            end
-        end #if
-    end #for
+#            if ERR * REFL < ROMTOL
+#                convergence = false
+#            end
+#        end #if
+#    end #for
 
-    DELSQ = (X1 - X2)^2 + (R1 - R2)^2
-    DELS = sqrt(DELSQ)
+#    DELSQ = (X1 - X2)^2 + (R1 - R2)^2
+#    DELS = sqrt(DELSQ)
 
-    # analytically-integrated singular parts which were removed
-    UGAI = (1.0 + log(16.0 * RF / DELS)) / (4.0 * pi * RF)
-    VGAI = 0.0
-    USAI = 0.0
-    VSAI = (1.0 + log(2.0 * RF / DELS)) / (4.0 * pi * RF)
+#    # analytically-integrated singular parts which were removed
+#    UGAI = (1.0 + log(16.0 * RF / DELS)) / (4.0 * pi * RF)
+#    VGAI = 0.0
+#    USAI = 0.0
+#    VSAI = (1.0 + log(2.0 * RF / DELS)) / (4.0 * pi * RF)
 
-    # return final results, with removed parts added back on
-    UG1 = (UG1I[1] + UGAI * 0.5) * DELS
-    VG1 = (VG1I[1] + VGAI * 0.5) * DELS
-    UG2 = (UG2I[1] + UGAI * 0.5) * DELS
-    VG2 = (VG2I[1] + VGAI * 0.5) * DELS
-    US1 = (US1I[1] + USAI * 0.5) * DELS
-    VS1 = (VS1I[1] + VSAI * 0.5) * DELS
-    US2 = (US2I[1] + USAI * 0.5) * DELS
-    VS2 = (VS2I[1] + VSAI * 0.5) * DELS
+#    # return final results, with removed parts added back on
+#    UG1 = (UG1I[1] + UGAI * 0.5) * DELS
+#    VG1 = (VG1I[1] + VGAI * 0.5) * DELS
+#    UG2 = (UG2I[1] + UGAI * 0.5) * DELS
+#    VG2 = (VG2I[1] + VGAI * 0.5) * DELS
+#    US1 = (US1I[1] + USAI * 0.5) * DELS
+#    VS1 = (VS1I[1] + VSAI * 0.5) * DELS
+#    US2 = (US2I[1] + USAI * 0.5) * DELS
+#    VS2 = (VS2I[1] + VSAI * 0.5) * DELS
 
-    return UG, US
-end
+#    return UG, US
+#end
 
-"""
+#"""
 
 
-     Computes the velocities induced by a vortex/source ring
-     located at XV with radius RV with unit circulation
-     and unit source/length density.
+#     Computes the velocities induced by a vortex/source ring
+#     located at XV with radius RV with unit circulation
+#     and unit source/length density.
 
-     Adapted from routines provided by J. Kerwin.
+#     Adapted from routines provided by J. Kerwin.
 
-  Input:
-     XV,RV  x,r of the ring
-     XF,RF  x,r of the field point
+#  Input:
+#     XV,RV  x,r of the ring
+#     XF,RF  x,r of the field point
 
-  Output:
-     UX,UR  velocity at XF,RF for unit circulation (+ counterclockwise)
-     SX,SR  velocity at XF,RF for unit source/perimeter
+#  Output:
+#     UX,UR  velocity at XF,RF for unit circulation (+ counterclockwise)
+#     SX,SR  velocity at XF,RF for unit source/perimeter
 
-"""
-function RING!(XV, RV, XF, RF, UX, UR, SX, SR)
-    if RV <= 0.0
-        # zero-radius ring
-        UX = 0.0
-        UR = 0.0
-        SX = 0.0
-        SR = 0.0
-        return nothing
-    end
+#"""
+#function RING!(XV, RV, XF, RF, UX, UR, SX, SR)
+#    if RV <= 0.0
+#        # zero-radius ring
+#        UX = 0.0
+#        UR = 0.0
+#        SX = 0.0
+#        SR = 0.0
+#        return nothing
+#    end
 
-    # this fails if R=1 and X=0  (on the ring itself)
-    R = RF / RV
-    X = (XV - XF) / RV
+#    # this fails if R=1 and X=0  (on the ring itself)
+#    R = RF / RV
+#    X = (XV - XF) / RV
 
-    if R == 1.0 && X == 0.0
-        UX = 0.0
-        UR = 0.0
-        SX = 0.0
-        SR = 0.0
-        return nothing
-    end
+#    if R == 1.0 && X == 0.0
+#        UX = 0.0
+#        UR = 0.0
+#        SX = 0.0
+#        SR = 0.0
+#        return nothing
+#    end
 
-    if RF == 0.0
-        # Control Point on the axis
-        UX = 1.0 / sqrt(1.0 + X^2)^3 / (2.0 * RV)
-        UR = 0.0
-        SX = -X / sqrt(1.0 + X^2)^3 / (2.0 * RV)
-        SR = 0.0
+#    if RF == 0.0
+#        # Control Point on the axis
+#        UX = 1.0 / sqrt(1.0 + X^2)^3 / (2.0 * RV)
+#        UR = 0.0
+#        SX = -X / sqrt(1.0 + X^2)^3 / (2.0 * RV)
+#        SR = 0.0
 
-    else
-        # Control Point not on X-axis
-        XRP = X^2 + (1.0 + R)^2
-        XRM = X^2 + (1.0 - R)^2
+#    else
+#        # Control Point not on X-axis
+#        XRP = X^2 + (1.0 + R)^2
+#        XRM = X^2 + (1.0 - R)^2
 
-        SRP = sqrt(XRP)
+#        SRP = sqrt(XRP)
 
-        AK = XRM / XRP
-        ELLEK!(AK, ELE, ELK)
+#        AK = XRM / XRP
+#        ELLEK!(AK, ELE, ELK)
 
-        F = 2.0 / XRM
+#        F = 2.0 / XRM
 
-        UX = (1.0 / SRP) * (ELK - ELE * (1.0 + F * (R - 1.0))) / (2.0 * PI * RV)
-        UR = (X / (SRP * R)) * (ELK - ELE * (1.0 + F * R)) / (2.0 * PI * RV)
+#        UX = (1.0 / SRP) * (ELK - ELE * (1.0 + F * (R - 1.0))) / (2.0 * PI * RV)
+#        UR = (X / (SRP * R)) * (ELK - ELE * (1.0 + F * R)) / (2.0 * PI * RV)
 
-        SX = (X / SRP) * (-ELE * F) / (2.0 * PI * RV)
-        SR = (1.0 / (SRP * R)) * (ELK - ELE * (1.0 + F * (R - R * R))) / (2.0 * PI * RV)
+#        SX = (X / SRP) * (-ELE * F) / (2.0 * PI * RV)
+#        SR = (1.0 / (SRP * R)) * (ELK - ELE * (1.0 + F * (R - R * R))) / (2.0 * PI * RV)
 
-        #streamfunction due to vortex
-        #       PSI = ((1.0 - 2.0*XRP*R)*ELK - ELE)*RV / (2.0*PI*sqrt(XRP))
-    end
+#        #streamfunction due to vortex
+#        #       PSI = ((1.0 - 2.0*XRP*R)*ELK - ELE)*RV / (2.0*PI*sqrt(XRP))
+#    end
 
-    return nothing
-end
+#    return nothing
+#end
 
-"""
+#"""
 
-ELLIPTIC FUNCTIONS ROUTINE
+#ELLIPTIC FUNCTIONS ROUTINE
 
-Adapted from routines provided by J. Kerwin.
+#Adapted from routines provided by J. Kerwin.
 
-Input
-     AK     elliptic-integral argument
+#Input
+#     AK     elliptic-integral argument
 
-Output
-     ELE    complete elliptic integral of the second kind
-     ELK    complete elliptic integral of the first  kind
+#Output
+#     ELE    complete elliptic integral of the second kind
+#     ELK    complete elliptic integral of the first  kind
 
-"""
-function ELLEK!(AK, ELE, ELK)
-    ALK = -log(AK)
+#"""
+#function ELLEK!(AK, ELE, ELK)
+#    ALK = -log(AK)
 
-    ELE = 1.00000000000
-    +(0.44325141463 + (0.06260601220 + (0.04757383546 + 0.01736506451 * AK) * AK) * AK) * AK
-    +(
-        (0.24998368310 + (0.09200180037 + (0.04069697526 + 0.00526449639 * AK) * AK) * AK) *
-        AK,
-    ) * ALK
+#    ELE = 1.00000000000
+#    +(0.44325141463 + (0.06260601220 + (0.04757383546 + 0.01736506451 * AK) * AK) * AK) * AK
+#    +(
+#        (0.24998368310 + (0.09200180037 + (0.04069697526 + 0.00526449639 * AK) * AK) * AK) *
+#        AK,
+#    ) * ALK
 
-    ELK = 1.38629436112
-    +(0.09666344259 + (0.03590092383 + (0.03742563713 + 0.01451196212 * AK) * AK) * AK) * AK
-    +(
-        0.50000000000 +
-        (0.12498593597 + (0.06880248576 + (0.03328355346 + 0.00441787012 * AK) * AK) * AK) *
-        AK,
-    ) * ALK
+#    ELK = 1.38629436112
+#    +(0.09666344259 + (0.03590092383 + (0.03742563713 + 0.01451196212 * AK) * AK) * AK) * AK
+#    +(
+#        0.50000000000 +
+#        (0.12498593597 + (0.06880248576 + (0.03328355346 + 0.00441787012 * AK) * AK) * AK) *
+#        AK,
+#    ) * ALK
 
-    return nothing
-end
+#    return nothing
+#end
