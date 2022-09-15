@@ -11,7 +11,7 @@
 1. [Get first guess grid flow data](#7-get-first-guess-grid-flow-data)
 1. [Get first guess wake vortex sheet strengths](#8-get-first-guess-wake-vortex-sheet-strengths)
 1. [Calculate velocities and coefficients](#9-calculate-velocities-and-coefficients)
-1. [Calculate blade section source strengths](#10-calculate-blade-section-source-strengths)
+1. [Calculate influence matrix (LHS of system)](#10-calculate-influence-matrix-lhs-of-system)
 1. [Calculate blade section source strengths](#11-calculate-blade-section-source-strengths)
 1. [Get initial solution for $\overline{\gamma}$](#12-get-initial-solution-for-overlinegamma)
 1. [Update control point velocities](#13-update-control-point-velocities-sum-influence-of-wall-panels-wake-panels-and-freestream)
