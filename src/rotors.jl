@@ -456,7 +456,7 @@ Calculate section source strength.
 **Arguments:**
  - `W::Float` : Inflow velocity magnitude
  - `chord::Float` : dimensional section chord length
- - `cl::Float` : section lift coefficient
+ - `cd::Float` : section drag coefficient
  - `B::Int` : number of rotor blades
  - `r::Float` : dimensional radial position of blade element
 
