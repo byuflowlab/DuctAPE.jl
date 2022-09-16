@@ -64,7 +64,7 @@ uses FLOWFoil to solve inviscid problem
 - duct_geometry
 
 **Returns:**
-- inviscid_system : LHS, RHS, and vortex strenghts
+- inviscid_system : LHS, RHS, and vortex strengths
 
 **Calls:**
 - various FLOWFoil Functions
@@ -315,10 +315,10 @@ Set the constant source strengths on the rotor source panels
 
 **Arguments:**
 - wall_panel_strengths
-- wake_vortex_strenghts
+- wake_vortex_strengths
 
 **Returns:**
-- rotor_source_panel_strenghts
+- rotor_source_panel_strengths
 
 **Calls:**
 - [probe_velocity_field](#probevelocityfield)
@@ -360,10 +360,6 @@ Calculates source strength.
 
 ---
 
-BEGIN NEWTON SOLVE
-
----
-
 ### `solve_system`
 
 Solve invsicid system (augmented with wake and rotor panel contributions) for wall vortex strengths
@@ -382,7 +378,24 @@ Solve invsicid system (augmented with wake and rotor panel contributions) for wa
 
 ---
 
-### `update_velocities`
+FOR NEWTON SOLVE
+
+### `residual`
+
+Calculate rotor circulation and source panel strengths as a function of wall panel strengths.
+
+**Arguments:**
+
+**Returns**
+- blade element circulations
+- rotor source panel strengths
+
+Calls:
+- all the update functions below.
+
+---
+
+#### _`update_velocities`_
 
 Description
 
@@ -394,25 +407,7 @@ Description
 
 ---
 
-### `calculate_newton_step`
-
-Where should this go??
-
-Select step in blade circulation based on newton's method
-
-**Arguments:**
-- wall_panel_strengths
-- blade_circulation
-
-**Returns:**
-- updated blade circulations
-
-**Calls:**
-- dgamma_dcirc
-
----
-
-### `update_blade_section_data`
+#### _`update_blade_section_data`_
 
 Description
 
@@ -424,7 +419,7 @@ Description
 
 ---
 
-### `update_wake_grid_data`
+#### _`update_wake_grid_data`_
 
 Description
 
@@ -436,7 +431,7 @@ Description
 
 ---
 
-### `update_wake_panel_strengths`
+#### _`update_wake_panel_strengths`_
 
 Description
 
@@ -446,7 +441,7 @@ Description
 
 **Calls:**
 
-### `update_source_panel_strengths`
+#### _`update_source_panel_strengths`_
 
 Description
 
