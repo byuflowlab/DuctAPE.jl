@@ -4,52 +4,6 @@ Functions for paneling system
 Authors: Judd Mehr,
 =#
 
-###############################
-##### ----- EXPORTS ----- #####
-###############################
-
-## -- TYPES
-
-export PanelSystem, Panels
-
-## -- FUNCTIONS
-
-export generate_paneling, generate_panel_system
-
-"""
-    Panels{TPEx,TPEr,TPC,TPN,TPT}
-
-**Fields:**
- - `panel_edges_x::Array{Tuple{Float, Float}}` : Array of sets of x locations for panel edges
- - `panel_edges_r::Array{Tuple{Float, Float}}` : Array of sets of r locations for panel edges
- - `panel_centers::Array{Tuple{Float, Float}}` : Array of sets of x,r locations for panel centers
- - `panel_normals::Array{Tuple{Float, Float}}` : Array of panel unit normal vectors
- - `panel_tyes::Array{String}` : Array of panel types (for use in assembling linear system)
-"""
-struct Panels{TPEx,TPEr,TPC,TPN,TPT}
-    panel_edges_x::TPEx
-    panel_edges_r::TPEr
-    panel_centers::TPC
-    panel_normals::TPN
-    panel_types::TPT
-end
-
-"""
-    PanelSystem{TD,TH,TW,TR}
-
-**Fields:**
- - `wall_panels::DuctTAPE.Panels` : panels defining duct wall airfoil
- - `hub_panels::DuctTAPE.Panels` : panels defining hub
- - `wake_panels::DuctTAPE.Panels` : panels defining rotor wake vortex sheets
- - `rotor_source_panels::DuctTAPE.Panels` : panels defining rotor drag source panels
-"""
-struct PanelSystem{TD,TH,TW,TR}
-    wall_panels::TD
-    hub_panels::TH
-    wake_panels::TW
-    rotor_source_panels::TR
-    #drag_panels::TD
-end
 
 """
     generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)

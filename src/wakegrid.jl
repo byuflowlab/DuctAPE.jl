@@ -4,67 +4,6 @@ Types and Functions related to the wake grid
 Authors: Judd Mehr,
 =#
 
-###############################
-##### ----- EXPORTS ----- #####
-###############################
-
-## -- TYPES
-
-export GridOptions, WakeGridGeometry
-
-## -- FUNCTIONS
-
-export defineGridOptions, initialize_wakegrid
-
-#######################################
-##### ----- COMPOSITE TYPES ----- #####
-#######################################
-
-"""
-    GridOptions{TF,TI}
-
-**Fields:**
- - `num_radial_stations::Integer` : Number of radial stations (equal to number of rotor blade elements used in analysis)
- - `inlet_length::Float` : inlet length (unused)
- - `wake_length::Float` : length of wake behind duct relative to chord length
- - `wake_expansion_factor::Float` : expansion factor to apply to wake grid generation
-"""
-struct GridOptions{TF,TI}
-    num_radial_stations::TI
-    inlet_length::TF
-    wake_length::TF
-    wake_expansion_factor::TF
-    # wakerelax::TB
-end
-
-"""
-    WakeGridGeometry{TF,TI,TA,TW,TH}
-
-Wake grid geometry object
-
-**Fields:**
- - `x_grid_points::Matrix{Float}` : 2D Array of x grid points
- - `r_grid_points::Matrix{Float}` : 2D Array of radial grid points
- - `nx::Int` : number of x stations
- - `nr::Int` : number of radial stations
- - `wallTEidx::Int` : index of duct wall trailing edge x location
- - `hubTEidx::Int` : index of hub wall trailing edge x location
- - `rotoridxs::Array{Int}` : array of indices of rotor x locations
- - `wall_xstations::Array{Int}` : array of indicies on which duct wall is present in grid
- - `hub_xstations::Array{Int}` : array of indicies on which hub is present in grid
-"""
-struct WakeGridGeometry{TF,TI,TA,TW,TH}
-    x_grid_points::TF
-    r_grid_points::TF
-    nx::TI
-    nr::TI
-    wallTEidx::TI
-    hubTEidx::TI
-    rotoridxs::TA
-    wall_xstations::TW
-    hub_xstations::TH
-end
-
 #################################
 ##### ----- GEOMETRY ----- ######
 #################################
@@ -89,7 +28,7 @@ Constructor function for the GridOptions object.
  - `wake_expansion_factor::Float` : expansion factor to apply to wake grid generation
 """
 function defineGridOptions(
-    num_radial_stations; inlet_length=0.5, wake_length=1.0, wake_expansion_factor=1.1
+    num_radial_stations; inlet_length=0.0, wake_length=1.0, wake_expansion_factor=1.1
 )
     return GridOptions(
         num_radial_stations, inlet_length, wake_length, wake_expansion_factor
@@ -714,7 +653,7 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
 end
 
 """
-    initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9)
+    generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9)
 
 Initialize grid via zero-thrust, unit freestream solution.
 
@@ -737,7 +676,7 @@ Initialize grid via zero-thrust, unit freestream solution.
 - The wake spacing is started at the average of the axial spacing inside the duct area and then expanded by an expansion factor that can be defined by the user and is set to 1.1 by default.  This means that the end of the wake will actually not lie directly at the length input by the user (default 2x duct chord), but should be close enough.
 - If more than one rotor is being analyzed, the rotor radial stations have more than likely changed for aft rotors.  Therefore, rotor information for all but the foremost rotor are reinterpolated so that rotor stations line up with wake grid stations.
 """
-function initialize_wakegrid(
+function generate_wake_grid(
     ductgeometry, ductsplines, rotors, grid_options; max_iterations=100, tol=1e-9
 )
 
@@ -749,7 +688,7 @@ function initialize_wakegrid(
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
 
-    for i=1:length(rotors)
+    for i in 1:length(rotors)
         if i > 1
             reinterpolate_rotor!(xr, rr, rotors[i], rotoridxs[i])
         end

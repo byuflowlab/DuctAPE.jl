@@ -87,62 +87,9 @@ UPDROTVEL:
 TQCALC:
 =#
 
-###############################
-##### ----- EXPORTS ----- #####
-###############################
-
-## -- TYPES
-
-export Outputs
-
-## -- FUNCTIONS
-
-#######################################
-##### ----- COMPOSITE TYPES ----- #####
-#######################################
-
-"""
-"""
-struct Outputs{TTt,TTd,TTr,TPt,TPr,TQt,TQr}
-    totalthrust::TTt
-    ductthrust::TTd
-    rotorthrusts::TTr #array
-    totalpower::TPt
-    rotorpowers::TPr #array
-    totaltorque::TQt
-    rotortorques::TQr #array
-end
-
 #######################################
 ##### ----- ITERATION SETUP ----- #####
 #######################################
-
-"""
-need to get all the a's and b's (coefficient matrices) for the walls and rotors.
-Not quite sure where this is done in dfdc, but the functions talking about pointers might be a good place to start (e.g. dfdcsubs.f line 1770)
-"""
-function initialize_system()
-
-    # Initialize Rotor and Wake Aerodynamics
-
-    system_aero, rotor_velocities, initial_vaxial_average = initialize_system_aerodynamics(
-        rotors, blades, wakegrid, freestream; niter=10, rlx=0.5
-    )
-
-    # Initialize average V_m
-    vm_average = initialize_vm_average(initial_vaxial_average)
-
-    #see calculate gamma_theta_i values on wake vortex sheet panesl
-    gamma_theta_wakes = calculate_gamma_theta(system_aero, vm_average)
-
-    #NOTE: gamth = gth after this point in dfdc
-    #
-    #see GAMSOLV
-    #
-    # Create some sort of system object, make sure convergence flag is defaulted to false.
-    #TODO: figure out what to return
-    return system
-end
 
 """
 this is gamsolv at line 32 in solve.f in dfdc
@@ -188,16 +135,8 @@ function solve_system(; niter=100)
     #initialize system
     system = initialize_system()
 
-    #iterate
-    for iter in 1:niter
-
-        #return with true convergence flag if converged
-        if converged
-            #update rotor velocities, see UPDROTVEL
-            system.converged = true
-            return system
-        end
-    end
+    #use nlsolve to solve newton system.
+    nlsolve(f!, initial_x, autodiff = :forward)
 
     #return current system including a false convergence flag.
     return system

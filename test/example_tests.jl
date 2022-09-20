@@ -70,7 +70,7 @@ end
     num_radial_stations = length(rnondim1)
     grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
-    grid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
+    grid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options)
 
     # Test to make sure there's no compilation errors for now.
     @test grid == grid
@@ -164,7 +164,7 @@ end
     num_radial_stations = length(rnondim1)
     grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
-    wakegrid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
+    wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options)
 
     # get paneling of various objects
     wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(

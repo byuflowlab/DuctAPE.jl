@@ -4,61 +4,6 @@ Types and Functions pertaining to duct walls (hub, duct)
 Authors: Judd Mehr,
 =#
 
-###############################
-##### ----- EXPORTS ----- #####
-###############################
-
-## -- TYPES
-
-export DuctGeometry, DuctSplines
-
-## -- FUNCTIONS
-
-export defineDuctGeometry, split_wall
-
-"""
-    DuctGeometry{TA,TF}
-
-**Fields:**
- - `wallinnerxcoordinates::Array{Float}` : x coordinates of inner (lower) wall geometry
- - `wallouterxcoordinates::Array{Float}` : x coordinates of outer (upper) wall geometry
- - `wallinnerrcoordinates::Array{Float}` : r coordinates of inner (lower) wall geometry
- - `wallouterrcoordinates::Array{Float}` : r coordinates of outer (upper) wall geometry
- - `hubxcoordinates::Array{Float}` : x coordinates of hub geometry
- - `hubrcoordinates::Array{Float}` : r coordinates of hub geometry
- - `LEx::Float` : x-position of leading edge
- - `TEx::Float` : x-position of trailing edge
- - `chord::Float` : chord length
- - `wallbluntTE::Bool` : flag for blunt trailing edge on wall
- - `hubbluntTE::Bool` : flag for blunt trailing edge on hub
-"""
-struct DuctGeometry{TA,TF,TB}
-    wallinnerxcoordinates::TA
-    wallinnerrcoordinates::TA
-    wallouterxcoordinates::TA
-    wallouterrcoordinates::TA
-    hubxcoordinates::TA
-    hubrcoordinates::TA
-    LEx::TF
-    TEx::TF
-    chord::TF
-    wallbluntTE::TB
-    hubbluntTE::TB
-end
-
-"""
-TODO: move the contents of DuctSplines into DuctGeometry to simplify inputs/outputs throughout code.
-
- - `wallinnerspline::FLOWMath.Akima` : Spline of inner coordinates of duct wall
- - `wallouterspline::FLOWMath.Akima` : Spline of outer coordinates of duct wall
- - `hubspline::FLOWMath.Akima` : Spline of hub coordinates
-"""
-struct DuctSplines{TSDi,TSDo,TSH}
-    wallinnerspline::TSDi
-    wallouterspline::TSDo
-    hubspline::TSH
-end
-
 """
     defineDuctGeometry(
         wallinnerxcoordinates,
@@ -194,30 +139,4 @@ function defineDuctGeometry(
         hubbluntTE,
     ),
     DuctSplines(wallinnerspline, wallouterspline, hubspline)
-end
-
-"""
-    split_wall(x,r)
-
-Splits full airfoil coordinates into upper and lower halves.
-
-Only works based on geometry.  Splits at lowest x-value, does not split based on stagnation point.
-
-**Arguments:**
- - `x::Array{Float}` : Array of x-coordinates, assumed to start at the bottom trailing edge and proceed clockwise
- - `r::Array{Float}` : Array of r-coordinates, assumed to start at the bottom trailing edge and proceed clockwise
-
-**Returns:**
- - `xlower::Array{Float}` : Array of lower x-coordinates
- - `xupper::Array{Float}` : Array of upper x-coordinates
- - `rlower::Array{Float}` : Array of lower r-coordinates
- - `rupper::Array{Float}` : Array of upper r-coordinates
-"""
-function split_wall(x, r)
-
-    #find minimum x (LE)
-    _, xminidx = findmin(x)
-
-    #return split coordinates
-    return x[1:xminidx], x[xminidx:end], r[1:xminidx], r[xminidx:end]
 end

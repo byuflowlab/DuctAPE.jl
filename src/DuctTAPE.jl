@@ -10,16 +10,40 @@ using CCBlade
 ccb = CCBlade
 # using ForwardDiff
 # fd = ForwardDiff #newton method
-# using IterativeSolvers
-# is = IterativeSolvers #SOR solver
+# using NLsolve
 
 # - INCLUDED FILES
-include("utils.jl")
+include("types.jl")
 include("walls.jl")
-include("airfoils.jl")
 include("rotors.jl")
 include("wakegrid.jl")
 include("panels.jl")
 include("system.jl")
 include("solve.jl")
+include("utils.jl")
+include("airfoils.jl")
+
+#include("initailize.jl")
+
+#######################
+##### - EXPORTS - #####
+#######################
+
+##  TYPES
+
+export Freestream
+export DuctGeometry, DuctSplines
+export GridOptions, WakeGridGeometry
+export PanelSystem, Panels
+export RotorGeometry, BladeDimensions
+export Outputs
+
+##  FUNCTIONS
+
+export defineDuctGeometry, split_wall
+export defineGridOptions, initialize_wakegrid
+export generate_paneling, generate_panel_system
+export initialize_system_aerodynamics
+export initialize_rotor_geometry, initialize_blade_dimensions
+
 end

@@ -71,7 +71,7 @@ end
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
 
     #test everything together
-    grid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, [], grid_options)
+    grid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, [], grid_options)
 
     @test xr == x_grid_points
     @test rr == r_grid_points
@@ -221,7 +221,7 @@ end
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
 
     #test everything together
-    grid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, [rotor], grid_options)
+    grid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, [rotor], grid_options)
 
     @test xr == x_grid_points
     @test rr == r_grid_points
@@ -287,7 +287,7 @@ end
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
 
     #test everything together
-    grid = DuctTAPE.initialize_wakegrid(
+    grid = DuctTAPE.generate_wake_grid(
         ductgeometry, ductsplines, [rotor1, rotor2], grid_options
     )
 
@@ -337,7 +337,7 @@ end
     rotors = [rotor]
 
     #test everything together
-    wakegrid = DuctTAPE.initialize_wakegrid(
+    wakegrid = DuctTAPE.generate_wake_grid(
         ductgeometry, ductsplines, [rotor], grid_options
     )
 
@@ -388,7 +388,7 @@ end
     rotors = [rotor]
 
     #test everything together
-    wakegrid = DuctTAPE.initialize_wakegrid(
+    wakegrid = DuctTAPE.generate_wake_grid(
         ductgeometry, ductsplines, [rotor], grid_options
     )
 

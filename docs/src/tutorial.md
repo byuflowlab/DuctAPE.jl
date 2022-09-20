@@ -208,13 +208,13 @@ grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 With options set, rotor location chosen, and the wall and hub geometry available, we're finally ready to initialize the wake grid object.
 
 ```@docs
-DuctTAPE.initialize_wakegrid
+DuctTAPE.generate_wake_grid
 DuctTAPE.WakeGridGeometry
 ```
 
 ```@example geom
 # --- INITIALIZE GRID
-wakegrid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
+wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options)
 
 xg = wakegrid.x_grid_points
 rg = wakegrid.r_grid_points
@@ -359,7 +359,7 @@ grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
 
 # --- INITIALIZE GRID
-wakegrid = DuctTAPE.initialize_wakegrid(ductgeometry, ductsplines, rotors, grid_options)
+wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options)
 
 xg = wakegrid.x_grid_points
 rg = wakegrid.r_grid_points
