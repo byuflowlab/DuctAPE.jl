@@ -19,11 +19,12 @@ include("rotors.jl")
 include("wakegrid.jl")
 include("panels.jl")
 include("system.jl")
-include("solve.jl")
+
 include("utils.jl")
 include("airfoils.jl")
 
-#include("initailize.jl")
+# include("initailize.jl")
+# include("solve.jl")
 
 #######################
 ##### - EXPORTS - #####

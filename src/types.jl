@@ -4,6 +4,27 @@
 ##################################
 
 """
+"""
+struct System{FS,GO,DG,WGG,RG,BD,PG,BA,G,S,PS,RV,GT}
+    #Parameters
+    freestream::FS
+    gridoptions::GO
+    #Geometry
+    ductgeometry::DG
+    wakegridgeometry::WGG
+    rotorgeometries::RG
+    bladedimensions::BD
+    panelgeometries::PG
+    #Aerodynamics
+    bladeaerodynamics::BA
+    Gammas::G
+    Sigmas::S
+    panelstrengths::PS
+    rotorvelocities::RV
+    gridthermodynamics::GT
+end
+
+"""
     Freestream{TVI,TVR,TF}
 
 **Fields:**
@@ -184,7 +205,7 @@ struct Panels{TPEx,TPEr,TPC,TPN,TPT}
 end
 
 """
-    PanelSystem{TD,TH,TW,TR}
+    PanelGeometries{TD,TH,TW,TR}
 
 **Fields:**
  - `wall_panels::DuctTAPE.Panels` : panels defining duct wall airfoil
@@ -192,7 +213,7 @@ end
  - `wake_panels::DuctTAPE.Panels` : panels defining rotor wake vortex sheets
  - `rotor_source_panels::DuctTAPE.Panels` : panels defining rotor drag source panels
 """
-struct PanelSystem{TD,TH,TW,TR}
+struct PanelGeometries{TD,TH,TW,TR}
     wall_panels::TD
     hub_panels::TH
     wake_panels::TW

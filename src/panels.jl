@@ -1,12 +1,12 @@
 #=
-Functions for paneling system
+Functions for Panel Geometries and Geometric Coefficients
 
 Authors: Judd Mehr,
 =#
 
 
 """
-    generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
+    generate_panel_geometries(ductgeometry, ductsplines, rotors, wakegrid)
 
 Generate panel edges, centers, and unit normals.
 
@@ -28,7 +28,7 @@ Generate panel edges, centers, and unit normals.
 - The wall panels in front of the foremost rotor are set using cosine spacing such that the last panel before the foremost rotor is roughly similar in length to the average of the panel lengths in the remainder of the duct.
 (Note that the estimation process for this is not particularly robust at this point.)
 """
-function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
+function generate_panel_geometries(ductgeometry, ductsplines, rotors, wakegrid)
 
     ## -- INITIALIZE ARRAYS -- ##
     # i.e. Count number of panels
@@ -323,31 +323,9 @@ function generate_paneling(ductgeometry, ductsplines, rotors, wakegrid)
         wake_panel_edge_x, wake_panel_edge_r, wake_panel_center, wake_panel_normal, "v"
     )
 
-    #return the 3 types of panel objects.
-    return wall_panels, hub_panels, wake_panels, rotor_source_panels
-end
-
-"""
-    generate_panel_system(ductgeometry, ductsplines, rotors, wakegrid)
-
-Put all the various panel objects together for convenience.
-
-**Arguments:**
- - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry object
- - `ductsplines::DuctTAPE.DuctSplines` : Duct Splines object
- - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
- - `wakegrid::DuctTAPE.WakeGridGeometry` : Wake Grid object
-
-**Returns:**
- - `panelsystem::DuctTAPE.PanelSystem` : All System Panels
-"""
-function generate_panel_system(ductgeometry, ductsplines, rotors, wakegrid)
-
-    #generate individual panel objects
-    wall_panels, hub_panels, wake_panels, rotor_source_panels = generate_paneling(
-        ductgeometry, ductsplines, rotors, wakegrid
-    )
+    ## return the 3 types of panel objects.
+    #return wall_panels, hub_panels, wake_panels, rotor_source_panels
 
     #return panel system containing all panel objects
-    return PanelSystem(wall_panels, hub_panels, wake_panels, rotor_source_panels)
+    return PanelGeometries(wall_panels, hub_panels, wake_panels, rotor_source_panels)
 end

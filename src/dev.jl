@@ -153,23 +153,6 @@ end
 
 ##########FOR NEWTON SOLVE
 
-"""
-    `residual`
-
-Calculate rotor circulation and source panel strengths as a function of wall panel strengths.
-
-**Arguments:**
-
-**Returns**
-- blade element circulations
-- rotor source panel strengths
-
-Calls:
-- all the update functions below.
-"""
-function residual()
-    return nothing
-end
 
 """
     `update_velocities`
