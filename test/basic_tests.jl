@@ -342,9 +342,14 @@ end
     )
 
     #generate panels
-    wall_panels, hub_panels, wake_panels, rotor_source_panels = generate_paneling(
+    panel_geometries = DuctTAPE.generate_panel_geometries(
         ductgeometry, ductsplines, rotors, wakegrid
     )
+
+    wall_panels = panel_geometries.wall_panels
+    hub_panels = panel_geometries.hub_panels
+    wake_panels = panel_geometries.wake_panels
+    rotor_source_panels = panel_geometries.rotor_source_panels
 
     @test wall_panels.panel_centers ==
         [(0.75, 1.0); (0.25, 1.0); (0.25, 1.25); (0.75, 1.25)]
@@ -397,9 +402,14 @@ end
     blades = [bladedims]
 
     #generate panels
-    wall_panels, hub_panels, wake_panels, rotor_source_panels = generate_paneling(
+    panel_geometries = DuctTAPE.generate_panel_geometries(
         ductgeometry, ductsplines, rotors, wakegrid
     )
+
+    wall_panels = panel_geometries.wall_panels
+    hub_panels = panel_geometries.hub_panels
+    wake_panels = panel_geometries.wake_panels
+    rotor_source_panels = panel_geometries.rotor_source_panels
 
     vinf = 10.0
     vref = vinf

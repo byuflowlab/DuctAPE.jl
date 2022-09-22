@@ -166,10 +166,15 @@ end
 
     wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options)
 
-    # get paneling of various objects
-    wall_panels, hub_panels, wake_panels, rotor_source_panels = DuctTAPE.generate_paneling(
+    #generate panels
+    panel_geometries = DuctTAPE.generate_panel_geometries(
         ductgeometry, ductsplines, rotors, wakegrid
     )
+
+    wall_panels = panel_geometries.wall_panels
+    hub_panels = panel_geometries.hub_panels
+    wake_panels = panel_geometries.wake_panels
+    rotor_source_panels = panel_geometries.rotor_source_panels
 
     # Test to make sure there's no compilation errors for now.
     @test true

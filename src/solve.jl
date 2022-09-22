@@ -83,12 +83,27 @@ function solve!(problem)
     =#
 
     #create solution object from problem and solver_results
+    solution = assemble_solution(problem, solver_results)
 
     #return updated problem and convergence flag
     return solution, NLsolve.converged(solver_results)
 end
 
 """
+    calculate_residuals(Gamma, Sigma, Ws, cls, cds, blades)
+
+Calculates Gamma and Sigma residuals.
+
+**Arguments:**
+- `Gamma::Array{Float,2}` : Matrix of Gamma inputs, size = (number of radial stations, number of rotors)
+- `Sigma::Array{Float,2}` : Matrix of Sigma inputs, size = (number of radial stations - 1, number of rotors)
+- `Ws::Array{Float,2}` : Inflow velocities at rotor stations (same size as Gamma)
+- `cls::Array{Float,2}` : lift coefficients at rotor stations
+- `cds::Array{Float,2}` : drag coefficients at rotor stations
+- `blades::Array{DuctTAPE.BladeDimensions}` : Array of dimensional rotor blade objects
+
+**Returns:**
+- `residuals::Array{Float}` : 1D array of residuals [Gamma1;... GammaN; Sigam1;... SigmaN]
 """
 function calculate_residuals(Gamma, Sigma, Ws, cls, cds, blades)
 
@@ -132,4 +147,20 @@ function calculate_residuals(Gamma, Sigma, Ws, cls, cds, blades)
 
     #reformat residuals into single array (matching gamma_sigma input for clarity)
     return [reshape(gamma_res, (:, 1)); reshape(sigma_res, (:, 1))]
+end
+
+"""
+    assemble_solution(problem, solver_results)
+
+Assemble solution (system) object from problem and results.
+
+**Arguments:**
+- `problem::DuctTAPE.System` : Problem system object
+- `solver_results::NLsolve.SolverResults` : nlsolve output object
+
+**Returns:**
+- `solution::DuctTAPE.System` : Solution system object
+"""
+function assemble_solution(problem, solver_results)
+    return solution
 end
