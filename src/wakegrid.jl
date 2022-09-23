@@ -105,7 +105,7 @@ function generate_grid_points(ductgeometry, rotors, grid_options; debug=false)
         rotoridx = 1 #findmin([rotors[i].xlocation for i in 1:length(rotors)])
 
         #get blade from foremost rotor
-        blade = initialize_blade_dimensions(ductgeometry, rotors[rotoridx])
+        blade = initialize_blade_dimensions(rotors, ductgeometry)[1]
 
         if rotors[rotoridx].radialstations == nothing
             #get annulus radius
@@ -686,12 +686,6 @@ function generate_wake_grid(
 
     # relax grid
     xr, rr = relax_grid(xg, rg, nx, nr; max_iterations=max_iterations, tol=tol)
-
-    for i in 1:length(rotors)
-        if i > 1
-            reinterpolate_rotor!(xr, rr, rotors[i], rotoridxs[i])
-        end
-    end
 
     return WakeGridGeometry(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs)#, wall_xstations, hub_xstations)
 end

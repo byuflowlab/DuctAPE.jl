@@ -95,10 +95,18 @@ function initialize_geometry(ductgeometry, rotors, gridoptions)
     #TODO: update ductgeometry to include splines throughout.
 
     # Create Wake Grid
-    wakegrid, updatedrotors, blades = generate_wake_grid(ductgeometry, rotors, gridoptions)
+    wakegrid = generate_wake_grid(ductgeometry, rotors, gridoptions)
+
+    #reinterpolate rotors if necessary
+    reinterpolate_rotors!(rotors, wakegrid)
+
+    # get blade objects from updated rotor objects
+    blades = initialize_blade_dimensions(rotors, ductgeometry)
 
     # Create Panels
-    panelgeometries = generate_panel_geometries(ductgeometry, updatedrotors, blades, wakegrid)
+    panelgeometries = generate_panel_geometries(
+        ductgeometry, updatedrotors, blades, wakegrid
+    )
 
     return wakegrid, panelgeometries, updatedrotors
 end

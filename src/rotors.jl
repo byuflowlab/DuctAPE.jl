@@ -105,7 +105,7 @@ function initialize_rotor_geometry(
 end
 
 """
-    reinterpolate_rotor!(wakegrid, rotor, rotoridx)
+    reinterpolate_rotors(wakegrid, rotor, rotoridx)
 
 Since the wake grid relaxes and is not aligned with aft rotor radial stations, this function reinterpolates rotor data based on updated radial stations.
 
@@ -116,66 +116,76 @@ Since the wake grid relaxes and is not aligned with aft rotor radial stations, t
  - `rotor::DuctTAPE.RotorGeometry` : the rotor geometry to update
  - `rotoridx::Int` : index in the x direction for where the rotor lies on the wake grid
 """
-function reinterpolate_rotor!(gridxs, gridrs, rotor, rotoridx)
+function reinterpolate_rotors!(rotors, wakegrid)
 
-    #rename things for convenience
-    nr = length(rotor.radialstations)
-    new_rad_stash = gridrs[rotoridx, :]
+    #check if less than 2 rotors
+    if length(rotors) <= 1
+        return rotors
+    else
+        #if more, go through and update rotors
+        for r in 2:length(rotors)
+            #rename things for convenience
+            nr = length(rotor[r].radialstations)
+            new_rad_stash = wakegrid.x_grid_points[rotoridx[r], :]
 
-    ## -- Calculate New Section Properties -- ##
+            ## -- Calculate New Section Properties -- ##
 
-    #TODO: none of this will be nothing at this point (probably), can probably simplify and clean up this function.
+            #TODO: none of this will be nothing at this point (probably), can probably simplify and clean up this function.
 
-    # update chords
-    if rotor.chords != nothing
-        new_chords = FLOWMath.Akima(rotor.radialstations, rotor.chords)
-        for i in 1:nr
-            rotor.chords[i] = new_chords(new_rad_stash[i])
+            # update chords
+            if rotor.chords != nothing
+                new_chords = FLOWMath.Akima(rotor[r].radialstations, rotor[r].chords)
+                for i in 1:nr
+                    rotor[r].chords[i] = new_chords(new_rad_stash[i])
+                end
+            end
+
+            # update twists
+            if rotor[r].twists != nothing
+                new_twists = FLOWMath.Akima(rotor[r].radialstations, rotor[r].twists)
+                for i in 1:nr
+                    rotor[r].twists[i] = new_twists(new_rad_stash[i])
+                end
+            end
+
+            # updates skews
+            if rotor[r].skews != nothing
+                new_skews = FLOWMath.Akima(rotor[r].radialstations, rotor[r].skews)
+                for i in 1:nr
+                    rotor[r].skews[i] = new_skews(new_rad_stash[i])
+                end
+            end
+
+            # update rakes
+            if rotor[r].rakes != nothing
+                new_rakes = FLOWMath.Akima(rotor[r].radialstations, rotor[r].rakes)
+                for i in 1:nr
+                    rotor[r].rakes[i] = new_rakes(new_rad_stash[i])
+                end
+            end
+
+            # update solidity
+            if rotor[r].solidities != nothing
+                new_solidities = FLOWMath.Akima(
+                    rotor[r].radialstations, rotor[r].solidities
+                )
+                for i in 1:nr
+                    rotor[r].solidities[i] = new_solidities(new_rad_stash[i])
+                end
+            end
+
+            # update radial stations at the end after using both old and new for splines
+            for i in 1:nr
+                rotor[r].radialstations[i] = new_rad_stash[i]
+            end
         end
-    end
-
-    # update twists
-    if rotor.twists != nothing
-        new_twists = FLOWMath.Akima(rotor.radialstations, rotor.twists)
-        for i in 1:nr
-            rotor.twists[i] = new_twists(new_rad_stash[i])
-        end
-    end
-
-    # updates skews
-    if rotor.skews != nothing
-        new_skews = FLOWMath.Akima(rotor.radialstations, rotor.skews)
-        for i in 1:nr
-            rotor.skews[i] = new_skews(new_rad_stash[i])
-        end
-    end
-
-    # update rakes
-    if rotor.rakes != nothing
-        new_rakes = FLOWMath.Akima(rotor.radialstations, rotor.rakes)
-        for i in 1:nr
-            rotor.rakes[i] = new_rakes(new_rad_stash[i])
-        end
-    end
-
-    # update solidity
-    if rotor.solidities != nothing
-        new_solidities = FLOWMath.Akima(rotor.radialstations, rotor.solidities)
-        for i in 1:nr
-            rotor.solidities[i] = new_solidities(new_rad_stash[i])
-        end
-    end
-
-    # update radial stations at the end after using both old and new for splines
-    for i in 1:nr
-        rotor.radialstations[i] = new_rad_stash[i]
     end
 
     return nothing
 end
 
 """
-    initialize_blade_dimensions(ductgeometry, Rotor)
+    initialize_blade_dimensions(rotors, ductgeometry)
 
 Initilialize needed blade information for various calculations during the solution process.
 
@@ -183,36 +193,49 @@ Initilialize needed blade information for various calculations during the soluti
  - `ductsplines::DuctTAPE.ductsplines` : ductsplines object containing splines for duct wall and hub
  - `Rotor::DuctTAPE.Rotor` : Rotor object for which to define blade information
 """
-function initialize_blade_dimensions(ductgeometry, Rotor)
+function initialize_blade_dimensions(rotors, ductgeometry)
 
-    #unpack splines for convenience
-    wallspline = ductgeometry.wallinnerspline
-    hubspline = ductgeometry.hubspline
+    #initialize TODO: how to type this?
+    blades = []
 
-    #find r-position of wall and hub at rotor location
-    rhub = max(0.0, hubspline(Rotor.xlocation * ductgeometry.chord))
-    rtip = wallspline(Rotor.xlocation * ductgeometry.chord)
+    for Rotor in rotors
+        #unpack splines for convenience
+        wallspline = ductgeometry.wallinnerspline
+        hubspline = ductgeometry.hubspline
 
-    #get dimensional radial station locations
-    #use linear transform to go from non-dim to dimensional range
-    rdim = lintran(
-        rhub, rtip, Rotor.radialstations[1], Rotor.radialstations[end], Rotor.radialstations
-    )
+        #find r-position of wall and hub at rotor location
+        rhub = max(0.0, hubspline(Rotor.xlocation * ductgeometry.chord))
+        rtip = wallspline(Rotor.xlocation * ductgeometry.chord)
 
-    # dimensional chords
-    cdim = Rotor.chords .* rtip
+        #get dimensional radial station locations
+        #use linear transform to go from non-dim to dimensional range
+        rdim = lintran(
+            rhub,
+            rtip,
+            Rotor.radialstations[1],
+            Rotor.radialstations[end],
+            Rotor.radialstations,
+        )
 
-    #twists are unchanged
-    tdim = Rotor.twists
+        # dimensional chords
+        cdim = Rotor.chords .* rtip
 
-    # check that the rotor radial positions are all positive and that the array is monotonic to avoid issues including hanging in wake grid generation
-    @assert ismonotonic(rdim) && all(>=(0), rdim)
+        #twists are unchanged
+        tdim = Rotor.twists
 
-    #calculate swept area
-    sweptannulus = pi * (rtip^2 - rhub^2)
-    sweptarea = pi * rtip^2
+        # check that the rotor radial positions are all positive and that the array is monotonic to avoid issues including hanging in wake grid generation
+        @assert ismonotonic(rdim) && all(>=(0), rdim)
 
-    return BladeDimensions(rhub, rtip, rdim, cdim, tdim, sweptannulus, sweptarea)
+        #calculate swept area
+        sweptannulus = pi * (rtip^2 - rhub^2)
+        sweptarea = pi * rtip^2
+
+        push!(
+            blades, BladeDimensions(rhub, rtip, rdim, cdim, tdim, sweptannulus, sweptarea)
+        )
+    end
+
+    return blades
 end
 
 """
@@ -341,6 +364,6 @@ Calculate section source strength.
  - `sigma::Float` : section source strength
 """
 function blade_section_sigma(W, chord, cd, B, r)
-    return B/(4.0*pi*r) * W * chord * cd #eqn 73 in dfdc docs
+    return B / (4.0 * pi * r) * W * chord * cd #eqn 73 in dfdc docs
 end
 

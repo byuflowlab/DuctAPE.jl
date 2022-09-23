@@ -123,7 +123,7 @@ end
     )
 
     #get blade based on grid
-    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, rotor)
+    bladedims = DuctTAPE.initialize_blade_dimensions([rotor], ductgeometry)[1]
 
     #test blade geometries.
     @test bladedims.hubr == 0.0
@@ -163,7 +163,7 @@ end
     )
 
     #get blade based on grid
-    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, rotor2)
+    bladedims = DuctTAPE.initialize_blade_dimensions([rotor2], ductgeometry)[1]
 
     #test blade geometries.
     @test bladedims.hubr == 0.0
@@ -204,9 +204,9 @@ end
         0.5, 1, rs, 0.0, chords, twists, nothing, nothing, fill(af1, 3), nothing, 1000
     )
 
-    x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs = DuctTAPE.generate_grid_points(
-        ductgeometry, [rotor], grid_options
-    )
+   x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs = DuctTAPE.generate_grid_points(
+       ductgeometry, [rotor], grid_options
+   )
 
     @test x_grid_points == [0.5 0.5 0.5; 1.0 1.0 1.0; 1.5 1.5 1.5; 2.0 2.0 2.0]
     @test r_grid_points == [0.0 0.5 1.0; 0.0 0.5 1.0; 0.0 0.5 1.0; 0.0 0.5 1.0]
@@ -390,8 +390,7 @@ end
     wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, [rotor], grid_options)
 
     #get blade based on grid
-    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, rotor)
-    blades = [bladedims]
+    blades = DuctTAPE.initialize_blade_dimensions(rotors, ductgeometry)
 
     #generate panels
     panel_geometries = DuctTAPE.generate_panel_geometries(ductgeometry, rotors, wakegrid)
@@ -437,7 +436,7 @@ end
     @test all(x -> x == 10.0, rotor_velocities[1].relative_axial_velocities)
     @test all(x -> x == 0.0, rotor_velocities[1].relative_radial_velocities)
     @test rotor_velocities[1].relative_tangential_velocities ==
-        -DuctTAPE.get_omega(1000.0) .* bladedims.rdim
+    -DuctTAPE.get_omega(1000.0) .* blades[1].rdim
 
     #average axial velocity test
     @test average_axial_velocity == 10.0 #vinf only
