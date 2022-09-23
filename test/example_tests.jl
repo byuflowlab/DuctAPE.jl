@@ -6,13 +6,13 @@ include("../data/dfdc/dstestr2_case.jl");
     outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
 
     # -- DEFINE DUCT OBJECT
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
     grid_options = DuctTAPE.defineGridOptions(10)
 
-    grid = DuctTAPE.generate_grid_points(ductgeometry, ductsplines, [], grid_options)
+    grid = DuctTAPE.generate_grid_points(ductgeometry, [], grid_options)
 
     # Test to make sure there's no compilation errors for now.
     @test grid == grid
@@ -24,7 +24,7 @@ end
     outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
 
     # -- DEFINE DUCT OBJECT
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -70,7 +70,7 @@ end
     num_radial_stations = length(rnondim1)
     grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
-    grid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options)
+    grid = DuctTAPE.generate_wake_grid(ductgeometry, rotors, grid_options)
 
     # Test to make sure there's no compilation errors for now.
     @test grid == grid
@@ -118,7 +118,7 @@ end
     outerwallx, innerwallx, outerwallr, innerwallr = DuctTAPE.split_wall(ductx, ductr)
 
     # -- DEFINE DUCT OBJECT
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -164,11 +164,11 @@ end
     num_radial_stations = length(rnondim1)
     grid_options = DuctTAPE.defineGridOptions(num_radial_stations)
 
-    wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options)
+    wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, rotors, grid_options)
 
     #generate panels
     panel_geometries = DuctTAPE.generate_panel_geometries(
-        ductgeometry, ductsplines, rotors, wakegrid
+        ductgeometry, rotors, wakegrid
     )
 
     wall_panels = panel_geometries.wall_panels

@@ -6,13 +6,12 @@ Authors: Judd Mehr,
 
 
 """
-    generate_panel_geometries(ductgeometry, ductsplines, rotors, wakegrid)
+    generate_panel_geometries(ductgeometry, rotors, wakegrid)
 
 Generate panel edges, centers, and unit normals.
 
 **Arguments:**
  - `ductgeometry::DuctTAPE.DuctGeometry` : Duct Geometry object
- - `ductsplines::DuctTAPE.DuctSplines` : Duct Splines object
  - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
  - `wakegrid::DuctTAPE.WakeGridGeometry` : Wake Grid object
 
@@ -28,7 +27,7 @@ Generate panel edges, centers, and unit normals.
 - The wall panels in front of the foremost rotor are set using cosine spacing such that the last panel before the foremost rotor is roughly similar in length to the average of the panel lengths in the remainder of the duct.
 (Note that the estimation process for this is not particularly robust at this point.)
 """
-function generate_panel_geometries(ductgeometry, ductsplines, rotors, wakegrid)
+function generate_panel_geometries(ductgeometry, rotors, wakegrid)
 
     ## -- INITIALIZE ARRAYS -- ##
     # i.e. Count number of panels
@@ -87,8 +86,8 @@ function generate_panel_geometries(ductgeometry, ductsplines, rotors, wakegrid)
     wallxcoordinates = [reverse(wallinnerxcoordinates)[1:(end - 1)]; wallouterxcoordinates]
 
     #similar for r coordinates
-    wallinnerrcoordinates = ductsplines.wallinnerspline(wallinnerxcoordinates)
-    wallouterrcoordinates = ductsplines.wallouterspline(wallouterxcoordinates)
+    wallinnerrcoordinates = ductgeometry.wallinnerspline(wallinnerxcoordinates)
+    wallouterrcoordinates = ductgeometry.wallouterspline(wallouterxcoordinates)
     wallrcoordinates = [reverse(wallinnerrcoordinates)[1:(end - 1)]; wallouterrcoordinates]
     #TODO: need to make sure this is the correct direction. (what is the correct direction??)
 
@@ -134,7 +133,7 @@ function generate_panel_geometries(ductgeometry, ductsplines, rotors, wakegrid)
     hubxcoordinates = wakegrid.hub_xstations
 
     #similar for r coordinates
-    hubrcoordinates = ductsplines.hubspline(hubxcoordinates)
+    hubrcoordinates = ductgeometry.hubspline(hubxcoordinates)
 
     #loop through hub panel count
     for i in 1:numhubpan
@@ -182,9 +181,6 @@ function generate_panel_geometries(ductgeometry, ductsplines, rotors, wakegrid)
         rotor_panel_edge_r = [(0.0, 0.0) for j in 1:numrotorsourcepan]
         rotor_panel_center = [(0.0, 0.0) for j in 1:numrotorsourcepan]
         rotor_panel_normal = [(0.0, 0.0) for j in 1:numrotorsourcepan]
-
-        #create a blade object for each rotor (to get dimensional radial data)
-        blade = initialize_blade_dimensions(ductgeometry, ductsplines, rotors[i])
 
         #loop through each of the radial stations
         for j in 1:numrotorsourcepan

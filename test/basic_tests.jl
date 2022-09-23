@@ -9,7 +9,7 @@
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -25,9 +25,9 @@
     @test ductgeometry.wallbluntTE == false
     @test ductgeometry.hubbluntTE == false
 
-    @test ductsplines.wallinnerspline(0.5) == 1.0
-    @test ductsplines.wallouterspline(0.5) == 1.5
-    @test ductsplines.hubspline(0.5) == 0.0
+    @test ductgeometry.wallinnerspline(0.5) == 1.0
+    @test ductgeometry.wallouterspline(0.5) == 1.5
+    @test ductgeometry.hubspline(0.5) == 0.0
 end
 
 @testset "Basic Wake Grid Geometry: No Rotor" begin
@@ -40,7 +40,7 @@ end
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -55,7 +55,7 @@ end
     @test grid_options.wake_expansion_factor == 1.0
 
     x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = DuctTAPE.generate_grid_points(
-        ductgeometry, ductsplines, [], grid_options
+        ductgeometry, [], grid_options
     )
 
     @test x_grid_points == [0.0 0.0 0.0; 1.0 1.0 1.0; 1.5 1.5 1.5; 2.0 2.0 2.0]
@@ -71,7 +71,7 @@ end
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
 
     #test everything together
-    grid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, [], grid_options)
+    grid = DuctTAPE.generate_wake_grid(ductgeometry, [], grid_options)
 
     @test xr == x_grid_points
     @test rr == r_grid_points
@@ -118,12 +118,12 @@ end
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
     #get blade based on grid
-    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, ductsplines, rotor)
+    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, rotor)
 
     #test blade geometries.
     @test bladedims.hubr == 0.0
@@ -158,12 +158,12 @@ end
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
     #get blade based on grid
-    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, ductsplines, rotor2)
+    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, rotor2)
 
     #test blade geometries.
     @test bladedims.hubr == 0.0
@@ -184,7 +184,7 @@ end
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -205,7 +205,7 @@ end
     )
 
     x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = DuctTAPE.generate_grid_points(
-        ductgeometry, ductsplines, [rotor], grid_options
+        ductgeometry, [rotor], grid_options
     )
 
     @test x_grid_points == [0.5 0.5 0.5; 1.0 1.0 1.0; 1.5 1.5 1.5; 2.0 2.0 2.0]
@@ -221,7 +221,7 @@ end
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
 
     #test everything together
-    grid = DuctTAPE.generate_wake_grid(ductgeometry, ductsplines, [rotor], grid_options)
+    grid = DuctTAPE.generate_wake_grid(ductgeometry, [rotor], grid_options)
 
     @test xr == x_grid_points
     @test rr == r_grid_points
@@ -246,7 +246,7 @@ end
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -270,7 +270,7 @@ end
     )
 
     x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = DuctTAPE.generate_grid_points(
-        ductgeometry, ductsplines, [rotor1; rotor2], grid_options
+        ductgeometry, [rotor1; rotor2], grid_options
     )
 
     @test x_grid_points ==
@@ -287,9 +287,7 @@ end
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
 
     #test everything together
-    grid = DuctTAPE.generate_wake_grid(
-        ductgeometry, ductsplines, [rotor1, rotor2], grid_options
-    )
+    grid = DuctTAPE.generate_wake_grid(ductgeometry, [rotor1, rotor2], grid_options)
 
     @test xr == x_grid_points
     @test rr == r_grid_points
@@ -315,7 +313,7 @@ end
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -337,14 +335,10 @@ end
     rotors = [rotor]
 
     #test everything together
-    wakegrid = DuctTAPE.generate_wake_grid(
-        ductgeometry, ductsplines, [rotor], grid_options
-    )
+    wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, [rotor], grid_options)
 
     #generate panels
-    panel_geometries = DuctTAPE.generate_panel_geometries(
-        ductgeometry, ductsplines, rotors, wakegrid
-    )
+    panel_geometries = DuctTAPE.generate_panel_geometries(ductgeometry, rotors, wakegrid)
 
     wall_panels = panel_geometries.wall_panels
     hub_panels = panel_geometries.hub_panels
@@ -371,7 +365,7 @@ end
     hubx = outerwallx
     hubr = [0; 0; 0.0]
 
-    ductgeometry, ductsplines = DuctTAPE.defineDuctGeometry(
+    ductgeometry = DuctTAPE.defineDuctGeometry(
         innerwallx, innerwallr, outerwallx, outerwallr, hubx, hubr
     )
 
@@ -393,18 +387,14 @@ end
     rotors = [rotor]
 
     #test everything together
-    wakegrid = DuctTAPE.generate_wake_grid(
-        ductgeometry, ductsplines, [rotor], grid_options
-    )
+    wakegrid = DuctTAPE.generate_wake_grid(ductgeometry, [rotor], grid_options)
 
     #get blade based on grid
-    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, ductsplines, rotor)
+    bladedims = DuctTAPE.initialize_blade_dimensions(ductgeometry, rotor)
     blades = [bladedims]
 
     #generate panels
-    panel_geometries = DuctTAPE.generate_panel_geometries(
-        ductgeometry, ductsplines, rotors, wakegrid
-    )
+    panel_geometries = DuctTAPE.generate_panel_geometries(ductgeometry, rotors, wakegrid)
 
     wall_panels = panel_geometries.wall_panels
     hub_panels = panel_geometries.hub_panels
@@ -419,21 +409,21 @@ end
 
     freestream = DuctTAPE.Freestream(vinf, vref, rho, vso, mu)
 
-    system_aero, rotor_velocities, average_axial_velocity = initialize_system_aerodynamics(
+    b_gamma_grid, delta_enthalpy_grid, delta_entropy_grid, b_circ_rotors, rotor_source_strengths, control_point_velocities, rotor_velocities, average_axial_velocity = initialize_system_aerodynamics(
         rotors, blades, wakegrid, rotor_source_panels, freestream; niter=10, rlx=0.5
     )
 
-    #system_aero tests
-    @test system_aero.b_gamma_grid == zeros(size(system_aero.b_gamma_grid))
-    @test system_aero.delta_enthalpy_grid == zeros(size(system_aero.delta_enthalpy_grid))
-    @test system_aero.delta_entropy_grid == zeros(size(system_aero.delta_entropy_grid))
+    #tests
+    @test b_gamma_grid == zeros(size(b_gamma_grid))
+    @test delta_enthalpy_grid == zeros(size(delta_enthalpy_grid))
+    @test delta_entropy_grid == zeros(size(delta_entropy_grid))
 
-    @test system_aero.b_circ_rotors == [zeros(size(system_aero.b_circ_rotors[1]))]
-    @test system_aero.rotor_source_strengths ==
-        zeros(size(system_aero.rotor_source_strengths))
+    @test b_circ_rotors == [zeros(size(b_circ_rotors[1]))]
+    @test rotor_source_strengths ==
+        zeros(size(rotor_source_strengths))
 
-    @test system_aero.control_point_velocities ==
-        zeros(size(system_aero.control_point_velocities))
+    @test control_point_velocities ==
+        zeros(size(control_point_velocities))
 
     #rotor velocity tests
     @test all(x -> x == 0.0, rotor_velocities[1].induced_axial_velocities)

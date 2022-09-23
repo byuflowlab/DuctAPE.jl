@@ -128,15 +128,17 @@ function defineDuctGeometry(
     return DuctGeometry(
         wallinnerxcoordinates,
         wallinnerrcoordinates,
+        wallinnerspline,
         wallouterxcoordinates,
         wallouterrcoordinates,
+        wallouterspline,
         hubxcoordinates,
         hubrcoordinates,
+        hubspline,
         LEx,
         TEx,
         chord,
         wallbluntTE,
         hubbluntTE,
-    ),
-    DuctSplines(wallinnerspline, wallouterspline, hubspline)
+    )
 end

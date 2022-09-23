@@ -95,12 +95,12 @@ function initialize_geometry(ductgeometry, rotors, gridoptions)
     #TODO: update ductgeometry to include splines throughout.
 
     # Create Wake Grid
-    wakegrid, updatedrotors = generate_wake_grid(ductgeometry, rotors, gridoptions)
+    wakegrid, updatedrotors, blades = generate_wake_grid(ductgeometry, rotors, gridoptions)
 
     # Create Panels
-    systempanels = generate_panel_system(ductgeometry, updatedrotors, wakegrid)
+    panelgeometries = generate_panel_geometries(ductgeometry, updatedrotors, blades, wakegrid)
 
-    return wakegrid, systempanels, updatedrotors
+    return wakegrid, panelgeometries, updatedrotors
 end
 
 """
@@ -111,31 +111,37 @@ Runs a panel method on mirrored duct geometry to get initial guess for flow insi
 Runs CCBlade using panel method inflow to get first guess for rotor performance.
 Then initializes guesses for the blade circulation, wake vorticity, and rotor source strengths.
 """
-function initialize_flow_data(ductgeometry, systempanels, rotors, freestream)
+function initialize_flow_data(ductgeometry, systempanels, rotors, blades, freestream)
 
     # Run Panel Method to get first guess on flow field.
-    initial_rotor_velocities, Avinf, bvinf = first_guess_flowfield(systempanels, freestream)
+    Avinf, bvinf = first_guess_flowfield(systempanels, freestream)
 
-    # Run CCBlade to get W and cl values
-    W, cl, blades = first_guess_rotor_data(rotors, wall_panel_strengths, freestream)
+    # # Run CCBlade to get W and cl values
+    # W, cl, blades = first_guess_rotor_data(rotors, wall_panel_strengths, freestream)
 
-    # Set Blade Circulation
-    Gamma = set_blade_circulation(W, cl, blades)
+    # # Set Blade Circulation
+    # Gamma = set_blade_circulation(W, cl, blades)
 
-    # Set Wake Enthalpy
-    Delta_H = set_wake_enthalpy(Gamma, systempanels)
+    # # Set Wake Enthalpy
+    # Delta_H = set_wake_enthalpy(Gamma, systempanels)
 
-    # Set Wake Vorticity
-    wake_vortex_strengths = set_wake_vorticity(Gamma, Delta_H)
+    # # Set Wake Vorticity
+    # wake_vortex_strengths = set_wake_vorticity(Gamma, Delta_H)
 
-    # Set Rotor Source Strengths
-    rotor_source_strengths = set_rotor_panel_strengths()
+    # # Set Rotor Source Strengths
+    # rotor_source_strengths = set_rotor_panel_strengths()
 
-    # Generate Grid Flow Data Object
-    gridflowdata = GridFlowData(Gamma, Delta_H)
+    # # Generate Grid Flow Data Object
+    # gridflowdata = GridFlowData(Gamma, Delta_H)
+
+    B_Gamma_tilde, Delta_H_tilde, Delta_S_tilde, Gamma, Sigma, control_point_velocities, rotor_velocities, Vm_avg = initialize_system_aerodynamics(
+        rotors, blades, wakegrid, rotorpanels, freestream; niter=10, rlx=0.5
+    )
 
     # Generate Panel Strengths Object
-    panelstrengths = PanelStrenghts(wall_panel_strengths, wake_vortex_strengths, rotor_source_strengths)
+    panelstrengths = PanelStrengths(
+        wall_panel_strengths, wake_vortex_strengths, rotor_source_strengths
+    )
 
     return gridflowdata, panelstrengths
 end
@@ -166,11 +172,16 @@ end
 
     #STGFIND (find stagnation points
 """
-function initialize_problem(ductgeometry, rotors, gridflowdata, freestream)
+function initialize_problem(ductgeometry, rotors, gridoptions, freestream)
 
-    wakegrid, systempanels, updatedrotors =  initialize_geometry(ductgeometry, rotors, gridoptions)
+    #initalize Geometry
+    wakegrid, panelgeometries, updatedrotors, blades = initialize_geometry(
+        ductgeometry, rotors, gridoptions
+    )
 
-    gridflowdata, panelstrengths = initialize_flow_data(ductgeometry, systempanels, rotors, freestream)
+    gridflowdata, panelstrengths = initialize_flow_data(
+        ductgeometry, systempanels, rotors, freestream
+    )
 
     return problem
 end

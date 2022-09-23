@@ -175,7 +175,7 @@ function reinterpolate_rotor!(gridxs, gridrs, rotor, rotoridx)
 end
 
 """
-    initialize_blade_dimensions(ductsplines, Rotor)
+    initialize_blade_dimensions(ductgeometry, Rotor)
 
 Initilialize needed blade information for various calculations during the solution process.
 
@@ -183,11 +183,11 @@ Initilialize needed blade information for various calculations during the soluti
  - `ductsplines::DuctTAPE.ductsplines` : ductsplines object containing splines for duct wall and hub
  - `Rotor::DuctTAPE.Rotor` : Rotor object for which to define blade information
 """
-function initialize_blade_dimensions(ductgeometry, ductsplines, Rotor)
+function initialize_blade_dimensions(ductgeometry, Rotor)
 
     #unpack splines for convenience
-    wallspline = ductsplines.wallinnerspline
-    hubspline = ductsplines.hubspline
+    wallspline = ductgeometry.wallinnerspline
+    hubspline = ductgeometry.hubspline
 
     #find r-position of wall and hub at rotor location
     rhub = max(0.0, hubspline(Rotor.xlocation * ductgeometry.chord))

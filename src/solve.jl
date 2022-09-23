@@ -56,6 +56,8 @@ Solves ducted rotor system defined by Problem object.
 - `convergence::Bool` : convergence flag
 """
 function solve!(problem)
+
+    #extract initial guess
     gamma_sigma_init = [problem.Gammas; problem.Sigmas]
 
     function res_wrap!(gamma_sigma_residuals, GS)

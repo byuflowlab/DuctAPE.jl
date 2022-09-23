@@ -105,7 +105,7 @@ function initialize_system_aerodynamics(
 
     # rotor_source_strengths at rotor stations
     rotor_source_strengths = [
-        0.0 for i in 1:numrotors, j in 1:length(rotors[1].radialstations)
+        0.0 for i in 1:numrotors, j in 1:length(rotors[1].radialstations)-1
     ]
 
     #Induced velocities at rotor stations
@@ -252,14 +252,12 @@ function initialize_system_aerodynamics(
 
     #return all the initialized rotor aero arrays
     #TODO: maybe this should be panelaero rather than gridaero...
-    return SystemAero(
-        b_gamma_grid,
+    return b_gamma_grid,
         delta_enthalpy_grid,
         delta_entropy_grid,
         [b_circ_rotors[i, :] for i in 1:numrotors],
         rotor_source_strengths,
         control_point_velocities,
-    ),
     rotor_velocities,
     Vm_avg
 end

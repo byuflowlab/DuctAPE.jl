@@ -37,7 +37,7 @@ end
 
 #TODO: add capabilities for rotor rake at some point.  The code should be able to handle it already, just need to introduce separate hub/wall xlocations and set the first xr points along the rotor quarter chord points.
 """
-    generate_grid_points(ductgeometry, ductsplines, rotors, grid_options, debug=false)
+    generate_grid_points(ductgeometry, rotors, grid_options, debug=false)
 
 Get grid boundary and initial interior points.
 
@@ -50,7 +50,7 @@ Get grid boundary and initial interior points.
  - `x_grid_points::Matrix{Float64,2}` : 2D Array of x grid points
  - `r_grid_points::Matrix{Float64,2}` : 2D Array of r grid points
 """
-function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; debug=false)
+function generate_grid_points(ductgeometry, rotors, grid_options; debug=false)
 
     #check that rotors are in the correct order
     for i in 1:(length(rotors) - 1)
@@ -60,7 +60,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     # --- RENAME THINGS FOR CONVENIENCE
 
     # Rename HUB Geometry for convenience
-    hubspline = ductsplines.hubspline
+    hubspline = ductgeometry.hubspline
     hubx = ductgeometry.hubxcoordinates
     hubr = ductgeometry.hubrcoordinates
     hubLEx = hubx[1]
@@ -69,8 +69,8 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
     hubTEr = hubr[end]
 
     # Rename WALL Geometry for convenience
-    innerwallspline = ductsplines.wallinnerspline
-    outerwallspline = ductsplines.wallouterspline
+    innerwallspline = ductgeometry.wallinnerspline
+    outerwallspline = ductgeometry.wallouterspline
     wallx = ductgeometry.wallinnerxcoordinates
     wallr = ductgeometry.wallinnerrcoordinates
     wallLEx = wallx[1]
@@ -105,7 +105,7 @@ function generate_grid_points(ductgeometry, ductsplines, rotors, grid_options; d
         rotoridx = 1 #findmin([rotors[i].xlocation for i in 1:length(rotors)])
 
         #get blade from foremost rotor
-        blade = initialize_blade_dimensions(ductgeometry, ductsplines, rotors[rotoridx])
+        blade = initialize_blade_dimensions(ductgeometry, rotors[rotoridx])
 
         if rotors[rotoridx].radialstations == nothing
             #get annulus radius
@@ -653,13 +653,12 @@ function relax_grid(xg, rg, nxi, neta; max_iterations=100, tol=1e-9, verbose=fal
 end
 
 """
-    generate_wake_grid(ductgeometry, ductsplines, rotors, grid_options; max_iterations=-1, tol=1e-9)
+    generate_wake_grid(ductgeometry, rotors, grid_options; max_iterations=-1, tol=1e-9)
 
 Initialize grid via zero-thrust, unit freestream solution.
 
 **Arguments:**
  - `ductgeometry::DuctTAPE.DuctGeometry` : ductgeometry Geometry Object
- - `ductsplines::DuctTAPE.DuctSplines` : ductsplines object
  - `rotors::Array{DuctTAPE.Rotor}` : Array of rotor objects
  - `grid_options::DuctTAPE.GridOptions` : Grid options object
 
@@ -677,12 +676,12 @@ Initialize grid via zero-thrust, unit freestream solution.
 - If more than one rotor is being analyzed, the rotor radial stations have more than likely changed for aft rotors.  Therefore, rotor information for all but the foremost rotor are reinterpolated so that rotor stations line up with wake grid stations.
 """
 function generate_wake_grid(
-    ductgeometry, ductsplines, rotors, grid_options; max_iterations=100, tol=1e-9
+    ductgeometry, rotors, grid_options; max_iterations=100, tol=1e-9
 )
 
     # get initial grid points
     xg, rg, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = generate_grid_points(
-        ductgeometry, ductsplines, rotors, grid_options
+        ductgeometry, rotors, grid_options
     )
 
     # relax grid

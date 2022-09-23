@@ -68,42 +68,35 @@ end
 
 **Fields:**
  - `wallinnerxcoordinates::Array{Float}` : x coordinates of inner (lower) wall geometry
- - `wallouterxcoordinates::Array{Float}` : x coordinates of outer (upper) wall geometry
  - `wallinnerrcoordinates::Array{Float}` : r coordinates of inner (lower) wall geometry
+ - `wallinnerspline::FLOWMath.Akima` : Spline of inner coordinates of duct wall
+ - `wallouterxcoordinates::Array{Float}` : x coordinates of outer (upper) wall geometry
  - `wallouterrcoordinates::Array{Float}` : r coordinates of outer (upper) wall geometry
+ - `wallouterspline::FLOWMath.Akima` : Spline of outer coordinates of duct wall
  - `hubxcoordinates::Array{Float}` : x coordinates of hub geometry
  - `hubrcoordinates::Array{Float}` : r coordinates of hub geometry
+ - `hubspline::FLOWMath.Akima` : Spline of hub coordinates
  - `LEx::Float` : x-position of leading edge
  - `TEx::Float` : x-position of trailing edge
  - `chord::Float` : chord length
  - `wallbluntTE::Bool` : flag for blunt trailing edge on wall
- - `hubbluntTE::Bool` : flag for blunt trailing edge on hub
+ - `hubbluntTE::Bool` : flag for blunt trailing edge on hub, unused
 """
-struct DuctGeometry{TA,TF,TB}
+struct DuctGeometry{TA,TSDi,TSDo,TSH,TF,TB}
     wallinnerxcoordinates::TA
     wallinnerrcoordinates::TA
+    wallinnerspline::TSDi
     wallouterxcoordinates::TA
     wallouterrcoordinates::TA
+    wallouterspline::TSDo
     hubxcoordinates::TA
     hubrcoordinates::TA
+    hubspline::TSH
     LEx::TF
     TEx::TF
     chord::TF
     wallbluntTE::TB
     hubbluntTE::TB
-end
-
-"""
-TODO: move the contents of DuctSplines into DuctGeometry to simplify inputs/outputs throughout code.
-
- - `wallinnerspline::FLOWMath.Akima` : Spline of inner coordinates of duct wall
- - `wallouterspline::FLOWMath.Akima` : Spline of outer coordinates of duct wall
- - `hubspline::FLOWMath.Akima` : Spline of hub coordinates
-"""
-struct DuctSplines{TSDi,TSDo,TSH}
-    wallinnerspline::TSDi
-    wallouterspline::TSDo
-    hubspline::TSH
 end
 
 """
