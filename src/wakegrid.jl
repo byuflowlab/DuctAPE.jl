@@ -315,43 +315,43 @@ function generate_grid_points(ductgeometry, rotors, grid_options; debug=false)
         )
     end
 
-    ## -- GET X STATIONS FOR WALL AND HUB PANELING -- ##
+    ### -- GET X STATIONS FOR WALL AND HUB PANELING -- ##
 
-    #get average step in x direction from rotors to end of duct
-    dx = Statistics.mean(xd[2:end] .- xd[1:(end - 1)])
+    ##get average step in x direction from rotors to end of duct
+    #dx = Statistics.mean(xd[2:end] .- xd[1:(end - 1)])
 
-    # get number of panels from wall LE to rotor location
-    nxwall = ceil(Int, 1.5 * (xfront - wallLEx) / (dx))
+    ## get number of panels from wall LE to rotor location
+    #nxwall = ceil(Int, 1.5 * (xfront - wallLEx) / (dx))
 
-    # get x stations in front of rotor for wall
-    if nxwall > 1
-        xwallcos = cosinespace(nxwall)
+    ## get x stations in front of rotor for wall
+    #if nxwall > 1
+    #    xwallcos = cosinespace(nxwall)
 
-        xwall = lintran(wallLEx, xfront, xwallcos[1], xwallcos[end], xwallcos)
-        # xwall = range(wallLEx, xfront, length=nxwall)
-    else
-        xwall = wallLEx
-    end
+    #    xwall = lintran(wallLEx, xfront, xwallcos[1], xwallcos[end], xwallcos)
+    #    # xwall = range(wallLEx, xfront, length=nxwall)
+    #else
+    #    xwall = wallLEx
+    #end
 
-    #put xstations together
-    wall_xstations = unique([xwall; xd[1:findlast(x -> x <= hubTEx, xd)]])
+    ##put xstations together
+    #wall_xstations = unique([xwall; xd[1:findlast(x -> x <= hubTEx, xd)]])
 
-    # get number of panels from hub LE to rotor location
-    nxhub = ceil(Int, 1.5 * (xfront - hubLEx) / (dx))
+    ## get number of panels from hub LE to rotor location
+    #nxhub = ceil(Int, 1.5 * (xfront - hubLEx) / (dx))
 
-    # get x stations in front of rotor for hub
-    if nxhub > 1
-        xhubcos = cosinespace(nxhub)
-        xhub = lintran(hubLEx, xfront, xhubcos[1], xhubcos[end], xhubcos)
-        # xhub = range(hubLEx, xfront, length=nxhub)
-    else
-        xhub = hubLEx
-    end
+    ## get x stations in front of rotor for hub
+    #if nxhub > 1
+    #    xhubcos = cosinespace(nxhub)
+    #    xhub = lintran(hubLEx, xfront, xhubcos[1], xhubcos[end], xhubcos)
+    #    # xhub = range(hubLEx, xfront, length=nxhub)
+    #else
+    #    xhub = hubLEx
+    #end
 
-    #put xstations together
-    hub_xstations = unique([xhub; xd[1:findlast(x -> x <= hubTEx, xd)]])
+    ##put xstations together
+    #hub_xstations = unique([xhub; xd[1:findlast(x -> x <= hubTEx, xd)]])
 
-    return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations
+    return x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs #wall_xstations, hub_xstations
 end
 
 """
@@ -680,7 +680,7 @@ function generate_wake_grid(
 )
 
     # get initial grid points
-    xg, rg, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = generate_grid_points(
+    xg, rg, nx, nr, wallTEidx, hubTEidx, rotoridxs = generate_grid_points(
         ductgeometry, rotors, grid_options
     )
 
@@ -693,7 +693,5 @@ function generate_wake_grid(
         end
     end
 
-    return WakeGridGeometry(
-        xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations
-    )
+    return WakeGridGeometry(xr, rr, nx, nr, wallTEidx, hubTEidx, rotoridxs)#, wall_xstations, hub_xstations)
 end

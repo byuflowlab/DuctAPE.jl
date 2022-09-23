@@ -34,7 +34,7 @@ function generate_panel_geometries(ductgeometry, rotors, wakegrid)
 
     # - number of hub geometry panels
     #take number of xcoordinates for the hub and subtract the last one to get the number of panels
-    numhubpan = length(wakegrid.hub_xstations) - 1
+    numhubpan = length(ductgeometry.hubxcoordinates) - 1 #length(wakegrid.hub_xstations) - 1
 
     #if the hub has a blunt trailing edge. need to add another panel.
     if ductgeometry.hubbluntTE
@@ -43,7 +43,7 @@ function generate_panel_geometries(ductgeometry, rotors, wakegrid)
 
     # - number of wall geometry panels
     #take the number of x coordinates for the inner and outer wall geometry and subtract the last point from each to get the number of panels for the whole airfoil
-    numwallpan = 2 * length(wakegrid.wall_xstations) - 2
+    numwallpan = length(ductgeometry.wallinnerxcoordinates) + length(ductgeometry.wallouterxcoordinates) - 2 #2 * length(wakegrid.wall_xstations) - 2
 
     #add another panel if the duct wall has a blunt trailing edge.
     if ductgeometry.wallbluntTE
@@ -81,13 +81,13 @@ function generate_panel_geometries(ductgeometry, rotors, wakegrid)
 
     # need to combine the inner and outer geometry coordinates
     # TODO: the user input decides what order things are in.  Need to make sure that the splines are defined in the correct directions, so probably need to add some checks at the point of the ductgeometry generation.
-    wallinnerxcoordinates = wakegrid.wall_xstations
-    wallouterxcoordinates = wakegrid.wall_xstations
+    wallinnerxcoordinates = ductgeometry.wallinnerxcoordinates
+    wallouterxcoordinates = ductgeometry.wallouterxcoordinates
     wallxcoordinates = [reverse(wallinnerxcoordinates)[1:(end - 1)]; wallouterxcoordinates]
 
     #similar for r coordinates
-    wallinnerrcoordinates = ductgeometry.wallinnerspline(wallinnerxcoordinates)
-    wallouterrcoordinates = ductgeometry.wallouterspline(wallouterxcoordinates)
+    wallinnerrcoordinates = ductgeometry.wallinnerrcoordinates
+    wallouterrcoordinates = ductgeometry.wallouterrcoordinates
     wallrcoordinates = [reverse(wallinnerrcoordinates)[1:(end - 1)]; wallouterrcoordinates]
     #TODO: need to make sure this is the correct direction. (what is the correct direction??)
 
@@ -130,10 +130,10 @@ function generate_panel_geometries(ductgeometry, rotors, wakegrid)
     hub_panel_center = [(0.0, 0.0) for i in 1:numhubpan]
     hub_panel_normal = [(0.0, 0.0) for i in 1:numhubpan]
 
-    hubxcoordinates = wakegrid.hub_xstations
+    hubxcoordinates = ductgeometry.hubxcoordinates
 
     #similar for r coordinates
-    hubrcoordinates = ductgeometry.hubspline(hubxcoordinates)
+    hubrcoordinates = ductgeometry.hubrcoordinates
 
     #loop through hub panel count
     for i in 1:numhubpan

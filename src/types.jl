@@ -164,10 +164,8 @@ Wake grid geometry object
  - `wallTEidx::Int` : index of duct wall trailing edge x location
  - `hubTEidx::Int` : index of hub wall trailing edge x location
  - `rotoridxs::Array{Int}` : array of indices of rotor x locations
- - `wall_xstations::Array{Int}` : array of indicies on which duct wall is present in grid
- - `hub_xstations::Array{Int}` : array of indicies on which hub is present in grid
 """
-struct WakeGridGeometry{TF,TI,TA,TW,TH}
+struct WakeGridGeometry{TF,TI,TA}#,TW,TH}
     x_grid_points::TF
     r_grid_points::TF
     nx::TI
@@ -175,8 +173,8 @@ struct WakeGridGeometry{TF,TI,TA,TW,TH}
     wallTEidx::TI
     hubTEidx::TI
     rotoridxs::TA
-    wall_xstations::TW
-    hub_xstations::TH
+    # wall_xstations::TW
+    # hub_xstations::TH
 end
 
 """

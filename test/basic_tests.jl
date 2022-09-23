@@ -54,7 +54,7 @@ end
     @test grid_options.wake_length == 1.0
     @test grid_options.wake_expansion_factor == 1.0
 
-    x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = DuctTAPE.generate_grid_points(
+    x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs = DuctTAPE.generate_grid_points(
         ductgeometry, [], grid_options
     )
 
@@ -64,8 +64,8 @@ end
     @test nr == 3
     @test wallTEidx == 2
     @test hubTEidx == 2
-    @test wall_xstations == [0.0; 1.0]
-    @test hub_xstations == [0.0; 1.0]
+    # @test wall_xstations == [0.0; 1.0]
+    # @test hub_xstations == [0.0; 1.0]
 
     #test grid relaxation
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
@@ -82,8 +82,8 @@ end
     @test grid.nr == 3
     @test grid.wallTEidx == 2
     @test grid.hubTEidx == 2
-    @test grid.wall_xstations == [0.0; 1.0]
-    @test grid.hub_xstations == [0.0; 1.0]
+    # @test grid.wall_xstations == [0.0; 1.0]
+    # @test grid.hub_xstations == [0.0; 1.0]
 end
 
 @testset "Basic Airfoil" begin
@@ -204,7 +204,7 @@ end
         0.5, 1, rs, 0.0, chords, twists, nothing, nothing, fill(af1, 3), nothing, 1000
     )
 
-    x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = DuctTAPE.generate_grid_points(
+    x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs = DuctTAPE.generate_grid_points(
         ductgeometry, [rotor], grid_options
     )
 
@@ -214,8 +214,8 @@ end
     @test nr == 3
     @test wallTEidx == 2
     @test hubTEidx == 2
-    @test wall_xstations == [0.0; 0.5; 1.0]
-    @test hub_xstations == [0.0; 0.5; 1.0]
+    # @test wall_xstations == [0.0; 0.5; 1.0]
+    # @test hub_xstations == [0.0; 0.5; 1.0]
 
     #test grid relaxation
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
@@ -232,8 +232,8 @@ end
     @test grid.nr == 3
     @test grid.wallTEidx == 2
     @test grid.hubTEidx == 2
-    @test grid.wall_xstations == [0.0; 0.5; 1.0]
-    @test grid.hub_xstations == [0.0; 0.5; 1.0]
+    # @test grid.wall_xstations == [0.0; 0.5; 1.0]
+    # @test grid.hub_xstations == [0.0; 0.5; 1.0]
 end
 
 @testset "Basic Grid Geometry: Dual Rotor" begin
@@ -269,7 +269,7 @@ end
         0.75, 1, rs, 0.0, chords, twists, nothing, nothing, fill(af1, 3), nothing, 1000
     )
 
-    x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs, wall_xstations, hub_xstations = DuctTAPE.generate_grid_points(
+    x_grid_points, r_grid_points, nx, nr, wallTEidx, hubTEidx, rotoridxs = DuctTAPE.generate_grid_points(
         ductgeometry, [rotor1; rotor2], grid_options
     )
 
@@ -280,8 +280,8 @@ end
     @test nr == 3
     @test wallTEidx == 3
     @test hubTEidx == 3
-    @test wall_xstations == [0.0; 0.25; 0.75; 1.0]
-    @test hub_xstations == [0.0; 0.25; 0.75; 1.0]
+    # @test wall_xstations == [0.0; 0.25; 0.75; 1.0]
+    # @test hub_xstations == [0.0; 0.25; 0.75; 1.0]
 
     #test grid relaxation
     xr, rr = DuctTAPE.relax_grid(x_grid_points, r_grid_points, nx, nr)
@@ -299,8 +299,8 @@ end
     @test nr == 3
     @test wallTEidx == 3
     @test hubTEidx == 3
-    @test wall_xstations == [0.0; 0.25; 0.75; 1.0]
-    @test hub_xstations == [0.0; 0.25; 0.75; 1.0]
+    # @test wall_xstations == [0.0; 0.25; 0.75; 1.0]
+    # @test hub_xstations == [0.0; 0.25; 0.75; 1.0]
 end
 
 @testset "Basic Paneling Tests" begin
