@@ -23,7 +23,7 @@ include("system.jl")
 include("utils.jl")
 include("airfoils.jl")
 
-# include("initailize.jl")
+include("initialize.jl")
 # include("solve.jl")
 
 #######################

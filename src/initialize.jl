@@ -105,10 +105,10 @@ function initialize_geometry(ductgeometry, rotors, gridoptions)
 
     # Create Panels
     panelgeometries = generate_panel_geometries(
-        ductgeometry, updatedrotors, blades, wakegrid
+        ductgeometry, rotors, wakegrid
     )
 
-    return wakegrid, panelgeometries, updatedrotors
+    return wakegrid, panelgeometries, rotors, blades
 end
 
 """
