@@ -2,14 +2,15 @@
 
 In the current state, DuctTAPE.jl can only be used in conjunction with FLOWFoil and CCBlade, of which only CCBlade is currently publicly available.
 
-```
+```raw julia
 using CCBlade
 using FLOWFoil
 using DuctTAPE
 ```
 
 We first need to call FLOWFoil to obtain an inviscid panel solution from which we can calculate the velocity field.
-```
+
+```raw julia
 ##### ----- CALL FLOWFOIL
 
 ### --- Create Duct Geometry and Run FLOWFoil
@@ -41,7 +42,7 @@ ff_solution = FLOWFoil.solve(problem)
 
 Next, we need to define the rotor object we would like to use.
 
-```
+```raw julia
 ##### ----- DEFINE ROTOR
 
 #set up parameters
@@ -64,7 +65,7 @@ rotor = DuctTAPE.RotorGeometry(
 
 The last piece we need is the freestream information we'd like to use.
 
-```
+```raw julia
 ##### ----- DEFINE FREESTREAM
 vinf = 5.0
 rho = 1.225 #kg/m3
@@ -76,7 +77,7 @@ freestream = DuctTAPE.Freestream(vinf, rho, mu, asound)
 
 We are now ready to get the inputs for, and run, the CCBlade solution function.
 
-```
+```raw julia
 ##### ----- COUPLE DUCT -> CCBLADE
 ccbrotor, sections, op, rdist = DuctTAPE.ff2ccb(ff_solution, rotor, freestream)
 
