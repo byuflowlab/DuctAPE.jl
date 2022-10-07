@@ -2,45 +2,44 @@
 
 ## Public
 
-### Additional Airfoil Functions
-These functions are nearly identical to CCBlade implementations, but include a solidity factor as one of the inputs.
+### Composite Types
 
-```@autodocs
-Modules = [DuctTAPE]
-Pages = ["airfoils.jl"]
+There are several native DuctTAPE types that are required for the user to use as inputs.
+
+The first is the freestream object, which defines the various freestream values.
+
+```@docs
+DuctTAPE.Freestream
 ```
 
----
+Second is the rotor geometry object that contains all the required information do define a rotor as well as allow DuctTAPE to create the CCBlade rotor, section, and operation point inputs.
+
+```@docs
+DuctTAPE.RotorGeometry
+```
+
+### Functions
+
+The current main function the user will employ from DuctTAPE is `ff2ccb` which is the FLOWFoil to CCBlade coupling function. This function calls several private functions listed below.
+
+```@docs
+DuctTAPE.ff2ccb
+```
 
 ---
 
 ## Private
 
-### Wake Grid Geometry Functions
+### Auxiliary Coupling Functions
 
-The wake grid initalization function actually calls two functions. The first is a method for initializing the grid geometry based on conservation of mass:
-
-```@docs
-DuctTAPE.generate_grid_points
-```
-
-The second is an elliptic grid solver using successive line over relaxation (SLOR) to relax the grid, meaning more accurately place the radial grid points along streamlines:
+These functions are called by the `ff2ccb` function as part of converting the FLOWFoil outputs into CCBlade inputs.
 
 ```@docs
-DuctTAPE.relax_grid
+DuctTAPE.extract_ff_geom
+DuctTAPE.ff2ccb_velocity
+DuctTAPE.generate_ccb_sections
 ```
 
-### Rotor Geometric Functions
-```@docs
-DuctTAPE.reinterpolate_rotor!
-```
-
-### Rotor & Wake Grid Aerodynamic Functions
-```@docs
-DuctTAPE.set_grid_aero!
-DuctTAPE.set_rotor_velocities
-DuctTAPE.calc_gamma_i
-```
 
 ### Utility Functions
 

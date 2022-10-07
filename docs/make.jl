@@ -16,9 +16,9 @@ makedocs(;
     pages=[
         "Intro" => "index.md",
         "Quick Start" => "tutorial.md",
-        "Guided Examples" => "examples.md",
+        # "Guided Examples" => "examples.md",
         "API Reference" => "reference.md",
-        "Theory" => "theory.md",
+        # "Theory" => "theory.md",
     ],
 )
 
