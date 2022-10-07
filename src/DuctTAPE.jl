@@ -2,7 +2,7 @@ module DuctTAPE
 
 ## -- DEPENDENCIES
 
-# using FLOWFoil #UNCOMMENT THIS LINE TO ENABLE FLOWFOIL
+using FLOWFoil
 using FLOWMath
 using CCBlade
 ccb = CCBlade #rename ccblade for convenience

@@ -10,9 +10,6 @@ Currently, this code is a simple coupler from FLOWFoil (an inviscid panel code f
 Future plans include full rotor-duct coupling using methods similar to those used in [DFDC](http://web.mit.edu/drela/Public/web/dfdc/) with modifications to enable ease of use in gradient-based optimization applications.
 
 
-!!! note "In Order To Use"
-    In order to make this documentation work, the non-registered FLOWFoil dependency had to be commented out of the `src/DuctTAPE.jl` and `Project.toml` files.
-
-    In order to use this code without errors, those lines need to be uncommented.
-
-    This is also why none of the automated testing currently passes, and would not anyway with an unregistered dependency.
+!!! note "Broken Tests"
+    Currently, FLOWFoil is an unregistered dependency of FLOWFoil.
+    For this reason, all automated github testing fails.
