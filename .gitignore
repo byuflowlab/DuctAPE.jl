@@ -5,8 +5,6 @@
 # other
 *.key
 *.idraw
-*.png
-*.pdf
 
 # julia
 *.jl.cov
