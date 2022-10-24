@@ -18,12 +18,17 @@ Second is the rotor geometry object that contains all the required information d
 DuctTAPE.RotorGeometry
 ```
 
-### Functions
+### Coupling Functions
 
 The current main function the user will employ from DuctTAPE is `ff2ccb` which is the FLOWFoil to CCBlade coupling function. This function calls several private functions listed below.
 
 ```@docs
 DuctTAPE.ff2ccb
+```
+
+### Post Processing Functions
+```@docs
+DuctTAPE.calculate_duct_thrust
 ```
 
 ---
@@ -36,9 +41,14 @@ These functions are called by the `ff2ccb` function as part of converting the FL
 
 ```@docs
 DuctTAPE.extract_ff_geom
+DuctTAPE.probe_ff_velocity
 DuctTAPE.ff2ccb_velocity
 DuctTAPE.generate_ccb_sections
+DuctTAPE.get_mesh_gammas
+DuctTAPE.weibull
 ```
+
+
 
 
 ### Utility Functions

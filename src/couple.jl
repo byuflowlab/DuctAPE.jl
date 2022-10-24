@@ -9,89 +9,99 @@ Takes the FLOWFoil solution object, rotor geometry object, and freestream object
 
 **Arguments:**
 - `ff_solution::FLOWFoil.InviscidSolution` : Inviscid solution object from FLOWFoil.
-- `rotor::RotorGeometry` : rotor geometry object
+- `dtrotor::RotorGeometry` : rotor geometry object
 - `freestream::Freestream` : freestream object
 
 **returns:**
 - `ccbrotor::CCBlade.rotor` : CCBlade rotor object
 - `ccbsections::Array{CCBlade.section}` : Array of CCBlade section objects
 - `ccbops:Array{Array{CCBlade.operatingpoint}}` : Array of Arrays of CCBlade operation points for each rotor RPM at which to analyze
-- `rdist::Array{float}` : Array of refined, dimensional rotot radial station r locations.
+- `vxs::Array{Float}` : Array of velocities for each advance ratio
 """
-function ff2ccb(ff_solution, rotor, freestream; debug=false)
+function ff2ccb(ff_solution, dtrotor, freestream; debug=false)
 
-    # need to get wall mesh geometry in order to define rotor blade dimensions
+    # need to get wall mesh geometry in order to define dtrotor blade dimensions
     xduct, yduct, xhub, yhub = extract_ff_geom(ff_solution)
 
     # duct wall geometry needs to be split before being splined
     xductinner, _, yductinner, _ = split_wall(xduct, yduct)
 
-    # spline duct and hub geometries
+    # spline inner duct and hub wall geometries front to back
     ductspline = FLOWMath.Akima(reverse(xductinner), reverse(yductinner))
     hubspline = FLOWMath.Akima(xhub, yhub)
 
-    # find rhub from point on hub spline corresponding with rotor xlocation
-    rhub = hubspline(rotor.xlocation)
+    # find rhub from point on hub spline corresponding with dtrotor xlocation
+    rhub = hubspline(dtrotor.xlocation)
 
-    # find rtip from point on duct spline corresponding with rotor xlocation
-    rtip = ductspline(rotor.xlocation)
+    # find rtip from point on duct spline corresponding with dtrotor xlocation
+    rtip = ductspline(dtrotor.xlocation)
 
-    # get dimensional rotor radial station locations
+    ##sanity check on dtrotor tip radius
+    #@assert isapprox(rtip, dtrotor.Rtip, atol=1e-5)
+
+    # get dimensional dtrotor radial station locations using utility function in this package
     dim_rad_stash = lintran(
         rhub, # range a start
         rtip, # range a end
-        rotor.radialstations[1], # range b start
-        rotor.radialstations[end], # range b end
-        rotor.radialstations, # range to transform
+        dtrotor.radialstations[1], # range b start
+        dtrotor.radialstations[end], # range b end
+        dtrotor.radialstations, # range to transform
     )
 
-    # assemble field points
-    field_points = [[rotor.xlocation; dim_rad_stash[i]] for i in 1:length(dim_rad_stash)]
+    # assemble field points, i.e. blade element locations
+    field_points = [[dtrotor.xlocation; dim_rad_stash[i]] for i in 1:length(dim_rad_stash)]
 
-    # probe ff_solution velocity field at rotor x location
-    duct_induced_velocities = FLOWFoil.probe_velocity_axisym(ff_solution, field_points)
+    # define CCBlade rotor object with dummy tip correction (manually added to CCBlade source code)
+    ccbrotor = ccb.Rotor(
+        rhub, rtip, dtrotor.numblades; turbine=false, tip=CCBlade.DuctTip()
+    )
 
-    # get full magnitude velocities
-    velocities = freestream.vinf .* duct_induced_velocities
-    for i in 1:length(velocities)
-        velocities[i][1] += freestream.vinf
-    end
-
-    # define rotor object
-    ccbrotor = ccb.Rotor(rhub, rtip, rotor.numblades; turbine=false, tip=nothing)
-
-    # define section objects
-    ccbsections, rdist = generate_ccb_sections(rotor, dim_rad_stash)
+    # define CCBlade Section objects
+    ccbsections, rdist = generate_ccb_sections(dtrotor, dim_rad_stash)
 
     # - Define Operation Points
     # rename for convenience
-    nops = length(rotor.RPM)
+    nops = length(freestream.vinf)
 
     # initialize operating point Arrays
-    ccbops = [Array{CCBlade.OperatingPoint}(undef, length(rdist)) for i in 1:nops]
+    ccbops = [Vector{CCBlade.OperatingPoint}(undef, length(rdist)) for i in 1:nops]
+
+    #initialize axial velocity arays
+    vxs = [Vector{eltype(freestream.vinf)}(undef, length(rdist)) for i in 1:nops]
 
     # loop through RPM's to analyze
     for i in 1:nops
+        # probe ff_solution velocity field at dtrotor x location
+        velocities = probe_ff_velocity(
+            ff_solution,
+            field_points,
+            freestream.vinf[i];
+            rho=freestream.rho,
+            mu=freestream.mu,
+            treat_singularity=true,
+            core_size=dtrotor.Rtip * 0.1,
+        )
 
-        # convert velocities
-        vx, vy = ff2ccb_velocity(rotor, dim_rad_stash, velocities, rdist, i)
+        # Put velocities in ccblade reference frame
+        vxs[i], vy = ff2ccb_velocity(dtrotor, dim_rad_stash, velocities, rdist, i)
 
         # define operating point
-        # note: for single rotor, v_x = vinf and v_y = omega*r
+        # note: for single open rotor, v_x = vinf and v_y = omega*r
         pitch = 0.0
         ccbops[i] =
             ccb.OperatingPoint.(
-                vx, vy, freestream.rho, pitch, freestream.mu, freestream.asound
+                vxs[i], vy, freestream.rho, pitch, freestream.mu, freestream.asound
             )
     end
 
     if debug
-        ccb.Rotor(rhub, rtip, rotor.numblades; turbine=false),
+        #if debugging, return ccblade defaults (tip corrections, simple ops)
+        return ccb.Rotor(rhub, rtip, dtrotor.numblades; turbine=false),
         ccbsections,
-        ccb.simple_op.(freestream.vinf, get_omega(rotor.RPM[1]), rdist, freestream.rho),
-        rdist
+        ccb.simple_op.(freestream.vinf[1], get_omega(dtrotor.RPM), rdist, freestream.rho),
+        vxs
     else
-        return ccbrotor, ccbsections, ccbops, rdist
+        return ccbrotor, ccbsections, ccbops, vxs
     end
     # fyi this is how to call CCBlade
     # ccb_out = ccb.solve.(ref(ccbrotor), sections, op)
@@ -100,10 +110,10 @@ end
 """
     extract_ff_geom(ff_solution)
 
-extract x and r coordiantes of duct and hub geometries from the FLOWFoil solution object.
+Extract x and r coordiantes of duct and hub geometries from the FLOWFoil solution object.
 
 **arguments:**
-- `ff_solution::FLOWFoil.inviscidsolution` : inviscid solution object from FLOWFoil.
+- `ff_solution::FLOWFoil.InviscidSolution` : inviscid solution object from FLOWFoil.
 
 **returns:**
 - `duct_x::Array{float}` : Array of x-coordinates of duct wall control points.
@@ -136,49 +146,50 @@ function extract_ff_geom(ff_solution)
 end
 
 """
-    generate_ccb_sections(rotor, dim_rad_stash)
+    generate_ccb_sections(dtrotor, dim_rad_stash)
 
-Generates CCBlade section objects from rotor information and dimensional radial stations.
+Generates CCBlade section objects from dtrotor information and dimensional radial stations.
 
 **Arguments:**
-- `rotor::RotorGeometry` : Rotor geometry object
+- `dtrotor::RotorGeometry` : dtrotor geometry object
 - `dim_rad_stash::Array{Float}` : Dimensional Radial Station locations
 
 **Returns:**
 - `ccbsections::Array{CCBlade.Section}` : Array of CCBlade section objects
 - `rdist::Array{float}` : Array of refined, dimensional rotot radial station r locations.
 """
-function generate_ccb_sections(rotor, dim_rad_stash)
+function generate_ccb_sections(dtrotor, dim_rad_stash)
 
     # rename for convenience
-    chords = rotor.chords * dim_rad_stash[end] # dimensionalize
-    twists = rotor.twists * pi / 180.0 # convert to radians
-    airfoils = rotor.airfoils
+    chords = dtrotor.chords * dim_rad_stash[end] # dimensionalize
+
+    twists = dtrotor.twists * pi / 180.0 # convert to radians
+
+    airfoils = dtrotor.airfoils
 
     # -- Refine Blade
     # spline chord and twist
     csp = FLOWMath.Akima(dim_rad_stash, chords)
     tsp = FLOWMath.Akima(dim_rad_stash, twists)
 
-    # get refined radial stations
+    # get dimensiona, refined radial stations
     Rhub = dim_rad_stash[1]
     Rtip = dim_rad_stash[end]
-    # rdist = range(dim_rad_stash[1], dim_rad_stash[end]; length=rotor.nref)
-    rdist = range(Rhub + Rtip * 0.015, Rtip - Rtip * 0.03; length=rotor.nref)
+    rdist = range(Rhub, Rtip; length=dtrotor.nref)
 
     # get refined chord and twist
     cdist = csp.(rdist)
     tdist = tsp.(rdist)
 
     # -- assign airfoils
-    # initialize Array
-    afdist = Array{typeof(airfoils[1])}(undef, rotor.nref)
+    # initialize airfoil array
+    afdist = Array{typeof(airfoils[1])}(undef, dtrotor.nref)
 
     # get average values of radial stations to better place airfoils (center defined airfoils in refined blade)
     mean_rad_stash = (dim_rad_stash[1:(end - 1)] .+ dim_rad_stash[2:end]) ./ 2.0
 
     # loop through refined radial stations and apply appropriate airfoil
-    for i in 1:(rotor.nref)
+    for i in 1:(dtrotor.nref)
         ridx = findfirst(x -> x > rdist[i], mean_rad_stash)
         if ridx != nothing
             afdist[i] = airfoils[ridx]
@@ -187,7 +198,190 @@ function generate_ccb_sections(rotor, dim_rad_stash)
         end
     end
 
+    #Return CCBlade sections
     return ccb.Section.(rdist, cdist, tdist, afdist), rdist
+end
+
+"""
+    probe_velocity_axisym(ff_solution, field_points, vinf)
+
+Probe the velocity field for the axisymmetric solution at the given field points.
+
+**Arguements:**
+- `ff_solution::FLOWFoil.InviscidSolution` : Inviscid Solution for the axisymmetric problem
+- `field_points::Array{Array{Float}}` : Array of field point location arrays.
+- `vinf::Float` : Freestream Velocity
+
+**Keyword Arguments:**
+- `rho::Float` : air density, default: 1.225 kg/m3
+- `mu::Float` : air viscosity, default: 1.81e-5 Pa-s
+- `treat_singularity::Bool` : flag whether to add treatment for near-wall singularity behavior
+- `core_size::Float` : scale factor for weibull function ends up being roughly the radius of a "core size."
+
+**Returns:**
+- `velocities::Array{Array{Float}}` : Array of velocities, [u;v], at each field point.
+"""
+function probe_ff_velocity(
+    ff_solution,
+    field_points,
+    vinf;
+    rho=1.225,
+    mu=1.81e-5,
+    treat_singularity=false,
+    core_size=0.025,
+)
+    T = eltype(vinf)
+    #initialize output velocities
+    # velocities = [[0.0; 0.0] for i in 1:length(field_points)]
+    velocities = [[T(0.0); T(0.0)] for i in 1:length(field_points)]
+    if treat_singularity
+        edge_velocities = [[T(0.0); T(0.0)] for i in 1:2]
+    end
+
+    #loop through each mesh
+    for i in 1:length(ff_solution.meshes)
+
+        #get gammas specific to this mesh
+        gammas = get_mesh_gammas(ff_solution.panelgammas, ff_solution.meshes, i)
+
+        # loop through panels for this mesh
+        for j in 1:length(ff_solution.meshes[i].panels)
+
+            #get current panel
+            panel = ff_solution.meshes[i].panels[j]
+
+            #loop through field points
+            for k in 1:length(field_points)
+                #get relative geometries needed for velocity calculation
+                x, r, cpr, dmagj, m = FLOWFoil.get_relative_geometry_axisym(
+                    panel, field_points[k]
+                )
+
+                ujk = FLOWFoil.get_u_ring(x, r, cpr, dmagj, m; probe=true)
+                vjk = FLOWFoil.get_v_ring(x, r, cpr, m; probe=true)
+
+                #add to overall velocity at field point
+                velocities[k][1] -= ujk * gammas[j] * dmagj * vinf
+                velocities[k][2] += vjk * gammas[j] * dmagj * vinf
+            end
+
+            if treat_singularity
+
+                #get edge of field of affect
+                ductcore = [field_points[end][1]; field_points[end][2] - core_size]
+                hubcore = [field_points[1][1]; field_points[1][2] + core_size]
+
+                #DUCT
+                x, r, cpr, dmagj, m = FLOWFoil.get_relative_geometry_axisym(panel, ductcore)
+
+                ujk = FLOWFoil.get_u_ring(x, r, cpr, dmagj, m; probe=true)
+                vjk = FLOWFoil.get_v_ring(x, r, cpr, m; probe=true)
+
+                #add to overall velocity at field point
+                edge_velocities[1][1] -= ujk * gammas[j] * dmagj * vinf
+                edge_velocities[1][2] += vjk * gammas[j] * dmagj * vinf
+
+                #HUB
+                x, r, cpr, dmagj, m = FLOWFoil.get_relative_geometry_axisym(panel, hubcore)
+
+                ujk = FLOWFoil.get_u_ring(x, r, cpr, dmagj, m; probe=true)
+                vjk = FLOWFoil.get_v_ring(x, r, cpr, m; probe=true)
+
+                #add to overall velocity at field point
+                edge_velocities[1][1] -= ujk * gammas[j] * dmagj * vinf
+                edge_velocities[1][2] += vjk * gammas[j] * dmagj * vinf
+            end
+        end
+    end
+
+    #get absolute velocity (not just induced)
+    for i in 1:length(velocities)
+        velocities[i][1] += vinf
+    end
+
+    if treat_singularity
+        for k in 1:length(field_points)
+            #Duct
+            if field_points[end][2] - field_points[k][2] < core_size
+                R = (field_points[end][2] - field_points[k][2]) / core_size
+                velocities[k][1] = weibull(
+                    abs(R); lambda=core_size / 2.0, k=1.0, scale=edge_velocities[1][1]
+                )
+                velocities[k][2] = weibull(
+                    abs(R); lambda=core_size / 2.0, k=1.0, scale=edge_velocities[1][2]
+                )
+            elseif field_points[k][2] - field_points[1][2] < core_size
+                R = (field_points[k][2] - field_points[1][2]) / core_size
+                velocities[k][1] = weibull(
+                    abs(R); lambda=core_size / 2.0, k=1.0, scale=edge_velocities[2][1]
+                )
+                velocities[k][2] = weibull(
+                    abs(R); lambda=core_size / 2.0, k=1.0, scale=edge_velocities[2][2]
+                )
+            end
+        end
+    end
+
+    return velocities
+end
+
+"""
+    get_mesh_gammas(gammas, meshes, meshidx)
+
+Get the gamma values only for the mesh at index meshidx in meshes.
+
+**Arguments:**
+- `gammas::FLOWFoil.InviscidSolution.panelgammas` : vortex strengths at each panel in the system.
+- `meshes::Array{FLOWFoil.AxiSymMesh}` : Array of meshes in system
+- `meshidx::Int` : index of which mesh in the meshes array for which to obtain the associated gammas.
+
+**Returns:**
+- `mesh_gammas::Array{Float}` : panel gamma values for input mesh
+"""
+function get_mesh_gammas(gammas, meshes, meshidx)
+
+    #initialize offset
+    offset = 0
+
+    #if we're interested in values on mesh greater than 1, add to offset
+    if meshidx > 1
+        for i in 1:(meshidx - 1)
+            offset += length(meshes[i].panels)
+        end
+    end
+
+    #grab the gammas for just the body we want.
+    mesh_gammas = gammas[(1 + offset):(offset + length(meshes[meshidx].panels))]
+
+    return mesh_gammas
+end
+
+"""
+    weibull(x; lambda, k, scale, offset)
+
+Produce a weibull distribution specifically for driving near-wall velocities to zero.
+
+**Arguments:**
+- `x::Float` : distance from wall
+
+**Keyword Arguments:**
+- `lambda::Float` : parameter of denominator in exponential, roughly associated with halfway point of distribution.
+- `k::Float` : parameter of power in exponential, probably want to keep at default, 1.0.
+- `scale::Float` : amount to scale distribution output by (velocity where you want to start driving things to zero)
+- `offset::Float` : value to offset the output by (if you aren't actually driving things to zero, but some other value)
+"""
+function weibull(x; lambda=1.0, k=1.0, scale=1.0, offset=0.0)
+
+    #weibull distribution
+    w = 1.0 - exp(-(x / lambda)^k)
+
+    #scale into the range from the offset to the max value
+    w *= (scale - offset)
+
+    #shift by the offset
+    w += offset
+
+    return w
 end
 
 """
@@ -200,53 +394,22 @@ Convert velocities from FLOWFoil to the CCBlade reference frame.
 - `dim_rad_stash::Array{Float}` : Dimensional Radial Station locations
 - `velocities::Array{Array{Float}}` : Array of [x; r] velocities from FLOWFoil.
 - `rdist::Array{float}` : Array of refined, dimensional rotot radial station r locations.
-- `opidx::Int` : index of which RPM value to use
 
 **Returns:**
 - `Vx::Array{Float}` : x-velocities in the CCBlade reference frame
 - `Vy::Array{Float}` : y-velocities in the CCBlade reference frame
 """
-function ff2ccb_velocity(rotor, dim_rad_stash, velocities, rdist, opidx)
+function ff2ccb_velocity(dtrotor, dim_rad_stash, velocities, rdist)
     # spline velocities
     vxsp = FLOWMath.Akima(dim_rad_stash, getindex.(velocities, 1))
     vrsp = FLOWMath.Akima(dim_rad_stash, getindex.(velocities, 2))
-    vtsp = FLOWMath.Akima(dim_rad_stash, get_omega(rotor.RPM[opidx]) .* dim_rad_stash)
+    vtsp = FLOWMath.Akima(dim_rad_stash, get_omega(dtrotor.RPM) .* dim_rad_stash)
 
     # get refined velocities
     Vx = vxsp.(rdist)
     Vy = vtsp.(rdist)
 
+    Vx, Vy = promote(Vx, Vy)
+
     return Vx, Vy
 end
-
-# """
-# Calculate thrust, torque, and efficiency
-# NOT NEEDED?? (ccblade version works fine...)
-# """
-# function calculate_TQeta(
-#     ff_solution, ccb_solution, ccprotor, ccbsections, freestream, Omega; nondim=false
-# )
-
-#     # get thrust from duct.
-#     duct_thrust, _ = FLOWFoil.calculate_forces(ff_solution)
-
-#     # get thrust and torque from rotor
-#     rotor_thrust, torque = ccb.thrusttorque(ccbrotor, ccbsections, ccb_solution)
-
-#     # sum thrust
-#     thrust = duct_thrust + rotor_thrust
-
-#     # calculate efficiency
-#     eta = thrust * freestream.vinf / (torque * Omega)
-
-#     # return non-dimensional values if asked
-#     if nondim
-#         D = 2.0 * rotor.Rtip
-#         n = Omega / (2 * pi)
-#         ct = thrust / (freestream.rho * n^2 * D^5)
-#         cq = torque / (freestream.rho * n^2 * D^5)
-#         return ct, cq, eta
-#     else
-#         return thrust, torque, eta
-#     end
-# end

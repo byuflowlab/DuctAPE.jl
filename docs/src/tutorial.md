@@ -84,5 +84,3 @@ ccbrotor, sections, op, rdist = DuctTAPE.ff2ccb(ff_solution, rotor, freestream)
 # Call CCBlade
 ccb_out = CCBlade.solve.(Ref(ccbrotor), sections, op)
 ```
-
-
