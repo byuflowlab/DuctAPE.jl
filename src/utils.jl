@@ -35,7 +35,7 @@ Linear transfrom of ra from range (ra1, raend) to (rb1, rbend)
  - `rb::Array{Float}` : array of transformed values on range b
 """
 function lintran(rb1, rbend, ra1, raend, ra)
-    return rb1 .+ (rbend - rb1) / (raend - ra1) .* (ra .- ra1)
+    return rb1 .+ (rbend - rb1) .* (ra .- ra1) / (raend - ra1)
 end
 
 """

@@ -28,7 +28,7 @@ function calculate_duct_thrust(ff_solution, Vinf; rho=1.225)
 
     #get gammas specific to duct mesh (assumed to be first mesh)
     #note that FLOWFoil solves things in terms of 1/Vinf, so these surface velocities are actually Vti/Vinf already.
-    duct_surface_velocities = get_mesh_gammas(gammas, duct_mesh, 1)
+    duct_surface_velocities = get_mesh_gammas(gammas, ff_solution.meshes, 1)
 
     # loop through panels for this mesh
     for j in 1:length(duct_mesh.panels)
@@ -43,11 +43,10 @@ function calculate_duct_thrust(ff_solution, Vinf; rho=1.225)
         P = cp_panel * q
 
         #add panel pressure in x-direction to total sectional force
-        f_x += P * panel.length * panel.normal[1]
+        fx += P * panel.length * panel.normal[1] * panel.controlpoint[2]
     end
 
-    println("fx: ", fx)
     #return total duct thrust for whole annulus: -fx*2pi
-    return -fx * 2.0 * pi
+    return fx * 2.0 * pi
 end
 
