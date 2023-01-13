@@ -357,37 +357,6 @@ function probe_ff_velocity(
 end
 
 """
-    get_mesh_gammas(gammas, meshes, meshidx)
-
-Get the gamma values only for the mesh at index meshidx in meshes.
-
-**Arguments:**
-- `gammas::FLOWFoil.InviscidSolution.panelgammas` : vortex strengths at each panel in the system.
-- `meshes::Array{FLOWFoil.AxiSymMesh}` : Array of meshes in system
-- `meshidx::Int` : index of which mesh in the meshes array for which to obtain the associated gammas.
-
-**Returns:**
-- `mesh_gammas::Array{Float}` : panel gamma values for input mesh
-"""
-function get_mesh_gammas(gammas, meshes, meshidx)
-
-    #initialize offset
-    offset = 0
-
-    #if we're interested in values on mesh greater than 1, add to offset
-    if meshidx > 1
-        for i in 1:(meshidx - 1)
-            offset += length(meshes[i].panels)
-        end
-    end
-
-    #grab the gammas for just the body we want.
-    mesh_gammas = gammas[(1 + offset):(offset + length(meshes[meshidx].panels))]
-
-    return mesh_gammas
-end
-
-"""
     weibull(x; lambda, k, scale, offset)
 
 Produce a weibull distribution specifically for driving near-wall velocities to zero.

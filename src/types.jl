@@ -22,19 +22,14 @@ struct RotorGeometry{TF,TRt,TRh,TI,TR,TC,TT,TAF,TRpm}
     numblades::TI
     nref::TI #number of refinement stations
     radialstations::TR
-    # tipgap::TG
     chords::TC
     twists::TT
-    # skews::TSk
-    # rakes::TRa
     airfoils::TAF
     # solidities::TSo
     RPM::TRpm
 end
 # TODO: Add to rotor object later
 #  - `tipgap::Float` : gap between blade tip and duct wall (not implemented yet)
-#  - `skews::Array{Float}` : array of skew values (similar to sweep) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only, the solver can't use this information)
-#  - `rakes::Array{Float}` : array of rake values (similar to dihedral) at radial stations defining rotor blade, non-dimensional based on rotor tip radius. (note: this is for reference only right now. it may be implemented into the grid initialization functions later.)
 #  - `solidity:Array{Float}` : array of rotor solidity at radial stations defining rotor blade, chord/distance between blade sections
 
 """

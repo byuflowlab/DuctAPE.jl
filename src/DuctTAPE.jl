@@ -5,7 +5,7 @@ module DuctTAPE
 using FLOWFoil
 using FLOWMath
 using CCBlade
-ccb = CCBlade #rename ccblade for convenience
+const ccb = CCBlade #rename ccblade for convenience
 
 ## -- INCLUDES
 
