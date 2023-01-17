@@ -17,7 +17,7 @@ struct OneWayMesh
     mesh2panel_affect
     x
     r
-    k2
+    m
 end
 
 function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:ff.Panel}

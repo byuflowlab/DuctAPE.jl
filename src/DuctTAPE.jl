@@ -25,6 +25,6 @@ include("rotor_geometry.jl")
 include("mesh.jl")
 
 # Additional Influence Coefficient Functions
-include("coeffcient_matrix.jl")
+include("coefficient_matrix.jl")
 
 end

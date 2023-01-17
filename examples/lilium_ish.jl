@@ -6,6 +6,8 @@ Example based on Lilium-like Geometry
 
 using DuctTAPE
 const dt = DuctTAPE
+using FLOWFoil
+const ff = FLOWFoil
 
 # Load in Lilium-like Geometry
 include("lilium_parameters.jl")
@@ -53,7 +55,7 @@ body_geometry, body_panels = dt.generate_body_geometry(duct_coordinates, hub_coo
 # - Get Rotor Geometry - #
 
 #choose number of blade elements
-nbe = 10
+nbe = 100
 
 # - Chord - #
 # note: just use linear chord distribution
@@ -78,12 +80,34 @@ blade_elements, rotor_panels = dt.generate_blade_elements(
 #             Meshes              #
 #---------------------------------#
 
+method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true])
+
+mesh_body_to_body = ff.generate_mesh(method, body_panels)
+
 mesh_bodies_to_rotor = dt.generate_one_way_mesh(body_panels, rotor_panels)
 
 #---------------------------------#
 #       Coefficient Matrices      #
 #---------------------------------#
 
-A_bodies_to_rotor = dt.assemble_one_way_source_matrix(
+body_system = ff.generate_inviscid_system(method, body_panels, mesh_body_to_body)
+A_body_to_body = body_system.A
+bc_freestream_to_body = body_system.b
+
+A_bodies_to_rotor = dt.assemble_one_way_vortex_matrix(
     mesh_bodies_to_rotor, body_panels, rotor_panels
 )
+
+#---------------------------------#
+#      Singularity Strenghts      #
+#---------------------------------#
+
+gamma_bodies = A_body_to_body \ bc_freestream_to_body
+gamma_bodies = gamma_bodies[1:(end - 1)]
+
+#---------------------------------#
+#        Induced Velocities       #
+#---------------------------------#
+
+Vinf = 1.0
+body_induced_rotor_velocity = A_bodies_to_rotor * (gamma_bodies .* Vinf) .+ Vinf

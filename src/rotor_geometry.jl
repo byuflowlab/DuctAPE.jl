@@ -12,6 +12,7 @@ struct BladeElements
     chords
     twists
     airfoils
+    num_blades
 end
 
 """
@@ -27,6 +28,7 @@ function generate_blade_elements(
     chords,
     twists,
     airfoils,
+    num_blades,
     body_geometry;
     method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
 )
@@ -52,6 +54,8 @@ function generate_blade_elements(
         method, [rotor_x_position .* ones(length(radial_positions)) dim_radial_positions]
     )
 
-    return BladeElements(dim_radial_positions, chords, twists * pi / 180.0, airfoils),
+    return BladeElements(
+        dim_radial_positions, chords, twists * pi / 180.0, airfoils, num_blades
+    ),
     rotor_panels
 end

@@ -17,11 +17,29 @@ we only need flowfoil boundary conditions for the body to body case, so we don't
 
 """
 """
-function assemble_one_way_vortex_matrix(mesh)
+function assemble_one_way_source_matrix(mesh)
     return nothing
 end
 
-function assemble_one_way_source_matrix(mesh, influence_panels, affect_panels)
+function assemble_one_way_vortex_matrix(
+    mesh, influence_panels::TP, affect_panels
+) where {TP<:ff.Panel}
+    return assemble_one_way_vortex_matrix(mesh, [influence_panels], affect_panels)
+end
+
+function assemble_one_way_vortex_matrix(
+    mesh, influence_panels, affect_panels::TP
+) where {TP<:ff.Panel}
+    return assemble_one_way_vortex_matrix(mesh, influence_panels, [affect_panels])
+end
+
+function assemble_one_way_vortex_matrix(
+    mesh, influence_panels::TP, affect_panels::TP
+) where {TP<:ff.Panel}
+    return assemble_one_way_vortex_matrix(mesh, [influence_panels], [affect_panels])
+end
+
+function assemble_one_way_vortex_matrix(mesh, influence_panels, affect_panels)
 
     ### --- SETUP --- ###
 
@@ -50,7 +68,7 @@ function assemble_one_way_source_matrix(mesh, influence_panels, affect_panels)
 
                     ### --- Calculate influence coefficient --- ###
                     #TODO: need to add or re-write this function to take in i and j already adjusted for mesh2panel.
-                    amat[i, j] = ff.calculate_ring_vortex_influence_off_body(
+                    amat[i, j] = calculate_ring_vortex_influence_off_body(
                         affect_panels[m], influence_panels[n], mesh, i, j
                     )
                 end
