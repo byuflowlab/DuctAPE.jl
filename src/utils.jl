@@ -38,6 +38,10 @@ function lintran(rb1, rbend, ra1, raend, ra)
     return rb1 .+ (rbend - rb1) .* (ra .- ra1) / (raend - ra1)
 end
 
+function lintran(rangeb, rangea, values)
+    return lintran(rangeb[1], rangeb[2], rangea[1], rangea[2], values)
+end
+
 """
     get_omega(rpm)
 
