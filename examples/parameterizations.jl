@@ -5,6 +5,12 @@ NURBS Parameterizations for Duct and Hub Geometries
 =#
 
 using Splines
+using FLOWMath
+const fm = FLOWMath
+using FLOWFoil
+const ff = FLOWFoil
+using DuctTAPE
+const dt = DuctTAPE
 
 """
 """
@@ -89,7 +95,8 @@ function get_coordinates(nurbs; N=160)
     n = length(nurbs.ctrlpts) - 1
 
     #initialize curve point array
-    Cw = [[0.0; 0.0] for i in 1:length(u)]
+    TF = eltype(nurbs.ctrlpts[1])
+    Cw = [zeros(TF, 2) for i in 1:length(u)]
 
     #loop through parametric points to get curve points
     for i in 1:length(u)
@@ -121,94 +128,56 @@ function generate_hub_coordinates(;
     nose_angle=pi / 4.0,
     tail_angle=pi / 9.0,
     cyl_x=[0.2125, 0.26],
-    degree=3,
-    weights=nothing,
     N=80,
     debug=false,
 )
 
     # calculate postitions of unknown x control point coordinates
-    x1 = hub_le + rmax / tan(nose_angle)
-    x2 = hub_te - rmax / tan(tail_angle)
+    xnose = hub_le + rmax / tan(nose_angle)
+    xtail = hub_te - rmax / tan(tail_angle)
+
+    TF = typeof(xnose)
 
     # Assemble Control Points
     if cyl_x == nothing
-        ctrlpts = [[hub_le, 0.0], [x1, rmax], [x2, rmax], [hub_te, 0.0]]
+        degree = 3
+        ctrlpts = [[hub_le, 0.0], [xnose, rmax], [xtail, rmax], [hub_te, 0.0]]
 
         knots = [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]
     else
-        ctrlpts = [
-            [hub_le, 0.0],
-            [x1, rmax],
-            [cyl_x[1], rmax],
-            [cyl_x[1], rmax],
-            [cyl_x[2], rmax],
-            [cyl_x[2], rmax],
-            [x2, rmax],
-            [hub_te, 0.0],
-        ]
+        degree = 2
+        nose_pts = [[hub_le, 0.0], [xnose, rmax], [cyl_x[1], rmax]]
 
-        #Calculate knot ratios:
-        knot_ratio1 = (cyl_x[1] - hub_le) / (hub_te - cyl_x[1])
-        knot_ratio2 = (cyl_x[2] - hub_le) / (hub_te - cyl_x[2])
+        tail_pts = [[cyl_x[2], rmax], [xtail, rmax], [hub_te, 0.0]]
 
         # Knot vector set such that flat portion at rmax is at rotor root leading and trailing edge.
-        knots = [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            knot_ratio1,
-            knot_ratio1,
-            knot_ratio2,
-            knot_ratio2,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ]
+        knots = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
     end
 
     # Keep weights as ones unless otherwise specified
-    if isnothing(weights)
-        weights = ones(length(ctrlpts))
-    end
+    nose_weights = ones(length(nose_pts))
+    tail_weights = ones(length(tail_pts))
 
     # Set up NURBS object
-    hubsp = NURBS(degree, knots, weights, ctrlpts)
+    nose_sp = NURBS(degree, knots, nose_weights, nose_pts)
+    tail_sp = NURBS(degree, knots, tail_weights, tail_pts)
 
     # Extract coordinates
-    h_x, h_r = get_coordinates(hubsp; N=N)
+    n_x, n_r = get_coordinates(nose_sp; N=N)
+    t_x, t_r = get_coordinates(tail_sp; N=N)
 
-    # return control points and knots if debugging
-    if debug
+    # - Add in cylinder section - #
+    c_x = range(cyl_x[1], cyl_x[2]; step=n_x[end] - n_x[end - 1])
+    c_r = rmax .* ones(TF, length(c_x))
 
-        #initialize vector
-        knot_points = [[0.0; 0.0] for i in 1:length(knots)]
+    # - Put everything together - #
+    h_x = [n_x; c_x[2:(end - 1)]; t_x]
+    h_r = [n_r; c_r[2:(end - 1)]; t_r]
 
-        # keep track of repeated knots
-        count = 1
+    # - Smooth things out - #
 
-        #loop through knots
-        for i in 1:length(knots)
+    x = dt.lintran([hub_le; hub_te], [0.0; 1.0], ff.cosine_spacing(N))
+    r = fm.akima(h_x, h_r, x)
 
-            #get point
-            knot_points[i] = Splines.curvepoint(hubsp, knots[i])
-
-            #if knot is repeated shift it up for display purposes
-            if i > 1
-                if knots[i] == knots[i - 1]
-                    knot_points[i][2] += count * 0.01
-                    count += 1
-                else
-                    count = 1
-                end
-            end
-        end
-
-        # return x and r coordiates
-        return h_x, h_r, ctrlpts, knot_points
-    else
-        return h_x, h_r
-    end
+    return x, r
 end

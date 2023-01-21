@@ -1,3 +1,58 @@
+include("../plots_default.jl")
+
+include("lilium_ish.jl")
+
+#---------------------------------#
+#             Unwrap              #
+#---------------------------------#
+
+hub_le = x0[1]
+hub_te = x0[2]
+Rhub = x0[3]
+hub_nose_angle = x0[4]
+hub_tail_angle = x0[5]
+cyl_le = x0[6]
+cyl_te = x0[7]
+duct_lex = x0[8]
+duct_ler = x0[9]
+duct_tex = x0[10]
+duct_ter = x0[11]
+duct_wedge_angle = x0[12]
+duct_le_radius = x0[13]
+duct_te_camber = x0[14]
+duct_ctrlpt_x = x0[15]
+rotor_chord_guess = x[16]
+rotor_root_twist_guess = x[17]
+rotor_tip_twist_guess = x[18]
+
+#---------------------------------#
+#             GEOMETRY            #
+#---------------------------------#
+
+# - Get Hub Geometry - #
+hx, hr = generate_hub_coordinates(;
+    hub_le=hub_le,
+    hub_te=hub_te,
+    rmax=Rhub,
+    nose_angle=hub_nose_angle, # pi/4 from trial and error
+    tail_angle=hub_tail_angle, # pi/9 from trial and error
+    cyl_x=[cyl_le; cyl_te],
+    N=80,
+    debug=true,
+)
+
+# - Get Duct Geometry - #
+dxo, dro, dxi, dri = generate_duct_coordinates(;
+    r_le=duct_le_radius, # try to match public images
+    le_x=duct_lex,
+    te_x=duct_tex,
+    inlet_radius=duct_ler,
+    outlet_radius=duct_ter,
+    wedge_angle=duct_wedge_angle, # try to match public images
+    te_camber_angle=duct_te_camber, # try to match public images
+    ctrlpt_xpos=duct_ctrlpt_x, # try to match public images
+    N=80,
+)
 
 plot(; aspectratio=:equal)
 
@@ -6,16 +61,80 @@ plot!(dxi, dri; color=mycolors[1], label="")
 
 plot!(hx, hr; color=mycolors[2], label="Hub Surface")
 
+# - Assemble Coordinates - #
+duct_coordinates = [[reverse(dxi); dxo[2:end]] [reverse(dri); dro[2:end]]]
+hub_coordinates = [hx hr]
+
+body_geometry, body_panels = dt.generate_body_geometry(duct_coordinates, hub_coordinates)
+# - Get Rotor Geometry - #
+
+#choose number of blade elements
+nbe = 5
+
+# - Chord - #
+# note: just use linear chord distribution
+# TODO: probaby need to do some reverse engineering with chord and twist to get the values in the parameters file, since the figures they are based off of likely show chord and twist together.
+chords = range(croot_rotor, croot_stator; length=nbe)
+
+# - Twist - #
+# note: need to make a guess, use degrees for input
+twists = range(rotor_root_twist_guess, rotor_tip_twist_guess; length=nbe) * 180.0 / pi
+
+# - Non-dimensional Radial Locations - #
+radial_positions = range(0.0, 1.0; length=nbe)
+
+# - TODO: add airfoil data - #
+airfoils = nothing
+
+# - Number of blades - #
+B = 5
+
+blade_elements, rotor_panels = dt.generate_blade_elements(
+    rotor_c4_pos, radial_positions, chords, twists, airfoils, B, body_geometry
+)
 #Plot rotor quarter chord
 plot!(
     [rotor_c4_pos; rotor_c4_pos],
     [blade_elements.radial_positions[1]; blade_elements.radial_positions[end]];
     linewidth=1.5,
-    linestyle=:dash,
+    linestyle=:dot,
     color=mycolors[3],
     label="Rotor Quarter Chord Line",
 )
 
+#Get rotor LE and TE
+rotor_le = rotor_c4_pos .- (rotor_chord_guess .* 0.25) .* sind.(twists)
+rotor_te = rotor_c4_pos .+ (rotor_chord_guess .* 0.75) .* sind.(twists)
+
+#Plot Rotor LE
+plot!(
+    rotor_le,
+    blade_elements.radial_positions;
+    color=mycolors[3],
+    # linestyle=:dot,
+    label="Rotor Blade Profile (including twist)",
+)
+
+#Plot Rotor TE
+plot!(rotor_te, blade_elements.radial_positions; color=mycolors[3], label="")
+
+for i in 1:nbe
+    if i == 1
+        plot!(
+            [rotor_le[i]; rotor_te[i]],
+            [blade_elements.radial_positions[i]; blade_elements.radial_positions[i]];
+            color=mycolors[3],
+            label="Blade Element Locations",
+        )
+    else
+        plot!(
+            [rotor_le[i]; rotor_te[i]],
+            [blade_elements.radial_positions[i]; blade_elements.radial_positions[i]];
+            color=mycolors[3],
+            label="",
+        )
+    end
+end
 savefig("examples/lilium_like_geometry_side.pdf")
 
 #myyticks = [0.0; Rhub; P.Rtip; maximum(ductrmesh)]
@@ -118,13 +237,13 @@ savefig("examples/lilium_like_geometry_side.pdf")
 #)
 
 ##Get rotor LE and TE
-#rotor_le = (section_chords .* P.Rtip .* 0.25) .* cosd.(section_twists)
-#rotor_te = (section_chords .* P.Rtip .* 0.75) .* cosd.(section_twists)
+#rotor_le = (rotor_chord_guess .* P.Rtip .* 0.25) .* cosd.(section_twists)
+#rotor_te = (rotor_chord_guess .* P.Rtip .* 0.75) .* cosd.(section_twists)
 
 ##assemble blade
-#qc = [dim_rad_stash zeros(length(dim_rad_stash))]
-#le = [dim_rad_stash rotor_le]
-#te = [dim_rad_stash -rotor_te]
+#qc = [blade_elements.radial_positions zeros(length(blade_elements.radial_positions))]
+#le = [blade_elements.radial_positions rotor_le]
+#te = [blade_elements.radial_positions -rotor_te]
 
 ##plot blades
 #for i in 1:num_blades
