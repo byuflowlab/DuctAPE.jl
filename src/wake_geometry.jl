@@ -201,19 +201,23 @@ function initialize_grid_points(body_geometry, blade_elements; wake_length=1.0, 
 end
 
 """
-    relax_grid(xg, rg, nxi, neta; max_iterations, tol)
+    relax_grid!(xg, rg, nxi, neta; max_iterations, tol)
+
 Relax grid using elliptic grid solver.
+
 **Arguments:**
  - `xg::Matrix{Float64}` : Initial x grid points guess
  - `rg::Matrix{Float64}` : Initial r grid points guess
  - `nxi::Int` : number of xi (x) stations in the grid
  - `neta::Int` : number of eta (r) stations in the grid
+
 **Keyword Arguments:**
  - `max_iterations::Int` : maximum number of iterations to run, default=100
  - `tol::Float` : convergence tolerance, default = 1e-9
+
 **Returns:**
- - `x_relax_points::Matrix{Float64}` : Relaxed x grid points guess
- - `r_relax_points::Matrix{Float64}` : Relaxed r grid points guess
+ - `x_relax_points::Matrix{Float64}` : Relaxed x grid points
+ - `r_relax_points::Matrix{Float64}` : Relaxed r grid points
 """
 function relax_grid!(xr, rr, nxi, neta; max_iterations=100, tol=1e-9, verbose=false)
     TF = eltype(rr)
@@ -505,6 +509,20 @@ function relax_grid!(xr, rr, nxi, neta; max_iterations=100, tol=1e-9, verbose=fa
 end
 
 """
+    generate_wake_panels(x_grid_points, r_grid_points, nr; kwargs)
+
+Generate vector of Axisymmetric panel objects for the wake lines emanating from the rotor blade elements.
+
+**Arguments:**
+- `x_grid_points::Matrix{Float}` : x-location of each grid point
+- `r_grid_points::Matrix{Float}` : r-location of each grid point
+- `nr::Int` : number of radial grid points
+
+**Keyword Arguments:**
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+
+**Returns:**
+- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
 """
 function generate_wake_panels(
     x_grid_points,
@@ -523,14 +541,29 @@ function generate_wake_panels(
 end
 
 """
-- `blade_elements::Array{BladeElements}`
+
+    generate_wake_panels(x_grid_points, r_grid_points, nr; kwargs)
+
+Generate vector of Axisymmetric panel objects for the wake lines emanating from the rotor blade elements.
+
+**Arguments:**
+- `body_geometry::BodyGeometry` : BodyGeometry object describing the duct and hub
+- `blade_elements::Vector{BladeElements}` : Vector of BladeElements objects for the rotors
+
+**Keyword Arguments:**
+- `wake_length::Float` : length of wake (non-dimensional based on maximum duct chord) to extend past the furthest trailing edge.
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+
+**Returns:**
+- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
+
 """
 function generate_wake_grid(
     body_geometry,
     blade_elements;
     wake_length=1.0,
-    debug=false,
     method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+    debug=false,
 )
 
     # - Initialize Grid Points - #
@@ -546,4 +579,3 @@ function generate_wake_grid(
 
     return x_grid_points, r_grid_points, nx, nr, rotoridxs, wake_panels
 end
-
