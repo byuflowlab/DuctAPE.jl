@@ -24,13 +24,14 @@ end
 
 """
  This function wraps the residual function in order to allow for additional parameters as inputs
+ params.converged is updated in place in this function.
  """
-function solve_wrapper(x_init, params)
+function solve!(x_init, params)
 
-    # - Wrap Residual Function to allow for parameters - #
+    # - Define closure that allows for parameters - #
     rwrap(F, x_init) = residual!(F, x_init, params)
 
-    # - Call NLsolve function using AD - #
+    # - Call NLsolve function using AD for Jacobian - #
     #= res is of type NLsolve.SolverResults.
     The zero field contains the "solution" to the non-linear solve.
     The converged() function tells us if the solver converged.
@@ -47,14 +48,17 @@ end
 """
 This is the function you run to actually solve stuff
 """
-function run(duct_coordinates, hub_coordinates)
+function run(duct_coordinates, hub_coordinates, rotor, stator, freestream)
 
-    #TODO: Initialize. Calculate the initial guesses for Gamma and Sigma from the inputs.
     #TODO: Assemble the parameters that need to be passed into the solver.  for example, all the geometry and coefficient matrices.
+    params = initialize_parameters(
+        duct_coordinates, hub_coordinates, rotor, stator, freestream
+    )
+    #TODO: Initialize. Calculate the initial guesses for Gamma and Sigma from the inputs.
 
     # - Run solver to find Gamma and Sigma values - #
     # params is a tuple
-    GammaSigma = ImplicitAD.implicit(solve_wrapper, residual!, GammaSigma_init, params)
+    GammaSigma = ImplicitAD.implicit(solve!, residual!, GammaSigma_init, params)
 
     return GammaSigma, converged
 
@@ -67,26 +71,36 @@ end
 function update_gamma_sigma(GammaSigma_init, params)
 
     # - Calculate Enthalpy Jumps - #
+    delta_h = calculate_enthalpy_jumps()
 
     # - Calculate Net Circulation - #
+    Gamma_tilde = calculate_net_circulation()
 
     # - Calculate Meridional Velocities - #
+    vm = calculate_meridional_velocities()
 
     # - Calculate Wake Vorticity - #
+    wake_gammas = calculate_wake_vorticity()
 
     # - Solve Full Linear System - #
+    body_vortex_strengths = solve_linear_system()
 
     # - Calculate Induced Velocities at Rotors - #
+    vi = calculate_induced_velocities()
 
     # - Calculate Blade Element Angles of Attack - #
+    alpha = calculate_angles_of_attack()
 
     # - Calculate Inflow Velocities at Blade Elements - #
+    W = calculate_inflow_velocities()
 
     # - Look up Blade Element Polar Data - #
+    cl, cd = search_polars()
 
     # - Calculate Updated Circulation and Source Strengths - #
+    Gamma, Sigma = calculate_gamma_sigma()
 
     # - Return Updated Circulation and Source Strengths in Single Vector - #
-    return nothing
+    return [Gamma; Sigma]
 end
 

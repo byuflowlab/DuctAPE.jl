@@ -1,8 +1,8 @@
 
 """
 """
-function initialize_geometries(
-    duct_coordinates, hub_coordinates, rotor_parameters, stator_parameters
+function initialize_parameters(
+    duct_coordinates, hub_coordinates, rotor_parameters, stator_parameters, freestream
 )
 
     #---------------------------------#
@@ -23,8 +23,17 @@ function initialize_geometries(
     #---------------------------------#
     #           First Rotor           #
     #---------------------------------#
+    #TODO: need to add omega to the bladeelements struct.
     rotor_blade_elements, rotor_panels = generate_blade_elements(
-        rotor_c4_pos, radial_positions, chords, twists, airfoils, nbe_fine, B, body_geometry
+        rotor_parameters.xpos,
+        rotor_parameters.radial_positions,
+        rotor_parameters.chords,
+        rotor_parameters.twists,
+        rotor_parameters.airfoils,
+        rotor_parameters.num_blade_elements,
+        rotor_parameters.num_blades,
+        rotor_parameters.omega,
+        body_geometry,
     )
 
     #---------------------------------#
@@ -42,17 +51,19 @@ function initialize_geometries(
     #          Other Rotor(s)         #
     #---------------------------------#
     stator_blade_elements, stator_panels = generate_blade_elements(
-        stator_c4_pos,
-        radial_positions,
-        chords,
-        twists,
-        airfoils,
-        nbe_fine,
-        B,
+        stator_parameters.xpos,
+        stator_parameters.radial_positions,
+        stator_parameters.chords,
+        stator_parameters.twists,
+        stator_parameters.airfoils,
+        stator_parameters.num_blade_elements,
+        stator_parameters.num_blades,
+        stator_parameters.omega,
         body_geometry,
     )
 
     return (
+        converged=[false], # Initialize Convergence Flag
         body_geometry=body_geometry,
         body_panels=body_panels,
         rotor_blade_elements=rotor_blade_elements,
