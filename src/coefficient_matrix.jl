@@ -1,17 +1,8 @@
 #=
-in order to generate all the required coefficient matrices, we need to first make sure each geometric item has an associated panels object.
-we then need to assemble the required meshes.
-we can then put together the coefficient matrices.
 
-needed matrices include:
-- body to body (default in FLOWFoil), for system linear solve
-- wake to body, for full system linear solve
-- rotor to body, for full system linear solve
-- body to rotor, for induced velocity calculation
-- wake to rotor, for induced velocity calculation
-- rotor to rotor, for induced velocity calculation
+Additional functions needed to create one-way coefficient matrices
 
-we only need flowfoil boundary conditions for the body to body case, so we don't want to use the system generation functions from flowfoil, but rather just the vortex and source coefficient functions.
+Authors: Judd Mehr,
 
 =#
 
@@ -43,6 +34,22 @@ function assemble_one_way_coefficient_matrix(
 end
 
 """
+    assemble_one_way_coefficient_matrix(mesh, influence_panels, affect_panels; kwargs)
+
+Function similar to FLOWFoil assemble coefficient functions, but only for one-way effects.
+
+**Arguments:**
+- `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
+- `influence_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects doing the influencing
+- `affect_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects being affected
+
+Multiple Dispatch allows for single panel objects as one or both inputs as well if there is only one body influencing and/or being affected.
+
+**Keyword Arguments:**
+- `singularity::String` : selects "vortex" or "source" as the singularity for which to calculate the x values.  vortex is default.
+
+**Returns:**
+- `A::Matrix{Float}` : Aerodynamic coefficient matrix of influence on affect panels.
 """
 function assemble_one_way_coefficient_matrix(
     mesh, influence_panels, affect_panels; singularity="vortex"
@@ -94,6 +101,19 @@ function assemble_one_way_coefficient_matrix(
 end
 
 """
+    calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
+
+Function simiar to FLOWFoil's calculate_ring_vortex_influence function, but specifically for geometry not located on the body; used in one-way coefficient calculations.
+
+**Arguments:**
+- `paneli::FLOWFoil.AxiSymPanel` : the ith panel (the panel being influenced).
+- `panelj::FLOWFoil.AxiSymPanel` : the jth panel (the panel doing the influencing).
+- `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
+- `i::Int` : index for ith panel
+- `j::Int` : index for jth panel
+
+**Returns:**
+- `aij::Float` : Influence of vortex ring strength at panel j onto panel i.
 """
 function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
     m2p_i = mesh.mesh2panel_influence
@@ -139,6 +159,19 @@ end
 #---------------------------------#
 
 """
+    calculate_ring_source_influence_off_body(paneli, panelj, mesh, i, j)
+
+Function simiar to FLOWFoil's calculate_ring_vortex_influence function, but specifically for geometry not located on the body; used in one-way coefficient calculations, and for sources rather than vortices.
+
+**Arguments:**
+- `paneli::FLOWFoil.AxiSymPanel` : the ith panel (the panel being influenced).
+- `panelj::FLOWFoil.AxiSymPanel` : the jth panel (the panel doing the influencing).
+- `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
+- `i::Int` : index for ith panel
+- `j::Int` : index for jth panel
+
+**Returns:**
+- `aij::Float` : Influence of source ring strength at panel j onto panel i.
 """
 function calculate_ring_source_influence_off_body(paneli, panelj, mesh, i, j)
     m2p_i = mesh.mesh2panel_influence

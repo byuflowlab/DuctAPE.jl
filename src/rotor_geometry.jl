@@ -2,6 +2,8 @@
 
 Functions Related to Rotor Geometry
 
+Authors: Judd Mehr,
+
 =#
 
 """

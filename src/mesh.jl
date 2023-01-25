@@ -65,6 +65,9 @@ Multiple Dispatch allows for single panel objects as one or both inputs as well 
 
 **Keyword Arguments:**
 - `singularity::String` : selects "vortex" or "source" as the singularity for which to calculate the x values.  vortex is default.
+
+**Returns:**
+- `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 """
 function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
 
