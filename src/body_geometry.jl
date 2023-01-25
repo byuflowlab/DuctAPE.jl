@@ -7,6 +7,14 @@ Authors: Judd Mehr,
 =#
 
 """
+    BodyGeometry
+
+**Fields:**
+- `duct_inner_spline::FLOWMath.Akima` : Akima spline object describing the duct geometry inner surface from the leading to trailing edge.
+- `duct_outer_spline::FLOWMath.Akima` : Akima spline object describing the duct geometry outer surface from the leading to trailing edge.
+- `hub_spline::FLOWMath.Akima` : Akima spline object describing the hub geometry from the leading to trailing edge.
+- `duct_range::Vector{Int}` : Vector containing the leading and trailing x-locations for the duct geometry.
+- `hub_range::Vector{Int}` : Vector containing the leading and trailing x-locations for the hub geometry.
 """
 struct BodyGeometry
     duct_inner_spline
@@ -17,8 +25,22 @@ struct BodyGeometry
 end
 
 """
-take in duct and hub coordinates and output geometry and panel objects
-ASSUMES DUCT COORDINATES ARE PROVIDED STARTING AND ENDING AT TE AND PROGRESSING CLOCKWISE, ASSUMES HUB COORDINATES START AT LE AND END AT TE
+    generate_body_geometry(duct_coordinates, hub_coordinates; kwargs)
+
+Generates BodyGeometry and duct and hub panel objects from the input coordinates.
+
+Note: assumes duct coordinates are provided starting and ending at te and progressing clockwise, assumes hub coordinates start at leading edge and end at trailing edge.
+
+**Arguments:**
+- `duct_coordinates::Array{Float64,2}` : [x y] coordinates of duct
+- `hub_coordinates::Array{Float64,2}` : [x y] coordinates of hub
+
+**Keyword Arguments:**
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+
+**Returns:**
+- `body_geometry::BodyGeometry` : BodyGeometry object for duct and hub
+- `body_panels::Vector{FLOWFoil.AxisymmetricPanel}` : Vector of flowfoil panel objects for the duct and hub
 """
 function generate_body_geometry(
     duct_coordinates,
@@ -46,7 +68,20 @@ function generate_body_geometry(
 end
 
 """
-ASSUMES DUCT COORDINATES ARE PROVIDED STARTING AND ENDING AT TE AND PROGRESSING CLOCKWISE, ASSUMES HUB COORDINATES START AT LE AND END AT TE
+    generate_splines(duct_coordinates, hub_coordinates)
+
+Assembles Akima spline objects for the given duct and hub coordinates.
+
+Note: assumes duct coordinates are provided starting and ending at te and progressing clockwise, assumes hub coordinates start at leading edge and end at trailing edge.
+
+**Arguments:**
+- `duct_coordinates::Array{Float64,2}` : [x y] coordinates of duct
+- `hub_coordinates::Array{Float64,2}` : [x y] coordinates of hub
+
+**Returns:**
+- `duct_inner_spline::FLOWMath.Akima` : Akima spline object describing the duct geometry inner surface from the leading to trailing edge.
+- `duct_outer_spline::FLOWMath.Akima` : Akima spline object describing the duct geometry outer surface from the leading to trailing edge.
+- `hub_spline::FLOWMath.Akima` : Akima spline object describing the hub geometry from the leading to trailing edge.
 """
 function generate_splines(duct_coordinates, hub_coordinates)
 
@@ -55,7 +90,7 @@ function generate_splines(duct_coordinates, hub_coordinates)
     ndc = length(duct_coordinates[:, 1])
 
     # - Reverse first half of coordinates for Akima spline inputs - #
-    duct_inner_coordinates = reverse(view(duct_coordinates, 1:leidx, :),dims=1)
+    duct_inner_coordinates = reverse(view(duct_coordinates, 1:leidx, :); dims=1)
     duct_outer_coordinates = view(duct_coordinates, leidx:ndc, :)
 
     # - Create Akima Splines - #
