@@ -16,12 +16,12 @@ Authors: Judd Mehr,
 - `duct_range::Vector{Int}` : Vector containing the leading and trailing x-locations for the duct geometry.
 - `hub_range::Vector{Int}` : Vector containing the leading and trailing x-locations for the hub geometry.
 """
-struct BodyGeometry
-    duct_inner_spline
-    duct_outer_spline
-    hub_spline
-    duct_range
-    hub_range
+struct BodyGeometry{TF,TX,TY,TC}
+    duct_inner_spline::FLOWFoil.Akima{TX,TY,TC}
+    duct_outer_spline::FLOWFoil.Akima{TX,TY,TC}
+    hub_spline::FLOWFoil.Akima{TX,TY,TC}
+    duct_range::Vector{TF}
+    hub_range::Vector{TF}
 end
 
 """

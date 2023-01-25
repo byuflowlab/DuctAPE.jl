@@ -7,17 +7,29 @@ Authors: Judd Mehr,
 =#
 
 """
+    OneWayMesh
+
+**Fields:**
+- `n_influence_bodies::Int` : number of bodies of influence, e.g. 2 for the duct and hub as part of the body system.
+- `n_affect_bodies::Int` : number of bodies being affected, e.g. 1 for the first rotor.
+- `influence_panel_indices::Vector{StepRange{Int64, Int64}}` : vector of index ranges of the panels for each of the bodies of influence.
+- `affect_panel_indices::Vector{StepRange{Int64, Int64}}` : vector of index ranges of the panels for each of the affected bodies.
+- `mesh2panel_influence::Vector{Int}` : vector mapping the index of the full matrix to the indices of the individual bodies of influence
+- `mesh2panel_affect:: Vector{Int}` : vector mapping the index of the full matrix to the indices of the individual affected bodies
+- `x::Matrix{Float}` : x values used in coefficient and velocity calculations
+- `r::Matrix{Float}` : r values used in coefficient and velocity calculations
+- `m::Matrix{Float}` : m values used in coefficient and velocity calculations
 """
-struct OneWayMesh
-    n_influence_bodies
-    n_affect_bodies
-    influence_panel_indices
-    affect_panel_indices
-    mesh2panel_influence
-    mesh2panel_affect
-    x
-    r
-    m
+struct OneWayMesh{TF}
+    n_influence_bodies::Int64
+    n_affect_bodies::Int64
+    influence_panel_indices::Vector{StepRange{Int64,Int64}}
+    affect_panel_indices::Vector{StepRange{Int64,Int64}}
+    mesh2panel_influence::Vector{Int64}
+    mesh2panel_affect::Vector{Int64}
+    x::Matrix{TF}
+    r::Matrix{TF}
+    m::Matrix{TF}
 end
 
 function generate_one_way_mesh(
@@ -39,8 +51,20 @@ function generate_one_way_mesh(
         [influence_panels], [affect_panels]; singularity=singularity
     )
 end
+
 """
-function similar to flowfoil's meshing function, but only creates the mesh one way rather than both ways (i.e. doesn't loop through both inputs
+    generate_one_way_mesh(influence_panels, affect_panels; kwargs)
+
+Function similar to FLOWFoil's meshing function, but only creates the mesh one way rather than both ways (i.e. doesn't loop through both inputs as both sources and targets).
+
+**Arguments:**
+- `influence_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects doing the influencing
+- `affect_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects being affected
+
+Multiple Dispatch allows for single panel objects as one or both inputs as well if there is only one body influencing and/or being affected.
+
+**Keyword Arguments:**
+- `singularity::String` : selects "vortex" or "source" as the singularity for which to calculate the x values.  vortex is default.
 """
 function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
 

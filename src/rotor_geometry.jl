@@ -5,25 +5,61 @@ Functions Related to Rotor Geometry
 =#
 
 """
-all dimensional, twist in radians
+    BladeElements
+
+**Fields:**
+- `num_radial_stations::Int64` : number of radial stations on the blade
+- `radial_positions::Vector{Float}` : radial positions (dimensional) of the blade elements on the blade
+- `chords::Vector{Float}` : values of the chord lengths of the blade elements
+- `twists::Vector{Float}` : values of the twist (in radians) of the blade elements
+- `solidities::Vector{Float}` : values of the local solidities of the blade elements
+- `airfoils::Vector{Airfoil Function Type}` : Airfoil polar data objects associated with each blade element
+- `num_blades::Int64` : number of blades on the rotor
+- `rotor_x_position::Float` : x-position (dimensional) of the the rotor
 """
 struct BladeElements
-    num_radial_stations
-    radial_positions
-    chords
-    twists
-    solidities
+    num_radial_stations::Int64
+    radial_positions::Vector{TF}
+    chords::Vector{TF}
+    twists::Vector{TF}
+    solidities::Vector{TF}
     airfoils
-    num_blades
-    rotor_x_position
+    num_blades::Int64
+    rotor_x_position::TF
 end
 
 """
+    generate_blade_elements(
+    rotor_x_position,
+    radial_positions,
+    chords,
+    twists,
+    airfoils,
+    num_radial_stations,
+    num_blades,
+    body_geometry;
+    kwargs
+)
+
 takes in non-dimensional radial positions, and dimensional everything else.
 uses body geometry to determine rotor hub and tip radius
 twist in degrees
 
-some day add tip-gap capabilities
+**Arguments:**
+- `rotor_x_position::Float` : x-position (dimensional) of the the rotor
+- `radial_positions::Vector{Float}` : radial positions (non-dimensional, zero at hub, one at tip) of the blade elements on the blade
+- `chords::Vector{Float}` : values of the chord lengths of the blade elements
+- `twists::Vector{Float}` : values of the twist (in degrees) of the blade elements
+- `solidities::Vector{Float}` : values of the local solidities of the blade elements
+- `airfoils::Vector{Airfoil Function Type}` : Airfoil polar data objects associated with each blade element
+- `num_radial_stations::Int64` : number of radial stations on the blade, if more than the length of the inputs, things will be interpolated to refine the blade.
+- `num_blades::Int64` : number of blades on the rotor
+- `body_geometry::BodyGeometry` : BodyGeometry object for duct and hub
+
+**Keyword Arguments:**
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+
+Future Work: add tip-gap capabilities
 """
 function generate_blade_elements(
     rotor_x_position,
