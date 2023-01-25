@@ -15,31 +15,38 @@ we only need flowfoil boundary conditions for the body to body case, so we don't
 
 =#
 
+#---------------------------------#
+#       Vortex Coefficients       #
+#---------------------------------#
+function assemble_one_way_coefficient_matrix(
+    mesh, influence_panels::TP, affect_panels; singularity="vortex"
+) where {TP<:ff.Panel}
+    return assemble_one_way_coefficient_matrix(
+        mesh, [influence_panels], affect_panels; singularity=singularity
+    )
+end
+
+function assemble_one_way_coefficient_matrix(
+    mesh, influence_panels, affect_panels::TP; singularity="vortex"
+) where {TP<:ff.Panel}
+    return assemble_one_way_coefficient_matrix(
+        mesh, influence_panels, [affect_panels]; singularity=singularity
+    )
+end
+
+function assemble_one_way_coefficient_matrix(
+    mesh, influence_panels::TP, affect_panels::TP; singularity="vortex"
+) where {TP<:ff.Panel}
+    return assemble_one_way_coefficient_matrix(
+        mesh, [influence_panels], [affect_panels]; singularity=singularity
+    )
+end
+
 """
 """
-function assemble_one_way_source_matrix(mesh)
-    return nothing
-end
-
-function assemble_one_way_vortex_matrix(
-    mesh, influence_panels::TP, affect_panels
-) where {TP<:ff.Panel}
-    return assemble_one_way_vortex_matrix(mesh, [influence_panels], affect_panels)
-end
-
-function assemble_one_way_vortex_matrix(
-    mesh, influence_panels, affect_panels::TP
-) where {TP<:ff.Panel}
-    return assemble_one_way_vortex_matrix(mesh, influence_panels, [affect_panels])
-end
-
-function assemble_one_way_vortex_matrix(
-    mesh, influence_panels::TP, affect_panels::TP
-) where {TP<:ff.Panel}
-    return assemble_one_way_vortex_matrix(mesh, [influence_panels], [affect_panels])
-end
-
-function assemble_one_way_vortex_matrix(mesh, influence_panels, affect_panels)
+function assemble_one_way_coefficient_matrix(
+    mesh, influence_panels, affect_panels; singularity="vortex"
+)
 
     ### --- SETUP --- ###
 
@@ -67,10 +74,17 @@ function assemble_one_way_vortex_matrix(mesh, influence_panels, affect_panels)
                 for j in idx_i[n]
 
                     ### --- Calculate influence coefficient --- ###
-                    #TODO: need to add or re-write this function to take in i and j already adjusted for mesh2panel.
-                    amat[i, j] = calculate_ring_vortex_influence_off_body(
-                        affect_panels[m], influence_panels[n], mesh, i, j
-                    )
+                    if singularity == "vortex"
+                        amat[i, j] = calculate_ring_vortex_influence_off_body(
+                            affect_panels[m], influence_panels[n], mesh, i, j
+                        )
+                    elseif singularity == "source"
+                        amat[i, j] = calculate_ring_source_influence_off_body(
+                            affect_panels[m], influence_panels[n], mesh, i, j
+                        )
+                    else
+                        @error "no singularity of type $(singularity)"
+                    end
                 end
             end
         end
@@ -86,7 +100,7 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
     m2p_a = mesh.mesh2panel_affect
 
     #calculate unit velocities
-    u = ff.get_u_ring(
+    u = ff.get_u_ring_vortex(
         mesh.x[i, j],
         mesh.r[i, j],
         panelj.panel_center[m2p_i[j], 2],
@@ -94,7 +108,7 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
         mesh.m[i, j],
     )
 
-    v = ff.get_v_ring(
+    v = ff.get_v_ring_vortex(
         mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_i[j], 2], mesh.m[i, j]
     )
 
@@ -117,5 +131,47 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
         # return self inducement coefficient
         return -0.5 - panelj.panel_curvature[m2p_i[j]] -
                (log(2.0 * cons) - 0.25) / cons * cos(panelj.panel_angle[m2p_i[j]])
+    end
+end
+
+#---------------------------------#
+#       Source Coefficients       #
+#---------------------------------#
+
+"""
+"""
+function calculate_ring_source_influence_off_body(paneli, panelj, mesh, i, j)
+    m2p_i = mesh.mesh2panel_influence
+    m2p_a = mesh.mesh2panel_affect
+
+    #calculate unit velocities
+    u = ff.get_u_ring_source(
+        mesh.x[i, j],
+        mesh.r[i, j],
+        panelj.panel_center[m2p_i[j], 2],
+        panelj.panel_length[m2p_i[j]],
+        mesh.m[i, j],
+    )
+
+    v = ff.get_v_ring_source(
+        mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_i[j], 2], mesh.m[i, j]
+    )
+
+    #return appropriate strength
+    # if asin(sqrt(m)) != pi / 2
+    if mesh.m[i, j] != 1.0
+
+        #panels are different
+        return (
+            -u * sin(paneli.panel_angle[m2p_a[i]]) + v * cos(paneli.panel_angle[m2p_a[i]])
+        ) * panelj.panel_length[m2p_i[j]]
+    else
+        #same panel -> self induction equation
+
+        # return self inducement coefficient
+        return 0.5 # +
+        # (
+        # -u * sin(paneli.panel_angle[m2p_a[i]]) + v * cos(paneli.panel_angle[m2p_a[i]])
+        # ) * panelj.panel_length[m2p_i[j]]
     end
 end

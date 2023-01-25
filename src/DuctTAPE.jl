@@ -21,6 +21,9 @@ include("body_geometry.jl")
 # Rotor Geometry Functions
 include("rotor_geometry.jl")
 
+# Wake Geometry Functions
+include("wake_geometry.jl")
+
 # Additional Meshing Functions
 include("mesh.jl")
 

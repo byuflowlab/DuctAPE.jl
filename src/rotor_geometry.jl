@@ -62,7 +62,7 @@ function generate_blade_elements(
     fine_chords = fm.akima(dim_radial_positions, chords, fine_radial_positions)
 
     # Twists (convert to radians here)
-    fine_twists = fm.Akima(
+    fine_twists = fm.akima(
         dim_radial_positions, twists .* pi / 180.0, fine_radial_positions
     )
 
@@ -75,7 +75,7 @@ function generate_blade_elements(
 
     # get average values of radial stations to better place airfoils (center defined airfoils in refined blade)
     mean_rad_stash =
-        (fine_radial_positions[1:(end - 1)] .+ fine_radial_positions[2:end]) ./ 2.0
+        (dim_radial_positions[1:(end - 1)] .+ dim_radial_positions[2:end]) ./ 2.0
 
     # loop through refined radial stations and apply appropriate airfoil
     for i in 1:(num_radial_stations)

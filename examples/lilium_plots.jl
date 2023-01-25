@@ -21,9 +21,14 @@ duct_wedge_angle = x0[12]
 duct_le_radius = x0[13]
 duct_te_camber = x0[14]
 duct_ctrlpt_x = x0[15]
-rotor_chord_guess = x[16]
-rotor_root_twist_guess = x[17]
-rotor_tip_twist_guess = x[18]
+rotor_chord_guess = x0[16]
+rotor_root_twist_guess = x0[17]
+rotor_tip_twist_guess = x0[18]
+rotor_c4_pos = x0[19]
+stator_c4_pos = x0[20]
+stator_root_chord = x0[21]
+stator_tip_chord = x0[22]
+stator_twist = x0[23]
 
 #---------------------------------#
 #             GEOMETRY            #
@@ -66,6 +71,7 @@ duct_coordinates = [[reverse(dxi); dxo[2:end]] [reverse(dri); dro[2:end]]]
 hub_coordinates = [hx hr]
 
 body_geometry, body_panels = dt.generate_body_geometry(duct_coordinates, hub_coordinates)
+
 # - Get Rotor Geometry - #
 
 #choose number of blade elements
@@ -73,8 +79,7 @@ nbe = 5
 
 # - Chord - #
 # note: just use linear chord distribution
-# TODO: probaby need to do some reverse engineering with chord and twist to get the values in the parameters file, since the figures they are based off of likely show chord and twist together.
-chords = range(croot_rotor, croot_stator; length=nbe)
+chords = range(rotor_chord_guess, rotor_chord_guess; length=nbe)
 
 # - Twist - #
 # note: need to make a guess, use degrees for input
@@ -84,13 +89,13 @@ twists = range(rotor_root_twist_guess, rotor_tip_twist_guess; length=nbe) * 180.
 radial_positions = range(0.0, 1.0; length=nbe)
 
 # - TODO: add airfoil data - #
-airfoils = nothing
+airfoils = [nothing for i in 1:nbe]
 
 # - Number of blades - #
-B = 5
+B = 27
 
 blade_elements, rotor_panels = dt.generate_blade_elements(
-    rotor_c4_pos, radial_positions, chords, twists, airfoils, B, body_geometry
+    rotor_c4_pos, radial_positions, chords, twists, airfoils, nbe, B, body_geometry
 )
 #Plot rotor quarter chord
 plot!(
@@ -110,8 +115,7 @@ rotor_te = rotor_c4_pos .+ (rotor_chord_guess .* 0.75) .* sind.(twists)
 plot!(
     rotor_le,
     blade_elements.radial_positions;
-    color=mycolors[3],
-    # linestyle=:dot,
+    color=mycolors[3], # linestyle=:dot,
     label="Rotor Blade Profile (including twist)",
 )
 
@@ -135,6 +139,72 @@ for i in 1:nbe
         )
     end
 end
+
+# - Get Stator Geometry - #
+
+#choose number of blade elements
+nbe = 5
+
+# - Chord - #
+# note: just use linear chord distribution
+chords = range(stator_root_chord, stator_tip_chord; length=nbe)
+
+# - Twist - #
+# note: need to make a guess, use degrees for input
+twists = zeros(nbe)
+
+# - Number of blades - #
+B = 8
+
+blade_elements, rotor_panels = dt.generate_blade_elements(
+    stator_c4_pos, radial_positions, chords, twists, airfoils, nbe, B, body_geometry
+)
+
+#Plot stator quarter chord
+plot!(
+    [stator_c4_pos; stator_c4_pos],
+    [blade_elements.radial_positions[1]; blade_elements.radial_positions[end]];
+    linewidth=1.5,
+    linestyle=:dot,
+    color=mycolors[3],
+    label="Stator Quarter Chord Line",
+)
+
+#Get stator LE and TE
+stator_le = stator_c4_pos .- range(stator_root_chord, stator_tip_chord; length=nbe) ./ 4.0
+stator_te =
+    stator_c4_pos .+ 3.0 .* range(stator_root_chord, stator_tip_chord; length=nbe) ./ 4.0
+
+#Plot stator LE
+plot!(
+    stator_le,
+    blade_elements.radial_positions;
+    color=mycolors[3],
+    # linestyle=:dot,
+    label="Stator Blade Profile (including twist)",
+)
+
+#Plot stator TE
+plot!(stator_te, blade_elements.radial_positions; color=mycolors[3], label="")
+
+for i in 1:nbe
+    if i == 1
+        plot!(
+            [stator_le[i]; stator_te[i]],
+            [blade_elements.radial_positions[i]; blade_elements.radial_positions[i]];
+            color=mycolors[3],
+            label="Blade Element Locations",
+        )
+    else
+        plot!(
+            [stator_le[i]; stator_te[i]],
+            [blade_elements.radial_positions[i]; blade_elements.radial_positions[i]];
+            color=mycolors[3],
+            label="",
+        )
+    end
+end
+
 savefig("examples/lilium_like_geometry_side.pdf")
 
 #myyticks = [0.0; Rhub; P.Rtip; maximum(ductrmesh)]

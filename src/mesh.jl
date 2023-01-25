@@ -20,21 +20,29 @@ struct OneWayMesh
     m
 end
 
-function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:ff.Panel}
-    return generate_one_way_mesh([influence_panels], affect_panels)
+function generate_one_way_mesh(
+    influence_panels::TP, affect_panels; singularity="vortex"
+) where {TP<:ff.Panel}
+    return generate_one_way_mesh([influence_panels], affect_panels; singularity=singularity)
 end
 
-function generate_one_way_mesh(influence_panels, affect_panels::TP) where {TP<:ff.Panel}
-    return generate_one_way_mesh(influence_panels, [affect_panels])
+function generate_one_way_mesh(
+    influence_panels, affect_panels::TP; singularity="vortex"
+) where {TP<:ff.Panel}
+    return generate_one_way_mesh(influence_panels, [affect_panels]; singularity=singularity)
 end
 
-function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:ff.Panel}
-    return generate_one_way_mesh([influence_panels], [affect_panels])
+function generate_one_way_mesh(
+    influence_panels::TP, affect_panels::TP; singularity="vortex"
+) where {TP<:ff.Panel}
+    return generate_one_way_mesh(
+        [influence_panels], [affect_panels]; singularity=singularity
+    )
 end
 """
 function similar to flowfoil's meshing function, but only creates the mesh one way rather than both ways (i.e. doesn't loop through both inputs
 """
-function generate_one_way_mesh(influence_panels, affect_panels)
+function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
 
     #TODO: copy over meshing function from flowfoil and adjust
 
@@ -94,7 +102,13 @@ function generate_one_way_mesh(influence_panels, affect_panels)
                     rj = influence_panels[n].panel_center[mesh2panel_i[j], 2]
 
                     # Calculate normalized distance components for current set of panels
-                    x[i, j] = (xi - xj) / rj
+                    if singularity == "vortex"
+                        x[i, j] = (xi - xj) / rj
+                    elseif singularity == "source"
+                        x[i, j] = (xi - xj) / ri
+                    else
+                        @error "no singularity of type $(singularity)"
+                    end
                     r[i, j] = ri / rj
 
                     # Calculate the k^2 value for the elliptic integrals
