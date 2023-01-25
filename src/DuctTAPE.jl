@@ -11,6 +11,9 @@ const fm = FLOWMath #rename FLOWMath for convenience
 using CCBlade
 const ccb = CCBlade #rename ccblade for convenience
 
+using NLsolve
+using ImplicitAD
+
 ## -- INCLUDES -- ##
 
 include("utils.jl")

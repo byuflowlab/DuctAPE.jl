@@ -152,7 +152,6 @@ function wrapper(x; debug=false)
     # - Get Stator Geometry - #
     # - Chord - #
     # note: just use linear chord distribution
-    # TODO: probaby need to do some reverse engineering with chord and twist to get the values in the parameters file, since the figures they are based off of likely show chord and twist together.
     chords = range(stator_root_chord, stator_tip_chord; length=nbe)
 
     # - Twist - #
@@ -168,6 +167,8 @@ function wrapper(x; debug=false)
     # - Number of blades - #
     B = 8
 
+    #TODO: actually put this after the wake generation
+    #TODO: also need to update this function or add another that takes in updated radial positions rather than just a number of blade elements to refine to.
     stator_blade_elements, stator_panels = dt.generate_blade_elements(
         stator_c4_pos,
         radial_positions,
@@ -194,10 +195,12 @@ function wrapper(x; debug=false)
 
     x_grid_points, r_grid_points, nx, nr, rotoridxs, wake_panels = dt.generate_wake_grid(
         body_geometry,
-        [rotor_blade_elements; stator_blade_elements];
+        [rotor_blade_elements; stator_blade_elements]; #TODO: actually just need x position for each rotor and radial locations for front most rotor
         wake_length=1.0,
         debug=false,
     )
+
+    #TODO: need to re-interpolate the stator blade elements based on the grid radial positions at the rotoridx for the stator.
 
     #---------------------------------#
     #             Meshes              #
