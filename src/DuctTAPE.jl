@@ -33,4 +33,10 @@ include("mesh.jl")
 # Additional Influence Coefficient Functions
 include("coefficient_matrix.jl")
 
+# Rotor Aerodynamic Functions
+include("rotor_aerodynamics.jl")
+
+# Pre-solve initializations
+include("initialize.jl")
+
 end

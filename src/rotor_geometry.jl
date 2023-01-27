@@ -18,16 +18,18 @@ Authors: Judd Mehr,
 - `airfoils::Vector{Airfoil Function Type}` : Airfoil polar data objects associated with each blade element
 - `num_blades::Int64` : number of blades on the rotor
 - `rotor_x_position::Float` : x-position (dimensional) of the the rotor
+- `omega::Float` : Rotation rate, in radians per second, of rotor
 """
-struct BladeElements
+struct BladeElements{TF, TAF}
     num_radial_stations::Int64
     radial_positions::Vector{TF}
     chords::Vector{TF}
     twists::Vector{TF}
     solidities::Vector{TF}
-    airfoils
+    airfoils::TAF
     num_blades::Int64
     rotor_x_position::TF
+    omega::TF
 end
 
 """
@@ -56,6 +58,7 @@ twist in degrees
 - `airfoils::Vector{Airfoil Function Type}` : Airfoil polar data objects associated with each blade element
 - `num_radial_stations::Int64` : number of radial stations on the blade, if more than the length of the inputs, things will be interpolated to refine the blade.
 - `num_blades::Int64` : number of blades on the rotor
+- `omega::Float` : Rotation rate, in radians per second, of rotor
 - `body_geometry::BodyGeometry` : BodyGeometry object for duct and hub
 
 **Keyword Arguments:**
@@ -71,7 +74,9 @@ function generate_blade_elements(
     airfoils,
     num_radial_stations,
     num_blades,
+    omega,
     body_geometry;
+    updated_radial_positions=nothing,
     method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
 )
 
@@ -94,18 +99,20 @@ function generate_blade_elements(
     #       Refine Distribuions       #
     #---------------------------------#
     # Get fine radial positions
-    fine_radial_positions = range(Rhub, Rtip; length=num_radial_stations)
+    if updated_radial_positions == nothing
+        updated_radial_positions = collect(range(Rhub, Rtip; length=num_radial_stations))
+    end
 
     # Chords
-    fine_chords = fm.akima(dim_radial_positions, chords, fine_radial_positions)
+    fine_chords = fm.akima(dim_radial_positions, chords, updated_radial_positions)
 
     # Twists (convert to radians here)
     fine_twists = fm.akima(
-        dim_radial_positions, twists .* pi / 180.0, fine_radial_positions
+        dim_radial_positions, twists .* pi / 180.0, updated_radial_positions
     )
 
     # - Calculate Solidity - #
-    solidities = (2.0 .* pi .* fine_radial_positions) ./ num_blades
+    solidities = (2.0 .* pi .* updated_radial_positions) ./ num_blades
 
     # - Define Airfoil Distribution - #
     # Initialize
@@ -117,7 +124,7 @@ function generate_blade_elements(
 
     # loop through refined radial stations and apply appropriate airfoil
     for i in 1:(num_radial_stations)
-        ridx = findfirst(x -> x > fine_radial_positions[i], mean_rad_stash)
+        ridx = findfirst(x -> x > updated_radial_positions[i], mean_rad_stash)
         if ridx != nothing
             afdist[i] = airfoils[ridx]
         else
@@ -127,18 +134,19 @@ function generate_blade_elements(
 
     # - Generate Rotor Panels - #
     rotor_panels = ff.generate_panels(
-        method, [rotor_x_position .* ones(num_radial_stations) fine_radial_positions]
+        method, [rotor_x_position .* ones(num_radial_stations) updated_radial_positions]
     )
 
     return BladeElements(
         num_radial_stations,
-        fine_radial_positions,
+        updated_radial_positions,
         fine_chords,
         fine_twists,
         solidities,
         afdist,
         num_blades,
         rotor_x_position,
+        omega,
     ),
     rotor_panels
 end

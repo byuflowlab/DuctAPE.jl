@@ -48,13 +48,23 @@ end
 """
 This is the function you run to actually solve stuff
 """
-function run(duct_coordinates, hub_coordinates, rotor, stator, freestream)
+function analyze_propulsor(duct_coordinates, hub_coordinates, rotor, stator, freestream)
 
-    #TODO: Assemble the parameters that need to be passed into the solver.  for example, all the geometry and coefficient matrices.
+    # - Initialize Parameters (geometries, meshes, coefficient matrics) - #
     params = initialize_parameters(
         duct_coordinates, hub_coordinates, rotor, stator, freestream
     )
-    #TODO: Initialize. Calculate the initial guesses for Gamma and Sigma from the inputs.
+
+    # - Calculate the initial guesses for Gamma and Sigma from the inputs. - #
+    Gamma_rotor_init, Sigma_rotor_init = calculate_gamma_sigma(
+        Vinf, params.rotor_blade_elements; vm=0.0, vtheta=0.0
+    )
+    Gamma_stator_init, Sigma_stator_init = calculate_gamma_sigma(
+        Vinf, params.stator_blade_elements; vm=0.0, vtheta=0.0
+    )
+
+    # - Assemble GammaSigma as a vector - #
+    GammaSigma_init - [Gamma_rotor_init; Gamma_stator_init] #; Sigma_rotor_init; Sigma_stator_init]
 
     # - Run solver to find Gamma and Sigma values - #
     # params is a tuple
@@ -70,8 +80,25 @@ end
 """
 function update_gamma_sigma(GammaSigma_init, params)
 
+    # - Rename for Convenience - #
+    nbe = length(params.rotor_blade_elements.radial_positions)
+    nr = params.num_rotors
+
+    #TODO need to figure out how to do things.  should the params be vectors of stuff rather than splitting out rotor and stator? (yes) need to make updates to the setup structure.
+    #TODO: before updating setup structure, figure out how you want THIS function to work, so that you know what the inputs should be and you only have to set it up once.
+
+    #if only using gammas at first do this
+    Gammas = reshape(GammaSigma_init, (nbe, nr))
+
+    #TODO: do this when adding in sigmas
+    ##first half of the vector are the gammas
+    #Gammas = reshape(view(GammaSigma_init, 1:(nbe * nr / 2), 1), (nbe, nr))
+
+    ##second half of the vetor are the sigmas
+    #Sigmas = reshape(view(GammaSigma_init, (nbe * nr / 2 + 1):(nbe * nr), 1), (nbe, nr))
+
     # - Calculate Enthalpy Jumps - #
-    delta_h = calculate_enthalpy_jumps()
+    delta_h = calculate_enthalpy_jumps(Gammas)
 
     # - Calculate Net Circulation - #
     Gamma_tilde = calculate_net_circulation()

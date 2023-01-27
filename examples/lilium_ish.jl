@@ -10,6 +10,8 @@ using FLOWFoil
 const ff = FLOWFoil
 using ImplicitAD
 const ia = ImplicitAD
+using CCBlade
+const ccb = CCBlade
 
 # Load in Lilium-like Geometry
 include("lilium_parameters.jl")
@@ -24,6 +26,8 @@ duct_wedge_angle = 2.0
 duct_le_radius = 0.01
 duct_te_camber = 15.0
 duct_ctrlpt_x = 1.0 / 6.0
+
+omega_rotor = dt.get_omega(2500.0) #2500 rpm to rad/s
 
 x0 = [
     hub_le
@@ -49,6 +53,7 @@ x0 = [
     stator_root_chord
     stator_tip_chord
     stator_twist_guess
+    omega_rotor
 ]
 
 """
@@ -83,6 +88,7 @@ function wrapper(x; debug=false)
     stator_root_chord = x[21]
     stator_tip_chord = x[22]
     stator_twist_guess = x[23]
+    omega_rotor = x[24]
 
     #---------------------------------#
     #             GEOMETRY            #
@@ -128,8 +134,6 @@ function wrapper(x; debug=false)
     nbe_fine = 10
 
     # - Chord - #
-    # note: just use linear chord distribution
-    # TODO: probaby need to do some reverse engineering with chord and twist to get the values in the parameters file, since the figures they are based off of likely show chord and twist together.
     chords = range(rotor_chord_guess, rotor_chord_guess; length=nbe)
 
     # - Twist - #
@@ -137,16 +141,26 @@ function wrapper(x; debug=false)
     twists = range(rotor_root_twist_guess, rotor_tip_twist_guess; length=nbe)
 
     # - Non-dimensional Radial Locations - #
-    radial_positions = range(0.0, 1.0; length=nbe)
+    rotor_radial_positions = range(0.0, 1.0; length=nbe)
 
     # - TODO: add airfoil data - #
-    airfoils = [nothing for i in 1:nbe]
+    af = ccb.AlphaAF("test/data/naca_4412_extrapolated_rotated_APCshifted.dat")
+    # airfoils = [nothing for i in 1:nbe]
+    airfoils = fill(af, nbe)
 
     # - Number of blades - #
     B = 27
 
     rotor_blade_elements, rotor_panels = dt.generate_blade_elements(
-        rotor_c4_pos, radial_positions, chords, twists, airfoils, nbe_fine, B, body_geometry
+        rotor_c4_pos,
+        rotor_radial_positions,
+        chords,
+        twists,
+        airfoils,
+        nbe_fine,
+        B,
+        omega_rotor,
+        body_geometry,
     )
 
     # - Get Stator Geometry - #
@@ -161,24 +175,13 @@ function wrapper(x; debug=false)
     # - Non-dimensional Radial Locations - #
     radial_positions = range(0.0, 1.0; length=nbe)
 
-    # - TODO: add airfoil data - #
-    airfoils = [nothing for i in 1:nbe]
+    # - TODO: add airfoil data appropriate for stators - #
+    # airfoils = [nothing for i in 1:nbe]
 
     # - Number of blades - #
     B = 8
 
-    #TODO: actually put this after the wake generation
-    #TODO: also need to update this function or add another that takes in updated radial positions rather than just a number of blade elements to refine to.
-    stator_blade_elements, stator_panels = dt.generate_blade_elements(
-        stator_c4_pos,
-        radial_positions,
-        chords,
-        twists,
-        airfoils,
-        nbe_fine,
-        B,
-        body_geometry,
-    )
+    omega_stator = 0.0 * omega_rotor
 
     #---------------------------------#
     #             Poblem              #
@@ -195,12 +198,25 @@ function wrapper(x; debug=false)
 
     x_grid_points, r_grid_points, nx, nr, rotoridxs, wake_panels = dt.generate_wake_grid(
         body_geometry,
-        [rotor_blade_elements; stator_blade_elements]; #TODO: actually just need x position for each rotor and radial locations for front most rotor
+        [rotor_c4_pos; stator_c4_pos],
+        rotor_blade_elements.radial_positions;
         wake_length=1.0,
         debug=false,
     )
 
-    #TODO: need to re-interpolate the stator blade elements based on the grid radial positions at the rotoridx for the stator.
+    # - Generate Stator Blade objects based on positions of grid so that the stator panels and blade elements line up with the grid.
+    stator_blade_elements, stator_panels = dt.generate_blade_elements(
+        stator_c4_pos,
+        radial_positions,
+        chords,
+        twists,
+        airfoils,
+        nbe_fine,
+        B,
+        omega_stator,
+        body_geometry;
+        updated_radial_positions=r_grid_points[rotoridxs[2], :],
+    )
 
     #---------------------------------#
     #             Meshes              #
@@ -333,9 +349,17 @@ function wrapper(x; debug=false)
     body_induced_rotor_velocity = A_bodies_to_rotor * (gamma_bodies .* Vinf) .+ Vinf
     body_induced_stator_velocity = A_bodies_to_stator * (gamma_bodies .* Vinf) .+ Vinf
 
+    #---------------------------------#
+    #       Initial Gamma Sigma       #
+    #---------------------------------#
+
+    Gamma_rotor_init, Sigma_rotor_init = dt.calculate_gamma_sigma(Vinf, rotor_blade_elements)#, vm=0.0, vtheta=0.0)
+
+    Gamma_stator_init, Sigma_stator_init = dt.calculate_gamma_sigma(Vinf, stator_blade_elements)#, vm=0.0, vtheta=0.0)
+
     if debug
         return x_grid_points, r_grid_points
     else
-        return wake_panels[2].panel_center[:, 2]
+        return Gamma_rotor_init
     end
 end

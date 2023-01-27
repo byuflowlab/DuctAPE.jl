@@ -23,7 +23,6 @@ function initialize_parameters(
     #---------------------------------#
     #           First Rotor           #
     #---------------------------------#
-    #TODO: need to add omega to the bladeelements struct.
     rotor_blade_elements, rotor_panels = generate_blade_elements(
         rotor_parameters.xpos,
         rotor_parameters.radial_positions,
@@ -41,12 +40,12 @@ function initialize_parameters(
     #---------------------------------#
     x_grid_points, r_grid_points, nx, nr, rotoridxs, wake_panels = generate_wake_grid(
         body_geometry,
-        [rotor_blade_elements; stator_blade_elements]; #TODO: actually just need x position for each rotor and radial locations for front most rotor
+        [rotor_parameters.xpos; stator_parameters.xpos],
+        rotor_blade_elements.radial_positions;
         wake_length=1.0,
         debug=false,
     )
 
-    #TODO: need to re-interpolate the stator blade elements based on the grid radial positions at the rotoridx for the stator.
     #---------------------------------#
     #          Other Rotor(s)         #
     #---------------------------------#
@@ -59,7 +58,8 @@ function initialize_parameters(
         stator_parameters.num_blade_elements,
         stator_parameters.num_blades,
         stator_parameters.omega,
-        body_geometry,
+        body_geometry;
+        updated_radial_positions=r_grid_points[rotoridxs[2], :],
     )
 
     return (

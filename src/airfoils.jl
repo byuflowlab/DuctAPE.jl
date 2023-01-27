@@ -17,7 +17,7 @@ function parsefile(filename, radians, solidity)
     info = ""
     Re = 1.0
     Mach = 1.0
-    solidity = 1.0
+    solidity_val = 1.0
 
     open(filename) do f
 
@@ -26,7 +26,7 @@ function parsefile(filename, radians, solidity)
         Re = parse(Float64, readline(f))
         Mach = parse(Float64, readline(f))
         if solidity
-            solidity = parse(Float64, readline(f))
+            solidity_val = parse(Float64, readline(f))
         end
 
         for line in eachline(f)
@@ -42,7 +42,7 @@ function parsefile(filename, radians, solidity)
     end
 
     if solidity
-        return info, Re, Mach, solidity, alpha, cl, cd
+        return info, Re, Mach, solidity_val, alpha, cl, cd
     else
         return info, Re, Mach, alpha, cl, cd
     end
@@ -99,7 +99,7 @@ filenames with one file per Reynolds number.
 - `filenames::Vector{String}`: name/path of files to read in, each at a different Reynolds number in ascending order
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct AlphaSolidityAF{TF,TS} <: AFType
+struct AlphaSolidityAF{TF,TS} <: ccb.AFType
     alpha::Vector{TF}
     solidity::Vector{TF}
     cl::Matrix{TF}
@@ -188,7 +188,7 @@ or files with one per Re/solidity combination
 - `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to Re[i] solidity[j] with Reynolds number and solidity number in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct AlphaReSolidityAF{TF,TS} <: AFType
+struct AlphaReSolidityAF{TF,TS} <: ccb.AFType
     alpha::Vector{TF}
     Re::Vector{TF}
     solidity::Vector{TF}
@@ -281,7 +281,7 @@ or files with one per Re/Mach combination
 - `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to Re[i] Mach[j] with Reynolds number and Mach number in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct AlphaReMachSolidityAF{TF,TS} <: AFType
+struct AlphaReMachSolidityAF{TF,TS} <: ccb.AFType
     alpha::Vector{TF}
     Re::Vector{TF}
     Mach::Vector{TF}
@@ -388,7 +388,7 @@ Return lift and drag coefficients based on airfoil object type and flow conditio
 
 **Arguments:**
  - `af::AFType` : Airfoil object either of a CCBlade airfoil type or custom type (custom if solidity information is included).
- - `alpha::Float` : angle of attack in degrees
+ - `alpha::Float` : angle of attack in radians
  - `reynolds::Float` : Reynolds number
  - `mach::Float` : Mach number
  - `solidity::Float` : Solidity factor (local chord length over distance between radial blade stations on adjacent blades). Set to -1 if not being used.
@@ -398,9 +398,6 @@ Return lift and drag coefficients based on airfoil object type and flow conditio
  - `cd::Float` : section drag coefficient
 """
 function get_clcd(af, alpha, reynolds, mach, solidity)
-
-    #convert alpha to radians
-    alpha *= pi / 180.0
 
     # if solidity undefined, use CCBlade functions
     if solidity == -1.0

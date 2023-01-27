@@ -7,39 +7,38 @@ Authors: Judd Mehr,
 =#
 
 """
-    initilaize_grid_points(body_geometry, blade_elements, grid_options, debug=false)
+    initilaize_grid_points(body_geometry, rotor_x_positions, radial_positions, grid_options, debug=false)
 
 Get grid boundary and initial interior points.
 
 **Arguments:**
- - `body_geometry::DuctTAPE.body_geometry` : Duct Geometry Object.
- - `blade_elements::Array{DuctTAPE.Rotor}` : Array of Rotor objects
- - `grid_options::DuctTAPE.GridOptions` : GridOptions object
+- `body_geometry::DuctTAPE.body_geometry` : Duct Geometry Object.
+- `rotor_x_positions::Vector{Float}` : Vector of x-positions for the rotors
+- `radial_positions::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
+- `grid_options::DuctTAPE.GridOptions` : GridOptions object
 
 **Returns:**
- - `x_grid_points::Matrix{Float64,2}` : 2D Array of x grid points
- - `r_grid_points::Matrix{Float64,2}` : 2D Array of r grid points
+- `x_grid_points::Matrix{Float64,2}` : 2D Array of x grid points
+- `r_grid_points::Matrix{Float64,2}` : 2D Array of r grid points
 """
-function initialize_grid_points(body_geometry, blade_elements; wake_length=1.0, debug=false)
-
-    #check that rotor/stator are in the correct order
-    for i in 1:(length(blade_elements) - 1)
-        @assert blade_elements[i].rotor_x_position < blade_elements[i + 1].rotor_x_position
-    end
+function initialize_grid_points(
+    body_geometry, rotor_x_positions, radial_positions; wake_length=1.0, debug=false
+)
 
     # --- RENAME THINGS FOR CONVENIENCE
-    TF = eltype(blade_elements[1].chords)
+    TF = eltype(body_geometry.duct_inner_spline.ydata)
 
     duct_range = body_geometry.duct_range
     hub_range = body_geometry.hub_range
     hub_spline = body_geometry.hub_spline
     duct_inner_spline = body_geometry.duct_inner_spline
 
-    # Rename options for convenience
-    nr = blade_elements[1].num_radial_stations
-    # check that both rotors have the same number of elements
-    for i in 1:length(blade_elements)
-        @assert nr == length(blade_elements[i].radial_positions)
+    nrotors = length(rotor_x_positions)
+    nr = length(radial_positions)
+
+    #check that rotor/stator are in the correct order
+    for i in 1:(nrotors - 1)
+        @assert rotor_x_positions[i] < rotor_x_positions[i + 1]
     end
 
     # --- SETUP/FIND BOUNDARY GEOMETRY
@@ -56,34 +55,27 @@ function initialize_grid_points(body_geometry, blade_elements; wake_length=1.0, 
     # --- DEFINE X GRID SPACING PIECES
 
     # choose x-step to be same length as radial step length, assumes that radial positions are linearly spaced
-    x_step = blade_elements[1].radial_positions[2] - blade_elements[1].radial_positions[1]
-
-    #need to save the x-index of the rotor positions for later use
-    rotoridxs = [0 for i in 1:length(blade_elements)]
+    x_step = radial_positions[2] - radial_positions[1]
 
     # if there are more than 1 rotors, need to account for following rotor locations so that grid aligns with rotors
-    if length(blade_elements) > 1
+    if length(rotor_x_positions) > 1
 
         # find the lengths between rotors using an approximate step size of the blade element spacing
-        x_length = zeros(Int, length(blade_elements) - 1)
-        for i in 1:(length(blade_elements) - 1)
-            x_length[i] = round(
-                Int,
-                (
-                    blade_elements[i + 1].rotor_x_position -
-                    blade_elements[i].rotor_x_position
-                ) / x_step,
+        x_length = zeros(Int, nrotors - 1)
+        for i in 1:(nrotors - 1)
+            x_length[i] = ceil(
+                Int, (rotor_x_positions[i + 1] - rotor_x_positions[i]) / x_step
             )
             if x_length[i] == 1
                 x_length[i] += 1
             end
         end
 
-        # save rotor x-index
+        #need to save the x-index of the rotor positions for later use
         rotoridxs = [1; cumsum(x_length)]
 
         #get the length from the last rotor to the end of the wake
-        last_length = round(Int, (wake_te - blade_elements[end].rotor_x_position) / x_step)
+        last_length = round(Int, (wake_te - rotor_x_positions[end]) / x_step)
 
         # put all the x stations together
         wake_x_stations = unique(
@@ -92,14 +84,12 @@ function initialize_grid_points(body_geometry, blade_elements; wake_length=1.0, 
                 [
                     [
                         range(
-                            blade_elements[i].rotor_x_position,
-                            blade_elements[i + 1].rotor_x_position;
+                            rotor_x_positions[i],
+                            rotor_x_positions[i + 1];
                             length=x_length[i],
-                        ) for i in length(blade_elements) - 1
+                        ) for i in nrotors - 1
                     ]
-                    range(
-                        blade_elements[end].rotor_x_position, wake_te; length=last_length
-                    )
+                    range(rotor_x_positions[end], wake_te; length=last_length)
                 ],
             ),
         )
@@ -109,8 +99,8 @@ function initialize_grid_points(body_geometry, blade_elements; wake_length=1.0, 
         # rotor index is only the first index if there is only one rotor.
         rotoridxs = [1]
 
-        # - If only one rotor,rotor_x_position- no need for complicated stuff.
-        wake_x_stations = range(blade_elements[1].rotor_x_position, wake_te; step=x_step)
+        # - If only one rotor,rotor_x_positions- no need for complicated stuff.
+        wake_x_stations = range(rotor_x_positions[1], wake_te; step=x_step)
     end
 
     #get number of x stations
@@ -143,10 +133,10 @@ function initialize_grid_points(body_geometry, blade_elements; wake_length=1.0, 
     r_grid_points = zeros(TF, nx, nr)
 
     #first column of radial grid points are radial stations of foremost rotor
-    r_grid_points[1, :] = blade_elements[1].radial_positions
+    r_grid_points[1, :] = radial_positions
 
     #first column of x grid points are all the x position of the foremost rotor
-    x_grid_points[1, :] .= blade_elements[1].rotor_x_position
+    x_grid_points[1, :] .= rotor_x_positions[1]
 
     #first and last rows of points from setup above
     x_grid_points[:, 1] = wake_x_stations
@@ -254,14 +244,14 @@ function relax_grid!(xr, rr, nxi, neta; max_iterations=100, tol=1e-9, verbose=fa
     for j in 2:neta
         # DFDC comment for this is roughly: streamline values (axisymmetric streamfunction). eta(j) = (j-1)**2 gives uniform spacing in r
         # not sure why it doesn't match the actual expression though.
-        eta[j] = view(rr,1, j).^2 - view(rr,1, j - 1).^2 + eta[j - 1]
+        eta[j] = view(rr, 1, j) .^ 2 - view(rr, 1, j - 1) .^ 2 + eta[j - 1]
     end
 
     # Get the x positions along the x axis (used later for various ratios compared to internal points as they move)
     xi = [xr[i, 1] for i in 1:nxi]
     # Get the r positions along the inner radial boundary
     # hubrstations = [rr[i, 1] for i in 1:nxi]
-    hubrstations = view(rr,1:nxi, 1)
+    hubrstations = view(rr, 1:nxi, 1)
 
     # used as scaling for tolerance
     dxy = max(
@@ -548,7 +538,8 @@ Generate vector of Axisymmetric panel objects for the wake lines emanating from 
 
 **Arguments:**
 - `body_geometry::BodyGeometry` : BodyGeometry object describing the duct and hub
-- `blade_elements::Vector{BladeElements}` : Vector of BladeElements objects for the rotors
+- `rotor_x_positions::Vector{Float}` : Vector of x-positions for the rotors
+- `radial_positions::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
 
 **Keyword Arguments:**
 - `wake_length::Float` : length of wake (non-dimensional based on maximum duct chord) to extend past the furthest trailing edge.
@@ -560,7 +551,8 @@ Generate vector of Axisymmetric panel objects for the wake lines emanating from 
 """
 function generate_wake_grid(
     body_geometry,
-    blade_elements;
+    rotor_x_positions,
+    radial_positions;
     wake_length=1.0,
     method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
     debug=false,
@@ -568,7 +560,7 @@ function generate_wake_grid(
 
     # - Initialize Grid Points - #
     x_grid_points, r_grid_points, nx, nr, rotoridxs = initialize_grid_points(
-        body_geometry, blade_elements; wake_length=1.0, debug=false
+        body_geometry, rotor_x_positions, radial_positions; wake_length=1.0, debug=false
     )
 
     # - Relax Grid Points - #

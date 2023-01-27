@@ -23,8 +23,8 @@ Authors: Judd Mehr,
 struct OneWayMesh{TF}
     n_influence_bodies::Int64
     n_affect_bodies::Int64
-    influence_panel_indices::Vector{StepRange{Int64,Int64}}
-    affect_panel_indices::Vector{StepRange{Int64,Int64}}
+    influence_panel_indices::Vector{UnitRange{Int64}}
+    affect_panel_indices::Vector{UnitRange{Int64}}
     mesh2panel_influence::Vector{Int64}
     mesh2panel_affect::Vector{Int64}
     x::Matrix{TF}
@@ -70,8 +70,6 @@ Multiple Dispatch allows for single panel objects as one or both inputs as well 
 - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 """
 function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
-
-    #TODO: copy over meshing function from flowfoil and adjust
 
     ### --- Convenience Variables --- ###
     nbodies_i = length(influence_panels)
