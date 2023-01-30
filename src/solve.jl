@@ -7,6 +7,34 @@ Authors: Judd Mehr,
 =#
 
 """
+This is the function you run to actually solve stuff
+"""
+function analyze_propulsor(duct_coordinates, hub_coordinates, rotor, stator, freestream)
+
+    # - Initialize Parameters (geometries, meshes, coefficient matrics) - #
+    params = initialize_parameters(
+        duct_coordinates, hub_coordinates, rotor, stator, freestream
+    )
+
+    # - Calculate the initial guesses for Gamma and Sigma from the inputs. - #
+    Gamma_init, Sigma_init = calculate_gamma_sigma(
+        Vinf, params.blade_elements; vm=0.0, vtheta=0.0
+    )
+
+    # - Assemble GammaSigma as a vector - #
+    GammaSigma_init = Gamma_init #[Gamma_init; Sigma_init]
+
+    # - Run solver to find Gamma and Sigma values - #
+    # params is a tuple
+    GammaSigma = ImplicitAD.implicit(solve!, residual!, GammaSigma_init, params)
+
+    return GammaSigma, converged
+
+    #TODO: do the rest.  need to use the converged gamma and sigma values to go through and get all the singularity strengths required for post-processing.
+
+end
+
+"""
 This is the function being solved
 GammaSigma_init are the inital guess for the gamma and sigma values.
 F are the output gamma and sigma values minus the input ones. (this is what we want to drive to zero).
@@ -46,46 +74,16 @@ function solve!(x_init, params)
 end
 
 """
-This is the function you run to actually solve stuff
-"""
-function analyze_propulsor(duct_coordinates, hub_coordinates, rotor, stator, freestream)
-
-    # - Initialize Parameters (geometries, meshes, coefficient matrics) - #
-    params = initialize_parameters(
-        duct_coordinates, hub_coordinates, rotor, stator, freestream
-    )
-
-    # - Calculate the initial guesses for Gamma and Sigma from the inputs. - #
-    Gamma_rotor_init, Sigma_rotor_init = calculate_gamma_sigma(
-        Vinf, params.rotor_blade_elements; vm=0.0, vtheta=0.0
-    )
-    Gamma_stator_init, Sigma_stator_init = calculate_gamma_sigma(
-        Vinf, params.stator_blade_elements; vm=0.0, vtheta=0.0
-    )
-
-    # - Assemble GammaSigma as a vector - #
-    GammaSigma_init - [Gamma_rotor_init; Gamma_stator_init] #; Sigma_rotor_init; Sigma_stator_init]
-
-    # - Run solver to find Gamma and Sigma values - #
-    # params is a tuple
-    GammaSigma = ImplicitAD.implicit(solve!, residual!, GammaSigma_init, params)
-
-    return GammaSigma, converged
-
-    #TODO: do the rest.  need to use the converged gamma and sigma values to go through and get all the singularity strengths required for post-processing.
-
-end
-
-"""
 """
 function update_gamma_sigma(GammaSigma_init, params)
+
+    #---------------------------------#
+    #              SET UP             #
+    #---------------------------------#
 
     # - Rename for Convenience - #
     nbe = length(params.rotor_blade_elements.radial_positions)
     nr = params.num_rotors
-
-    #TODO need to figure out how to do things.  should the params be vectors of stuff rather than splitting out rotor and stator? (yes) need to make updates to the setup structure.
-    #TODO: before updating setup structure, figure out how you want THIS function to work, so that you know what the inputs should be and you only have to set it up once.
 
     #if only using gammas at first do this
     Gammas = reshape(GammaSigma_init, (nbe, nr))
@@ -97,37 +95,44 @@ function update_gamma_sigma(GammaSigma_init, params)
     ##second half of the vetor are the sigmas
     #Sigmas = reshape(view(GammaSigma_init, (nbe * nr / 2 + 1):(nbe * nr), 1), (nbe, nr))
 
+    #---------------------------------#
+    #             UPDATES             #
+    #---------------------------------#
+
     # - Calculate Enthalpy Jumps - #
-    delta_h = calculate_enthalpy_jumps(Gammas)
+    H_tilde = calculate_enthalpy_jumps(Gammas, params.blade_elements)
 
     # - Calculate Net Circulation - #
-    Gamma_tilde = calculate_net_circulation()
+    BGamma, Gamma_tilde = calculate_net_circulation(Gammas, params.blade_elements)
 
     # - Calculate Meridional Velocities - #
-    vm = calculate_meridional_velocities()
+    vm = calculate_meridional_velocities(
+        Gamma_tilde,
+        H_tilde,
+        params.wake_grid,
+        params.rotoridxs,
+        params.duct_surface_velocity,
+    )
 
     # - Calculate Wake Vorticity - #
-    wake_gammas = calculate_wake_vorticity()
+    wake_gammas = calculate_wake_vorticity(vm)
 
     # - Solve Full Linear System - #
-    body_vortex_strengths = solve_linear_system()
+    update_body_vortex_strengths!(
+        params.body_vortex_strengths,
+        params.A_body_to_body,
+        params.bc_freestream_to_body,
+        wake_gammas,
+        params.A_wake_to_bodies,
+    )#, Sigmas, params.A_rotor_to_body)
 
     # - Calculate Induced Velocities at Rotors - #
-    vi = calculate_induced_velocities()
-
-    # - Calculate Blade Element Angles of Attack - #
-    alpha = calculate_angles_of_attack()
-
-    # - Calculate Inflow Velocities at Blade Elements - #
-    W = calculate_inflow_velocities()
-
-    # - Look up Blade Element Polar Data - #
-    cl, cd = search_polars()
+    vi = calculate_induced_velocities(body_vortex_strengths, BGamma, Gamma_tilde)
 
     # - Calculate Updated Circulation and Source Strengths - #
-    Gamma, Sigma = calculate_gamma_sigma()
+    Gamma, Sigma = calculate_gamma_sigma(Vinf, blade_elements, vi.vm, vi.vtheta)
 
     # - Return Updated Circulation and Source Strengths in Single Vector - #
-    return [Gamma; Sigma]
+    return Gamma
+    # return [Gamma; Sigma]
 end
-

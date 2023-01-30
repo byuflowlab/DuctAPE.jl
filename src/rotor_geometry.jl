@@ -20,16 +20,16 @@ Authors: Judd Mehr,
 - `rotor_x_position::Float` : x-position (dimensional) of the the rotor
 - `omega::Float` : Rotation rate, in radians per second, of rotor
 """
-struct BladeElements{TF, TAF}
-    num_radial_stations::Int64
+struct BladeElements{TF,TAF}
+    num_radial_stations::Vector{Int64}
     radial_positions::Vector{TF}
     chords::Vector{TF}
     twists::Vector{TF}
     solidities::Vector{TF}
-    airfoils::TAF
-    num_blades::Int64
-    rotor_x_position::TF
-    omega::TF
+    airfoils::Vector{TAF}
+    num_blades:Vector{Int64}
+    rotor_x_position::Vector{TF}
+    omega::Vector{TF}
 end
 
 """
@@ -132,11 +132,6 @@ function generate_blade_elements(
         end
     end
 
-    # - Generate Rotor Panels - #
-    rotor_panels = ff.generate_panels(
-        method, [rotor_x_position .* ones(num_radial_stations) updated_radial_positions]
-    )
-
     return BladeElements(
         num_radial_stations,
         updated_radial_positions,
@@ -151,54 +146,116 @@ function generate_blade_elements(
     rotor_panels
 end
 
-##TODO: need to update this function
-#"""
-#    reinterpolate_rotors(wakegrid, rotor, rotoridx)
-#Since the wake grid relaxes and is not aligned with aft rotor radial stations, this function reinterpolates rotor data based on updated radial stations.
-#(The `rotor` inputs is the only one updated by this function.)
-#**Arguments:**
-# - `wakegrid::DuctTAPE.WakeGridGeometry` : wake grid geometry object
-# - `rotor::DuctTAPE.RotorGeometry` : the rotor geometry to update
-# - `rotoridx::Int` : index in the x direction for where the rotor lies on the wake grid
-#"""
-#function reinterpolate_rotors!(rotors, wakegrid)
+function generate_blade_elements!(
+    blade_elements,
+    rotor_panels,
+    rotor_x_position,
+    radial_positions,
+    chords,
+    twists,
+    airfoils,
+    num_radial_stations,
+    num_blades,
+    omega,
+    body_geometry;
+    updated_radial_positions=nothing,
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+)
 
-#    #check if less than 2 rotors
-#    if length(rotors) <= 1
-#        return rotors
-#    else
-#        #if more, go through and update rotors
-#        for r in 2:length(rotors)
-#            #rename things for convenience
-#            nr = length(rotor[r].radialstations)
-#            new_rad_stash = wakegrid.x_grid_points[rotoridx[r], :]
+    # - Find Tip Radius based on body geometry - #
 
-#            ## -- Calculate New Section Properties -- ##
+    # Make sure that the rotor is inside the duct
+    @assert rotor_x_position > body_geometry.duct_range[1] "Rotor is in front of duct leading edge."
+    @assert rotor_x_position < body_geometry.duct_range[2] "Rotor is behind duct trailing edge."
+    @assert rotor_x_position > body_geometry.hub_range[1] "Rotor is in front of hub leading edge."
+    @assert rotor_x_position < body_geometry.hub_range[2] "Rotor is behind hub trailing edge."
 
-#            # update chords
-#            new_chords = FLOWMath.Akima(rotor[r].radialstations, rotor[r].chords)
-#            for i in 1:nr
-#                rotor[r].chords[i] = new_chords(new_rad_stash[i])
-#            end
+    # Sample the splines to get the radius values
+    Rtip = body_geometry.duct_inner_spline(rotor_x_position)
+    Rhub = body_geometry.hub_spline(rotor_x_position)
 
-#            # update twists
-#            new_twists = FLOWMath.Akima(rotor[r].radialstations, rotor[r].twists)
-#            for i in 1:nr
-#                rotor[r].twists[i] = new_twists(new_rad_stash[i])
-#            end
+    # - Dimensionalize the blade element radial positions - #
+    dim_radial_positions = lintran([Rhub; Rtip], [0.0; 1.0], radial_positions)
 
-#            # update solidity
-#            new_solidities = FLOWMath.Akima(rotor[r].radialstations, rotor[r].solidities)
-#            for i in 1:nr
-#                rotor[r].solidities[i] = new_solidities(new_rad_stash[i])
-#            end
+    #---------------------------------#
+    #       Refine Distribuions       #
+    #---------------------------------#
+    # Get fine radial positions
+    if updated_radial_positions == nothing
+        blade_elements.radial_positions .= collect(
+            range(Rhub, Rtip; length=num_radial_stations)
+        )
+    else
+        blade_elements.radial_positions .= updated_radial_positions
+    end
 
-#            # update radial stations at the end after using both old and new for splines
-#            for i in 1:nr
-#                rotor[r].radialstations[i] = new_rad_stash[i]
-#            end
-#        end
-#    end
+    # Chords
+    blade_elements.chords .= fm.akima(
+        dim_radial_positions, chords, blade_elements.radial_positions
+    )
 
-#    return nothing
-#end
+    # Twists (convert to radians here)
+    blade_elements.twists .= fm.akima(
+        dim_radial_positions, twists .* pi / 180.0, blade_elements.radial_positions
+    )
+
+    # - Calculate Solidity - #
+    blade_elements.solidities .=
+        (2.0 .* pi .* blade_elements.radial_positions) ./ num_blades
+
+    # - Define Airfoil Distribution - #
+
+    # get average values of radial stations to better place airfoils (center defined airfoils in refined blade)
+    mean_rad_stash =
+        (dim_radial_positions[1:(end - 1)] .+ dim_radial_positions[2:end]) ./ 2.0
+
+    # loop through refined radial stations and apply appropriate airfoil
+    for i in 1:(num_radial_stations)
+        ridx = findfirst(x -> x > blade_elements.radial_positions[i], mean_rad_stash)
+        if ridx != nothing
+            blade_elements.airfoils[i] = airfoils[ridx]
+        else
+            blade_elements.airfoils[i] = airfoils[end]
+        end
+    end
+
+    # - Update the rest - #
+    blade_elements.rotor_x_position[1] = rotor_x_position
+    blade_elements.omega[1] = omega
+    blade_elements.B[1] = num_blades
+
+    return nothing
+end
+
+function initialize_blade_elements(rotor_parameters, body_geometry, num_rotors)
+    return [
+        generate_blade_elements(
+            rotor_parameters.rotor_x_position,
+            rotor_parameters.radial_positions,
+            rotor_parameters.chords,
+            rotor_parameters.twists,
+            rotor_parameters.airfoils,
+            rotor_parameters.num_radial_stations,
+            rotor_parameters.num_blades,
+            rotor_parameters.omega,
+            rotor_parameters.body_geometry;
+            updated_radial_positions=nothing,
+            method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+        ) for i in 1:num_rotors
+    ]
+end
+
+"""
+"""
+function initialize_rotor_panels(
+    blade_elements,
+    num_rotors;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+)
+    return [
+        ff.generate_panels(
+            method,
+            [blade_elements.rotor_x_position .* ones(blade_elements.num_radial_stations) blade_elements.radial_positions],
+        )[1] for i in 1:num_rotors
+    ]
+end

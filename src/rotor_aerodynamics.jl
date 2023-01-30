@@ -7,18 +7,52 @@ Authors: Judd Mehr,
 =#
 
 """
+DONE. clean up and check
 """
-function calculate_induced_velocities()
+function calculate_induced_velocities(
+    BGamma,
+    Gamma_tilde,
+    blade_elements,
+    A_bodies_to_rotor,
+    gamma_bodies,
+    A_wake_to_rotor,
+    gamma_wake,
+    # A_rotor_to_rotor,
+    # Sigma,
+)
 
-    #TODO: vm comes from solving linear system
+    # - Rename for Convenience - #
+    nr = length(blade_elements)
 
-    #vtheta comes from gamma and such
-    vtheta = 1.0 / (2.0 * pi * radial_positions) * (Gamma_tilde + 0.5 * B * Gamma)
+    # - Initialize - #
+    vm = similar(BGamma)
+    vtheta = similar(BGamma)
 
-    return nothing
+    for i in 1:nr
+        # - Add Body Induced Velocities - #
+        vm[:, i] = A_bodies_to_rotor[i] * gamma_bodies
+
+        # - Add Wake Induced Velocities - #
+        for w in 1:length(gamma_wake[:, 1])
+            vm[:, i] += A_wake_to_rotor[w, i] * gamma_wake[i, :]'
+        end
+
+        # # - Add Rotor Induced Velocities - #
+        # for j in 1:nr
+        #     vm[:, i] += A_rotor_to_rotor[i, j] * Sigma[i]
+        # end
+
+        #vtheta comes from gamma and such
+        vtheta[:, i] =
+            1.0 / (2.0 * pi * blade_elements[i].radial_positions) *
+            (Gamma_tilde[:, i] + 0.5 * BGamma[:, i])
+    end
+
+    return (vm=vm, vtheta=vtheta)
 end
 
 """
+DONE. clean up and check
 """
 function calculate_angle_of_attack(twist, Wm, Wtheta)
 
@@ -32,21 +66,32 @@ function calculate_angle_of_attack(twist, Wm, Wtheta)
 end
 
 """
+DONE. clean up and check
 """
-function calculate_inflow_velocities(Vinf, Omega, radial_position, vm, vtheta)
-    Wm = Vinf + vm
-    Wtheta = vtheta - Omega * radial_position
+function calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
+    Wm = similar(vm)
+    Wtheta = similar(vm)
+
+    for i in 1:nr
+        Wm[:, i] = Vinf .+ vm[:, i]
+        Wtheta[:, i] =
+            vtheta[:, i] .- blade_elements[i].omega .* blade_elements[i].radial_position
+    end
+
     Wmag = sqrt.(Wm .^ 2 .+ Wtheta .^ 2)
+
     return (Wm=Wm, Wtheta=Wtheta, Wmag=Wmag)
 end
 
 """
+DONE. clean up and check
 """
 function search_polars(airfoil, alpha)
     return ccb.afeval(airfoil, alpha, 0.0, 0.0) #requires entries for Re and Ma, even though they aren't used.
 end
 
 """
+DONE. clean up and check
 """
 function calculate_gamma_sigma(Vinf, blade_elements, vm=0.0, vtheta=0.0)
     TF = eltype(blade_elements.chords)

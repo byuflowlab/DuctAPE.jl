@@ -12,3 +12,4 @@ function calculate_induced_velocity(coefficient_matrix, singularity_strengths)
 
     return induced_velocity
 end
+
