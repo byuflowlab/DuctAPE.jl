@@ -12,12 +12,12 @@ Custom Composite Type Definitions
  - `asound::Float` : Speed of sound value, default = 341.0 m/s
 """
 struct Freestream{TF,TC}
-    vinf::TF
+    Vinf::TF
     rho::TC # defaults to 1.225 kg/m^3
     mu::TC # defaults to 1.81e-5 Pa-s
     asound::TC # defaults to 341.0 m/s
 end
 
-function Freestream(vinf)
-    return Freestream(vinf, 1.225, 1.81e-5, 341.0)
+function Freestream(Vinf)
+    return Freestream(Vinf, 1.225, 1.81e-5, 341.0)
 end

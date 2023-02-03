@@ -14,9 +14,13 @@ const ccb = CCBlade #rename ccblade for convenience
 using NLsolve
 using ImplicitAD
 
+using LineSearches: BackTracking
+
 ## -- INCLUDES -- ##
 
 include("utils.jl")
+
+include("types.jl")
 
 # Body Geometry Functions
 include("body_geometry.jl")
@@ -36,7 +40,16 @@ include("coefficient_matrix.jl")
 # Rotor Aerodynamic Functions
 include("rotor_aerodynamics.jl")
 
+# Wake Aerodynamic Functions
+include("wake_aerodynamics.jl")
+
+# Body Aerodynamic Functions
+include("body_aerodynamics.jl")
+
 # Pre-solve initializations
 include("initialize.jl")
+
+# Solver
+include("solve.jl")
 
 end

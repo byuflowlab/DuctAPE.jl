@@ -151,215 +151,40 @@ function wrapper(x; debug=false)
     # - Number of blades - #
     B = 27
 
-    rotor_blade_elements, rotor_panels = dt.generate_blade_elements(
-        rotor_c4_pos,
-        rotor_radial_positions,
-        chords,
-        twists,
-        airfoils,
-        nbe_fine,
-        B,
-        omega_rotor,
-        body_geometry,
+    rotor_parameters = [(
+        rotor_x_position=rotor_c4_pos,
+        radial_positions=rotor_radial_positions,
+        chords=chords,
+        twists=twists,
+        airfoils=airfoils,
+        num_radial_stations=nbe,
+        num_blades=B,
+        omega=omega_rotor,
+    )]
+
+    # # - Get Stator Geometry - #
+    # # - Chord - #
+    # # note: just use linear chord distribution
+    # chords = range(stator_root_chord, stator_tip_chord; length=nbe)
+
+    # # - Twist - #
+    # # note: need to make a guess, use degrees for input
+    # twists = stator_twist_guess * ones(nbe)
+
+    # # - Non-dimensional Radial Locations - #
+    # radial_positions = range(0.0, 1.0; length=nbe)
+
+    # # - TODO: add airfoil data appropriate for stators - #
+    # # airfoils = [nothing for i in 1:nbe]
+
+    # # - Number of blades - #
+    # B = 8
+
+    # omega_stator = 0.0 * omega_rotor
+
+    gamma, converged = dt.analyze_propulsor(
+        duct_coordinates, hub_coordinates, rotor_parameters, dt.Freestream(1.0)
     )
 
-    # - Get Stator Geometry - #
-    # - Chord - #
-    # note: just use linear chord distribution
-    chords = range(stator_root_chord, stator_tip_chord; length=nbe)
-
-    # - Twist - #
-    # note: need to make a guess, use degrees for input
-    twists = stator_twist_guess * ones(nbe)
-
-    # - Non-dimensional Radial Locations - #
-    radial_positions = range(0.0, 1.0; length=nbe)
-
-    # - TODO: add airfoil data appropriate for stators - #
-    # airfoils = [nothing for i in 1:nbe]
-
-    # - Number of blades - #
-    B = 8
-
-    omega_stator = 0.0 * omega_rotor
-
-    #---------------------------------#
-    #             Poblem              #
-    #---------------------------------#
-
-    method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true])
-    problem = ff.define_problem(
-        method, (duct_coordinates, hub_coordinates), 0.0, -1.0, -1.0
-    )
-
-    #---------------------------------#
-    #       Initial Wake Points       #
-    #---------------------------------#
-
-    x_grid_points, r_grid_points, nx, nr, rotoridxs, wake_panels = dt.generate_wake_grid(
-        body_geometry,
-        [rotor_c4_pos; stator_c4_pos],
-        rotor_blade_elements.radial_positions;
-        wake_length=1.0,
-        debug=false,
-    )
-
-    # - Generate Stator Blade objects based on positions of grid so that the stator panels and blade elements line up with the grid.
-    stator_blade_elements, stator_panels = dt.generate_blade_elements(
-        stator_c4_pos,
-        radial_positions,
-        chords,
-        twists,
-        airfoils,
-        nbe_fine,
-        B,
-        omega_stator,
-        body_geometry;
-        updated_radial_positions=r_grid_points[rotoridxs[2], :],
-    )
-
-    #---------------------------------#
-    #             Meshes              #
-    #---------------------------------#
-
-    # - Body -> Body - #
-    mesh_body_to_body = ff.generate_mesh(method, body_panels)
-
-    # - Body -> Rotor - #
-    mesh_bodies_to_rotor = dt.generate_one_way_mesh(body_panels, rotor_panels)
-
-    # - Body -> Stator - #
-    mesh_bodies_to_stator = dt.generate_one_way_mesh(body_panels, stator_panels)
-
-    # - Wake -> Body - #
-    mesh_wake_to_body = dt.generate_one_way_mesh(wake_panels, body_panels)
-
-    # - Wake -> Rotor - #
-    mesh_wake_to_rotor = dt.generate_one_way_mesh(wake_panels, rotor_panels)
-
-    # - Wake -> Stator - #
-    mesh_wake_to_stator = dt.generate_one_way_mesh(wake_panels, stator_panels)
-
-    # - Rotor -> Body - #
-    mesh_rotor_to_body = dt.generate_one_way_mesh(
-        rotor_panels, body_panels; singularity="source"
-    )
-
-    # - Rotor -> Rotor - #
-    mesh_rotor_to_rotor = dt.generate_one_way_mesh(
-        rotor_panels, rotor_panels; singularity="source"
-    )
-
-    # - Rotor -> Stator - #
-    mesh_rotor_to_stator = dt.generate_one_way_mesh(
-        rotor_panels, stator_panels; singularity="source"
-    )
-
-    # - Stator -> Body - #
-    mesh_stator_to_body = dt.generate_one_way_mesh(
-        stator_panels, body_panels; singularity="source"
-    )
-
-    # - Stator -> Rotor - #
-    mesh_stator_to_rotor = dt.generate_one_way_mesh(
-        stator_panels, rotor_panels; singularity="source"
-    )
-
-    # - Stator -> Stator - #
-    mesh_stator_to_stator = dt.generate_one_way_mesh(
-        stator_panels, stator_panels; singularity="source"
-    )
-
-    #---------------------------------#
-    #       Coefficient Matrices      #
-    #---------------------------------#
-
-    # - Body -> Body - #
-    body_system = ff.generate_inviscid_system(method, body_panels, mesh_body_to_body)
-    A_body_to_body = body_system.A
-    bc_freestream_to_body = body_system.b
-
-    # - Body -> Rotor - #
-    A_bodies_to_rotor = dt.assemble_one_way_coefficient_matrix(
-        mesh_bodies_to_rotor, body_panels, rotor_panels
-    )
-
-    # - Body -> Stator - #
-    A_bodies_to_stator = dt.assemble_one_way_coefficient_matrix(
-        mesh_bodies_to_stator, body_panels, stator_panels
-    )
-
-    # - Wake -> Body - #
-    A_wake_to_bodies = dt.assemble_one_way_coefficient_matrix(
-        mesh_wake_to_body, wake_panels, body_panels
-    )
-
-    # - Wake -> Rotor - #
-    A_wake_to_rotor = dt.assemble_one_way_coefficient_matrix(
-        mesh_wake_to_rotor, wake_panels, stator_panels
-    )
-
-    # - Wake -> Stator - #
-    A_wake_to_stator = dt.assemble_one_way_coefficient_matrix(
-        mesh_wake_to_stator, wake_panels, stator_panels
-    )
-
-    # - Rotor -> Body - #
-    A_rotor_to_body = dt.assemble_one_way_coefficient_matrix(
-        mesh_rotor_to_body, rotor_panels, body_panels; singularity="source"
-    )
-
-    # - Rotor -> Rotor - #
-    A_rotor_to_rotor = dt.assemble_one_way_coefficient_matrix(
-        mesh_rotor_to_rotor, rotor_panels, rotor_panels; singularity="source"
-    )
-
-    # - Rotor -> Stator - #
-    A_rotor_to_stator = dt.assemble_one_way_coefficient_matrix(
-        mesh_rotor_to_stator, rotor_panels, stator_panels; singularity="source"
-    )
-
-    # - Stator -> Body - #
-    A_stator_to_body = dt.assemble_one_way_coefficient_matrix(
-        mesh_stator_to_body, stator_panels, body_panels; singularity="source"
-    )
-
-    # - Stator -> Rotor - #
-    A_stator_to_rotor = dt.assemble_one_way_coefficient_matrix(
-        mesh_stator_to_rotor, stator_panels, rotor_panels; singularity="source"
-    )
-
-    # - Stator -> Stator - #
-    A_stator_to_stator = dt.assemble_one_way_coefficient_matrix(
-        mesh_stator_to_stator, stator_panels, stator_panels; singularity="source"
-    )
-
-    #---------------------------------#
-    #      Singularity Strengths      #
-    #---------------------------------#
-
-    body_vortex_strengths = ia.implicit_linear(A_body_to_body, bc_freestream_to_body)
-    gamma_bodies = body_vortex_strengths[1:(end - 1)]
-
-    #---------------------------------#
-    #        Induced Velocities       #
-    #---------------------------------#
-
-    Vinf = 1.0
-    body_induced_rotor_velocity = A_bodies_to_rotor * (gamma_bodies .* Vinf) .+ Vinf
-    body_induced_stator_velocity = A_bodies_to_stator * (gamma_bodies .* Vinf) .+ Vinf
-
-    #---------------------------------#
-    #       Initial Gamma Sigma       #
-    #---------------------------------#
-
-    Gamma_rotor_init, Sigma_rotor_init = dt.calculate_gamma_sigma(Vinf, rotor_blade_elements)#, vm=0.0, vtheta=0.0)
-
-    Gamma_stator_init, Sigma_stator_init = dt.calculate_gamma_sigma(Vinf, stator_blade_elements)#, vm=0.0, vtheta=0.0)
-
-    if debug
-        return x_grid_points, r_grid_points
-    else
-        return Gamma_rotor_init
-    end
+    return gamma
 end

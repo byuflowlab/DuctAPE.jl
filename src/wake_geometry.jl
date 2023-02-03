@@ -522,7 +522,7 @@ function generate_wake_panels(
 )
 
     # - Organize Coordinates into wake lines - #
-    wake_line_coordinates = [[x_grid_points[:, i] r_grid_points[:, i]] for i in 1:nr]
+    wake_line_coordinates = [[x_grid_points[:,i] r_grid_points[:,i]] for i in 1:nr]
 
     # - Use FLOWFoil to Generate Vortex Panels - #
     wake_panels = ff.generate_panels(method, wake_line_coordinates)
@@ -569,5 +569,8 @@ function generate_wake_grid(
     # - Generate Panels - #
     wake_panels = generate_wake_panels(x_grid_points, r_grid_points, nr; method)
 
-    return x_grid_points, r_grid_points, nx, nr, rotoridxs, wake_panels
+    # - Put the points together in one grid - #
+    wake_grid = [[x_grid_points[j, i] r_grid_points[j, i]] for i in 1:nr, j in 1:nx]
+
+    return wake_grid, wake_panels, rotoridxs
 end

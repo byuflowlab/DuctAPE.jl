@@ -27,7 +27,7 @@ struct BladeElements{TF,TAF}
     twists::Vector{TF}
     solidities::Vector{TF}
     airfoils::Vector{TAF}
-    num_blades:Vector{Int64}
+    num_blades::Vector{Int64}
     rotor_x_position::Vector{TF}
     omega::Vector{TF}
 end
@@ -133,17 +133,16 @@ function generate_blade_elements(
     end
 
     return BladeElements(
-        num_radial_stations,
+        [num_radial_stations],
         updated_radial_positions,
         fine_chords,
         fine_twists,
         solidities,
         afdist,
-        num_blades,
-        rotor_x_position,
-        omega,
-    ),
-    rotor_panels
+        [num_blades],
+        [rotor_x_position],
+        [omega],
+    )
 end
 
 function generate_blade_elements!(
@@ -238,7 +237,7 @@ function initialize_blade_elements(rotor_parameters, body_geometry, num_rotors)
             rotor_parameters.num_radial_stations,
             rotor_parameters.num_blades,
             rotor_parameters.omega,
-            rotor_parameters.body_geometry;
+            body_geometry;
             updated_radial_positions=nothing,
             method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
         ) for i in 1:num_rotors
@@ -255,7 +254,64 @@ function initialize_rotor_panels(
     return [
         ff.generate_panels(
             method,
-            [blade_elements.rotor_x_position .* ones(blade_elements.num_radial_stations) blade_elements.radial_positions],
-        )[1] for i in 1:num_rotors
+            [blade_elements.rotor_x_position[1] .*
+             ones(blade_elements.num_radial_stations[1]) blade_elements.radial_positions],
+        ) for i in 1:num_rotors
     ]
+end
+
+"""
+"""
+function initialize_dummy_rotor_panels(
+    blade_elements,
+    num_rotors;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+)
+    TF = eltype(blade_elements.chords)
+
+    # - Set up the panel edges such that the blade elements are at the centers - #
+    edges = zeros(TF, blade_elements.num_radial_stations[1] + 1)
+
+    rp = view(blade_elements.radial_positions, :)
+
+    edges[2:(end - 1)] = (rp[1:(end - 1)] .+ rp[2:end]) / 2.0
+
+    edges[1] = 2.0 * rp[1] - edges[2]
+    edges[end] = 2.0 * rp[end] - edges[end - 1]
+
+    return [
+        ff.generate_panels(
+            method,
+            [blade_elements.rotor_x_position[1] .*
+             ones(blade_elements.num_radial_stations[1] + 1) edges],
+        ) for i in 1:num_rotors
+    ]
+end
+
+"""
+"""
+function update_dummy_rotor_panels!(
+    blade_elements,
+    dummy_panels,
+    r_grid_points;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+)
+
+    # - Set up the panel edges such that the blade elements are at the centers - #
+    edges = zeros(TF, blade_elements.num_radial_stations[1] + 1)
+
+    rp = view(r_grid_points, :)
+
+    edges[2:(end - 1)] = (rp[1:(end - 1)] .+ rp[2:end]) / 2.0
+
+    edges[1] = 2.0 * rp[1] - edges[2]
+    edges[end] = 2.0 * rp[end] - edges[end - 1]
+
+    dummy_panels .= ff.generate_panels!(
+        method,
+        dummy_panels,
+        [blade_elements.rotor_x_position[1] .* ones(blade_elements.num_radial_stations + 1) edges],
+    )
+
+    return nothing
 end
