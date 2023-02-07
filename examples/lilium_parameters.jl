@@ -18,9 +18,9 @@ ctip_rotor_measured = 0.03
 rotor_te_pos = 0.26
 rotor_c4_pos = rotor_te_pos - 3.0 * ctip_rotor_measured / 4.0
 
-rotor_root_twist_guess = 60.0 * pi / 180.0
-rotor_chord_guess = croot_rotor_measured / sin(rotor_root_twist_guess)
-rotor_tip_twist_guess = asin(ctip_rotor_measured / rotor_chord_guess)
+rotor_root_twist_guess = 60.0
+rotor_chord_guess = croot_rotor_measured / sind(rotor_root_twist_guess)
+rotor_tip_twist_guess = asind(ctip_rotor_measured / rotor_chord_guess)
 
 #Stator Geometry: estimated from public images on lillium website
 #for now assume that stator has zero twist...

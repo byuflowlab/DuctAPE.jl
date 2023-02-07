@@ -9,9 +9,12 @@ function initialize_parameters(
     #             Poblem              #
     #---------------------------------#
     #These are the structs used by FLOWFoil to use for dispatch purposes
-    method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true])
-    problem = ff.define_problem(
-        method, (duct_coordinates, hub_coordinates), 0.0, -1.0, -1.0
+    method_body = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true])
+    method_vortex = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true])
+    method_source = ff.AxisymmetricProblem(Source(Constant()), Neumann(), [true])
+
+    problem_body = ff.define_problem(
+        method_body, (duct_coordinates, hub_coordinates), 0.0, -1.0, -1.0
     )
 
     #---------------------------------#
@@ -21,8 +24,8 @@ function initialize_parameters(
     #BodyGeometry is predominantly splines of the duct and hub surfaces
     body_geometry, body_panels = generate_body_geometry(duct_coordinates, hub_coordinates)
     #Use inherent FLOWFoil functions to generate the body_to_body mesh and linear system used for the no-rotor solution
-    mesh_body_to_body = ff.generate_mesh(method, body_panels)
-    body_system = ff.generate_inviscid_system(method, body_panels, mesh_body_to_body)
+    mesh_body_to_body = ff.generate_mesh(method_body, body_panels)
+    body_system = ff.generate_inviscid_system(method_body, body_panels, mesh_body_to_body)
 
     #---------------------------------#
     #           First Rotor           #
@@ -40,18 +43,24 @@ function initialize_parameters(
 
     # - Generate Rotor Panels - #
     # Again, this contains information for all of the rotors, using the first rotor data. Updates to aft rotors take place after the wake generation.
-    rotor_panels = initialize_rotor_panels(blade_elements[1], num_rotors; method=method)
+    rotor_panels = initialize_rotor_panels(
+        blade_elements[1], num_rotors; method=method_source
+    )
     dummy_rotor_panels = initialize_dummy_rotor_panels(
-        blade_elements[1], num_rotors; method=method
+        blade_elements[1], num_rotors; method=method_source
     )
 
     #---------------------------------#
     #            Wake Points          #
     #---------------------------------#
-    wake_grid, wake_panels, rotoridxs = generate_wake_grid(
+    #TODO: need to update grid to emminate from center of rotor panels
+    #TODO: not sure what this will entail, but could be as simple as changing the starting r-positions.
+    #TODO: also output number of wake objects (length of wake panels vector)
+    wake_grid, wake_panels, num_wakes, rotoridxs = generate_wake_grid(
         body_geometry,
         (p -> p.rotor_x_position).(rotor_parameters),
-        blade_elements[1].radial_positions;
+        rotor_panels[1].panel_center[:, 2];
+        method=method_vortex,
         wake_length=1.0,
         debug=false,
     )
@@ -66,7 +75,6 @@ function initialize_parameters(
             # - Update Aft Rotor Geometries - #
             generate_blade_elements!(
                 blade_elements[i],
-                rotor_panels[i],
                 rotor_parameters[i].xpos,
                 rotor_parameters[i].radial_positions,
                 rotor_parameters[i].chords,
@@ -76,20 +84,22 @@ function initialize_parameters(
                 rotor_parameters[i].num_blades,
                 rotor_parameters[i].omega,
                 body_geometry;
-                method=method,
                 updated_radial_positions=r_grid_points[:, rotoridxs[i]],
             )
 
             # - Update Aft Rotor Panels - #
             ff.generate_panels!(
-                method,
+                method_source,
                 rotor_panels[i],
                 [rotor_parameters[i].rotor_x_position .*
                  ones(blade_elements[1].num_radial_stations) r_grid_points[:, rotoridxs[i]]],
             )
 
             update_dummy_rotor_panels!(
-                blade_elements, dummy_rotor_panels[i], r_grid_points[:, rotoridxs[i]]
+                blade_elements[i],
+                dummy_rotor_panels[i],
+                r_grid_points[:, rotoridxs[i]];
+                method=method_source,
             )
         end
     end
@@ -104,13 +114,9 @@ function initialize_parameters(
         generate_one_way_mesh(body_panels, dummy_rotor_panels[i]) for i in 1:num_rotors
     ]
 
-    # - Wake -> Body - #
-    mesh_wake_to_body = [generate_one_way_mesh(wake_panels[i], body_panels) for i in 1:nbe]
-
-    # - Wake -> Rotor - #
-    mesh_wake_to_rotor = [
-        generate_one_way_mesh(wake_panels[i], dummy_rotor_panels[j]) for i in 1:nbe,
-        j in 1:num_rotors
+    # - Body -> Wake - #
+    mesh_body_to_wake = [
+        generate_one_way_mesh(body_panels, wake_panels[i]) for i in 1:num_wakes
     ]
 
     # - Rotor -> Body - #
@@ -123,6 +129,29 @@ function initialize_parameters(
     mesh_rotor_to_rotor = [
         generate_one_way_mesh(rotor_panels[i], dummy_rotor_panels[j]; singularity="source")
         for i in 1:num_rotors, j in 1:num_rotors
+    ]
+
+    # - rotor -> Wake - #
+    mesh_rotor_to_wake = [
+        generate_one_way_mesh(rotor_panels[i], wake_panels[j]) for i in 1:num_rotors,
+        j in 1:num_wakes
+    ]
+
+    # - Wake -> Body - #
+    mesh_wake_to_body = [
+        generate_one_way_mesh(wake_panels[i], body_panels) for i in 1:num_wakes
+    ]
+
+    # - Wake -> Rotor - #
+    mesh_wake_to_rotor = [
+        generate_one_way_mesh(wake_panels[i], dummy_rotor_panels[j]) for i in 1:num_wakes,
+        j in 1:num_rotors
+    ]
+
+    # - Wake -> Wake - #
+    mesh_wake_to_wake = [
+        generate_one_way_mesh(wake_panels[i], wake_panels[j]) for i in 1:num_wakes,
+        j in 1:num_wakes
     ]
 
     #---------------------------------#
@@ -146,18 +175,10 @@ function initialize_parameters(
         ) for i in 1:num_rotors
     ]
 
-    # - Wake -> Body - #
-    A_wake_to_body = [
+    A_body_to_wake = [
         assemble_one_way_coefficient_matrix(
-            mesh_wake_to_body[i], wake_panels[i], body_panels
-        ) for i in 1:nbe
-    ]
-
-    # - Wake -> Rotor - #
-    A_wake_to_rotor = [
-        assemble_one_way_coefficient_matrix(
-            mesh_wake_to_rotor[i, j], wake_panels[i], dummy_rotor_panels[j]
-        ) for i in 1:nbe, j in 1:num_rotors
+            mesh_body_to_wake[i], body_panels, wake_panels[i]
+        ) for i in 1:num_wakes
     ]
 
     # - Rotor -> Body - #
@@ -175,6 +196,34 @@ function initialize_parameters(
             dummy_rotor_panels[j];
             singularity="source",
         ) for i in 1:num_rotors, j in 1:num_rotors
+    ]
+
+    # - Rotor -> Wake - #
+    A_rotor_to_wake = [
+        assemble_one_way_coefficient_matrix(
+            mesh_rotor_to_wake[i, j], rotor_panels[i], wake_panels[j]; singularity="source"
+        ) for i in 1:num_rotors, j in 1:num_wakes
+    ]
+
+    # - Wake -> Body - #
+    A_wake_to_body = [
+        assemble_one_way_coefficient_matrix(
+            mesh_wake_to_body[i], wake_panels[i], body_panels
+        ) for i in 1:num_wakes
+    ]
+
+    # - Wake -> Rotor - #
+    A_wake_to_rotor = [
+        assemble_one_way_coefficient_matrix(
+            mesh_wake_to_rotor[i, j], wake_panels[i], dummy_rotor_panels[j]
+        ) for i in 1:num_wakes, j in 1:num_rotors
+    ]
+
+    # - Wake -> Wake - #
+    A_wake_to_wake = [
+        assemble_one_way_coefficient_matrix(
+            mesh_wake_to_wake[i, j], wake_panels[i], dummy_wake_panels[j]
+        ) for i in 1:num_wakes, j in 1:num_wakes
     ]
 
     #TODO: return everything in a named tuple so that order doesn't matter during development.  May want to make this a struct later, but probably not.  Need to consult with others who have more experience to see if/what changes need to be made here.
@@ -206,9 +255,12 @@ function initialize_parameters(
         # - Coefficients - #
         A_body_to_body=A_body_to_body,
         A_body_to_rotor=A_body_to_rotor,
-        A_wake_to_body=A_wake_to_body,
-        A_wake_to_rotor=A_wake_to_rotor,
+        A_body_to_wake=A_body_to_wake,
         A_rotor_to_body=A_rotor_to_body,
         A_rotor_to_rotor=A_rotor_to_rotor,
+        A_rotor_to_wake=A_rotor_to_wake,
+        A_wake_to_body=A_wake_to_body,
+        A_wake_to_rotor=A_wake_to_rotor,
+        A_wake_to_wake=A_wake_to_wake,
     )
 end

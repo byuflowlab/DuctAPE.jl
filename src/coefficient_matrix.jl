@@ -138,7 +138,7 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
 
         #panels are different
         return (
-            -u * cos(paneli.panel_angle[m2p_a[i]]) + v * sin(paneli.panel_angle[m2p_a[i]])
+            u * cos(paneli.panel_angle[m2p_a[i]]) + v * sin(paneli.panel_angle[m2p_a[i]])
         ) * panelj.panel_length[m2p_i[j]]
     else
         #same panel -> self induction equation

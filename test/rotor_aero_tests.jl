@@ -62,6 +62,7 @@
         blade_elements = [
             (
                 num_radial_stations=[2],
+                num_blades=1,
                 chords=ones(2),
                 twists=pi / 2.0 * ones(2),
                 radial_positions=ones(2),
@@ -75,12 +76,14 @@
 
         dt.calculate_gamma_sigma!(Gamma, Sigma, blade_elements, Vinf, vm, vtheta)
 
+
         @test all(Gamma .== sqrt(8))
-        @test all(Sigma .== 0.5 * sqrt(8))
+        inflow = dt.calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
+        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1,1])
 
         Gamma, Sigma = dt.calculate_gamma_sigma(blade_elements, Vinf, vm, vtheta)
         @test all(Gamma .== sqrt(8))
-        @test all(Sigma .== 0.5 * sqrt(8))
+        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1,1])
     end
 
     @testset "Induced Velocity at Blade Elements Calculation" begin

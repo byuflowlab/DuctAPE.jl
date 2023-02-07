@@ -27,8 +27,16 @@ function analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, 
         params.blade_elements, params.freestream.Vinf
     )
 
+    # - Calculate initial guesses for wake vortex strengths - #
+    wake_vortex_strengths = initialize_wake_velocities()
+
     # - Assemble GammaSigma as a vector - #
-    GammaSigma_init = [body_vortex_strengths[1:(end - 1)]; Gamma_init] #; Sigma_init]
+    GammaSigma_init = [
+        body_vortex_strengths[1:(end - 1)]
+        reshape(vcat, wake_vortex_strengths)
+        Gamma_init
+        # Sigma_init]
+    ]
 
     # - Run solver to find Gamma and Sigma values - #
     GammaSigma = ImplicitAD.implicit(solve!, residual!, GammaSigma_init, params)
@@ -93,74 +101,110 @@ function update_gamma_sigma!(Gamma_Sigma, params)
     #              SET UP             #
     #---------------------------------#
 
-    # - Rename for Convenience - #
-    nbe = length(params.blade_elements[1].radial_positions)
-    nr = params.num_rotors
-    nbp = params.num_body_panels
-    gamma_idx = (nbp + 1):(nbp + nbe * nr)
-    sigma_idx = (nbp + 1 + nbe * nr):(nbp + 2 * nbe * nr)
+    # println("\nBegin Iteration\n")
 
-    #if only using Gamma at first do this
-    body_vortex_strengths = view(Gamma_Sigma, 1:nbp)
-    Gamma = reshape(view(Gamma_Sigma, gamma_idx), (nbe, nr))
-    Sigma = similar(Gamma)
-    # Sigma = reshape(view(Gamma_Sigma, sigma_idx), (nbe, nr))
+    body_vortex_strengths, wake_vortex_strengths, rotor_circulation_strengths, blade_element_source_strengths = extract_state_variables(
+        Gamma_Sigma, params
+    )
 
-    #---------------------------------#
-    #             UPDATES             #
-    #---------------------------------#
+    rotor_panel_source_strengths =
+        (
+            blade_element_source_strengths[1:(end - 1)] .+
+            blade_element_source_strengths[2:end]
+        ) / 2.0
 
     # - Calculate Enthalpy Jumps - #
-    H_tilde = calculate_enthalpy_jumps(Gamma, params.blade_elements)
+    H_tilde = calculate_enthalpy_jumps(rotor_circulation_strengths, params.blade_elements)
 
     # - Calculate Net Circulation - #
-    BGamma, Gamma_tilde = calculate_net_circulation(Gamma, params.blade_elements)
-
-    # - Get Surface Velocity on Duct Inner Surface - #
-    #ASSUMES DUCT IS FIRST BODY
-    vs = get_surface_velocity(
-        body_vortex_strengths, params.body_panels[1], params.wake_panels
+    BGamma, Gamma_tilde = calculate_net_circulation(
+        rotor_circulation_strengths, params.blade_elements
     )
-
-    # - Calculate Meridional Velocities - #
-    vm = calculate_wake_velocities(
-        params.wake_panels[1].panel_center[:, 1],
-        vs,
-        params.rotoridxs,
-        Gamma_tilde,
-        H_tilde,
-        params.blade_elements,
-    )
-
-    # - Calculate Wake Vorticity - #
-    wake_gammas = calculate_wake_vorticity(vm)
 
     # - Calculate Induced Velocities at Rotors - #
-    vi = calculate_induced_velocities(
+    vi_rotor = calculate_induced_velocities(
         BGamma,
         Gamma_tilde,
         params.blade_elements,
         params.A_body_to_rotor,
         body_vortex_strengths,
         params.A_wake_to_rotor,
-        wake_gammas,
+        wake_vortex_strengths,
         # params.A_rotor_to_rotor,
-        # Sigma,
+        # rotor_panel_source_strengths,
     )
 
-    # - Solve Full Linear System - #
-    update_body_vortex_strengths!(
+    # - Calculate Meridional Velocities on Wakes - #
+    wake_velocities = calculate_wake_velocities(
+        A_body_to_wake,
+        gamma_body,
+        A_wake_to_wake,
+        gamma_wake,
+        # A_rotor_to_wake,
+        # rotor_panel_source_strengths,
+    )
+
+    #---------------------------------#
+    #             UPDATES             #
+    #---------------------------------#
+
+    # - Update Wake Vortex Strengths - #
+    calculate_wake_vorticity!(wake_vortex_strengths, wake_velocities)
+
+    # - Update Body Vortex Strengths - #
+    calculate_body_vortex_strengths!(
         body_vortex_strengths,
         params.A_body_to_body,
         params.bc_freestream_to_body,
-        wake_gammas,
+        wake_vortex_strengths,
         params.A_wake_to_body,
-    )#, Sigma, params.A_rotor_to_body)
+    )#, blade_element_source_strengths, params.A_rotor_to_body)
 
     # - Calculate Updated Circulation and Source Strengths - #
     calculate_gamma_sigma!(
-        Gamma, Sigma, params.blade_elements, params.freestream.Vinf, vi.vm, vi.vtheta
+        rotor_circulation_strengths,
+        blade_element_source_strengths,
+        params.blade_elements,
+        params.freestream.Vinf,
+        vi_rotor.vm,
+        vi_rotor.vtheta,
     )
 
     return nothing
+end
+
+"""
+"""
+function extract_state_variables(Gamma_Sigma, params)
+
+    # - Rename for Convenience - #
+    nbe = length(params.blade_elements[1].radial_positions)
+    nr = params.num_rotors
+    nx = params.num_wake_x_panels
+    nbp = params.num_body_panels
+    n_g_bw = nbp + nbe * nx #number of gammas for bodies and wake
+    ng = n_g_bw + nbe * nr #number of gammas and Gammas
+
+    #  Body gamma Indices
+    body_idx = 1:nbp
+
+    # Wake gamma_theta Indices
+    wake_gamma_idx = (nbp + 1):(nbp + nbe * nx)
+
+    # Rotor Gamma Indices
+    rotor_Gamma_idx = (n_g_bw + 1):(ng)
+
+    # Rotor Sigma Indices
+    rotor_Sigma_idx = (ng + 1):(ng + 1 + nbe * nr)
+
+    # - Extract State Variables - #
+    body_vortex_strengths = view(Gamma_Sigma, body_idx)
+    wake_vortex_strengths = view(Gamma_Sigma, wake_gamma_idx, (nbe, nx))
+    rotor_circulation_strengths = reshape(view(Gamma_Sigma, rotor_Gamma_idx), (nbe, nr))
+    blade_element_source_strengths = similar(rotor_circulation_strengths)
+    # blade_element_source_strengths = reshape(view(Gamma_Sigma, rotor_Sigma_idx), (nbe, nr))
+
+    return body_vortex_strengths,
+    wake_vortex_strengths, rotor_circulation_strengths,
+    blade_element_source_strengths
 end

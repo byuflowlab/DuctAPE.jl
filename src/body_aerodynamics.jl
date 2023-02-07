@@ -6,7 +6,7 @@ Functions regarding body aerodyanmics
 
 """
 """
-function update_body_vortex_strengths!(
+function calculate_body_vortex_strengths!(
     body_vortex_strengths,
     A_body_to_body,
     body_boundary_conditions,

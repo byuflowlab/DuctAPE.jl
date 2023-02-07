@@ -63,11 +63,12 @@ function calculate_angle_of_attack(twist, Wm, Wtheta)
 
     # - Calculate Angle of Attack - #
     alpha = twist - inflow
-    if typeof(alpha) == Float64
-        println("section twist degrees: ", twist * 180 / pi)
-        println("inflow angle degrees: ", inflow * 180 / pi)
-        println("angle of attack degrees: ", alpha * 180 / pi)
-    end
+
+    # if typeof(alpha) == Float64
+    #     println("section twist degrees: ", twist * 180 / pi)
+    #     println("inflow angle degrees: ", inflow * 180 / pi)
+    #     println("angle of attack degrees: ", alpha * 180 / pi)
+    # end
 
     return alpha
 end
@@ -89,9 +90,10 @@ function calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
     end
 
     Wmag = sqrt.(Wm .^ 2 .+ Wtheta .^ 2)
-    if eltype(Wmag) == Float64
-        println("Inflow Magnitude: ", Wmag)
-    end
+
+    # if eltype(Wmag) == Float64
+    #     println("Inflow Magnitude: ", Wmag)
+    # end
 
     return (Wm=Wm, Wtheta=Wtheta, Wmag=Wmag)
 end
@@ -159,9 +161,9 @@ function calculate_gamma_sigma!(Gamma, Sigma, blade_elements, Vinf, vm=-1.0, vth
             cl[a], cd[a] = search_polars(blade_elements[i].airfoils[a], alphas[a])
         end
 
-        if eltype(cl) == Float64
-            println("lift coeffs: ", cl)
-        end
+        # if eltype(cl) == Float64
+        #     println("lift coeffs: ", cl)
+        # end
 
         # - Calculate Gamma and Sigma - #
         @. Gamma[:, i] = 0.5 * inflow.Wmag[:, i] * blade_elements[i].chords * cl
@@ -171,9 +173,10 @@ function calculate_gamma_sigma!(Gamma, Sigma, blade_elements, Vinf, vm=-1.0, vth
             blade_elements[i].chords *
             cd
 
-        if eltype(Gamma) == Float64
-            println("Gamma: ", Gamma)
-        end
+        # if eltype(Gamma) == Float64
+        #     println("Gamma: ", Gamma)
+        # end
+
     end
 
     return nothing
