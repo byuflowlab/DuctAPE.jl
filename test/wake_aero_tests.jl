@@ -75,7 +75,7 @@
 
         wake_vortex_strengths = zeros(size(Vm))
 
-        dt.calculate_wake_vorticity(
+        dt.calculate_wake_vortex_strengths!(
             wake_vortex_strengths, wake_panels, Vm, Vinf, Gamma_tilde, H_tilde, rotoridxs
         )
 
@@ -85,5 +85,58 @@
         @test wake_vortex_strengths[1, 2] == 1.0 / 2.0 * (-1.0 / (2.0 * pi) * 5.0 + 2.0)
         @test wake_vortex_strengths[2, 2] == 1.0 / 4.0 * (-1.0 / (4.0 * pi) * 7.0 + 2.0)
         @test wake_vortex_strengths[3, 2] == 1.0 / 6.0 * (-1.0 / (6.0 * pi) * 9.0 + 2.0)
+    end
+
+    @testset "Wake Aero Initialization" begin
+
+        # - Vm from Thrust - #
+        freestream = (Vinf=1.0, rho=1.0)
+
+        blade_elements = [
+            (
+                num_blades=1.0,
+                omega=1.0,
+                num_radial_stations=3,
+                radial_positions=[1.0; 2.0; 3.0],
+            ) for i in 1:2
+        ]
+
+        BGamma = ones(3, 2)
+        Gamma_tilde = ones(3, 2)
+
+        rotoridxs = [1, 2]
+
+        wake_panels = [
+            (panel_center=[1.0 1.5; 2.0 1.5; 3.0 1.5],)
+            (panel_center=[1.0 2.5; 2.0 2.5; 3.0 2.5],)
+        ]
+
+        Vm = dt.vm_from_thrust(
+            freestream, blade_elements, BGamma, Gamma_tilde, wake_panels, rotoridxs
+        )
+
+        vt = [1.0 / (3.0 * pi); 1.0 / (5.0 * pi)]
+        wt = vt .- [1.5; 2.5]
+        T = -sum(wt)
+        A = pi * 9.0
+        vt22 = T / A
+        vx = sqrt(0.25 + vt22) - 0.5
+
+        @test all(Vm[:, 1] .== vx + 1.0)
+
+        vx = 2.0 * sqrt(0.25 + vt22) - 0.5
+
+        @test all(Vm[:, 2] .== vx + 1.0)
+
+        vx = 3.0 * sqrt(0.25 + vt22) - 0.5
+
+        @test all(Vm[:, 3] .== vx + 1.0)
+
+        # - initial vortex strengths - #
+        params = (blade_elements=blade_elements, freestream=freestream)
+        gw = dt.initialize_wake_vortex_strengths(
+            Gamma_tilde, wake_panels, params, rotoridxs
+        )
+        @test gw == zeros(2, 3)
     end
 end

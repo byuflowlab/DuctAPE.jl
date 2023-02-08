@@ -76,14 +76,13 @@
 
         dt.calculate_gamma_sigma!(Gamma, Sigma, blade_elements, Vinf, vm, vtheta)
 
-
         @test all(Gamma .== sqrt(8))
         inflow = dt.calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
-        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1,1])
+        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1, 1])
 
         Gamma, Sigma = dt.calculate_gamma_sigma(blade_elements, Vinf, vm, vtheta)
         @test all(Gamma .== sqrt(8))
-        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1,1])
+        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1, 1])
     end
 
     @testset "Induced Velocity at Blade Elements Calculation" begin
@@ -106,7 +105,7 @@
         # A_rotor_to_rotor =[1 0; 0 1]
         # Sigma =ones(2)
 
-        vi = dt.calculate_induced_velocities(
+        vi = dt.calculate_induced_velocities_on_rotors(
             BGamma,
             Gamma_tilde,
             blade_elements,
@@ -140,7 +139,7 @@
         # A_rotor_to_rotor =[1 0; 0 1]
         # Sigma =ones(2)
 
-        vi = dt.calculate_induced_velocities(
+        vi = dt.calculate_induced_velocities_on_rotors(
             BGamma,
             Gamma_tilde,
             blade_elements,

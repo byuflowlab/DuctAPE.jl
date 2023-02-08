@@ -16,32 +16,37 @@ function analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, 
         duct_coordinates, hub_coordinates, rotor_parameters, freestream
     )
 
-    # Solve the no-rotor problem
+    # - Initialize the Body Vortex Strengths - #
+    # Solve the no-rotor linear problem
     body_vortex_strengths = ImplicitAD.implicit_linear(
         params.A_body_to_body, params.bc_freestream_to_body
     )
 
-    # - Calculate the initial guesses for Gamma and Sigma from the inputs. - #
-    # Uses the no-rotor solution, setting induced velocities to zero in the wake and on the rotors.
-    Gamma_init, Sigma_init = calculate_gamma_sigma(
+    # - Calculate the initial guesses for blade element circulation and source strengths - #
+    # Assume no body influence at this point, just do things based on the freestream.
+    rotor_circulation_strengths, rotor_panel_source_strengths = calculate_gamma_sigma(
         params.blade_elements, params.freestream.Vinf
     )
 
     # - Calculate initial guesses for wake vortex strengths - #
-    wake_vortex_strengths = initialize_wake_velocities()
+    # use rotor thrust method from DFDC for initializing meridional velocity on wakes
+    # TODO: you are here
+    wake_vortex_strengths = initialize_wake_velocities(
+        rotor_circulation_strengths, params.wake_panels
+    )
 
-    # - Assemble GammaSigma as a vector - #
-    GammaSigma_init = [
-        body_vortex_strengths[1:(end - 1)]
-        reshape(vcat, wake_vortex_strengths)
-        Gamma_init
-        # Sigma_init]
+    # - Assemble the various state variables as a vector - #
+    state_variables = [
+        body_vortex_strengths[1:(end - 1)] # Don't include the bound circulation value used in the kutta condition.
+        reduce(vcat, wake_vortex_strengths') # wake_vortex_strengths comes out as a matrix, one ROW for each wake, need to make it an array.
+        reduce(vcat, rotor_circulation_strengths) # Gamma_init will be defined as a matrix, one COLUMN for each rotor, need to reduce to a single vector
+        # reduce(vcat,rotor_panel_source_strengths) # Sigma_init will be defined as a matrix, one COLUMN for each rotor, need to reduce to a single vector
     ]
 
-    # - Run solver to find Gamma and Sigma values - #
-    GammaSigma = ImplicitAD.implicit(solve!, residual!, GammaSigma_init, params)
+    # - Run solver to find converged state variables - #
+    sol = ImplicitAD.implicit(solve!, residual!, state_variables, params)
 
-    return GammaSigma, params.converged
+    return sol, params.converged
 
     #TODO: do the rest.  need to use the converged gamma and sigma values to go through and get all the singularity strengths required for post-processing.
 
@@ -52,14 +57,16 @@ This is the function being solved
 GammaSigma_init are the inital guess for the gamma and sigma values.
 F are the output gamma and sigma values minus the input ones. (this is what we want to drive to zero).
 """
-function residual!(F, GammaSigma_init, params)
-    GammaSigma_new = deepcopy(GammaSigma_init)
+function residual!(F, state_variables, params)
+
+    # Initialize outputs
+    updated_states = deepcopy(state_variables)
 
     # - Calculated Updated Gamma and Sigma Values - #
-    update_gamma_sigma!(GammaSigma_new, params)
+    update_gamma_sigma!(updated_states, params)
 
-    # - Return Difference in Gamma and Sigma Values - #
-    @. F = GammaSigma_init - GammaSigma_new
+    # - Return Difference in State Variable Values - #
+    @. F = state_variables - updated_states
 
     return nothing
 end
@@ -68,10 +75,10 @@ end
  This function wraps the residual function in order to allow for additional parameters as inputs
  params.converged is updated in place in this function.
  """
-function solve!(x_init, params)
+function solve!(state_variables, params)
 
     # - Define closure that allows for parameters - #
-    rwrap(F, x_init) = residual!(F, x_init, params)
+    rwrap(F, state_variables) = residual!(F, state_variables, params)
 
     # - Call NLsolve function using AD for Jacobian - #
     #= res is of type NLsolve.SolverResults.
@@ -80,7 +87,7 @@ function solve!(x_init, params)
     =#
     res = NLsolve.nlsolve(
         rwrap,
-        x_init;
+        state_variables;
         autodiff=:forward,
         method=:newton,
         linesearch=BackTracking(; maxstep=1e6),
@@ -149,7 +156,7 @@ function update_gamma_sigma!(Gamma_Sigma, params)
     #---------------------------------#
 
     # - Update Wake Vortex Strengths - #
-    calculate_wake_vorticity!(wake_vortex_strengths, wake_velocities)
+    calculate_wake_vortex_strengths!(wake_vortex_strengths, wake_velocities)
 
     # - Update Body Vortex Strengths - #
     calculate_body_vortex_strengths!(
@@ -158,7 +165,9 @@ function update_gamma_sigma!(Gamma_Sigma, params)
         params.bc_freestream_to_body,
         wake_vortex_strengths,
         params.A_wake_to_body,
-    )#, blade_element_source_strengths, params.A_rotor_to_body)
+        # blade_element_source_strengths,
+        # params.A_rotor_to_body
+    )
 
     # - Calculate Updated Circulation and Source Strengths - #
     calculate_gamma_sigma!(
@@ -174,6 +183,9 @@ function update_gamma_sigma!(Gamma_Sigma, params)
 end
 
 """
+This got a little busy, so I moved it here in it's own function so that I could also make sure that the dimensions of things were working out.
+
+NEED TO TEST
 """
 function extract_state_variables(Gamma_Sigma, params)
 

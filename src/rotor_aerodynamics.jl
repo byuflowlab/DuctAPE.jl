@@ -9,7 +9,7 @@ Authors: Judd Mehr,
 """
 DONE. clean up and check
 """
-function calculate_induced_velocities(
+function calculate_induced_velocities_on_rotors(
     BGamma, #matrix size num blade elem x num rotors
     Gamma_tilde, #matrix size num blade elem x num rotors
     blade_elements,

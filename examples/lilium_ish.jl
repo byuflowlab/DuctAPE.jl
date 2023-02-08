@@ -143,7 +143,7 @@ function wrapper(x; debug=false)
     # - Non-dimensional Radial Locations - #
     rotor_radial_positions = range(0.0, 1.0; length=nbe)
 
-    # - TODO: add airfoil data - #
+    # - Airfoil Data - #
     af = ccb.AlphaAF("test/data/naca_4412_extrapolated_rotated_APCshifted.dat")
     # airfoils = [nothing for i in 1:nbe]
     airfoils = fill(af, nbe)

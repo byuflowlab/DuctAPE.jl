@@ -518,7 +518,7 @@ function generate_wake_panels(
     x_grid_points,
     r_grid_points,
     nr;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true]),
 )
 
     # - Organize Coordinates into wake lines - #
@@ -567,9 +567,16 @@ function generate_wake_grid(
     relax_grid!(x_grid_points, r_grid_points, nx, nr)
 
     # - Generate Panels - #
-    wake_panels = generate_wake_panels(x_grid_points, r_grid_points, nr; method)
+    # These are the grid centers
+    wake_panels = generate_wake_panels(
+        (x_grid_points[:, 1:(end - 1)] .+ x_grid_points[:, 2:end]) / 2.0,
+        (r_grid_points[:, 1:(end - 1)] .+ r_grid_points[:, 2:end]) / 2.0,
+        nr - 1;
+        method=method,
+    )
 
     # - Put the points together in one grid - #
+    #TODO: not sure if this is going to be used elsewhere, may remove this later
     wake_grid = [[x_grid_points[j, i] r_grid_points[j, i]] for i in 1:nr, j in 1:nx]
 
     return wake_grid, wake_panels, length(wake_panels), rotoridxs

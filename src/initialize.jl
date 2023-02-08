@@ -23,6 +23,7 @@ function initialize_parameters(
     #Uses FLOWFoil to generate the panel objects
     #BodyGeometry is predominantly splines of the duct and hub surfaces
     body_geometry, body_panels = generate_body_geometry(duct_coordinates, hub_coordinates)
+
     #Use inherent FLOWFoil functions to generate the body_to_body mesh and linear system used for the no-rotor solution
     mesh_body_to_body = ff.generate_mesh(method_body, body_panels)
     body_system = ff.generate_inviscid_system(method_body, body_panels, mesh_body_to_body)
@@ -53,13 +54,10 @@ function initialize_parameters(
     #---------------------------------#
     #            Wake Points          #
     #---------------------------------#
-    #TODO: need to update grid to emminate from center of rotor panels
-    #TODO: not sure what this will entail, but could be as simple as changing the starting r-positions.
-    #TODO: also output number of wake objects (length of wake panels vector)
     wake_grid, wake_panels, num_wakes, rotoridxs = generate_wake_grid(
         body_geometry,
         (p -> p.rotor_x_position).(rotor_parameters),
-        rotor_panels[1].panel_center[:, 2];
+        blade_elements[1].radial_positions;
         method=method_vortex,
         wake_length=1.0,
         debug=false,
@@ -110,45 +108,53 @@ function initialize_parameters(
     #For cases other than the body-on-body case, a slightly different mesh implementation needed to be created so as to allow one-way interactions since all the other coefficient matrices to be created end up on the right hand side of the linear system.
 
     # - Body -> Rotor - #
+    # These meshes are from the body to the rotor blade elements and are used to generate the coefficient matrices that are part of finding the body-induced velocity at the blade elements.
     mesh_body_to_rotor = [
         generate_one_way_mesh(body_panels, dummy_rotor_panels[i]) for i in 1:num_rotors
     ]
 
     # - Body -> Wake - #
+    # These meshes are from the body to the wake elements and are used to generate the coefficient matrices that are part of finding the average velocity in the wakes.
     mesh_body_to_wake = [
         generate_one_way_mesh(body_panels, wake_panels[i]) for i in 1:num_wakes
     ]
 
     # - Rotor -> Body - #
+    # For coefficients used in linear solve for body vortex strength residual
     mesh_rotor_to_body = [
         generate_one_way_mesh(rotor_panels[i], body_panels; singularity="source") for
         i in 1:num_rotors
     ]
 
     # - Rotor -> Rotor - #
+    # Meshes from rotor panel centers to blade element locations to account for rotor-induced velocities, meaning the source panel induced velocities
     mesh_rotor_to_rotor = [
         generate_one_way_mesh(rotor_panels[i], dummy_rotor_panels[j]; singularity="source")
         for i in 1:num_rotors, j in 1:num_rotors
     ]
 
-    # - rotor -> Wake - #
+    # - Rotor -> Wake - #
+    # rotor source panel to wake panels for use in calculating induced velocity on wake
     mesh_rotor_to_wake = [
-        generate_one_way_mesh(rotor_panels[i], wake_panels[j]) for i in 1:num_rotors,
-        j in 1:num_wakes
+        generate_one_way_mesh(rotor_panels[i], wake_panels[j]; singularity="source") for
+        i in 1:num_rotors, j in 1:num_wakes
     ]
 
     # - Wake -> Body - #
+    # used in generating coefficients used in linear solve for body strength residuals
     mesh_wake_to_body = [
         generate_one_way_mesh(wake_panels[i], body_panels) for i in 1:num_wakes
     ]
 
     # - Wake -> Rotor - #
+    # used in generaing coefficients for induced velocity on blade sections
     mesh_wake_to_rotor = [
         generate_one_way_mesh(wake_panels[i], dummy_rotor_panels[j]) for i in 1:num_wakes,
         j in 1:num_rotors
     ]
 
     # - Wake -> Wake - #
+    # self induction of wakes for finding wake velocities
     mesh_wake_to_wake = [
         generate_one_way_mesh(wake_panels[i], wake_panels[j]) for i in 1:num_wakes,
         j in 1:num_wakes
@@ -175,6 +181,8 @@ function initialize_parameters(
         ) for i in 1:num_rotors
     ]
 
+    # - Body -> Wake - #
+    # for finding wake velocities
     A_body_to_wake = [
         assemble_one_way_coefficient_matrix(
             mesh_body_to_wake[i], body_panels, wake_panels[i]
@@ -182,6 +190,7 @@ function initialize_parameters(
     ]
 
     # - Rotor -> Body - #
+    # for linear solve
     A_rotor_to_body = [
         assemble_one_way_coefficient_matrix(
             mesh_rotor_to_body[i], rotor_panels[i], body_panels; singularity="source"
@@ -189,6 +198,8 @@ function initialize_parameters(
     ]
 
     # - Rotor -> Rotor - #
+    # for finding blade element velocities
+    # NOTE: since the rotor panels are all aligned, there shouldn't be any self induction in the meridional direction.  consider setting the self-induced coefficient matrices to zeros
     A_rotor_to_rotor = [
         assemble_one_way_coefficient_matrix(
             mesh_rotor_to_rotor[i, j],
@@ -199,6 +210,7 @@ function initialize_parameters(
     ]
 
     # - Rotor -> Wake - #
+    # for finding wake velocities
     A_rotor_to_wake = [
         assemble_one_way_coefficient_matrix(
             mesh_rotor_to_wake[i, j], rotor_panels[i], wake_panels[j]; singularity="source"
@@ -206,6 +218,7 @@ function initialize_parameters(
     ]
 
     # - Wake -> Body - #
+    # for linear solve
     A_wake_to_body = [
         assemble_one_way_coefficient_matrix(
             mesh_wake_to_body[i], wake_panels[i], body_panels
@@ -213,6 +226,7 @@ function initialize_parameters(
     ]
 
     # - Wake -> Rotor - #
+    # for finding blade element velocities
     A_wake_to_rotor = [
         assemble_one_way_coefficient_matrix(
             mesh_wake_to_rotor[i, j], wake_panels[i], dummy_rotor_panels[j]
@@ -220,13 +234,13 @@ function initialize_parameters(
     ]
 
     # - Wake -> Wake - #
+    # for finding wake velocities
     A_wake_to_wake = [
         assemble_one_way_coefficient_matrix(
-            mesh_wake_to_wake[i, j], wake_panels[i], dummy_wake_panels[j]
+            mesh_wake_to_wake[i, j], wake_panels[i], wake_panels[j]
         ) for i in 1:num_wakes, j in 1:num_wakes
     ]
 
-    #TODO: return everything in a named tuple so that order doesn't matter during development.  May want to make this a struct later, but probably not.  Need to consult with others who have more experience to see if/what changes need to be made here.
     return (
         # - General - #
         converged=[false], # Initialize Convergence Flag updated in non-linear solve
@@ -235,23 +249,17 @@ function initialize_parameters(
         body_geometry=body_geometry,
         bc_freestream_to_body=bc_freestream_to_body,
         num_body_panels=length(bc_freestream_to_body) - 1,
-        wake_grid=wake_grid,
         # - Rotors - #
         num_rotors=num_rotors,
         blade_elements=blade_elements, # Portions of these will be updated in the coupling with GXBeam potentially
         rotoridxs=rotoridxs,
+        # - Wakes - #
+        wake_grid=wake_grid,
+        num_wakes=num_wakes,
         # - Panels - #
         body_panels=body_panels,
         rotor_panels=rotor_panels,
         wake_panels=wake_panels,
-        # - Meshes - #
-        # TODO: not sure if these are needed to output or not.  Probably clean them out later if not.
-        # mesh_body_to_body=mesh_body_to_body,
-        # mesh_body_to_rotor=mesh_body_to_rotor,
-        # mesh_wake_to_body=mesh_wake_to_body,
-        # mesh_wake_to_rotor=mesh_wake_to_rotor,
-        # mesh_rotor_to_body=mesh_rotor_to_body,
-        # mesh_rotor_to_rotor=mesh_rotor_to_rotor,
         # - Coefficients - #
         A_body_to_body=A_body_to_body,
         A_body_to_rotor=A_body_to_rotor,
