@@ -156,9 +156,7 @@ end
 
 """
 """
-function initialize_wake_vortex_strengths(
-    rotor_circulation_strengths, wake_panels, params, rotoridxs
-)
+function initialize_wake_vortex_strengths(rotor_circulation_strengths, params)
 
     # - Calculate Enthalpy Jumps - #
     H_tilde = calculate_enthalpy_jumps(rotor_circulation_strengths, params.blade_elements)
@@ -174,8 +172,8 @@ function initialize_wake_vortex_strengths(
         params.blade_elements,
         BGamma,
         Gamma_tilde,
-        wake_panels,
-        rotoridxs,
+        params.wake_panels,
+        params.rotoridxs,
     )
 
     # - Initialize matrix of wake vortex strengths - #
@@ -184,12 +182,12 @@ function initialize_wake_vortex_strengths(
     # - Use the normal function for calculating the vortex panel strengths - #
     calculate_wake_vortex_strengths!(
         wake_vortex_strengths,
-        wake_panels,
+        params.wake_panels,
         Vm,
         params.freestream.Vinf,
         Gamma_tilde,
         H_tilde,
-        rotoridxs,
+        params.rotoridxs,
     )
 
     return wake_vortex_strengths
@@ -209,10 +207,10 @@ function vm_from_thrust(
     nw = length(wake_panels)
 
     # average meridional velocity approxmiation
-    Vm = freestream.Vinf * ones(TF, blade_elements[1].num_radial_stations - 1, nx)
+    Vm = freestream.Vinf * ones(TF, blade_elements[1].num_radial_stations[1] - 1, nx)
 
     # accumulated axial induced velocity
-    vi = 0.0
+    v_in = freestream.Vinf
 
     for x in 1:nx
         r = findlast(idx -> idx <= x, rotoridxs)
@@ -233,7 +231,13 @@ function vm_from_thrust(
             v_theta = gt_avg / (2.0 * pi * wake_panels[j].panel_center[x, 2])
 
             # - Absolute Velocity - #
-            w_theta = v_theta - blade_elements[r].omega * wake_panels[j].panel_center[x, 2]
+            r_avg =
+                (
+                    blade_elements[r].radial_positions[j + 1] +
+                    blade_elements[r].radial_positions[j]
+                ) / 2.0
+
+            w_theta = v_theta - blade_elements[r].omega[1] * r_avg
 
             # - Thrust contribution - #
             bg_avg = (BGamma[j + 1, r] + BGamma[j, r]) / 2.0
@@ -245,13 +249,12 @@ function vm_from_thrust(
         #disk area TODO should this be the annular area??
         A = blade_elements[r].radial_positions[end]^2 * pi
 
-        # thrust induced velocity squared over 2
-        vt2_2 = T / (freestream.rho * A)
-
         #axial induced velocity
         #includes contributions from prior rotors
-        vi += sqrt(((freestream.Vinf) / 2.0)^2 + vt2_2)
-        vx = vi - freestream.Vinf / 2.0
+        vx = sqrt(v_in^2 + 2.0 * T / (freestream.rho * A)) - vinf_acc / 2.0
+
+        # increase v_in for future rotors by the inducement of this rotor
+        v_in += vx
 
         # average meridional velocity behind rotor
         Vm[:, x] .= vx + freestream.Vinf

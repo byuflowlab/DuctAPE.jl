@@ -29,10 +29,8 @@ function analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, 
     )
 
     # - Calculate initial guesses for wake vortex strengths - #
-    # use rotor thrust method from DFDC for initializing meridional velocity on wakes
-    # TODO: you are here
-    wake_vortex_strengths = initialize_wake_velocities(
-        rotor_circulation_strengths, params.wake_panels
+    wake_vortex_strengths = initialize_wake_vortex_strengths(
+        rotor_circulation_strengths, params
     )
 
     # - Assemble the various state variables as a vector - #
