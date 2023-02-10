@@ -248,7 +248,11 @@ function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotorid
 
         #axial induced velocity
         #includes contributions from prior rotors
-        vx = sqrt(v_in^2 + 2.0 * T / (freestream.rho * disk_area)) - v_in / 2.0
+        if v_in^2 + 2.0 * T / (freestream.rho * disk_area) < 0.0
+            vx = 0.1 * freestream.Vinf
+        else
+            vx = sqrt(v_in^2 + 2.0 * T / (freestream.rho * disk_area)) - v_in / 2.0
+        end
 
         # increase v_in for future rotors by the inducement of this rotor
         v_in = vx
@@ -278,7 +282,6 @@ function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotorid
         end
     end
 
-    println(Vm)
     return Vm
 end
 

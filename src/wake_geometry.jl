@@ -577,7 +577,7 @@ function generate_wake_grid(
 
     # - Put the points together in one grid - #
     #TODO: not sure if this is going to be used elsewhere, may remove this later
-    wake_grid = [[x_grid_points[j, i] r_grid_points[j, i]] for i in 1:nr, j in 1:nx]
+    # wake_grid = [[x_grid_points[j, i] r_grid_points[j, i]] for i in 1:nr, j in 1:nx]
 
-    return wake_grid, wake_panels, length(wake_panels), rotoridxs
+    return wake_panels, length(wake_panels), rotoridxs, r_grid_points
 end

@@ -54,7 +54,7 @@ function initialize_parameters(
     #---------------------------------#
     #            Wake Points          #
     #---------------------------------#
-    wake_grid, wake_panels, num_wakes, rotoridxs = generate_wake_grid(
+    wake_panels, num_wakes, rotoridxs, r_grid_points = generate_wake_grid(
         body_geometry,
         (p -> p.rotor_x_position).(rotor_parameters),
         blade_elements[1].radial_positions;
@@ -73,30 +73,32 @@ function initialize_parameters(
             # - Update Aft Rotor Geometries - #
             generate_blade_elements!(
                 blade_elements[i],
-                rotor_parameters[i].xpos,
+                rotor_parameters[i].rotor_x_position,
                 rotor_parameters[i].radial_positions,
                 rotor_parameters[i].chords,
                 rotor_parameters[i].twists,
                 rotor_parameters[i].airfoils,
-                rotor_parameters[i].num_blade_elements,
+                nbe, #not actually used when updated radial positions are given
                 rotor_parameters[i].num_blades,
                 rotor_parameters[i].omega,
                 body_geometry;
-                updated_radial_positions=r_grid_points[:, rotoridxs[i]],
+                updated_radial_positions=r_grid_points[rotoridxs[i], :],
             )
 
             # - Update Aft Rotor Panels - #
             ff.generate_panels!(
                 method_source,
                 rotor_panels[i],
-                [rotor_parameters[i].rotor_x_position .*
-                 ones(blade_elements[1].num_radial_stations) r_grid_points[:, rotoridxs[i]]],
+                [(
+                    rotor_parameters[i].rotor_x_position .*
+                    ones(blade_elements[1].num_radial_stations[1])
+                ) r_grid_points[rotoridxs[i], :]],
             )
 
             update_dummy_rotor_panels!(
                 blade_elements[i],
                 dummy_rotor_panels[i],
-                r_grid_points[:, rotoridxs[i]];
+                r_grid_points[rotoridxs[i], :];
                 method=method_source,
             )
         end
@@ -254,7 +256,7 @@ function initialize_parameters(
         blade_elements=blade_elements, # Portions of these will be updated in the coupling with GXBeam potentially
         rotoridxs=rotoridxs,
         # - Wakes - #
-        wake_grid=wake_grid,
+        # wake_grid=wake_grid,
         num_wakes=num_wakes,
         num_wake_x_panels=wake_panels[1].npanels,
         # - Panels - #

@@ -24,7 +24,7 @@ function analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, 
 
     # - Calculate the initial guesses for blade element circulation and source strengths - #
     # Assume no body influence at this point, just do things based on the freestream.
-    rotor_circulation_strengths, rotor_panel_source_strengths = calculate_gamma_sigma(
+    rotor_circulation_strengths, blade_element_source_strengths = calculate_gamma_sigma(
         params.blade_elements, params.freestream.Vinf
     )
 
@@ -38,7 +38,7 @@ function analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, 
         body_vortex_strengths[1:(end - 1)] # Don't include the bound circulation value used in the kutta condition.
         reduce(vcat, wake_vortex_strengths') # wake_vortex_strengths comes out as a matrix, one ROW for each wake, need to make it an array.
         reduce(vcat, rotor_circulation_strengths) # Gamma_init will be defined as a matrix, one COLUMN for each rotor, need to reduce to a single vector
-        # reduce(vcat,rotor_panel_source_strengths) # Sigma_init will be defined as a matrix, one COLUMN for each rotor, need to reduce to a single vector
+        # reduce(vcat,blade_element_source_strengths) # Sigma_init will be defined as a matrix, one COLUMN for each rotor, need to reduce to a single vector
     ]
 
     # - Run solver to find converged state variables - #
@@ -116,8 +116,8 @@ function update_gamma_sigma!(Gamma_Sigma, params)
     # rotor source strength states are give at blade element locations, take the averages to get the values at the source panel control points
     rotor_panel_source_strengths =
         (
-            blade_element_source_strengths[1:(end - 1)] .+
-            blade_element_source_strengths[2:end]
+            blade_element_source_strengths[1:(end - 1), :] .+
+            blade_element_source_strengths[2:end, :]
         ) / 2.0
 
     # - Calculate Enthalpy Jumps - #
