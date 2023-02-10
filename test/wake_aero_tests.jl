@@ -111,32 +111,22 @@
             (panel_center=[1.0 2.5; 2.0 2.5; 3.0 2.5],)
         ]
 
-        Vm = dt.vm_from_thrust(
-            freestream, blade_elements, BGamma, Gamma_tilde, wake_panels, rotoridxs
-        )
+        Vm = dt.vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotoridxs)
 
-        vt = [1.0 / (3.0 * pi); 1.0 / (5.0 * pi)]
-        wt = vt .- [1.5; 2.5]
-        T = -sum(wt)
-        A = pi * 9.0
-        vt22 = T / A
-        vx = sqrt(0.25 + vt22) - 0.5
+        vin(vi) = sqrt(vi^2 + 1.0 / pi) - 0.5 * vi
 
-        @test all(Vm[:, 1] .== vx + 1.0)
-
-        vx = 2.0 * sqrt(0.25 + vt22) - 0.5
-
-        @test all(Vm[:, 2] .== vx + 1.0)
-
-        vx = 3.0 * sqrt(0.25 + vt22) - 0.5
-
-        @test all(Vm[:, 3] .== vx + 1.0)
+        @test all(Vm[:, 1] .== vin(1.0) + 1.0)
+        @test all(Vm[:, 2] .== vin(vin(1.0)) + 1.0)
+        @test all(Vm[:, 3] .== Vm[:, 2] .* 0.99)
 
         # - initial vortex strengths - #
-        params = (blade_elements=blade_elements, freestream=freestream)
-        gw = dt.initialize_wake_vortex_strengths(
-            Gamma_tilde, wake_panels, params, rotoridxs
+        params = (
+            rotoridxs=rotoridxs,
+            blade_elements=blade_elements,
+            wake_panels=wake_panels,
+            freestream=freestream,
         )
+        gw = dt.initialize_wake_vortex_strengths(Gamma_tilde, params)
         @test gw == zeros(2, 3)
     end
 end

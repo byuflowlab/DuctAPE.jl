@@ -269,11 +269,11 @@ function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotorid
         # does this give the solver more differences to work with?
         if i < length(blade_elements)
             for x in r:(rotoridxs[i + 1] - 1)
-                Vm[:, x + 1] .= Vm[:, x] .* 0.95
+                Vm[:, x + 1] .= Vm[:, x] .* 0.99
             end
         else
             for x in r:(nx - 1)
-                Vm[:, x + 1] .= Vm[:, x] .* 0.95
+                Vm[:, x + 1] .= Vm[:, x] .* 0.99
             end
         end
     end
