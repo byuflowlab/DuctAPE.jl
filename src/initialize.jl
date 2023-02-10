@@ -256,6 +256,7 @@ function initialize_parameters(
         # - Wakes - #
         wake_grid=wake_grid,
         num_wakes=num_wakes,
+        num_wake_x_panels=wake_panels[1].npanels,
         # - Panels - #
         body_panels=body_panels,
         rotor_panels=rotor_panels,

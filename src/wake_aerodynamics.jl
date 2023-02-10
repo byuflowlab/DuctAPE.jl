@@ -171,7 +171,6 @@ function initialize_wake_vortex_strengths(rotor_circulation_strengths, params)
         params.freestream,
         params.blade_elements,
         BGamma,
-        Gamma_tilde,
         params.wake_panels,
         params.rotoridxs,
     )
@@ -190,19 +189,17 @@ function initialize_wake_vortex_strengths(rotor_circulation_strengths, params)
         params.rotoridxs,
     )
 
+    # println(wake_vortex_strengths)
     return wake_vortex_strengths
 end
 
 """
-DONE. HAS TEST. CLEAN UP.
 """
-function vm_from_thrust(
-    freestream, blade_elements, BGamma, Gamma_tilde, wake_panels, rotoridxs
-)
+function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotoridxs)
 
     # - Initialize - #
 
-    TF = eltype(Gamma_tilde)
+    TF = eltype(BGamma)
     nx = length(wake_panels[1].panel_center[:, 1])
     nw = length(wake_panels)
 
@@ -212,54 +209,76 @@ function vm_from_thrust(
     # accumulated axial induced velocity
     v_in = freestream.Vinf
 
-    for x in 1:nx
-        r = findlast(idx -> idx <= x, rotoridxs)
+    for i in 1:length(blade_elements)
+        # r = findlast(idx -> idx <= x, rotoridxs)
+        r = rotoridxs[i]
 
         ## -- Calculate Total Thrust of the Rotor -- ##
-        T = 0.0
+
+        annular_area = 0.0
+        bg_avg = 0.0
 
         for j in 1:nw
 
-            # - Blade section length - #
-            dr =
-                blade_elements[r].radial_positions[j + 1] -
-                blade_elements[r].radial_positions[j]
+            # - Blade section annular area - #
+            dA =
+                pi * (
+                    blade_elements[i].radial_positions[j + 1]^2 -
+                    blade_elements[i].radial_positions[j]^2
+                )
 
-            # - Blade induced velocity - #
+            annular_area += dA
 
-            gt_avg = (Gamma_tilde[j + 1, r] + Gamma_tilde[j, r]) / 2.0
-            v_theta = gt_avg / (2.0 * pi * wake_panels[j].panel_center[x, 2])
-
-            # - Absolute Velocity - #
-            r_avg =
-                (
-                    blade_elements[r].radial_positions[j + 1] +
-                    blade_elements[r].radial_positions[j]
-                ) / 2.0
-
-            w_theta = v_theta - blade_elements[r].omega[1] * r_avg
-
-            # - Thrust contribution - #
-            bg_avg = (BGamma[j + 1, r] + BGamma[j, r]) / 2.0
-            T -= freestream.rho * bg_avg * w_theta * dr
+            # - Area Weighted Circulation - #
+            # this is the numerator, we divide by the total annular area a few lines down
+            bg_avg += dA * (BGamma[j + 1, r] + BGamma[j, r]) / 2.0
         end
+
+        # disk area used in thrust calculation
+        disk_area = pi * blade_elements[i].radial_positions[end]^2
+
+        # - Total Thrust - #
+        T =
+            freestream.rho *
+            bg_avg *
+            (disk_area / annular_area) *
+            blade_elements[i].omega[1] / (2.0 * pi)
 
         ## -- Calculate axial induced velocity of rotor -- ##
 
-        #disk area TODO should this be the annular area??
-        A = blade_elements[r].radial_positions[end]^2 * pi
-
         #axial induced velocity
         #includes contributions from prior rotors
-        vx = sqrt(v_in^2 + 2.0 * T / (freestream.rho * A)) - vinf_acc / 2.0
+        vx = sqrt(v_in^2 + 2.0 * T / (freestream.rho * disk_area)) - v_in / 2.0
 
         # increase v_in for future rotors by the inducement of this rotor
-        v_in += vx
+        v_in = vx
 
-        # average meridional velocity behind rotor
-        Vm[:, x] .= vx + freestream.Vinf
+        #TODO: not sure what to do here, this doesn't converge.
+
+        # # average meridional velocity behind rotor
+        # if i < length(blade_elements)
+        #     Vm[:, r:rotoridxs[i + 1]] .= freestream.Vinf + v_in
+        # else
+        #     Vm[:, r:end] .= freestream.Vinf + v_in
+        # end
+
+        # simply set the wake just behind the rotor and leave the rest as vinf? this does converge.
+        Vm[:, r] .= freestream.Vinf + v_in
+
+        # what about a decrease values behind rotors? this does converge, but converges to different solution than just leaving most things vinf except at the rotors
+        # does this give the solver more differences to work with?
+        if i < length(blade_elements)
+            for x in r:(rotoridxs[i + 1] - 1)
+                Vm[:, x + 1] .= Vm[:, x] .* 0.95
+            end
+        else
+            for x in r:(nx - 1)
+                Vm[:, x + 1] .= Vm[:, x] .* 0.95
+            end
+        end
     end
 
+    println(Vm)
     return Vm
 end
 

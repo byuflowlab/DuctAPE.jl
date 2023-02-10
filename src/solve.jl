@@ -52,8 +52,6 @@ end
 
 """
 This is the function being solved
-GammaSigma_init are the inital guess for the gamma and sigma values.
-F are the output gamma and sigma values minus the input ones. (this is what we want to drive to zero).
 """
 function residual!(F, state_variables, params)
 
@@ -99,6 +97,8 @@ function solve!(state_variables, params)
 end
 
 """
+This is the function that does all the work
+Gamma_Sigma are teh state variables
 """
 function update_gamma_sigma!(Gamma_Sigma, params)
 
@@ -108,10 +108,12 @@ function update_gamma_sigma!(Gamma_Sigma, params)
 
     # println("\nBegin Iteration\n")
 
+    # - Extract the State Variables into the proper formats - #
     body_vortex_strengths, wake_vortex_strengths, rotor_circulation_strengths, blade_element_source_strengths = extract_state_variables(
         Gamma_Sigma, params
     )
 
+    # rotor source strength states are give at blade element locations, take the averages to get the values at the source panel control points
     rotor_panel_source_strengths =
         (
             blade_element_source_strengths[1:(end - 1)] .+
@@ -127,7 +129,7 @@ function update_gamma_sigma!(Gamma_Sigma, params)
     )
 
     # - Calculate Induced Velocities at Rotors - #
-    vi_rotor = calculate_induced_velocities(
+    vi_rotor = calculate_induced_velocities_on_rotors(
         BGamma,
         Gamma_tilde,
         params.blade_elements,
@@ -136,25 +138,22 @@ function update_gamma_sigma!(Gamma_Sigma, params)
         params.A_wake_to_rotor,
         wake_vortex_strengths,
         # params.A_rotor_to_rotor,
-        # rotor_panel_source_strengths,
+        # rotor_panel_source_strengths, # these are the averages
     )
 
     # - Calculate Meridional Velocities on Wakes - #
     wake_velocities = calculate_wake_velocities(
-        A_body_to_wake,
-        gamma_body,
-        A_wake_to_wake,
-        gamma_wake,
-        # A_rotor_to_wake,
-        # rotor_panel_source_strengths,
+        params.A_body_to_wake,
+        body_vortex_strengths,
+        params.A_wake_to_wake,
+        wake_vortex_strengths,
+        # params.A_rotor_to_wake,
+        # rotor_panel_source_strengths, # these are the averages
     )
 
     #---------------------------------#
     #             UPDATES             #
     #---------------------------------#
-
-    # - Update Wake Vortex Strengths - #
-    calculate_wake_vortex_strengths!(wake_vortex_strengths, wake_velocities)
 
     # - Update Body Vortex Strengths - #
     calculate_body_vortex_strengths!(
@@ -163,7 +162,7 @@ function update_gamma_sigma!(Gamma_Sigma, params)
         params.bc_freestream_to_body,
         wake_vortex_strengths,
         params.A_wake_to_body,
-        # blade_element_source_strengths,
+        # blade_element_source_strengths, # these are the states, not the averages.
         # params.A_rotor_to_body
     )
 
@@ -175,6 +174,17 @@ function update_gamma_sigma!(Gamma_Sigma, params)
         params.freestream.Vinf,
         vi_rotor.vm,
         vi_rotor.vtheta,
+    )
+
+    # - Update Wake Vortex Strengths - #
+    calculate_wake_vortex_strengths!(
+        wake_vortex_strengths,
+        params.wake_panels,
+        wake_velocities,
+        params.freestream.Vinf,
+        Gamma_tilde,
+        H_tilde,
+        params.rotoridxs,
     )
 
     return nothing
@@ -192,14 +202,14 @@ function extract_state_variables(Gamma_Sigma, params)
     nr = params.num_rotors
     nx = params.num_wake_x_panels
     nbp = params.num_body_panels
-    n_g_bw = nbp + nbe * nx #number of gammas for bodies and wake
+    n_g_bw = nbp + (nbe - 1) * nx #number of gammas for bodies and wake
     ng = n_g_bw + nbe * nr #number of gammas and Gammas
 
     #  Body gamma Indices
     body_idx = 1:nbp
 
     # Wake gamma_theta Indices
-    wake_gamma_idx = (nbp + 1):(nbp + nbe * nx)
+    wake_gamma_idx = (nbp + 1):(nbp + (nbe - 1) * nx)
 
     # Rotor Gamma Indices
     rotor_Gamma_idx = (n_g_bw + 1):(ng)
@@ -209,7 +219,7 @@ function extract_state_variables(Gamma_Sigma, params)
 
     # - Extract State Variables - #
     body_vortex_strengths = view(Gamma_Sigma, body_idx)
-    wake_vortex_strengths = view(Gamma_Sigma, wake_gamma_idx, (nbe, nx))
+    wake_vortex_strengths = reshape(view(Gamma_Sigma, wake_gamma_idx), (nbe - 1, nx))
     rotor_circulation_strengths = reshape(view(Gamma_Sigma, rotor_Gamma_idx), (nbe, nr))
     blade_element_source_strengths = similar(rotor_circulation_strengths)
     # blade_element_source_strengths = reshape(view(Gamma_Sigma, rotor_Sigma_idx), (nbe, nr))
