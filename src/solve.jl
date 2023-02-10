@@ -44,7 +44,7 @@ function analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, 
     # - Run solver to find converged state variables - #
     sol = ImplicitAD.implicit(solve!, residual!, state_variables, params)
 
-    return sol, params.converged
+    return sol, params.converged, params
 
     #TODO: do the rest.  need to use the converged gamma and sigma values to go through and get all the singularity strengths required for post-processing.
 

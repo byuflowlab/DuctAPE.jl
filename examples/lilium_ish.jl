@@ -182,9 +182,9 @@ function wrapper(x; debug=false)
 
     # omega_stator = 0.0 * omega_rotor
 
-    state_variables, converged = dt.analyze_propulsor(
+    state_variables, converged, params = dt.analyze_propulsor(
         duct_coordinates, hub_coordinates, rotor_parameters, dt.Freestream(10.0)
     )
 
-    return state_variables, converged, duct_coordinates, hub_coordinates
+    return state_variables, converged, params
 end
