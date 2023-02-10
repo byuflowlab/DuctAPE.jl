@@ -4,11 +4,12 @@ using DuctTAPE
 const dt = DuctTAPE
 
 include("../../plots_default.jl")
+
+# Duct Geometry
 include("../data/marin_19a_duct.jl")
 
 plot(; aspectratio=:equal)
-plot!(full_x, full_r; markershape=:circle, markersize=2, label="Duct Outer Surface")
-savefig("duct_geometry.pdf")
+plot!(full_x, full_r; markershape=:circle, markersize=2, label="Raw Geometry")
 
 # - FLOWFoil Solution for Duct Alone - #
 
@@ -23,7 +24,9 @@ plot!(
     markersize=1,
     label="Smooth Duct Geometry",
 )
-savefig("smooth_duct_geometry.pdf")
+savefig("duct_geometry.pdf")
+
+# - Check that geometry yields smooth results - #
 
 method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false])
 problem = ff.define_problem(method, coordinates, 0.0, -1.0, -1.0)
