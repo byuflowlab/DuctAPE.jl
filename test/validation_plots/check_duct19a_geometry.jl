@@ -7,6 +7,7 @@ include("../../plots_default.jl")
 
 # Duct Geometry
 include("../data/marin_19a_duct.jl")
+include("../data/marin_19a_duct_alone_surface_pressure.jl")
 
 plot(; aspectratio=:equal)
 plot!(full_x, full_r; markershape=:circle, markersize=2, label="Raw Geometry")
@@ -54,6 +55,8 @@ plot(
     xlabel="x/c",
     ylabel=L"c_p",
     yflip=true,
-    label="",
+    label="flowfoil",
 )
+plot!(inner_cp_vs_x[:, 1], inner_cp_vs_x[:, 2]; seriestype=:scatter, label="exp inner")
+plot!(outer_cp_vs_x[:, 1], outer_cp_vs_x[:, 2]; seriestype=:scatter, label="exp outer")
 savefig("marin_19a_duct_surface_pressure.pdf")
