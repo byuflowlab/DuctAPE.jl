@@ -327,39 +327,53 @@ cd_1t_rot = similar(cd_1t_ext)
 rR = 0.75  # r/R = 75%
 tsr = 9.0  # representative tip-speed ratio
 
+f = open("test/data/flat_plate_polar_1percent_thickness.dat","w")
+write(f,"Flat Plate with 1% thickness extrapolated and rotation corrected.\n")
+write(f,"10000\n")
+write(f,"0\n")
 for i in 1:length(cl_1t_ext)
     cl_1t_rot[i], cd_1t_rot[i] = rotation_correction(
         DuSeligEggers(), cl_1t_ext[i], cd_1t_ext[i], cr75, rR, tsr, alpha_1t_ext[i]
     )
+    write(f,"$(alpha_1t_ext[i]) $(cl_1t_rot[i]) $(cd_1t_rot[i])\n")
 end
+close(f)
 
 # 3% thickness
 alpha_3t_rot = alpha_3t_ext
 cl_3t_rot = similar(cl_3t_ext)
 cd_3t_rot = similar(cd_3t_ext)
 
-rR = 0.75  # r/R = 75%
-tsr = 9.0  # representative tip-speed ratio
 
+f = open("test/data/flat_plate_polar_3percent_thickness.dat","w")
+write(f,"Flat Plate with 3% thickness extrapolated and rotation corrected.\n")
+write(f,"10000\n")
+write(f,"0\n")
 for i in 1:length(cl_3t_ext)
     cl_3t_rot[i], cd_3t_rot[i] = rotation_correction(
         DuSeligEggers(), cl_3t_ext[i], cd_3t_ext[i], cr75, rR, tsr, alpha_3t_ext[i]
     )
+    write(f,"$(alpha_3t_ext[i]) $(cl_3t_rot[i]) $(cd_3t_rot[i])\n")
 end
+close(f)
 
 # 5% thickness
 alpha_5t_rot = alpha_5t_ext
 cl_5t_rot = similar(cl_5t_ext)
 cd_5t_rot = similar(cd_5t_ext)
 
-rR = 0.75  # r/R = 75%
-tsr = 9.0  # representative tip-speed ratio
 
+f = open("test/data/flat_plate_polar_5percent_thickness.dat","w")
+write(f,"Flat Plate with 5% thickness extrapolated and rotation corrected.\n")
+write(f,"10000\n")
+write(f,"0\n")
 for i in 1:length(cl_5t_ext)
     cl_5t_rot[i], cd_5t_rot[i] = rotation_correction(
         DuSeligEggers(), cl_5t_ext[i], cd_5t_ext[i], cr75, rR, tsr, alpha_5t_ext[i]
     )
+    write(f,"$(alpha_5t_ext[i]) $(cl_5t_rot[i]) $(cd_5t_rot[i])\n")
 end
+close(f)
 
 plot(; xlabel="angle of attack, radians", ylabel=L"c_\ell")
 plot!(alpha_1t_rot, cl_1t_rot; label="1% rotation corrected")
@@ -575,9 +589,9 @@ cd_9cam = [
 ## -- Extrapolations and Corrections -- ##
 # - Get smoothed angle of attack values in the ranges you have data - #
 alpha_cam_min = max(cl_3cam[1, 1], cl_6cam[1, 1], cd_3cam[1, 1], cd_6cam[1, 1])
-alpha_cam_max = min(cl_3cam[end, 1], cl_6cam[end, 1], cd_3cam[end, 1], cd_6cam[end, 1])
+# alpha_cam_max = min(cl_3cam[end, 1], cl_6cam[end, 1], cd_3cam[end, 1], cd_6cam[end, 1])
+alpha_cam_max = 10.0
 
-# alpha_cam_max = 15.0
 alpha_cam = range(alpha_cam_min, alpha_cam_max; step=0.5)# .* pi / 180
 
 # - Use Akima Splines to smooth all the data - #
@@ -630,7 +644,8 @@ plot!(alpha_cam, cd_6cam_smooth; label="smoothed 6%")
 savefig("flat_plate_camber_drag.pdf")
 
 # - Viterna Extraploation - #
-cr75 = 0.57
+cr75 = 0.55
+
 alpha_3cam_ext, cl_3cam_ext, cd_3cam_ext = viterna(
     alpha_cam * pi / 180.0,
      cl_3cam_smooth,
@@ -664,28 +679,34 @@ alpha_3cam_rot = alpha_3cam_ext
 cl_3cam_rot = similar(cl_3cam_ext)
 cd_3cam_rot = similar(cd_3cam_ext)
 
-rR = 0.75  # r/R = 75%
-tsr = 9.0  # representative tip-speed ratio
-
+f = open("test/data/flat_plate_polar_3percent_camber.dat","w")
+write(f,"Flat Plate with 1% thickness and 3% camber extrapolated and rotation corrected.\n")
+write(f,"10000\n")
+write(f,"0\n")
 for i in 1:length(cl_3cam_ext)
     cl_3cam_rot[i], cd_3cam_rot[i] = rotation_correction(
         DuSeligEggers(), cl_3cam_ext[i], cd_3cam_ext[i], cr75, rR, tsr, alpha_3cam_ext[i]
     )
+    write(f,"$(alpha_3cam_ext[i]) $(cl_3cam_rot[i]) $(cd_3cam_rot[i])\n")
 end
+close(f)
 
 # 6% camber
 alpha_6cam_rot = alpha_6cam_ext
 cl_6cam_rot = similar(cl_6cam_ext)
 cd_6cam_rot = similar(cd_6cam_ext)
 
-rR = 0.76  # r/R = 76%
-tsr = 9.0  # representative tip-speed ratio
-
+f = open("test/data/flat_plate_polar_6percent_camber.dat","w")
+write(f,"Flat Plate with 1% thickness and 6% camber extrapolated and rotation corrected.\n")
+write(f,"10000\n")
+write(f,"0\n")
 for i in 1:length(cl_6cam_ext)
     cl_6cam_rot[i], cd_6cam_rot[i] = rotation_correction(
         DuSeligEggers(), cl_6cam_ext[i], cd_6cam_ext[i], cr75, rR, tsr, alpha_6cam_ext[i]
     )
+    write(f,"$(alpha_6cam_ext[i]) $(cl_6cam_rot[i]) $(cd_6cam_rot[i])\n")
 end
+close(f)
 
 plot(; xlabel="angle of attack, radians", ylabel=L"c_\ell")
 plot!(alpha_3cam_rot, cl_3cam_rot; label="3% rotation corrected")

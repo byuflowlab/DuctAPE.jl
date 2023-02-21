@@ -1,33 +1,13 @@
 #from web plot digitizer on figure 6.16 of marine propellers book (also figure 2.20 from original work: wake adapted ducted propellers that the other book took it from)
 
-# rotor_raw_les = [0.206987553534413  0.1943127962085307
-# 0.15090540503520256  0.29541864139020535
-# 0.10062186669588846  0.3949447077409163
-# 0.053210238427892076  0.4960505529225908
-# 0.014450867052023364  0.5987361769352291
-# -0.018455104146690937  0.6951026856240126
-# -0.04276360847053651  0.7977883096366508
-# -0.05256645572509977  0.895734597156398
-# -0.050808609338045096  0.9936808846761453
-# ]
-
-# rotor_raw_tes = [0.8717274379274762  0.1943127962085307
-# 0.9081308385612139  0.29541864139020535
-# 0.9416623291236335  0.3949447077409163
-# 0.9722853829365621  0.4960505529225908
-# 0.9999999999999998  0.5987361769352291
-# 1.0220073235989735  0.6951026856240126
-# 1.0410514204311976  0.7977883096366508
-# 1.0514615237103795  0.8973143759873617
-# 1.0561095435078396  0.995260663507109
-# ]
 using Xfoil
 using Splines
+using CCBlade
 include("../../plots_default.jl")
 
 rotor_diameter = 240.00 #mm
 num_blades = 4 # assume that 4-55 is 4 blades at 55 degrees twist?
-radial_positions = [0.2; 0.3; 0.4; 0.5; 0.6; 0.7; 0.8; 0.9]
+radial_positions = [0.2; 0.3; 0.4; 0.5; 0.6; 0.7; 0.8; 0.9; 1.0]
 
 # r/R = 0.6 chord length based on known 240mm diameter
 c6 = 65.0 #mm
@@ -135,6 +115,15 @@ for i in 1:length(chords)
         coordinates[j, :, i] = Splines.curvepoint(bspline, u[j])
     end
 
+    # shift things down so the trailing edge it one the x-axis
+    coordinates[:, 2, i] .-= coordinates[end, 2, i]
+
+    f = open("test/data/ka_4-55_geometry_section_0.$(i+1)R.dat", "w")
+    for j in 1:length(u)
+        write(f, "$(coordinates[j,1,i]) $(coordinates[j,2,i])\n")
+    end
+    close(f)
+
     plot(; aspectratio=:equal)
     plot!(
         xu_table[i, :],
@@ -161,63 +150,89 @@ for i in 1:length(chords)
     println("$(i*10+10) Airfoil:")
     println("Max Thickness = ", maximum(coordinates[:, 2, i]))
     println("Max Camber = ", maximum(coordinates[:, 2, i]) / 2.0)
-
-    # - xfoil test - #
-    # Xfoil.set_coordinates(reverse(coordinates[:, 1, i]), reverse(coordinates[:, 2, i]))
-    # g = Xfoil.get_globals()
-    # plot(; aspectratio=:equal)
-    # plot!(
-    #     xu_table[1, :],
-    #     ru_table[1, :];
-    #     seriestype=:scatter,
-    #     markersize=2,
-    #     label="Upper Ordiantes",
-    # )
-    # plot!(
-    #     xl_table[1, :],
-    #     rl_table[1, :];
-    #     seriestype=:scatter,
-    #     markersize=2,
-    #     label="Lower Ordinates",
-    # )
-    # plot!(g.x[1:140], g.y[1:140]; seriestype=:scatter, markersize=1, label="PANE")
-    # savefig("Ka-455_airfoil_test_bspline_smooth_xfoilpane.pdf")
-    # cl, cd, cdp, cm, conv = Xfoil.solve_alpha(5.0, 1e6)
-    # println("$(i*10+10) r/R converged: ", conv)
-    # println("visc cl: ", cl)
-    # cl, cm = Xfoil.solve_alpha(5.0)
-    # println("inv cl: ", cl)
 end
 
-# using FLOWMath
-# using FLOWFoil
+### --- Figure out Reynolds Number to run thick sections at.
 
-# N = 80
-# xu = FLOWFoil.cosine_spacing(N)
-# xl = reverse(xu)
+rho = 1.225 #air
+# rho = 1000 #water
+mu = 1.81e-5 #air
+# mu = 1e-3 #water
+c = chords
+r = radial_positions * rotor_diameter / 2.0
 
-# ru = zeros(length(chords), N)
-# rl = zeros(length(chords), N)
+J = 0.36
+Vinf = 10.0
+Omega = Vinf / (J * r[end] / pi)
+for i in 1:length(chords)
+    re = rho * c[i] * sqrt(Vinf^2 + (Omega * r[i])^2) / mu
+    println("Re @ $(i*10+10)% R = ", re)
+    inflow_angle = atan(Vinf / (Omega * r[i])) * 180 / pi
+    aoa = 55.0 - inflow_angle
+    println("AoA @ $(i*10+10)% R = ", aoa)
+end
 
-# for i in 1:length(chords)
-#     ru[i, :] = FLOWMath.akima(xu_table[i, :], ru_table[i, :], xu)
-#     rl[i, :] = reverse(FLOWMath.akima(xl_table[i, :], rl_table[i, :], xu))
-# end
+#
+#
+#
+#
+#
+#
+#
 
-# plot!(
-#     xu,
-#     ru[1, :];
-#     seriestype=:scatter,
-#     color=:black,
-#     markersize=1,
-#     label="Smoothed Coordinates",
-# )
-# plot!(xl, rl[1, :]; seriestype=:scatter, color=:black, markersize=1, label="")
-# savefig("Ka-455_airfoil_test_smooth.pdf")
-# for i in 1:length(chords)
-#     plot(; aspectratio=:equal)
-#     plot!(xu, ru[i, :]; seriestype=:scatter, markersize=1, label="Smoothed Coordinates")
-#     plot!(xl, rl[i, :]; seriestype=:scatter, markersize=1, label="")
-#     savefig("Ka-455_airfoil_test_smooth_rR$(i*10+10).pdf")
-# end
+# - xfoil test - #
+alpha = range(-15.0, 20.0; step=0.25)
+for i in 1:4#length(chords)
+    Xfoil.set_coordinates(reverse(coordinates[:, 1, i]), reverse(coordinates[:, 2, i]))
 
+    f = open("test/data/ka4-55_0.$(i*10+10)R_polar.dat", "w")
+    write(f, "")
+    write(f, "Ka 4-55 0.$(i*10+10) percent radius section\n")
+    write(f, "100000000\n")
+    write(f, "0\n")
+    println("foil $(i*10+10)")
+    clvec = []
+    cdvec = []
+    idxs = []
+    for j in 1:length(alpha)
+        cl, cd, cdp, cm, conv = Xfoil.solve_alpha(alpha[j], 1e8; reinit=true)
+        if conv
+            println("Alpha: $(alpha[j]) converged")
+            write(f, "$(alpha[j]*pi/180.0) $cl $cd\n")
+            push!(clvec, cl)
+            push!(cdvec, cd)
+            push!(idxs, j)
+        end
+    end
+    close(f)
+
+    # apply corrections
+
+    cr75 = 0.57
+    rR = 0.75  # r/R = 75%
+    tsr = 9.0  # representative tip-speed ratio
+    alpha_ext, cl_ext, cd_ext = viterna(alpha[idxs] * pi / 180.0, clvec, cdvec, cr75)
+    plot(alpha_ext, cl_ext)
+    savefig("clextrap_test$i.pdf")
+
+    f = open("test/data/ka4-55_0.$(i*10+10)R_polar_extrot.dat", "w")
+    write(f, "")
+    write(
+        f,
+        "Ka 4-55 0.$(i*10+10) percent radius section extrapolated and rotation coreected\n",
+    )
+    write(f, "100000000\n")
+    write(f, "0\n")
+    cl_rot = similar(cl_ext)
+    cd_rot = similar(cd_ext)
+    for j in 1:length(alpha_ext)
+        cl_rot[j], cd_rot[j] = rotation_correction(
+            DuSeligEggers(), cl_ext[j], cd_ext[j], cr75, rR, tsr, alpha_ext[j]
+        )
+        write(f, "$(alpha_ext[j]) $(cl_rot[j]) $(cd_rot[j])\n")
+    end
+    close(f)
+
+    plot(alpha_ext, cl_rot)
+    savefig("clrot_test$i.pdf")
+end
