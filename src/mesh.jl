@@ -32,24 +32,16 @@ struct OneWayMesh{TF}
     m::Matrix{TF}
 end
 
-function generate_one_way_mesh(
-    influence_panels::TP, affect_panels; singularity="vortex"
-) where {TP<:ff.Panel}
+function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:ff.Panel}
     return generate_one_way_mesh([influence_panels], affect_panels; singularity=singularity)
 end
 
-function generate_one_way_mesh(
-    influence_panels, affect_panels::TP; singularity="vortex"
-) where {TP<:ff.Panel}
+function generate_one_way_mesh(influence_panels, affect_panels::TP) where {TP<:ff.Panel}
     return generate_one_way_mesh(influence_panels, [affect_panels]; singularity=singularity)
 end
 
-function generate_one_way_mesh(
-    influence_panels::TP, affect_panels::TP; singularity="vortex"
-) where {TP<:ff.Panel}
-    return generate_one_way_mesh(
-        [influence_panels], [affect_panels]; singularity=singularity
-    )
+function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:ff.Panel}
+    return generate_one_way_mesh([influence_panels], [affect_panels])
 end
 
 """
@@ -63,13 +55,10 @@ Function similar to FLOWFoil's meshing function, but only creates the mesh one w
 
 Multiple Dispatch allows for single panel objects as one or both inputs as well if there is only one body influencing and/or being affected.
 
-**Keyword Arguments:**
-- `singularity::String` : selects "vortex" or "source" as the singularity for which to calculate the x values.  vortex is default.
-
 **Returns:**
 - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 """
-function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
+function generate_one_way_mesh(influence_panels, affect_panels)
 
     ### --- Convenience Variables --- ###
     nbodies_i = length(influence_panels)
@@ -127,13 +116,8 @@ function generate_one_way_mesh(influence_panels, affect_panels; singularity="vor
                     rj = influence_panels[n].panel_center[mesh2panel_i[j], 2]
 
                     # Calculate normalized distance components for current set of panels
-                    if singularity == "vortex"
-                        x[i, j] = (xi - xj) / rj
-                    elseif singularity == "source"
-                        x[i, j] = (xi - xj) / ri
-                    else
-                        @error "no singularity of type $(singularity)"
-                    end
+                    # TODO: suspect this should be the same for both cases, Lewis seems to have a typo normalizing x by ri instead of rj.
+                    x[i, j] = (xi - xj) / rj
                     r[i, j] = ri / rj
 
                     # Calculate the k^2 value for the elliptic integrals

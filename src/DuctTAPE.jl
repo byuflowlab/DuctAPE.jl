@@ -16,6 +16,8 @@ using ImplicitAD
 
 using LineSearches: BackTracking
 
+using SpecialFunctions
+
 ## -- INCLUDES -- ##
 
 include("utils.jl")

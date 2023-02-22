@@ -6,35 +6,39 @@ Authors: Judd Mehr,
 
 =#
 
+#= TODO:
+need to redo everything here, almost.  We aren't actually wanting the vortex coefficients, but rather just the induced velocities due to a unit singularity which we can multiple by the singularities to get the velocities at the given points.  still keep things as matricies, but we'll want to return a matrix for the axial components and a second matrix for the radial components.  Also need to alter the induced velocity expressions to match Ryall and Collins for these cases where we aren't working with a panel method (probably). BUT need to check a single panel case to make sure that all the velocity directions are correct.
+=#
+
 #---------------------------------#
 #       Vortex Coefficients       #
 #---------------------------------#
-function assemble_one_way_coefficient_matrix(
+function assemble_induced_velocity_matrices(
     mesh, influence_panels::TP, affect_panels; singularity="vortex"
 ) where {TP<:ff.Panel}
-    return assemble_one_way_coefficient_matrix(
+    return assemble_induced_velocity_matrices(
         mesh, [influence_panels], affect_panels; singularity=singularity
     )
 end
 
-function assemble_one_way_coefficient_matrix(
+function assemble_induced_velocity_matrices(
     mesh, influence_panels, affect_panels::TP; singularity="vortex"
 ) where {TP<:ff.Panel}
-    return assemble_one_way_coefficient_matrix(
+    return assemble_induced_velocity_matrices(
         mesh, influence_panels, [affect_panels]; singularity=singularity
     )
 end
 
-function assemble_one_way_coefficient_matrix(
+function assemble_induced_velocity_matrices(
     mesh, influence_panels::TP, affect_panels::TP; singularity="vortex"
 ) where {TP<:ff.Panel}
-    return assemble_one_way_coefficient_matrix(
+    return assemble_induced_velocity_matrices(
         mesh, [influence_panels], [affect_panels]; singularity=singularity
     )
 end
 
 """
-    assemble_one_way_coefficient_matrix(mesh, influence_panels, affect_panels; kwargs)
+    assemble_induced_velocity_matrices(mesh, influence_panels, affect_panels; kwargs)
 
 Function similar to FLOWFoil assemble coefficient functions, but only for one-way effects.
 
@@ -51,7 +55,7 @@ Multiple Dispatch allows for single panel objects as one or both inputs as well 
 **Returns:**
 - `A::Matrix{Float}` : Aerodynamic coefficient matrix of influence on affect panels.
 """
-function assemble_one_way_coefficient_matrix(
+function assemble_induced_velocity_matrices(
     mesh, influence_panels, affect_panels; singularity="vortex"
 )
 
@@ -69,7 +73,8 @@ function assemble_one_way_coefficient_matrix(
 
     # initialize coefficient matrix
     TF = eltype(mesh.m)
-    amat = zeros(TF, (M, N))
+    vxmat = zeros(TF, (M, N))
+    vrmat = zeros(TF, (M, N))
 
     # Loop through system
 
@@ -82,11 +87,11 @@ function assemble_one_way_coefficient_matrix(
 
                     ### --- Calculate influence coefficient --- ###
                     if singularity == "vortex"
-                        amat[i, j] = calculate_ring_vortex_influence_off_body(
+                        vxmat[i, j], vrmat[i, j] = calculate_ring_vortex_influence_off_body(
                             affect_panels[m], influence_panels[n], mesh, i, j
                         )
                     elseif singularity == "source"
-                        amat[i, j] = calculate_ring_source_influence_off_body(
+                        vxmat[i, j], vrmat[i, j] = calculate_ring_source_influence_off_body(
                             affect_panels[m], influence_panels[n], mesh, i, j
                         )
                     else
@@ -97,7 +102,7 @@ function assemble_one_way_coefficient_matrix(
         end
     end
 
-    return amat
+    return vxmat, vrmat
 end
 
 """
@@ -120,40 +125,101 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
     m2p_a = mesh.mesh2panel_affect
 
     #calculate unit velocities
-    u = ff.get_u_ring_vortex(
-        mesh.x[i, j],
-        mesh.r[i, j],
-        panelj.panel_center[m2p_i[j], 2],
-        panelj.panel_length[m2p_i[j]],
-        mesh.m[i, j],
-    )
-
-    v = ff.get_v_ring_vortex(
+    vx = get_vx_ring_vortex_off_body(
         mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_i[j], 2], mesh.m[i, j]
     )
 
-    #return appropriate strength
-    # if asin(sqrt(m)) != pi / 2
-    if mesh.m[i, j] != 1.0
+    vr = get_vr_ring_vortex_off_body(
+        mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_i[j], 2], mesh.m[i, j]
+    )
 
-        #panels are different
-        return (
-            u * cos(paneli.panel_angle[m2p_a[i]]) + v * sin(paneli.panel_angle[m2p_a[i]])
-        ) * panelj.panel_length[m2p_i[j]]
-    else
-        #same panel -> self induction equation
-
-        #NOTE: this is not eqn 4.22 in Lewis.  Their code uses this expression which seems to avoid singularities better.  Not sure how they changed the second term (from dj/4piR to -R) though; perhaps the R in the text != the curvature in the code (radiusofcurvature vs curvature).
-
-        # constant used in multiple places to clean things up
-        cons = 4.0 * pi * panelj.panel_center[m2p_i[j], 2] / panelj.panel_length[m2p_i[j]]
-
-        # return self inducement coefficient
-        return -0.5 - panelj.panel_curvature[m2p_i[j]] -
-               (log(2.0 * cons) - 0.25) / cons * cos(panelj.panel_angle[m2p_i[j]])
-    end
+    return vx * panelj.panel_length[j], vr * panelj.panel_length[j]
 end
 
+"""
+    get_vx_ring_vortex_off_body(x, r, rj, m)
+
+Calculate x-component of velocity influence of vortex ring.
+
+**Arguments:**
+- `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
+- `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
+- `rj::Float` : r-location of the jth panel control point
+- `m::Float` : Elliptic Function parameter
+
+**Returns:**
+- `vxij::Float` : x-component of velocity induced by panel j onto panel i
+"""
+function get_vx_ring_vortex_off_body(x, r, rj, m; probe=false)
+
+    #get the first denominator
+    den1 = 2.0 * pi * rj * sqrt(x^2 + (r + 1.0)^2)
+
+    #get numerator and denominator of second fraction
+    num2 = 2 * (r - 1)
+    den2 = x^2 + (r - 1)^2
+
+    #get values for elliptic integrals
+    K, E = get_elliptics(m)
+
+    #TODO: decide if self-induced velocity is needed and add.
+
+    # negative here is due to our convention that the vortex is postive clockwise
+    # Ryall has a positive, Lewis has a minus, only difference seems to be potentially opposite conventions for positive vorticity
+    return -1.0 / den1 * (K - (1.0 + num2 / den2) * E)
+end
+
+"""
+    get_vr_ring_vortex_off_body(x, r, rj, m)
+
+Calculate r-component of velocity influence of vortex ring.
+
+**Arguments:**
+- `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
+- `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
+- `rj::Float` : r-location of the jth panel control point
+- `m::Float` : Elliptic Function parameter
+
+**Returns:**
+- `vrij::Float` : r-component of velocity induced by panel j onto panel i
+"""
+function get_vr_ring_vortex_off_body(x, r, rj, m; probe=false)
+
+    #get numerator and denominator of first fraction
+    num1 = x / r
+    den1 = 2.0 * pi * rj * sqrt(x^2 + (r + 1.0)^2)
+
+    num2 = 2 * r
+    den2 = x^2 + (r - 1)^2
+
+    #get values for elliptic integrals
+    K, E = get_elliptics(m)
+
+    #TODO: decide if self-induced velocity is needed and add.
+
+    #Ryall has a plus or minus based on the sign of x that is multiplied here.  That doesn't seem to be needed to get the correct directions working. Lewis omits any plus and minuses.
+    return num1 / den1 * (K - (1.0 + num2 / den2) * E)
+end
+
+"""
+    get_elliptics(m)
+
+Calculate value of elliptic functions for the given geometry parameter.
+
+**Arguments:**
+- `m::Float` : Elliptic Function parameter
+
+**Returns:**
+- `K::Float` : K(m), value of elliptic function of the first kind at m.
+- `E::Float` : E(m), value of eeliptic function of the second kind at m.
+"""
+function get_elliptics(m)
+    if m > 1 || isnan(m)
+        #m cannot be greater than 1 for elliptic functions, and cannot mathematically be either, but numerically might be infinitesimally larger.
+        m = 1.0
+    end
+    return SpecialFunctions.ellipk(m), SpecialFunctions.ellipe(m)
+end
 #---------------------------------#
 #       Source Coefficients       #
 #---------------------------------#
@@ -178,7 +244,7 @@ function calculate_ring_source_influence_off_body(paneli, panelj, mesh, i, j)
     m2p_a = mesh.mesh2panel_affect
 
     #calculate unit velocities
-    u = ff.get_u_ring_source(
+    vx = get_vx_ring_source_off_body(
         mesh.x[i, j],
         mesh.r[i, j],
         panelj.panel_center[m2p_i[j], 2],
@@ -186,25 +252,69 @@ function calculate_ring_source_influence_off_body(paneli, panelj, mesh, i, j)
         mesh.m[i, j],
     )
 
-    v = ff.get_v_ring_source(
+    vr = get_vr_ring_source_off_body(
         mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_i[j], 2], mesh.m[i, j]
     )
 
-    #return appropriate strength
-    # if asin(sqrt(m)) != pi / 2
-    if mesh.m[i, j] != 1.0
+    return vx * panelj.panel_length[j], vr * panelj.panel_length[j]
+end
 
-        #panels are different
-        return (
-            -u * sin(paneli.panel_angle[m2p_a[i]]) + v * cos(paneli.panel_angle[m2p_a[i]])
-        ) * panelj.panel_length[m2p_i[j]]
-    else
-        #same panel -> self induction equation
+"""
+    get_vx_ring_source_off_body(x, r, rj, m)
 
-        # return self inducement coefficient
-        return 0.5 # +
-        # (
-        # -u * sin(paneli.panel_angle[m2p_a[i]]) + v * cos(paneli.panel_angle[m2p_a[i]])
-        # ) * panelj.panel_length[m2p_i[j]]
-    end
+Calculate x-component of velocity influence of source ring.
+
+**Arguments:**
+- `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
+- `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
+- `rj::Float` : r-location of the jth panel control point
+- `m::Float` : Elliptic Function parameter
+
+**Returns:**
+- `uij::Float` : x-component of velocity induced by panel j onto panel i
+"""
+function get_vx_ring_source_off_body(x, r, rj, dj, m; probe=false)
+
+    #get values for elliptic integrals
+    K, E = get_elliptics(m)
+
+    #get the first denominator
+    den1 = 2.0 * pi * rj * sqrt(x^2 + (r + 1.0)^2)
+
+    #get numerator and denominator of second fraction
+    num2 = 2 * x * E
+    den2 = x^2 + (r - 1)^2
+
+    #TODO: need to check sign.  Ryall has plus or minus depending on if x is positive or negative, respectively. Lewis does not have this.
+    return sign(x) * 1.0 / den1 * (num2 / den2)
+end
+
+"""
+    get_vr_ring_source_off_body(x, r, rj, m)
+
+Calculate r-component of velocity influence of source ring.
+
+**Arguments:**
+- `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
+- `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
+- `rj::Float` : r-location of the jth panel control point
+- `m::Float` : Elliptic Function parameter
+
+**Returns:**
+- `vij::Float` : r-component of velocity induced by panel j onto panel i
+"""
+function get_vr_ring_source_off_body(x, r, rj, m; probe=false)
+
+    #get values for elliptic integrals
+    K, E = get_elliptics(m)
+
+    #TODO: lewis just has a 1. Ryall has 1/r. need to check
+    num1 = 1 / r
+    #get numerator and denominator of first fraction
+    den1 = 2.0 * pi * rj * sqrt(x^2 + (r + 1.0)^2)
+
+    num2 = 2 * r * (r - 1.0)
+    den2 = x^2 + (r - 1)^2
+
+    return num1 / den1 * (K - (1.0 - num2 / den2) * E)
 end
