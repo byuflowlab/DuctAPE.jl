@@ -13,9 +13,11 @@ function calculate_induced_velocities_on_rotors(
     BGamma, #matrix size num blade elem x num rotors
     Gamma_tilde, #matrix size num blade elem x num rotors
     blade_elements,
-    A_bodies_to_rotor, #vector of matrices
+    vxd_bodies_to_rotor, #vector of matrices
+    vrd_bodies_to_rotor, #vector of matrices
     gamma_bodies,
-    A_wake_to_rotor, #matrix of matrices size num wakes x num rotors
+    vxd_wake_to_rotor, #matrix of matrices size num wakes x num rotors
+    vrd_wake_to_rotor, #matrix of matrices size num wakes x num rotors
     gamma_wake, # matrix
     # A_rotor_to_rotor,
     # Sigma,
@@ -30,11 +32,13 @@ function calculate_induced_velocities_on_rotors(
 
     for i in 1:nr
         # - Add Body Induced Velocities - #
-        vm[:, i] .= A_bodies_to_rotor[i] * gamma_bodies
+        # TODO: need to double check the theory and implementation here
+        vm[:, i] .= (vxd_bodies_to_rotor[i] .+ vrd_bodies_to_rotor[i]) * gamma_bodies
 
         # - Add Wake Induced Velocities - #
         for w in 1:length(gamma_wake[:, 1])
-            vm[:, i] .+= A_wake_to_rotor[w, i] * gamma_wake[w, :]
+            vm[:, i] .+=
+                (vxd_wake_to_rotor[w, i] .+ vrd_wake_to_rotor[w, i]) * gamma_wake[w, :]
         end
 
         # # - Add Rotor Induced Velocities - #

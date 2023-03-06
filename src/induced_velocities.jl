@@ -1,15 +1,17 @@
 """
 assumes inputs are tuples
 """
-function calculate_induced_velocity(coefficient_matrix, singularity_strengths)
+function calculate_induced_velocity(vxd, vrd, singularity_strengths)
 
     # Initialize output
-    induced_velocity = 0.0
+    Vx = 0.0
+    Vr = 0.0
 
-    for i in 1:length(coefficient_matrix)
-        induced_velocity += coefficient_matrix[i] * singularity_strengths[i]
+    for i in 1:length(vxd)
+        Vx += vxd[i] * singularity_strengths[i]
+        Vr += vrd[i] * singularity_strengths[i]
     end
 
-    return induced_velocity
+    return Vx, Vr
 end
 

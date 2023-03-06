@@ -53,7 +53,8 @@ Multiple Dispatch allows for single panel objects as one or both inputs as well 
 - `singularity::String` : selects "vortex" or "source" as the singularity for which to calculate the x values.  vortex is default.
 
 **Returns:**
-- `A::Matrix{Float}` : Aerodynamic coefficient matrix of influence on affect panels.
+- `vxdmat::Matrix{Float}` : v_x_ij * d_j for all i, j
+- `vrdmat::Matrix{Float}` : v_r_ij * d_j for all i, j
 """
 function assemble_induced_velocity_matrices(
     mesh, influence_panels, affect_panels; singularity="vortex"
@@ -73,8 +74,8 @@ function assemble_induced_velocity_matrices(
 
     # initialize coefficient matrix
     TF = eltype(mesh.m)
-    vxmat = zeros(TF, (M, N))
-    vrmat = zeros(TF, (M, N))
+    vxdmat = zeros(TF, (M, N))
+    vrdmat = zeros(TF, (M, N))
 
     # Loop through system
 
@@ -87,11 +88,11 @@ function assemble_induced_velocity_matrices(
 
                     ### --- Calculate influence coefficient --- ###
                     if singularity == "vortex"
-                        vxmat[i, j], vrmat[i, j] = calculate_ring_vortex_influence_off_body(
+                        vxdmat[i, j], vrdmat[i, j] = calculate_ring_vortex_influence_off_body(
                             affect_panels[m], influence_panels[n], mesh, i, j
                         )
                     elseif singularity == "source"
-                        vxmat[i, j], vrmat[i, j] = calculate_ring_source_influence_off_body(
+                        vxdmat[i, j], vrdmat[i, j] = calculate_ring_source_influence_off_body(
                             affect_panels[m], influence_panels[n], mesh, i, j
                         )
                     else
@@ -102,7 +103,7 @@ function assemble_induced_velocity_matrices(
         end
     end
 
-    return vxmat, vrmat
+    return [[vxdmat] [vrdmat]]
 end
 
 """
@@ -285,7 +286,6 @@ function get_vx_ring_source_off_body(x, r, rj, dj, m; probe=false)
     num2 = 2 * x * E
     den2 = x^2 + (r - 1)^2
 
-    #TODO: need to check sign.  Ryall has plus or minus depending on if x is positive or negative, respectively. Lewis does not have this.
     return sign(x) * 1.0 / den1 * (num2 / den2)
 end
 
@@ -308,7 +308,6 @@ function get_vr_ring_source_off_body(x, r, rj, m; probe=false)
     #get values for elliptic integrals
     K, E = get_elliptics(m)
 
-    #TODO: lewis just has a 1. Ryall has 1/r. need to check
     num1 = 1 / r
     #get numerator and denominator of first fraction
     den1 = 2.0 * pi * rj * sqrt(x^2 + (r + 1.0)^2)

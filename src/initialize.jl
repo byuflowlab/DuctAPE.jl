@@ -182,6 +182,8 @@ function initialize_parameters(
             mesh_body_to_rotor[i], body_panels, dummy_rotor_panels[i]
         ) for i in 1:num_rotors
     ]
+    vxd_body_to_rotor = [A_body_to_rotor[i][1] for i in 1:num_rotors]
+    vrd_body_to_rotor = [A_body_to_rotor[i][2] for i in 1:num_rotors]
 
     # - Body -> Wake - #
     # for finding wake velocities
@@ -190,6 +192,8 @@ function initialize_parameters(
             mesh_body_to_wake[i], body_panels, wake_panels[i]
         ) for i in 1:num_wakes
     ]
+    vxd_body_to_wake = [A_body_to_wake[i][1] for i in 1:num_wakes]
+    vrd_body_to_wake = [A_body_to_wake[i][2] for i in 1:num_wakes]
 
     # - Rotor -> Body - #
     # for linear solve
@@ -198,6 +202,8 @@ function initialize_parameters(
             mesh_rotor_to_body[i], rotor_panels[i], body_panels; singularity="source"
         ) for i in 1:num_rotors
     ]
+    vxd_rotor_to_body = [A_rotor_to_body[i][1] for i in 1:num_rotors]
+    vrd_rotor_to_body = [A_rotor_to_body[i][2] for i in 1:num_rotors]
 
     # - Rotor -> Rotor - #
     # for finding blade element velocities
@@ -210,6 +216,12 @@ function initialize_parameters(
             singularity="source",
         ) for i in 1:num_rotors, j in 1:num_rotors
     ]
+    vxd_rotor_to_rotor = [
+        A_rotor_to_rotor[i, j][1] for i in 1:num_rotors, j in 1:num_rotors
+    ]
+    vrd_rotor_to_rotor = [
+        A_rotor_to_rotor[i, j][2] for i in 1:num_rotors, j in 1:num_rotors
+    ]
 
     # - Rotor -> Wake - #
     # for finding wake velocities
@@ -218,6 +230,8 @@ function initialize_parameters(
             mesh_rotor_to_wake[i, j], rotor_panels[i], wake_panels[j]; singularity="source"
         ) for i in 1:num_rotors, j in 1:num_wakes
     ]
+    vxd_rotor_to_wake = [A_rotor_to_wake[i, j][1] for i in 1:num_rotors, j in 1:num_wakes]
+    vrd_rotor_to_wake = [A_rotor_to_wake[i, j][2] for i in 1:num_rotors, j in 1:num_wakes]
 
     # - Wake -> Body - #
     # for linear solve
@@ -226,6 +240,8 @@ function initialize_parameters(
             mesh_wake_to_body[i], wake_panels[i], body_panels
         ) for i in 1:num_wakes
     ]
+    vxd_wake_to_body = [A_wake_to_body[i][1] for i in 1:num_wakes]
+    vrd_wake_to_body = [A_wake_to_body[i][2] for i in 1:num_wakes]
 
     # - Wake -> Rotor - #
     # for finding blade element velocities
@@ -234,6 +250,8 @@ function initialize_parameters(
             mesh_wake_to_rotor[i, j], wake_panels[i], dummy_rotor_panels[j]
         ) for i in 1:num_wakes, j in 1:num_rotors
     ]
+    vxd_wake_to_rotor = [A_wake_to_rotor[i, j][1] for i in 1:num_wakes, j in 1:num_rotors]
+    vrd_wake_to_rotor = [A_wake_to_rotor[i, j][2] for i in 1:num_wakes, j in 1:num_rotors]
 
     # - Wake -> Wake - #
     # for finding wake velocities
@@ -242,6 +260,8 @@ function initialize_parameters(
             mesh_wake_to_wake[i, j], wake_panels[i], wake_panels[j]
         ) for i in 1:num_wakes, j in 1:num_wakes
     ]
+    vxd_wake_to_wake = [A_wake_to_wake[i, j][1] for i in 1:num_wakes, j in 1:num_wakes]
+    vrd_wake_to_wake = [A_wake_to_wake[i, j][2] for i in 1:num_wakes, j in 1:num_wakes]
 
     return (
         # - General - #
@@ -265,13 +285,21 @@ function initialize_parameters(
         wake_panels=wake_panels,
         # - Coefficients - #
         A_body_to_body=A_body_to_body,
-        A_body_to_rotor=A_body_to_rotor,
-        A_body_to_wake=A_body_to_wake,
-        A_rotor_to_body=A_rotor_to_body,
-        A_rotor_to_rotor=A_rotor_to_rotor,
-        A_rotor_to_wake=A_rotor_to_wake,
-        A_wake_to_body=A_wake_to_body,
-        A_wake_to_rotor=A_wake_to_rotor,
-        A_wake_to_wake=A_wake_to_wake,
+        vxd_body_to_rotor=vxd_body_to_rotor,
+        vxd_body_to_wake=vxd_body_to_wake,
+        vxd_rotor_to_body=vxd_rotor_to_body,
+        vxd_rotor_to_rotor=vxd_rotor_to_rotor,
+        vxd_rotor_to_wake=vxd_rotor_to_wake,
+        vxd_wake_to_body=vxd_wake_to_body,
+        vxd_wake_to_rotor=vxd_wake_to_rotor,
+        vxd_wake_to_wake=vxd_wake_to_wake,
+        vrd_body_to_rotor=vrd_body_to_rotor,
+        vrd_body_to_wake=vrd_body_to_wake,
+        vrd_rotor_to_body=vrd_rotor_to_body,
+        vrd_rotor_to_rotor=vrd_rotor_to_rotor,
+        vrd_rotor_to_wake=vrd_rotor_to_wake,
+        vrd_wake_to_body=vrd_wake_to_body,
+        vrd_wake_to_rotor=vrd_wake_to_rotor,
+        vrd_wake_to_wake=vrd_wake_to_wake,
     )
 end

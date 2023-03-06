@@ -63,11 +63,13 @@ end
 """
 """
 function calculate_wake_velocities(
-    A_body_to_wake, #vector of matrices size 1 x num wakes
+    vxd_body_to_wake, #vector of matrices size 1 x num wakes
+    vrd_body_to_wake, #vector of matrices size 1 x num wakes
     gamma_body,
     # A_rotor_to_wake, matrix of matrices size num rotors x num wakes
     # rotor_source_strengths,
-    A_wake_to_wake, #matrix of matrices size num wakes x num wakes
+    vxd_wake_to_wake, #matrix of matrices size num wakes x num wakes
+    vrd_wake_to_wake, #matrix of matrices size num wakes x num wakes
     gamma_wake,
 )
 
@@ -80,12 +82,14 @@ function calculate_wake_velocities(
 
     for i in 1:nr
         # - Add Body Induced Velocities - #
-        Vm[i, :] .= A_body_to_wake[i] * gamma_body
+        # TODO: need to double check the theory and implementation here
+        Vm[i, :] .= (vxd_body_to_wake[i] .+ vrd_body_to_wake[i]) * gamma_body
 
         # - Add Wake Induced Velocities - #
         #
         for w in 1:nr
-            Vm[i, :] .+= A_wake_to_wake[w, i] * gamma_wake[w, :]
+            Vm[i, :] .+=
+                (vxd_wake_to_wake[w, i] .+ vxd_wake_to_wake[w, i]) * gamma_wake[w, :]
         end
 
         # # - Add Rotor Induced Velocities - #

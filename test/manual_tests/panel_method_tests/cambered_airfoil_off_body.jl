@@ -43,7 +43,7 @@ savefig("test/manual_tests/4412_surface_pressure.pdf")
 minr = findfirst(x -> x < 0.5, panels.panel_center[:, 1]) #findmin(panels.panel_center[:, 2])
 x1 = ones(50) * panels.panel_center[minr, 1]
 
-r1 = range(panels.panel_center[minr, 2], panels.panel_center[minr, 2] - 1.0; length=50)
+r1 = range(panels.panel_center[minr, 2], panels.panel_center[minr, 2] - 15.0; length=50)
 coords1 = [x1 r1]
 panels1 = ff.generate_panels(method, coords1)
 cpr1 = panels1.panel_center[:, 2]

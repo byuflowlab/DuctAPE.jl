@@ -12,7 +12,7 @@ r = radius * sind.(theta)
 geom = plot(x, r; aspectratio=:equal, xlabel="x", ylabel="r", label="sphere surface")
 coordinates = [x r]
 
-method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true])
+method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
 problem = ff.define_problem(method, coordinates, 0.0, -1.0, -1.0)
 panels = ff.generate_panels(method, coordinates)
 mesh = ff.generate_mesh(method, panels)
