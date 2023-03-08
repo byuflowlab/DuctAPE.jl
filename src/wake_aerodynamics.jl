@@ -5,9 +5,9 @@ Functions regarding wake aerodynamics
 =#
 
 """
-DONE. HAS TEST. clean up
+TODO: update test to use Omegas and num_blades
 """
-function calculate_enthalpy_jumps(Gammas, blade_elements)
+function calculate_enthalpy_jumps(Gammas, Omegas, num_blades)
 
     # - Rename for Convenience - #
     nr = length(Gammas[1, :])
@@ -18,9 +18,7 @@ function calculate_enthalpy_jumps(Gammas, blade_elements)
 
     # - Loop through rotors - #
     for i in 1:nr
-        @. H_tilde[:, i] =
-            blade_elements[i].omega * blade_elements[i].num_blades * Gammas[:, i] /
-            (2.0 * pi)
+        @. H_tilde[:, i] = Omegas[i] * num_blades[i] * Gammas[:, i] / (2.0 * pi)
     end
 
     # - Return cumulative sum of Enthalpy Jumps  - #
@@ -28,9 +26,9 @@ function calculate_enthalpy_jumps(Gammas, blade_elements)
 end
 
 """
-DONE. HAS TEST. clean up
+TODO: update test to use num_blades
 """
-function calculate_net_circulation(Gammas, blade_elements)
+function calculate_net_circulation(Gammas, num_blades)
 
     # - Rename for Convenience - #
     nr = length(Gammas[1, :])
@@ -42,7 +40,7 @@ function calculate_net_circulation(Gammas, blade_elements)
 
     # - Loop through rotors - #
     for i in 1:nr
-        @. BGamma[:, i] = blade_elements[i].num_blades * Gammas[:, i]
+        @. BGamma[:, i] = num_blades[i] * Gammas[:, i]
     end
 
     # - Return cumulative sum of net circulations - #

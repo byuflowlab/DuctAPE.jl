@@ -63,7 +63,7 @@ TODO: need to check upstream in the functions that the sign convention for the v
 function calculate_angle_of_attack(twist, Wm, Wtheta)
 
     # - Calculate Inflow Angle - #
-    inflow = atan(Wm, -Wtheta)
+    inflow = atan.(Wm, -Wtheta)
 
     # - Calculate Angle of Attack - #
     alpha = twist - inflow

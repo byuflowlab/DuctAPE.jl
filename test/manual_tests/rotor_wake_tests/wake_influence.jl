@@ -66,7 +66,7 @@ savefig("./test/manual_tests/rotor_wake_tests/basic_wake_panels.pdf")
 
 ## -- Determine points at which to sample velocity field -- ##
 #how about the radial averages of the grid points?
-x_sample_points = repeat(xrange; outer=(1, length(radial_stations) - 1))
+x_sample_points = repeat(xrange; outer=(1, length(radial_stations) - 1)) .- 0.05
 avg_radial_stations = (radial_stations[2:end] .+ radial_stations[1:(end - 1)]) ./ 2.0
 r_sample_points = repeat(avg_radial_stations'; outer=(length(xrange), 1))
 
@@ -114,5 +114,40 @@ vrd_wake_to_wake = [
 ## -- Calculate the induced velocities inside the wake and on the rotor plane -- ##
 
 # - need to populate the panel strengths based on the constant_circulation_rotor outputs. - #
+panel_strengths = repeat(gamma_thetas; inner=(1, length(xrange) - 1))
 
+# - loop through all the induced velocities summing up the totals - #
+#initialize the outputs
+vxs = zeros(nr - 1, length(xrange) - 1)
+vrs = zeros(nr - 1, length(xrange) - 1)
 
+# loop through the rows of sample panels
+for i in 1:(nr - 1)
+    # loop through the rows of vortex panels
+    for j in 1:nr
+        # populate the ith sample row with the contributions from the jth vortex panel row
+        vxs[i, :] .+= vxd_wake_to_wake[j, i] * panel_strengths[j, :]
+        vrs[i, :] .+= vrd_wake_to_wake[j, i] * panel_strengths[j, :]
+    end
+end
+
+# - Put together some contour plots - #
+
+pyplot()
+contour(
+    sample_panels[1].panel_center[:, 1],
+    avg_radial_stations,
+    vxs;
+    aspectratio=:equal,
+    fill=true,
+)
+savefig("./test/manual_tests/rotor_wake_tests/vx_contour.pdf")
+
+contour(
+    sample_panels[1].panel_center[:, 1],
+    avg_radial_stations,
+    vrs;
+    aspectratio=:equal,
+    fill=true,
+)
+savefig("./test/manual_tests/rotor_wake_tests/vr_contour.pdf")

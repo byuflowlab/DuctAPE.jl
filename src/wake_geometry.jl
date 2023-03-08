@@ -568,6 +568,7 @@ function generate_wake_grid(
 
     # - Generate Panels - #
     # These are the grid centers
+    # TODO: need to determine where the wake panels actually lie. probably not like this.
     wake_panels = generate_wake_panels(
         (x_grid_points[:, 1:(end - 1)] .+ x_grid_points[:, 2:end]) / 2.0,
         (r_grid_points[:, 1:(end - 1)] .+ r_grid_points[:, 2:end]) / 2.0,
