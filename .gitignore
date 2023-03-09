@@ -6,6 +6,7 @@
 *.key
 *.idraw
 /*.pdf
+test/manual_tests/*/*.pdf
 /*.png
 
 # julia

@@ -264,6 +264,7 @@ end
 
 # - Calculate Circulation from lift and inflow_init - #
 Gamma = 0.5 .* inflow_init.Wmag .* chord .* cl_init
+# Gamma = deepcopy(ccbGamma)
 
 # get net circulation and B*Gamma
 BGamma_init, Gamma_tilde_init = dt.calculate_net_circulation(Gamma, B)
@@ -278,18 +279,35 @@ Vm_init = vm_from_vinf(Vinf, Gamma_tilde_init, H_tilde_init, r)
 wake_vortex_strengths = gamma_theta_open_rotor(Vinf, Vm_init)
 
 # - Populate Wake velocity and strength matrices - #
-wake_Vms = repeat(Vm_init; inner=(1, length(xrange) - 1))
+# wake_Vms = repeat(Vm_init; inner=(1, length(xrange) - 1))
 wake_gammas = repeat(wake_vortex_strengths; inner=(1, length(xrange) - 1))
+
+## -- Set up some plots for iteration -- ##
+pcirc = plot(Gamma, r; xlabel=L"\Gamma = 0.5 W c c_\ell", ylabel="r", label="Init")
+palpha = plot(alpha_init * 180.0 / pi, r; xlabel=L"\alpha", ylabel="r", label="Init")
+pvm = plot(Vm_init .- Vinf, r; xlabel=L"u (v_m)", ylabel="r", label="Init")
+pvt = plot(vtheta_init, r; xlabel=L"v (v_\theta)", ylabel="r", label="Init")
+pw = plot(inflow_init.Wmag, r; xlabel=L"|W|", ylabel="r", label="Init")
+pgammatheta = plot(
+    wake_vortex_strengths, r; xlabel="wake vortex strengths", ylabel="r", label="Init"
+)
+pvmwake = plot(; xlabel="wake-induced velocity at rotor plane", ylabel="r")
+
+plot!(pcirc, ccbGamma, r; xlabel=L"\Gamma = 0.5 W c c_\ell", ylabel="r", label="CCBlade")
+plot!(palpha, out.alpha * 180.0 / pi, r; xlabel=L"\alpha", ylabel="r", label="CCBlade")
+plot!(pvm, out.u, r; xlabel=L"u (v_m)", ylabel="r", label="CCBlade")
+plot!(pvt, out.v, r; xlabel=L"v (v_\theta)", ylabel="r", label="CCBlade")
+plot!(pw, out.W, r; xlabel=L"|W|", ylabel="r", label="CCBlade")
 
 #---------------------------------#
 #             Iterate             #
 #---------------------------------#
 Gamma_temp = 99 * ones(length(Gamma))
-iter = [1]
+iter = [0]
 Vm = deepcopy(Vm_init)
-while Gamma_temp[5] - Gamma[5] > 1e-3
-    println("iter $(iter[1])")
+while abs(Gamma_temp[5] - Gamma[5]) > 1e-3
     iter[1] += 1
+    println("iter $(iter[1])")
 
     # - Calculate induced velocities at rotor - #
 
@@ -338,9 +356,27 @@ while Gamma_temp[5] - Gamma[5] > 1e-3
     wake_vortex_strengths .= gamma_theta_open_rotor(Vinf, Vm)
 
     # - Populate Wake velocity and strength matrices - #
-    wake_Vms .= repeat(Vm; inner=(1, length(xrange) - 1))
+    # wake_Vms .= repeat(Vm; inner=(1, length(xrange) - 1))
     wake_gammas .= repeat(wake_vortex_strengths; inner=(1, length(xrange) - 1))
+
+    plot!(pcirc, Gamma, r; label="iter #$(iter[1])")
+    plot!(palpha, alpha * 180.0 / pi, r; label="iter #$(iter[1])")
+    plot!(pvm, Vm .- Vinf, r; label="iter #$(iter[1])")
+    plot!(pvt, vtheta * 2.0, r; label="iter #$(iter[1])")
+    plot!(pw, inflow.Wmag, r; label="iter #$(iter[1])")
+    plot!(pgammatheta, wake_vortex_strengths, r; label="iter #$(iter[1])")
+    plot!(pvmwake, vm_wake_on_rotor, r; label="iter #$(iter[1])")
 end
+
+savefig(pcirc, "test/manual_tests/rotor_wake_tests/circulation_iteration.pdf")
+savefig(palpha, "test/manual_tests/rotor_wake_tests/alpha_iteration.pdf")
+savefig(pvm, "test/manual_tests/rotor_wake_tests/vm_iteration.pdf")
+savefig(pvt, "test/manual_tests/rotor_wake_tests/vtheta_iteration.pdf")
+savefig(pw, "test/manual_tests/rotor_wake_tests/Wmag_iteration.pdf")
+savefig(
+    pgammatheta, "test/manual_tests/rotor_wake_tests/wake_vortex_strength_iteration.pdf"
+)
+savefig(pvmwake, "test/manual_tests/rotor_wake_tests/vm_wake_on_rotor_iteration.pdf")
 
 ## -- Plots -- ##
 plot(ccbGamma, r; xlabel=L"\Gamma", ylabel="r", label="CCBlade")
@@ -348,5 +384,17 @@ plot!(Gamma, r; label="DuctTAPE")
 savefig("test/manual_tests/rotor_wake_tests/iterwake_circulation.pdf")
 
 plot(out.u, r; xlabel="induced axial velocity", ylabel="r", label="CCBlade")
-plot!((Vm .- Vinf) / 2.0, r; label="DuctTAPE / 2")
+plot!((Vm .- Vinf), r; label="DuctTAPE")
 savefig("test/manual_tests/rotor_wake_tests/iterwake_Vx.pdf")
+
+# # f = open("test/manual_tests/rotor_wake_tests/save_gamma_ccb_init.jl", "w+")
+# f = open("test/manual_tests/rotor_wake_tests/save_gamma_my_init.jl", "a+")
+
+# # write(f, "myinitgam = [\n")
+# write(f, "ccbinitgam = [\n")
+
+# for i in 1:length(Gamma)
+#     write(f, "$(Gamma[i])\n")
+# end
+# write(f, "]\n")
+# close(f)
