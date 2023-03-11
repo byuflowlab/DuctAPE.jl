@@ -76,8 +76,8 @@ stator_tip_chord = x[22]
 stator_twist_guess = x[23]
 omega_rotor = x[24]
 
-method_body = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true])
-method_vortex = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true])
+method_body = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])
+method_vortex = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
 method_source = ff.AxisymmetricProblem(Source(Constant()), Neumann(), [true])
 
 problem_body = ff.define_problem(
