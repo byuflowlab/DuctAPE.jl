@@ -37,8 +37,9 @@ function calculate_induced_velocities_on_rotors(
 
         # - Add Wake Induced Velocities - #
         for w in 1:length(gamma_wake[:, 1])
-            vm[:, i] .+=
-                (vxd_wake_to_rotor[w, i] .+ vrd_wake_to_rotor[w, i]) * gamma_wake[w, :]
+            vx = vxd_wake_to_rotor[w, i] * gamma_wake[w, :]
+            vr = vrd_wake_to_rotor[w, i] * gamma_wake[w, :]
+            vm[:, i] .+= sqrt(vx^2 + vr^2)
         end
 
         # # - Add Rotor Induced Velocities - #
@@ -46,10 +47,16 @@ function calculate_induced_velocities_on_rotors(
         #     vm[:, i] += A_rotor_to_rotor[i, j] * Sigma[i]
         # end
 
-        #vtheta comes from gamma and such
-        vtheta[:, i] .=
-            1.0 / (2.0 * pi * blade_elements[i].radial_positions) *
-            (Gamma_tilde[:, i] + 0.5 * BGamma[:, i])
+        #vtheta comes directly from circulation
+
+        if i == 1
+            vtheta[:, i] .=
+                1.0 / (2.0 * pi * blade_elements[i].radial_positions) * (0.5 * BGamma[:, i])
+        else
+            vtheta[:, i] .=
+                1.0 / (2.0 * pi * blade_elements[i].radial_positions) *
+                (Gamma_tilde[:, i - 1] + 0.5 * BGamma[:, i])
+        end
     end
 
     return (vm=vm, vtheta=vtheta)
@@ -94,10 +101,6 @@ function calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
     end
 
     Wmag = sqrt.(Wm .^ 2 .+ Wtheta .^ 2)
-
-    # if eltype(Wmag) == Float64
-    #     println("Inflow Magnitude: ", Wmag)
-    # end
 
     return (Wm=Wm, Wtheta=Wtheta, Wmag=Wmag)
 end

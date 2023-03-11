@@ -36,7 +36,7 @@ Note: assumes duct coordinates are provided starting and ending at te and progre
 - `hub_coordinates::Array{Float64,2}` : [x y] coordinates of hub
 
 **Keyword Arguments:**
-- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
 
 **Returns:**
 - `body_geometry::BodyGeometry` : BodyGeometry object for duct and hub
@@ -45,7 +45,7 @@ Note: assumes duct coordinates are provided starting and ending at te and progre
 function generate_body_geometry(
     duct_coordinates,
     hub_coordinates;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
 )
 
     # - Use FLOWFoil Functions to generate array of panel objects for duct and hub. - #

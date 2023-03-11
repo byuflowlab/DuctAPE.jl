@@ -10,7 +10,7 @@ r .+= 100.0
 coordinates = [x r]
 geom = plot(x, r; aspectratio=:equal, xlabel="x", ylabel="r", label="Airfoil Surface")
 
-method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false])
+method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false])
 problem = ff.define_problem(method, coordinates, 0.0, -1.0, -1.0)
 panels = ff.generate_panels(method, coordinates)
 mesh = ff.generate_mesh(method, panels)

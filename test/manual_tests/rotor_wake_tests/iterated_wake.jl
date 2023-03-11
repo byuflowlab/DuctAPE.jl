@@ -163,7 +163,7 @@ wake_panels = dt.generate_wake_panels(
     x_grid_points,
     r_grid_points,
     nbe;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true]),
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
 )
 
 # Rotor points of interest
@@ -237,8 +237,6 @@ vrd_wake_to_rotor = [A_wake_to_rotor[i][2] for i in 1:length(wake_panels)]
 #---------------------------------#
 #            INITIALIZE           #
 #---------------------------------#
-#TODO: fix all the scoping issues.
-#TODO: may just need to update things in the loop better.
 
 # - Define some basic blade element named tuples as place holders
 blade_elements = [(omega=Omega, radial_positions=r, chords=chord)]
@@ -284,20 +282,30 @@ wake_gammas = repeat(wake_vortex_strengths; inner=(1, length(xrange) - 1))
 
 ## -- Set up some plots for iteration -- ##
 pcirc = plot(Gamma, r; xlabel=L"\Gamma = 0.5 W c c_\ell", ylabel="r", label="Init")
-palpha = plot(alpha_init * 180.0 / pi, r; xlabel=L"\alpha", ylabel="r", label="Init")
-pvm = plot(Vm_init .- Vinf, r; xlabel=L"u (v_m)", ylabel="r", label="Init")
-pvt = plot(vtheta_init, r; xlabel=L"v (v_\theta)", ylabel="r", label="Init")
-pw = plot(inflow_init.Wmag, r; xlabel=L"|W|", ylabel="r", label="Init")
+palpha = plot(
+    alpha_init * 180.0 / pi, r; xlabel=L"\alpha (degrees)", ylabel="r", label="Init"
+)
+pvm = plot(
+    Vm_init .- Vinf,
+    r;
+    xlabel="farfield induced axial (meridional) velocity",
+    ylabel="r",
+    label="Init",
+)
+pvt = plot(
+    vtheta_init, r; xlabel="nearfield induced tangential velocity", ylabel="r", label="Init"
+)
+pw = plot(inflow_init.Wmag, r; xlabel="inflow velocity magnitude", ylabel="r", label="Init")
 pgammatheta = plot(
     wake_vortex_strengths, r; xlabel="wake vortex strengths", ylabel="r", label="Init"
 )
-pvmwake = plot(; xlabel="wake-induced velocity at rotor plane", ylabel="r")
+pvmwake = plot(; xlabel="wake-induced meridional velocity at rotor plane", ylabel="r")
 
-plot!(pcirc, ccbGamma, r; xlabel=L"\Gamma = 0.5 W c c_\ell", ylabel="r", label="CCBlade")
-plot!(palpha, out.alpha * 180.0 / pi, r; xlabel=L"\alpha", ylabel="r", label="CCBlade")
-plot!(pvm, out.u, r; xlabel=L"u (v_m)", ylabel="r", label="CCBlade")
-plot!(pvt, out.v, r; xlabel=L"v (v_\theta)", ylabel="r", label="CCBlade")
-plot!(pw, out.W, r; xlabel=L"|W|", ylabel="r", label="CCBlade")
+plot!(pcirc, ccbGamma, r; label="CCBlade")
+plot!(palpha, out.alpha * 180.0 / pi, r; label="CCBlade")
+plot!(pvm, out.u * 2.0, r; label="CCBlade")
+plot!(pvt, out.v, r; label="CCBlade")
+plot!(pw, out.W, r; label="CCBlade")
 
 #---------------------------------#
 #             Iterate             #
@@ -314,15 +322,13 @@ while abs(Gamma_temp[5] - Gamma[5]) > 1e-3
     # vm comes from wake affect on rotor
     vm_wake_on_rotor = zeros(nbe)
     for i in length(wake_to_rotor_mesh)
-        vm_wake_on_rotor .+=
-            (vxd_wake_to_rotor[i] .+ vrd_wake_to_rotor[i]) * wake_gammas[i, :]
+        vx = vxd_wake_to_rotor[i] * wake_gammas[i, :]
+        vr = vrd_wake_to_rotor[i] * wake_gammas[i, :]
+        vm_wake_on_rotor .+= sqrt.(vx .^ 2 .+ vr .^ 2)
     end
 
     # vtheta comes from rotor self-induction
     vtheta = 1.0 ./ (2.0 .* pi .* r) .* (0.5 .* B .* Gamma)
-
-    # - swap old to new - #
-    Gamma_temp .= Gamma
 
     # calculate inflow from freestream and rotation
     inflow = dt.calculate_inflow_velocities(
@@ -338,6 +344,9 @@ while abs(Gamma_temp[5] - Gamma[5]) > 1e-3
     for a in 1:length(alpha)
         cl[a], cd[a] = dt.search_polars(af, alpha[a])
     end
+
+    # - swap old to new - #
+    Gamma_temp .= Gamma
 
     # - Calculate Circulation from lift and inflow - #
     @. Gamma = 0.5 * inflow.Wmag * chord * cl
@@ -359,10 +368,11 @@ while abs(Gamma_temp[5] - Gamma[5]) > 1e-3
     # wake_Vms .= repeat(Vm; inner=(1, length(xrange) - 1))
     wake_gammas .= repeat(wake_vortex_strengths; inner=(1, length(xrange) - 1))
 
+    # - PLOT - #
     plot!(pcirc, Gamma, r; label="iter #$(iter[1])")
     plot!(palpha, alpha * 180.0 / pi, r; label="iter #$(iter[1])")
     plot!(pvm, Vm .- Vinf, r; label="iter #$(iter[1])")
-    plot!(pvt, vtheta * 2.0, r; label="iter #$(iter[1])")
+    plot!(pvt, vtheta, r; label="iter #$(iter[1])")
     plot!(pw, inflow.Wmag, r; label="iter #$(iter[1])")
     plot!(pgammatheta, wake_vortex_strengths, r; label="iter #$(iter[1])")
     plot!(pvmwake, vm_wake_on_rotor, r; label="iter #$(iter[1])")

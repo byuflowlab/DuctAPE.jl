@@ -29,7 +29,7 @@ savefig("duct_geometry.pdf")
 
 # - Check that geometry yields smooth results - #
 
-method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false])
+method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false])
 problem = ff.define_problem(method, coordinates, 0.0, -1.0, -1.0)
 body_panels = ff.generate_panels(method, coordinates)
 mesh_body_to_body = ff.generate_mesh(method, body_panels)

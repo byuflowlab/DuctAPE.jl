@@ -509,7 +509,7 @@ Generate vector of Axisymmetric panel objects for the wake lines emanating from 
 - `nr::Int` : number of radial grid points
 
 **Keyword Arguments:**
-- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
 
 **Returns:**
 - `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
@@ -518,7 +518,7 @@ function generate_wake_panels(
     x_grid_points,
     r_grid_points,
     nr;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true]),
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
 )
 
     # - Organize Coordinates into wake lines - #
@@ -543,7 +543,7 @@ Generate vector of Axisymmetric panel objects for the wake lines emanating from 
 
 **Keyword Arguments:**
 - `wake_length::Float` : length of wake (non-dimensional based on maximum duct chord) to extend past the furthest trailing edge.
-- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true]),
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
 
 **Returns:**
 - `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
@@ -554,7 +554,7 @@ function generate_wake_grid(
     rotor_x_positions,
     radial_positions;
     wake_length=1.0,
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true]),
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
     debug=false,
 )
 

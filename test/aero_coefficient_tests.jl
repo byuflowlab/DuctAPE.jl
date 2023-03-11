@@ -74,7 +74,7 @@ end
     @testset "Self-induction " begin
 
         # - Self-inducement Tests - #
-        method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true])
+        method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
         influence_panels = [ff.generate_panels(method, [0.0 1.0; 1.0 1.0])]
         affect_panels = [ff.generate_panels(method, [0.0 1.0; 1.0 1.0])]
 
@@ -99,7 +99,7 @@ end
 
         # - Single Body - #
 
-        method = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true])
+        method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
         influence_panels = ff.generate_panels(method, [0.0 1.0; 0.5 1.0; 1.0 1.0])
         affect_panels = ff.generate_panels(method, [0.0 2.0; 0.5 2.0; 1.0 2.0])
 
@@ -292,7 +292,6 @@ end
                     mesh.x[i, j],
                     mesh.r[i, j],
                     influence_panels.panel_center[mesh.mesh2panel_influence[j], 2],
-                    influence_panels.panel_length[mesh.mesh2panel_influence[j]],
                     mesh.m[i, j],
                 )
 
@@ -318,7 +317,6 @@ end
                     mesh.x[i, j],
                     mesh.r[i, j],
                     influence_panels.panel_center[mesh.mesh2panel_influence[j], 2],
-                    influence_panels.panel_length[mesh.mesh2panel_influence[j]],
                     mesh.m[i, j],
                 )
 

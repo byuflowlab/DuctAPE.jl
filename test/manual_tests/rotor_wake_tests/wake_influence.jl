@@ -47,7 +47,7 @@ wake_panels = dt.generate_wake_panels(
     x_grid_points,
     r_grid_points,
     nr;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true]),
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
 )
 
 # - Plot the panels to make sure you made them correctly - #
@@ -76,7 +76,7 @@ sample_panels = dt.generate_wake_panels(
     x_sample_points,
     r_sample_points,
     nra;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true]),
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
 )
 
 # - Plot to make sure they're in the right place - #

@@ -9,8 +9,8 @@ function initialize_parameters(
     #             Poblem              #
     #---------------------------------#
     #These are the structs used by FLOWFoil to use for dispatch purposes
-    method_body = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [false, true])
-    method_vortex = ff.AxisymmetricProblem(Vortex(Constant()), Neumann(), [true])
+    method_body = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])
+    method_vortex = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
     method_source = ff.AxisymmetricProblem(Source(Constant()), Neumann(), [true])
 
     problem_body = ff.define_problem(

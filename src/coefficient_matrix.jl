@@ -163,11 +163,13 @@ function get_vx_ring_vortex_off_body(x, r, rj, m; probe=false)
     #get values for elliptic integrals
     K, E = get_elliptics(m)
 
-    #TODO: decide if self-induced velocity is needed and add.
-
-    # negative here is due to our convention that the vortex is postive clockwise
-    # Ryall has a positive, Lewis has a minus, only difference seems to be potentially opposite conventions for positive vorticity
-    return -1.0 / den1 * (K - (1.0 + num2 / den2) * E)
+    # set self-induced case to zero for the off-body case
+    if x^2 + (r - 1.0)^2 <= eps()
+        return 0.0
+    else
+        # negative here is due to our convention that the vortex is postive clockwise
+        return -1.0 / den1 * (K - (1.0 + num2 / den2) * E)
+    end
 end
 
 """
@@ -196,10 +198,12 @@ function get_vr_ring_vortex_off_body(x, r, rj, m; probe=false)
     #get values for elliptic integrals
     K, E = get_elliptics(m)
 
-    #TODO: decide if self-induced velocity is needed and add.
-
-    #Ryall has a plus or minus based on the sign of x that is multiplied here.  That doesn't seem to be needed to get the correct directions working. Lewis omits any plus and minuses.
-    return num1 / den1 * (K - (1.0 + num2 / den2) * E)
+    # set self-induced case to zero for the off-body case
+    if x^2 + (r - 1.0)^2 <= eps()
+        return 0.0
+    else
+        return num1 / den1 * (K - (1.0 + num2 / den2) * E)
+    end
 end
 
 """
@@ -286,7 +290,12 @@ function get_vx_ring_source_off_body(x, r, rj, dj, m; probe=false)
     num2 = 2 * x * E
     den2 = x^2 + (r - 1)^2
 
-    return sign(x) * 1.0 / den1 * (num2 / den2)
+    # return zero for the self-induced off body case
+    if x^2 + (r - 1.0)^2 <= eps()
+        return 0.0
+    else
+        return 1.0 / den1 * (num2 / den2)
+    end
 end
 
 """
@@ -308,12 +317,18 @@ function get_vr_ring_source_off_body(x, r, rj, m; probe=false)
     #get values for elliptic integrals
     K, E = get_elliptics(m)
 
-    num1 = 1 / r
     #get numerator and denominator of first fraction
+    num1 = 1.0 / r
     den1 = 2.0 * pi * rj * sqrt(x^2 + (r + 1.0)^2)
 
+    #get numerator and denominator of second fraction
     num2 = 2 * r * (r - 1.0)
     den2 = x^2 + (r - 1)^2
 
-    return num1 / den1 * (K - (1.0 - num2 / den2) * E)
+    # return zero for the self-induced off-body case
+    if x^2 + (r - 1.0)^2 <= eps()
+        return 0.0
+    else
+        return num1 / den1 * (K - (1.0 - num2 / den2) * E)
+    end
 end
