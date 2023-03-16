@@ -20,8 +20,6 @@ using SpecialFunctions
 
 ## -- INCLUDES -- ##
 
-include("utils.jl")
-
 include("types.jl")
 
 # Body Geometry Functions

@@ -7,8 +7,9 @@ Formatting copied directly from CCBlade source code.
 using Printf: @printf
 
 """
-overload `parsefile` function from CCBlade
-assumes solidity parameter after mach number
+    parsefile(filename, radians, solidity)
+
+Overload for `parsefile` function from CCBlade. Assumes solidity is given after Mach number
 """
 function parsefile(filename, radians, solidity)
     alpha = Float64[]
@@ -17,7 +18,7 @@ function parsefile(filename, radians, solidity)
     info = ""
     Re = 1.0
     Mach = 1.0
-    solidity_val = 1.0
+    solidity = 1.0
 
     open(filename) do f
 
@@ -49,9 +50,12 @@ function parsefile(filename, radians, solidity)
 end
 
 """
-overload `writefile` function from CCBlade to include solidity parameter in file header
+    writefile(filename, info, Re, Mach, solidity, alpha, cl, cd, radians)
+
+Overload for `writefile` function from CCBlade. Writes solidity after Mach number
 """
 function writefile(filename, info, Re, Mach, solidity, alpha, cl, cd, radians)
+    
     open(filename, "w") do f
         @printf(f, "%s\n", info)
         @printf(f, "%.17g\n", Re)

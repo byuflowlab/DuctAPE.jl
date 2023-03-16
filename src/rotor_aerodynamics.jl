@@ -7,59 +7,54 @@ Authors: Judd Mehr,
 =#
 
 """
-DONE. clean up and check
-"""
-function calculate_induced_velocities_on_rotors(
-    BGamma, #matrix size num blade elem x num rotors
-    Gamma_tilde, #matrix size num blade elem x num rotors
-    blade_elements,
-    vxd_bodies_to_rotor, #vector of matrices
-    vrd_bodies_to_rotor, #vector of matrices
-    gamma_bodies,
-    vxd_wake_to_rotor, #matrix of matrices size num wakes x num rotors
-    vrd_wake_to_rotor, #matrix of matrices size num wakes x num rotors
-    gamma_wake, # matrix
-    # A_rotor_to_rotor,
-    # Sigma,
-)
+    calculate_induced_velocities_on_rotors(BΓr, Γ_tilde, blade_elements, Ax_br, Ar_br, Γ_b,
+        Ax_wr, Ar_wr, Γ_w)
 
-    # - Rename for Convenience - #
+Calculate meridional and tangential induced velocity on the rotors.
+
+The meridional velocity is defined tangent to a streamline in the x-r plane.  Its magnitude
+can therefore be computed as `Vm = Vx + Vr`
+"""
+function calculate_induced_velocities_on_rotors(BΓr, Γ_tilde,
+    blade_elements, Ax_br, Ar_br, Γ_b, Ax_wr, Ar_wr, Γ_w)
+
+    # problem dimensions
     nr = length(blade_elements)
 
-    # - Initialize - #
-    vm = similar(BGamma)
-    vtheta = similar(BGamma)
+    # initialize outputs
+    Vm = similar(BΓr) .= 0
+    Vθ = similar(BΓr) .= 0
 
-    for i in 1:nr
-        # - Add Body Induced Velocities - #
-        # TODO: need to double check the theory and implementation here
-        vm[:, i] .= (vxd_bodies_to_rotor[i] .+ vrd_bodies_to_rotor[i]) * gamma_bodies
+    # loop through each rotor
+    for ir in 1:nr
 
-        # - Add Wake Induced Velocities - #
-        for w in 1:length(gamma_wake[:, 1])
-            vx = vxd_wake_to_rotor[w, i] * gamma_wake[w, :]
-            vr = vrd_wake_to_rotor[w, i] * gamma_wake[w, :]
-            vm[:, i] .+= sqrt(vx^2 + vr^2)
+        # add body induced meridional velocities
+        Vm[:, ir] .+= Ax_br[ir] * Γ_b
+        Vm[:, ir] .+= Ar_br[ir] * Γ_b
+
+        # add wake induced meridional velocities
+        for iw in 1:size(Γ_w, 1)
+            Vm[:, ir] .+= Ax_wr[iw, ir] * view(Γ_w, iw, :)
+            Vm[:, ir] .+= Ar_wr[iw, ir] * view(Γ_w, iw, :)
         end
 
-        # # - Add Rotor Induced Velocities - #
-        # for j in 1:nr
-        #     vm[:, i] += A_rotor_to_rotor[i, j] * Sigma[i]
+        # # add rotor induced meridional velocities
+        # for iw in 1:size(Σ_r, 1)
+        #     Vm[:, ir] .+= Ax_rr[iw, ir] * view(Σ_r, iw, :)
+        #     Vm[:, ir] .+= Ar_rr[iw, ir] * view(Σ_r, iw, :)
         # end
 
-        #vtheta comes directly from circulation
+        # add self-induced tangential velocity
+        Vθ[:, ir] .+= view(BΓr, :, ir) / (4*pi*blade_elements[ir].radial_positions)
 
-        if i == 1
-            vtheta[:, i] .=
-                1.0 / (2.0 * pi * blade_elements[i].radial_positions) * (0.5 * BGamma[:, i])
-        else
-            vtheta[:, i] .=
-                1.0 / (2.0 * pi * blade_elements[i].radial_positions) *
-                (Gamma_tilde[:, i - 1] + 0.5 * BGamma[:, i])
+        # add tangential velocity from previous rotors
+        if ir > 1
+            Vθ[:,] .+= view(Γ_tilde, :, ir-1) / (2*pi*blade_elements[ir].radial_positions)
         end
+
     end
 
-    return (vm=vm, vtheta=vtheta)
+    return Vm, Vθ
 end
 
 """
@@ -67,13 +62,11 @@ DONE.HAS TEST. clean up
 twist is from plane of rotation
 TODO: need to check upstream in the functions that the sign convention for the velocities matches expectations for this function.
 """
-function calculate_angle_of_attack(twist, Wm, Wtheta)
+function calculate_angle_of_attack(twist, Wm, Wθ)
 
-    # - Calculate Inflow Angle - #
-    inflow = atan.(Wm, -Wtheta)
+    inflow =
 
     # - Calculate Angle of Attack - #
-    alpha = twist - inflow
 
     # if typeof(alpha) == Float64
     #     println("section twist degrees: ", twist * 180 / pi)
@@ -84,108 +77,80 @@ function calculate_angle_of_attack(twist, Wm, Wtheta)
     return alpha
 end
 
-"""
-DONE.HAS TEST. clean up
-vm and vtheta are matrices of same size as Gamma_tilde, etc. meaning there is a value at each of the blade elements on each of the rotors.
-"""
-function calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
-    nr = length(blade_elements)
 
-    Wm = similar(vm)
-    Wtheta = similar(vm)
+"""
+    calculate_gamma_sigma(blade_elements, Vinf [, Vm, Vθ])
 
-    for i in 1:nr
-        Wm[:, i] = Vinf .+ vm[:, i]
-        Wtheta[:, i] =
-            vtheta[:, i] .- blade_elements[i].omega .* blade_elements[i].radial_positions
+Calculate rotor circulation and source strengths using airfoil data.
+"""
+function calculate_gamma_sigma(blade_elements, Vinf, Vm=nothing, Vθ=nothing)
+
+    # get floating point type
+    if isnothing(Vm) && isnothing(Vθ)
+        TF = promote_type(eltype(blade_elements[1].chords), typeof(Vinf))
+    else
+        TF = promote_type(eltype(blade_elements[1].chords), typeof(Vinf), eltype(Vm), eltype(Vθ))
     end
 
-    Wmag = sqrt.(Wm .^ 2 .+ Wtheta .^ 2)
+    # get problem dimensions
+    nbe = length(blade_elements)
+    nr = blade_elements[1].num_radial_stations[1]
 
-    return (Wm=Wm, Wtheta=Wtheta, Wmag=Wmag)
+    # initialize outputs
+    Γr = zeros(TF, nbe, nr)
+    Σr = zeros(TF, nbe, nr)
+
+    # call in-place function
+    return calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm, Vθ)
 end
 
 """
-DONE.HAS TEST. clean up
-alpha is in radians
-TODO: this is just a place holder. need to add more comprehensive function later
+    calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf [, Vm, Vθ])
+
+In-place version of [`calculate_gamma_sigma`](@ref)
 """
-function search_polars(airfoil, alpha)
-    return ccb.afeval(airfoil, alpha, 0.0, 0.0) #requires entries for Re and Ma, even though they aren't used.
-end
+function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm=nothing, Vθ=nothing)
 
-"""
-DONE.HAS TEST. clean up
-"""
-function calculate_gamma_sigma(blade_elements, Vinf, vm=-1.0, vtheta=-1.0)
+    # problem dimensions
+    nbe, nr = size(Γr)
 
-    # - Rename for Convenience - #
-    TF = eltype(blade_elements[1].chords)
+    # loop through rotors
+    for i in 1:nbe
+        for j = 1:nr
 
-    # - Initialize Outputs - #
-    Gamma = zeros(TF, blade_elements[1].num_radial_stations[1], length(blade_elements))
-    Sigma = zeros(TF, blade_elements[1].num_radial_stations[1], length(blade_elements))
+            # extract blade element properties
+            B = blade_elements[i].num_blades # number of blades
+            c = blade_elements[i].chords[j] # chord length
+            twist = blade_elements[i].twists[j] # twist
+            r = blade_elements[i].radial_positions[j] # radius
+            Ω = blade_elements[i].omega[j] # rotation rate
 
-    # - Call function - #
-    calculate_gamma_sigma!(Gamma, Sigma, blade_elements, Vinf, vm, vtheta)
+            # meridional and tangential inflow velocities
+            Wm = isnothing(Vm) ? Vinf : Vm[i, j] + Vinf
+            Wθ = isnothing(Vθ) ? -Ω*r : Vθ[i, j] - Ω*r
+            W = sqrt(Wm^2 + Wθ^2)
 
-    # - Return Initialized Values - #
-    return Gamma, Sigma
-end
+            # calculate angle of attack
+            alpha = twist - atan(Wm, -Wθ)
 
-"""
-DONE.HAS TEST. clean up
-"""
-function calculate_gamma_sigma!(Gamma, Sigma, blade_elements, Vinf, vm=-1.0, vtheta=-1.0)
+            # look up lift and drag data
+            cl, cd = search_polars(blade_elements[i].airfoils[j], alpha)
 
-    # - Rename for Convenience - #
-    TF = eltype(Gamma)
+            # calculate vortex strength
+            Γr[i, j] = 1/2*W*c*cl
 
-    # - Initialize reused vectors - #
-    cl = zeros(TF, length(blade_elements[1].chords))
-    cd = zeros(TF, length(blade_elements[1].chords))
+            # calculate source strength
+            Σr[i, j] = B/(4*pi*r)*W*c*cd
 
-    # - Calculate Inflow Velocity - #
-    if vm == -1.0 && vtheta == -1.0
-        #first run through, no induced velocities
-        vm = zeros(TF, length(blade_elements[1].chords), length(blade_elements))
-        vtheta = zeros(TF, length(blade_elements[1].chords), length(blade_elements))
-    end
-
-    inflow = calculate_inflow_velocities(blade_elements, Ref(Vinf), vm, vtheta)
-
-    # - Loop through rotors - #
-    for i in 1:length(blade_elements)
-
-        # - Calculate Angle of Attack - #
-        alphas =
-            calculate_angle_of_attack.(
-                blade_elements[i].twists, inflow.Wm[:, i], inflow.Wtheta[:, i]
-            )
-
-        # - Look up lfit and drag data - #
-        for a in 1:length(alphas)
-            cl[a], cd[a] = search_polars(blade_elements[i].airfoils[a], alphas[a])
         end
-
-        # if eltype(cl) == Float64
-        #     println("lift coeffs: ", cl)
-        # end
-
-        # - Calculate Gamma and Sigma - #
-        @. Gamma[:, i] = 0.5 * inflow.Wmag[:, i] * blade_elements[i].chords * cl
-        @. Sigma[:, i] =
-            blade_elements[i].num_blades / (4 * pi * blade_elements[i].radial_positions) *
-            inflow.Wmag[:, i] *
-            blade_elements[i].chords *
-            cd
-
-        # if eltype(Gamma) == Float64
-        #     println("Gamma: ", Gamma)
-        # end
-
     end
 
-    return nothing
+    return Γr, Σr
 end
 
+"""
+    search_polars(airfoil, alpha, re=0.0, ma=0.0)
+
+Look up lift and drag data for an airfoil using CCBlade
+"""
+search_polars(airfoil, alpha, re=0.0, ma=0.0) = ccb.afeval(airfoil, alpha, re, ma)

@@ -1,50 +1,48 @@
-#=
-
-Functions regarding wake aerodynamics
-
-=#
-
 """
-TODO: update test to use Omegas and num_blades
+    calculate_enthalpy_jumps(Γr, Ωr, num_blades)
+
+Calculate enthalpy jump across each blade.
 """
-function calculate_enthalpy_jumps(Gammas, Omegas, num_blades)
+function calculate_enthalpy_jumps(Γr, Ωr, num_blades)
 
-    # - Rename for Convenience - #
-    nr = length(Gammas[1, :])
-    nbe = length(Gammas[:, 1])
+    # number of blade elements and rotors
+    nbe, nr = size(Γr)
 
-    # - Initialize output - #
-    H_tilde = similar(Gammas)
-
-    # - Loop through rotors - #
-    for i in 1:nr
-        @. H_tilde[:, i] = Omegas[i] * num_blades[i] * Gammas[:, i] / (2.0 * pi)
+    # compute cumulative sum of enthalpy jumps
+    H_tilde = similar(Γr, nbe) .= 0
+    for ibe = 1:nbe
+        for ir in 1:nr
+            Ω = Ωr[ir]
+            Γ = Γr[ibe, ir]
+            B = num_blades[ir]
+            H_tilde[ibe] += Ω*B*Γ/(2.0*pi)
+        end
     end
 
-    # - Return cumulative sum of Enthalpy Jumps  - #
-    return cumsum(H_tilde; dims=2)
+    return H_tilde
 end
 
 """
-TODO: update test to use num_blades
+    calculate_net_circulation(Γr, num_blades)
+
+Calculate net circulation on each blade element
 """
-function calculate_net_circulation(Gammas, num_blades)
+function calculate_net_circulation(Γr, num_blades)
 
-    # - Rename for Convenience - #
-    nr = length(Gammas[1, :])
-    nbe = length(Gammas[:, 1])
+    # number of blade elements and rotors
+    nbe, nr = size(Γr)
 
-    # - Initialize output - #
-    Gamma_tilde = similar(Gammas)
-    BGamma = similar(Gammas)
-
-    # - Loop through rotors - #
-    for i in 1:nr
-        @. BGamma[:, i] = num_blades[i] * Gammas[:, i]
+    # calculate net circulations
+    BGamma = similar(Γr) .= 0
+    Gamma_tilde = similar(Γr) .= 0
+    for ibe in 1:nbe
+        for ir in 1:nr
+            BGamma[ibe, ir] = num_blades[ir] * Gammas[ibe, ir]
+            Gamma_tilde[ibe] += BGamma[ibe, ir]
+        end
     end
 
-    # - Return cumulative sum of net circulations - #
-    return BGamma, cumsum(BGamma; dims=2)
+    return BGamma, Gamma_tilde
 end
 
 # """
@@ -59,41 +57,37 @@ end
 # end
 
 """
+    calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw)
+
+Calculate the magnitude of the meridional velocity.  This velocity is defined tangent to a
+streamline in the x-r plane such that its magnitude is given by: `Vm = Vx + Vr`
 """
-function calculate_wake_velocities(
-    vxd_body_to_wake, #vector of matrices size 1 x num wakes
-    vrd_body_to_wake, #vector of matrices size 1 x num wakes
-    gamma_body,
-    # A_rotor_to_wake, matrix of matrices size num rotors x num wakes
-    # rotor_source_strengths,
-    vxd_wake_to_wake, #matrix of matrices size num wakes x num wakes
-    vrd_wake_to_wake, #matrix of matrices size num wakes x num wakes
-    gamma_wake,
-)
+function calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, Ax_rw, Ar_rw, Σr)
 
-    # - Rename for Convenience - #
-    nr = length(gamma_wake[:, 1])
-    nx = length(gamma_wake[1, :])
+    # problem dimensions
+    nr, nw = size(Γw)
 
-    # - Initialize - #
-    Vm = similar(gamma_wake)
+    # initialize meridonal velocity magnitude
+    Vm = similar(Γw) .= 0
 
-    for i in 1:nr
-        # - Add Body Induced Velocities - #
-        # TODO: need to double check the theory and implementation here
-        Vm[i, :] .= (vxd_body_to_wake[i] .+ vrd_body_to_wake[i]) * gamma_body
+    # loop through each wake panel
+    for ir in 1:nr
 
-        # - Add Wake Induced Velocities - #
-        #
-        for w in 1:nr
-            Vm[i, :] .+=
-                (vxd_wake_to_wake[w, i] .+ vxd_wake_to_wake[w, i]) * gamma_wake[w, :]
+        # add body induced velocity
+        Vm[ir,:] .+= Ax_bw[ir] * Γb[ir]
+        Vm[ir,:] .+= Ar_bw[ir] * Γb[ir]
+
+        # add wake induced velocity
+        for iw in 1:size(Γw, 1)
+            Vm[ir, :] .+= Ax_ww[iw, i] * view(Γw, iw, :)
+            Vm[ir, :] .+= Ar_ww[iw, i] * view(Γw, iw, :)
         end
 
-        # # - Add Rotor Induced Velocities - #
-        # for w in 1:length(rotor_source_strengths[:, 1])
-        #     Vm[:, i] .+= A_rotor_to_wake[w, i] * rotor_source_strengths[w, :]
-        # end
+        # add rotor induced velocities (is this needed?)
+        for iw in 1:size(Σr, 1)
+            Vm[ir, :] .+= Ax_rw[iw, i] * view(Σr, iw, :)
+            Vm[ir, :] .+= Ar_rw[iw, i] * view(Σr, iw, :)
+        end
 
     end
 
@@ -101,59 +95,43 @@ function calculate_wake_velocities(
 end
 
 """
+    calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Vinf, Γ_tilde, H_tilde, rotor_indices)
+
+Calculate wake vortex strengths
 """
-function calculate_wake_vortex_strengths!(
-    wake_vortex_strengths, wake_panels, Vm, Vinf, Gamma_tilde, H_tilde, rotoridxs
-)
+function calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Vinf, Γ_tilde, H_tilde, rotor_indices)
 
-    # - Rename for Convenience - #
-    nr = length(Vm[:, 1])
-    nx = length(Vm[1, :])
+    nr, nx = size(Γw)
 
-    for r in 1:nr
-        for x in 1:nx
-
-            # - Get the Differences in Gamma_tilde and H_tilde - #
+    for ir in 1:nr
+        for ix in 1:nx
 
             # find the index of the closest rotor in front of current x position
-            i = findlast(idx -> idx <= x, rotoridxs)
+            i = findlast(idx -> idx <= x, rotor_indices)
 
-            # Gamma_tilde difference
-            Gamma_diff = Gamma_tilde[r + 1, i]^2 - Gamma_tilde[r, i]^2
-
-            # H_tilde difference
-            H_diff = H_tilde[r + 1, i] - H_tilde[r, i]
-
-            # - Get the Average Meridional Velocities - #
-
-            if r == 1 || r == nr
-                # if we are at the first or last station, average velocity is just the velocity on the panel
-                Vm_avg = Vm[r, x]
-
+            # compute average meridional velocities
+            if ir == 1 || ir == nr
+                # use panel velocity as average velocity
+                Vm_avg = Vm[ir, ix]
             else
-                #otherwise, it is an average of the panels above and below the current panel
-                Vm_avg = 0.5 * (Vm[r - 1, x] + Vm[r + 1, x])
+                # average velocities above and below the current panel
+                Vm_avg = 1/2 * (Vm[ir-1, ix] + Vm[ir+1, ix])
             end
 
-            # - Set the Wake Vortex Strength - #
-
-            # keep things positive to avoid division by zero
-            # Vm_avg = max(0.1 * Vinf, Vm_avg) #dfdc use 0.1, could probably reduce this somewhat
-
+            # calculate the wake vortex strength
             if Vm_avg <= 0.0
-                # try handling zero/negative velocities like this
-                wake_vortex_strengths[r, x] *= 0.0
+                Γw[ir,ix] = 0.0
             else
-                wake_vortex_strengths[r, x] =
-                    1.0 / (2 * Vm_avg) * (
-                        -1.0 / (2 * pi * wake_panels[r].panel_center[x, 2]) * Gamma_diff +
-                        2 * H_diff
-                    )
+                r = wake_panels[ir].panel_center[ix, 2]
+                K = -1/(8*pi^2*r^2)
+                ΔΓ2 = 1/(2*pi*r)^2 * (Γ_tilde[ir+1,ix]^2 - Γ_tilde[ir, ix]^2)
+                ΔH = H_tilde[ir+1,ix] - H_tilde[ir, ix]
+                Γw[ir,ix] = (K*ΔΓ2 + ΔH)/Vm_avg
             end
         end
     end
 
-    return nothing
+    return Γw
 end
 
 """
@@ -174,7 +152,7 @@ function initialize_wake_vortex_strengths(rotor_circulation_strengths, params)
         params.blade_elements,
         BGamma,
         params.wake_panels,
-        params.rotoridxs,
+        params.rotor_indices,
     )
 
     # - Initialize matrix of wake vortex strengths - #
@@ -188,7 +166,7 @@ function initialize_wake_vortex_strengths(rotor_circulation_strengths, params)
         params.freestream.Vinf,
         Gamma_tilde,
         H_tilde,
-        params.rotoridxs,
+        params.rotor_indices,
     )
 
     # println(wake_vortex_strengths)
@@ -197,7 +175,7 @@ end
 
 """
 """
-function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotoridxs)
+function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotor_indices)
 
     # - Initialize - #
 
@@ -212,8 +190,8 @@ function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotorid
     v_in = freestream.Vinf
 
     for i in 1:length(blade_elements)
-        # r = findlast(idx -> idx <= x, rotoridxs)
-        r = rotoridxs[i]
+        # r = findlast(idx -> idx <= x, rotor_indices)
+        r = rotor_indices[i]
 
         ## -- Calculate Total Thrust of the Rotor -- ##
 
@@ -263,7 +241,7 @@ function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotorid
 
         # # average meridional velocity behind rotor
         # if i < length(blade_elements)
-        #     Vm[:, r:rotoridxs[i + 1]] .= freestream.Vinf + v_in
+        #     Vm[:, r:rotor_indices[i + 1]] .= freestream.Vinf + v_in
         # else
         #     Vm[:, r:end] .= freestream.Vinf + v_in
         # end
@@ -274,7 +252,7 @@ function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotorid
         # what about a decrease values behind rotors? this does converge, but converges to different solution than just leaving most things vinf except at the rotors
         # does this give the solver more differences to work with?
         if i < length(blade_elements)
-            for x in r:(rotoridxs[i + 1] - 1)
+            for x in r:(rotor_indices[i + 1] - 1)
                 Vm[:, x + 1] .= Vm[:, x] .* 0.99
             end
         else
@@ -286,4 +264,3 @@ function vm_from_thrust(freestream, blade_elements, BGamma, wake_panels, rotorid
 
     return Vm
 end
-

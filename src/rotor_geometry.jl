@@ -92,7 +92,7 @@ function generate_blade_elements(
     Rhub = body_geometry.hub_spline(rotor_x_position)
 
     # - Dimensionalize the blade element radial positions - #
-    dim_radial_positions = lintran([Rhub; Rtip], [0.0; 1.0], radial_positions)
+    dim_radial_positions = fm.linear([Rhub; Rtip], [0.0; 1.0], radial_positions)
 
     #---------------------------------#
     #       Refine Distribuions       #
@@ -171,7 +171,7 @@ function generate_blade_elements!(
     Rhub = body_geometry.hub_spline(rotor_x_position)
 
     # - Dimensionalize the blade element radial positions - #
-    dim_radial_positions = lintran([Rhub; Rtip], [0.0; 1.0], radial_positions)
+    dim_radial_positions = fm.linear([Rhub; Rtip], [0.0; 1.0], radial_positions)
 
     #---------------------------------#
     #       Refine Distribuions       #
