@@ -5,17 +5,17 @@ Calculate enthalpy jump across each blade.
 """
 function calculate_enthalpy_jumps(Γr, Ωr, num_blades)
 
-    # number of blade elements and rotors
-    nbe, nr = size(Γr)
+    # number of blade elements (or radial positions) and rotors
+    nr, nrotor = size(Γr)
 
     # compute cumulative sum of enthalpy jumps
-    H_tilde = similar(Γr, nbe) .= 0
-    for ibe = 1:nbe
-        for ir in 1:nr
-            Ω = Ωr[ir]
-            Γ = Γr[ibe, ir]
-            B = num_blades[ir]
-            H_tilde[ibe] += Ω*B*Γ/(2.0*pi)
+    H_tilde = similar(Γr) .= 0
+    for ir = 1:nr
+        for irotor in 1:nrotor
+            Ω = Ωr[irotor]
+            Γ = Γr[ir, irotor]
+            B = num_blades[irotor]
+            H_tilde[ir, irotor] += Ω*B*Γ/(2.0*pi)
         end
     end
 
@@ -29,20 +29,20 @@ Calculate net circulation on each blade element
 """
 function calculate_net_circulation(Γr, num_blades)
 
-    # number of blade elements and rotors
-    nbe, nr = size(Γr)
+    # number of blade elements (or radial positions) and rotors
+    ir, nrotor = size(Γr)
 
     # calculate net circulations
-    BGamma = similar(Γr) .= 0
-    Gamma_tilde = similar(Γr) .= 0
-    for ibe in 1:nbe
-        for ir in 1:nr
-            BGamma[ibe, ir] = num_blades[ir] * Gammas[ibe, ir]
-            Gamma_tilde[ibe] += BGamma[ibe, ir]
+    Γ_tilde = similar(Γr) .= 0
+    for ir in 1:nr
+        for ir in 1:nrotor
+            Γ = Γr[ir, irotor]
+            B = num_blades[irotor]
+            Γ_tilde[ir, irotor] += B*Γ
         end
     end
 
-    return BGamma, Gamma_tilde
+    return Γ_tilde
 end
 
 # """
@@ -64,29 +64,29 @@ streamline in the x-r plane such that its magnitude is given by: `Vm = Vx + Vr`
 """
 function calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, Ax_rw, Ar_rw, Σr)
 
-    # problem dimensions
-    nr, nw = size(Γw)
+    # number of streamwise and radial panels
+    nx, nr = size(Γw)
 
-    # initialize meridonal velocity magnitude
+    # initialize meridional velocity magnitude
     Vm = similar(Γw) .= 0
 
-    # loop through each wake panel
+    # loop through each radial set of wake panels
     for ir in 1:nr
 
-        # add body induced velocity
-        Vm[ir,:] .+= Ax_bw[ir] * Γb[ir]
-        Vm[ir,:] .+= Ar_bw[ir] * Γb[ir]
+        # add body induced velocities
+        Vm[:,ir] .+= Ax_bw[ir] * Γb[ir]
+        Vm[:,ir] .+= Ar_bw[ir] * Γb[ir]
 
-        # add wake induced velocity
-        for iw in 1:size(Γw, 1)
-            Vm[ir, :] .+= Ax_ww[iw, i] * view(Γw, iw, :)
-            Vm[ir, :] .+= Ar_ww[iw, i] * view(Γw, iw, :)
+        # add wake induced velocities
+        for iwake in 1:size(Γw, 1)
+            Vm[:, ir] .+= Ax_ww[iwake, ir] * Γw[iwake, ir]
+            Vm[:, ir] .+= Ar_ww[iwake, ir] * Γw[iwake, ir]
         end
 
-        # add rotor induced velocities (is this needed?)
-        for iw in 1:size(Σr, 1)
-            Vm[ir, :] .+= Ax_rw[iw, i] * view(Σr, iw, :)
-            Vm[ir, :] .+= Ar_rw[iw, i] * view(Σr, iw, :)
+        # add rotor induced velocities
+        for irotor in 1:size(Σr, 1)
+            Vm[:, ir] .+= Ax_rw[irotor, ir] * Σr[irotor, ir]
+            Vm[:, ir] .+= Ar_rw[irotor, ir] * Σr[irotor, ir]
         end
 
     end
@@ -95,19 +95,22 @@ function calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, Ax_rw, 
 end
 
 """
-    calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Vinf, Γ_tilde, H_tilde, rotor_indices)
+    calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Γ_tilde, H_tilde, rotor_indices)
 
 Calculate wake vortex strengths
 """
-function calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Vinf, Γ_tilde, H_tilde, rotor_indices)
+function calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, rotor_indices)
 
-    nr, nx = size(Γw)
+    # number of streamwise and radial panels
+    nx, nr = size(Γw)
 
+    # loop through each radial position
     for ir in 1:nr
+        # loop through each streamwise position
         for ix in 1:nx
 
-            # find the index of the closest rotor in front of current x position
-            i = findlast(idx -> idx <= x, rotor_indices)
+            # find upstream rotor
+            irotor = findlast(idx -> idx <= x, rotor_indices)
 
             # compute average meridional velocities
             if ir == 1 || ir == nr
@@ -124,8 +127,8 @@ function calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Vinf, Γ_tilde, 
             else
                 r = wake_panels[ir].panel_center[ix, 2]
                 K = -1/(8*pi^2*r^2)
-                ΔΓ2 = 1/(2*pi*r)^2 * (Γ_tilde[ir+1,ix]^2 - Γ_tilde[ir, ix]^2)
-                ΔH = H_tilde[ir+1,ix] - H_tilde[ir, ix]
+                ΔΓ2 = Γ_tilde[ir+1, irotor]^2 - Γ_tilde[ir, irotor]^2
+                ΔH = H_tilde[ir+1, irotor] - H_tilde[ir, irotor]
                 Γw[ir,ix] = (K*ΔΓ2 + ΔH)/Vm_avg
             end
         end
@@ -135,14 +138,18 @@ function calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Vinf, Γ_tilde, 
 end
 
 """
+
+
 """
 function initialize_wake_vortex_strengths(rotor_circulation_strengths, params)
+
+    # TODO: Update this function
 
     # - Calculate Enthalpy Jumps - #
     H_tilde = calculate_enthalpy_jumps(rotor_circulation_strengths, params.blade_elements)
 
     # - Calculate Net Circulation - #
-    BGamma, Gamma_tilde = calculate_net_circulation(
+    BGamma, Γ_tilde = calculate_net_circulation(
         rotor_circulation_strengths, params.blade_elements
     )
 
@@ -164,7 +171,7 @@ function initialize_wake_vortex_strengths(rotor_circulation_strengths, params)
         params.wake_panels,
         Vm,
         params.freestream.Vinf,
-        Gamma_tilde,
+        Γ_tilde,
         H_tilde,
         params.rotor_indices,
     )

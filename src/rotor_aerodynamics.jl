@@ -1,22 +1,14 @@
-#=
-
-Functions regarding rotor aerodynamics
-
-Authors: Judd Mehr,
-
-=#
-
 """
-    calculate_induced_velocities_on_rotors(BΓr, Γ_tilde, blade_elements, Ax_br, Ar_br, Γ_b,
-        Ax_wr, Ar_wr, Γ_w)
+    calculate_induced_velocities_on_rotors(blade_elements, Γr, Ax_br, Ar_br, Γb,
+        Ax_wr, Ar_wr, Γw)
 
 Calculate meridional and tangential induced velocity on the rotors.
 
 The meridional velocity is defined tangent to a streamline in the x-r plane.  Its magnitude
-can therefore be computed as `Vm = Vx + Vr`
+can therefore be computed as `Vm = Vx + Vr`  **need to check this**
 """
-function calculate_induced_velocities_on_rotors(BΓr, Γ_tilde,
-    blade_elements, Ax_br, Ar_br, Γ_b, Ax_wr, Ar_wr, Γ_w)
+function calculate_induced_velocities_on_rotors(blade_elements, Γr, Ax_br, Ar_br, Γb,
+    Ax_wr, Ar_wr, Γw)
 
     # problem dimensions
     nr = length(blade_elements)
@@ -26,57 +18,36 @@ function calculate_induced_velocities_on_rotors(BΓr, Γ_tilde,
     Vθ = similar(BΓr) .= 0
 
     # loop through each rotor
-    for ir in 1:nr
+    for i in 1:nr
 
         # add body induced meridional velocities
-        Vm[:, ir] .+= Ax_br[ir] * Γ_b
-        Vm[:, ir] .+= Ar_br[ir] * Γ_b
+        Vm[:, i] .+= Ax_br[i] * Γb
+        Vm[:, i] .+= Ar_br[i] * Γb
 
         # add wake induced meridional velocities
-        for iw in 1:size(Γ_w, 1)
-            Vm[:, ir] .+= Ax_wr[iw, ir] * view(Γ_w, iw, :)
-            Vm[:, ir] .+= Ar_wr[iw, ir] * view(Γ_w, iw, :)
+        for iw in 1:size(Γw, 1)
+            Vm[:, i] .+= Ax_wr[iw, i] * view(Γw, iw, :)
+            Vm[:, i] .+= Ar_wr[iw, i] * view(Γw, iw, :)
         end
 
-        # # add rotor induced meridional velocities
-        # for iw in 1:size(Σ_r, 1)
-        #     Vm[:, ir] .+= Ax_rr[iw, ir] * view(Σ_r, iw, :)
-        #     Vm[:, ir] .+= Ar_rr[iw, ir] * view(Σ_r, iw, :)
-        # end
+        # add rotor induced meridional velocities
+        for iw in 1:size(Σr, 1)
+            Vm[:, i] .+= Ax_rr[iw, i] * view(Σr, iw, :)
+            Vm[:, i] .+= Ar_rr[iw, i] * view(Σr, iw, :)
+        end
 
-        # add self-induced tangential velocity
-        Vθ[:, ir] .+= view(BΓr, :, ir) / (4*pi*blade_elements[ir].radial_positions)
+        # add induced tangential velocity from self
+        @views Vθ[:, i] .+= B .* Γr[:, i] ./ (4*pi*blade_elements[i].radial_positions)
 
-        # add tangential velocity from previous rotors
-        if ir > 1
-            Vθ[:,] .+= view(Γ_tilde, :, ir-1) / (2*pi*blade_elements[ir].radial_positions)
+        # add induced tangential velocity from previous rotors
+        for j = 1:i-1
+            @views Vθ[:, i] .+= B .* Γr[:, j] ./ (2*pi*blade_elements[j].radial_positions)
         end
 
     end
 
     return Vm, Vθ
 end
-
-"""
-DONE.HAS TEST. clean up
-twist is from plane of rotation
-TODO: need to check upstream in the functions that the sign convention for the velocities matches expectations for this function.
-"""
-function calculate_angle_of_attack(twist, Wm, Wθ)
-
-    inflow =
-
-    # - Calculate Angle of Attack - #
-
-    # if typeof(alpha) == Float64
-    #     println("section twist degrees: ", twist * 180 / pi)
-    #     println("inflow angle degrees: ", inflow * 180 / pi)
-    #     println("angle of attack degrees: ", alpha * 180 / pi)
-    # end
-
-    return alpha
-end
-
 
 """
     calculate_gamma_sigma(blade_elements, Vinf [, Vm, Vθ])

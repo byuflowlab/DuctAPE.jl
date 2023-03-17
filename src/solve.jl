@@ -6,16 +6,19 @@ and `fx` is a function which returns the standard input arguments to `analyze_pr
 """
 function analyze_propulsor(x, fx=x->x; tol=1e-8, maxiter=100)
 
-    # define parameters
-    p = (; fx, tol, maxiter)
+    # convergence flag
+    converged = [false]
 
-    # compute state variables
+    # define parameters
+    p = (; fx, tol, maxiter, converged)
+
+    # compute state variables (updates convergence flag internally)
     states = ImplicitAD.implicit(solve, residual!, x, p)
 
     # TODO: post-processing using the converged state variables
 
     # return solution
-    return states
+    return states, converged[1]
 end
 
 
@@ -35,16 +38,19 @@ function analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, 
     # use default input function
     fx = x -> (duct_coordinates, hub_coordinates, rotor_parameters, freestream)
 
-    # define parameters
-    p = (; fx, tol, maxiter)
+    # convergence flag
+    converged = [false]
 
-    # compute state variables
+    # define parameters
+    p = (; fx, tol, maxiter, converged)
+
+    # compute state variables (updates convergence flag internally)
     states = solve(x, p)
 
     # TODO: post-processing using the converged state variables
 
     # return solution
-    return states
+    return states, converged[1]
 end
 
 
@@ -57,7 +63,7 @@ Use fixed point iteration to find a converged set of state variables.
 function solve(x, p)
 
     # unpack parameters
-    (; fx, tol, maxiter) = p
+    (; fx, tol, maxiter, converged) = p
 
     # unpack inputs
     (; duct_coordinates, hub_coordinates, rotor_parameters, freestream) = fx(x)
@@ -72,7 +78,7 @@ function solve(x, p)
     resid = copy(states)
 
     # set convergence flag to false
-    params.converged[1] = false
+    converged[1] = false
 
     # perform fixed point iteration
     for iter in 1:maxiter
@@ -89,7 +95,7 @@ function solve(x, p)
         # check if all state variables are converged
         if all(x -> abs(x) < tol, resid)
             # set convergence flag to true
-            params.converged[1] = true
+            converged[1] = true
             # stop iterating
             break
         end
@@ -152,10 +158,11 @@ function calculate_initial_states(params)
     Γw = initialize_wake_vortex_strengths(Γr, params)
 
     # combine initial states into one vector
-    states = vcat(Γb,
-        reduce(vcat, Γw') # convert array of arrays to matrix
-        reduce(vcat, Γr) # convert array of arrays to matrix
-        reduce(vcat, Σr) # convert array of arrays to matrix
+    states = vcat(
+        Γb, # body vortex sheet strengths
+        reduce(vcat, Γw') # wake vortex sheet strengths
+        reduce(vcat, Γr) # rotor vortex strengths
+        reduce(vcat, Σr) # rotor source strengths
     )
 
     return states
@@ -173,28 +180,22 @@ function update_gamma_sigma!(states, params)
     # extract parameters
     blade_elements = params.blade_elements
     wake_panels = params.wake_panels
-    b0 = params.bc_freestream_to_body
+    b_fb = params.bc_freestream_to_body
     Vinf = params.freestream.Vinf
     rotor_indices = params.rotor_idxs
 
     # extract vortex and source states
     Γb, Γw, Γr, Σr = extract_state_variables(states, params)
 
-    # calculate enthalpy jumps
-    H_tilde = calculate_enthalpy_jumps(Γr, Ωr, num_blades)
-
-    # calculate net circulation
-    BΓr, Γr_tilde = calculate_net_circulation(Γr, num_blades)
-
     # calculate induced velocity at rotors
-    Vm, Vθ = calculate_induced_velocities_on_rotors(BΓr, Γr_tilde, blade_elements,
-        Abr_x, Abr_r, Γb, Awr_x, Awr_r, Γw)
+    Vm, Vθ = calculate_induced_velocities_on_rotors(blade_elements,
+        Γr, Ax_br, Ar_br, Γb, Ax_wr, Ar_wr, Γw)
 
     # calculate meridional velocities at wakes
     wake_velocities = calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, Ax_rw, Ar_rw, Σr)
 
     # update body vortex strengths
-    calculate_body_vortex_strengths!(Γb, A_bb, b0, Γw, Ax_wb, Ar_wb, Σr, Ax_rb, Ar_rb)
+    calculate_body_vortex_strengths!(Γb, A_bb, b_fb, Ax_wb, Ar_wb, Γw, Ax_rb, Ar_rb, Σr)
 
     # update wake vortex strengths
     calculate_wake_vortex_strengths!(Γw, wake_panels, wake_velocities,

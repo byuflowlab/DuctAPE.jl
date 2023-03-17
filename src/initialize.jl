@@ -270,7 +270,6 @@ function initialize_parameters(
 
     return (
         # - General - #
-        converged=[false], # Initialize Convergence Flag updated in non-linear solve
         freestream=freestream,
         # - Body Only - #
         body_geometry=body_geometry,
