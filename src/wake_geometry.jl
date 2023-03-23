@@ -6,6 +6,8 @@ Authors: Judd Mehr,
 
 =#
 
+# TODO: Use updated version for the wake geometry generation
+
 """
     initilaize_grid_points(body_geometry, rotor_x_positions, radial_positions, grid_options, debug=false)
 

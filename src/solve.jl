@@ -148,19 +148,19 @@ function calculate_initial_states(params)
 
     # initialize body vortex strengths (no-rotor linear problem)
     A = params.A_bb # AIC matrix for body to body problem
-    b = params.bc_freestream_to_body # right hand side for body to body problem
-    Γb = A\b # circulation strengths from solving body to body problem
+    b = params.b_fs # right hand side for body to body problem
+    Γb = A\b # get circulation strengths from solving body to body problem
 
     # initialize blade circulation and source strengths (assume no body influence)
     Γr, Σr = calculate_gamma_sigma(params.blade_elements, params.freestream.Vinf)
 
     # initialize wake vortex strengths
-    Γw = initialize_wake_vortex_strengths(Γr, params)
+    Γw = initialize_wake_vortex_strengths(Γr, Σr, params)
 
     # combine initial states into one vector
     states = vcat(
         Γb, # body vortex sheet strengths
-        reduce(vcat, Γw') # wake vortex sheet strengths
+        reduce(vcat, Γw) # wake vortex sheet strengths
         reduce(vcat, Γr) # rotor vortex strengths
         reduce(vcat, Σr) # rotor source strengths
     )
@@ -187,12 +187,19 @@ function update_gamma_sigma!(states, params)
     # extract vortex and source states
     Γb, Γw, Γr, Σr = extract_state_variables(states, params)
 
-    # calculate induced velocity at rotors
-    Vm, Vθ = calculate_induced_velocities_on_rotors(blade_elements,
-        Γr, Ax_br, Ar_br, Γb, Ax_wr, Ar_wr, Γw)
+    # calculate net circulation
+    Γ_tilde = calculate_net_circulation(Γr, num_blades)
+
+    # calculate enthalpy jumps
+    H_tilde = calculate_enthalpy_jumps(Γr, Ωr, num_blades)
 
     # calculate meridional velocities at wakes
-    wake_velocities = calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, Ax_rw, Ar_rw, Σr)
+    wake_velocities = calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, 
+        Ax_rw, Ar_rw, Σr)
+
+    # calculate induced velocity at rotors
+    Vm, Vθ = calculate_induced_velocities_on_rotors(blade_elements, Γr, Ax_br, Ar_br, Γb, 
+        Ax_wr, Ar_wr, Γw)
 
     # update body vortex strengths
     calculate_body_vortex_strengths!(Γb, A_bb, b_fb, Ax_wb, Ar_wb, Γw, Ax_rb, Ar_rb, Σr)
@@ -217,22 +224,22 @@ Extract circulation and source strengths from the state vector
 function extract_state_variables(states, params)
 
     # Problem Dimensions
-    nbp = params.num_body_panels                            # number of body panels
-    nbe = length(params.blade_elements[1].radial_positions) # number of blade elements
-    nr = params.num_rotors                                  # number of rotors
-    nx = params.num_wake_x_panels                           # number of wake panels
+    nb = params.num_body_panels                            # number of body panels
+    nrotor = params.num_rotors                             # number of rotors
+    nx = params.num_wake_x_panels                          # number of streamwise coordinates
+    nr = length(params.blade_elements[1].radial_positions) # number of radial coordinates
 
     # State Variable Indices
-    iΓb = 1:nbp                                # body vortex strength indices
-    iΓw = iΓb[end] + 1 : iΓb[end] + (nbe-1)*nx # wake vortex strength indices
-    iΓr = iΓw[end] + 1 : iΓw[end] + nbe*nr     # rotor circulation strength indices
-    iΣr = iΓr[end] + 1 : iΓr[end] + nbe*nr     # rotor source strength indices
+    iΓb = 1:nb                                # body vortex strength indices
+    iΓw = iΓb[end] + 1 : iΓb[end] + nx*nr     # wake vortex strength indices
+    iΓr = iΓw[end] + 1 : iΓw[end] + nr*nrotor # rotor circulation strength indices
+    iΣr = iΓr[end] + 1 : iΓr[end] + nr*nrotor # rotor source strength indices
 
     # Extract State variables
-    Γb = view(states, iΓb)                         # body vortex strengths
-    Γw = reshape(view(states, iΓw), (nbe - 1, nx)) # wake vortex strengths
-    Γr = reshape(view(states, iΓr), (nbe, nr))     # rotor circulation strengths
-    Σr = reshape(view(states, iΣr), (nbe, nr))     # rotor circulation strengths
+    Γb = view(states, iΓb)                        # body vortex strengths
+    Γw = reshape(view(states, iΓw), (nx, nr))     # wake vortex strengths
+    Γr = reshape(view(states, iΓr), (nr, nrotor)) # rotor circulation strengths
+    Σr = reshape(view(states, iΣr), (nr, nrotor)) # rotor circulation strengths
 
     return Γb, Γw, Γr, Σr
 end

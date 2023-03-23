@@ -8,44 +8,43 @@ function initialize_parameters(
     duct_coordinates, hub_coordinates, rotor_parameters, freestream
 )
     # number of rotors
-    num_rotors = length(rotor_parameters)
+    nrotor = length(rotor_parameters)
 
-    #----------------------------------#
-    #             Problem              #
-    #----------------------------------#
+    # --- Methods --- #
 
-    # These are the structs used by FLOWFoil for dispatch
+    # method for the body to body problem
     body_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])
+
+    # method for vortex panels
     vortex_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
+    
+    # method for source panels
     source_method = ff.AxisymmetricProblem(Source(Constant()), Neumann(), [true])
 
-    #---------------------------------#
-    #             Bodies              #
-    #---------------------------------#
+    # --- Bodies --- #
 
-    # Uses FLOWFoil to generate the panel objects
+    # generate duct and hub geometry and paneling
     body_geometry, body_panels = generate_body_geometry(duct_coordinates, hub_coordinates)
 
-    # Use FLOWFoil to generate the body to body mesh
-    body_mesh = ff.generate_mesh(body_method, body_panels)
+    # --- First Rotor --- #
 
-    # Use FLOWFoil to generate the linear system for the no-rotor solution
-    body_system = ff.generate_inviscid_system(body_method, body_panels, body_mesh)
+    # initialize blade elements for first rotor
+    first_blade_elements = generate_blade_elements(
+        rotor_parameters.B,
+        rotor_parameters.omega,
+        rotor_parameters.xrotor,
+        rotor_parameters.rblade,
+        rotor_parameters.chords,
+        rotor_parameters.twists,
+        rotor_parameters.airfoils,
+        body_geometry,
+        rotor_parameters.nr)
 
-    #---------------------------------#
-    #           First Rotor           #
-    #---------------------------------#
+    # initialize panels for first rotor
+    first_rotor_panels = generate_rotor_panels(first_blade_elements, source_method)
+    first_dummy_rotor_panels = generate_dummy_rotor_panels(first_blade_elements, source_method)
 
-    # Generate blade element structs and initialize all rotors using the first rotor
-    blade_elements = initialize_blade_elements(rotor_parameters[1], body_geometry, num_rotors)
-
-    # Generate rotor panels and initialize all rotors using the first rotor
-    rotor_panels = initialize_rotor_panels(blade_elements[1], num_rotors; method=source_method)
-    dummy_rotor_panels = initialize_dummy_rotor_panels(blade_elements[1], num_rotors; method=source_method)
-
-    #---------------------------------#
-    #            Wake Points          #
-    #---------------------------------#
+    # --- Wake Grid --- #
 
     # Generate a streamline-aligned wake grid
     wake_panels, num_wakes, rotoridxs, r_grid_points = generate_wake_grid(
@@ -57,245 +56,138 @@ function initialize_parameters(
         debug=false,
     )
 
-    #---------------------------------#
-    #          Other Rotor(s)         #
-    #---------------------------------#
+    # --- Other Rotors --- #
 
-    # Update aft rotors. The radial positions of these rotors are defined by the radial
-    # positions of the wake panels.
+    # allocate space for all rotors
+    blade_elements = fill(first_blade_elements, nrotor)
+    rotor_panels = fill(first_rotor_panels, nrotor)
+    dummy_rotor_panels = fill(first_dummy_rotor_panels, nrotor)
 
-    if num_rotors > 1
+    # calculate properties for remaining rotors
+    for i in 2:nrotor
 
-        # loop through each aft rotor
-        for i in 2:num_rotors
+        # update aft rotor geometries
+        blade_elements[i] = generate_blade_elements(
+            rotor_parameters[i].B,
+            rotor_parameters[i].omega,
+            rotor_parameters[i].xrotor,
+            rotor_parameters[i].rblade,
+            rotor_parameters[i].chords,
+            rotor_parameters[i].twists,
+            rotor_parameters[i].airfoils,
+            body_geometry,
+            size(r_grid_points, 2), # number of grid points matches wake
+            view(r_grid_points, rotor_indices[i], :) # use wake coordinates for rotor
+        )
 
-            # update aft rotor geometries
-            generate_blade_elements!(
-                blade_elements[i],
-                rotor_parameters[i].rotor_x_position,
-                rotor_parameters[i].radial_positions,
-                rotor_parameters[i].chords,
-                rotor_parameters[i].twists,
-                rotor_parameters[i].airfoils,
-                nothing, #not actually used when updated radial positions are given
-                rotor_parameters[i].num_blades,
-                rotor_parameters[i].omega,
-                body_geometry;
-                updated_radial_positions=r_grid_points[rotoridxs[i], :],
-            )
+        # update aft rotor panels
+        rotor_panels[i] = generate_rotor_panels(blade_elements[i], source_method)
+        dummy_rotor_panels[i] = generate_dummy_rotor_panels(blade_elements[i], source_method)
 
-            x_grid_points = fill(rotor_parameters[i].rotor_x_position, blade_elements[1].num_radial_stations[1])
-
-            # update aft rotor panels
-            ff.generate_panels!(
-                source_method,
-                rotor_panels[i],
-                [x_grid_points, r_grid_points[rotoridxs[i], :]],
-            )
-
-            update_dummy_rotor_panels!(
-                blade_elements[i],
-                dummy_rotor_panels[i],
-                r_grid_points[rotoridxs[i], :];
-                method=source_method,
-            )
-        end
     end
 
-    #---------------------------------#
-    #             Meshes              #
-    #---------------------------------#
+    # --- Meshes --- #
 
-    # For cases other than the body-on-body case, a slightly different mesh implementation
-    # needs to be created to allow one-way interactions since all the other coefficient
-    # matrices to be created end up on the right hand side of the linear system.
+    # body to body
+    mesh_bb = ff.generate_mesh(body_method, body_panels)
 
-    # - Body -> Rotor - #
-    # These meshes are from the body to the rotor blade elements and are used to generate
-    # the coefficient matrices that are part of finding the body-induced velocity at the
-    # blade elements.
-    mesh_body_to_rotor = [
-        generate_one_way_mesh(body_panels, dummy_rotor_panels[i]) for i in 1:num_rotors
-    ]
+    # body to rotor
+    mesh_br = generate_one_way_mesh.(Ref(body_panels), dummy_rotor_panels)
 
-    # - Body -> Wake - #
-    # These meshes are from the body to the wake elements and are used to generate the
-    # coefficient matrices that are part of finding the average velocity in the wakes.
-    mesh_body_to_wake = [
-        generate_one_way_mesh(body_panels, wake_panels[i]) for i in 1:num_wakes
-    ]
+    # body to wake
+    mesh_bw = generate_one_way_mesh.(Ref(body_panels), wake_panels)
 
-    # # - Rotor -> Body - #
-    # # For coefficients used in linear solve for body vortex strength residual
-    # mesh_rb = [
-    #     generate_one_way_mesh(rotor_panels[i], body_panels; singularity="source") for
-    #     i in 1:num_rotors
-    # ]
+    # rotor to body
+    mesh_rb = generate_one_way_mesh.(rotor_panels, Ref(body_panels); singularity="source")
 
-    # # - Rotor -> Rotor - #
-    # # Meshes from rotor panel centers to blade element locations to account for
-    # # rotor-induced velocities, meaning the source panel induced velocities
-    # mesh_rr = [
-    #     generate_one_way_mesh(rotor_panels[i], dummy_rotor_panels[j]; singularity="source")
-    #     for i in 1:num_rotors, j in 1:num_rotors
-    # ]
+    # rotor to rotor
+    mesh_rr = generate_one_way_mesh.(rotor_panels, dummy_rotor_panels'; singularity="source")
 
-    # # - Rotor -> Wake - #
-    # # rotor source panel to wake panels for use in calculating induced velocity on wake
-    # mesh_rw = [
-    #     generate_one_way_mesh(rotor_panels[i], wake_panels[j]; singularity="source") for
-    #     i in 1:num_rotors, j in 1:num_wakes
-    # ]
+    # rotor to wake
+    mesh_rw = generate_one_way_mesh.(rotor_panels, wake_panels'; singularity="source")
 
-    # - Wake -> Body - #
-    # used in generating coefficients used in linear solve for body strength residuals
-    mesh_wb = [
-        generate_one_way_mesh(wake_panels[i], body_panels) for i in 1:num_wakes
-    ]
+    # wake to body
+    mesh_wb = generate_one_way_mesh.(wake_panels, Ref(body_panels))
 
-    # - Wake -> Rotor - #
-    # used in generaing coefficients for induced velocity on blade sections
-    mesh_wr = [
-        generate_one_way_mesh(wake_panels[i], dummy_rotor_panels[j]) for i in 1:num_wakes,
-        j in 1:num_rotors
-    ]
+    # wake to rotor
+    mesh_wr = generate_one_way_mesh.(wake_panels, dummy_rotor_panels')
 
-    # - Wake -> Wake - #
-    # self induction of wakes for finding wake velocities
-    mesh_ww = [
-        generate_one_way_mesh(wake_panels[i], wake_panels[j]) for i in 1:num_wakes,
-        j in 1:num_wakes
-    ]
+    # wake to wake
+    mesh_ww = generate_one_way_mesh.(wake_panels, wake_panels')
 
-    #---------------------------------#
-    #       Coefficient Matrices      #
-    #---------------------------------#
-    # - Body -> Body - #
-    # The body-to-body case is simply the default FLOWFoil functionality.
-    # Note that we apply the freestream velocity here, as it will be needed to be a part of the system throughout rather than just being applied in post-processing as is done in FLOWFoil.
+    # --- Coefficient Matrices --- #
+    
+    body_system = ff.generate_inviscid_system(body_method, body_panels, body_mesh)
 
-    # Get Left Hand Side Matrix
+    # body to body
     A_bb = body_system.A
 
-    # Get Right Hand Side vector for the body-freestream interactions
-    bc_freestream_to_body = body_system.b .* freestream.Vinf
+    # freestream to body
+    b_fb = body_system.b .* freestream.Vinf
 
-    # We put the remaining matrices into vectors for easy accessiblity when we don't know beforehand how many rotors will be used.  This allows us to use a single rotor, or a rotor + stator, or as many rotors as we want without having to change implementations or make any declarations ahead of time.
-    # - Body -> Rotor - #
-    A_body_to_rotor = [
-        assemble_one_way_coefficient_matrix(
-            mesh_body_to_rotor[i], body_panels, dummy_rotor_panels[i]
-        ) for i in 1:num_rotors
-    ]
-    Ax_br = [A_body_to_rotor[i][1] for i in 1:num_rotors]
-    Ar_body_to_rotor = [A_body_to_rotor[i][2] for i in 1:num_rotors]
+    # body to rotor
+    A_br = assemble_one_way_coefficient_matrix.(mesh_br, Ref(body_panels), dummy_rotor_panels)
+    Ax_br = getindex.(A_br, 1)
+    Ar_br = getindex.(A_br, 2)
 
-    # - Body -> Wake - #
-    # for finding wake velocities
-    A_body_to_wake = [
-        assemble_one_way_coefficient_matrix(
-            mesh_body_to_wake[i], body_panels, wake_panels[i]
-        ) for i in 1:num_wakes
-    ]
-    Ax_body_to_wake = [A_body_to_wake[i][1] for i in 1:num_wakes]
-    Ar_body_to_wake = [A_body_to_wake[i][2] for i in 1:num_wakes]
+    # body to wake
+    A_bw = assemble_one_way_coefficient_matrix.(mesh_bw, Ref(body_panels), wake_panels)
+    Ax_bw = getindex.(A_bw, 1)
+    Ar_bw = getindex.(A_bw, 2)
 
-    # - Rotor -> Body - #
-    # for linear solve
-    A_rb = [
-        assemble_one_way_coefficient_matrix(
-            mesh_rb[i], rotor_panels[i], body_panels; singularity="source"
-        ) for i in 1:num_rotors
-    ]
-    Ax_rb = [A_rb[i][1] for i in 1:num_rotors]
-    Ar_rb = [A_rb[i][2] for i in 1:num_rotors]
+    # rotor to body
+    A_rb = assemble_one_way_coefficient_matrix.(mesh_rb, rotor_panels, Ref(body_panels); singularity="source")
+    Ax_rb = getindex.(A_rb, 1)
+    Ar_rb = getindex.(A_rb, 2)
 
-    # - Rotor -> Rotor - #
-    # for finding blade element velocities
-    # NOTE: since the rotor panels are all aligned, there shouldn't be any self induction in the meridional direction.  consider setting the self-induced coefficient matrices to zeros
-    A_rr = [
-        assemble_one_way_coefficient_matrix(
-            mesh_rr[i, j],
-            rotor_panels[i],
-            dummy_rotor_panels[j];
-            singularity="source",
-        ) for i in 1:num_rotors, j in 1:num_rotors
-    ]
-    Ax_rr = [
-        A_rr[i, j][1] for i in 1:num_rotors, j in 1:num_rotors
-    ]
-    Ar_rr = [
-        A_rr[i, j][2] for i in 1:num_rotors, j in 1:num_rotors
-    ]
+    # rotor to rotor
+    A_rr = assemble_one_way_coefficient_matrix.(mesh_rr, rotor_panels, dummy_rotor_panels'; singularity="source")
+    Ax_rr = getindex.(A_rr, 1)
+    Ar_rr = getindex.(A_rr, 2)
 
-    # - Rotor -> Wake - #
-    # for finding wake velocities
-    A_rw = [
-        assemble_one_way_coefficient_matrix(
-            mesh_rw[i, j], rotor_panels[i], wake_panels[j]; singularity="source"
-        ) for i in 1:num_rotors, j in 1:num_wakes
-    ]
-    Ax_rw = [A_rw[i, j][1] for i in 1:num_rotors, j in 1:num_wakes]
-    Ar_rw = [A_rw[i, j][2] for i in 1:num_rotors, j in 1:num_wakes]
+    # rotor to wake
+    A_rw = assemble_one_way_coefficient_matrix.(mesh_rw, rotor_panels, wake_panels'; singularity="source")
+    Ax_rw = getindex.(A_rw, 1)
+    Ar_rw = getindex.(A_rw, 2)
 
-    # - Wake -> Body - #
-    # for linear solve
-    A_wb = [
-        assemble_one_way_coefficient_matrix(
-            mesh_wb[i], wake_panels[i], body_panels
-        ) for i in 1:num_wakes
-    ]
-    Ax_wb = [A_wb[i][1] for i in 1:num_wakes]
-    Ar_wb = [A_wb[i][2] for i in 1:num_wakes]
+    # wake to body
+    A_wb = assemble_one_way_coefficient_matrix.(mesh_wb, wake_panels, Ref(body_panels))
+    Ax_wb = getindex.(A_wb, 1)
+    Ar_wb = getindex.(A_wb, 2)
 
-    # - Wake -> Rotor - #
-    # for finding blade element velocities
-    A_wr = [
-        assemble_one_way_coefficient_matrix(
-            mesh_wr[i, j], wake_panels[i], dummy_rotor_panels[j]
-        ) for i in 1:num_wakes, j in 1:num_rotors
-    ]
-    Ax_wr = [A_wr[i, j][1] for i in 1:num_wakes, j in 1:num_rotors]
-    Ar_wr = [A_wr[i, j][2] for i in 1:num_wakes, j in 1:num_rotors]
+    # wake to rotor
+    A_wr = assemble_one_way_coefficient_matrix.(mesh_wr, wake_panels, dummy_rotor_panels')
+    Ax_wr = getindex.(A_wr, 1)
+    Ar_wr = getindex.(A_wb, 2)
 
-    # - Wake -> Wake - #
-    # for finding wake velocities
-    A_ww = [
-        assemble_one_way_coefficient_matrix(
-            mesh_ww[i, j], wake_panels[i], wake_panels[j]
-        ) for i in 1:num_wakes, j in 1:num_wakes
-    ]
-    Ax_ww = [A_ww[i, j][1] for i in 1:num_wakes, j in 1:num_wakes]
-    Ar_ww = [A_ww[i, j][2] for i in 1:num_wakes, j in 1:num_wakes]
+    # wake to wake
+    A_ww = assemble_one_way_coefficient_matrix.(mesh_ww, wake_panels, wake_panels')
+    Ax_ww = getindex.(A_ww, 1)
+    Ar_ww = getindex.(A_ww, 2)
+
 
     return (
-        # - General - #
-        freestream=freestream,
-        # - Body Only - #
-        body_geometry=body_geometry,
-        bc_freestream_to_body=bc_freestream_to_body,
-        num_body_panels=length(bc_freestream_to_body) - 1,
-        # - Rotors - #
-        num_rotors=num_rotors,
-        blade_elements=blade_elements, # Portions of these will be updated in the coupling with GXBeam potentially
-        rotoridxs=rotoridxs,
-        # - Wakes - #
-        # wake_grid=wake_grid,
-        num_wakes=num_wakes,
-        num_wake_x_panels=wake_panels[1].npanels,
-        # - Panels - #
-        body_panels=body_panels,
-        rotor_panels=rotor_panels,
-        wake_panels=wake_panels,
-        # - Coefficients - #
-        A_bb=A_bb, # bb
-        Ax_br=Ax_br, Ar_br=Ar_br, # body to rotor (x-direction, r-direction)
-        Ax_bw=Ax_bw, Ar_bw=Ar_bw, # body to wake (x-direction, r-direction)
-        # Ax_rb=Ax_rb, Ar_rb=Ar_rb, # rotor to body (x-direction, r-direction)
-        # Ax_rr=Ax_rr, Ar_rr=Ar_rr, # rotor to rotor (x-direction, r-direction)
-        # Ax_rw=Ax_rw, Ar_rw=Ar_rw, # rotor to wake (x-direction, r-direction)
-        Ax_wb=Ax_wb, Ar_wb=Ar_wb, # wake to body (x-direction, r-direction)
-        Ax_wr=Ax_wr, Ar_wr=Ar_wr, # wake to rotor (x-direction, r-direction)
-        Ax_ww=Ax_ww, Ar_ww=Ar_ww, # wake to wake (x-direction, r-direction)
+        # body
+        body_geometry = body_geometry, # body geometry
+        # rotors
+        blade_elements = blade_elements, # blade elements
+        rotor_indices = rotor_indices, # rotor locations
+        # panels
+        body_panels = body_panels, # body paneling
+        rotor_panels = rotor_panels, # rotor paneling
+        wake_panels = wake_panels, # wake paneling
+        # aerodynamic influence coefficients
+        A_bb = A_bb, # body to body
+        b_fb = b_fb, # freestream contribution to body boundary conditions
+        Ax_br = Ax_br, Ar_br = Ar_br, # body to rotor (x-direction, r-direction)
+        Ax_bw = Ax_bw, Ar_bw = Ar_bw, # body to wake (x-direction, r-direction)
+        Ax_rb = Ax_rb, Ar_rb = Ar_rb, # rotor to body (x-direction, r-direction)
+        Ax_rr = Ax_rr, Ar_rr = Ar_rr, # rotor to rotor (x-direction, r-direction)
+        Ax_rw = Ax_rw, Ar_rw = Ar_rw, # rotor to wake (x-direction, r-direction)
+        Ax_wb = Ax_wb, Ar_wb = Ar_wb, # wake to body (x-direction, r-direction)
+        Ax_wr = Ax_wr, Ar_wr = Ar_wr, # wake to rotor (x-direction, r-direction)
+        Ax_ww = Ax_ww, Ar_ww = Ar_ww, # wake to wake (x-direction, r-direction)
+        # operating conditions
+        freestream = freestream, # freestream parameters
     )
 end

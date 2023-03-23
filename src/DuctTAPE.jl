@@ -14,8 +14,6 @@ const ccb = CCBlade #rename ccblade for convenience
 using NLsolve
 using ImplicitAD
 
-using LineSearches: BackTracking
-
 using SpecialFunctions
 
 ## -- INCLUDES -- ##
@@ -51,8 +49,5 @@ include("initialize.jl")
 
 # Solver
 include("solve.jl")
-
-# Post Processing
-include("post_process.jl")
 
 end

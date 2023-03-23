@@ -7,50 +7,50 @@ Calculate body vortex strengths
 function calculate_body_vortex_strengths!(Γb, A_bb, b_fb, Ax_wb, Ar_wb, Γw, Ax_rb, Ar_rb, Σr)
 
     # problem dimensions
-    nb = length(Γb) # number of body panels
-    nw = length(Ax_wb) # number of wakes
-    nr = length(Ax_rb) # number of rotors
+    nbody = length(Γb) # number of body panels
+    nwake = length(Ax_wb) # number of wakes (divided into streamlines)
+    nrotor = length(Ax_rb) # number of rotors
 
-    # add freestream contributions to right hand side (b_fb = -V∞ ̂n)
+    # add freestream contributions to right hand side
     b = similar(Γb) .= b_fb
 
     # add wake vortex sheet contributions to right hand side
-    for iw in 1:nw
+    for iwake in 1:nwake
 
         # get induced velocity in the x-direction
-        Vx = Ax_wb[iw] * view(Γw, :, iw)
+        Vx = Ax_wb[iwake] * view(Γw, :, iwake)
 
         # get induced velocity in the r-direction
-        Vr = Ar_wb[iw] * view(Γw, :, iw)
+        Vr = Ar_wb[iwake] * view(Γw, :, iwake)
 
-        # add normal component of velocity to right hand side
-        for ib in 1:nb
-            sa, ca = sincos(body_panels[ib].panel_angle)
-            Vn = Vx[ib]*ca + Vr[ib]*sa
-            b[ib] -= Vn
+        # add tangential component of velocity to right hand side
+        for ibody in 1:nbody
+            sa, ca = sincos(body_panels.panel_angle[ibody])
+            Vt = Vx[ibody]*ca + Vr[ibody]*sa
+            b[ibody] -= Vt
         end
 
     end
 
     # add rotor source sheet contributions to right hand side
-    for ir in 1:nr
+    for irotor in 1:nrotor
 
         # get induced velocity in the x-direction
-        Vx = Ax_rb[ir] * view(Σr, :, ir)
+        Vx = Ax_rb[irotor] * view(Σr, :, irotor)
 
         # get induced velocity in the r-direction
-        Vr = Ar_rb[ir] * view(Σr, :, ir)
+        Vr = Ar_rb[irotor] * view(Σr, :, irotor)
 
         # add normal component of velocity to right hand side
-        for ib in 1:nb
-            sa, ca = sincos(body_panels[ib].panel_angle)
-            Vn = Vx[ib]*ca + Vr[ib]*sa
-            b[ib] -= Vn
+        for ibody in 1:nbody
+            sa, ca = sincos(body_panels[ibody].panel_angle)
+            Vt = Vx[ibody]*ca + Vr[ibody]*sa
+            b[ibody] -= Vt
         end
 
     end
 
-    # TODO: precompute factorization, test if implicit_linear is fast
+    # TODO: precompute factorization, test if implicit_linear is faster
 
     return ldiv!(Γb, factorize(A_bb), b)
 end

@@ -1,13 +1,8 @@
-#=
 
-Functions for generating meshes (relational geometry between objects)
-
-Authors: Judd Mehr,
-
-=#
+# The functions in this file should eventually be moved to FLOWFoil
 
 """
-    OneWayMesh
+    OneWayMesh{TF}
 
 **Fields:**
 - `n_influence_bodies::Int` : number of bodies of influence, e.g. 2 for the duct and hub as part of the body system.
@@ -32,33 +27,22 @@ struct OneWayMesh{TF}
     m::Matrix{TF}
 end
 
-function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:ff.Panel}
-    return generate_one_way_mesh([influence_panels], affect_panels; singularity=singularity)
-end
-
-function generate_one_way_mesh(influence_panels, affect_panels::TP) where {TP<:ff.Panel}
-    return generate_one_way_mesh(influence_panels, [affect_panels]; singularity=singularity)
-end
-
-function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:ff.Panel}
-    return generate_one_way_mesh([influence_panels], [affect_panels])
-end
-
 """
     generate_one_way_mesh(influence_panels, affect_panels; kwargs)
 
-Function similar to FLOWFoil's meshing function, but only creates the mesh one way rather than both ways (i.e. doesn't loop through both inputs as both sources and targets).
+Function similar to FLOWFoil's meshing function, but only creates the mesh one way rather 
+than both ways (i.e. doesn't loop through both inputs as both sources and targets).
 
-**Arguments:**
-- `influence_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects doing the influencing
-- `affect_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects being affected
+ # Arguments
+ - `influence_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects doing the influencing
+ - `affect_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects being affected
 
 Multiple Dispatch allows for single panel objects as one or both inputs as well if there is only one body influencing and/or being affected.
 
-**Returns:**
-- `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
+ # Returns:
+ - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 """
-function generate_one_way_mesh(influence_panels, affect_panels)
+function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
 
     ### --- Convenience Variables --- ###
     nbodies_i = length(influence_panels)
@@ -140,4 +124,16 @@ function generate_one_way_mesh(influence_panels, affect_panels)
         r,
         k2,
     )
+end
+
+function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:ff.Panel}
+    return generate_one_way_mesh([influence_panels], affect_panels; singularity=singularity)
+end
+
+function generate_one_way_mesh(influence_panels, affect_panels::TP) where {TP<:ff.Panel}
+    return generate_one_way_mesh(influence_panels, [affect_panels]; singularity=singularity)
+end
+
+function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:ff.Panel}
+    return generate_one_way_mesh([influence_panels], [affect_panels])
 end

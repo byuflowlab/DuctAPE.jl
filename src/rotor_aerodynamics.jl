@@ -11,37 +11,41 @@ function calculate_induced_velocities_on_rotors(blade_elements, Γr, Ax_br, Ar_b
     Ax_wr, Ar_wr, Γw)
 
     # problem dimensions
-    nr = length(blade_elements)
+    nr, nrotor = size(Γr)
 
     # initialize outputs
-    Vm = similar(BΓr) .= 0
-    Vθ = similar(BΓr) .= 0
+    Vm = similar(Γr) .= 0
+    Vθ = similar(Γr) .= 0
 
     # loop through each rotor
-    for i in 1:nr
+    for jrotor in 1:nrotor
 
         # add body induced meridional velocities
-        Vm[:, i] .+= Ax_br[i] * Γb
-        Vm[:, i] .+= Ar_br[i] * Γb
+        @views Vm[:, jrotor] .+= Ax_br[jrotor] * Γb
+        @views Vm[:, jrotor] .+= Ar_br[jrotor] * Γb
 
         # add wake induced meridional velocities
-        for iw in 1:size(Γw, 1)
-            Vm[:, i] .+= Ax_wr[iw, i] * view(Γw, iw, :)
-            Vm[:, i] .+= Ar_wr[iw, i] * view(Γw, iw, :)
+        for iwake in 1:nwake
+            @views Vm[:, jrotor] .+= Ax_wr[iwake, jrotor] * view(Γw, :, iwake)
+            @views Vm[:, jrotor] .+= Ar_wr[iwake, jrotor] * view(Γw, :, iwake)
         end
 
         # add rotor induced meridional velocities
-        for iw in 1:size(Σr, 1)
-            Vm[:, i] .+= Ax_rr[iw, i] * view(Σr, iw, :)
-            Vm[:, i] .+= Ar_rr[iw, i] * view(Σr, iw, :)
+        for irotor in 1:nrotor
+            @views Vm[:, jrotor] .+= Ax_rr[irotor, jrotor] * view(Σr, :, irotor)
+            @views Vm[:, jrotor] .+= Ar_rr[irotor, jrotor] * view(Σr, :, irotor)
         end
 
         # add induced tangential velocity from self
-        @views Vθ[:, i] .+= B .* Γr[:, i] ./ (4*pi*blade_elements[i].radial_positions)
+        B = blade_elements[jrotor].num_blades
+        r = blade_elements[jrotor].radial_positions
+        @views Vθ[:, jrotor] .+= B .* Γr[:, jrotor] ./ (4*pi*r)
 
         # add induced tangential velocity from previous rotors
-        for j = 1:i-1
-            @views Vθ[:, i] .+= B .* Γr[:, j] ./ (2*pi*blade_elements[j].radial_positions)
+        for krotor = 1:jrotor-1
+            B = blade_elements[krotor].num_blades
+            r = blade_elements[krotor].radial_positions
+            @views Vθ[:, jrotor] .+= B .* Γr[:, krotor] ./ (2*pi*r)
         end
 
     end
@@ -64,12 +68,12 @@ function calculate_gamma_sigma(blade_elements, Vinf, Vm=nothing, Vθ=nothing)
     end
 
     # get problem dimensions
-    nbe = length(blade_elements)
     nr = blade_elements[1].num_radial_stations[1]
+    nrotor = length(blade_elements)
 
     # initialize outputs
-    Γr = zeros(TF, nbe, nr)
-    Σr = zeros(TF, nbe, nr)
+    Γr = zeros(TF, nr, nrotor)
+    Σr = zeros(TF, nr, nrotor)
 
     # call in-place function
     return calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm, Vθ)
@@ -83,35 +87,35 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm=nothing, Vθ=nothing)
 
     # problem dimensions
-    nbe, nr = size(Γr)
+    nr, nrotor = size(Γr)
 
     # loop through rotors
-    for i in 1:nbe
-        for j = 1:nr
+    for ir in 1:nr
+        for irotor = 1:nrotor
 
             # extract blade element properties
-            B = blade_elements[i].num_blades # number of blades
-            c = blade_elements[i].chords[j] # chord length
-            twist = blade_elements[i].twists[j] # twist
-            r = blade_elements[i].radial_positions[j] # radius
-            Ω = blade_elements[i].omega[j] # rotation rate
+            B = blade_elements[ir].num_blades # number of blades
+            c = blade_elements[ir].chords[irotor] # chord length
+            twist = blade_elements[ir].twists[irotor] # twist
+            r = blade_elements[ir].radial_positions[irotor] # radius
+            Ω = blade_elements[ir].omega[irotor] # rotation rate
 
             # meridional and tangential inflow velocities
-            Wm = isnothing(Vm) ? Vinf : Vm[i, j] + Vinf
-            Wθ = isnothing(Vθ) ? -Ω*r : Vθ[i, j] - Ω*r
+            Wm = isnothing(Vm) ? Vinf : Vm[ir, irotor] + Vinf
+            Wθ = isnothing(Vθ) ? -Ω*r : Vθ[ir, irotor] - Ω*r
             W = sqrt(Wm^2 + Wθ^2)
 
             # calculate angle of attack
             alpha = twist - atan(Wm, -Wθ)
 
             # look up lift and drag data
-            cl, cd = search_polars(blade_elements[i].airfoils[j], alpha)
+            cl, cd = search_polars(blade_elements[ir].airfoils[irotor], alpha)
 
             # calculate vortex strength
-            Γr[i, j] = 1/2*W*c*cl
+            Γr[ir, irotor] = 1/2*W*c*cl
 
             # calculate source strength
-            Σr[i, j] = B/(4*pi*r)*W*c*cd
+            Σr[ir, irotor] = B/(4*pi*r)*W*c*cd
 
         end
     end

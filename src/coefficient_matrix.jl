@@ -1,41 +1,4 @@
-#=
-
-Additional functions needed to create one-way coefficient matrices
-
-Authors: Judd Mehr,
-
-=#
-
-#= TODO:
-need to redo everything here, almost.  We aren't actually wanting the vortex coefficients, but rather just the induced velocities due to a unit singularity which we can multiple by the singularities to get the velocities at the given points.  still keep things as matricies, but we'll want to return a matrix for the axial components and a second matrix for the radial components.  Also need to alter the induced velocity expressions to match Ryall and Collins for these cases where we aren't working with a panel method (probably). BUT need to check a single panel case to make sure that all the velocity directions are correct.
-=#
-
-#---------------------------------#
-#       Vortex Coefficients       #
-#---------------------------------#
-function assemble_induced_velocity_matrices(
-    mesh, influence_panels::TP, affect_panels; singularity="vortex"
-) where {TP<:ff.Panel}
-    return assemble_induced_velocity_matrices(
-        mesh, [influence_panels], affect_panels; singularity=singularity
-    )
-end
-
-function assemble_induced_velocity_matrices(
-    mesh, influence_panels, affect_panels::TP; singularity="vortex"
-) where {TP<:ff.Panel}
-    return assemble_induced_velocity_matrices(
-        mesh, influence_panels, [affect_panels]; singularity=singularity
-    )
-end
-
-function assemble_induced_velocity_matrices(
-    mesh, influence_panels::TP, affect_panels::TP; singularity="vortex"
-) where {TP<:ff.Panel}
-    return assemble_induced_velocity_matrices(
-        mesh, [influence_panels], [affect_panels]; singularity=singularity
-    )
-end
+# The functions in this file should eventually be moved to FLOWFoil
 
 """
     assemble_induced_velocity_matrices(mesh, influence_panels, affect_panels; kwargs)
@@ -104,6 +67,27 @@ function assemble_induced_velocity_matrices(
     end
 
     return [[vxdmat] [vrdmat]]
+end
+
+function assemble_induced_velocity_matrices(mesh, influence_panels::TP, affect_panels; 
+    singularity="vortex") where {TP<:ff.Panel}
+    
+    return assemble_induced_velocity_matrices(mesh, [influence_panels], affect_panels; 
+        singularity=singularity)
+end
+
+function assemble_induced_velocity_matrices(mesh, influence_panels, affect_panels::TP; 
+    singularity="vortex") where {TP<:ff.Panel}
+    
+    return assemble_induced_velocity_matrices(mesh, influence_panels, [affect_panels]; 
+        singularity=singularity)
+end
+
+function assemble_induced_velocity_matrices(mesh, influence_panels::TP, affect_panels::TP; 
+    singularity="vortex") where {TP<:ff.Panel}
+    
+    return assemble_induced_velocity_matrices(mesh, [influence_panels], [affect_panels]; 
+        singularity=singularity)
 end
 
 """
@@ -225,6 +209,7 @@ function get_elliptics(m)
     end
     return SpecialFunctions.ellipk(m), SpecialFunctions.ellipe(m)
 end
+
 #---------------------------------#
 #       Source Coefficients       #
 #---------------------------------#
