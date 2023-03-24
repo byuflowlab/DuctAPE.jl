@@ -8,49 +8,51 @@ The meridional velocity is defined tangent to a streamline in the x-r plane.  It
 can therefore be computed as `Vm = Vx + Vr`  **need to check this**
 """
 function calculate_induced_velocities_on_rotors(
-    blade_elements, Γr, vx_rb, vr_rb, Γb, vx_rw, vr_rw, Γw, vx_rr, vr_rr, Σr
-)
+    blade_elements, Γr, vx_rb, vr_rb, Γb, vx_rw, vr_rw, Γw
+)# vx_rr, vr_rr, Σr)
 
     # problem dimensions
-    nr, nrotor = size(Γr)
+    _, nrotor = size(Γr) # number of rotors
+    nwake = length(vr_rw) # number of wake sheets
 
     # initialize outputs
-    Vm = similar(Γr) .= 0
-    Vθ = similar(Γr) .= 0
+    vm = similar(Γr) .= 0 # meridional induced velocity
+    vθ = similar(Γr) .= 0 # tangential induced velocity
 
     # loop through each rotor
     for jrotor in 1:nrotor
 
         # add body induced meridional velocities
-        @views Vm[:, jrotor] .+= vx_rb[jrotor] * Γb
-        @views Vm[:, jrotor] .+= vr_rb[jrotor] * Γb
+        @views vm[:, jrotor] .+= vx_rb[jrotor] * Γb
+        @views vm[:, jrotor] .+= vr_rb[jrotor] * Γb
 
         # add wake induced meridional velocities
         for iwake in 1:nwake
-            @views Vm[:, jrotor] .+= vx_rw[iwake, jrotor] * view(Γw, :, iwake)
-            @views Vm[:, jrotor] .+= vr_rw[iwake, jrotor] * view(Γw, :, iwake)
+            @views vm[:, jrotor] .+= vx_rw[iwake, jrotor] * view(Γw, :, iwake)
+            @views vm[:, jrotor] .+= vr_rw[iwake, jrotor] * view(Γw, :, iwake)
         end
 
-        # add rotor induced meridional velocities
-        for irotor in 1:nrotor
-            @views Vm[:, jrotor] .+= vx_rr[irotor, jrotor] * view(Σr, :, irotor)
-            @views Vm[:, jrotor] .+= vr_rr[irotor, jrotor] * view(Σr, :, irotor)
-        end
+        #TODO: add later
+        # # add rotor induced meridional velocities
+        # for irotor in 1:nrotor
+        #     @views vm[:, jrotor] .+= vx_rr[irotor, jrotor] * view(Σr, :, irotor)
+        #     @views vm[:, jrotor] .+= vr_rr[irotor, jrotor] * view(Σr, :, irotor)
+        # end
 
         # add induced tangential velocity from self
         B = blade_elements[jrotor].num_blades
         r = blade_elements[jrotor].radial_positions
-        @views Vθ[:, jrotor] .+= B .* Γr[:, jrotor] ./ (4 * pi * r)
+        @views vθ[:, jrotor] .+= B .* Γr[:, jrotor] ./ (4 * pi * r)
 
         # add induced tangential velocity from previous rotors
         for krotor in 1:(jrotor - 1)
             B = blade_elements[krotor].num_blades
             r = blade_elements[krotor].radial_positions
-            @views Vθ[:, jrotor] .+= B .* Γr[:, krotor] ./ (2 * pi * r)
+            @views vθ[:, jrotor] .+= B .* Γr[:, krotor] ./ (2 * pi * r)
         end
     end
 
-    return Vm, Vθ
+    return vm, vθ
 end
 
 """
@@ -89,11 +91,13 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm=nothing, Vθ=nothing)
 
     # problem dimensions
-    nr, nrotor = size(Γr)
+    nr, nrotor = size(Γr) #num radial stations, num rotors
 
     # loop through rotors
-    for ir in 1:nr
-        for irotor in 1:nrotor
+    for irotor in 1:nrotor
+
+        # loop through radial stations
+        for ir in 1:nr
 
             # extract blade element properties
             B = blade_elements[ir].num_blades # number of blades
@@ -111,7 +115,7 @@ function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm=nothing, Vθ=
             alpha = twist - atan(Wm, -Wθ)
 
             # look up lift and drag data
-            cl, cd = search_polars(blade_elements[ir].airfoils[irotor], alpha)
+            cl, cd = search_polars(blade_elements[irotor].airfoils[ir], alpha)
 
             # calculate vortex strength
             Γr[ir, irotor] = 1 / 2 * W * c * cl
@@ -128,5 +132,6 @@ end
     search_polars(airfoil, alpha, re=0.0, ma=0.0)
 
 Look up lift and drag data for an airfoil using CCBlade
+TODO: add in cascade database search at some point.
 """
 search_polars(airfoil, alpha, re=0.0, ma=0.0) = ccb.afeval(airfoil, alpha, re, ma)
