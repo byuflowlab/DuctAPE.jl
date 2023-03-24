@@ -13,9 +13,9 @@ function calculate_enthalpy_jumps(Γr, Ωr, num_blades)
     for irotor in 1:nrotor
         Ω = Ωr[irotor]
         B = num_blades[irotor]
-        for ir = 1:nr
+        for ir in 1:nr
             Γ = Γr[ir, irotor]
-            H_tilde[ir, irotor] += Ω*B*Γ/(2.0*pi)
+            H_tilde[ir, irotor] += Ω * B * Γ / (2.0 * pi)
         end
     end
 
@@ -38,7 +38,7 @@ function calculate_net_circulation(Γr, num_blades)
         B = num_blades[irotor]
         for ir in 1:nr
             Γ = Γr[ir, irotor]
-            Γ_tilde[ir, irotor] += B*Γ
+            Γ_tilde[ir, irotor] += B * Γ
         end
     end
 
@@ -46,12 +46,12 @@ function calculate_net_circulation(Γr, num_blades)
 end
 
 """
-    calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw)
+    calculate_wake_velocities(vx_wb, vr_wb, Γb, Ax_ww, vr_ww, Γw)
 
 Calculate the magnitude of the meridional velocity.  This velocity is defined tangent to a
 streamline in the x-r plane such that its magnitude is given by: `Vm = Vx + Vr`
 """
-function calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, Ax_rw, Ar_rw, Σr)
+function calculate_wake_velocities(vx_wb, vr_wb, Γb, Ax_ww, vr_ww, Γw, vx_wr, vr_wr, Σr)
 
     # number of streamwise and radial panels
     nx, nr = size(Γw)
@@ -63,21 +63,20 @@ function calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, Ax_rw, 
     for ir in 1:nr
 
         # add body induced velocities
-        Vm[:,ir] .+= Ax_bw[ir] * Γb
-        Vm[:,ir] .+= Ar_bw[ir] * Γb
+        Vm[:, ir] .+= vx_wb[ir] * Γb
+        Vm[:, ir] .+= vr_wb[ir] * Γb
 
         # add wake induced velocities
         for iwake in 1:size(Γw, 1)
             Vm[:, ir] .+= Ax_ww[iwake, ir] * Γw[:, iwake]
-            Vm[:, ir] .+= Ar_ww[iwake, ir] * Γw[:, iwake]
+            Vm[:, ir] .+= vr_ww[iwake, ir] * Γw[:, iwake]
         end
 
         # add rotor induced velocities
         for irotor in 1:size(Σr, 1)
-            Vm[:, ir] .+= Ax_rw[irotor, ir] * Σr[:, irotor]
-            Vm[:, ir] .+= Ar_rw[irotor, ir] * Σr[:, irotor]
+            Vm[:, ir] .+= vx_wr[irotor, ir] * Σr[:, irotor]
+            Vm[:, ir] .+= vr_wr[irotor, ir] * Σr[:, irotor]
         end
-
     end
 
     return Vm
@@ -88,7 +87,9 @@ end
 
 Calculate wake vortex strengths
 """
-function calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Γ_tilde, H_tilde, rotor_indices)
+function calculate_wake_vortex_strengths!(
+    Γw, wake_panels, Vm, Γ_tilde, H_tilde, rotor_indices
+)
 
     # number of streamwise and radial panels
     nx, nr = size(Γw)
@@ -107,18 +108,18 @@ function calculate_wake_vortex_strengths!(Γw, wake_panels, Vm, Γ_tilde, H_tild
                 Vm_avg = Vm[ir, ix]
             else
                 # average velocities above and below the current panel
-                Vm_avg = 1/2 * (Vm[ir-1, ix] + Vm[ir+1, ix])
+                Vm_avg = 1 / 2 * (Vm[ir - 1, ix] + Vm[ir + 1, ix])
             end
 
             # calculate the wake vortex strength
             if Vm_avg <= 0.0
-                Γw[ir,ix] = 0.0
+                Γw[ir, ix] = 0.0
             else
                 r = wake_panels[ir].panel_center[ix, 2]
-                K = -1/(8*pi^2*r^2)
-                ΔΓ2 = Γ_tilde[ir+1, irotor]^2 - Γ_tilde[ir, irotor]^2
-                ΔH = H_tilde[ir+1, irotor] - H_tilde[ir, irotor]
-                Γw[ir,ix] = (K*ΔΓ2 + ΔH)/Vm_avg
+                K = -1 / (8 * pi^2 * r^2)
+                ΔΓ2 = Γ_tilde[ir + 1, irotor]^2 - Γ_tilde[ir, irotor]^2
+                ΔH = H_tilde[ir + 1, irotor] - H_tilde[ir, irotor]
+                Γw[ir, ix] = (K * ΔΓ2 + ΔH) / Vm_avg
             end
         end
     end

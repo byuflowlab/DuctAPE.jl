@@ -1,5 +1,14 @@
-function update_body_geometry(duct_coordinates, hub_coordinates, xwake, nhub, nduct_inner,
-    nduct_outer; finterp = FLOWMath.akima)
+"""
+"""
+function update_body_geometry(
+    duct_coordinates,
+    hub_coordinates,
+    xwake,
+    nhub,
+    nduct_inner,
+    nduct_outer;
+    finterp=FLOWMath.akima,
+)
 
     # separate inner and outer duct coordinates
     _, leidx = findmin(view(duct_coordinates, :, 1))
@@ -15,7 +24,7 @@ function update_body_geometry(duct_coordinates, hub_coordinates, xwake, nhub, nd
         new_xduct_outer = xduct_outer
         new_rduct_outer = rduct_outer
     else
-        new_xduct_outer = range(xduct_outer[1, 1], xduct_outer[end, 1], nduct_outer+1)
+        new_xduct_outer = range(xduct_outer[1, 1], xduct_outer[end, 1], nduct_outer + 1)
         new_rduct_outer = finterp(xduct_outer, rduct_outer, new_xduct_outer)
     end
 
@@ -36,7 +45,9 @@ function update_body_geometry(duct_coordinates, hub_coordinates, xwake, nhub, nd
         new_rduct_inner = view(duct_coordinates, leidx:-1:ridx, 2)
     else
         # interpolate inner duct geometry between leading edge and rotor
-        new_xduct_inner = range(duct_coordinates[leidx, 1], duct_coordinates[ridx, 1], nduct_inner+1)
+        new_xduct_inner = range(
+            duct_coordinates[leidx, 1], duct_coordinates[ridx, 1], nduct_inner + 1
+        )
         new_rduct_inner = finterp(xduct_inner, rduct_inner, new_xduct_inner)
     end
 
@@ -57,7 +68,7 @@ function update_body_geometry(duct_coordinates, hub_coordinates, xwake, nhub, nd
         new_rhub = view(rhub, 1:ridx, 2)
     else
         # interpolate hub geometry between leading edge and rotor
-        new_xhub = range(xhub[1, 1], xhub[ridx, 1], nhub+1)
+        new_xhub = range(xhub[1, 1], xhub[ridx, 1], nhub + 1)
         new_rhub = finterp(xhub, rhub, new_xhub)
     end
 
@@ -66,11 +77,11 @@ function update_body_geometry(duct_coordinates, hub_coordinates, xwake, nhub, nd
         hcat(reverse(new_xduct_grid), reverse(new_rduct_grid)),
         hcat(reverse(new_xduct_inner)[2:end], reverse(new_rduct_inner)[2:end]),
         hcat(new_xduct_outer[2:end], new_rduct_outer[2:end]),
-        )
+    )
 
     # assemble new hub coordinates
     updated_hub_coordinates = vcat(
-        hcat(new_xhub[1:end-1], new_rhub[1:end-1]),
+        hcat(new_xhub[1:(end - 1)], new_rhub[1:(end - 1)]),
         hcat(new_xhub_grid, new_rhub_grid),
     )
 
@@ -90,9 +101,11 @@ Define the paneling (see [`FLOWFoil.AxisymmetricPanel`](@ref)) for the duct and 
 - `method` : Axisymmetric method as defined by FLOWFoil, defaults to `AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])`
 
 """
-function generate_body_geometry(duct_coordinates, hub_coordinates;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]))
-
+function generate_body_geometry(
+    duct_coordinates,
+    hub_coordinates;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+)
     body_panels = ff.generate_panels(method, (duct_coordinates, hub_coordinates))
 
     return body_panels

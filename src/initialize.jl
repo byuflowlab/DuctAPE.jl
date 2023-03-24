@@ -1,4 +1,3 @@
-
 """
     initialize_parameters(duct_coordinates, hub_coordinates, rotor_parameters, freestream; kwargs...)
 
@@ -25,11 +24,21 @@ NOTE: The `nwake`, `xwake`, `nhub`, `nduct_inner`, and `nduct_outer` arguments s
 always be provided when performing gradient-based optimizatoin in order to ensure that the
 resulting paneling is consistent between optimization iterations.
 """
-function initialize_parameters(duct_coordinates, hub_coordinates, rotor_parameters, freestream;
-    wake_length=1.0, nwake = length(rotor_parameters[1].rblade), finterp = FLOWMath.akima,
-    xwake = default_discretization(duct_coordinates, hub_coordinates, rotor_parameters,
-        wake_length, nwake),
-    nhub = nothing, nduct_inner = nothing, nduct_outer = nothing)
+function initialize_parameters(
+    duct_coordinates,
+    hub_coordinates,
+    rotor_parameters,
+    freestream;
+    wake_length=1.0,
+    nwake=length(rotor_parameters[1].rblade),
+    finterp=FLOWMath.akima,
+    xwake=default_discretization(
+        duct_coordinates, hub_coordinates, rotor_parameters, wake_length, nwake
+    ),
+    nhub=nothing,
+    nduct_inner=nothing,
+    nduct_outer=nothing,
+)
 
     # number of rotors
     nrotor = length(rotor_parameters)
@@ -49,8 +58,14 @@ function initialize_parameters(duct_coordinates, hub_coordinates, rotor_paramete
 
     # update the body paneling to match the wake discretization
     updated_duct_coordinates, updated_hub_coordinates = update_body_geometry(
-        duct_coordinates, hub_coordinates, xwake, nhub, nduct_inner, nduct_outer;
-        finterp=finterp)
+        duct_coordinates,
+        hub_coordinates,
+        xwake,
+        nhub,
+        nduct_inner,
+        nduct_outer;
+        finterp=finterp,
+    )
 
     # generate body paneling
     body_panels = generate_body_panels(updated_duct_coordinates, updated_hub_coordinates)
@@ -69,11 +84,14 @@ function initialize_parameters(duct_coordinates, hub_coordinates, rotor_paramete
         rotor_parameters[1].airfoils,
         updated_duct_coordinates,
         updated_hub_coordinates,
-        rwake)
+        rwake,
+    )
 
     # initialize panels for first rotor
     first_rotor_panels = generate_rotor_panels(first_blade_elements, source_method)
-    first_dummy_rotor_panels = generate_dummy_rotor_panels(first_blade_elements, source_method)
+    first_dummy_rotor_panels = generate_dummy_rotor_panels(
+        first_blade_elements, source_method
+    )
 
     # --- Wake Grid --- #
 
@@ -105,13 +123,14 @@ function initialize_parameters(duct_coordinates, hub_coordinates, rotor_paramete
             rotor_parameters[i].airfoils,
             updated_duct_coordinates,
             updated_hub_coordinates,
-            view(rgrid, rotor_indices[i], :)
-            )
+            view(rgrid, rotor_indices[i], :),
+        )
 
         # update aft rotor panels
         rotor_panels[i] = generate_rotor_panels(blade_elements[i], source_method)
-        dummy_rotor_panels[i] = generate_dummy_rotor_panels(blade_elements[i], source_method)
-
+        dummy_rotor_panels[i] = generate_dummy_rotor_panels(
+            blade_elements[i], source_method
+        )
     end
 
     # --- Meshes --- #
@@ -120,25 +139,26 @@ function initialize_parameters(duct_coordinates, hub_coordinates, rotor_paramete
     body_mesh = ff.generate_mesh(body_method, body_panels)
 
     # body to rotor
-    mesh_br = generate_one_way_mesh.(Ref(body_panels), dummy_rotor_panels)
+    mesh_rtb = generate_one_way_mesh.(Ref(body_panels), dummy_rotor_panels)
 
     # body to wake
-    mesh_bw = generate_one_way_mesh.(Ref(body_panels), wake_panels)
+    mesh_btw = generate_one_way_mesh.(Ref(body_panels), wake_panels)
 
     # rotor to body
-    mesh_rb = generate_one_way_mesh.(rotor_panels, Ref(body_panels); singularity="source")
+    mesh_btr = generate_one_way_mesh.(rotor_panels, Ref(body_panels); singularity="source")
 
     # rotor to rotor
-    mesh_rr = generate_one_way_mesh.(rotor_panels, dummy_rotor_panels'; singularity="source")
+    mesh_rr =
+        generate_one_way_mesh.(rotor_panels, dummy_rotor_panels'; singularity="source")
 
     # rotor to wake
-    mesh_rw = generate_one_way_mesh.(rotor_panels, wake_panels'; singularity="source")
+    mesh_rtw = generate_one_way_mesh.(rotor_panels, wake_panels'; singularity="source")
 
     # wake to body
-    mesh_wb = generate_one_way_mesh.(wake_panels, Ref(body_panels))
+    mesh_wtb = generate_one_way_mesh.(wake_panels, Ref(body_panels))
 
     # wake to rotor
-    mesh_wr = generate_one_way_mesh.(wake_panels, dummy_rotor_panels')
+    mesh_wtr = generate_one_way_mesh.(wake_panels, dummy_rotor_panels')
 
     # wake to wake
     mesh_ww = generate_one_way_mesh.(wake_panels, wake_panels')
@@ -151,72 +171,89 @@ function initialize_parameters(duct_coordinates, hub_coordinates, rotor_paramete
     A_bb = body_system.A
 
     # freestream to body
-    b_fb = body_system.b .* freestream.Vinf
+    b_bf = body_system.b .* freestream.Vinf
 
     # body to rotor
-    A_br = assemble_one_way_coefficient_matrix.(mesh_br, Ref(body_panels), dummy_rotor_panels)
-    Ax_br = getindex.(A_br, 1)
-    Ar_br = getindex.(A_br, 2)
+    A_btr =
+        assemble_one_way_coefficient_matrix.(mesh_rtb, Ref(body_panels), dummy_rotor_panels)
+    vx_rb = getindex.(A_btr, 1)
+    vr_rb = getindex.(A_btr, 2)
 
-    # body to wake
-    A_bw = assemble_one_way_coefficient_matrix.(mesh_bw, Ref(body_panels), wake_panels)
-    Ax_bw = getindex.(A_bw, 1)
-    Ar_bw = getindex.(A_bw, 2)
+    # # body to wake
+    # A_btw = assemble_one_way_coefficient_matrix.(mesh_btw, Ref(body_panels), wake_panels)
+    # vx_wb = getindex.(A_btw, 1)
+    # vr_wb = getindex.(A_btw, 2)
 
     # rotor to body
-    A_rb = assemble_one_way_coefficient_matrix.(mesh_rb, rotor_panels, Ref(body_panels); singularity="source")
-    Ax_rb = getindex.(A_rb, 1)
-    Ar_rb = getindex.(A_rb, 2)
+    A_rtb =
+        assemble_one_way_coefficient_matrix.(
+            mesh_btr, rotor_panels, Ref(body_panels); singularity="source"
+        )
+    vx_br = getindex.(A_rtb, 1)
+    vr_br = getindex.(A_rtb, 2)
 
     # rotor to rotor
-    A_rr = assemble_one_way_coefficient_matrix.(mesh_rr, rotor_panels, dummy_rotor_panels'; singularity="source")
-    Ax_rr = getindex.(A_rr, 1)
-    Ar_rr = getindex.(A_rr, 2)
+    A_rr =
+        assemble_one_way_coefficient_matrix.(
+            mesh_rr, rotor_panels, dummy_rotor_panels'; singularity="source"
+        )
+    vx_rr = getindex.(A_rr, 1)
+    vr_rr = getindex.(A_rr, 2)
 
     # rotor to wake
-    A_rw = assemble_one_way_coefficient_matrix.(mesh_rw, rotor_panels, wake_panels'; singularity="source")
-    Ax_rw = getindex.(A_rw, 1)
-    Ar_rw = getindex.(A_rw, 2)
+    A_rtw =
+        assemble_one_way_coefficient_matrix.(
+            mesh_rtw, rotor_panels, wake_panels'; singularity="source"
+        )
+    vx_wr = getindex.(A_rtw, 1)
+    vr_wr = getindex.(A_rtw, 2)
 
     # wake to body
-    A_wb = assemble_one_way_coefficient_matrix.(mesh_wb, wake_panels, Ref(body_panels))
-    Ax_wb = getindex.(A_wb, 1)
-    Ar_wb = getindex.(A_wb, 2)
+    A_wtb = assemble_one_way_coefficient_matrix.(mesh_wtb, wake_panels, Ref(body_panels))
+    vx_bw = getindex.(A_wtb, 1)
+    vr_bw = getindex.(A_wtb, 2)
 
     # wake to rotor
-    A_wr = assemble_one_way_coefficient_matrix.(mesh_wr, wake_panels, dummy_rotor_panels')
-    Ax_wr = getindex.(A_wr, 1)
-    Ar_wr = getindex.(A_wb, 2)
+    A_wtr = assemble_one_way_coefficient_matrix.(mesh_wtr, wake_panels, dummy_rotor_panels')
+    vx_rw = getindex.(A_wtr, 1)
+    vr_rw = getindex.(A_wtb, 2)
 
-    # wake to wake
-    A_ww = assemble_one_way_coefficient_matrix.(mesh_ww, wake_panels, wake_panels')
-    Ax_ww = getindex.(A_ww, 1)
-    Ar_ww = getindex.(A_ww, 2)
-
+    # # wake to wake
+    # A_ww = assemble_one_way_coefficient_matrix.(mesh_ww, wake_panels, wake_panels')
+    # vx_ww = getindex.(A_ww, 1)
+    # vr_ww = getindex.(A_ww, 2)
 
     return (
         # body
-        body_geometry = body_geometry, # body geometry
+        body_geometry=body_geometry, # body geometry
         # rotors
-        blade_elements = blade_elements, # blade elements
-        rotor_indices = rotor_indices, # rotor locations
+        blade_elements=blade_elements, # blade elements
+        rotor_indices=rotor_indices, # rotor locations
         # panels
-        body_panels = body_panels, # body paneling
-        rotor_panels = rotor_panels, # rotor paneling
-        wake_panels = wake_panels, # wake paneling
+        body_panels=body_panels, # body paneling
+        rotor_panels=rotor_panels, # rotor paneling
+        wake_panels=wake_panels, # wake paneling
         # aerodynamic influence coefficients
-        A_bb = A_bb, # body to body
-        b_fb = b_fb, # freestream contribution to body boundary conditions
-        Ax_br = Ax_br, Ar_br = Ar_br, # body to rotor (x-direction, r-direction)
-        Ax_bw = Ax_bw, Ar_bw = Ar_bw, # body to wake (x-direction, r-direction)
-        Ax_rb = Ax_rb, Ar_rb = Ar_rb, # rotor to body (x-direction, r-direction)
-        Ax_rr = Ax_rr, Ar_rr = Ar_rr, # rotor to rotor (x-direction, r-direction)
-        Ax_rw = Ax_rw, Ar_rw = Ar_rw, # rotor to wake (x-direction, r-direction)
-        Ax_wb = Ax_wb, Ar_wb = Ar_wb, # wake to body (x-direction, r-direction)
-        Ax_wr = Ax_wr, Ar_wr = Ar_wr, # wake to rotor (x-direction, r-direction)
-        Ax_ww = Ax_ww, Ar_ww = Ar_ww, # wake to wake (x-direction, r-direction)
+        A_bb=A_bb, # body to body
+        b_bf=b_bf, # freestream contribution to body boundary conditions
+        vx_rb=vx_rb,
+        vr_rb=vr_rb, # body to rotor (x-direction, r-direction)
+        vx_wb=vx_wb,
+        vr_wb=vr_wb, # body to wake (x-direction, r-direction)
+        vx_br=vx_br,
+        vr_br=vr_br, # rotor to body (x-direction, r-direction)
+        vx_rr=vx_rr,
+        vr_rr=vr_rr, # rotor to rotor (x-direction, r-direction)
+        vx_wr=vx_wr,
+        vr_wr=vr_wr, # rotor to wake (x-direction, r-direction)
+        vx_bw=vx_bw,
+        vr_bw=vr_bw, # wake to body (x-direction, r-direction)
+        vx_rw=vx_rw,
+        vr_rw=vr_rw, # wake to rotor (x-direction, r-direction)
+        vx_ww=vx_ww,
+        vr_ww=vr_ww, # wake to wake (x-direction, r-direction)
         # operating conditions
-        freestream = freestream, # freestream parameters
+        freestream=freestream, # freestream parameters
     )
 end
 
@@ -225,7 +262,9 @@ end
 
 Calculate wake x-coordinates.
 """
-function discretize_wake(duct_coordinates, hub_coordinates, rotor_parameters, wake_length, nwake)
+function discretize_wake(
+    duct_coordinates, hub_coordinates, rotor_parameters, wake_length, nwake
+)
 
     # extract rotor locations
     xrotors = getproperty.(rotor_parameters, :xrotor)
@@ -275,16 +314,16 @@ function discretize_wake(duct_coordinates, hub_coordinates, rotor_parameters, wa
     panel_density = nwake / (Rtip - Rhub)
 
     # calculate number of panels for each discrete section
-    npanels = [ceil(Int, (xd[i+1] - xd[i]) * panel_density) for i = 1:length(xd)-1]
+    npanels = [ceil(Int, (xd[i + 1] - xd[i]) * panel_density) for i in 1:(length(xd) - 1)]
 
     # calculate indices for the start of each discrete section
     indices = cumsum(vcat(1, npanels))
 
     # construct x-discretization
-    xwake = similar(xd, sum(npanels)+1)
-    for i = 1:length(xd)-1
-        xrange = range(xd[i], xd[i+1], length=npanels[i]+1)
-        xwake[indices[i] : indices[i+1]] .= xrange
+    xwake = similar(xd, sum(npanels) + 1)
+    for i in 1:(length(xd) - 1)
+        xrange = range(xd[i], xd[i + 1]; length=npanels[i] + 1)
+        xwake[indices[i]:indices[i + 1]] .= xrange
     end
 
     # return dimensionalized wake x-coordinates

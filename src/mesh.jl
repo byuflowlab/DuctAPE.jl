@@ -1,4 +1,3 @@
-
 # The functions in this file should eventually be moved to FLOWFoil
 
 """
@@ -30,7 +29,7 @@ end
 """
     generate_one_way_mesh(influence_panels, affect_panels; kwargs)
 
-Function similar to FLOWFoil's meshing function, but only creates the mesh one way rather 
+Function similar to FLOWFoil's meshing function, but only creates the mesh one way rather
 than both ways (i.e. doesn't loop through both inputs as both sources and targets).
 
  # Arguments

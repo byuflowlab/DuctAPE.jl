@@ -47,8 +47,20 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 
 Future Work: add tip-gap capabilities
 """
-function generate_blade_elements(B, omega, xrotor, rblade, chords, twists, solidities, airfoils,
-    duct_coordinates, hub_coordinates, xwake, rwake)
+function generate_blade_elements(
+    B,
+    omega,
+    xrotor,
+    rblade,
+    chords,
+    twists,
+    solidities,
+    airfoils,
+    duct_coordinates,
+    hub_coordinates,
+    xwake,
+    rwake,
+)
 
     # get hub and tip wall radial positions
     _, ihub = findmin(x -> abs(x - xrotor), view(hub_coordinates, :, 1))
@@ -63,38 +75,49 @@ function generate_blade_elements(B, omega, xrotor, rblade, chords, twists, solid
     chords = fm.akima(rblade, chords, rwake)
 
     # update twists (convert to radians here)
-    twists = fm.akima(rblade, twists .* pi/180.0, rwake)
+    twists = fm.akima(rblade, twists .* pi / 180.0, rwake)
 
     # update solidities
-    solidities = 2*pi*rwake/B
+    solidities = 2 * pi * rwake / B
 
     # get bounding airfoil polars
-    outer_airfoil = similar(airfoils, length(rwake)-1)
-    inner_airfoil = similar(airfoils, length(rwake)-1)
-    inner_fraction = similar(airfoils, Float64, length(rwake)-1)
-    for i in 1:length(rwake)-1
+    outer_airfoil = similar(airfoils, length(rwake) - 1)
+    inner_airfoil = similar(airfoils, length(rwake) - 1)
+    inner_fraction = similar(airfoils, Float64, length(rwake) - 1)
+    for i in 1:(length(rwake) - 1)
         # panel radial location
-        ravg = (rwake[i] + rwake[i+1])/2
+        ravg = (rwake[i] + rwake[i + 1]) / 2
         # outer airfoil
         io = min(length(rblade), searchsortedfirst(rblade, ravg))
         outer_airfoil[io] = airfoils[io]
         # inner airfoil
-        ii = max(1, io-1)
+        ii = max(1, io - 1)
         inner_airfoil[ii] = airfoils[ii]
         # fraction of inner airfoil's polars to use
-        inner_fraction[i] = (ravg - rblade[ii])/(rblade[io] - rblade[ii])
+        inner_fraction[i] = (ravg - rblade[ii]) / (rblade[io] - rblade[ii])
     end
 
     # find index of the rotor's position in the wake grid
     _, wake_index = findmin(x -> abs(x - xrotor), xwake)
 
     # return blade elements
-    return (; B, omega, xrotor, r=rwake, chords, twists, solidities, outer_airfoil, inner_airfoil, inner_fraction, wake_index)
+    return (;
+        B,
+        omega,
+        xrotor,
+        r=rwake,
+        chords,
+        twists,
+        solidities,
+        outer_airfoil,
+        inner_airfoil,
+        inner_fraction,
+        wake_index,
+    )
 end
 
 # generates rotor panels
 function generate_rotor_panels(blade_elements, method)
-
     r = blade_elements.r
     x = fill(blade_elements.xrotor, length(r))
     xr = [x r]
@@ -104,15 +127,14 @@ end
 
 # generates dummy rotor panels
 function generate_dummy_rotor_panels(blade_elements, method)
-
     r = blade_elements.r
     x = fill(blade_elements.xrotor, length(r))
 
     # place blade elements in center
-    rm = similar(r, length(r)+1)
-    rm[2:end-1] .= (r[1:end-1] .+ r[2:end]) ./ 2.0
-    rm[1] = 2*r[1] - rm[2]
-    rm[end] =  2*r[end] - rm[end-1]
+    rm = similar(r, length(r) + 1)
+    rm[2:(end - 1)] .= (r[1:(end - 1)] .+ r[2:end]) ./ 2.0
+    rm[1] = 2 * r[1] - rm[2]
+    rm[end] = 2 * r[end] - rm[end - 1]
 
     xr = [x, rm]
 
