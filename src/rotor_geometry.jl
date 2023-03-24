@@ -1,32 +1,36 @@
-"""
-    BladeElements{TF, TAF}
+# """
+#     BladeElements{TF, TAF}
 
-# Fields:
-- `B::Int`: number of blades on the rotor
-- `omega::TF` : rotor rotation rate (rad/s)
-- `xrotor::TF`: x-position of the rotor (dimensionalized)
-- `r::Vector{TF}`: radial coordinate of each blade element (dimensionalized)
-- `chords::Vector{TF}` : chord length of each blade element
-- `twists::Vector{TF}` : twist of each blade element (in radians)
-- `solidities::Vector{TF}` : solidity of each blade element
-- `airfoils::Vector{TAF}` : Airfoil polars for each blade element
-"""
-struct BladeElements{TF,TAF}
-    B::Int
-    omega::TF
-    xrotor::TF
-    r::Vector{TF}
-    chords::Vector{TF}
-    twists::Vector{TF}
-    solidities::Vector{TF}
-    airfoils::Vector{TAF}
-end
+# # Fields:
+# - `B::Int`: number of blades on the rotor
+# - `omega::TF` : rotor rotation rate (rad/s)
+# - `xrotor::TF`: x-position of the rotor (dimensionalized)
+# - `r::Vector{TF}`: radial coordinate of each blade element (dimensionalized)
+# - `chords::Vector{TF}` : chord length of each blade element
+# - `twists::Vector{TF}` : twist of each blade element (in radians)
+# - `solidities::Vector{TF}` : solidity of each blade element
+# - `outer_airfoils::Vector{TAF}` : outer bounding airfoil polar
+# - `inner_airfoils::Vector{TAF}` : inner bounding airfoil polar
+# - `inner_fraction::Vector{TAF}`: fraction of inner bounding airfoil polar to use
+# """
+# struct BladeElements{TF,TAF}
+#     B::Int
+#     omega::TF
+#     xrotor::TF
+#     r::Vector{TF}
+#     chords::Vector{TF}
+#     twists::Vector{TF}
+#     solidities::Vector{TF}
+#     outer_airfoils::Vector{TAF}
+#     inner_airfoils::Vector{TAF}
+#     inner_fraction::Vector{TF}
+# end
 
 """
     generate_blade_elements(B, omega, xrotor, rblade, chords, twists, solidities, airfoils,
-        body_geometry, nr, r=range(Rhub, Rtip; length=nr))
+        duct_coordinates, hub_coordinates, r)
 
-Use the duct and hub geometry to dimensionalize the non-dimensional radial positions in 
+Use the duct and hub geometry to dimensionalize the non-dimensional radial positions in
 `rblade`. Then return a [`BladeElements`](@ref) struct.
 
 # Arguments:
@@ -43,53 +47,54 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 
 Future Work: add tip-gap capabilities
 """
-function generate_blade_elements(B, omega, xrotor, rblade, chords, twists, airfoils, 
-    body_geometry, nr, r=nothing)
+function generate_blade_elements(B, omega, xrotor, rblade, chords, twists, solidities, airfoils,
+    duct_coordinates, hub_coordinates, xwake, rwake)
 
-    # Make sure that the rotor is inside the duct
-    @assert xrotor > body_geometry.duct_range[1] "Rotor is in front of duct leading edge."
-    @assert xrotor < body_geometry.duct_range[2] "Rotor is behind duct trailing edge."
-    @assert xrotor > body_geometry.hub_range[1] "Rotor is in front of hub leading edge."
-    @assert xrotor < body_geometry.hub_range[2] "Rotor is behind hub trailing edge."
-
-    # get duct and hub wall radial positions
-    Rtip = body_geometry.duct_inner_spline(xrotor)
-    Rhub = body_geometry.hub_spline(xrotor)
+    # get hub and tip wall radial positions
+    _, ihub = findmin(x -> abs(x - xrotor), view(hub_coordinates, :, 1))
+    _, iduct = findmin(x -> abs(x - xrotor), view(duct_coordinates, :, 1))
+    Rhub = hub_coordinates[ihub, 2]
+    Rtip = duct_coordinates[iduct, 2]
 
     # dimensionalize the blade element radial positions
     rblade = fm.linear([Rhub; Rtip], [0.0; 1.0], rblade)
 
-    # update radial coordinates
-    if isnothing(r)
-        r = collect(range(Rhub, Rtip; length=nr))
-    end
-
     # update chord lengths
-    chords = fm.akima(rblade, chords, r)
+    chords = fm.akima(rblade, chords, rwake)
 
     # update twists (convert to radians here)
-    twists = fm.akima(rblade, twists .* pi/180.0, r)
+    twists = fm.akima(rblade, twists .* pi/180.0, rwake)
 
     # update solidities
-    solidities = 2*pi*r/B
+    solidities = 2*pi*rwake/B
 
-    # update airfoil polars (using midpoint between stations), note that this will create 
-    # a discontinuity if the radial positions are updated during an optimization
-    ravg = (dim_radial_positions[1:(end - 1)] .+ dim_radial_positions[2:end]) ./ 2.0
-    afdist = similar(airfoils, nr)
-    for i in 1:nr
-        ridx = findfirst(x -> x > updated_radial_positions[i], ravg)
-        afdist[i] = isnothing(ridx) ? airfoils[end] : airfoils[ridx]
+    # get bounding airfoil polars
+    outer_airfoil = similar(airfoils, length(rwake)-1)
+    inner_airfoil = similar(airfoils, length(rwake)-1)
+    inner_fraction = similar(airfoils, Float64, length(rwake)-1)
+    for i in 1:length(rwake)-1
+        # panel radial location
+        ravg = (rwake[i] + rwake[i+1])/2
+        # outer airfoil
+        io = min(length(rblade), searchsortedfirst(rblade, ravg))
+        outer_airfoil[io] = airfoils[io]
+        # inner airfoil
+        ii = max(1, io-1)
+        inner_airfoil[ii] = airfoils[ii]
+        # fraction of inner airfoil's polars to use
+        inner_fraction[i] = (ravg - rblade[ii])/(rblade[io] - rblade[ii])
     end
 
-    # return blade elements
-    return BladeElements(B, omega, xrotor, r, chords, twists, solidities, afdist)
-end
+    # find index of the rotor's position in the wake grid
+    _, wake_index = findmin(x -> abs(x - xrotor), xwake)
 
+    # return blade elements
+    return (; B, omega, xrotor, r=rwake, chords, twists, solidities, outer_airfoil, inner_airfoil, inner_fraction, wake_index)
+end
 
 # generates rotor panels
 function generate_rotor_panels(blade_elements, method)
-    
+
     r = blade_elements.r
     x = fill(blade_elements.xrotor, length(r))
     xr = [x r]

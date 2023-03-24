@@ -160,9 +160,9 @@ function calculate_initial_states(params)
     # combine initial states into one vector
     states = vcat(
         Γb, # body vortex sheet strengths
-        reduce(vcat, Γw) # wake vortex sheet strengths
-        reduce(vcat, Γr) # rotor vortex strengths
-        reduce(vcat, Σr) # rotor source strengths
+        reduce(vcat, Γw), # wake vortex sheet strengths
+        reduce(vcat, Γr), # rotor vortex strengths
+        reduce(vcat, Σr), # rotor source strengths
     )
 
     return states
@@ -194,11 +194,11 @@ function update_gamma_sigma!(states, params)
     H_tilde = calculate_enthalpy_jumps(Γr, Ωr, num_blades)
 
     # calculate meridional velocities at wakes
-    wake_velocities = calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw, 
+    wake_velocities = calculate_wake_velocities(Ax_bw, Ar_bw, Γb, Ax_ww, Ar_ww, Γw,
         Ax_rw, Ar_rw, Σr)
 
     # calculate induced velocity at rotors
-    Vm, Vθ = calculate_induced_velocities_on_rotors(blade_elements, Γr, Ax_br, Ar_br, Γb, 
+    Vm, Vθ = calculate_induced_velocities_on_rotors(blade_elements, Γr, Ax_br, Ar_br, Γb,
         Ax_wr, Ar_wr, Γw)
 
     # update body vortex strengths

@@ -1,195 +1,158 @@
-#=
+"""
 
-Funtions related to generation of the wake "grid"
+    generate_wake_grid(body_geometry, xrotor, rblade, wake_length=1.0; kwargs...)
 
-Authors: Judd Mehr,
+Generate the wake grid.
 
-=#
+# Arguments:
+- `body_geometry::BodyGeometry`: Duct and hub geometry
+- `xrotor::Vector{Float}`: x-position of each rotor
+- `rblade::Vector{Float}` : r-position of each blade element (for the first rotor)
+- `wake_length::Float` : non-dimensional length (based on maximum duct chord) that the wake
+    extends past the furthest trailing edge.
 
-# TODO: Use updated version for the wake geometry generation
+# Keyword Arguments:
+- `method = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])`
 
 """
-    initilaize_grid_points(body_geometry, rotor_x_positions, radial_positions, grid_options, debug=false)
+function generate_wake_grid(xwake, rwake, wake_length=1.0)
 
-Get grid boundary and initial interior points.
+    # initialize the wake grid
+    xgrid, rgrid = initialize_wake_grid(body_geometry, xrotor, rblade, wake_length)
+
+    # align the wake grid with streamlines
+    update_grid!(xgrid, rgrid)
+
+    return xgrid, rgrid, rotor_indices
+end
+
+"""
+    generate_wake_panels(xgrid, rgrid; kwargs...)
+
+Generate paneling for each wake line emanating from the rotor blade elements.
+
+# Arguments:
+- `xgrid::Matrix{Float}` : x-location of each grid point
+- `rgrid::Matrix{Float}` : r-location of each grid point
+
+**Keyword Arguments:**
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+
+**Returns:**
+- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
+"""
+function generate_wake_panels(xgrid, rgrid;
+    method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]))
+
+    @assert size(xgrid) == size(rgrid)
+
+    # extract grid size
+    nx, nr = size(xgrid)
+
+    # find panel centers
+    xmgrid = (xgrid[:, 1:end-1] .+ xgrid[:, 2:end]) / 2.0
+    rmgrid = (rgrid[:, 1:end-1] .+ rgrid[:, 2:end]) / 2.0
+
+    # define wake lines
+    wake_lines = [[xmgrid[:, ir] rmgrid[:, ir]] for ir in 1:nr-1]
+
+    # generate paneling for each wake line
+    wake_panels = ff.generate_panels(method, wake_lines)
+
+    return wake_panels
+end
+
+"""
+    initialize_wake_grid(body_geometry, xrotor, rblade)
+
+Intialize the wake grid
 
 **Arguments:**
 - `body_geometry::DuctTAPE.body_geometry` : Duct Geometry Object.
-- `rotor_x_positions::Vector{Float}` : Vector of x-positions for the rotors
-- `radial_positions::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
+- `xrotor::Vector{Float}` : Vector of x-positions for the rotors
+- `rwake::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
 - `grid_options::DuctTAPE.GridOptions` : GridOptions object
 
 **Returns:**
-- `x_grid_points::Matrix{Float64,2}` : 2D Array of x grid points
-- `r_grid_points::Matrix{Float64,2}` : 2D Array of r grid points
+- `xgrid::Matrix{Float64,2}` : 2D Array of x grid points
+- `rgrid::Matrix{Float64,2}` : 2D Array of r grid points
 """
-function initialize_grid_points(
-    body_geometry, rotor_x_positions, radial_positions; wake_length=1.0, debug=false
-)
+function initialize_wake_grid(duct_coordinates, hub_coordinates, xwake, rwake)
 
-    # --- RENAME THINGS FOR CONVENIENCE
-    TF = eltype(body_geometry.duct_inner_spline.ydata)
+    # number of streamwise grid locations
+    nx = length(xwake)
 
-    duct_range = body_geometry.duct_range
-    hub_range = body_geometry.hub_range
-    hub_spline = body_geometry.hub_spline
-    duct_inner_spline = body_geometry.duct_inner_spline
+    # number or radial grid locations
+    nr = length(rwake)
 
-    nrotors = length(rotor_x_positions)
-    nr = length(radial_positions)
+    # initialize outputs
+    xgrid = similar(duct_coordinates, nx, nr)
+    rgrid = similar(duct_coordinates, nx, nr)
 
-    #check that rotor/stator are in the correct order
-    for i in 1:(nrotors - 1)
-        @assert rotor_x_positions[i] < rotor_x_positions[i + 1]
-    end
+    # set x-locations
+    xgrid .= xwake
 
-    # --- SETUP/FIND BOUNDARY GEOMETRY
+    # set first rotor radial locations
+    rgrid[1,:] .= rwake
 
-    # -- Get rear boundary
-    # calculate duct trailing edge
-    duct_te = max(duct_range[2], hub_range[2])
-    # calculate duct chord
-    duct_chord = duct_te - min(duct_range[1], hub_range[1])
+    # initial x-position of wake
+    xrotor = xwake[1]
 
-    #wake starts at body_geometry trailing edge and extends the input wake_length relative to body_geometry chord.
-    wake_te = duct_te * (1.0 + wake_length)
+    # hub trailing edge
+    xhub_te = hub_coordinates[end,1]
 
-    # --- DEFINE X GRID SPACING PIECES
+    # duct trailing edge
+    xduct_te = duct_coordinates[1,1]
 
-    # choose x-step to be same length as radial step length, assumes that radial positions are linearly spaced
-    x_step = radial_positions[2] - radial_positions[1]
+    # set inner radial locations
+    _, ihub_rotor = findmin(x->abs(x-xrotor), view(hub_coordinates, :, 1))
+    _, ihub_te = findmin(x->abs(x-xhub_te), xwake)
 
-    # if there are more than 1 rotors, need to account for following rotor locations so that grid aligns with rotors
-    if length(rotor_x_positions) > 1
+    rgrid[1:ihub_te,1] .= hub_coordinates[ihub_rotor:end, 2]
+    rgrid[ihub_te+1:end,1] .= hub_coordinates[end, 2]
 
-        # find the lengths between rotors using an approximate step size of the blade element spacing
-        x_length = zeros(Int, nrotors - 1)
-        for i in 1:(nrotors - 1)
-            x_length[i] = ceil(
-                Int, (rotor_x_positions[i + 1] - rotor_x_positions[i]) / x_step
-            )
-            if x_length[i] == 1
-                x_length[i] += 1
-            end
+    # set outer radial locations
+    _, leidx = findmin(view(duct_coordinates, :, 1))
+    _, iduct_rotor = findmin(x->abs(x-xrotor), view(duct_coordinates, 1:leidx, 1))
+    _, iduct_te = findmin(x->abs(x-xduct_te), xwake)
+    rgrid[1:iduct_te,end] .= duct_coordinates[iduct_rotor:-1:1, 2]
+    rgrid[iduct_te+1:end,end] .= duct_coordinates[1, 2]
+
+    # --- Define Inner Grid Points --- #
+
+    # get the area of the annulus at the first rotor
+    area = pi * (rgrid[1, end]^2 - rgrid[1, 1]^2)
+
+    # get the area of each blade element on the first rotor
+    section_area = pi * (rgrid[1, 2:end] .^2 .- rgrid[1, 1:end-1] .^2)
+
+    # apply conservation of mass at each grid point
+    for ix in 2:nx
+
+        xhub = xgrid[ix, 1]
+        rhub = rgrid[ix, 1]
+
+        xduct = xgrid[ix, end]
+        rduct = rgrid[ix, end]
+
+        # calculate the area of the annulus at the current streamwise location
+        local_area = pi * (rduct .^2 .- rhub .^2)
+
+        for ir in 2:(nr - 1)
+
+            # define radial grid point based on conservation of mass
+            local_section_area = local_area*section_area[ir-1]/area
+            rgrid[ix, ir] = sqrt(local_section_area/pi + rgrid[ix, ir-1]^2)
+
+            # linearly interpolate hub and duct x-positions
+            frac = (rgrid[ix, ir] - rhub) / (rduct - rhub)
+            xgrid[ix, ir] = xhub + frac * (xduct - xhub)
+
         end
 
-        #need to save the x-index of the rotor positions for later use
-        rotoridxs = [1; cumsum(x_length)]
-
-        #get the length from the last rotor to the end of the wake
-        last_length = round(Int, (wake_te - rotor_x_positions[end]) / x_step)
-
-        # put all the x stations together
-        wake_x_stations = unique(
-            reduce(
-                vcat,
-                [
-                    [
-                        range(
-                            rotor_x_positions[i],
-                            rotor_x_positions[i + 1];
-                            length=x_length[i],
-                        ) for i in nrotors - 1
-                    ]
-                    range(rotor_x_positions[end], wake_te; length=last_length)
-                ],
-            ),
-        )
-
-    else
-
-        # rotor index is only the first index if there is only one rotor.
-        rotoridxs = [1]
-
-        # - If only one rotor,rotor_x_positions- no need for complicated stuff.
-        wake_x_stations = range(rotor_x_positions[1], wake_te; step=x_step)
     end
 
-    #get number of x stations
-    nx = length(wake_x_stations)
-
-    # --- DEFINE R STATION LOCATIONS ALONG INNER/OUTER BOUNDARIES
-    # -- Get radial locations of outer boundary
-    router = zeros(TF, nx)
-    for i in 1:nx
-        if wake_x_stations[i] < duct_range[2]
-            router[i] = duct_inner_spline(wake_x_stations[i])
-        else
-            router[i] = duct_inner_spline(duct_range[2])
-        end
-    end
-
-    # -- Get radial locations of inner boundary
-    rinner = zeros(TF, nx)
-    for i in 1:nx
-        if wake_x_stations[i] < hub_range[2]
-            rinner[i] = hub_spline(wake_x_stations[i])
-        else
-            rinner[i] = hub_spline(hub_range[2])
-        end
-    end
-
-    # --- INITIALIZE GRID POINTS
-    #initialize grid matrix
-    x_grid_points = zeros(TF, nx, nr)
-    r_grid_points = zeros(TF, nx, nr)
-
-    #first column of radial grid points are radial stations of foremost rotor
-    r_grid_points[1, :] = radial_positions
-
-    #first column of x grid points are all the x position of the foremost rotor
-    x_grid_points[1, :] .= rotor_x_positions[1]
-
-    #first and last rows of points from setup above
-    x_grid_points[:, 1] = wake_x_stations
-    x_grid_points[:, end] = wake_x_stations
-    r_grid_points[:, 1] = rinner
-    r_grid_points[:, end] = router
-
-    # --- DEFINE INNER GRID POINTS
-
-    # -- Set up grid definition Loop
-    #Get area of foremost rotor annulus
-    rotorarea = pi * (router[1]^2 - rinner[1]^2)
-
-    #get the annulus area of the radial stations
-    drotorarea = [
-        pi * (r_grid_points[1, j + 1]^2 - r_grid_points[1, j]^2) for j in 1:(nr - 1)
-    ]
-
-    #get areas of subsequent annuli
-    localarea = [pi * (r_grid_points[i, end]^2 - r_grid_points[i, 1]^2) for i in 1:nx]
-
-    # March conservation of mass along x-direction to get grid points.
-    for i in 2:nx #for each x station after the rotor plane
-
-        #get the x,r coordinates at the x stations
-        xwall = x_grid_points[i, end]
-        xhub = x_grid_points[i, 1]
-        rwall = r_grid_points[i, end]
-        rhub = r_grid_points[i, 1]
-
-        # get the area of the annulus at the current x station
-        # localarea = pi * (rwall^2 - rhub^2)
-
-        for j in 2:(nr - 1) #for each radial station between the hub and wall
-
-            #get local change in area using conservation of mass
-            dlocalarea = (drotorarea[j - 1] * localarea[i]) / rotorarea
-
-            #define radial grid point based on conservation of mass
-            r_grid_points[i, j] = sqrt(dlocalarea / pi + r_grid_points[i, j - 1]^2)
-
-            #NOTE that the rest of the loop only does something if xs aren't the same like they are now.
-            #calculate ratio for weighted average
-            frac = (r_grid_points[i, j] - rhub) / (rwall - rhub)
-
-            # place x grid point based on weighted ratio
-            x_grid_points[i, j] = xhub + frac * (xwall - xhub)
-        end # for radial stations
-    end # for x stations
-
-    return x_grid_points, r_grid_points, nx, nr, rotoridxs
+    return xgrid, rgrid
 end
 
 """
@@ -498,89 +461,4 @@ function relax_grid!(xr, rr, nxi, neta; max_iterations=100, tol=1e-9, verbose=fa
         println("iterations = ", iterate)
     end
     return nothing
-end
-
-"""
-    generate_wake_panels(x_grid_points, r_grid_points, nr; kwargs)
-
-Generate vector of Axisymmetric panel objects for the wake lines emanating from the rotor blade elements.
-
-**Arguments:**
-- `x_grid_points::Matrix{Float}` : x-location of each grid point
-- `r_grid_points::Matrix{Float}` : r-location of each grid point
-- `nr::Int` : number of radial grid points
-
-**Keyword Arguments:**
-- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
-
-**Returns:**
-- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
-"""
-function generate_wake_panels(
-    x_grid_points,
-    r_grid_points,
-    nr;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
-)
-
-    # - Organize Coordinates into wake lines - #
-    wake_line_coordinates = [[x_grid_points[:, i] r_grid_points[:, i]] for i in 1:nr]
-
-    # - Use FLOWFoil to Generate Vortex Panels - #
-    wake_panels = ff.generate_panels(method, wake_line_coordinates)
-
-    return wake_panels
-end
-
-"""
-
-    generate_wake_panels(x_grid_points, r_grid_points, nr; kwargs)
-
-Generate vector of Axisymmetric panel objects for the wake lines emanating from the rotor blade elements.
-
-**Arguments:**
-- `body_geometry::BodyGeometry` : BodyGeometry object describing the duct and hub
-- `rotor_x_positions::Vector{Float}` : Vector of x-positions for the rotors
-- `radial_positions::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
-
-**Keyword Arguments:**
-- `wake_length::Float` : length of wake (non-dimensional based on maximum duct chord) to extend past the furthest trailing edge.
-- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
-
-**Returns:**
-- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
-
-"""
-function generate_wake_grid(
-    body_geometry,
-    rotor_x_positions,
-    radial_positions;
-    wake_length=1.0,
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
-    debug=false,
-)
-
-    # - Initialize Grid Points - #
-    x_grid_points, r_grid_points, nx, nr, rotoridxs = initialize_grid_points(
-        body_geometry, rotor_x_positions, radial_positions; wake_length=1.0, debug=false
-    )
-
-    # - Relax Grid Points - #
-    relax_grid!(x_grid_points, r_grid_points, nx, nr)
-
-    # - Generate Panels - #
-    # These are the grid centers
-    # TODO: need to determine where the wake panels actually lie. probably not like this.
-    wake_panels = generate_wake_panels(
-        (x_grid_points[:, 1:(end - 1)] .+ x_grid_points[:, 2:end]) / 2.0,
-        (r_grid_points[:, 1:(end - 1)] .+ r_grid_points[:, 2:end]) / 2.0,
-        nr - 1;
-        method=method,
-    )
-
-    # - Put the points together in one grid - #
-    #TODO: not sure if this is going to be used elsewhere, may remove this later
-    # wake_grid = [[x_grid_points[j, i] r_grid_points[j, i]] for i in 1:nr, j in 1:nx]
-
-    return wake_panels, length(wake_panels), rotoridxs, r_grid_points
 end
