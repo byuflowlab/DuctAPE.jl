@@ -49,12 +49,8 @@ function generate_wake_panels(xgrid, rgrid;
     # extract grid size
     nx, nr = size(xgrid)
 
-    # find panel centers
-    xmgrid = (xgrid[:, 1:end-1] .+ xgrid[:, 2:end]) / 2.0
-    rmgrid = (rgrid[:, 1:end-1] .+ rgrid[:, 2:end]) / 2.0
-
     # define wake lines
-    wake_lines = [[xmgrid[:, ir] rmgrid[:, ir]] for ir in 1:nr-1]
+    wake_lines = [[xgrid[:, ir] rgrid[:, ir]] for ir in 1:nr]
 
     # generate paneling for each wake line
     wake_panels = ff.generate_panels(method, wake_lines)

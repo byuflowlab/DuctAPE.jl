@@ -2,93 +2,106 @@
     calculate_induced_velocities_on_rotors(blade_elements, Γr, vx_rb, vr_rb, Γb,
         vx_rw, vr_rw, Γw)
 
-Calculate meridional and tangential induced velocity on the rotors.
+Calculate axial, radial, and tangential induced velocity on the rotors.
 
-The meridional velocity is defined tangent to a streamline in the x-r plane.  Its magnitude
-can therefore be computed as `Vm = Vx + Vr`  **need to check this**
+`Γr::Matrix{Float}` : rotor circulation values (must be a matrix, even if only 1 rotor is being used). Size is number of blade elements by number of rotors.
+`vx_rw::Matrix{Matrix{Float}}` : unit axial induced velocities of wakes on rotors. Must be a matrix of size number of rotors by number of wakes made up of matrices of size number of blade elements by number of wake "panels."
+`Γw::Matrix{Float}` : wake circulation values (must be a matrix). Size is number of wake sheets by number of "panels" per sheet.
 """
 function calculate_induced_velocities_on_rotors(
-    blade_elements, Γr, vx_rb, vr_rb, Γb, vx_rw, vr_rw, Γw
+    blade_elements, Γr, vx_rw, vr_rw, Γw, vx_rb=nothing, vr_rb=nothing, Γb=nothing
 )# vx_rr, vr_rr, Σr)
 
     # problem dimensions
     _, nrotor = size(Γr) # number of rotors
-    nwake = length(vr_rw) # number of wake sheets
+    _, nwake = size(vx_rw) # number of wake sheets
 
     # initialize outputs
-    vm = similar(Γr) .= 0 # meridional induced velocity
+    vx = similar(Γr) .= 0 # axial induced velocity
+    vr = similar(Γr) .= 0 # radial induced velocity
     vθ = similar(Γr) .= 0 # tangential induced velocity
 
-    # loop through each rotor
-    for jrotor in 1:nrotor
+    # loop through each affected rotor
+    for irotor in 1:nrotor
 
-        # add body induced meridional velocities
-        @views vm[:, jrotor] .+= vx_rb[jrotor] * Γb
-        @views vm[:, jrotor] .+= vr_rb[jrotor] * Γb
+        # add body induced velocities
+        if Γb != nothing
+            @views vx[:, irotor] .+= vx_rb[irotor] * Γb
+            @views vr[:, irotor] .+= vr_rb[irotor] * Γb
+        end
 
-        # add wake induced meridional velocities
-        for iwake in 1:nwake
-            @views vm[:, jrotor] .+= vx_rw[iwake, jrotor] * view(Γw, :, iwake)
-            @views vm[:, jrotor] .+= vr_rw[iwake, jrotor] * view(Γw, :, iwake)
+        # add wake induced velocities
+        for jwake in 1:nwake
+            @views vx[:, irotor] .+= vx_rw[irotor, jwake] * Γw[jwake, :]
+            @views vr[:, irotor] .+= vr_rw[irotor, jwake] * Γw[jwake, :]
         end
 
         #TODO: add later
-        # # add rotor induced meridional velocities
-        # for irotor in 1:nrotor
-        #     @views vm[:, jrotor] .+= vx_rr[irotor, jrotor] * view(Σr, :, irotor)
-        #     @views vm[:, jrotor] .+= vr_rr[irotor, jrotor] * view(Σr, :, irotor)
+        # # add rotor induced velocities
+        # for jrotor in 1:nrotor
+        #     @views vx[:, irotor] .+= vx_rr[irotor, jrotor] * view(Σr, :, jrotor)
+        #     @views vr[:, irotor] .+= vr_rr[irotor, jrotor] * view(Σr, :, jrotor)
         # end
 
-        # add induced tangential velocity from self
-        B = blade_elements[jrotor].num_blades
-        r = blade_elements[jrotor].radial_positions
-        @views vθ[:, jrotor] .+= B .* Γr[:, jrotor] ./ (4 * pi * r)
+        # add self-induced tangential velocity
+        B = blade_elements[irotor].num_blades
+        r = blade_elements[irotor].radial_positions
+        @views vθ[:, irotor] .+= B .* Γr[:, irotor] ./ (4 * pi * r)
 
-        # add induced tangential velocity from previous rotors
-        for krotor in 1:(jrotor - 1)
-            B = blade_elements[krotor].num_blades
-            r = blade_elements[krotor].radial_positions
-            @views vθ[:, jrotor] .+= B .* Γr[:, krotor] ./ (2 * pi * r)
+        # add induced tangential velocity from upstream rotors
+        for jrotor in 1:(irotor - 1)
+            B = blade_elements[jrotor].num_blades
+            r = blade_elements[jrotor].radial_positions
+            @views vθ[:, irotor] .+= B .* Γr[:, jrotor] ./ (2 * pi * r)
         end
     end
 
-    return vm, vθ
+    # return raw induced velocities
+    # TODO: decide where to assemble full velocities, here or in another function.
+    return vx, vr, vθ
 end
 
 """
-    calculate_gamma_sigma(blade_elements, Vinf [, Vm, Vθ])
+    calculate_gamma_sigma(blade_elements, Vm, Vθ)
 
-Calculate rotor circulation and source strengths using airfoil data.
+Calculate rotor circulation and source strengths using blade element data and inflow velocities.
+
+**Arguments:**
+`Vm::Matrix{Float}` : Meridional velocity (including freestream and induced velocity) at rotor planes. Must be a matrix of size number of blade elements by number of rotors.
+
+**Returns:**
+`Γr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
+`Σr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
-function calculate_gamma_sigma(blade_elements, Vinf, Vm=nothing, Vθ=nothing)
+function calculate_gamma_sigma(blade_elements, Vm, Vθ)
 
     # get floating point type
-    if isnothing(Vm) && isnothing(Vθ)
-        TF = promote_type(eltype(blade_elements[1].chords), typeof(Vinf))
-    else
-        TF = promote_type(
-            eltype(blade_elements[1].chords), typeof(Vinf), eltype(Vm), eltype(Vθ)
-        )
-    end
+    TF = promote_type(
+        eltype(blade_elements[1].chords),
+        eltype(blade_elements[1].twists),
+        eltype(Vm),
+        eltype(Vθ),
+    )
 
-    # get problem dimensions
-    nr = blade_elements[1].num_radial_stations[1]
-    nrotor = length(blade_elements)
+    # get problem dimensions (number of radial stations x number of rotors)
+    nr, nrotor = size(Vm)
 
     # initialize outputs
     Γr = zeros(TF, nr, nrotor)
     Σr = zeros(TF, nr, nrotor)
 
     # call in-place function
-    return calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm, Vθ)
+    return calculate_gamma_sigma!(Γr, Σr, blade_elements, Vm, Vθ)
 end
 
 """
-    calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf [, Vm, Vθ])
+    calculate_gamma_sigma!(Γr, Σr, blade_elements, Vm, Vθ)
 
 In-place version of [`calculate_gamma_sigma`](@ref)
+
+Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and Vθ)
 """
-function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm=nothing, Vθ=nothing)
+function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vm, Vθ)
 
     # problem dimensions
     nr, nrotor = size(Γr) #num radial stations, num rotors
@@ -100,15 +113,15 @@ function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm=nothing, Vθ=
         for ir in 1:nr
 
             # extract blade element properties
-            B = blade_elements[ir].num_blades # number of blades
-            c = blade_elements[ir].chords[irotor] # chord length
-            twist = blade_elements[ir].twists[irotor] # twist
-            r = blade_elements[ir].radial_positions[irotor] # radius
-            Ω = blade_elements[ir].omega[irotor] # rotation rate
+            B = blade_elements[irotor].num_blades # number of blades
+            c = blade_elements[irotor].chords[ir] # chord length
+            twist = blade_elements[irotor].twists[ir] # twist
+            r = blade_elements[irotor].radial_positions[ir] # radius
+            Ω = blade_elements[irotor].omega # rotation rate
 
             # meridional and tangential inflow velocities
-            Wm = isnothing(Vm) ? Vinf : Vm[ir, irotor] + Vinf
-            Wθ = isnothing(Vθ) ? -Ω * r : Vθ[ir, irotor] - Ω * r
+            Wm = Vm[ir, irotor]
+            Wθ = Vθ[ir, irotor]
             W = sqrt(Wm^2 + Wθ^2)
 
             # calculate angle of attack

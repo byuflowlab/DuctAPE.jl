@@ -67,12 +67,15 @@ function calculate_wake_vortex_strengths!(Γw, Rr_wake, Vmr, Γ_tilde, H_tilde)
         for ir in 1:nr
 
             # compute average meridional velocities
-            if ir == 1 || ir == nr
+            if ir == 1
                 # use panel velocity as average velocity
                 Vm_avg = Vmr[ir, irotor]
+            elseif ir == nr
+                # use panel velocity as average velocity
+                Vm_avg = Vmr[ir - 1, irotor]
             else
                 # average velocities above and below the current panel
-                Vm_avg = 1 / 2 * (Vmr[ir - 1, irotor] + Vmr[ir + 1, irotor])
+                Vm_avg = 1 / 2 * (Vmr[ir - 1, irotor] + Vmr[ir, irotor])
             end
 
             # calculate the wake vortex strength
@@ -87,14 +90,19 @@ function calculate_wake_vortex_strengths!(Γw, Rr_wake, Vmr, Γ_tilde, H_tilde)
                 # constant in expression for convenience
                 K = -1 / (8 * pi^2 * r^2)
 
-                # net circulation squared jump across sheet
-                ΔΓ2 = Γ_tilde[ir + 1, irotor]^2 - Γ_tilde[ir, irotor]^2
-
-                # enthalpy jump across sheet
-                ΔH = H_tilde[ir + 1, irotor] - H_tilde[ir, irotor]
+                # net circulation squared and enthalpy jumps across sheet
+                if ir == 1
+                    ΔΓ2 = Γ_tilde[ir, irotor]^2
+                    ΔH = H_tilde[ir, irotor]
+                elseif ir == nr
+                    ΔΓ2 = -Γ_tilde[ir - 1, irotor]^2
+                    ΔH = -H_tilde[ir - 1, irotor]
+                else
+                    ΔΓ2 = Γ_tilde[ir, irotor]^2 - Γ_tilde[ir - 1, irotor]^2
+                    ΔH = H_tilde[ir, irotor] - H_tilde[ir - 1, irotor]
+                end
 
                 # wake strength density taken from rotor to next rotor constant along streamlines
-                # TODO: need to populate the entire wake either here or in another function
                 Γw[ir, irotor] = (K * ΔΓ2 + ΔH) / Vm_avg
             end
         end

@@ -193,6 +193,7 @@ function update_gamma_sigma!(states, params)
     )
 
     # calculate induced velocity at rotors
+    # TODO:update outputs here
     Vm, Vθ = calculate_induced_velocities_on_rotors(
         blade_elements, Γr, vx_rb, vr_rb, Γb, vx_rw, vr_rw, Γw
     )

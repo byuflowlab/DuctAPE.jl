@@ -35,6 +35,9 @@ function update_body_geometry(
     new_xduct_grid = xwake[1:duct_trailing_index]
     new_rduct_grid = finterp(xduct_inner, rduct_inner, new_xduct_grid)
 
+    #TODO: something isn't right around here. see plots for non-symmetric geometry
+    #probably ask taylor what he's trying to do here
+    #also consider if this is even a good approach to the overall problem
     # find the index of the first rotor on the duct inside surface
     ridx = length(xduct_inner) - searchsortedfirst(xduct_inner, xwake[1]) + 1
 

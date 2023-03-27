@@ -125,18 +125,19 @@ function generate_rotor_panels(blade_elements, method)
     return ff.generate_panels(method, xr)
 end
 
-# generates dummy rotor panels
-function generate_dummy_rotor_panels(blade_elements, method)
-    r = blade_elements.r
-    x = fill(blade_elements.xrotor, length(r))
+#TODO: pretty sure this can be deleted.
+# # generates dummy rotor panels
+# function generate_dummy_rotor_panels(blade_elements, method)
+#     r = blade_elements.r
+#     x = fill(blade_elements.xrotor, length(r))
 
-    # place blade elements in center
-    rm = similar(r, length(r) + 1)
-    rm[2:(end - 1)] .= (r[1:(end - 1)] .+ r[2:end]) ./ 2.0
-    rm[1] = 2 * r[1] - rm[2]
-    rm[end] = 2 * r[end] - rm[end - 1]
+#     # place blade elements in center
+#     rm = similar(r, length(r) + 1)
+#     rm[2:(end - 1)] .= (r[1:(end - 1)] .+ r[2:end]) ./ 2.0
+#     rm[1] = 2 * r[1] - rm[2]
+#     rm[end] = 2 * r[end] - rm[end - 1]
 
-    xr = [x, rm]
+#     xr = [x, rm]
 
-    return ff.generate_panels(method, xr)
-end
+#     return ff.generate_panels(method, xr)
+# end

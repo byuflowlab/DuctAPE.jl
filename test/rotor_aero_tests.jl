@@ -1,47 +1,4 @@
 @testset "Rotor Aerodynamics" begin
-    @testset "Angle of Attack Calculation" begin
-        twist_angle = pi / 2.0
-        meridional_flow_magnitude = 1.0
-        tangential_flow_magnitude = -1.0
-
-        @test pi / 4.0 == dt.calculate_angle_of_attack(
-            twist_angle, meridional_flow_magnitude, tangential_flow_magnitude
-        )
-    end
-
-    @testset "Blade Element Inflow Velocity Calculation" begin
-
-        # - Single Blade Element - #
-        Vinf = 1.0
-        vm = [1.0]
-        vtheta = [-1.0]
-        blade_elements = [(radial_positions=[1.0], omega=[1.0])]
-        inflow = dt.calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
-        @test inflow.Wm[1] == 2.0
-        @test inflow.Wtheta[1] == -2.0
-        @test inflow.Wmag[1] == sqrt(8.0)
-
-        # - Single Rotor - #
-        Vinf = 1.0
-        vm = ones(2)
-        vtheta = -ones(2)
-        blade_elements = [(radial_positions=ones(2), omega=ones(2))]
-        inflow = dt.calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
-        @test all(inflow.Wm[:] .== 2.0)
-        @test all(inflow.Wtheta[:] .== -2.0)
-        @test all(inflow.Wmag[:] .== sqrt(8.0))
-
-        # - Multiple Rotors - #
-        Vinf = 1.0
-        vm = ones(2, 2)
-        vtheta = -ones(2, 2)
-        blade_elements = [(radial_positions=ones(2), omega=ones(2)) for i in 1:2]
-        inflow = dt.calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
-        @test all(inflow.Wm[:] .== 2.0)
-        @test all(inflow.Wtheta[:] .== -2.0)
-        @test all(inflow.Wmag[:] .== sqrt(8.0))
-    end
-
     @testset "Airfoil Polar Search" begin
         alpha = [-pi; 0.0; pi]
         cl = 2.0 * ones(length(alpha))
@@ -54,7 +11,7 @@
         alpha = [-pi; 0.0; pi]
         cl = 2.0 * ones(length(alpha))
         cd = ones(length(alpha))
-        af = AlphaAF(alpha, cl, cd, "TEST")
+        af = ccb.AlphaAF(alpha, cl, cd, "TEST")
 
         Vinf = 1.0
         vm = ones(2, 2)
@@ -71,58 +28,50 @@
             ) for i in 1:2
         ]
 
-        Gamma = similar(vm)
-        Sigma = similar(vm)
+        Gamma = similar(vm) .= 0
+        Sigma = similar(vm) .= 0
 
-        dt.calculate_gamma_sigma!(Gamma, Sigma, blade_elements, Vinf, vm, vtheta)
+        W = sqrt.(vm .^ 2 .+ vtheta .^ 2)
 
-        @test all(Gamma .== sqrt(8))
-        inflow = dt.calculate_inflow_velocities(blade_elements, Vinf, vm, vtheta)
-        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1, 1])
+        dt.calculate_gamma_sigma!(Gamma, Sigma, blade_elements, vm, vtheta)
 
-        Gamma, Sigma = dt.calculate_gamma_sigma(blade_elements, Vinf, vm, vtheta)
-        @test all(Gamma .== sqrt(8))
-        @test all(Sigma .== 1.0 / (4.0 * pi) * inflow.Wmag[1, 1])
+        @test all(Gamma .== W)
+        @test all(Sigma .== 1.0 / (4.0 * pi) * W)
+
+        Gamma, Sigma = dt.calculate_gamma_sigma(blade_elements, vm, vtheta)
+        @test all(Gamma .== W)
+        @test all(Sigma .== 1.0 / (4.0 * pi) * W)
     end
 
     @testset "Induced Velocity at Blade Elements Calculation" begin
 
         # - Single Rotor - #
 
-        BGamma = ones(2)
-        Gamma_tilde = ones(2)
+        gamma_rotor = ones(2, 1)
         blade_elements = [(
             num_radial_stations=[2],
+            num_blades=1,
             chords=ones(2),
             twists=pi / 2.0 * ones(2),
             radial_positions=ones(2),
             omega=ones(2),
         )]
-        A_bodies_to_rotor = [1 0; 0 1]
-        gamma_bodies = ones(2)
-        A_wake_to_rotor = [[1 0; 0 1] for i in 1:2]
+        vx_rw = [[1 0; 0 1] for i in 1:1, j in 1:2]
+        vr_rw = [[1 0; 0 1] for i in 1:1, j in 1:2]
         gamma_wake = ones(2, 2)
         # A_rotor_to_rotor =[1 0; 0 1]
         # Sigma =ones(2)
 
-        vi = dt.calculate_induced_velocities_on_rotors(
-            BGamma,
-            Gamma_tilde,
-            blade_elements,
-            A_bodies_to_rotor,
-            gamma_bodies,
-            A_wake_to_rotor,
-            gamma_wake,
-            # A_rotor_to_rotor,
-            # Sigma,
+        vx, vr, vt = dt.calculate_induced_velocities_on_rotors(
+            blade_elements, gamma_rotor, vx_rw, vr_rw, gamma_wake
         )
 
-        @test vi.vtheta == 1.5 / (2.0 * pi) * ones(2)
-        @test vi.vm == 3.0 * ones(2)
+        @test all(vt .== 1.0 / (4.0 * pi) * gamma_rotor)
+        @test all(vx .== 2.0 * ones(2))
+        @test all(vr .== 2.0 * ones(2))
 
         # - Multiple Rotors - #
-        BGamma = [1.0 for i in 1:2, j in 1:2]
-        Gamma_tilde = [1.0 for i in 1:2, j in 1:2]
+        gamma_rotor = ones(2, 2)
         blade_elements = [
             (
                 num_radial_stations=[2],
@@ -130,29 +79,21 @@
                 twists=pi / 2.0 * ones(2),
                 radial_positions=ones(2),
                 omega=ones(2),
+                num_blades=1,
             ) for i in 1:2
         ]
-        A_bodies_to_rotor = [[1 0; 0 1] for i in 1:2]
-        gamma_bodies = ones(2)
-        A_wake_to_rotor = [[1 0; 0 1] for i in 1:2, j in 1:2]
         gamma_wake = ones(2, 2)
-        # A_rotor_to_rotor =[1 0; 0 1]
-        # Sigma =ones(2)
+        vx_rw = [[1 0; 0 1] for i in 1:2, j in 1:2]
+        vr_rw = [[1 0; 0 1] for i in 1:2, j in 1:2]
 
-        vi = dt.calculate_induced_velocities_on_rotors(
-            BGamma,
-            Gamma_tilde,
-            blade_elements,
-            A_bodies_to_rotor,
-            gamma_bodies,
-            A_wake_to_rotor,
-            gamma_wake,
-            # A_rotor_to_rotor,
-            # Sigma,
+        vx, vr, vt = dt.calculate_induced_velocities_on_rotors(
+            blade_elements, gamma_rotor, vx_rw, vr_rw, gamma_wake
         )
 
-        @test vi.vtheta == 1.5 / (2.0 * pi) * ones(2, 2)
-        @test vi.vm == 3.0 * ones(2, 2)
+        @test all(vt[:, 1] .== 1.0 / (4.0 * pi) * gamma_rotor)
+        @test all(vt[:, 2] .== (1.0 / (4.0 * pi) + 1 / (2 * pi)) * gamma_rotor)
+        @test all(vx .== 2.0 * ones(2))
+        @test all(vr .== 2.0 * ones(2))
     end
 end
 
