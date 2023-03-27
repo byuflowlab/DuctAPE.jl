@@ -22,7 +22,7 @@ duct_le_radius = 0.01
 duct_te_camber = 15.0
 duct_ctrlpt_x = 1.0 / 6.0
 
-omega_rotor = dt.get_omega(2500.0) #2500 rpm to rad/s
+omega_rotor = 2500.0  * pi / 30.0 #2500 rpm to rad/s
 
 x = [
     hub_le
