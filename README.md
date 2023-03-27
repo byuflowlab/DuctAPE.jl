@@ -1,14 +1,11 @@
-# DuctTAPE.jl ([Duct]()ed [T]()wo-dimensional [A]()ero [P]()ropulsor [E]()valuation)
+# DuctTAPE.jl ([Duct]()ed [T]()wo-dimensional ([A]()xisymmetrtic) [P]()ropulsor [E]()valuation)
 
 <!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://flow.byu.edu/DuctTAPE.jl/stable) -->
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://flow.byu.edu/DuctTAPE.jl/dev)
 [![Build Status](https://github.com/byuflowlab/DuctTAPE.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/byuflowlab/DuctTAPE.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
-DuctTAPE is a code for the aerodynamic evaluation of 2D, axisymmetric, ducted propulsors design for incompressible aerodynamic applications (although hydrodynamic applications could also apply, but "Aero" made the acronym work).
-
-Currently, this code is a simple coupler from FLOWFoil (an inviscid panel code for both 2D and axisymmetric applications) to [CCBlade](https://flow.byu.edu/CCBlade.jl/stable/).
-Future plans include full rotor-duct coupling using methods similar to those used in [DFDC](http://web.mit.edu/drela/Public/web/dfdc/) with modifications to enable ease of use in gradient-based optimization applications.
+DuctTAPE is a code for the aerodynamic evaluation of axisymmetric ducted propulsors designed for incompressible *(low Mach) applications.
 
 
 ## Warning: "Unregistered Dependencies"
