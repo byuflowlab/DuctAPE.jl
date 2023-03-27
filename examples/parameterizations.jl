@@ -176,7 +176,7 @@ function generate_hub_coordinates(;
 
     # - Smooth things out - #
 
-    x = dt.lintran([hub_le; hub_te], [0.0; 1.0], ff.cosine_spacing(N))
+    x = fm.linear([hub_le; hub_te], [0.0; 1.0], ff.cosine_spacing(N))
     r = fm.akima(h_x, h_r, x)
 
     return x, r
