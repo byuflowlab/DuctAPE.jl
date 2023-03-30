@@ -298,7 +298,7 @@ function setup_stuff()
     ##### ----- Wake to Rotor ----- #####
     A_wake_to_rotor = [
         dt.assemble_induced_velocity_matrices(
-            wake_to_rotor_mesh[i], wake_vortex_panels[i], rotor_panels
+            wake_to_rotor_mesh[j], wake_vortex_panels[j], rotor_panels
         ) for i in 1:1, j in 1:length(wake_vortex_panels)
     ]
 

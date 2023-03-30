@@ -39,6 +39,86 @@ function add_rotor_self_induced_vtheta!(Wtheta, radial_positions, BGamma)
 end
 
 ##### ----- OLD SCRIPT STUFF ----- #####
+
+Gamma = view(states, params.Gammaidx)
+gamma_theta = view(states, params.gamma_theta_idx)
+
+wake_vortex_strengths = repeat(gamma_theta; inner=(1, params.nxwake))
+
+rpc = params.rotor_panel_centers
+
+TF = eltype(Gamma)
+
+# if TF == Float64
+#     println("input Gamma")
+#     println(Gamma)
+# end
+
+vx_rotor = zeros(TF, length(Gamma))
+vr_rotor = zeros(TF, length(Gamma))
+vtheta_rotor = zeros(TF, length(Gamma))
+
+# - add the wake induced velocities at the rotor plane to Vm - #
+add_wake_on_rotor_vm_inducement!(
+    vx_rotor, vr_rotor, wake_vortex_strengths, params.vx_rw, params.vr_rw
+)
+
+# - add the rotor rotational self-induction directly - #
+add_rotor_self_induced_vtheta!(vtheta_rotor, rpc, params.num_blades * Gamma)
+
+# - Get the blade element reference frame total velocity components - #
+# the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
+Wx_rotor = vx_rotor .+ params.Vinf
+# the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
+Wtheta_rotor = vtheta_rotor .- params.Omega .* rpc
+
+Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+
+# - Get the inflow magnitude at the rotor as the combination of all the components - #
+Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+
+# calculate angle of attack
+# alpha = dt.calculate_angle_of_attack(params.twist, Wm_rotor, Wtheta_rotor)
+alpha = params.twist .- atan.(Wm_rotor, -Wtheta_rotor)
+
+# - Look up lfit and drag data - #
+cl = zeros(TF, length(alpha))
+cd = zeros(TF, length(alpha))
+for a in 1:length(alpha)
+    cl[a], cd[a] = dt.search_polars(params.af, alpha[a])
+end
+
+# - calculate circulation and associated jumps - #
+Gamma_updated = 0.5 .* Wmag_rotor .* params.chord .* cl
+
+# if TF == Float64
+#     println("updated Gamma_updated")
+#     println(states[params.Gammaidx])
+# end
+
+Gamma_tilde = params.num_blades .* Gamma_updated
+H_tilde = params.Omega * params.num_blades * Gamma_updated / (2.0 * pi)
+
+# - get average meridional velocity at rotor - #
+Vmavg = [
+     ( Wm_rotor[1])
+    0.5 .* (Wm_rotor[1:(end - 1)] .+ Wm_rotor[2:end])
+     (Wm_rotor[end] )
+]
+
+# - assemble components of wake strength expression - #
+dGammatilde2 = [
+    Gamma_tilde[1]^2
+    Gamma_tilde[2:end] .^ 2 .- Gamma_tilde[1:(end - 1)] .^ 2
+    -Gamma_tilde[end]^2
+]
+dHtilde = [H_tilde[1]; H_tilde[2:end] .- H_tilde[1:(end - 1)]; -H_tilde[end]]
+
+# - update wake strengths - #
+gamma_theta_updated =
+    1.0 ./ (2.0 .* Vmavg) .*
+    (-(1.0 ./ (2.0 .* pi .* params.rotor_panel_edges)).^2 .* (dGammatilde2) .+ 2.0 .* (dHtilde))
+
 ##### ----- NEW FUNCTIONS ----- #####
 function extract_state_variables(states, params)
 
@@ -84,15 +164,19 @@ Wmag_rotor_new = sqrt.(Wx_rotor_new .^ 2 .+ vr_rotor_new .^ 2 .+ Wtheta_rotor_ne
 # TODO: check that this is outputting as expected. make sure gammas and sigmas aren't flipped.
 # TODO: need to add/update unit test
 dt.calculate_gamma_sigma!(
-    Gamma_new, similar(states[params.Gammaidx]), params.blade_elements, Wmag_rotor_new, Wtheta_rotor_new
+    Gamma_new,
+    similar(states[params.Gammaidx]).=0,
+    params.blade_elements,
+    Wm_rotor_new,
+    Wtheta_rotor_new,
 )
 
 #TODO: need to unit test these functions
-Gamma_tilde = dt.calculate_net_circulation(Gamma_new, params.num_blades)
-H_tilde = dt.calculate_enthalpy_jumps(Gamma_new, params.Omega, params.num_blades)
+Gamma_tilde_new = dt.calculate_net_circulation(Gamma_new, params.num_blades)
+H_tilde_new = dt.calculate_enthalpy_jumps(Gamma_new, params.Omega, params.num_blades)
 
 # - update wake strengths - #
 # TODO: need to unit test this function
 dt.calculate_wake_vortex_strengths!(
-    gamma_theta_new, params.rotor_panel_edges, Wm_rotor_new, Gamma_tilde, H_tilde
+    gamma_theta_new, params.rotor_panel_edges, Wm_rotor_new, Gamma_tilde_new, H_tilde_new
 )

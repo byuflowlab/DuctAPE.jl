@@ -10,13 +10,18 @@ function calculate_enthalpy_jumps(Γr, Ωr, num_blades)
 
     # compute cumulative sum of enthalpy jumps
     H_tilde = similar(Γr) .= 0
-    for irotor in 1:nrotor
-        Ω = Ωr[irotor]
-        B = num_blades[irotor]
+    for ir in 1:nr
+        for irotor in 1:nrotor
+            Ω = Ωr[irotor]
+            B = num_blades[irotor]
 
-        for ir in 1:nr
             Γ = Γr[ir, irotor]
             H_tilde[ir, irotor] += Ω * B * Γ / (2.0 * pi)
+
+            # add the upstream contributions
+            for jrotor in 1:(irotor - 1)
+                H_tilde[ir, irotor] += H_tilde[ir, jrotor]
+            end
         end
     end
 
@@ -35,12 +40,17 @@ function calculate_net_circulation(Γr, num_blades)
 
     # calculate net circulations
     Γ_tilde = similar(Γr) .= 0
-    for irotor in 1:nrotor
-        B = num_blades[irotor]
+    for ir in 1:nr
+        for irotor in 1:nrotor
+            B = num_blades[irotor]
 
-        for ir in 1:nr
             Γ = Γr[ir, irotor]
             Γ_tilde[ir, irotor] += B * Γ
+
+            # add the upstream contributions
+            for jrotor in 1:(irotor - 1)
+                Γ_tilde[ir, irotor] += Γ_tilde[ir, jrotor]
+            end
         end
     end
 

@@ -85,7 +85,7 @@ function update_gamma_sigma!(states, params)
         Gamma,
         similar(states[params.Gammaidx]),
         params.blade_elements,
-        Wmag_rotor,
+        Wm_rotor,
         Wtheta_rotor,
     )
 

@@ -12,7 +12,7 @@ Initializes the geometry, panels, and aerodynamic influence coefficient matrices
 # Keyword Arguments
 - `wake_length=1.0` : non-dimensional length (based on maximum duct chord) that the wake
     extends past the furthest trailing edge.
-- `nwake=length(rotor_parameters[1].rblade)`: Number of radial stations to use when defining
+- `nwake_sheets=length(rotor_parameters[1].rblade)`: Number of radial stations to use when defining
     the wake
 - `finterp=FLOWMath.akima`: Method used to interpolate the duct and hub geometries.
 - `xwake`: May be used to define a custom set of x-coordinates for the wake.
@@ -20,7 +20,7 @@ Initializes the geometry, panels, and aerodynamic influence coefficient matrices
 - `nduct_inner`: Number of panels between the duct leading edge and the first rotor.
 - `nduct_outer`: Number of panels on the duct outer surface.
 
-NOTE: The `nwake`, `xwake`, `nhub`, `nduct_inner`, and `nduct_outer` arguments should
+NOTE: The `nwake_sheets`, `xwake`, `nhub`, `nduct_inner`, and `nduct_outer` arguments should
 always be provided when performing gradient-based optimizatoin in order to ensure that the
 resulting paneling is consistent between optimization iterations.
 """
@@ -30,10 +30,10 @@ function initialize_parameters(
     rotor_parameters,
     freestream;
     wake_length=1.0,
-    nwake=length(rotor_parameters[1].rblade),
+    nwake_sheets=length(rotor_parameters[1].rblade),
     finterp=FLOWMath.akima,
     xwake=default_discretization(
-        duct_coordinates, hub_coordinates, rotor_parameters, wake_length, nwake
+        duct_coordinates, hub_coordinates, rotor_parameters, wake_length, nwake_sheets
     ),
     nhub=nothing,
     nduct_inner=nothing,
@@ -179,11 +179,6 @@ function initialize_parameters(
     vx_rb = getindex.(A_btr, 1)
     vr_rb = getindex.(A_btr, 2)
 
-    # # body to wake
-    # A_btw = assemble_one_way_coefficient_matrix.(mesh_btw, Ref(body_panels), wake_panels)
-    # vx_wb = getindex.(A_btw, 1)
-    # vr_wb = getindex.(A_btw, 2)
-
     # rotor to body
     A_rtb =
         assemble_one_way_coefficient_matrix.(
@@ -218,11 +213,6 @@ function initialize_parameters(
     vx_rw = getindex.(A_wtr, 1)
     vr_rw = getindex.(A_wtb, 2)
 
-    # # wake to wake
-    # A_ww = assemble_one_way_coefficient_matrix.(mesh_ww, wake_panels, wake_panels')
-    # vx_ww = getindex.(A_ww, 1)
-    # vr_ww = getindex.(A_ww, 2)
-
     return (
         # body
         body_geometry=body_geometry, # body geometry
@@ -236,96 +226,23 @@ function initialize_parameters(
         # aerodynamic influence coefficients
         A_bb=A_bb, # body to body
         b_bf=b_bf, # freestream contribution to body boundary conditions
-        vx_rb=vx_rb,
-        vr_rb=vr_rb, # body to rotor (x-direction, r-direction)
-        vx_wb=vx_wb,
-        vr_wb=vr_wb, # body to wake (x-direction, r-direction)
-        vx_br=vx_br,
-        vr_br=vr_br, # rotor to body (x-direction, r-direction)
-        vx_rr=vx_rr,
-        vr_rr=vr_rr, # rotor to rotor (x-direction, r-direction)
-        vx_wr=vx_wr,
-        vr_wr=vr_wr, # rotor to wake (x-direction, r-direction)
-        vx_bw=vx_bw,
-        vr_bw=vr_bw, # wake to body (x-direction, r-direction)
-        vx_rw=vx_rw,
-        vr_rw=vr_rw, # wake to rotor (x-direction, r-direction)
-        vx_ww=vx_ww,
-        vr_ww=vr_ww, # wake to wake (x-direction, r-direction)
+        vx_rb=vx_rb, # body to rotor (x-direction)
+        vr_rb=vr_rb, # body to rotor (r-direction)
+        vx_wb=vx_wb, # body to wake (x-direction)
+        vr_wb=vr_wb, # body to wake ( r-direction)
+        vx_br=vx_br, # rotor to body (x-direction)
+        vr_br=vr_br, # rotor to body ( r-direction)
+        vx_rr=vx_rr, # rotor to rotor (x-direction)
+        vr_rr=vr_rr, # rotor to rotor ( r-direction)
+        vx_wr=vx_wr, # rotor to wake (x-direction)
+        vr_wr=vr_wr, # rotor to wake ( r-direction)
+        vx_bw=vx_bw, # wake to body (x-direction)
+        vr_bw=vr_bw, # wake to body ( r-direction)
+        vx_rw=vx_rw, # wake to rotor (x-direction)
+        vr_rw=vr_rw, # wake to rotor ( r-direction)
+        vx_ww=vx_ww, # wake to wake (x-direction)
+        vr_ww=vr_ww, # wake to wake ( r-direction)
         # operating conditions
         freestream=freestream, # freestream parameters
     )
-end
-
-"""
-    discretize_wake(duct_coordinates, hub_coordinates, rotor_parameters, wake_length, nwake)
-
-Calculate wake x-coordinates.
-"""
-function discretize_wake(
-    duct_coordinates, hub_coordinates, rotor_parameters, wake_length, nwake
-)
-
-    # extract rotor locations
-    xrotors = getproperty.(rotor_parameters, :xrotor)
-
-    # extract duct leading and trailing edge locations
-    xduct_le = minimum(duct_coordinates[:, 1])
-    xduct_te = maximum(duct_coordinates[:, 1])
-
-    # extract hub leading and trailing edge location
-    xhub_le = minimum(hub_coordinates[:, 1])
-    xhub_te = maximum(hub_coordinates[:, 1])
-
-    # calculate duct chord
-    duct_chord = max(xduct_te, xhub_te) - min(xduct_le, xhub_le)
-
-    # dimensionalize wake_length
-    wake_length = duct_chord * wake_length
-
-    # ensure rotors are ordered properly
-    @assert issorted(xrotors)
-
-    # make sure that all rotors are inside the duct
-    for xrotor in xrotors
-        @assert xrotor > xduct_le "Rotor is in front of duct leading edge."
-        @assert xrotor < xduct_te "Rotor is behind duct trailing edge."
-        @assert xrotor > xhub_le "Rotor is in front of hub leading edge."
-        @assert xrotor < xhub_te "Rotor is behind hub trailing edge."
-    end
-
-    # combine all discrete locations into one ordered array
-    if isapprox(xhub_te, xduct_te)
-        xd = vcat(xrotors, xhub_te, xhub_te + wake_length)
-    elseif xduct_te < xhub_te
-        xd = vcat(xrotors, xduct_te, xhub_te, xhub_te + wake_length)
-    else
-        xd = vcat(xrotors, xhub_te, xduct_te, xduct_te + wake_length)
-    end
-
-    # find (approximate) hub and tip locations
-    _, leidx = findmin(view(duct_coordinates, :, 1))
-    _, ihub = findmin(x -> abs(x - xrotors[1]), view(hub_coordinates, :, 1))
-    _, iduct = findmin(x -> abs(x - xrotors[1]), view(duct_coordinates, 1:leidx, 1))
-    Rhub = hub_coordinates[ihub, 2]
-    Rtip = duct_coordinates[iduct, 2]
-
-    # calculate number of panels per unit length
-    panel_density = nwake / (Rtip - Rhub)
-
-    # calculate number of panels for each discrete section
-    npanels = [ceil(Int, (xd[i + 1] - xd[i]) * panel_density) for i in 1:(length(xd) - 1)]
-
-    # calculate indices for the start of each discrete section
-    indices = cumsum(vcat(1, npanels))
-
-    # construct x-discretization
-    xwake = similar(xd, sum(npanels) + 1)
-    for i in 1:(length(xd) - 1)
-        xrange = range(xd[i], xd[i + 1]; length=npanels[i] + 1)
-        xwake[indices[i]:indices[i + 1]] .= xrange
-    end
-
-    # return dimensionalized wake x-coordinates
-    return xwake
 end

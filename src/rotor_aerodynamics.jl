@@ -127,8 +127,17 @@ function calculate_gamma_sigma!(Γr, Σr, blade_elements, Vm, Vθ)
             # calculate angle of attack
             alpha = twist - atan(Wm, -Wθ)
 
-            # look up lift and drag data
-            cl, cd = search_polars(blade_elements[irotor].airfoils[ir], alpha)
+            # look up lift and drag data for the nearest two input sections
+            # TODO: this breaks rotor aero tests... need to update those.
+            clin, cdin = search_polars(blade_elements[irotor].inner_airfoil[ir], alpha)
+            clout, cdout = search_polars(blade_elements[irotor].outer_airfoil[ir], alpha)
+            # linearly interpolate between those two values at your blade element location
+            cl = fm.linear(
+                [0.0; 1.0], [clin, clout], blade_elements[irotor].inner_fraction[ir]
+            )
+            cd = fm.linear(
+                [0.0; 1.0], [cdin, cdout], blade_elements[irotor].inner_fraction[ir]
+            )
 
             # calculate vortex strength
             Γr[ir, irotor] = 1 / 2 * W * c * cl
