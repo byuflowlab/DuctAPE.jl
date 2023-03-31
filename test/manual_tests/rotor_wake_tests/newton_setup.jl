@@ -5,6 +5,7 @@
 
 # - Include Plots and my default settings - #
 include("../../../plots_default.jl")
+pyplot()
 # include("plots_default.jl")
 
 # - use CCBlade for comparison - #
@@ -555,7 +556,9 @@ function setup_stuff()
             num_blades=B,
             chords=chord,
             twists=theta,
-            airfoils=fill(af, length(rpc)),
+            inner_airfoil=fill(af, length(rpc)),
+            outer_airfoil=fill(af, length(rpc)),
+            inner_fraction=fill(1.0, length(rpc)),
             radial_positions=rpc,
         )],
         num_rotors=1,

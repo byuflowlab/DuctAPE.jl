@@ -41,10 +41,13 @@ function discretize_wake(
     # combine all discrete locations into one ordered array
     if isapprox(xhub_te, xduct_te)
         xd = vcat(xrotors, xhub_te, xhub_te + wake_length)
+        @assert length(npanels) == length(xrotors) + 1 "Length of vector `npanels` should be one more than the length of vector `xrotors` when the duct and hub trailing edges align."
     elseif xduct_te < xhub_te
         xd = vcat(xrotors, xduct_te, xhub_te, xhub_te + wake_length)
+        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges align."
     else
         xd = vcat(xrotors, xhub_te, xduct_te, xduct_te + wake_length)
+        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges align."
     end
 
     # # find (approximate) hub and tip locations

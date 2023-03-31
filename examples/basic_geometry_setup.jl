@@ -1,7 +1,8 @@
 using DuctTAPE
 using FLOWMath
 include("../plots_default.jl")
-pyplot()
+# pyplot()
+gr()
 
 #---------------------------------#
 #      Duct and Hub Geometry      #
@@ -96,7 +97,7 @@ end
 #              WAKE               #
 #---------------------------------#
 # get discretization of wakes at leading rotor position
-rwake = range(Rhub[1], Rtip[1], nwake_sheets)
+rwake = range(Rhubs[1], Rtips[1], nwake_sheets)
 
 # initialize wake grid
 xgrid, rgrid = DuctTAPE.initialize_wake_grid(trans_duct_xr, new_hub_xr, xwake, rwake)
@@ -132,6 +133,7 @@ end
 #---------------------------------#
 #             ROTORS              #
 #---------------------------------#
+
 # rotor parameters
 rotor1_parameters = (;
     B=2,

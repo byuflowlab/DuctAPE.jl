@@ -7,6 +7,11 @@ function calculate_body_vortex_strengths!(
     Γb, A_bb, b_bf, vx_bw, vr_bw, Γw, vx_br, vr_br, Σr
 )
 
+#TODO: need to consider how the subtractive Kutta conditions affects things here.
+#TODO: build full system then apply subtractive stuff? flowfoil already did the subtractive stuff for the body only case...
+#TODO: perhaps need to move axisymmetric content from FLOWFoil over to DuctTAPE completely...
+#TODO, or separate out function in flowfoil to make original matrix, then add a separate funciton to add back diagonal correction and another to apply kutta condition to system?
+
     # problem dimensions
     nbody = length(Γb) # number of body panels
     nwake = length(vx_bw) # number of wakes (divided into streamlines)
@@ -49,7 +54,10 @@ function calculate_body_vortex_strengths!(
         end
     end
 
-    # TODO: precompute factorization, test if implicit_linear is faster
+    #return the residual, rather than solving the linear system.
+    #TODO: in the solve functions, need to make sure that we don't subtract things again.
+    return A*Γb - b
 
-    return ldiv!(Γb, factorize(A_bb), b)
+    # TODO: precompute factorization, test if implicit_linear is faster
+    # return ldiv!(Γb, factorize(A_bb), b)
 end

@@ -28,7 +28,7 @@ function update_body_geometry(
 
         scale = xduct_outer[end, 1] - xduct_outer[1, 1]
         transform = xduct_outer[1, 1]
-        new_xduct_outer = scaled_cosine_spacing(nduct_outer, scale, transform)
+        new_xduct_outer = scaled_cosine_spacing(nduct_outer + 1, scale, transform)
 
         new_rduct_outer = finterp(xduct_outer, rduct_outer, new_xduct_outer)
     end
@@ -58,7 +58,7 @@ function update_body_geometry(
         scale = new_xduct_grid[1] - duct_coordinates[dleidx, 1]
         transform = duct_coordinates[dleidx, 1]
         new_xduct_inner = scaled_cosine_spacing(
-            nduct_inner, 2 * scale, transform; mypi=pi / 2
+            nduct_inner + 1, 2 * scale, transform; mypi=pi / 2
         )
 
         new_rduct_inner = finterp(xduct_inner, rduct_inner, new_xduct_inner)
@@ -85,7 +85,7 @@ function update_body_geometry(
 
         scale = new_xhub_grid[1] - xhub[1]
         transform = xhub[1]
-        new_xhub = scaled_cosine_spacing(nhub, 2 * scale, transform; mypi=pi / 2)
+        new_xhub = scaled_cosine_spacing(nhub + 1, 2 * scale, transform; mypi=pi / 2)
         new_rhub = finterp(xhub, rhub, new_xhub)
     end
 

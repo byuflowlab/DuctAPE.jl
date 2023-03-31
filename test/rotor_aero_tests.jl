@@ -24,7 +24,9 @@
                 twists=pi / 2.0 * ones(2),
                 radial_positions=ones(2),
                 omega=ones(2),
-                airfoils=fill(af, 2),
+                inner_airfoil=fill(af, 2),
+                outer_airfoil=fill(af, 2),
+                inner_fraction=[1.0; 1.0],
             ) for i in 1:2
         ]
 
