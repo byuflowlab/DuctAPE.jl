@@ -3,7 +3,7 @@
 
 # # Fields:
 # - `B::Int`: number of blades on the rotor
-# - `omega::TF` : rotor rotation rate (rad/s)
+# - `Omega::TF` : rotor rotation rate (rad/s)
 # - `xrotor::TF`: x-position of the rotor (dimensionalized)
 # - `r::Vector{TF}`: radial coordinate of each blade element (dimensionalized)
 # - `chords::Vector{TF}` : chord length of each blade element
@@ -15,7 +15,7 @@
 # """
 # struct BladeElements{TF,TAF}
 #     B::Int
-#     omega::TF
+#     Omega::TF
 #     xrotor::TF
 #     r::Vector{TF}
 #     chords::Vector{TF}
@@ -27,7 +27,7 @@
 # end
 
 """
-    generate_blade_elements(B, omega, xrotor, rblade, chords, twists, solidities, airfoils,
+    generate_blade_elements(B, Omega, xrotor, rblade, chords, twists, solidities, airfoils,
         duct_coordinates, hub_coordinates, r)
 
 Use the duct and hub geometry to dimensionalize the non-dimensional radial positions in
@@ -35,7 +35,7 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 
 # Arguments:
 - `B::Int64` : number of blades on the rotor
-- `omega::Float` : rotor rotation rate (rad/s)
+- `Omega::Float` : rotor rotation rate (rad/s)
 - `xrotor::Float` : x-position of the the rotor (dimensional)
 - `rblade::Vector{Float}` : non-dimensional radial positions of each blade element (zero at hub, one at tip)
 - `chords::Vector{Float}` : values of the chord lengths of the blade elements
@@ -48,17 +48,17 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 Future Work: add tip-gap capabilities
 """
 function generate_blade_elements(
-    B, omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe
+    B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe
 )
 
     # dimensionalize the blade element radial positions
-    rblade = fm.linear([0.0; 1.0], [Rhub; Rtip], rnondim)
+    rblade = fm.linear([0.0; 1.0], [0.0; Rtip], rnondim)
 
     # update chord lengths
     chords = fm.akima(rblade, chords, rbe)
 
-    # update twists (convert to radians here)
-    twists = fm.akima(rblade, twists .* pi / 180.0, rbe)
+    # update twists
+    twists = fm.akima(rblade, twists, rbe)
 
     # update solidities
     solidities = chords ./ (2 * pi * rbe / B)
@@ -72,12 +72,21 @@ function generate_blade_elements(
         # ravg = (rwake[i] + rwake[i + 1]) / 2
         # outer airfoil
         io = min(length(rblade), searchsortedfirst(rblade, rbe[i]))
-        outer_airfoil[io] = airfoils[io]
+        outer_airfoil[i] = airfoils[io]
         # inner airfoil
         ii = max(1, io - 1)
-        inner_airfoil[ii] = airfoils[ii]
+        inner_airfoil[i] = airfoils[ii]
         # fraction of inner airfoil's polars to use
-        inner_fraction[i] = (rbe[i] - rblade[ii]) / (rblade[io] - rblade[ii])
+        if rblade[io] == rblade[ii]
+            inner_fraction[i] = 1.0
+        else
+            inner_fraction[i] = (rbe[i] - rblade[ii]) / (rblade[io] - rblade[ii])
+        end
+
+        # Check incorrect extrapolation
+        if inner_fraction[i] > 1.0
+            inner_fraction[i] = 1.0
+        end
     end
 
     # find index of the rotor's position in the wake grid
@@ -86,7 +95,7 @@ function generate_blade_elements(
     # return blade elements
     return (;
         B,
-        omega,
+        Omega,
         xrotor,
         rbe,
         chords,
@@ -95,6 +104,8 @@ function generate_blade_elements(
         outer_airfoil,
         inner_airfoil,
         inner_fraction,
+        Rtip,
+        Rhub,
         # wake_index,
     )
 end

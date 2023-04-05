@@ -75,7 +75,7 @@ function initialize_parameters(
     # initialize blade elements for first rotor
     first_blade_elements = generate_blade_elements(
         rotor_parameters[1].B,
-        rotor_parameters[1].omega,
+        rotor_parameters[1].Omega,
         rotor_parameters[1].xrotor,
         rotor_parameters[1].rblade,
         rotor_parameters[1].chords,
@@ -114,7 +114,7 @@ function initialize_parameters(
         # update aft rotor geometries
         blade_elements[i] = generate_blade_elements(
             rotor_parameters[i].B,
-            rotor_parameters[i].omega,
+            rotor_parameters[i].Omega,
             rotor_parameters[i].xrotor,
             rotor_parameters[i].rblade,
             rotor_parameters[i].chords,
