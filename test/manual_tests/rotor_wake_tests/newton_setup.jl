@@ -1,4 +1,3 @@
-
 #---------------------------------#
 #             Includes            #
 #---------------------------------#
@@ -552,7 +551,7 @@ function setup_stuff()
         vx_rw=vxd_wake_to_rotor,
         vr_rw=vrd_wake_to_rotor,
         blade_elements=[(
-            omega=Omega,
+            Omega=Omega,
             num_blades=B,
             chords=chord,
             twists=theta,

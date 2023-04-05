@@ -25,7 +25,7 @@ end
  This function wraps the residual function in order to allow for additional parameters as inputs
  params.converged is updated in place in this function.
  """
-function solve!(state_variables, params)
+function solve(state_variables, params)
 
     # - Define closure that allows for parameters - #
     rwrap(F, state_variables) = residual!(F, state_variables, params)
@@ -115,12 +115,12 @@ function extract_state_variables(states, params)
     nr = length(params.blade_elements[1].radial_positions) # number of radial coordinates
 
     # State Variable Indices
-    iΓr = 1:(nr * nrotor) # rotor circulation strength indices
-    iΓw = (iΓr[end] + 1):(iΓr[end] + nrotor * (nr + 1))     # wake vortex strength indices
+    iGamr = 1:(nr * nrotor) # rotor circulation strength indices
+    igamw = (iGamr[end] + 1):(iGamr[end] + nrotor * (nr + 1))     # wake vortex strength indices
 
     # Extract State variables
-    Γr = reshape(view(states, iΓr), (nr, nrotor)) # rotor circulation strengths
-    Γw = reshape(view(states, iΓw), (nr + 1, nrotor)) # wake circulation strengths
+    Gamr = reshape(view(states, iGamr), (nr, nrotor)) # rotor circulation strengths
+    gamw = reshape(view(states, igamw), (nr + 1, nrotor)) # wake circulation strengths
 
-    return Γr, Γw
+    return Gamr, gamw
 end

@@ -15,7 +15,7 @@
             airfoils=airfoils,
             num_radial_stations=3,
             num_blades=2,
-            omega=100.0,
+            Omega=100.0,
         )
         (
             rotor_x_position=0.75,
@@ -25,7 +25,7 @@
             airfoils=airfoils,
             num_radial_stations=3,
             num_blades=2,
-            omega=0.0,
+            Omega=0.0,
         )
     ]
 

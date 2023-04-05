@@ -239,7 +239,7 @@ vrd_wake_to_rotor = [A_wake_to_rotor[i][2] for i in 1:length(wake_panels)]
 #---------------------------------#
 
 # - Define some basic blade element named tuples as place holders
-blade_elements = [(omega=Omega, radial_positions=r, chords=chord)]
+blade_elements = [(Omega=Omega, radial_positions=r, chords=chord)]
 
 # initialize induced velocities at rotors to zeros
 vm_init = zeros(nbe)

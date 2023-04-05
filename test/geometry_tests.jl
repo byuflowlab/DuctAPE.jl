@@ -20,7 +20,7 @@
             airfoils=ones(5),
             num_radial_stations=6,
             num_blades=2,
-            omega=1.0,
+            Omega=1.0,
         )
 
         blade_elements = dt.initialize_blade_elements(
@@ -32,7 +32,7 @@
         @test all(blade_elements[1].twists .== pi / 180.0 * ones(6))
         @test blade_elements[1].radial_positions ==
             0.25 .+ 0.5 * [0.0; 0.2; 0.4; 0.6; 0.8; 1.0]
-        @test blade_elements[1].omega == [1.0]
+        @test blade_elements[1].Omega == [1.0]
         @test blade_elements[1].num_blades == [2]
         @test blade_elements[1].num_radial_stations == [6]
 
@@ -51,7 +51,7 @@
             airfoils=2.0 * ones(5),
             num_radial_stations=7,
             num_blades=4,
-            omega=2.0,
+            Omega=2.0,
         )
 
         dt.generate_blade_elements!(
@@ -63,7 +63,7 @@
             rotor_parameters.airfoils,
             rotor_parameters.num_radial_stations,
             rotor_parameters.num_blades,
-            rotor_parameters.omega,
+            rotor_parameters.Omega,
             body_geometry;
             updated_radial_positions=blade_elements[1].radial_positions,
         )
@@ -73,7 +73,7 @@
         @test all(blade_elements[2].twists .== 2.0 * pi / 180.0 * ones(6))
         @test blade_elements[2].radial_positions ==
             0.25 .+ 0.5 * [0.0; 0.2; 0.4; 0.6; 0.8; 1.0]
-        @test blade_elements[2].omega == [2.0]
+        @test blade_elements[2].Omega == [2.0]
         @test blade_elements[2].num_blades == [4]
         @test blade_elements[2].num_radial_stations == [6]
 

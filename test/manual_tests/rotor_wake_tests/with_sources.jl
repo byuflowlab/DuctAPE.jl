@@ -740,7 +740,7 @@ end
 
 # # - Define some basic blade element named tuples as place holders
 # blade_elements = [(
-#     omega=Omega, radial_positions=rpc, chords=chord
+#     Omega=Omega, radial_positions=rpc, chords=chord
 # )]
 
 # # initialize induced velocities at rotors to zeros

@@ -51,7 +51,7 @@ dt.Freestream(Vinf, rho, mu, asound) #note: this is marine prop, maybe use water
 #     airfoils=airfoils,
 #     num_radial_stations=num_radial_stations,
 #     num_blades=num_blades,
-#     omega=omega,
+#     Omega=Omega,
 # )]
 
 ## - Run Solver - ##

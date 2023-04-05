@@ -19,11 +19,11 @@
         blade_elements = [
             (
                 num_radial_stations=[2],
-                num_blades=1,
+                B=1,
                 chords=ones(2),
                 twists=pi / 2.0 * ones(2),
-                radial_positions=ones(2),
-                omega=ones(2),
+                rbe=ones(2),
+                Omega=ones(2),
                 inner_airfoil=fill(af, 2),
                 outer_airfoil=fill(af, 2),
                 inner_fraction=[1.0; 1.0],
@@ -52,11 +52,11 @@
         gamma_rotor = ones(2, 1)
         blade_elements = [(
             num_radial_stations=[2],
-            num_blades=1,
+            B=1,
             chords=ones(2),
             twists=pi / 2.0 * ones(2),
-            radial_positions=ones(2),
-            omega=ones(2),
+            rbe=ones(2),
+            Omega=ones(2),
         )]
         vx_rw = [[1 0; 0 1] for i in 1:1, j in 1:2]
         vr_rw = [[1 0; 0 1] for i in 1:1, j in 1:2]
@@ -79,9 +79,9 @@
                 num_radial_stations=[2],
                 chords=ones(2),
                 twists=pi / 2.0 * ones(2),
-                radial_positions=ones(2),
-                omega=ones(2),
-                num_blades=1,
+                rbe=ones(2),
+                Omega=ones(2),
+                B=1,
             ) for i in 1:2
         ]
         gamma_wake = ones(2, 2)
