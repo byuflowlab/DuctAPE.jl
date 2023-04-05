@@ -87,7 +87,9 @@ function update_rotor_states!(states, params)
         sigma,
         params.blade_elements,
         Wm_rotor,
+        # Wx_rotor,
         Wtheta_rotor,
+        Wmag_rotor,
     )
 
     Gamma_tilde = calculate_net_circulation(Gamma, params.blade_elements[1].B)

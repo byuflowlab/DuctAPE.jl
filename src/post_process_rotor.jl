@@ -70,12 +70,12 @@ function states_to_outputs_rotor_only(states, params)
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
     Wx_rotor = vx_rotor .+ params.Vinf
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Vθ = vtheta_rotor .- params.blade_elements[1].Omega .* params.blade_elements[1].rbe
+    Wθ = vtheta_rotor .- params.blade_elements[1].Omega .* params.blade_elements[1].rbe
 
-    Vm = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+    Wm = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
 
     # - Get the inflow magnitude at the rotor as the combination of all the components - #
-    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Vθ .^ 2)
+    W = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wθ .^ 2)
 
     nbe = length(params.blade_elements[1].rbe)
     r = zeros(TF, nbe)
@@ -98,13 +98,10 @@ function states_to_outputs_rotor_only(states, params)
         twist[ir] = params.blade_elements[1].twists[ir] # twist
         r[ir] = params.blade_elements[1].rbe[ir] # radius
 
-        # meridional and tangential inflow velocities
-        Wm = Vm[ir]
-        Wθ = Vθ[ir]
-        W = sqrt(Wm^2 + Wθ^2)
 
         # calculate angle of attack
-        phi[ir] = atan(Wm, -Wθ)
+        # phi[ir] = atan(Wm[ir], -Wθ[ir])
+        phi[ir] = atan(Wm[ir], -Wθ[ir])
         alpha[ir] = twist[ir] - phi[ir]
 
         affrac[ir] = params.blade_elements[1].inner_fraction[ir]
@@ -128,9 +125,10 @@ function states_to_outputs_rotor_only(states, params)
         vx_rotor,
         vr_rotor,
         vtheta_rotor,
-        Vm,
-        Vθ,
-        W=Wmag_rotor,
+        # Wm=Wx_rotor,
+        Wm,
+        Wθ,
+        W,
         phi,
         alpha,
         affrac,

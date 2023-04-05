@@ -166,10 +166,6 @@ CQ = zeros(nJ)
 effccb = zeros(nJ)
 CTccb = zeros(nJ)
 CQccb = zeros(nJ)
-# cl = zeros(nJ, nbe)
-# cd = zeros(nJ, nbe)
-# Np = zeros(nJ, nbe)
-# Tp = zeros(nJ, nbe)
 
 # Loop through advance ratios
 for i in 1:nJ
@@ -180,16 +176,24 @@ for i in 1:nJ
     # calculate freestream velocity for given advance ratio
     Vinf_sweep = J[i] * D * n
 
-    # run solver
-    # remember to update freestream velocity in parameters
-    states = dt.solve_rotor_only(inputs, (; params..., Vinf=Vinf_sweep))
+    @time begin
+        # run solver
+        # remember to update freestream velocity in parameters
+        states = dt.solve_rotor_only(inputs, (; params..., Vinf=Vinf_sweep))
 
-    # - Post Process - #
-    dtout = dt.states_to_outputs_rotor_only(states, params)
+        # - Post Process - #
+        dtout = dt.states_to_outputs_rotor_only(states, (; params..., Vinf=Vinf_sweep))
 
-    aero = dt.get_rotor_loads(
-        dtout.W, dtout.phi, dtout.cl, dtout.cd, params.blade_elements[1], freestream
-    )
+        aero = dt.get_rotor_loads(
+            dtout.W,
+            dtout.phi,
+            dtout.cl,
+            dtout.cd,
+            params.blade_elements[1],
+            (; freestream..., Vinf=Vinf_sweep),
+        )
+    end
+
     CT[i] = aero.CT
     CQ[i] = aero.CQ
     eff[i] = aero.eff
@@ -220,13 +224,13 @@ for i in 1:nJ
 
     plot(
         dtout.r,
-        dtout.twist*180/pi;
+        dtout.twist * 180 / pi;
         ylabel="twist (deg)",
         xlabel="r",
         label="DuctTAPE",
         title="J = $(J[i])",
     )
-    plot!(r * Rtip, twist*180/pi; label="CCBlade")
+    plot!(r * Rtip, twist * 180 / pi; label="CCBlade")
     savefig("examples/twist_J$(J[i]).pdf")
 
     # axial induced velocity
@@ -253,28 +257,52 @@ for i in 1:nJ
     plot!(out.v, r; label="CCBlade")
     savefig("examples/vtheta_J$(J[i]).pdf")
 
+    # tangential total velocity
+    plot(
+        dtout.Wθ,
+        rbe / Rtip;
+        xlabel=L"W_\theta",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.v .- Omega * r * Rtip, r; label="CCBlade")
+    savefig("examples/Wtheta_J$(J[i]).pdf")
+
+    # meridional total velocity
+    plot(
+        dtout.Wm,
+        rbe / Rtip;
+        xlabel=L"W_m",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.u .+ Vinf_sweep, r; label="CCBlade")
+    savefig("examples/Wm_J$(J[i]).pdf")
+
     # inflow angle
     plot(
-        dtout.phi*180/pi,
+        dtout.phi * 180 / pi,
         rbe / Rtip;
         xlabel=L"\phi~(deg)",
         ylabel="r",
         label="DuctTAPE",
         title="J = $(J[i])",
     )
-    plot!(out.phi*180/pi, r; label="CCBlade")
+    plot!(out.phi * 180 / pi, r; label="CCBlade")
     savefig("examples/phi_J$(J[i]).pdf")
 
     # angle of attack
     plot(
-        dtout.alpha*180/pi,
+        dtout.alpha * 180 / pi,
         rbe / Rtip;
         xlabel=L"\alpha~(deg)",
         ylabel="r",
         label="DuctTAPE",
         title="J = $(J[i])",
     )
-    plot!(out.alpha*180/pi, r; label="CCBlade")
+    plot!(out.alpha * 180 / pi, r; label="CCBlade")
     savefig("examples/alpha_J$(J[i]).pdf")
 
     # inflow magnitude

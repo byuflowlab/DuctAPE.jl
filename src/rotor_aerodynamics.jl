@@ -109,7 +109,7 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 
 Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and Vθ)
 """
-function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, Vθ)
+function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W)
 
     # problem dimensions
     nr, nrotor = size(Gamr) #num radial stations, num rotors
@@ -127,15 +127,8 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, Vθ)
             r = blade_elements[irotor].rbe[ir] # radius
             Ω = blade_elements[irotor].Omega # rotation rate
 
-            # meridional and tangential inflow velocities
-            # TODO: make sure the velocities getting passed in here are what you expect them to be. track them back.
-            Wm = Vm[ir, irotor]
-            Wθ = Vθ[ir, irotor] #TODO:!!! Vθ ≂̸ Wθ !!! (could just be a naming issue)
-            # TODO: this W isn't quite right. probably want to pass that in as well since sqrt(vx^2 + vr^2 + vt^2) ≂̸ sqrt(sqrt(vx^2+vr^2) + vt^2)
-            W = sqrt(Wm^2 + Wθ^2)
-
             # calculate angle of attack
-            alpha = twist - atan(Wm, -Wθ)
+            alpha = twist - atan(Wm[ir, irotor], -Wθ[ir, irotor])
 
             # look up lift and drag data for the nearest two input sections
             # TODO: this breaks rotor aero tests... need to update those.
@@ -150,10 +143,10 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, Vθ)
             )
 
             # calculate vortex strength
-            Gamr[ir, irotor] = 1 / 2 * W * c * cl
+            Gamr[ir, irotor] = 1 / 2 * W[ir, irotor] * c * cl
 
             # calculate source strength
-            sigr[ir, irotor] = B / (4 * pi * r) * W * c * cd
+            sigr[ir, irotor] = B / (4 * pi * r) * W[ir, irotor] * c * cd
         end
     end
 
