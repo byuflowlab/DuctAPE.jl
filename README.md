@@ -9,7 +9,7 @@ DuctTAPE is a code for the aerodynamic evaluation of axisymmetric ducted propuls
 
 
 ## Warning: "Unregistered Dependencies"
-Currently, FLOWFoil is an unregistered dependency of FLOWFoil.
+Currently, FLOWFoil is an unregistered dependency of DuctTAPE.
 For this reason, all automated github testing fails.
 
 In addition, in order to allow the documentation to be automatically deployed, we commented out the FLOWFoil line in both `src/DuctTAPE.jl` and `Project.toml`.  In order for DuctTAPE to function, those line will need to be uncommented by the user.
