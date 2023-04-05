@@ -152,7 +152,7 @@ rotor_parameters = [(
     airfoils=airfoils,
     num_radial_stations=nbe,
     num_blades=B,
-    omega=omega_rotor,
+    Omega=omega_rotor,
 )]
 
 blade_elements = dt.initialize_blade_elements(

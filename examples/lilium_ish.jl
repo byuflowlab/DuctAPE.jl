@@ -159,7 +159,7 @@ function wrapper(x; debug=false)
         airfoils=airfoils,
         num_radial_stations=nbe,
         num_blades=B,
-        omega=omega_rotor,
+        Omega=omega_rotor,
     )]
 
     # # - Get Stator Geometry - #

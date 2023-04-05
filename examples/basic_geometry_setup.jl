@@ -137,7 +137,7 @@ end
 # rotor parameters
 rotor1_parameters = (;
     B=2,
-    omega=50,
+    Omega=50,
     xrotor=xrotors[1],
     rblade=[0.0, 1.0],
     chords=[0.5, 0.25],
@@ -183,7 +183,7 @@ plot!(
 blade_elements = [
     DuctTAPE.generate_blade_elements(
         rotor_parameters[i].B,
-        rotor_parameters[i].omega,
+        rotor_parameters[i].Omega,
         rotor_parameters[i].xrotor,
         rotor_parameters[i].rblade,
         rotor_parameters[i].chords,
