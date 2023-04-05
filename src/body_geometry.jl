@@ -1,0 +1,173 @@
+"""
+"""
+function update_body_geometry(
+    duct_coordinates,
+    hub_coordinates,
+    xwake,
+    nhub,
+    nduct_inner,
+    nduct_outer;
+    finterp=FLOWMath.akima,
+)
+
+    # separate inner and outer duct coordinates
+    dle, dleidx = findmin(view(duct_coordinates, :, 1))
+    duct_inner_coordinates = view(duct_coordinates, dleidx:-1:1, :)
+    duct_outer_coordinates = view(duct_coordinates, dleidx:size(duct_coordinates, 1), :)
+
+    # existing outer duct geometry
+    xduct_outer = view(duct_outer_coordinates, :, 1)
+    rduct_outer = view(duct_outer_coordinates, :, 2)
+
+    # update outer duct geometry
+    if isnothing(nduct_inner)
+        new_xduct_outer = xduct_outer
+        new_rduct_outer = rduct_outer
+    else
+        # new_xduct_outer = range(xduct_outer[1, 1], xduct_outer[end, 1], nduct_outer + 1)
+
+        scale = xduct_outer[end, 1] - xduct_outer[1, 1]
+        transform = xduct_outer[1, 1]
+        new_xduct_outer = scaled_cosine_spacing(nduct_outer + 1, scale, transform)
+
+        new_rduct_outer = finterp(xduct_outer, rduct_outer, new_xduct_outer)
+    end
+
+    # interpolate inner duct geometry to provided grid locations
+    xduct_inner = view(duct_inner_coordinates, :, 1)
+    rduct_inner = view(duct_inner_coordinates, :, 2)
+    duct_trailing_index = min(length(xwake), searchsortedfirst(xwake, xduct_inner[end]))
+    new_xduct_grid = xwake[1:duct_trailing_index]
+    new_rduct_grid = finterp(xduct_inner, rduct_inner, new_xduct_grid)
+
+    # update inner duct geometry between leading edge and rotor
+    if isnothing(nduct_inner)
+        # find the index of the first rotor on the duct inside surface
+        ridx = length(xduct_inner) - searchsortedfirst(xduct_inner, xwake[1]) + 1
+
+        # use existing inner duct geometry between leading edge and rotor
+        new_xduct_inner = view(duct_coordinates, dleidx:-1:ridx, 1)
+        new_rduct_inner = view(duct_coordinates, dleidx:-1:ridx, 2)
+    else
+        # interpolate inner duct geometry between leading edge and rotor
+
+        # new_xduct_inner = range(
+        #     duct_coordinates[dleidx, 1], new_xduct_grid[1], nduct_inner + 1
+        # )
+
+        scale = new_xduct_grid[1] - duct_coordinates[dleidx, 1]
+        transform = duct_coordinates[dleidx, 1]
+        new_xduct_inner = scaled_cosine_spacing(
+            nduct_inner + 1, 2 * scale, transform; mypi=pi / 2
+        )
+
+        new_rduct_inner = finterp(xduct_inner, rduct_inner, new_xduct_inner)
+    end
+
+    # interpolate hub geometry to provided grid locations
+    xhub = view(hub_coordinates, :, 1)
+    rhub = view(hub_coordinates, :, 2)
+    hub_trailing_index = min(length(xwake), searchsortedfirst(xwake, xhub[end]))
+    new_xhub_grid = xwake[1:hub_trailing_index]
+    new_rhub_grid = finterp(xhub, rhub, new_xhub_grid)
+
+    # update hub geometry between leading edge and rotor
+    if isnothing(nduct_inner)
+        # find the index of the first rotor on the hub
+        ridx = searchsortedfirst(xhub, xwake[1])
+
+        # use existing hub geometry between leading edge and rotor
+        new_xhub = view(xhub, 1:ridx, 1)
+        new_rhub = view(rhub, 1:ridx, 2)
+    else
+        # interpolate hub geometry between leading edge and rotor
+        # new_xhub = range(xhub[1, 1], new_xhub_grid[1], nhub + 1)
+
+        scale = new_xhub_grid[1] - xhub[1]
+        transform = xhub[1]
+        new_xhub = scaled_cosine_spacing(nhub + 1, 2 * scale, transform; mypi=pi / 2)
+        new_rhub = finterp(xhub, rhub, new_xhub)
+    end
+
+    # assemble new duct coordinates
+    updated_duct_coordinates = vcat(
+        hcat(reverse(new_xduct_grid), reverse(new_rduct_grid)),
+        hcat(reverse(new_xduct_inner)[2:end], reverse(new_rduct_inner)[2:end]),
+        hcat(new_xduct_outer[2:end], new_rduct_outer[2:end]),
+    )
+
+    # assemble new hub coordinates
+    updated_hub_coordinates = vcat(
+        hcat(new_xhub[1:(end - 1)], new_rhub[1:(end - 1)]),
+        hcat(new_xhub_grid, new_rhub_grid),
+    )
+
+    return updated_duct_coordinates, updated_hub_coordinates
+end
+
+"""
+transforms duct radial coordinates such that the leading rotor radius touches the duct wall.
+Also finds the various rotor hub and tip radii based on the hub and duct geometry
+"""
+function place_duct(duct_coordinates, hub_coordinates, Rtip, xrotors)
+
+    # - Get hub and tip wall indices - #
+    ihub = zeros(Int, length(xrotors))
+    iduct = zeros(Int, length(xrotors))
+    for i in 1:length(xrotors)
+        #indices
+        _, ihub[i] = findmin(x -> abs(x - xrotors[i]), view(hub_coordinates, :, 1))
+        _, iduct[i] = findmin(x -> abs(x - xrotors[i]), view(duct_coordinates, :, 1))
+    end
+
+    # get current radial position of duct wall at leading rotor location
+    rduct = duct_coordinates[iduct[1], 2]
+
+    # - transform duct r-coordinates up by Rtip - #
+    # need to account for current radial position of duct at leading rotor location as well.
+    duct_coordinates[:, 2] .+= Rtip .- rduct[1]
+
+    # - Get hub and tip radial positions - #
+    Rhubs = hub_coordinates[ihub, 2]
+    Rtips = duct_coordinates[iduct, 2]
+
+    return duct_coordinates, Rtips, Rhubs
+end
+
+"""
+    generate_body_panels(duct_coordinates, hub_coordinates, discretization; kwargs...)
+
+Define the paneling (see [`FLOWFoil.AxisymmetricPanel`](@ref)) for the duct and hub.
+
+# Arguments:
+- `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
+- `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
+
+# Keyword Arguments:
+- `method` : Axisymmetric method as defined by FLOWFoil, defaults to `AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])`
+
+"""
+function generate_body_panels(
+    duct_coordinates,
+    hub_coordinates;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+)
+    body_panels = ff.generate_panels(method, (duct_coordinates, hub_coordinates))
+
+    return body_panels
+end
+
+"""
+"""
+function scaled_cosine_spacing(N, scale, transform; mypi=pi)
+    return transform .+ scale * [0.5 * (1 - cos(mypi * (i - 1) / (N - 1))) for i in 1:N]
+end
+
+# - Function for adding in xlocations - #
+# from https://stackoverflow.com/questions/25678112/insert-item-into-a-sorted-list-with-julia-with-and-without-duplicates
+function insert_and_dedup!(v, x)
+    for i in 1:length(dp)
+        # find ranges and replace with discrete values (thus deleting duplicates if present)
+        v = (splice!(v, searchsorted(v, x[i]), x[i]); v)
+    end
+end

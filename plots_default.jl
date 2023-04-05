@@ -4,12 +4,14 @@ Default Plots Settings for creating tikz native figures for dissertation
 
 using Plots;
 pgfplotsx();
+# pyplot()
 using LaTeXStrings
 using Measures
 
 default()
 default(;
     #     #:Plot
+    # background_color=RGBA(1, 1, 1, 0),
     # background_color = nothing,
     # background_color_outside = nothing,
     #     display_type,
@@ -33,7 +35,9 @@ default(;
     #     plot_titlefontvalign,
     #     pos,
     #     show,
-    size=(400, 300), #it appears that 100 ≈ 1inch in LaTeX
+    size=(400, 300).*5.0./4.0, #it appears that 100 ≈ 1inch in LaTeX
+    # size=(600, 450), #it appears that 100 ≈ 1inch in LaTeX
+    # size=(800, 600), #it appears that 100 ≈ 1inch in LaTeX
     #     tex_output_standalone,
     #     thickness_scaling,
     #     warn_on_unsupported,
@@ -149,7 +153,7 @@ default(;
     #     foreground_color_title,
     #     framestyle = :zerolines,
     #     left_margin,
-    legend=false, # include legend true/false
+    # legend=false, # include legend true/false
     #     legendfontcolor,
     #     legendfontfamily,
     #     legendfonthalign,
@@ -163,7 +167,7 @@ default(;
     #     legendtitlefontrotation,
     #     legendtitlefontsize,
     #     legendtitlefontvalign,
-    # margin=10mm,
+    margin=10mm,
     #     projection,
     #     right_margin,
     #     subplot_index,
@@ -192,7 +196,7 @@ default(;
     #     formatter,
     grid=false, # background grid true/false
     #     gridalpha,
-    gridlinewidth=0.5,
+    # gridlinewidth=0.5,
     #     gridstyle,
     #     guide,
     #     guide_position,
@@ -229,8 +233,8 @@ mycolors = [
     RGB(0, 46 / 255, 93 / 255), #BYU Blue
     RGB(155 / 255, 0, 0), #"BYU" Red
     RGB(128 / 255, 128 / 255, 128 / 255), #Middle Gray
-    RGB(162 / 255, 277 / 255, 162 / 255), #Light Green
-    RGB(243 / 255, 2090 / 255, 243 / 255), #Pink
+    RGB(162 / 255, 227 / 255, 162 / 255), #Light Green
+    RGB(243 / 255, 209 / 255, 243 / 255), #Pink
     RGB(205 / 255, 179 / 255, 0.0), #Yellow
     RGB(161 / 255, 161 / 255, 226 / 255), #Purple
 ]
