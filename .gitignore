@@ -8,6 +8,7 @@
 *.idraw
 /*.pdf
 examples/*.pdf
+examples/*.png
 test/manual_tests/*/*.pdf
 test/manual_tests/*/*.png
 /*.png

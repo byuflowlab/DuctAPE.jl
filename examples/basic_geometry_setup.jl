@@ -1,8 +1,10 @@
 using DuctTAPE
+const dt = DuctTAPE
 using FLOWMath
+const fm = FLOWMath
 include("../plots_default.jl")
-# pyplot()
-gr()
+pyplot()
+# gr()
 
 #---------------------------------#
 #      Duct and Hub Geometry      #
@@ -32,7 +34,7 @@ nwake_sheets = 10
 npanels = [5; 5; 4; 20]
 
 # discretize the wake x-coordinates
-xwake, rotor_indices = DuctTAPE.discretize_wake(
+xwake, rotor_indices = dt.discretize_wake(
     duct_coordinates, hub_coordinates, xrotors, wake_length, nwake_sheets, npanels
 )
 
@@ -42,33 +44,34 @@ nhub_inlet = 5
 # number of panels between duct leading edge and first rotor
 nduct_inlet = 5
 
-# number of panels on duct outer surface
-nduct_outer = 10
-
 # update the body paneling to match the wake discretization
-new_duct_xr, new_hub_xr = DuctTAPE.update_body_geometry(
-    duct_coordinates,
-    hub_coordinates,
-    xwake,
-    nhub_inlet,
-    nduct_inlet,
-    nduct_outer;
-    finterp=FLOWMath.linear,
+new_duct_xr, new_hub_xr = dt.update_body_geometry(
+    duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=fm.linear
 )
 
 # shift the duct geometry according to the leading rotor tip radius, and return the rotor hub and tip dimensions for all rotors
-trans_duct_xr, Rtips, Rhubs = DuctTAPE.place_duct(new_duct_xr, new_hub_xr, Rtip, xrotors)
+trans_duct_xr, Rtips, Rhubs = dt.place_duct(new_duct_xr, new_hub_xr, Rtip, xrotors)
 
 # generate the body panels
-body_panels = DuctTAPE.generate_body_panels(trans_duct_xr, new_hub_xr)
+body_panels = dt.generate_body_panels(trans_duct_xr, new_hub_xr)
 
 ## -- PLOT -- ##
-plot(duct_x, duct_r; label="input geometry", color=mycolors[1], marker=true, linestyle=:dot)
+plot(
+    duct_x,
+    duct_r;
+    xlabel="x",
+    ylabel="r",
+    label="input geometry",
+    color=mycolors[1],
+    marker=true,
+    linestyle=:dot,
+)
 plot!(hub_x, hub_r; label="", color=mycolors[1], marker=true, linestyle=:dot)
 plot!(
     xwake,
     -0.0625 * ones(length(xwake));
-    markershape=:vline,
+    marker=true,
+    markersize=2,
     label="wake x-coordinates",
 )
 plot!(
@@ -100,21 +103,21 @@ end
 rwake = range(Rhubs[1], Rtips[1], nwake_sheets)
 
 # initialize wake grid
-xgrid, rgrid = DuctTAPE.initialize_wake_grid(trans_duct_xr, new_hub_xr, xwake, rwake)
+xgrid, rgrid = dt.initialize_wake_grid(trans_duct_xr, new_hub_xr, xwake, rwake)
 for i in 1:length(rwake)
     mylabel = i == 1 ? "initial wake panel edges" : ""
     plot!(xgrid[:, i], rgrid[:, i]; markershape=:vline, color=mycolors[5], label=mylabel)
 end
 
 # Relax Grid
-DuctTAPE.relax_grid!(xgrid, rgrid; max_iterations=100, tol=1e-9, verbose=false)
+dt.relax_grid!(xgrid, rgrid; max_iterations=100, tol=1e-9, verbose=false)
 for i in 1:length(rwake)
     mylabel = i == 1 ? "relaxed wake panel edges" : ""
     plot!(xgrid[:, i], rgrid[:, i]; markershape=:vline, color=mycolors[4], label=mylabel)
 end
 
 # create wake panels
-wake_panels = DuctTAPE.generate_wake_panels(xgrid, rgrid)
+wake_panels = dt.generate_wake_panels(xgrid, rgrid)
 
 ## -- PLOT -- ##
 for i in 1:length(wake_panels)
@@ -153,7 +156,7 @@ rotor_parameters = [rotor1_parameters, rotor2_parameters]
 
 # generate rotor source panel objects
 rotor_source_panels = [
-    DuctTAPE.generate_rotor_panels(xrotors[i], rgrid[rotor_indices[i], :]) for
+    dt.generate_rotor_panels(xrotors[i], rgrid[rotor_indices[i], :]) for
     i in 1:length(xrotors)
 ]
 
@@ -181,7 +184,7 @@ plot!(
 
 # blade elements for rotors
 blade_elements = [
-    DuctTAPE.generate_blade_elements(
+    dt.generate_blade_elements(
         rotor_parameters[i].B,
         rotor_parameters[i].Omega,
         rotor_parameters[i].xrotor,
@@ -195,4 +198,5 @@ blade_elements = [
     ) for i in 1:length(xrotors)
 ]
 
-savefig("examples/basic_geometry_setup.pdf")
+# savefig("examples/basic-geometry-setup.pdf")
+savefig("examples/basic-geometry-setup.png")

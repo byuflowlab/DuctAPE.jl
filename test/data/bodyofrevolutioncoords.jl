@@ -217,6 +217,6 @@ xwedge = range(
 )
 ywedge = 0.16 .- 0.16 / (xwedge[end] - xwedge[1]) * (xwedge .- xwedge[1])
 
-xsmooth = [xcirc; xcyl[2:(end - 1)]; xwedge]
-rsmooth = [ycirc; ycyl[2:(end - 1)]; ywedge]
+x_hub = [xcirc; xcyl[2:(end - 1)]; xwedge]
+r_hub = [ycirc; ycyl[2:(end - 1)]; ywedge]
 

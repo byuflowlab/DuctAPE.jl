@@ -56,10 +56,32 @@ function calculate_body_strengths_residual(
 
     #return the residual, rather than solving the linear system.
     #TODO: in the solve functions, need to make sure that we don't subtract things again.
-    return A * gamb - b
+    # return A * gamb - b
 
     # TODO: do these later after things are working if you need to get things faster.
     # TODO: decide if linear system needs to be solved or not
     # TODO: precompute factorization, test if implicit_linear is faster
     # return ldiv!(gamb, factorize(A_bb), b)
+
+    return solve_body_system(A, b)
+end
+
+"""
+generates body only linear system
+returns A matrix and b vector
+"""
+function generate_body_linear_system(
+    body_panels,
+    body_mesh;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+)
+    system = ff.generate_inviscid_system(method, body_panels, body_mesh)
+
+    return system.A, system.b
+end
+
+"""
+"""
+function solve_body_system(A, b)
+    return ImplicitAD.implicit_linear(A, b)
 end

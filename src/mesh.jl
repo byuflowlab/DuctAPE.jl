@@ -136,3 +136,13 @@ end
 function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:ff.Panel}
     return generate_one_way_mesh([influence_panels], [affect_panels])
 end
+
+"""
+generates body mesh using flowfoil directly, but don't want users to have to know flowfoil to use ducttape
+"""
+function generate_body_mesh(
+    body_panels;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+)
+    return ff.generate_mesh(method, body_panels)
+end

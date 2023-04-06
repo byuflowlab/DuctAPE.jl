@@ -98,7 +98,6 @@ function states_to_outputs_rotor_only(states, params)
         twist[ir] = params.blade_elements[1].twists[ir] # twist
         r[ir] = params.blade_elements[1].rbe[ir] # radius
 
-
         # calculate angle of attack
         # phi[ir] = atan(Wm[ir], -Wθ[ir])
         phi[ir] = atan(Wm[ir], -Wθ[ir])
@@ -139,4 +138,24 @@ function states_to_outputs_rotor_only(states, params)
         cdout,
         cd,
     )
+end
+
+"""
+"""
+function states_to_outputs_body_only(panel_strengths, panels, mesh)
+
+    # - Rename for Convenience - #
+    idx = mesh.panel_indices
+
+    # - Extract surface velocity - #
+    #= Note that we here assume that we are using the subtractive method for the kutta conditions, requiring us to recover the solution value for the last panel (trailing edge upper side).  We also assume here that the indexing starts at the lower side trailing edge and proceeds clockwise back to the upper side trailing edge.  Otherwise, not only will the solver not have worked, there will also be an indexing error here
+    =#
+    vs_duct = [panel_strengths[idx[1][1:(end - 1)]]; -panel_strengths[idx[1][1]]]
+    vs_hub = panel_strengths[idx[2] .- 1]
+
+    # - Calculate surface pressure - #
+    cp_duct = 1.0 .- (vs_duct) .^ 2
+    cp_hub = 1.0 .- (vs_hub) .^ 2
+
+    return vs_duct, vs_hub, cp_duct, cp_hub
 end
