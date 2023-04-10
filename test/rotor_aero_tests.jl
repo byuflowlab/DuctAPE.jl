@@ -35,12 +35,12 @@
 
         W = sqrt.(vm .^ 2 .+ vtheta .^ 2)
 
-        dt.calculate_gamma_sigma!(Gamma, Sigma, blade_elements, vm, vtheta)
+        dt.calculate_gamma_sigma!(Gamma, Sigma, blade_elements, vm, vtheta, W)
 
         @test all(Gamma .== W)
         @test all(Sigma .== 1.0 / (4.0 * pi) * W)
 
-        Gamma, Sigma = dt.calculate_gamma_sigma(blade_elements, vm, vtheta)
+        Gamma, Sigma = dt.calculate_gamma_sigma(blade_elements, vm, vtheta, W)
         @test all(Gamma .== W)
         @test all(Sigma .== 1.0 / (4.0 * pi) * W)
     end

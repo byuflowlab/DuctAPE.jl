@@ -1,13 +1,7 @@
 """
 """
 function update_body_geometry(
-    duct_coordinates,
-    hub_coordinates,
-    xwake,
-    nhub,
-    nduct_inner;
-    # nduct_outer;
-    finterp=FLOWMath.akima,
+    duct_coordinates, hub_coordinates, xwake, nhub, nduct_inner; finterp=FLOWMath.akima
 )
 
     # - separate inner and outer duct coordinates - #
@@ -91,7 +85,7 @@ function update_body_geometry(
     updated_duct_coordinates = vcat(
         hcat(reverse(new_xduct_grid), reverse(new_rduct_grid)),
         hcat(reverse(new_xduct_inner)[2:end], reverse(new_rduct_inner)[2:end]),
-        hcat(new_xduct_inner[2:end], new_rduct_outer[2:end]),
+        hcat(new_xduct_inner[2:(end - 1)], new_rduct_outer[2:(end - 1)]),
         hcat(new_xduct_grid, new_rduct_grid_outer),
     )
 
@@ -153,9 +147,10 @@ function generate_body_panels(
 )
 
     # use FLOWFoil to generate panels
-    body_panels = ff.generate_panels(method, (duct_coordinates, hub_coordinates))
+    duct_panels = ff.generate_panels(method, duct_coordinates)
+    hub_panels = ff.generate_panels(method, hub_coordinates)
 
-    return body_panels
+    return [duct_panels; hub_panels]
 end
 
 """

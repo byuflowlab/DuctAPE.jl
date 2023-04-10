@@ -121,6 +121,34 @@ function calculate_wake_vortex_strengths!(gamw, Rr_wake, Vmr, Γ_tilde, H_tilde)
     return gamw
 end
 
+"""
+Fill in values for wake strengths behind rotors
+"""
+function fill_out_wake_strengths(gamw, rotor_indices, num_wake_x_panels)
+
+    # do things the easy way if there's only one rotor.
+    if length(rotor_indices) == 1
+        return repeat(gamw; inner=(1, num_wake_x_panels))
+    else
+        # Initialize Output
+        TF = eltype(gamw)
+        wake_vortex_strengths = zeros(TF, length(gamw[:, 1]), num_wake_x_panels)
+
+        # set up ranges
+        # note that the plus one here and the minus one in the loop account for the difference in panel edge (rotor index) vs panel center (strength location) indexing
+        ridx = [rotor_indices; num_wake_x_panels + 1]
+
+        # loop through rotors
+        for i in 1:length(rotor_indices)
+            wake_vortex_strengths[:, ridx[i]:(ridx[i + 1] - 1)] .= repeat(
+                gamw[:, i]; inner=(1, ridx[i + 1] - ridx[i])
+            )
+        end
+
+        return wake_vortex_strengths
+    end
+end
+
 #TODO: probably delete this, unless it ends up being needed
 # function initialize_wake_vortex_strengths(Gamr, Ωr, freestream)
 

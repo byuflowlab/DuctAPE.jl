@@ -141,7 +141,10 @@ function initialize_rotor_states(rp, fs)
     ##### ----- Rotor to Rotor ----- #####
     A_rotor_to_rotor = [
         assemble_induced_velocity_matrices(
-            rotor_to_rotor_mesh[i, j], rotor_source_panels[j], rotor_source_panels[i]
+            rotor_to_rotor_mesh[i, j],
+            rotor_source_panels[j],
+            rotor_source_panels[i];
+            singularity="source",
         ) for i in 1:length(rotor_source_panels), j in 1:length(rotor_source_panels)
     ]
 
@@ -195,7 +198,6 @@ function initialize_rotor_states(rp, fs)
 
     params = (
         converged=[false],
-        iter=[1],
         Vinf=fs.Vinf,
         nxwake=length(xrange) - 1,
         vx_rw=vxd_wake_to_rotor,

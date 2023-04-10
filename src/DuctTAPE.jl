@@ -20,6 +20,9 @@ using SpecialFunctions
 
 include("types.jl")
 
+# Utility Functions
+include("utils.jl")
+
 # Body Geometry Functions
 include("body_geometry.jl")
 

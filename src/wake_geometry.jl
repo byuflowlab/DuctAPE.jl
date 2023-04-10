@@ -9,7 +9,6 @@ function discretize_wake(
     hub_coordinates,
     xrotors, # rotor x locations
     wake_length,
-    nwake_sheets,
     npanels;
 )
 
@@ -25,7 +24,7 @@ function discretize_wake(
     duct_chord = max(xduct_te, xhub_te) - min(xduct_le, xhub_le)
 
     # dimensionalize wake_length
-    wake_length = duct_chord * wake_length
+    wake_length *= duct_chord
 
     # ensure rotors are ordered properly
     @assert issorted(xrotors)

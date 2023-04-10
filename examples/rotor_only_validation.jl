@@ -22,7 +22,7 @@ include("run_ccblade.jl")
 using Plots
 # using LaTeXStrings
 include("../plots_default.jl")
-pyplot()
+# pyplot()
 
 #---------------------------------#
 #             Geometry            #
@@ -382,11 +382,11 @@ plot!(J, CTccb; label=L"C_T~CCBlade", color=mycolors[1], linestyle=:dash)
 plot!(J, CQccb * 2 * pi; label=L"C_P~CCBlade", color=mycolors[2], linestyle=:dash)
 plot!(Jexp, CTexp; seriestype=:scatter, label="C_T~experimental", color=mycolors[1])
 plot!(Jexp, CPexp; seriestype=:scatter, label="C_P~experimental", color=mycolors[2])
-# savefig("examples/rotor-only-thrust-and-power-validation.pdf")
-savefig("examples/rotor-only-thrust-and-power-validation.png")
+savefig("examples/rotor-only-thrust-and-power-validation.pdf")
+# savefig("examples/rotor-only-thrust-and-power-validation.png")
 
 plot(J, eff; xlabel=L"J", ylabel=L"\eta", label="DuctTAPE")
 plot!(J, effccb; label="CCBlade")
 plot!(Jexp, etaexp; seriestype=:scatter, label="experimental")
-# savefig("examples/rotor-only-efficiency-validation.pdf")
-savefig("examples/rotor-only-efficiency-validation.png")
+savefig("examples/rotor-only-efficiency-validation.pdf")
+# savefig("examples/rotor-only-efficiency-validation.png")

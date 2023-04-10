@@ -41,7 +41,7 @@ Multiple Dispatch allows for single panel objects as one or both inputs as well 
  # Returns:
  - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 """
-function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
+function generate_one_way_mesh(influence_panels, affect_panels)
 
     ### --- Convenience Variables --- ###
     nbodies_i = length(influence_panels)
@@ -126,11 +126,11 @@ function generate_one_way_mesh(influence_panels, affect_panels; singularity="vor
 end
 
 function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:ff.Panel}
-    return generate_one_way_mesh([influence_panels], affect_panels; singularity=singularity)
+    return generate_one_way_mesh([influence_panels], affect_panels)
 end
 
 function generate_one_way_mesh(influence_panels, affect_panels::TP) where {TP<:ff.Panel}
-    return generate_one_way_mesh(influence_panels, [affect_panels]; singularity=singularity)
+    return generate_one_way_mesh(influence_panels, [affect_panels])
 end
 
 function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:ff.Panel}

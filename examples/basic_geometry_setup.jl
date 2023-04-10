@@ -49,7 +49,7 @@ new_duct_xr, new_hub_xr = dt.update_body_geometry(
     duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=fm.linear
 )
 
-# shift the duct geometry according to the leading rotor tip radius, and return the rotor hub and tip dimensions for all rotors
+# shift the duct geometry according to the leading rotor tip radius, and return the rotor hub and tip dimensions for all rplace_duct(duct_coordinates, hub_coordinates, Rtip, xrotors)otors
 trans_duct_xr, Rtips, Rhubs = dt.place_duct(new_duct_xr, new_hub_xr, Rtip, xrotors)
 
 # generate the body panels
@@ -139,10 +139,11 @@ end
 
 # rotor parameters
 rotor1_parameters = (;
+    Rtip=1.5,
     B=2,
     Omega=50,
     xrotor=xrotors[1],
-    rblade=[0.0, 1.0],
+    r=[0.0, 1.0],
     chords=[0.5, 0.25],
     twists=[50.0, 10.0],
     airfoils=[nothing, nothing],
