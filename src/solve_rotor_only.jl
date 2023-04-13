@@ -40,6 +40,7 @@ function solve_rotor_only(inputs, params)
         linesearch=BackTracking(; maxstep=1e6),
     )
 
+    println("converged? ", converged(res))
     # - Overwrite the convergence flag in the parameters - #
     params.converged[1] = converged(res)
 
