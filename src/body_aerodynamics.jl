@@ -1,34 +1,33 @@
 """
-    calculate_body_strengths_residual(gamb, A_bb, b_bf, vx_bw, vr_bw, gamw)
+    calculate_body_strengths_residual(gamb, A_bb, b_bf, vx_bw, vr_bw, wake_gamma)
 
 Calculate body vortex strengths
 kid is kutta indices, where kid[1] is the row/column to keep and kid[2] is the row/column to subtract from kid[1] and then delete (1 is the first duct panel, and 2 is the Nth duct panel)
 """
-function calculate_body_vortex_strengths!(gamb, A_bb, b_bf, kidx, A_bw, gamw, A_br, sigr)
+function calculate_body_vortex_strengths!(gamb, A_bb, b_bf, kidx, A_bw, wake_gamma, A_br, sigr)
 
     # problem dimensions
-    nbody = length(gamb) # number of body panels
-    nwake = length(A_bw) # number of wakes (divided into streamlines)
+    nwake = length(A_bw) # number of wake sheets
     nrotor = length(A_br) # number of rotors
 
     # add freestream contributions to right hand side
-    # note: the negative was already added previously for the freestream.
+    # note: the negative was already included in the precomputation for the freestream.
     b = similar(gamb) .= b_bf
 
     # add wake vortex sheet contributions to right hand side
-    # note: the subtraction is not included in the coefficients here, so we need to subract
-    for iwake in 1:nwake
+    # note: the subtraction was not included in the other coefficients in the precomputation, so we need to subract
+    for jwake in 1:nwake
 
         # get induced velocity in the x-direction
-        b .-= A_bw[iwake] * view(gamw, iwake, :)
+        b .-= A_bw[jwake] * view(wake_gamma, jwake, :)
     end
 
     # add rotor source sheet contributions to right hand side
     # note: the subtraction is not included in the coefficients here, so we need to subract
-    for irotor in 1:nrotor
+    for jrotor in 1:nrotor
 
         # get induced velocity in the x-direction
-        b .-= A_br[irotor] * view(sigr, irotor, :)
+        b .-= A_br[jrotor] * view(sigr, : , jrotor)
     end
 
     #return the residual, rather than solving the linear system.
@@ -46,22 +45,10 @@ function calculate_body_vortex_strengths!(gamb, A_bb, b_bf, kidx, A_bw, gamw, A_
 end
 
 """
-generates body only linear system
-returns A matrix and b vector
-"""
-function generate_body_linear_system(
-    body_panels,
-    body_mesh;
-    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
-)
-    system = ff.generate_inviscid_system(method, body_panels, body_mesh)
-
-    return system.A, system.b
-end
-
-"""
+Apply Kutta Condition and Solve Linear System
 """
 function solve_body_system(A, b, kidx)
+
     # - Apply the Subtractive Kutta Condition - #
     for i in 1:length(kidx[:, 1])
         # subtract "Nth" row from "1st" row

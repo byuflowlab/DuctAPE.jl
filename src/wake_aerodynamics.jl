@@ -149,21 +149,67 @@ function fill_out_wake_strengths(gamw, rotor_indices, num_wake_x_panels)
     end
 end
 
-#TODO: probably delete this, unless it ends up being needed
-# function initialize_wake_vortex_strengths(Gamr, Ωr, freestream)
+function initialize_wake_vortex_strengths(Vinf, Gamr, Omega, B, rotor_panel_edges)
 
-#     # set initial Vm values
-#     Vm = similar(Gamr, nr - 1, nx) .= freestream.Vinf
+    # get net circulations
+    Gamma_tilde = calculate_net_circulation(Gamr, B)
 
-#     # calculate enthalpy jumps
-#     H_tilde = calculate_enthalpy_jumps(Gamr, Ωr, B)
+    # get enthalpy jumps
+    H_tilde = calculate_enthalpy_jumps(Gamr, Omega, B)
 
-#     # calculate net circulation
-#     Γ_tilde = calculate_net_circulation(Gamr, B)
+    # initialize vm with freestream and rotation assuming open rotor
+    vm = marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
 
-#     # calculate wake vortex strengths
-#     calculate_wake_vortex_strengths!(gamw, wake_panels, Vm, Γ_tilde, H_tilde, rotor_indices)
+    # return initialized wake vortex strengths
+    gwhub = vm[1, :] .- Vinf
+    gw = vm[2:end, :] .- vm[1:(end - 1), :]
+    gwduct = Vinf .- vm[end, :]
+    return [gwhub'; gw; gwduct']
+end
 
-#     # println(wake_vortex_strengths)
-#     return wake_vortex_strengths
-# end
+"""
+get meridional velocities using the marching method for when Vinf outside of wake is known.
+"""
+function marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
+
+    #rename for convenience
+    nr, nrotor = size(Gamma_tilde)
+
+    #initialize
+    Vm = zeros(nr, nrotor)
+
+    # Loop through rotors
+    for irotor in 1:nrotor
+
+        # Loop through radial stations
+        #march from just outside the tip to the hub
+        for ir in nr:-1:1
+            if ir == nr
+
+                #this is the change at the tip, so we need to set Vm2 to Vinf, and set Gamma dn H 2's to zeros
+                radical =
+                    Vinf^2 +
+                    (1.0 / (2.0 * pi * rotor_panel_edges[ir, irotor]))^2 *
+                    (-Gamma_tilde[ir, irotor]^2) - 2.0 * (-H_tilde[ir, irotor])
+            else
+
+                #otherwise, we just take the differences inside as-is
+                radical =
+                    Vm[ir + 1, irotor]^2 +
+                    (1.0 / (2.0 * pi * rotor_panel_edges[ir, irotor]))^2 *
+                    (Gamma_tilde[ir + 1, irotor]^2 - Gamma_tilde[ir, irotor]^2) -
+                    2.0 * (H_tilde[ir + 1, irotor] - H_tilde[ir, irotor])
+            end
+
+            # compute the meridional velocity value, avoiding negative square roots and divisions by zero later
+            if radical > 0.0
+                Vm[ir, irotor] = sqrt(radical)
+            else
+                Vm[ir, irotor] = 0.1 * Vinf
+            end
+        end
+    end
+
+    #Vm should now be in the order of hub to tip
+    return Vm
+end

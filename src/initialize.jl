@@ -10,7 +10,7 @@ Initializes the geometry, panels, and aerodynamic influence coefficient matrices
 - `freestream`: freestream parameters
 
 # Keyword Arguments
-- `wake_length=1.0` : non-dimensional length (based on maximum duct chord) that the wake
+- `paneling_constants.wake_length=1.0` : non-dimensional length (based on maximum duct chord) that the wake
     extends past the furthest trailing edge.
 - `nwake_sheets=length(rotor_parameters[1].rblade)`: Number of radial stations to use when defining
     the wake
@@ -20,21 +20,17 @@ Initializes the geometry, panels, and aerodynamic influence coefficient matrices
 - `nduct_inner`: Number of panels between the duct leading edge and the first rotor.
 - `nduct_outer`: Number of panels on the duct outer surface.
 
-NOTE: The `nwake_sheets`, `xwake`, `nhub`, `nduct_inner`, and `nduct_outer` arguments should
+NOTE: The `paneling_constants.nwake_sheets`, `xwake`, `nhub`, `nduct_inner`, and `nduct_outer` arguments should
 always be provided when performing gradient-based optimizatoin in order to ensure that the
 resulting paneling is consistent between optimization iterations.
 """
 function precomputed_inputs(
     duct_coordinates,
     hub_coordinates,
+    paneling_constants,
     rotor_parameters, #vector of named tuples
     freestream;
-    wake_length=1.0,
-    nwake_sheets=15,
     finterp=fm.akima,
-    nhub_inlet=nothing,
-    nduct_inlet=nothing,
-    npanels=nothing, #this is a vector of number of panels between discrete points after the first rotor, e.g. between the rotor and the duct trailing edge and between the duct trailing edge and the end of the wake
 )
 
     ## -- Rename for Convenience -- ##
@@ -43,13 +39,13 @@ function precomputed_inputs(
 
     # - Methods - #
     # method for the body to body problem
-    body_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])
+    # body_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])
 
     # method for vortex panels
-    vortex_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
+    # vortex_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
 
     # method for source panels
-    source_method = ff.AxisymmetricProblem(Source(Constant()), Neumann(), [true])
+    # source_method = ff.AxisymmetricProblem(Source(Constant()), Neumann(), [true])
 
     #------------------------------------#
     # Discretize Wake and Repanel Bodies #
@@ -58,12 +54,12 @@ function precomputed_inputs(
     # - Discretize Wake x-coordinates - #
     # also returns indices of rotor locations in the wake
     xwake, rotor_indices = discretize_wake(
-        duct_coordinates, hub_coordinates, rotor_parameters.xrotor, wake_length, npanels
+        duct_coordinates, hub_coordinates, rotor_parameters.xrotor, paneling_constants.wake_length, paneling_constants.npanels
     )
 
     # - Repanel Bodies - #
     rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
-        duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=finterp
+        duct_coordinates, hub_coordinates, xwake, paneling_constants.nhub_inlet, paneling_constants.nduct_inlet; finterp=finterp
     )
 
     #-----------------------------------#
@@ -89,7 +85,7 @@ function precomputed_inputs(
         @assert Rtips[i] > Rhubs[i] "Rotor #$i Tip Radius is set to be less than its Hub Radius."
     end
 
-    rwake = range(Rhubs[1], Rtips[1]; length=nwake_sheets)
+    rwake = range(Rhubs[1], Rtips[1]; length=paneling_constants.nwake_sheets)
 
     # Initialize wake "grid"
     xgrid, rgrid = initialize_wake_grid(
@@ -127,10 +123,6 @@ function precomputed_inputs(
             rotor_source_panels[i].panel_center[:, 2],
         ) for i in 1:nrotor
     ]
-
-    # - Get rotor panel edges and centers - #
-    rotor_panel_edges = [rgrid[rotor_indices[i], :] for i in 1:nrotor]
-    rotor_panel_centers = [rotor_source_panels[i].panel_center[:, 2] for i in 1:nrotor]
 
     #--------------------------------#
     # Generate Relational Geometries #
@@ -265,6 +257,18 @@ function precomputed_inputs(
         j in 1:length(wake_vortex_panels)
     ]
 
+    ## -- Miscellaneous Values for Indexing -- ##
+
+    # - Get rotor panel edges and centers - #
+    rotor_panel_edges = [rgrid[rotor_indices[i], :] for i in 1:nrotor]
+    rotor_panel_centers = [rotor_source_panels[i].panel_center[:, 2] for i in 1:nrotor]
+
+    rotor_panel_edges = reduce(hcat, rotor_panel_edges)
+    rotor_panel_centers = reduce(hcat, rotor_panel_centers)
+
+    # get the total number of vortex panels on the bodies
+    num_body_panels = length(b_bf)
+
     return (;
         converged=[false],
         # body_geometry, # body geometry
@@ -276,6 +280,7 @@ function precomputed_inputs(
         # panels
         rotor_indices,
         num_wake_x_panels=length(xwake) - 1,
+        num_body_panels,
         # body_panels, # body paneling
         # rotor_source_panels, # rotor paneling
         # wake_vortex_panels, # wake paneling
@@ -300,5 +305,48 @@ function precomputed_inputs(
         body_panels,
         rotor_source_panels,
         wake_vortex_panels,
+        mesh_bb,
+        mesh_rb,
+        mesh_br,
+        mesh_bw,
+        mesh_rw,
     )
+end
+
+"""
+    initialize_states(inputs)
+
+Calculate an initial guess for the state variables
+"""
+function initialize_states(inputs)
+
+    # - Initialize body vortex strengths (rotor-off linear problem) - #
+    A = inputs.A_bb # AIC matrix for body to body problem
+    b = inputs.b_bf # right hand side for body to body problem
+    gamb = solve_body_system(A, b, inputs.kutta_idxs) # get circulation strengths from solving body to body problem
+
+    # - Initialize blade circulation and source strengths (assume open rotor) - #
+    # use rotor rotation for tangential velocity of each blade section
+    Wθ_init = -inputs.rotor_panel_centers .* inputs.blade_elements.Omega'
+    # use freestream magnitude as meridional velocity at each blade section
+    Wm_init = similar(Wθ_init) .= inputs.Vinf
+    # magnitude is simply freestream and rotation
+    W_init = sqrt.(Wθ_init .^ 2 .+ Wm_init .^ 2)
+    # initialize circulation and source panel strengths
+    Gamr, sigr = calculate_gamma_sigma(inputs.blade_elements, Wm_init, Wθ_init, W_init)
+
+    # - Initialize wake vortex strengths - #
+    gamw = initialize_wake_vortex_strengths(
+        inputs.Vinf, Gamr, sigr, inputs.blade_elements.B, inputs.rotor_panel_edges
+    )
+
+    # - Combine initial states into one vector - #
+    states = vcat(
+        gamb,               # body vortex panel strengths
+        reduce(vcat, gamw), # wake vortex sheet strengths
+        reduce(vcat, Gamr), # rotor circulation strengths
+        reduce(vcat, sigr), # rotor source panel strengths
+    )
+
+    return states
 end

@@ -14,15 +14,15 @@ Authors: Judd Mehr, Andrew Ning
 using DuctTAPE
 const dt = DuctTAPE
 
-# CCBlade used for it's airfoil function objects here.
+# CCBlade used for it's airfoils function objects here.
 using CCBlade
 const ccb = CCBlade
 include("run_ccblade.jl")
 
-using Plots
+# using Plots
+# pyplot()
 # using LaTeXStrings
 include("../plots_default.jl")
-# pyplot()
 
 #---------------------------------#
 #             Geometry            #
@@ -37,7 +37,7 @@ Rhub = 0.10 * Rtip
 # number of blades
 B = 2
 
-# Blade section non-dimensional radial positions, chord lengths, and local twist angles in degrees
+# Blade section non-dimensional radial positions, chords lengths, and local twists angles in degrees
 propgeom = [
     0.15 0.130 32.76
     0.20 0.149 37.19
@@ -62,23 +62,23 @@ propgeom = [
 # extract non-dimensional radial positions
 r = propgeom[:, 1]
 # Dimensionalize chords
-chord = propgeom[:, 2] * Rtip
-# convert twist to radians
-twist = propgeom[:, 3] * pi / 180
+chords = propgeom[:, 2] * Rtip
+# convert twists to radians
+twists = propgeom[:, 3] * pi / 180
 
-# use a NACA 4412 airfoil
+# use a NACA 4412 airfoils
 #=
-Note here we are using the CCBlade functionality to define the airfoil data function.
-In addition, we are using the airfoil data file available from the CCBlade repository that has been extrapolated using the Viterna method as well as corrected for rotational effects as described in the CCBlade documentation.
+Note here we are using the CCBlade functionality to define the airfoils data function.
+In addition, we are using the airfoils data file available from the CCBlade repository that has been extrapolated using the Viterna method as well as corrected for rotational effects as described in the CCBlade documentation.
 =#
-airfoil = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(r))
+airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(r))
 
 ##### ----- User Options ----- #####
 # number of blade elements to use in analysis
 #=
 Note: the solver with interpolate the rotor data using the given number of blade element inputs
 =#
-nbe = 15
+nwake_sheets = 15
 
 # x position of rotor
 xrotor = 0.0
@@ -100,7 +100,7 @@ asound = 341.0 #m/s
 #---------------------------------#
 
 # Rotor Parameters
-rotor_parameters = (; xrotor, r, chord, twist, airfoil, Rtip, Rhub, B, Omega, nbe)
+rotor_parameters = [(; xrotor, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega)]
 
 # Freestream Parameters
 freestream = (; rho, mu, asound, Vinf=5.0)
@@ -150,7 +150,7 @@ D = 2 * Rtip #rotor tip diameter
 inputs, params = dt.initialize_rotor_states(rotor_parameters, freestream)
 
 rbe = params.blade_elements[1].rbe
-nbe = length(rbe)
+# nwake_sheets = length(rbe)
 
 # initialize outputs
 eff = zeros(nJ)
@@ -207,24 +207,24 @@ for i in 1:nJ
     # # double check geometry
     # plot(
     #     dtout.r,
-    #     dtout.chord;
+    #     dtout.chords;
     #     xlabel="r",
-    #     ylabel="chord",
+    #     ylabel="chords",
     #     label="DuctTAPE",
     #     title="J = $(J[i])",
     # )
-    # plot!(r * Rtip, chord; label="CCBlade")
+    # plot!(r * Rtip, chords; label="CCBlade")
     # savefig("examples/chord_J$(J[i]).pdf")
 
     # plot(
     #     dtout.r,
-    #     dtout.twist * 180 / pi;
-    #     ylabel="twist (deg)",
+    #     dtout.twists * 180 / pi;
+    #     ylabel="twists (deg)",
     #     xlabel="r",
     #     label="DuctTAPE",
     #     title="J = $(J[i])",
     # )
-    # plot!(r * Rtip, twist * 180 / pi; label="CCBlade")
+    # plot!(r * Rtip, twists * 180 / pi; label="CCBlade")
     # savefig("examples/twist_J$(J[i]).pdf")
 
     # # axial induced velocity
