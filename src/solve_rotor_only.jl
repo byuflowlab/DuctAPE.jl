@@ -34,7 +34,8 @@ function solve_rotor_only(inputs, params)
         inputs;
         autodiff=:forward,
         method=:newton,
-        iterations=25, #keep iterations low for initial testing/plotting
+        # iterations=25, #keep iterations low for initial testing/plotting
+        iterations=100, #keep iterations low for initial testing/plotting
         show_trace=true,
         linesearch=BackTracking(; maxstep=1e6),
     )

@@ -5,6 +5,9 @@ fs = freestream
 currently only capable of a single rotor
 """
 function initialize_rotor_states(rp, fs)
+
+    TF = eltype(rp.twist)
+
     #---------------------------------#
     #              Rotor              #
     #---------------------------------#
@@ -164,8 +167,8 @@ function initialize_rotor_states(rp, fs)
     #TODO: need to use the blade element airfoil stuff here (look at rotor aero file for usage)
     aoa = atan.(fs.Vinf, rp.Omega * rbe)
 
-    cl = zeros(rp.nbe)
-    cd = zeros(rp.nbe)
+    cl = zeros(TF,rp.nbe)
+    cd = zeros(TF,rp.nbe)
     for i in 1:(rp.nbe)
         clin, cdin = search_polars(blade_elements.inner_airfoil[i], aoa[i])
         clout, cdout = search_polars(blade_elements.outer_airfoil[i], aoa[i])
@@ -175,7 +178,7 @@ function initialize_rotor_states(rp, fs)
     end
 
     Gamma_init = 0.5 .* W .* cl .* blade_elements.chords
-    Vmr = fs.Vinf * ones(length(W))
+    Vmr = fs.Vinf * ones(TF, length(W))
 
     Gamma_tilde_init = rp.B .* Gamma_init
     H_tilde_init = rp.Omega * rp.B * Gamma_init / (2.0 * pi)
@@ -190,7 +193,7 @@ function initialize_rotor_states(rp, fs)
 
     # - Set Up States and Parameters - #
     # initialize rotor source strengths to zero for now
-    states = [Gamma_init; gamma_wake_init; zeros(nbe)]
+    states = [Gamma_init; gamma_wake_init; zeros(TF,nbe)]
     # states = [Gamma_init; gamma_wake_init]
 
     params = (
@@ -216,11 +219,13 @@ get meridional velocities using the marching method for when Vinf outside of wak
 """
 function vm_from_vinf(Vinf, Gamma_tilde, H_tilde, radial_stations)
 
+    TF = eltype(Gamma_tilde)
+
     #rename for convenience
     nr = length(Gamma_tilde)
 
     #initialize
-    Vm = zeros(nr)
+    Vm = zeros(TF,nr)
 
     #march from just outside the tip to the hub
     for i in nr:-1:1
