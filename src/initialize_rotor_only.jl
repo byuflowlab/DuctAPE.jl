@@ -53,7 +53,7 @@ function initialize_rotor_states(rp, fs)
     ##### ----- General Geometry ----- #####
 
     # - Choose blade element spacing - #
-    dr = 0.001
+    dr = 0.01 * rp[1].Rtip
 
     # - Rotor Diameter - #
     D = 2.0 * rp[1].Rtip
@@ -165,21 +165,21 @@ function initialize_rotor_states(rp, fs)
     #################################
 
     # - Initialize with freestream only - #
-    Wθ_init = -rotor_panel_centers .* rp.Omega'
+    Wθ = -rotor_panel_centers .* rp.Omega'
     # use freestream magnitude as meridional velocity at each blade section
-    Wm_init = similar(Wθ_init) .= fs.Vinf
+    Wm = similar(Wθ) .= fs.Vinf
     # magnitude is simply freestream and rotation
-    W_init = sqrt.(Wθ_init .^ 2 .+ Wm_init .^ 2)
+    W = sqrt.(Wθ .^ 2 .+ Wm .^ 2)
     # initialize circulation and source panel strengths
-    Gamma_init, sigr = calculate_gamma_sigma(blade_elements, Wm_init, Wθ_init, W_init)
+    Gamma, sigr = calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
 
-    gamma_wake_init = initialize_wake_vortex_strengths(
-        fs.Vinf, Gamma_init, rp.Omega, rp.B, rotor_panel_edges
+    gamma_wake = initialize_wake_vortex_strengths(
+        fs.Vinf, Gamma, rp.Omega, rp.B, rotor_panel_edges
     )
 
     # - Set Up States and Parameters - #
     # initialize rotor source strengths to zero for now
-    states = [Gamma_init; gamma_wake_init; sigr]
+    states = [Gamma; gamma_wake; sigr]
 
     params = (
         converged=[false],
