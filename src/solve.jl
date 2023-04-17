@@ -110,7 +110,7 @@ function solve(x, p)
     )
 
     # save convergence information
-    converged[1] = converged(res)
+    converged[1] = NLsolve.converged(res)
 
     # return solution
     return res.zero

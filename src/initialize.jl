@@ -33,7 +33,17 @@ function precomputed_inputs(
     finterp=fm.akima,
 )
 
-    ## -- Rename for Convenience -- ##
+    # ## -- Rename for Convenience -- ##
+    # # promoted type
+    # TF = promote_type(
+    #     eltype(rotor_parameters.chords),
+    #     eltype(rotor_parameters.twists),
+    #     eltype(rotor_parameters.Omega),
+    #     eltype(rotor_parameters.tip_gap),
+    #     eltype(duct_coordinates),
+    #     eltype(freestream.Vinf),
+    # )
+
     # number of rotors
     nrotor = length(rotor_parameters)
 
@@ -50,31 +60,77 @@ function precomputed_inputs(
     #------------------------------------#
     # Discretize Wake and Repanel Bodies #
     #------------------------------------#
+    if hub_coordinates == nothing
+        nohub = true
+        hub_coordinates = [
+            minimum(duct_coordinates[:, 1]) 0.0
+            maximum(duct_coordinates[:, 1]) 0.0
+        ]
+    else
+        nohub = false
+    end
 
     # - Discretize Wake x-coordinates - #
     # also returns indices of rotor locations in the wake
     xwake, rotor_indices = discretize_wake(
-        duct_coordinates, hub_coordinates, rotor_parameters.xrotor, paneling_constants.wake_length, paneling_constants.npanels
+        duct_coordinates,
+        hub_coordinates,
+        rotor_parameters.xrotor,
+        paneling_constants.wake_length,
+        paneling_constants.npanels,
     )
 
     # - Repanel Bodies - #
     rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
-        duct_coordinates, hub_coordinates, xwake, paneling_constants.nhub_inlet, paneling_constants.nduct_inlet; finterp=finterp
+        duct_coordinates,
+        hub_coordinates,
+        xwake,
+        paneling_constants.nhub_inlet,
+        paneling_constants.nduct_inlet;
+        finterp=finterp,
     )
 
     #-----------------------------------#
     # Position Duct and Get Rotor Radii #
     #-----------------------------------#
+    # check that tip gap isn't too small
+    # set vector of tip gaps to zero for initialization (any overrides to zero thus taken c of automatically)
+    tip_gaps = zeros(eltype(rotor_parameters.tip_gap), nrotor)
+    if rotor_parameters[1].tip_gap != 0.0
+        if rotor_parameters[1].tip_gap < 1e-4
+            @warn "You have selected a tip gap for the foremost rotor that is smaller than 1e-4. Overriding to 0.0 to avoid near singularity issues."
+        else
+            tip_gaps[1] = rotor_parameters[1].tip_gap
+        end
+    end
 
+    # can't have non-zero tip gaps for aft rotors
+    for ir in 2:nrotor
+        if rotor_parameters[ir].tip_gap != 0.0
+            @warn "DuctTAPE does not currently have capabilities for adding tip gap to any but the foremost rotor. Overriding to 0.0."
+        else
+            tip_gaps[ir] = rotor_parameters[ir].tip_gap
+        end
+    end
+
+    # if hub was nothing, set hub radius to dimensional inner rotor radius
+    if nohub
+        rp_hub_coordinates[:, 2] .= rotor_parameters[1].r[1] * rotor_parameters[1].Rtip
+    end
     t_duct_coordinates, Rtips, Rhubs = place_duct(
         rp_duct_coordinates,
         rp_hub_coordinates,
         rotor_parameters[1].Rtip,
+        tip_gaps,
         rotor_parameters.xrotor,
     )
 
     # generate body paneling
-    body_panels = generate_body_panels(t_duct_coordinates, rp_hub_coordinates)
+    if nohub
+        body_panels = generate_body_panels(t_duct_coordinates, nothing)
+    else
+        body_panels = generate_body_panels(t_duct_coordinates, rp_hub_coordinates)
+    end
 
     #----------------------------------#
     # Generate Discretized Wake Sheets #
@@ -85,7 +141,15 @@ function precomputed_inputs(
         @assert Rtips[i] > Rhubs[i] "Rotor #$i Tip Radius is set to be less than its Hub Radius."
     end
 
-    rwake = range(Rhubs[1], Rtips[1]; length=paneling_constants.nwake_sheets)
+    #rotor panel edges
+    rpe = range(Rhubs[1], Rtips[1]; length=paneling_constants.nwake_sheets)
+
+    # wake sheet starting radius including dummy sheets for tip gap.
+    if tip_gaps[1] == 0.0
+        rwake = rpe
+    else
+        rwake = [rpe; Rtips[1] + tip_gaps[1]]
+    end
 
     # Initialize wake "grid"
     xgrid, rgrid = initialize_wake_grid(
@@ -95,8 +159,17 @@ function precomputed_inputs(
     # Relax "Grid"
     relax_grid!(xgrid, rgrid; max_iterations=100, tol=1e-9, verbose=false)
 
+    #don't include the dummy sheet used for tip gap if tipgap is present
+    if tip_gaps[1] == 0.0
+        xwakegrid = view(xgrid, :, :)
+        rwakegrid = view(rgrid, :, :)
+    else
+        xwakegrid = view(xgrid, :, 1:(length(rwake) - 1))
+        rwakegrid = view(rgrid, :, 1:(length(rwake) - 1))
+    end
+
     # generate wake sheet paneling
-    wake_vortex_panels = generate_wake_panels(xgrid, rgrid)
+    wake_vortex_panels = generate_wake_panels(xwakegrid, rwakegrid)
 
     #------------------------------------------#
     # Generate Rotor Panels and Blade Elements #
@@ -104,8 +177,8 @@ function precomputed_inputs(
 
     # rotor source panel objects
     rotor_source_panels = [
-        generate_rotor_panels(rotor_parameters[i].xrotor, rgrid[rotor_indices[i], :]) for
-        i in 1:nrotor
+        generate_rotor_panels(rotor_parameters[i].xrotor, rwakegrid[rotor_indices[i], :])
+        for i in 1:nrotor
     ]
 
     # rotor blade element objects
@@ -186,7 +259,9 @@ function precomputed_inputs(
     # b_bfff = ff.assemble_ring_boundary_conditions_raw(
     #     ff.Dirichlet(), [false; true], body_panels, body_meshff
     # )
-    b_bf = assemble_body_freestream_boundary_conditions(body_panels, mesh_bb)
+    b_bf =
+        freestream.Vinf .*
+        assemble_body_freestream_boundary_conditions(body_panels, mesh_bb)
 
     # - rotor to body - #
     A_br = [
@@ -260,7 +335,7 @@ function precomputed_inputs(
     ## -- Miscellaneous Values for Indexing -- ##
 
     # - Get rotor panel edges and centers - #
-    rotor_panel_edges = [rgrid[rotor_indices[i], :] for i in 1:nrotor]
+    rotor_panel_edges = [rwakegrid[rotor_indices[i], :] for i in 1:nrotor]
     rotor_panel_centers = [rotor_source_panels[i].panel_center[:, 2] for i in 1:nrotor]
 
     rotor_panel_edges = reduce(hcat, rotor_panel_edges)
@@ -337,7 +412,11 @@ function initialize_states(inputs)
 
     # - Initialize wake vortex strengths - #
     gamw = initialize_wake_vortex_strengths(
-        inputs.Vinf, Gamr, sigr, inputs.blade_elements.B, inputs.rotor_panel_edges
+        inputs.Vinf,
+        Gamr,
+        inputs.blade_elements.Omega,
+        inputs.blade_elements.B,
+        inputs.rotor_panel_edges,
     )
 
     # - Combine initial states into one vector - #

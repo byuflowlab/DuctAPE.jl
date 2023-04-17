@@ -62,9 +62,15 @@ propgeom = [
 # extract non-dimensional radial positions
 r = propgeom[:, 1]
 # Dimensionalize chords
-chords = propgeom[:, 2] * Rtip
+chords = propgeom[:, 2] #* Rtip
 # convert twists to radians
-twists = propgeom[:, 3] * pi / 180
+twists = propgeom[:, 3] #* pi / 180
+
+# plot(r, chords, xlabel=L"r/R_\mathrm{tip}", ylabel=L"c/R_\mathrm{tip}", label="",ylim=(0.0,0.22),xlim=(0.0,1.0))
+# savefig("examples/apc_chord.pdf")
+# plot(r, twists, xlabel=L"r/R_\mathrm{tip}", ylabel="twist (deg)",label="",ylim=(0.0,39),xlim=(0.0,1.0))
+# savefig("examples/apc_twist.pdf")
+
 
 # use a NACA 4412 airfoils
 #=

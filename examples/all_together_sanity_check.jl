@@ -27,6 +27,14 @@ include("../plots_default.jl")
 # Blade Tip Radius, in meters
 Rtip = 10 / 2.0 * 0.0254  # inches to meters
 
+#! Tip Gap
+#=
+we have this dimensional such that it's easy for the user to know how the limits of the input (want to keep larger than 1e-4 or so to avoid near singularities between the wake and body panels)
+=#
+# tip_gap = 0.0
+# tip_gap = 0.1*Rtip #10 percent tip gap
+tip_gap = 10.0
+
 # Blade Hub radius, in meters
 Rhub = 0.10 * Rtip
 
@@ -70,7 +78,7 @@ twists = propgeom[:, 3] * pi / 180
 Note here we are using the CCBlade functionality to define the airfoils data function.
 In addition, we are using the airfoils data file available from the CCBlade repository that has been extrapolated using the Viterna method as well as corrected for rotational effects as described in the CCBlade documentation.
 =#
-airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(r))
+airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(rnondim))
 
 #---------------------------------#
 #         Paneling Options        #
@@ -85,13 +93,17 @@ wake_length = 1.0
 
 # number of panels between discrete points
 # in this case, 5 panels between rotors, 5 panels between last rotor and hub te, 3 panels between hub and duct te's, and 20 panels from duct TE to end of wake
-npanels = [10; 3; 25]
+# npanels = [10; 5; 25]
+npanels = [10; 25]
 
 nhub_inlet = 20
 nduct_inlet = 20
 #---------------------------------#
 #       Operating Conditions      #
 #---------------------------------#
+
+#Vinf
+Vinf = 5.0
 
 # rotor rotation rate in rad/s
 Omega = 5400 * pi / 30  # convert from RPM to rad/s
@@ -114,15 +126,16 @@ The file containing the duct coordinates contains the following geometry items:
 note in this case, we include the radial offset of the duct since we have no rotor tip radius to define the duct radial location.
 =#
 include("../test/data/naca_662-015.jl")
-duct_coordinates = [x_duct r_duct]./2.0
+duct_coordinates = [x_duct r_duct] ./ 2.0
 
 # - Hub Coordinates - #
 # use hub coordinates from FLOWFoil validation cases
 #=
 Similarly, the hub coordinates here contain x_hub and r_hub, which contain the x and r coordinates from the leading edge to the trailing edge of the center body (hub), thus the coordinates are also effectively clockwise.
 =#
-include("../test/data/bodyofrevolutioncoords.jl")
-hub_coordinates = [x_hub[1:(end - 1)]./2.0 r_hub[1:(end - 1)] * Rhub / maximum(r_hub)]
+# include("../test/data/bodyofrevolutioncoords.jl")
+# hub_coordinates = [x_hub[1:(end - 1)] ./ 2.0 r_hub[1:(end - 1)] * Rhub / maximum(r_hub)]
+hub_coordinates = nothing
 
 #---------------------------------#
 #          Define Inputs          #
@@ -130,14 +143,14 @@ hub_coordinates = [x_hub[1:(end - 1)]./2.0 r_hub[1:(end - 1)] * Rhub / maximum(r
 
 # Rotor Parameters
 rotor_parameters = [(;
-    xrotor, nwake_sheets, r=rnondim, chords, twists, airfoils, Rtip, Rhub, B, Omega
+    xrotor, nwake_sheets, r=rnondim, chords, twists, airfoils, Rtip, Rhub, tip_gap, B, Omega
 )]
 
 # Paneling Parameters
 paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
 
 # Freestream Parameters
-freestream = (; rho, mu, asound, Vinf=5.0)
+freestream = (; rho, mu, asound, Vinf)
 
 ######################################################################
 #                                                                    #
@@ -153,7 +166,8 @@ inputs = dt.precomputed_inputs(
 ### --- Sanity Plots --- ###
 plot(; aspectratio=1)
 
-for ib in 1:2
+# for ib in 1:2
+for ib in 1:1
     plot!(
         inputs.body_panels[ib].panel_center[:, 1],
         inputs.body_panels[ib].panel_center[:, 2];
@@ -173,6 +187,7 @@ for iw in 1:nwake_sheets
     plot!(
         inputs.wake_vortex_panels[iw].panel_center[:, 1],
         inputs.wake_vortex_panels[iw].panel_center[:, 2];
+        linewidth=0.5,
         color=mycolors[3],
         label="",
     )
@@ -184,17 +199,115 @@ savefig("examples/all-together-geometry.pdf")
 states = dt.initialize_states(inputs)
 gamb, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
 
+## -- check body surface velocity initialiation -- ##
 dp = inputs.body_panels[1].panel_center[:, 1]
-hp = inputs.body_panels[2].panel_center[:, 1]
-gamd = gamb[1:length(dp)]
-gamh = gamb[(length(dp) + 1):end]
-plot(dp, gamd / 5.0; xlabel="x", ylabel="vs/vinf", label="initial duct suface velocity")
-plot!(hp, gamh / 5.0; label="initial hub suface velocity")
-savefig("examples/body-init-sanity-check.pdf")
+# hp = inputs.body_panels[2].panel_center[:, 1]
+gamd = 1.0 .- (gamb[1:length(dp)]./Vinf).^2
+# gamh = 1.0 .- (gamb[(length(dp) + 1):end]./Vinf).^2
+
+pb = plot(
+    dp, gamd ; xlabel="x", ylabel="cp", label="initial duct surface pressure"
+)
+# plot!(pb, hp, gamh ; label="initial hub surface pressure")
+savefig(pb, "examples/body-init-sanity-check.pdf")
+
+## -- check rotor circulation and source initial strengths -- ##
+pG = plot(Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r")
+savefig(pG, "examples/rotorcirculation-init-sanity-check.pdf")
+
+ps = plot(sigr, inputs.rotor_panel_centers; xlabel=L"\sigma", ylabel="r")
+savefig(ps, "examples/rotorsources-init-sanity-check.pdf")
+
+pw = plot(gamw, inputs.rotor_panel_edges; xlabel=L"\gamma_\theta", ylabel="r")
+savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
 
 #---------------------------------#
 #           Run Analysis          #
 #---------------------------------#
+
+# - Extract commonly used items from precomputed inputs - #
+blade_elements = inputs.blade_elements
+rpc = inputs.rotor_panel_centers
+Vinf = inputs.Vinf
+
+# - Fill out wake strengths - #
+wake_vortex_strengths = dt.fill_out_wake_strengths(
+    gamw, inputs.rotor_indices, inputs.num_wake_x_panels
+)
+
+# - Get the induced velocities at the rotor plane - #
+vx_rotor, vr_rotor, vtheta_rotor = dt.calculate_induced_velocities_on_rotors(
+    blade_elements,
+    Gamr,
+    inputs.vx_rw,
+    inputs.vr_rw,
+    wake_vortex_strengths,
+    inputs.vx_rr,
+    inputs.vr_rr,
+    sigr,
+    inputs.vx_rb,
+    inputs.vr_rb,
+    gamb,
+)
+
+# the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
+Wx_rotor = vx_rotor .+ inputs.Vinf
+
+# the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
+Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* rpc
+
+# meridional component
+Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+
+# Get the inflow magnitude at the rotor as the combination of all the components
+Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+
+dt.calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor)
+
+# - Calculate net circulation and enthalpy jumps - #
+# TODO: check that your get property override works here for inputting an array of number of blades and rotation rates
+Gamma_tilde = dt.calculate_net_circulation(Gamr, blade_elements.B)
+H_tilde = dt.calculate_enthalpy_jumps(Gamr, blade_elements.Omega, blade_elements.B)
+
+# - update wake strengths - #
+dt.calculate_wake_vortex_strengths!(
+    gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
+)
+
+# - Calculate body vortex strengths - #
+dt.calculate_body_vortex_strengths!(
+    gamb,
+    inputs.A_bb,
+    inputs.b_bf,
+    inputs.kutta_idxs,
+    inputs.A_bw,
+    wake_vortex_strengths,
+    inputs.A_br,
+    sigr,
+)
+
+## -- check body surface velocity initialiation -- ##
+# gamd = gamb[1:length(dp)]
+# gamh = gamb[(length(dp) + 1):end]
+gamd = 1.0 .- (gamb[1:length(dp)]./Vinf).^2
+# gamh = 1.0 .- (gamb[(length(dp) + 1):end]./Vinf).^2
+
+plot!(pb, dp, gamd ; xlabel="x", ylabel="cp", label="iter1 duct surface pressure")
+# plot!(pb, hp, gamh ; label="iter hub surface pressure")
+savefig(pb, "examples/body-init-sanity-check.pdf")
+
+## -- check rotor circulation and source initial strengths -- ##
+plot!(pG, Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="iter1")
+savefig(pG, "examples/rotorcirculation-init-sanity-check.pdf")
+
+plot!(ps, sigr, inputs.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="iter1")
+savefig(ps, "examples/rotorsources-init-sanity-check.pdf")
+
+plot!(
+    pw, gamw, inputs.rotor_panel_edges; xlabel=L"\gamma_\theta", ylabel="r", label="iter1"
+)
+savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
+
 strengths = dt.analyze_propulsor(
     duct_coordinates,
     hub_coordinates,
