@@ -60,14 +60,23 @@ function precomputed_inputs(
     #------------------------------------#
     # Discretize Wake and Repanel Bodies #
     #------------------------------------#
-    if hub_coordinates == nothing
+    rotoronly = false
+    nohub = false
+    noduct = false
+    if hub_coordinates == nothing && duct_coordinates != nothing
         nohub = true
         hub_coordinates = [
             minimum(duct_coordinates[:, 1]) 0.0
             maximum(duct_coordinates[:, 1]) 0.0
         ]
-    else
-        nohub = false
+    elseif hub_coordinates != nothing && duct_coordinates == nothing
+        noduct = true
+        hub_coordinates = [
+            minimum(hub_coordinates[:, 1]) 0.0
+            maximum(hub_coordinates[:, 1]) 0.0
+        ]
+    elseif hub_coordinates == nothing && duct_coordinates == nothing
+        rotoronly = true
     end
 
     # - Discretize Wake x-coordinates - #
