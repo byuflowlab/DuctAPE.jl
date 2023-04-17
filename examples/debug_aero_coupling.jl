@@ -33,7 +33,7 @@ we have this dimensional such that it's easy for the user to know how the limits
 =#
 # tip_gap = 0.0
 # tip_gap = 0.1*Rtip #10 percent tip gap
-tip_gap = 1.0
+tip_gap = 10.0
 
 # Blade Hub radius, in meters
 Rhub = 0.10 * Rtip
@@ -178,6 +178,7 @@ for ib in 1:1
         inputs.body_panels[ib].panel_center[:, 1],
         inputs.body_panels[ib].panel_center[:, 2];
         color=mycolors[1],
+        linewidth=0.5,
         label="",
     )
 end
@@ -186,6 +187,9 @@ plot!(
     inputs.rotor_source_panels[1].panel_center[:, 1],
     inputs.rotor_source_panels[1].panel_center[:, 2];
     color=mycolors[2],
+    markershape=:square,
+    markersize=0.5,
+    linewidth=0.25,
     label="",
 )
 
@@ -193,13 +197,13 @@ for iw in 1:nwake_sheets
     plot!(
         inputs.wake_vortex_panels[iw].panel_center[:, 1],
         inputs.wake_vortex_panels[iw].panel_center[:, 2];
-        linewidth=0.5,
+        linewidth=0.25,
         color=mycolors[3],
         label="",
     )
 end
 
-savefig("examples/all-together-geometry.pdf")
+savefig("examples/debug-aero-couple-geometry.pdf")
 
 ### --- Initialize States --- ###
 states = dt.initialize_states(inputs)
@@ -312,12 +316,12 @@ plot!(
 )
 savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
 
-strengths = dt.analyze_propulsor(
-    duct_coordinates,
-    hub_coordinates,
-    paneling_constants,
-    rotor_parameters,
-    freestream;
-    tol=1e-8,
-    maxiter=100,
-)
+# strengths = dt.analyze_propulsor(
+#     duct_coordinates,
+#     hub_coordinates,
+#     paneling_constants,
+#     rotor_parameters,
+#     freestream;
+#     tol=1e-8,
+#     maxiter=100,
+# )
