@@ -14,12 +14,12 @@ Authors: Judd Mehr, Andrew Ning
 using DuctTAPE
 const dt = DuctTAPE
 
-# CCBlade used for it's airfoil function objects here.
+# CCBlade used for it's airfoils function objects here.
 using CCBlade
 const ccb = CCBlade
 include("run_ccblade.jl")
 
-using Plots
+# using Plots
 # pyplot()
 # using LaTeXStrings
 include("../plots_default.jl")
@@ -37,7 +37,7 @@ Rhub = 0.10 * Rtip
 # number of blades
 B = 2
 
-# Blade section non-dimensional radial positions, chord lengths, and local twist angles in degrees
+# Blade section non-dimensional radial positions, chords lengths, and local twists angles in degrees
 propgeom = [
     0.15 0.130 32.76
     0.20 0.149 37.19
@@ -62,23 +62,29 @@ propgeom = [
 # extract non-dimensional radial positions
 r = propgeom[:, 1]
 # Dimensionalize chords
-chord = propgeom[:, 2] * Rtip
-# convert twist to radians
-twist = propgeom[:, 3] * pi / 180
+chords = propgeom[:, 2] * Rtip
+# convert twists to radians
+twists = propgeom[:, 3] * pi / 180
 
-# use a NACA 4412 airfoil
+# plot(r, chords, xlabel=L"r/R_\mathrm{tip}", ylabel=L"c/R_\mathrm{tip}", label="",ylim=(0.0,0.22),xlim=(0.0,1.0))
+# savefig("examples/apc_chord.pdf")
+# plot(r, twists, xlabel=L"r/R_\mathrm{tip}", ylabel="twist (deg)",label="",ylim=(0.0,39),xlim=(0.0,1.0))
+# savefig("examples/apc_twist.pdf")
+
+
+# use a NACA 4412 airfoils
 #=
-Note here we are using the CCBlade functionality to define the airfoil data function.
-In addition, we are using the airfoil data file available from the CCBlade repository that has been extrapolated using the Viterna method as well as corrected for rotational effects as described in the CCBlade documentation.
+Note here we are using the CCBlade functionality to define the airfoils data function.
+In addition, we are using the airfoils data file available from the CCBlade repository that has been extrapolated using the Viterna method as well as corrected for rotational effects as described in the CCBlade documentation.
 =#
-airfoil = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(r))
+airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(r))
 
 ##### ----- User Options ----- #####
 # number of blade elements to use in analysis
 #=
 Note: the solver with interpolate the rotor data using the given number of blade element inputs
 =#
-nbe = 15
+nwake_sheets = 15
 
 # x position of rotor
 xrotor = 0.0
@@ -100,7 +106,7 @@ asound = 341.0 #m/s
 #---------------------------------#
 
 # Rotor Parameters
-rotor_parameters = (; xrotor, r, chord, twist, airfoil, Rtip, Rhub, B, Omega, nbe)
+rotor_parameters = [(; xrotor, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega)]
 
 # Freestream Parameters
 freestream = (; rho, mu, asound, Vinf=5.0)
@@ -139,14 +145,7 @@ etaexp = exp[:, 4]
 #---------------------------------#
 #          Set Up Solves          #
 #---------------------------------#
-# nJ = 20  # number of advance ratios
-
-# J = range(0.1, 0.6; length=nJ)  # advance ratio
-# J = collect(range(0.1, 0.6; step=0.025))  # advance ratio
-J = collect(range(0.1, 0.6; step=0.05))  # advance ratio
-x = 0.21872265966754156
-insert_and_dedup!(J, x) = (splice!(J, searchsorted(J, x), x); J)
-insert_and_dedup!(J, x)
+J = collect(range(0.1, 0.6; step=0.025))  # advance ratio
 nJ = length(J)
 
 # get values needed for backing out freestream velocity from advance ratio
@@ -157,7 +156,7 @@ D = 2 * Rtip #rotor tip diameter
 inputs, params = dt.initialize_rotor_states(rotor_parameters, freestream)
 
 rbe = params.blade_elements[1].rbe
-nbe = length(rbe)
+# nwake_sheets = length(rbe)
 
 # initialize outputs
 eff = zeros(nJ)
@@ -205,7 +204,8 @@ for i in 1:nJ
     CQccb[i] = ccbouts.CQ
     out = ccbouts.out
 
-    # ### --- PLOTS --- ###
+    ### --- PLOTS --- ###
+    #Uncomment to see all the details
     # println()
     # println("Plotting...")
     # println()
@@ -213,24 +213,24 @@ for i in 1:nJ
     # # double check geometry
     # plot(
     #     dtout.r,
-    #     dtout.chord;
+    #     dtout.chords;
     #     xlabel="r",
-    #     ylabel="chord",
+    #     ylabel="chords",
     #     label="DuctTAPE",
     #     title="J = $(J[i])",
     # )
-    # plot!(r * Rtip, chord; label="CCBlade")
+    # plot!(r * Rtip, chords; label="CCBlade")
     # savefig("examples/chord_J$(J[i]).pdf")
 
     # plot(
     #     dtout.r,
-    #     dtout.twist * 180 / pi;
-    #     ylabel="twist (deg)",
+    #     dtout.twists * 180 / pi;
+    #     ylabel="twists (deg)",
     #     xlabel="r",
     #     label="DuctTAPE",
     #     title="J = $(J[i])",
     # )
-    # plot!(r * Rtip, twist * 180 / pi; label="CCBlade")
+    # plot!(r * Rtip, twists * 180 / pi; label="CCBlade")
     # savefig("examples/twist_J$(J[i]).pdf")
 
     # # axial induced velocity
@@ -286,40 +286,40 @@ for i in 1:nJ
     #     dtout.phi * 180 / pi,
     #     rbe / Rtip;
     #     xlabel=L"\phi~(deg)",
-        # ylabel="r",
-        # label="DuctTAPE",
-        # title="J = $(J[i])",
+    #     ylabel="r",
+    #     label="DuctTAPE",
+    #     title="J = $(J[i])",
     # )
     # plot!(out.phi * 180 / pi, r; label="CCBlade")
     # savefig("examples/phi_J$(J[i]).pdf")
 
     # # angle of attack
     # plot(
-        # dtout.alpha * 180 / pi,
-        # rbe / Rtip;
-        # xlabel=L"\alpha~(deg)",
-        # ylabel="r",
-        # label="DuctTAPE",
-        # title="J = $(J[i])",
+    #     dtout.alpha * 180 / pi,
+    #     rbe / Rtip;
+    #     xlabel=L"\alpha~(deg)",
+    #     ylabel="r",
+    #     label="DuctTAPE",
+    #     title="J = $(J[i])",
     # )
     # plot!(out.alpha * 180 / pi, r; label="CCBlade")
     # savefig("examples/alpha_J$(J[i]).pdf")
 
     # # inflow magnitude
     # plot(
-        # dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctTAPE", title="J = $(J[i])"
+    #     dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctTAPE", title="J = $(J[i])"
     # )
     # plot!(out.W, r; label="CCBlade")
     # savefig("examples/W_J$(J[i]).pdf")
 
     # # Lift
     # plot(
-        # dtout.cl,
-        # rbe / Rtip;
-        # xlabel=L"c_\ell",
-        # ylabel="r",
-        # label="DuctTAPE",
-        # title="J = $(J[i])",
+    #     dtout.cl,
+    #     rbe / Rtip;
+    #     xlabel=L"c_\ell",
+    #     ylabel="r",
+    #     label="DuctTAPE",
+    #     title="J = $(J[i])",
     # )
     # plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
     # plot!(dtout.clout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
@@ -383,14 +383,16 @@ end
 #---------------------------------#
 
 plot(J, CT; xlabel=L"J", label=L"C_T~DuctTAPE", color=mycolors[1])
-plot!(J, CQ * 2 * pi; label=L"C_Q~DuctTAPE", color=mycolors[2])
+plot!(J, CQ * 2 * pi; label=L"C_P~DuctTAPE", color=mycolors[2])
 plot!(J, CTccb; label=L"C_T~CCBlade", color=mycolors[1], linestyle=:dash)
-plot!(J, CQccb * 2 * pi; label=L"C_Q~CCBlade", color=mycolors[2], linestyle=:dash)
-plot!(Jexp, CTexp; seriestype=:scatter, label="experimental", color=mycolors[1])
-plot!(Jexp, CPexp; seriestype=:scatter, label="", color=mycolors[2])
+plot!(J, CQccb * 2 * pi; label=L"C_P~CCBlade", color=mycolors[2], linestyle=:dash)
+plot!(Jexp, CTexp; seriestype=:scatter, label="C_T~experimental", color=mycolors[1])
+plot!(Jexp, CPexp; seriestype=:scatter, label="C_P~experimental", color=mycolors[2])
 savefig("examples/rotor-only-thrust-and-power-validation.pdf")
+# savefig("examples/rotor-only-thrust-and-power-validation.png")
 
 plot(J, eff; xlabel=L"J", ylabel=L"\eta", label="DuctTAPE")
 plot!(J, effccb; label="CCBlade")
 plot!(Jexp, etaexp; seriestype=:scatter, label="experimental")
 savefig("examples/rotor-only-efficiency-validation.pdf")
+# savefig("examples/rotor-only-efficiency-validation.png")

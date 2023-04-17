@@ -121,21 +121,96 @@ function calculate_wake_vortex_strengths!(gamw, Rr_wake, Vmr, Γ_tilde, H_tilde)
     return gamw
 end
 
-#TODO: probably delete this, unless it ends up being needed
-# function initialize_wake_vortex_strengths(Gamr, Ωr, freestream)
+"""
+Fill in values for wake strengths behind rotors
+"""
+function fill_out_wake_strengths(gamw, rotor_indices, num_wake_x_panels)
 
-#     # set initial Vm values
-#     Vm = similar(Gamr, nr - 1, nx) .= freestream.Vinf
+    # do things the easy way if there's only one rotor.
+    if length(rotor_indices) == 1
+        return repeat(gamw; inner=(1, num_wake_x_panels))
+    else
+        # Initialize Output
+        TF = eltype(gamw)
+        wake_vortex_strengths = zeros(TF, length(gamw[:, 1]), num_wake_x_panels)
 
-#     # calculate enthalpy jumps
-#     H_tilde = calculate_enthalpy_jumps(Gamr, Ωr, B)
+        # set up ranges
+        # note that the plus one here and the minus one in the loop account for the difference in panel edge (rotor index) vs panel center (strength location) indexing
+        ridx = [rotor_indices; num_wake_x_panels + 1]
 
-#     # calculate net circulation
-#     Γ_tilde = calculate_net_circulation(Gamr, B)
+        # loop through rotors
+        for i in 1:length(rotor_indices)
+            wake_vortex_strengths[:, ridx[i]:(ridx[i + 1] - 1)] .= repeat(
+                gamw[:, i]; inner=(1, ridx[i + 1] - ridx[i])
+            )
+        end
 
-#     # calculate wake vortex strengths
-#     calculate_wake_vortex_strengths!(gamw, wake_panels, Vm, Γ_tilde, H_tilde, rotor_indices)
+        return wake_vortex_strengths
+    end
+end
 
-#     # println(wake_vortex_strengths)
-#     return wake_vortex_strengths
-# end
+function initialize_wake_vortex_strengths(Vinf, Gamr, Omega, B, rotor_panel_edges)
+
+    # get net circulations
+    Gamma_tilde = calculate_net_circulation(Gamr, B)
+
+    # get enthalpy jumps
+    H_tilde = calculate_enthalpy_jumps(Gamr, Omega, B)
+
+    # initialize vm with freestream and rotation assuming open rotor
+    vm = marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
+
+    # return initialized wake vortex strengths
+    gwhub = vm[1, :] .- Vinf
+    gw = vm[2:end, :] .- vm[1:(end - 1), :]
+    gwduct = Vinf .- vm[end, :]
+    return [gwhub'; gw; gwduct']
+end
+
+"""
+get meridional velocities using the marching method for when Vinf outside of wake is known.
+"""
+function marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
+    TF = eltype(Gamma_tilde)
+
+    #rename for convenience
+    nr, nrotor = size(Gamma_tilde)
+
+    #initialize
+    Vm = zeros(TF, nr, nrotor)
+
+    # Loop through rotors
+    for irotor in 1:nrotor
+
+        # Loop through radial stations
+        #march from just outside the tip to the hub
+        for ir in nr:-1:1
+            if ir == nr
+
+                #this is the change at the tip, so we need to set Vm2 to Vinf, and set Gamma dn H 2's to zeros
+                radical =
+                    Vinf^2 +
+                    (1.0 / (2.0 * pi * rotor_panel_edges[ir, irotor]))^2 *
+                    (-Gamma_tilde[ir, irotor]^2) - 2.0 * (-H_tilde[ir, irotor])
+            else
+
+                #otherwise, we just take the differences inside as-is
+                radical =
+                    Vm[ir + 1, irotor]^2 +
+                    (1.0 / (2.0 * pi * rotor_panel_edges[ir, irotor]))^2 *
+                    (Gamma_tilde[ir + 1, irotor]^2 - Gamma_tilde[ir, irotor]^2) -
+                    2.0 * (H_tilde[ir + 1, irotor] - H_tilde[ir, irotor])
+            end
+
+            # compute the meridional velocity value, avoiding negative square roots and divisions by zero later
+            if radical > 0.0
+                Vm[ir, irotor] = sqrt(radical)
+            else
+                Vm[ir, irotor] = 0.1 * Vinf
+            end
+        end
+    end
+
+    #Vm should now be in the order of hub to tip
+    return Vm
+end
