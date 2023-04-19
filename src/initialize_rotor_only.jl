@@ -165,7 +165,14 @@ function initialize_rotor_states(rp, fs)
     #################################
 
     # - Initialize with freestream only - #
-    Wθ = -rotor_panel_centers .* rp.Omega'
+Wθ = -rotor_panel_centers .* rp.Omega'
+    # Wθ = zeros(eltype(rp[1].Omega),length(rotor_panel_centers),length(rp))
+    # for ir in 1:length(rotor_panel_centers)
+    #     for irotor in 1:length(rp)
+    #         Wθ[ir,irotor] = -rotor_panel_centers[ir] * rp[irotor].Omega[1]
+    #     end
+    # end
+
     # use freestream magnitude as meridional velocity at each blade section
     Wm = similar(Wθ) .= fs.Vinf
     # magnitude is simply freestream and rotation
