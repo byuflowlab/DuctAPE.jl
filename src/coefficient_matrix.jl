@@ -121,7 +121,7 @@ end
 function assemble_body_freestream_boundary_conditions(panels, mesh)
 
     # - Rename for Convenience - #
-    idx = mesh.influence_panel_indices
+    idx = mesh.affect_panel_indices
     N = idx[end][end]
     nbodies = length(panels)
     m2p_i = mesh.mesh2panel_affect

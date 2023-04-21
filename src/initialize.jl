@@ -405,27 +405,64 @@ Calculate an initial guess for the state variables
 function initialize_states(inputs)
 
     # - Initialize body vortex strengths (rotor-off linear problem) - #
-    A = inputs.A_bb # AIC matrix for body to body problem
-    b = inputs.b_bf # right hand side for body to body problem
-    gamb = solve_body_system(A, b, inputs.kutta_idxs) # get circulation strengths from solving body to body problem
+    gamb = solve_body_system(inputs.A_bb, inputs.b_bf, inputs.kutta_idxs) # get circulation strengths from solving body to body problem
 
     # - Initialize blade circulation and source strengths (assume open rotor) - #
-    # use rotor rotation for tangential velocity of each blade section
-    Wθ_init = -inputs.rotor_panel_centers .* inputs.blade_elements.Omega'
-    # use freestream magnitude as meridional velocity at each blade section
-    Wm_init = similar(Wθ_init) .= inputs.Vinf
-    # magnitude is simply freestream and rotation
-    W_init = sqrt.(Wθ_init .^ 2 .+ Wm_init .^ 2)
-    # initialize circulation and source panel strengths
-    Gamr, sigr = calculate_gamma_sigma(inputs.blade_elements, Wm_init, Wθ_init, W_init)
 
-    # - Initialize wake vortex strengths - #
-    gamw = initialize_wake_vortex_strengths(
-        inputs.Vinf,
+    # get floating point type
+    TF = promote_type(
+        eltype(inputs.blade_elements[1].chords),
+        eltype(inputs.blade_elements[1].twists),
+        eltype(inputs.blade_elements[1].Omega),
+        eltype(gamb),
+    )
+
+    # get problem dimensions (number of radial stations x number of rotors)
+    nr = length(inputs.blade_elements[1].rbe)
+    nrotor = length(inputs.blade_elements)
+
+    # initialize outputs
+    Gamr = zeros(TF, nr, nrotor)
+    sigr = zeros(TF, nr, nrotor)
+    gamw = zeros(TF, nr + 1, nrotor)
+    wake_vortex_strengths = repeat(gamw; inner=(1, inputs.num_wake_x_panels))
+
+    vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+        inputs.blade_elements,
         Gamr,
-        inputs.blade_elements.Omega,
-        inputs.blade_elements.B,
-        inputs.rotor_panel_edges,
+        inputs.vx_rw,
+        inputs.vr_rw,
+        wake_vortex_strengths,
+        inputs.vx_rr,
+        inputs.vr_rr,
+        sigr,
+        inputs.vx_rb,
+        inputs.vr_rb,
+        gamb,
+    )
+
+    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
+    Wx_rotor = vx_rotor .+ inputs.Vinf
+
+    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
+    Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.rotor_panel_centers
+
+    # meridional component
+    Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+
+    # Get the inflow magnitude at the rotor as the combination of all the components
+    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+
+    # initialize circulation and source panel strengths
+    calculate_gamma_sigma!(Gamr, sigr, inputs.blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor)
+
+    # - Calculate net circulation and enthalpy jumps - #
+    Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
+    H_tilde = calculate_enthalpy_jumps(Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B)
+
+    # - update wake strengths - #
+    calculate_wake_vortex_strengths!(
+        gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
     )
 
     # - Combine initial states into one vector - #

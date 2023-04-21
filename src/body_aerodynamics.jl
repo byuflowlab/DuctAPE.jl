@@ -4,7 +4,9 @@
 Calculate body vortex strengths
 kid is kutta indices, where kid[1] is the row/column to keep and kid[2] is the row/column to subtract from kid[1] and then delete (1 is the first duct panel, and 2 is the Nth duct panel)
 """
-function calculate_body_vortex_strengths!(gamb, A_bb, b_bf, kidx, A_bw, wake_gamma, A_br, sigr)
+function calculate_body_vortex_strengths!(
+    gamb, A_bb, b_bf, kidx, A_bw, wake_gamma, A_br, sigr
+)
 
     # problem dimensions
     nwake = length(A_bw) # number of wake sheets
@@ -27,7 +29,7 @@ function calculate_body_vortex_strengths!(gamb, A_bb, b_bf, kidx, A_bw, wake_gam
     for jrotor in 1:nrotor
 
         # get induced velocity in the x-direction
-        b .-= A_br[jrotor] * view(sigr, : , jrotor)
+        b .-= A_br[jrotor] * view(sigr, :, jrotor)
     end
 
     #return the residual, rather than solving the linear system.
@@ -40,6 +42,7 @@ function calculate_body_vortex_strengths!(gamb, A_bb, b_bf, kidx, A_bw, wake_gam
     # return ldiv!(gamb, factorize(A_bb), b)
 
     view(gamb, :) .= solve_body_system(A_bb, b, kidx)
+    # gamb[:] .= solve_body_system(A_bb, b, kidx)
 
     return nothing
 end
@@ -47,21 +50,32 @@ end
 """
 Apply Kutta Condition and Solve Linear System
 """
-function solve_body_system(A, b, kidx)
+function solve_body_system(A_bb, b, kidx)
 
     # - Apply the Subtractive Kutta Condition - #
     for i in 1:length(kidx[:, 1])
         # subtract "Nth" row from "1st" row
-        A[kidx[i, 1], :] .-= A[kidx[i, 2], :]
+        A_bb[kidx[i, 1], :] .-= A_bb[kidx[i, 2], :]
         # subtract "Nth" column from "1st" column
-        A[:, kidx[i, 1]] .-= A[:, kidx[i, 2]]
+        A_bb[:, kidx[i, 1]] .-= A_bb[:, kidx[i, 2]]
         # subtract "Nth" row from "1st" row
         b[kidx[i, 1]] -= b[kidx[i, 2]]
     end
 
+    # Solve with subtractive Kutta Condition applied
     x = ImplicitAD.implicit_linear(
-        A[1:end .∉ [kidx[:, 2]], 1:end .∉ [kidx[:, 2]]], b[1:end .∉ [kidx[:, 2]]]
+        A_bb[1:end .∉ [kidx[:, 2]], 1:end .∉ [kidx[:, 2]]], b[1:end .∉ [kidx[:, 2]]]
     )
+
+    # - put things back after solving - #
+    for i in 1:length(kidx[:, 1])
+        # add "Nth" row back to "1st" row
+        A_bb[kidx[i, 1], :] .+= A_bb[kidx[i, 2], :]
+        # add "Nth" column back to "1st" column
+        A_bb[:, kidx[i, 1]] .+= A_bb[:, kidx[i, 2]]
+        # add "Nth" row back to "1st" row
+        b[kidx[i, 1]] += b[kidx[i, 2]]
+    end
 
     # recover the final body panel strength value
     for i in 1:length(kidx[:, 1])

@@ -142,20 +142,27 @@ end
 
 """
 """
-function states_to_outputs_body_only(panel_strengths, panels, mesh)
+function states_to_outputs_body_only(panel_strengths, panels, mesh; Vinf=1.0)
 
     # - Rename for Convenience - #
-    idx = mesh.panel_indices
+    idx = mesh.affect_panel_indices
 
     # - Extract surface velocity - #
-    #= Note that we here assume that we are using the subtractive method for the kutta conditions, requiring us to recover the solution value for the last panel (trailing edge upper side).  We also assume here that the indexing starts at the lower side trailing edge and proceeds clockwise back to the upper side trailing edge.  Otherwise, not only will the solver not have worked, there will also be an indexing error here
-    =#
-    vs_duct = [panel_strengths[idx[1][1:(end - 1)]]; -panel_strengths[idx[1][1]]]
-    vs_hub = panel_strengths[idx[2] .- 1]
+    if length(idx) == 1
+        vs_duct = panel_strengths[idx[1]]
 
-    # - Calculate surface pressure - #
-    cp_duct = 1.0 .- (vs_duct) .^ 2
-    cp_hub = 1.0 .- (vs_hub) .^ 2
+        # - Calculate surface pressure - #
+        cp_duct = 1.0 .- (vs_duct ./ Vinf) .^ 2
 
-    return vs_duct, vs_hub, cp_duct, cp_hub
+        return vs_duct ./ Vinf, cp_duct
+    else
+        vs_duct = panel_strengths[idx[1]]
+        vs_hub = panel_strengths[idx[2] .- 1]
+
+        # - Calculate surface pressure - #
+        cp_duct = 1.0 .- (vs_duct ./ Vinf) .^ 2
+        cp_hub = 1.0 .- (vs_hub ./ Vinf) .^ 2
+
+        return vs_duct ./ Vinf, vs_hub ./ Vinf, cp_duct, cp_hub
+    end
 end

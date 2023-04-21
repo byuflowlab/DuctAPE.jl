@@ -123,13 +123,15 @@ Updates the state variables.
 """
 function residual!(res, states, inputs, p)
 
+    updated_states = copy(states)
+
     # - Extract commonly used items from precomputed inputs - #
     blade_elements = inputs.blade_elements
     rpc = inputs.rotor_panel_centers
     Vinf = inputs.Vinf
 
-    # - Extract States - #
-    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+    # - Extract updated_states - #
+    gamb, gamw, Gamr, sigr = extract_state_variables(updated_states, inputs)
 
     # - Fill out wake strengths - #
     wake_vortex_strengths = fill_out_wake_strengths(
@@ -189,9 +191,17 @@ function residual!(res, states, inputs, p)
     )
 
     # Update Residual
-    res .= states .- res
+    res .= updated_states .- states
 
     return nothing
+end
+
+function residual(states, inputs, p)
+    res = copy(states)
+
+    residual!(res, states, inputs, p)
+
+    return res
 end
 
 """

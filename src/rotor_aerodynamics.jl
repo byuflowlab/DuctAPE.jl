@@ -24,7 +24,7 @@ function calculate_induced_velocities_on_rotors(
 
     # problem dimensions
     _, nrotor = size(Gamr) # number of rotors
-    _, nwake = size(vx_rw) # number of wake sheets
+    nwake, _ = size(gamw) # number of wake sheets
 
     # initialize outputs
     vx = similar(Gamr) .= 0 # axial induced velocity
