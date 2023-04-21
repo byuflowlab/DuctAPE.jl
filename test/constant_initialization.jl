@@ -28,6 +28,7 @@
         chords=[0.5, 0.25],
         twists=[50.0, 10.0],
         airfoils=[nothing, nothing],
+        tip_gap=0.0,
     )
 
     # stator parameters
@@ -37,30 +38,32 @@
     rotor_parameters = [rotor1_parameters, rotor2_parameters]
 
     nwake_sheets = 10
+    nhub_inlet = 4
+    nduct_inlet = 5
+    npanels = [5; 5; 20] #this is a vector of number of panels between discrete points after the first rotor, e.g. between the rotor and the duct trailing edge and between the duct trailing edge and the end of the wake
+    wake_length = 1.0
+
+    paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
 
     constants = DuctTAPE.precomputed_inputs(
         duct_coordinates,
         hub_coordinates,
+        paneling_constants,
         rotor_parameters, #vector of named tuples
         (Vinf=5.0,);#freestream;
-        wake_length=1.0,
-        nwake_sheets=nwake_sheets,
         finterp=fm.linear,
-        nhub_inlet=4,
-        nduct_inlet=5,
-        npanels=[5; 5; 20], #this is a vector of number of panels between discrete points after the first rotor, e.g. between the rotor and the duct trailing edge and between the duct trailing edge and the end of the wake
     )
 
     # Test that the rotor tips and hubs ended up in the right places.
-    for i in 1:(constants.num_rotors)
-        @test constants.blade_elements[i].Rhub == constants.rotor_panel_edges[i][1]
-        @test constants.blade_elements[i].Rtip == constants.rotor_panel_edges[i][end]
+    for irotor in 1:(constants.num_rotors)
+        @test constants.blade_elements[irotor].Rhub ==
+            constants.rotor_panel_edges[1, irotor]
+        @test constants.blade_elements[irotor].Rtip ==
+            constants.rotor_panel_edges[end, irotor]
     end
+
     @test constants.blade_elements[1].Rhub == 0.25
     @test constants.blade_elements[1].Rtip == 1.5
     @test constants.blade_elements[2].Rhub == 0.125
-
     @test constants.blade_elements[2].Rtip == 1.625
-
-
 end

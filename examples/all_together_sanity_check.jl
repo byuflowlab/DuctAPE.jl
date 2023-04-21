@@ -13,7 +13,7 @@ const dt = DuctTAPE
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
 const ccb = CCBlade
-include("run_ccblade.jl")
+# include("run_ccblade.jl")
 
 # using Plots
 # pyplot()
@@ -314,7 +314,8 @@ savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
 
 strengths = dt.analyze_propulsor(
     duct_coordinates,
-    hub_coordinates,
+    # hub_coordinates,
+    nothing,
     paneling_constants,
     rotor_parameters,
     freestream;
