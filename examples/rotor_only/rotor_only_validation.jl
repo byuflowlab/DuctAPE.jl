@@ -22,7 +22,7 @@ include("run_ccblade.jl")
 # using Plots
 # pyplot()
 # using LaTeXStrings
-include("../plots_default.jl")
+include("../../plots_default.jl")
 
 #---------------------------------#
 #             Geometry            #
@@ -71,7 +71,6 @@ twists = propgeom[:, 3] * pi / 180
 # plot(r, twists, xlabel=L"r/R_\mathrm{tip}", ylabel="twist (deg)",label="",ylim=(0.0,39),xlim=(0.0,1.0))
 # savefig("examples/apc_twist.pdf")
 
-
 # use a NACA 4412 airfoils
 #=
 Note here we are using the CCBlade functionality to define the airfoils data function.
@@ -106,7 +105,9 @@ asound = 341.0 #m/s
 #---------------------------------#
 
 # Rotor Parameters
-rotor_parameters = [(; xrotor, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega)]
+rotor_parameters = [(;
+    xrotor, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega
+)]
 
 # Freestream Parameters
 freestream = (; rho, mu, asound, Vinf=5.0)
@@ -191,6 +192,8 @@ for i in 1:nJ
             params.blade_elements[1],
             (; freestream..., Vinf=Vinf_sweep),
         )
+
+        # states, dtout, aero = dt.analyze_propulsor(rotor_parameters, (; freestream..., Vinf=Vinf_sweep))
     end
 
     CT[i] = aero.CT

@@ -36,7 +36,7 @@ function solve_rotor_only(inputs, params)
         method=:newton,
         iterations=25, #keep iterations low for initial testing/plotting
         show_trace=true,
-        linesearch=BackTracking(; maxstep=1e6),
+        # linesearch=BackTracking(; maxstep=1e6),
     )
 
     # - Overwrite the convergence flag in the parameters - #

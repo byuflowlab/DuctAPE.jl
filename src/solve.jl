@@ -1,31 +1,30 @@
 """
-    analyze_propulsor(x, fx=x->x; tol=1e-8, maxiter=100)
+    analyze_propulsor(x, fx=x->x; maximum_linesearch_step_size=1e-8, iteration_limit=100)
 
 Version of `analyze_propeller` designed for sensitivity analysis.  `x` is an input vector
 and `fx` is a function which returns the standard input arguments to `analyze_propeller`.
 """
-function analyze_propulsor(x, fx=x -> x; tol=1e-8, maxiter=100)
+# function analyze_propulsor(x, fx=x -> x; maximum_linesearch_step_size=1e-8, iteration_limit=15)
 
-    # convergence flag
-    converged = [false]
+#     # convergence flag
+#     converged = [false]
 
-    # define parameters
-    p = (; fx, tol, maxiter, converged)
+#     # define parameters
+#     p = (; fx, maximum_linesearch_step_size, iteration_limit, converged)
 
-    # compute state variables (updates convergence flag internally)
-    states = ImplicitAD.implicit(solve, residual!, x, p)
+#     # compute state variables (updates convergence flag internally)
+#     states = ImplicitAD.implicit(solve, residual!, x, p)
 
-    # TODO: post-processing using the converged state variables
+#     # TODO: post-processing using the converged state variables
 
-    # return solution
-    return states, converged[1]
-end
+#     # return solution
+#     return states, converged[1]
+# end
 
 """
     analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, freestream;
-        tol=1e-8, maxiter=100)
+        maximum_linesearch_step_size=1e-8, iteration_limit=100)
 
-Finds a converged set of circulation and source and vortex strengths for a ducted propeller.
 """
 function analyze_propulsor(
     duct_coordinates,
@@ -33,8 +32,8 @@ function analyze_propulsor(
     paneling_constants,
     rotor_parameters,
     freestream;
-    tol=1e-8,
-    maxiter=100,
+    maximum_linesearch_step_size=1e10,
+    iteration_limit=100,
 )
 
     # use empty input vector
@@ -54,7 +53,7 @@ function analyze_propulsor(
     converged = [false]
 
     # define parameters
-    p = (; fx, tol, maxiter, converged)
+    p = (; fx, maximum_linesearch_step_size, iteration_limit, converged)
 
     # compute various panel and circulation strenghts (updates convergence flag internally)
     strengths = solve(x, p)
@@ -72,7 +71,7 @@ end
 function solve(x, p)
 
     # unpack parameters
-    (; fx, tol, maxiter, converged) = p
+    (; fx, maximum_linesearch_step_size, iteration_limit, converged) = p
 
     # unpack inputs
     (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream) = fx(
@@ -85,10 +84,10 @@ function solve(x, p)
     )
 
     # calculate initial guess for state variables
-    states = initialize_states(inputs)
+    initial_states = initialize_states(inputs)
 
     # initialize residual vector
-    resid = copy(states)
+    # resid = copy(states)
 
     # - Define closure that allows for parameters - #
     rwrap(r, states) = residual!(r, states, inputs, p)
@@ -100,13 +99,12 @@ function solve(x, p)
     =#
     res = NLsolve.nlsolve(
         rwrap,
-        states;
+        initial_states;
         autodiff=:forward,
         method=:newton,
-        iterations=maxiter, #25, #keep iterations low for initial testing/plotting
+        iterations=iteration_limit,
         show_trace=true,
-        # linesearch=BackTracking(; maxstep=1e6),
-        linesearch=BackTracking(; maxstep=tol),
+        # linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
     )
 
     # save convergence information
@@ -122,20 +120,48 @@ end
 Updates the state variables.
 """
 function residual!(res, states, inputs, p)
-
     updated_states = copy(states)
 
+    update_strengths!(updated_states, inputs, p)
+
+    # Update Residual
+    @. res = updated_states - states
+
+    return nothing
+end
+
+function residual(states, inputs, p)
+    res = copy(states)
+
+    residual!(res, states, inputs, p)
+
+    return res
+end
+
+function update_strengths!(states, inputs, p)
     # - Extract commonly used items from precomputed inputs - #
     blade_elements = inputs.blade_elements
     rpc = inputs.rotor_panel_centers
     Vinf = inputs.Vinf
 
-    # - Extract updated_states - #
-    gamb, gamw, Gamr, sigr = extract_state_variables(updated_states, inputs)
+    # - Extract states - #
+    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
     # - Fill out wake strengths - #
     wake_vortex_strengths = fill_out_wake_strengths(
         gamw, inputs.rotor_indices, inputs.num_wake_x_panels
+    )
+
+    # - Calculate body vortex strengths - #
+    calculate_body_vortex_strengths!(
+        gamb,
+        inputs.A_bb,
+        inputs.b_bf,
+        inputs.kutta_idxs,
+        inputs.A_bw,
+        wake_vortex_strengths,
+        inputs.A_br,
+        sigr,
     )
 
     # - Get the induced velocities at the rotor plane - #
@@ -177,31 +203,7 @@ function residual!(res, states, inputs, p)
     calculate_wake_vortex_strengths!(
         gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
     )
-
-    # - Calculate body vortex strengths - #
-    calculate_body_vortex_strengths!(
-        gamb,
-        inputs.A_bb,
-        inputs.b_bf,
-        inputs.kutta_idxs,
-        inputs.A_bw,
-        wake_vortex_strengths,
-        inputs.A_br,
-        sigr,
-    )
-
-    # Update Residual
-    res .= updated_states .- states
-
     return nothing
-end
-
-function residual(states, inputs, p)
-    res = copy(states)
-
-    residual!(res, states, inputs, p)
-
-    return res
 end
 
 """
