@@ -1,7 +1,7 @@
 """
 """
 function update_body_geometry(
-    duct_coordinates, hub_coordinates, xwake, nhub, nduct_inner; finterp=FLOWMath.akima
+    duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=FLOWMath.akima
 )
 
     # - separate inner and outer duct coordinates - #
@@ -30,7 +30,7 @@ function update_body_geometry(
     new_rhub_grid = finterp(xhub, rhub, new_xhub_grid)
 
     # - update hub geometry between leading edge and rotor - #
-    if isnothing(nduct_inner)
+    if isnothing(nduct_inlet)
         # find the index of the first rotor on the hub
         ridx = searchsortedfirst(xhub, xwake[1])
 
@@ -39,16 +39,16 @@ function update_body_geometry(
         new_rhub = view(rhub, 1:ridx, 2)
     else
         # interpolate hub geometry between leading edge and rotor
-        # new_xhub = range(xhub[1, 1], new_xhub_grid[1], nhub + 1)
+        # new_xhub = range(xhub[1, 1], new_xhub_grid[1], nhub_inlet + 1)
 
         scale = new_xhub_grid[1] - xhub[1]
         transform = xhub[1]
-        new_xhub = scaled_cosine_spacing(nhub + 1, 2 * scale, transform; mypi=pi / 2)
+        new_xhub = scaled_cosine_spacing(nhub_inlet + 1, 2 * scale, transform; mypi=pi / 2)
         new_rhub = finterp(xhub, rhub, new_xhub)
     end
 
     # - update inner duct geometry between leading edge and rotor - #
-    if isnothing(nduct_inner)
+    if isnothing(nduct_inlet)
         # find the index of the first rotor on the duct inside surface
         ridx = length(xduct_inner) - searchsortedfirst(xduct_inner, xwake[1]) + 1
 
@@ -58,20 +58,20 @@ function update_body_geometry(
     else
         # interpolate inner duct geometry between leading edge and rotor
         # new_xduct_inner = range(
-        #     duct_coordinates[dleidx, 1], new_xduct_grid[1], nduct_inner + 1
+        #     duct_coordinates[dleidx, 1], new_xduct_grid[1], nduct_inlet + 1
         # )
 
         scale = new_xduct_grid[1] - duct_coordinates[dleidx, 1]
         transform = duct_coordinates[dleidx, 1]
         new_xduct_inner = scaled_cosine_spacing(
-            nduct_inner + 1, 2 * scale, transform; mypi=pi / 2
+            nduct_inlet + 1, 2 * scale, transform; mypi=pi / 2
         )
 
         new_rduct_inner = finterp(xduct_inner, rduct_inner, new_xduct_inner)
     end
 
     # update outer duct geometry
-    if isnothing(nduct_inner)
+    if isnothing(nduct_inlet)
         new_xduct_outer = xduct_outer
         new_rduct_outer = rduct_outer
     else

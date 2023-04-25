@@ -152,18 +152,6 @@ function update_strengths!(states, inputs, p)
         gamw, inputs.rotor_indices, inputs.num_wake_x_panels
     )
 
-    # - Calculate body vortex strengths - #
-    calculate_body_vortex_strengths!(
-        gamb,
-        inputs.A_bb,
-        inputs.b_bf,
-        inputs.kutta_idxs,
-        inputs.A_bw,
-        wake_vortex_strengths,
-        inputs.A_br,
-        sigr,
-    )
-
     # - Get the induced velocities at the rotor plane - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         blade_elements,
@@ -190,6 +178,18 @@ function update_strengths!(states, inputs, p)
 
     # Get the inflow magnitude at the rotor as the combination of all the components
     Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+
+    # - Calculate body vortex strengths (before updating state dependencies) - #
+    calculate_body_vortex_strengths!(
+        gamb,
+        inputs.A_bb,
+        inputs.b_bf,
+        inputs.kutta_idxs,
+        inputs.A_bw,
+        wake_vortex_strengths,
+        inputs.A_br,
+        sigr,
+    )
 
     # - Update rotor circulation and source panel strengths - #
     calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor)

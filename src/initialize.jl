@@ -168,17 +168,10 @@ function precomputed_inputs(
     # Relax "Grid"
     relax_grid!(xgrid, rgrid; max_iterations=100, tol=1e-9, verbose=false)
 
-    #don't include the dummy sheet used for tip gap if tipgap is present
-    if tip_gaps[1] == 0.0
-        xwakegrid = view(xgrid, :, :)
-        rwakegrid = view(rgrid, :, :)
-    else
-        xwakegrid = view(xgrid, :, 1:(length(rwake) - 1))
-        rwakegrid = view(rgrid, :, 1:(length(rwake) - 1))
-    end
-
     # generate wake sheet paneling
-    wake_vortex_panels = generate_wake_panels(xwakegrid, rwakegrid)
+    wake_vortex_panels = generate_wake_panels(
+        xgrid[:, 1:length(rpe)], rgrid[:, 1:length(rpe)]
+    )
 
     #------------------------------------------#
     # Generate Rotor Panels and Blade Elements #
@@ -186,8 +179,9 @@ function precomputed_inputs(
 
     # rotor source panel objects
     rotor_source_panels = [
-        generate_rotor_panels(rotor_parameters[i].xrotor, rwakegrid[rotor_indices[i], :])
-        for i in 1:nrotor
+        generate_rotor_panels(
+            rotor_parameters[i].xrotor, rgrid[rotor_indices[i], 1:length(rpe)]
+        ) for i in 1:nrotor
     ]
 
     # rotor blade element objects
@@ -344,7 +338,7 @@ function precomputed_inputs(
     ## -- Miscellaneous Values for Indexing -- ##
 
     # - Get rotor panel edges and centers - #
-    rotor_panel_edges = [rwakegrid[rotor_indices[i], :] for i in 1:nrotor]
+    rotor_panel_edges = [rgrid[rotor_indices[i], 1:length(rpe)] for i in 1:nrotor]
     rotor_panel_centers = [rotor_source_panels[i].panel_center[:, 2] for i in 1:nrotor]
 
     rotor_panel_edges = reduce(hcat, rotor_panel_edges)
@@ -440,12 +434,16 @@ function initialize_states(inputs)
         inputs.vr_rb,
         gamb,
     )
+    vx_rotor = zeros(TF, size(sigr))
+    vr_rotor = zeros(TF, size(sigr))
+    vtheta_rotor = zeros(TF, size(sigr))
 
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
     Wx_rotor = vx_rotor .+ inputs.Vinf
 
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.rotor_panel_centers
+    Wtheta_rotor =
+        vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.rotor_panel_centers
 
     # meridional component
     Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
@@ -454,15 +452,27 @@ function initialize_states(inputs)
     Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
 
     # initialize circulation and source panel strengths
-    calculate_gamma_sigma!(Gamr, sigr, inputs.blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor)
+    calculate_gamma_sigma!(
+        Gamr, sigr, inputs.blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor
+    )
 
-    # - Calculate net circulation and enthalpy jumps - #
-    Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
-    H_tilde = calculate_enthalpy_jumps(Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B)
+    # # - Calculate net circulation and enthalpy jumps - #
+    # Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
+    # H_tilde = calculate_enthalpy_jumps(
+    #     Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B
+    # )
 
-    # - update wake strengths - #
-    calculate_wake_vortex_strengths!(
-        gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
+    # # - update wake strengths - #
+    # calculate_wake_vortex_strengths!(
+    #     gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
+    # )
+
+    gamw = initialize_wake_vortex_strengths(
+        inputs.Vinf,
+        Gamr,
+        inputs.blade_elements.Omega,
+        inputs.blade_elements.B,
+        inputs.rotor_panel_edges,
     )
 
     # - Combine initial states into one vector - #
