@@ -156,7 +156,8 @@ J = collect(range(0.1, 0.6; step=0.025))  # advance ratio
 nJ = length(J)
 
 # Initialize Inputs
-inputs, params = dt.initialize_rotor_states(rotor_parameters, freestream)
+wake_length=3.0
+inputs, params = dt.initialize_rotor_states(rotor_parameters, freestream, wake_length)
 
 Gamr, gamw, sigr = dt.extract_rotor_states(inputs, params)
 
@@ -186,27 +187,27 @@ for i in 1:nJ
         states = dt.solve_rotor_only(inputs, (; params..., Vinf=Vinf_sweep))
         Gamrconv, gamwconv, sigrconv = dt.extract_rotor_states(states, params)
 
-        pG = plot(
-            Gamr, params.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial"
-        )
-        plot!(pG, Gamrconv, params.rotor_panel_centers; label="converged")
-        savefig("examples/rotor_only/Circulation_J$(J[i]).pdf")
+        # pG = plot(
+        #     Gamr, params.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial"
+        # )
+        # plot!(pG, Gamrconv, params.rotor_panel_centers; label="converged")
+        # savefig("examples/rotor_only/Circulation_J$(J[i]).pdf")
 
-        pw = plot(
-            gamw,
-            params.rotor_panel_edges;
-            xlabel=L"\gamma_\theta",
-            ylabel="r",
-            label="initial",
-        )
-        plot!(pw, gamwconv, params.rotor_panel_edges; label="converged")
-        savefig("examples/rotor_only/wake-strengths_J$(J[i]).pdf")
+        # pw = plot(
+        #     gamw,
+        #     params.rotor_panel_edges;
+        #     xlabel=L"\gamma_\theta",
+        #     ylabel="r",
+        #     label="initial",
+        # )
+        # plot!(pw, gamwconv, params.rotor_panel_edges; label="converged")
+        # savefig("examples/rotor_only/wake-strengths_J$(J[i]).pdf")
 
-        ps = plot(
-            sigr, params.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="initial"
-        )
-        plot!(ps, sigrconv, params.rotor_panel_centers; label="converged")
-        savefig("examples/rotor_only/source-strenghts_J$(J[i]).pdf")
+        # ps = plot(
+        #     sigr, params.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="initial"
+        # )
+        # plot!(ps, sigrconv, params.rotor_panel_centers; label="converged")
+        # savefig("examples/rotor_only/source-strenghts_J$(J[i]).pdf")
 
         # - Post Process - #
         dtout = dt.states_to_outputs_rotor_only(states, (; params..., Vinf=Vinf_sweep))
@@ -234,178 +235,178 @@ for i in 1:nJ
     CQccb[i] = ccbouts.CQ
     out = ccbouts.out
 
-    ### --- PLOTS --- ###
-    #Uncomment to see all the details
-    println()
-    println("Plotting...")
-    println()
+    #### --- PLOTS --- ###
+    ##Uncomment to see all the details
+    #println()
+    #println("Plotting...")
+    #println()
 
-    # double check geometry
-    plot(
-        dtout.r,
-        dtout.chord;
-        xlabel="r",
-        ylabel="chords",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(r * Rtip, chords; label="CCBlade")
-    savefig("examples/rotor_only/chord_J$(J[i]).pdf")
+    ## double check geometry
+    #plot(
+    #    dtout.r,
+    #    dtout.chord;
+    #    xlabel="r",
+    #    ylabel="chords",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(r * Rtip, chords; label="CCBlade")
+    #savefig("examples/rotor_only/chord_J$(J[i]).pdf")
 
-    plot(
-        dtout.r,
-        dtout.twist * 180 / pi;
-        ylabel="twists (deg)",
-        xlabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(r * Rtip, twists * 180 / pi; label="CCBlade")
-    savefig("examples/rotor_only/twist_J$(J[i]).pdf")
+    #plot(
+    #    dtout.r,
+    #    dtout.twist * 180 / pi;
+    #    ylabel="twists (deg)",
+    #    xlabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(r * Rtip, twists * 180 / pi; label="CCBlade")
+    #savefig("examples/rotor_only/twist_J$(J[i]).pdf")
 
-    # axial induced velocity
-    plot(
-        dtout.vx_rotor,
-        rbe / Rtip;
-        xlabel=L"v_x",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.u, r; label="CCBlade")
-    savefig("examples/rotor_only/vx_J$(J[i]).pdf")
+    ## axial induced velocity
+    #plot(
+    #    dtout.vx_rotor,
+    #    rbe / Rtip;
+    #    xlabel=L"v_x",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.u, r; label="CCBlade")
+    #savefig("examples/rotor_only/vx_J$(J[i]).pdf")
 
-    # tangential induced velocity
-    plot(
-        dtout.vtheta_rotor,
-        rbe / Rtip;
-        xlabel=L"v_\theta",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.v, r; label="CCBlade")
-    savefig("examples/rotor_only/vtheta_J$(J[i]).pdf")
+    ## tangential induced velocity
+    #plot(
+    #    dtout.vtheta_rotor,
+    #    rbe / Rtip;
+    #    xlabel=L"v_\theta",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.v, r; label="CCBlade")
+    #savefig("examples/rotor_only/vtheta_J$(J[i]).pdf")
 
-    # tangential total velocity
-    plot(
-        dtout.Wθ,
-        rbe / Rtip;
-        xlabel=L"W_\theta",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.v .- Omega * r * Rtip, r; label="CCBlade")
-    savefig("examples/rotor_only/Wtheta_J$(J[i]).pdf")
+    ## tangential total velocity
+    #plot(
+    #    dtout.Wθ,
+    #    rbe / Rtip;
+    #    xlabel=L"W_\theta",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.v .- Omega * r * Rtip, r; label="CCBlade")
+    #savefig("examples/rotor_only/Wtheta_J$(J[i]).pdf")
 
-    # meridional total velocity
-    plot(
-        dtout.Wm,
-        rbe / Rtip;
-        xlabel=L"W_m",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.u .+ Vinf_sweep, r; label="CCBlade")
-    savefig("examples/rotor_only/Wm_J$(J[i]).pdf")
+    ## meridional total velocity
+    #plot(
+    #    dtout.Wm,
+    #    rbe / Rtip;
+    #    xlabel=L"W_m",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.u .+ Vinf_sweep, r; label="CCBlade")
+    #savefig("examples/rotor_only/Wm_J$(J[i]).pdf")
 
-    # inflow angle
-    plot(
-        dtout.phi * 180 / pi,
-        rbe / Rtip;
-        xlabel=L"\phi~(deg)",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.phi * 180 / pi, r; label="CCBlade")
-    savefig("examples/rotor_only/phi_J$(J[i]).pdf")
+    ## inflow angle
+    #plot(
+    #    dtout.phi * 180 / pi,
+    #    rbe / Rtip;
+    #    xlabel=L"\phi~(deg)",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.phi * 180 / pi, r; label="CCBlade")
+    #savefig("examples/rotor_only/phi_J$(J[i]).pdf")
 
-    # angle of attack
-    plot(
-        dtout.alpha * 180 / pi,
-        rbe / Rtip;
-        xlabel=L"\alpha~(deg)",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.alpha * 180 / pi, r; label="CCBlade")
-    savefig("examples/rotor_only/alpha_J$(J[i]).pdf")
+    ## angle of attack
+    #plot(
+    #    dtout.alpha * 180 / pi,
+    #    rbe / Rtip;
+    #    xlabel=L"\alpha~(deg)",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.alpha * 180 / pi, r; label="CCBlade")
+    #savefig("examples/rotor_only/alpha_J$(J[i]).pdf")
 
-    # inflow magnitude
-    plot(
-        dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctTAPE", title="J = $(J[i])"
-    )
-    plot!(out.W, r; label="CCBlade")
-    savefig("examples/rotor_only/W_J$(J[i]).pdf")
+    ## inflow magnitude
+    #plot(
+    #    dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctTAPE", title="J = $(J[i])"
+    #)
+    #plot!(out.W, r; label="CCBlade")
+    #savefig("examples/rotor_only/W_J$(J[i]).pdf")
 
-    # Lift
-    plot(
-        dtout.cl,
-        rbe / Rtip;
-        xlabel=L"c_\ell",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
-    plot!(dtout.clout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
-    plot!(out.cl, r; label="CCBlade")
-    savefig("examples/rotor_only/cl_J$(J[i]).pdf")
+    ## Lift
+    #plot(
+    #    dtout.cl,
+    #    rbe / Rtip;
+    #    xlabel=L"c_\ell",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
+    #plot!(dtout.clout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
+    #plot!(out.cl, r; label="CCBlade")
+    #savefig("examples/rotor_only/cl_J$(J[i]).pdf")
 
-    # Drag
-    plot(
-        dtout.cd,
-        rbe / Rtip;
-        xlabel=L"c_d",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(dtout.cdin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
-    plot!(dtout.cdout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
-    plot!(out.cd, r; label="CCBlade")
-    savefig("examples/rotor_only/cd_J$(J[i]).pdf")
+    ## Drag
+    #plot(
+    #    dtout.cd,
+    #    rbe / Rtip;
+    #    xlabel=L"c_d",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(dtout.cdin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
+    #plot!(dtout.cdout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
+    #plot!(out.cd, r; label="CCBlade")
+    #savefig("examples/rotor_only/cd_J$(J[i]).pdf")
 
-    # normal coeff
-    plot(
-        aero.cn,
-        rbe / Rtip;
-        xlabel=L"c_n",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.cn, r; label="CCBlade")
-    savefig("examples/rotor_only/cn_J$(J[i]).pdf")
+    ## normal coeff
+    #plot(
+    #    aero.cn,
+    #    rbe / Rtip;
+    #    xlabel=L"c_n",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.cn, r; label="CCBlade")
+    #savefig("examples/rotor_only/cn_J$(J[i]).pdf")
 
-    # tangential coeff
-    plot(
-        aero.ct,
-        rbe / Rtip;
-        xlabel=L"c_t",
-        ylabel="r",
-        label="DuctTAPE",
-        title="J = $(J[i])",
-    )
-    plot!(out.ct, r; label="CCBlade")
-    savefig("examples/rotor_only/ct_J$(J[i]).pdf")
+    ## tangential coeff
+    #plot(
+    #    aero.ct,
+    #    rbe / Rtip;
+    #    xlabel=L"c_t",
+    #    ylabel="r",
+    #    label="DuctTAPE",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(out.ct, r; label="CCBlade")
+    #savefig("examples/rotor_only/ct_J$(J[i]).pdf")
 
-    # Distributed Loads
-    plot(
-        rbe / Rtip,
-        aero.Np;
-        xlabel="r/Rtip",
-        label="Normal load per unit length",
-        title="J = $(J[i])",
-    )
-    plot!(r, out.Np; label="CCBlade Np")
-    plot!(rbe / Rtip, aero.Tp; label="Tangential load per unit length")
-    plot!(r, out.Tp; label="CCBlade Tp")
-    savefig("examples/rotor_only/distributed_loads_J$(J[i]).pdf")
+    ## Distributed Loads
+    #plot(
+    #    rbe / Rtip,
+    #    aero.Np;
+    #    xlabel="r/Rtip",
+    #    label="Normal load per unit length",
+    #    title="J = $(J[i])",
+    #)
+    #plot!(r, out.Np; label="CCBlade Np")
+    #plot!(rbe / Rtip, aero.Tp; label="Tangential load per unit length")
+    #plot!(r, out.Tp; label="CCBlade Tp")
+    #savefig("examples/rotor_only/distributed_loads_J$(J[i]).pdf")
 end
 
 #---------------------------------#
