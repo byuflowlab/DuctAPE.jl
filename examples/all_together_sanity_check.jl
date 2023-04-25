@@ -13,7 +13,7 @@ const dt = DuctTAPE
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
 const ccb = CCBlade
-# include("run_ccblade.jl")
+include("rotor_only/run_ccblade.jl")
 
 using FLOWMath
 
@@ -35,7 +35,7 @@ we have this dimensional such that it's easy for the user to know how the limits
 =#
 # tip_gap = 0.0
 # tip_gap = 0.1*Rtip #10 percent tip gap
-tip_gap = 1.0
+tip_gap = 100.0
 
 # Blade Hub radius, in meters
 Rhub = 0.10 * Rtip
@@ -88,7 +88,7 @@ airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(rnondim))
 #=
 Note: the solver with interpolate the rotor data using the given number of blade element inputs
 =#
-nwake_sheets = 15
+nwake_sheets = 18
 
 # non-dimensional wake length
 wake_length = 1.0
@@ -96,10 +96,10 @@ wake_length = 1.0
 # number of panels between discrete points
 # in this case, 5 panels between rotors, 5 panels between last rotor and hub te, 3 panels between hub and duct te's, and 20 panels from duct TE to end of wake
 # npanels = [10; 5; 25]
-npanels = [10; 25]
+npanels = [40; 80]
 
-nhub_inlet = 20
-nduct_inlet = 20
+nhub_inlet = 40
+nduct_inlet = 40
 #---------------------------------#
 #       Operating Conditions      #
 #---------------------------------#
@@ -215,21 +215,24 @@ gamd = 1.0 .- (gamb[1:length(dp)] ./ Vinf) .^ 2
 
 pb = plot(dp, gamd; xlabel="x", ylabel="cp", label="initial duct surface pressure")
 # plot!(pb, hp, gamh ; label="initial hub surface pressure")
-savefig(pb, "examples/body-init-sanity-check.pdf")
+# savefig(pb, "examples/body-init-sanity-check.pdf")
 
 ## -- check rotor circulation and source initial strengths -- ##
-pG = plot(Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r")
-savefig(pG, "examples/rotorcirculation-init-sanity-check.pdf")
+pG = plot(Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial")
+# savefig(pG, "examples/rotorcirculation-init-sanity-check.pdf")
 
-ps = plot(sigr, inputs.rotor_panel_centers; xlabel=L"\sigma", ylabel="r")
-savefig(ps, "examples/rotorsources-init-sanity-check.pdf")
+ps = plot(sigr, inputs.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="initial")
+# savefig(ps, "examples/rotorsources-init-sanity-check.pdf")
 
-pw = plot(gamw, inputs.rotor_panel_edges; xlabel=L"\gamma_\theta", ylabel="r")
-savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
+pw = plot(
+    gamw, inputs.rotor_panel_edges; xlabel=L"\gamma_\theta", ylabel="r", label="initial"
+)
+# savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
 
 #---------------------------------#
 #           Run Analysis          #
 #---------------------------------#
+ccbouts = run_ccblade(Vinf)
 
 for i in 1:3
     # - Extract commonly used items from precomputed inputs - #
@@ -322,10 +325,6 @@ for i in 1:3
         label="iter$i",
     )
 end
-savefig(pb, "examples/body-init-sanity-check.pdf")
-savefig(pG, "examples/rotorcirculation-init-sanity-check.pdf")
-savefig(ps, "examples/rotorsources-init-sanity-check.pdf")
-savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
 
 strengths = dt.analyze_propulsor(
     duct_coordinates,
@@ -334,6 +333,31 @@ strengths = dt.analyze_propulsor(
     paneling_constants,
     rotor_parameters,
     freestream;
-    tol=1e-8,
-    maxiter=100,
 )
+gamb, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+gamd = 1.0 .- (gamb[1:length(dp)] ./ Vinf) .^ 2
+# gamh = 1.0 .- (gamb[(length(dp) + 1):end]./Vinf).^2
+
+plot!(pb, dp, gamd; xlabel="x", ylabel="cp", label="converged duct surface pressure")
+# plot!(pb, hp, gamh ; label="iter hub surface pressure")
+
+## -- check rotor circulation and source initial strengths -- ##
+plot!(pG, Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="converged")
+plot!(pG, ccbouts.circ, inputs.rotor_panel_centers; label="CCBlade, rotor only")
+
+plot!(ps, sigr, inputs.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="converged")
+
+plot!(
+    pw,
+    gamw,
+    inputs.rotor_panel_edges;
+    xlabel=L"\gamma_\theta",
+    ylabel="r",
+    label="converged",
+)
+
+savefig(pb, "examples/body-init-sanity-check.pdf")
+savefig(pG, "examples/rotorcirculation-init-sanity-check.pdf")
+savefig(ps, "examples/rotorsources-init-sanity-check.pdf")
+savefig(pw, "examples/wakegamma-init-sanity-check.pdf")
+

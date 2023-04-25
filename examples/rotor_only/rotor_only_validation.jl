@@ -156,8 +156,10 @@ J = collect(range(0.1, 0.6; step=0.025))  # advance ratio
 nJ = length(J)
 
 # Initialize Inputs
-wake_length=3.0
-inputs, params = dt.initialize_rotor_states(rotor_parameters, freestream, wake_length)
+wake_length = 1.0
+inputs, params = dt.initialize_rotor_states(
+    rotor_parameters, freestream; wake_length=wake_length
+)
 
 Gamr, gamw, sigr = dt.extract_rotor_states(inputs, params)
 

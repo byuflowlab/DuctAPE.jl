@@ -44,5 +44,7 @@ function run_ccblade(Vinf)
     T, Q = thrusttorque(rotor, sections, out)
     eff, CT, CQ = nondim(T, Q, Vinf, Omega, rho, rotor, "propeller")
 
-    return (;eff, CT, CQ, out)
+    circ = 0.5.*out.cl.*out.W.*chord
+
+    return (;eff, CT, CQ, out, circ)
 end
