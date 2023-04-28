@@ -46,5 +46,5 @@ function run_ccblade(Vinf)
 
     circ = 0.5.*out.cl.*out.W.*chord
 
-    return (;eff, CT, CQ, out, circ)
+    return (;eff, CT, CQ, out, circ, r)
 end
