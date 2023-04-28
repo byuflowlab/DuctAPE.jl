@@ -9,7 +9,7 @@ Authors: Judd Mehr,
 using DuctTAPE
 const dt = DuctTAPE
 
-include("../plots_default.jl")
+include("../../plots_default.jl")
 
 #---------------------------------#
 #        Define Coordinates       #
@@ -23,7 +23,7 @@ The file containing the duct coordinates contains the following geometry items:
 - r_duct : r-coordinates of duct geometry defined from trailing edge to trailing edge clockwise
 note in this case, we include the radial offset of the duct since we have no rotor tip radius to define the duct radial location.
 =#
-include("../test/data/naca_662-015.jl")
+include("../../test/data/naca_662-015.jl")
 duct_coordinates = [x_duct r_duct]
 
 ##### ----- Panels ----- #####
@@ -87,8 +87,8 @@ vs_duct, cp_duct = dt.states_to_outputs_body_only(
 #note that we already have the x-locations associated with the outputs as the panel center locations of the geometry.
 
 # - Plot Surface Pressure Coefficients - #
-plot(; xlabel="x/c", ylabel=L"c_p", yflip=true)
-plot!(body_panels[1].panel_center[:, 1], cp_duct; label="Duct")
-plot!(pressurexupper, pressureupper; seriestype=:scatter, label="Experimental Outer")
-plot!(pressurexlower, pressurelower; seriestype=:scatter, label="Experimental Inner")
-savefig("examples/duct-only-surface-pressure.pdf")
+pb = plot(; xlabel="x/c", ylabel=L"c_p", yflip=true)
+plot!(pb,body_panels[1].panel_center[:, 1], cp_duct; label="Duct")
+plot!(pb,pressurexupper, pressureupper; seriestype=:scatter, label="Experimental Outer")
+plot!(pb,pressurexlower, pressurelower; seriestype=:scatter, label="Experimental Inner")
+savefig("examples/duct-only-surface-pressure-validation.pdf")
