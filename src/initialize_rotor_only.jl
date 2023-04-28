@@ -66,9 +66,6 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
     xrange = range(
         rotor_parameters[1].xrotor, rotor_parameters[1].xrotor + wake_length * D; step=dr
     )
-    # xrange = range(0.0, 1.0; step=dr)
-    # xrange = [0.25, 0.275, 0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5, 0.52, 0.54, 0.56
-    # , 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.92, 0.94, 0.96, 0.98, 1.0]
 
     # - Put together the initial grid point matrices - #
     #=

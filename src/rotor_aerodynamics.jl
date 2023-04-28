@@ -109,10 +109,18 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 
 Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and Vθ)
 """
-function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W)
+function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=false)
 
     # problem dimensions
     nr, nrotor = size(Gamr) #num radial stations, num rotors
+
+    if debug
+        # initialize extra outputs
+        phidb = zeros(eltype(Gamr), size(Gamr))
+        alphadb = zeros(eltype(Gamr), size(Gamr))
+        cldb = zeros(eltype(Gamr), size(Gamr))
+        cddb = zeros(eltype(Gamr), size(Gamr))
+    end
 
     # loop through rotors
     for irotor in 1:nrotor
@@ -128,7 +136,8 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W)
             Ω = blade_elements[irotor].Omega # rotation rate
 
             # calculate angle of attack
-            alpha = twist - atan(Wm[ir, irotor], -Wθ[ir, irotor])
+            phi = atan(Wm[ir, irotor], -Wθ[ir, irotor])
+            alpha = twist - phi
 
             # look up lift and drag data for the nearest two input sections
             # TODO: this breaks rotor aero tests... need to update those.
@@ -147,10 +156,21 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W)
 
             # calculate source strength
             sigr[ir, irotor] = B / (4 * pi * r) * W[ir, irotor] * c * cd
+
+            if debug
+                phidb[ir, irotor] = phi
+                alphadb[ir, irotor] = alpha
+                cldb[ir, irotor] = cl
+                cddb[ir, irotor] = cd
+            end
         end
     end
 
-    return Gamr, sigr
+    if debug
+        return Gamr, sigr, phidb, alphadb, cldb, cddb
+    else
+        return Gamr, sigr
+    end
 end
 
 """
