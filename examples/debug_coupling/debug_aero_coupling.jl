@@ -21,9 +21,9 @@ include("../../plots_default.jl")
 include("../../test/compare_objects.jl")
 
 #plot flags
-plot_inputs = true
-plot_initialization = true
-plot_analysis = true
+plot_inputs = false
+plot_initialization = false
+plot_analysis = false
 
 ######################################################################
 #                                                                    #
@@ -75,11 +75,11 @@ end
 #        Initialize States        #
 #---------------------------------#
 if !plot_initialization
-    states = dt.initialize_states(inputs)
+    initial_states = dt.initialize_states(inputs)
 else
     include("debug_state_initialization.jl")
 
-    @assert all(states .== dt.initialize_states(inputs))
+    # @assert all(initial_states .== dt.initialize_states(inputs))
 end
 
 #---------------------------------#
@@ -87,19 +87,17 @@ end
 #---------------------------------#
 
 if !plot_analysis
-    strengths = dt.analyze_propulsor(
+    strengths, convergeflag = dt.analyze_propulsor(
         duct_coordinates,
         # hub_coordinates,
         nothing,
         paneling_constants,
         rotor_parameters,
         freestream;
-        tol=1e-8,
-        maxiter=100,
     )
 else
     if !plot_initialization
-        gamb, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+        gamb, gamw, Gamr, sigr = dt.extract_state_variables(initial_states, inputs)
         dp = inputs.body_panels[1].panel_center[:, 1]
         # hp = inputs.body_panels[2].panel_center[:, 1]
         gamd = 1.0 .- (gamb[1:length(dp)] ./ Vinf) .^ 2
@@ -132,16 +130,17 @@ else
     end
     include("debug_analysis.jl")
 end
+# strengths, convergeflag = dt.analyze_propulsor(
+#     duct_coordinates,
+#     # hub_coordinates,
+#     nothing,
+#     paneling_constants,
+#     rotor_parameters,
+#     freestream;
+# )
 
-strengths = dt.analyze_propulsor(
-    duct_coordinates,
-    # hub_coordinates,
-    nothing,
-    paneling_constants,
-    rotor_parameters,
-    freestream;
-)
-gamb, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+dp = inputs.body_panels[1].panel_center[:, 1]
+gamb, gamw, Gamr, sigr = dt.extract_state_variables(strengths, inputs)
 gamd = 1.0 .- (gamb[1:length(dp)] ./ Vinf) .^ 2
 # gamh = 1.0 .- (gamb[(length(dp) + 1):end]./Vinf).^2
 
@@ -150,6 +149,10 @@ plot!(pb, dp, gamd; xlabel="x", ylabel="cp", label="converged duct surface press
 
 ## -- check rotor circulation and source initial strengths -- ##
 plot!(pG, Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="converged")
+
+include("../rotor_only/run_ccblade.jl")
+ccbouts = run_ccblade(inputs.Vinf)
+plot!(pG, ccbouts.circ, rnondim * Rtip; label="CCBlade")
 
 plot!(ps, sigr, inputs.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="converged")
 
@@ -166,4 +169,3 @@ savefig(pb, "examples/debug_coupling/body-strengths-converged.pdf")
 savefig(pG, "examples/debug_coupling/circulation-converged.pdf")
 savefig(ps, "examples/debug_coupling/sources-converged.pdf")
 savefig(pw, "examples/debug_coupling/wake-strengths-converged.pdf")
-

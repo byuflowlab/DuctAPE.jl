@@ -1,4 +1,3 @@
-
 # - Initialize body vortex strengths (rotor-off linear problem) - #
 gamb = dt.solve_body_system(inputs.A_bb, inputs.b_bf, inputs.kutta_idxs) # get circulation strengths from solving body to body problem
 
@@ -35,9 +34,9 @@ vx_rotor, vr_rotor, vtheta_rotor = dt.calculate_induced_velocities_on_rotors(
     inputs.vr_rb,
     gamb,
 )
-vx_rotor = zeros(size(sigr))
-vr_rotor = zeros(size(sigr))
-vtheta_rotor = zeros(size(sigr))
+# vx_rotor = zeros(size(sigr))
+# vr_rotor = zeros(size(sigr))
+# vtheta_rotor = zeros(size(sigr))
 
 # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
 Wx_rotor = vx_rotor .+ inputs.Vinf
@@ -56,35 +55,35 @@ dt.calculate_gamma_sigma!(
     Gamr, sigr, inputs.blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor
 )
 
-# # - Calculate net circulation and enthalpy jumps - #
-# Gamma_tilde = dt.calculate_net_circulation(Gamr, inputs.blade_elements.B)
-# H_tilde = dt.calculate_enthalpy_jumps(
-#     Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B
-# )
-
-# # - update wake strengths - #
-# dt.calculate_wake_vortex_strengths!(
-#     gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
-# )
-
-# try initilizing to freestream instead...
-gamw = dt.initialize_wake_vortex_strengths(
-    inputs.Vinf,
-    Gamr,
-    inputs.blade_elements.Omega,
-    inputs.blade_elements.B,
-    inputs.rotor_panel_edges,
+# - Calculate net circulation and enthalpy jumps - #
+Gamma_tilde = dt.calculate_net_circulation(Gamr, inputs.blade_elements.B)
+H_tilde = dt.calculate_enthalpy_jumps(
+    Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B
 )
 
+# - update wake strengths - #
+dt.calculate_wake_vortex_strengths!(
+    gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
+)
+
+# # try initilizing to freestream instead...
+# gamw = dt.initialize_wake_vortex_strengths(
+#     inputs.Vinf,
+#     Gamr,
+#     inputs.blade_elements.Omega,
+#     inputs.blade_elements.B,
+#     inputs.rotor_panel_edges,
+# )
+
 # - Combine initial states into one vector - #
-states = vcat(
+initial_states = vcat(
     gamb,               # body vortex panel strengths
     reduce(vcat, gamw), # wake vortex sheet strengths
     reduce(vcat, Gamr), # rotor circulation strengths
     reduce(vcat, sigr), # rotor source panel strengths
 )
 
-gamb, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+gamb, gamw, Gamr, sigr = dt.extract_state_variables(initial_states, inputs)
 
 ## -- check body surface velocity initialiation -- ##
 dp = inputs.body_panels[1].panel_center[:, 1]
