@@ -14,13 +14,16 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
     ##### ----- Panels ----- #####
     # - Rotor Panel Edges - #
     # rotor_panel_edges = range(rotor_parameters.Rhub, rotor_parameters.Rtip, rotor_parameters.nbe .+ 1)
-    rotor_panel_edges = [range(rotor_parameters[i].Rhub, rotor_parameters[i].Rtip, nbe + 1) for i in 1:nrotor]
+    rotor_panel_edges = [
+        range(rotor_parameters[i].Rhub, rotor_parameters[i].Rtip, nbe + 1) for i in 1:nrotor
+    ]
     rotor_panel_edges = reduce(hcat, rotor_panel_edges)
 
     # - Generate Panels - #
     # note there will be nbe panels, but we require nbe+1 panel edges.
     rotor_source_panels = [
-        generate_rotor_panels(rotor_parameters[i].xrotor, rotor_panel_edges[:, i]) for i in 1:nrotor
+        generate_rotor_panels(rotor_parameters[i].xrotor, rotor_panel_edges[:, i]) for
+        i in 1:nrotor
     ]
 
     #get rotor panel radial center points for convenience
@@ -60,10 +63,12 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
 
     # - Define x grid spacing - #
     #note that by using step rather than length, we aren't guarenteed to have the wake as long as we want, but it will be close.
-    xrange = range(0.0, wake_length * D; step=dr)
+    xrange = range(
+        rotor_parameters[1].xrotor, rotor_parameters[1].xrotor + wake_length * D; step=dr
+    )
     # xrange = range(0.0, 1.0; step=dr)
     # xrange = [0.25, 0.275, 0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5, 0.52, 0.54, 0.56
-# , 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.92, 0.94, 0.96, 0.98, 1.0]
+    # , 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.92, 0.94, 0.96, 0.98, 1.0]
 
     # - Put together the initial grid point matrices - #
     #=
@@ -177,7 +182,11 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
     Gamma, sigr = calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
 
     gamma_wake = initialize_wake_vortex_strengths(
-        freestream.Vinf, Gamma, rotor_parameters.Omega, rotor_parameters.B, rotor_panel_edges
+        freestream.Vinf,
+        Gamma,
+        rotor_parameters.Omega,
+        rotor_parameters.B,
+        rotor_panel_edges,
     )
 
     # - Set Up States and Parameters - #
@@ -195,6 +204,11 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
         num_rotors=1,
         rotor_panel_edges=rotor_panel_edges,
         rotor_panel_centers=rotor_panel_centers,
+        wake_vortex_panels,
+        rotor_source_panels,
+        xrange,
+        x_grid_points,
+        r_grid_points,
     )
 
     return states, params

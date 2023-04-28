@@ -31,6 +31,7 @@ function precomputed_inputs(
     rotor_parameters, #vector of named tuples
     freestream;
     finterp=fm.akima,
+    debug=false
 )
 
     # ## -- Rename for Convenience -- ##
@@ -276,7 +277,7 @@ function precomputed_inputs(
     # - wake to body - #
     A_bw = [
         assemble_induced_velocity_on_body_matrix(
-            mesh_bw[i, j], [wake_vortex_panels[j]], body_panels; singularity="vortex"
+            mesh_bw[i, j], [wake_vortex_panels[j]], body_panels; singularity="vortex", debug=debug
         ) for i in 1:1, j in 1:length(wake_vortex_panels)
     ]
 
@@ -378,10 +379,12 @@ function precomputed_inputs(
         # operating conditions
         Vinf=freestream.Vinf, # freestream parameters
         # - Debugging/Plotting
-        t_duct_coordinates,
-        rp_hub_coordinates,
+        duct_coordinates=t_duct_coordinates,
+        hub_coordinates=rp_hub_coordinates,
         body_panels,
         rotor_source_panels,
+        wakexgrid=xgrid[:, 1:length(rpe)],
+        wakergrid=rgrid[:, 1:length(rpe)],
         wake_vortex_panels,
         mesh_bb,
         mesh_rb,
@@ -434,9 +437,10 @@ function initialize_states(inputs)
         inputs.vr_rb,
         gamb,
     )
-    vx_rotor = zeros(TF, size(sigr))
-    vr_rotor = zeros(TF, size(sigr))
-    vtheta_rotor = zeros(TF, size(sigr))
+
+    # vx_rotor = zeros(TF, size(sigr))
+    # vr_rotor = zeros(TF, size(sigr))
+    # vtheta_rotor = zeros(TF, size(sigr))
 
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
     Wx_rotor = vx_rotor .+ inputs.Vinf
@@ -456,24 +460,24 @@ function initialize_states(inputs)
         Gamr, sigr, inputs.blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor
     )
 
-    # # - Calculate net circulation and enthalpy jumps - #
-    # Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
-    # H_tilde = calculate_enthalpy_jumps(
-    #     Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B
-    # )
-
-    # # - update wake strengths - #
-    # calculate_wake_vortex_strengths!(
-    #     gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
-    # )
-
-    gamw = initialize_wake_vortex_strengths(
-        inputs.Vinf,
-        Gamr,
-        inputs.blade_elements.Omega,
-        inputs.blade_elements.B,
-        inputs.rotor_panel_edges,
+    # - Calculate net circulation and enthalpy jumps - #
+    Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
+    H_tilde = calculate_enthalpy_jumps(
+        Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B
     )
+
+    # - update wake strengths - #
+    calculate_wake_vortex_strengths!(
+        gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
+    )
+
+    # gamw = initialize_wake_vortex_strengths(
+    #     inputs.Vinf,
+    #     Gamr,
+    #     inputs.blade_elements.Omega,
+    #     inputs.blade_elements.B,
+    #     inputs.rotor_panel_edges,
+    # )
 
     # - Combine initial states into one vector - #
     states = vcat(

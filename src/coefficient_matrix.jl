@@ -70,7 +70,7 @@ function assemble_induced_velocity_matrices(
 end
 
 function assemble_induced_velocity_on_body_matrix(
-    mesh, influence_panels, affect_panels; singularity="vortex"
+    mesh, influence_panels, affect_panels; singularity="vortex", debug=false
 )
 
     ### --- SETUP --- ###
@@ -101,7 +101,7 @@ function assemble_induced_velocity_on_body_matrix(
                     ### --- Calculate influence coefficient --- ###
                     if singularity == "vortex"
                         amat[i, j] = calculate_ring_vortex_influence_on_body(
-                            affect_panels[m], influence_panels[n], mesh, i, j
+                            affect_panels[m], influence_panels[n], mesh, i, j; debug=debug
                         )
                     elseif singularity == "source"
                         amat[i, j] = calculate_ring_source_influence_on_body(
@@ -150,7 +150,10 @@ function get_kutta_indices(body_of_revolution, mesh)
 
     for m in findall(m -> m == false, body_of_revolution)
         ### --- GetKutta Condition Indices --- ###
-        kutta_idxs[kutta_count, :] = [mesh.affect_panel_indices[m][1]; mesh.affect_panel_indices[m][end]]
+        kutta_idxs[kutta_count, :] = [
+            mesh.affect_panel_indices[m][1]
+            mesh.affect_panel_indices[m][end]
+        ]
         kutta_count += 1
     end
 
@@ -212,7 +215,7 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
     return vx * panelj.panel_length[m2p_j[j]], vr * panelj.panel_length[m2p_j[j]]
 end
 
-function calculate_ring_vortex_influence_on_body(paneli, panelj, mesh, i, j)
+function calculate_ring_vortex_influence_on_body(paneli, panelj, mesh, i, j; debug=false)
     m2p_j = mesh.mesh2panel_influence
     m2p_i = mesh.mesh2panel_affect
 
@@ -234,6 +237,12 @@ function calculate_ring_vortex_influence_on_body(paneli, panelj, mesh, i, j)
             vx * cos(paneli.panel_angle[m2p_i[i]]) + vr * sin(paneli.panel_angle[m2p_i[i]])
         ) * panelj.panel_length[m2p_j[j]]
     else
+        if debug
+            println("Self-induced velocity being used at:")
+            println("wake panel, ", i, "at [x,r] = ", paneli.panel_center[m2p_i[i], :])
+            println("body panel, ", j, "at [x,r] = ", panelj.panel_center[m2p_j[j], :])
+            println("where m = ", mesh.m[i, j])
+        end
         #same panel -> self induction equation
 
         #NOTE: this is not eqn 4.22 in Lewis.  Their code uses this expression which seems to avoid singularities better.  Not sure how they changed the second term (from dj/4piR to -R) though; perhaps the R in the text != the curvature in the code (radiusofcurvature vs curvature).

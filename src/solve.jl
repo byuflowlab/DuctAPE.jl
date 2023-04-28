@@ -32,7 +32,8 @@ function analyze_propulsor(
     paneling_constants,
     rotor_parameters,
     freestream;
-    maximum_linesearch_step_size=1e10,
+    debug=false,
+    maximum_linesearch_step_size=1e6,
     iteration_limit=100,
 )
 
@@ -47,6 +48,7 @@ function analyze_propulsor(
             paneling_constants,
             rotor_parameters,
             freestream,
+            debug,
         )
 
     # convergence flag
@@ -56,12 +58,12 @@ function analyze_propulsor(
     p = (; fx, maximum_linesearch_step_size, iteration_limit, converged)
 
     # compute various panel and circulation strenghts (updates convergence flag internally)
-    strengths = solve(x, p)
+    strengths, inputs, initials = solve(x, p)
 
     # TODO: post-processing using the converged strengths
 
     # return solution
-    return strengths, p.converged[1]
+    return strengths, inputs, initials, p.converged[1]
 end
 
 """
@@ -74,17 +76,23 @@ function solve(x, p)
     (; fx, maximum_linesearch_step_size, iteration_limit, converged) = p
 
     # unpack inputs
-    (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream) = fx(
+    (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream, debug) = fx(
         x
     )
 
     # initialize various inputs used in analysis
     inputs = precomputed_inputs(
-        duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream
+        duct_coordinates,
+        hub_coordinates,
+        paneling_constants,
+        rotor_parameters,
+        freestream;
+        debug=debug,
     )
 
     # calculate initial guess for state variables
     initial_states = initialize_states(inputs)
+    initials = copy(initial_states)
 
     # initialize residual vector
     # resid = copy(states)
@@ -104,14 +112,14 @@ function solve(x, p)
         method=:newton,
         iterations=iteration_limit,
         show_trace=true,
-        # linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
+        linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
     )
 
     # save convergence information
     converged[1] = NLsolve.converged(res)
 
     # return solution
-    return res.zero
+    return res.zero, inputs, initials
 end
 
 """
