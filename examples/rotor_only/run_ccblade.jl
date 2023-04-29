@@ -30,7 +30,8 @@ function run_ccblade(Vinf)
     r = propgeom[:, 1] * Rtip
     chord = propgeom[:, 2] * Rtip
     theta = propgeom[:, 3] * pi / 180
-    af = AlphaAF("test/data/naca4412.dat")
+    # af = AlphaAF("test/data/naca4412.dat")
+    af = AlphaAF("test/data/xrotor_af_test.dat")
     sections = Section.(r, chord, theta, Ref(af))
 
     Omega = 5400 * pi / 30  # convert to rad/s

@@ -16,6 +16,7 @@ using FLOWMath
 const fm = FLOWMath
 
 include("../plots_default.jl")
+include("debug_outputs.jl")
 
 function full_clean(;
     tip_gap=[0.1],
@@ -24,7 +25,8 @@ function full_clean(;
     wake_length=1.0,
     discscale=1,
     duct_file=project_dir * "/test/data/naca_662-015.jl",
-    airfoil_file=project_dir * "/test/data/naca4412.dat",
+    airfoil_file=project_dir * "/test/data/xrotor_af_test.dat",
+    debug=true
 )
     #---------------------------------#
     #         ROTOR Geometry          #
@@ -107,7 +109,7 @@ function full_clean(;
     #         Paneling Options        #
     #---------------------------------#
 
-    nwake_sheets = 15
+    nwake_sheets = 10
 
     # non-dimensional wake length
     # wake_length = 1.0
@@ -185,6 +187,10 @@ function full_clean(;
                 convlabel = "Converged"
             else
                 convlabel = "NOT converged"
+            end
+
+            if debug
+                debug_outputs(strengths, inputs; suffix ="xrotor$(xr)_tipgap$(tip_gap[i])")
             end
 
             #extract solution
@@ -463,7 +469,7 @@ function full_clean(;
     return nothing
 end
 
-full_clean(; xrotor=[0.25], tip_gap=[0.0], discscale=1, npanels_inlet=10, wake_length=1.0)
+full_clean(; xrotor=[0.25], tip_gap=[1.0; 0.1; 0.01; 0.0], discscale=1, npanels_inlet=10, wake_length=1.0)
 
 # full_clean(; tip_gap=[0.1; 0.01; 0.001; 0.0], discscale=1)
 

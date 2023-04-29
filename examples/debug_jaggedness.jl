@@ -102,6 +102,11 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     #save
     savefig(pa, "examples/angledist.pdf")
 
+    # plot chord distribution
+    pc = plot(; xlabel="Chords", ylabel="r")
+    plot!(pc, blade_elements.chords, inputs.rotor_panel_centers)
+    savefig(pc, "examples/chorddist.pdf")
+
     ### --- generate cl data plot --- ###
     # plot airfoil data!
     aoas = range(minimum(alpha), maximum(alpha), length(alpha) * 5)
@@ -162,9 +167,30 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     savefig(pGt, "examples/Gammatildedist.pdf")
 
     # - update wake strengths - #
-    dt.calculate_wake_vortex_strengths!(
-        gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
+    gamw, dhtilde, dgammatilde2, kdb = dt.calculate_wake_vortex_strengths!(
+        gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde; debug=true
     )
+
+    #---------------------------------#
+    #       Plot more wake stuff      #
+    #---------------------------------#
+    println("Plotting More Wake Stuff")
+
+    pdh = plot(; xlabel=L"\Delta \widetilde{H}", ylabel="r")
+    plot!(pdh, dhtilde, inputs.rotor_panel_edges; label="")
+    savefig(pdh, "examples/DeltaHtildedist.pdf")
+
+    pdg2 = plot(; xlabel=L"\Delta \widetilde{\Gamma}^2", ylabel="r")
+    plot!(pdg2, dgammatilde2, inputs.rotor_panel_edges; label="")
+    savefig(pdg2, "examples/DeltaGamtilde2dist.pdf")
+
+    pk = plot(; xlabel="constant dgamma is multiplied by", ylabel="r")
+    plot!(pk, kdb, inputs.rotor_panel_edges; label="")
+    savefig(pk, "examples/K.pdf")
+
+    pKGt = plot(; xlabel=L"K\Delta \widetilde{\Gamma}^2", ylabel="r")
+    plot!(pKGt, kdb .* dgammatilde2, inputs.rotor_panel_edges; label="")
+    savefig(pKGt, "examples/KdG2.pdf")
 
     #---------------------------------#
     #          Plot States            #
@@ -216,7 +242,7 @@ B = 2
 
 # Blade section non-dimensional radial positions, chords lengths, and local twists angles in degrees
 propgeom = [
-    0.15 0.130 32.76
+    # 0.15 0.130 32.76
     0.20 0.149 37.19
     0.25 0.173 33.54
     0.30 0.189 29.25
@@ -244,8 +270,13 @@ chords = propgeom[:, 2] * Rtip
 #
 twists = propgeom[:, 3] * pi / 180
 
+plot(rnondim, chords ./ Rtip; xlabel="r/R", ylabel="c/R")
+savefig("examples/chord_dist_raw.pdf")
+plot(rnondim, twists * 180 / pi; xlabel="r/R", ylabel="Twist (deg)")
+savefig("examples/twist_dist_raw.pdf")
+
 # use a NACA 4412 airfoils
-airfoil_file = project_dir * "/test/data/naca4412.dat"
+airfoil_file = project_dir * "/test/data/xrotor_af_test.dat"
 airfoils = fill(ccb.AlphaAF(airfoil_file), length(rnondim))
 
 #Vinf
@@ -254,12 +285,11 @@ Vinf = 5.0
 # rotor rotation rate in rad/s
 Omega = 5400 * pi / 30  # convert from RPM to rad/s
 
-nwake_sheets = 15
+nwake_sheets = 10
 
 #---------------------------------#
 #          Define Inputs          #
 #---------------------------------#
-
 # Rotor Parameters
 rotor_parameters = [(;
     xrotor=0.0,

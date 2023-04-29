@@ -19,7 +19,8 @@ function calculate_induced_velocities_on_rotors(
     sigr,
     vx_rb=nothing,
     vr_rb=nothing,
-    gamb=nothing,
+    gamb=nothing;
+    debug=false,
 )
 
     # problem dimensions
@@ -31,6 +32,19 @@ function calculate_induced_velocities_on_rotors(
     vr = similar(Gamr) .= 0 # radial induced velocity
     vθ = similar(Gamr) .= 0 # tangential induced velocity
 
+    if debug
+
+        # initialize outputs
+        vxb = similar(Gamr) .= 0 # axial induced velocity
+        vrb = similar(Gamr) .= 0 # radial induced velocity
+
+        vxw = similar(Gamr) .= 0 # axial induced velocity
+        vrw = similar(Gamr) .= 0 # radial induced velocity
+
+        vxr = similar(Gamr) .= 0 # axial induced velocity
+        vrr = similar(Gamr) .= 0 # radial induced velocity
+    end
+
     # loop through each affected rotor
     for irotor in 1:nrotor
 
@@ -38,18 +52,33 @@ function calculate_induced_velocities_on_rotors(
         if gamb != nothing
             @views vx[:, irotor] .+= vx_rb[irotor] * gamb
             @views vr[:, irotor] .+= vr_rb[irotor] * gamb
+
+            if debug
+                @views vxb[:, irotor] .+= vx_rb[irotor] * gamb
+                @views vrb[:, irotor] .+= vr_rb[irotor] * gamb
+            end
         end
 
         # add wake induced velocities
         for jwake in 1:nwake
             @views vx[:, irotor] .+= vx_rw[irotor, jwake] * gamw[jwake, :]
             @views vr[:, irotor] .+= vr_rw[irotor, jwake] * gamw[jwake, :]
+
+            if debug
+                @views vxw[:, irotor] .+= vx_rw[irotor, jwake] * gamw[jwake, :]
+                @views vrw[:, irotor] .+= vr_rw[irotor, jwake] * gamw[jwake, :]
+            end
         end
 
         # add rotor induced velocities
         for jrotor in 1:nrotor
             @views vx[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
             @views vr[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
+
+            if debug
+                @views vxr[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
+                @views vrr[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
+            end
         end
 
         # add self-induced tangential velocity
@@ -66,7 +95,11 @@ function calculate_induced_velocities_on_rotors(
     end
 
     # return raw induced velocities
-    return vx, vr, vθ
+    if debug
+        return vx, vr, vθ, vxb, vrb, vxw, vrw, vxr, vrr
+    else
+        return vx, vr, vθ
+    end
 end
 
 """

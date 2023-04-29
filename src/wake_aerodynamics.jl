@@ -65,10 +65,16 @@ Calculate wake vortex strengths
 `Rr_wake::Matrix{Float}` : radial locations of the wake sheets at each rotor plane. (synonymous with the rotor source panel edge locations)
 `Vmr::Matrix{Float}` : meridional velocity at each radial position on the rotor planes (the meridional velocity at the rotor source panel centers, i.e., at the blade element radial stations)
 """
-function calculate_wake_vortex_strengths!(gamw, Rr_wake, Vmr, Γ_tilde, H_tilde)
+function calculate_wake_vortex_strengths!(gamw, Rr_wake, Vmr, Γ_tilde, H_tilde; debug=false)
 
     # number of streamwise and radial panels
     nr, nrotor = size(gamw)
+
+    if debug
+        dhtilde = zeros(eltype(gamw), size(gamw))
+        dgammatilde2 = zeros(eltype(gamw), size(gamw))
+        kdb = zeros(eltype(gamw), size(gamw))
+    end
 
     #loop  through rotors where wake strengths are generated
     for irotor in 1:nrotor
@@ -114,11 +120,21 @@ function calculate_wake_vortex_strengths!(gamw, Rr_wake, Vmr, Γ_tilde, H_tilde)
 
                 # wake strength density taken from rotor to next rotor constant along streamlines
                 gamw[ir, irotor] = (K * ΔΓ2 + ΔH) / Vm_avg
+
+                if debug
+                    kdb[ir, irotor] = K
+                    dhtilde[ir, irotor] = ΔH
+                    dgammatilde2[ir, irotor] = ΔΓ2
+                end
             end
         end
     end
 
-    return gamw
+    if debug
+        return gamw, dhtilde, dgammatilde2, kdb
+    else
+        return gamw
+    end
 end
 
 """
