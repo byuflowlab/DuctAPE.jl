@@ -1,32 +1,37 @@
 #---------------------------------#
 #             Includes            #
 #---------------------------------#
-project_dir = dirname(dirname(@__FILE__))
+
+project_dir = dirname(dirname(dirname(@__FILE__)))
+if project_dir == ""
+    project_dir = "."
+end
+
+include(project_dir * "/plots_default.jl")
 
 using DuctTAPE
 const dt = DuctTAPE
-include("duct_only/run_duct.jl")
+include(project_dir * "/examples/duct_only/run_duct.jl")
 
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
 const ccb = CCBlade
-include("rotor_only/run_ccblade.jl")
+include(project_dir * "/examples/rotor_only/run_ccblade.jl")
 
 using FLOWMath
 const fm = FLOWMath
 
-include("../plots_default.jl")
-include("debug_outputs.jl")
+include(project_dir * "/examples/debug_together/debug_outputs.jl")
 
 function full_clean(;
-    tip_gap=[0.1],
+    tip_gaps=[0.1],
     xrotor=[0.25],
     npanels_inlet=10,
     wake_length=1.0,
     discscale=1,
     duct_file=project_dir * "/test/data/naca_662-015.jl",
     airfoil_file=project_dir * "/test/data/xrotor_af_test.dat",
-    debug=true
+    debug=true,
 )
     #---------------------------------#
     #         ROTOR Geometry          #
@@ -34,6 +39,7 @@ function full_clean(;
 
     # Blade Tip Radius, in meters
     Rtip = 10 / 2.0 * 0.0254  # inches to meters
+    tg = tip_gaps.*Rtip/100.0
 
     # Blade Hub radius, in meters
     Rhub = 0.10 * Rtip
@@ -143,7 +149,7 @@ function full_clean(;
 
         ###### LOOP ######
 
-        for i in 1:length(tip_gap)
+        for i in 1:length(tg)
             #---------------------------------#
             #          Define Inputs          #
             #---------------------------------#
@@ -158,7 +164,7 @@ function full_clean(;
                 airfoils,
                 Rtip,
                 Rhub,
-                tip_gap=tip_gap[i],
+                tip_gap=tg[i],
                 B,
                 Omega,
             )]
@@ -190,7 +196,7 @@ function full_clean(;
             end
 
             if debug
-                debug_outputs(strengths, inputs; suffix ="xrotor$(xr)_tipgap$(tip_gap[i])")
+                debug_outputs(strengths, inputs; suffix="xrotor$(xr)_tipgap$(tip_gaps[i])%Rtip")
             end
 
             #extract solution
@@ -215,7 +221,7 @@ function full_clean(;
             ##### ----- Plot rotor circulation distribution ----- #####
             # initialize plot
             pG = plot(;
-                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gap[i])"
+                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gaps[i])%Rtip"
             )
 
             # plot solution
@@ -251,7 +257,9 @@ function full_clean(;
 
             #save
             savefig(
-                pG, "examples/rotorcirculation-check_xrotor$(xr)_tipgap$(tip_gap[i]).pdf"
+                pG,
+                project_dir *
+                "/examples/debug_together/rotorcirculation-check_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             ##### ----- Plot duct surface velocity ----- #####
@@ -268,7 +276,7 @@ function full_clean(;
 
             # initialize plot
             pb = plot(;
-                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gap[i])",
+                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gaps[i])%Rtip",
                 xlabel="x",
                 ylabel=L"\frac{V_s}{V_\infty}",
             )
@@ -327,11 +335,15 @@ function full_clean(;
             )
 
             #save
-            savefig(pb, "examples/body-velocity_xrotor$(xr)_tipgap$(tip_gap[i]).pdf")
+            savefig(
+                pb,
+                project_dir *
+                "/examples/debug_together/body-velocity_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+            )
 
             ##### ----- Plot Wake Strengths ----- #####
             pg = plot(;
-                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gap[i])",
+                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gaps[i])%Rtip",
                 xlabel=L"\gamma_\theta",
                 ylabel="r",
             )
@@ -349,11 +361,15 @@ function full_clean(;
             )
 
             #save
-            savefig(pg, "examples/wake-strength_xrotor$(xr)_tipgap$(tip_gap[i]).pdf")
+            savefig(
+                pg,
+                project_dir *
+                "/examples/debug_together/wake-strength_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+            )
 
             ##### ----- Plot Source Strengths ----- #####
             ps = plot(;
-                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gap[i])",
+                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gaps[i])%Rtip",
                 xlabel=L"\sigma",
                 ylabel="r",
             )
@@ -372,14 +388,16 @@ function full_clean(;
 
             #save
             savefig(
-                ps, "examples/source-strength-check_xrotor$(xr)_tipgap$(tip_gap[i]).pdf"
+                ps,
+                project_dir *
+                "/examples/debug_together/source-strength-check_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             ##### ----- Plot GEOMETRY ----- #####
             #initialize plot
             pgeom = plot(;
                 aspectratio=1,
-                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gap[i])",
+                title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gaps[i])%Rtip",
             )
             plot!(
                 pgeom,
@@ -428,7 +446,8 @@ function full_clean(;
             end
 
             savefig(
-                "examples/precomputed-rotor-wake-geometry_xrotor$(xr)_tipgap$(tip_gap[i]).pdf",
+                project_dir *
+                "/examples/debug_together/precomputed-rotor-wake-geometry_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             # plot body panels
@@ -459,7 +478,8 @@ function full_clean(;
 
             savefig(
                 pgeom,
-                "examples/precomputed-full-geometry_xrotor$(xr)_tipgap$(tip_gap[i]).pdf",
+                project_dir *
+                "/examples/debug_together/precomputed-full-geometry_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
         end #for tip gap
     end #for xrotor
@@ -469,12 +489,19 @@ function full_clean(;
     return nothing
 end
 
-full_clean(; xrotor=[0.25], tip_gap=[1.0; 0.1; 0.01; 0.0], discscale=1, npanels_inlet=10, wake_length=1.0)
+full_clean(;
+    xrotor=[0.25],
+    # tip_gaps=[100; 75; 50; 25; 20; 17.5; 15, 12.5 10; 7.5; 5; 2.5; 1; 0],
+    tip_gaps=[0.0],
+    discscale=1,
+    npanels_inlet=10,
+    wake_length=1.0,
+)
 
-# full_clean(; tip_gap=[0.1; 0.01; 0.001; 0.0], discscale=1)
+# full_clean(; tg=[0.1; 0.01; 0.001; 0.0], discscale=1)
 
 # ds = [1; 2; 4]
 # # ds = [1]
 # for d in 1:length(ds)
-#     full_clean(; tip_gap=[0.01], discscale=ds[d])
+#     full_clean(; tg=[0.01], discscale=ds[d])
 # end

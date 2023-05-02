@@ -1,15 +1,18 @@
 #---------------------------------#
 #             Includes            #
 #---------------------------------#
-project_dir = dirname(dirname(@__FILE__))
+# project_dir = dirname(dirname(dirname(@__FILE__)))
+# if project_dir == ""
+#     project_dir = "."
+# end
 
-using DuctTAPE
-const dt = DuctTAPE
+# include(project_dir * "/plots_default.jl")
 
-using FLOWMath
-const fm = FLOWMath
+# using DuctTAPE
+# const dt = DuctTAPE
 
-include("../plots_default.jl")
+# using FLOWMath
+# const fm = FLOWMath
 
 function debug_outputs(states, inputs; suffix="")
 
@@ -62,7 +65,7 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pvx, vx_fromrotor, inputs.rotor_panel_centers; label="Due to Rotor (sources)")
 
     #save
-    savefig(pvx, "examples/vxdist" * suffix * ".pdf")
+    savefig(pvx, "examples/debug_together/vxdist" * suffix * ".pdf")
 
     ##### ----- Plot vtheta distribution ----- #####
     # initialize plot
@@ -72,7 +75,7 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pvtheta, vtheta_total, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pvtheta, "examples/vthetadist" * suffix * ".pdf")
+    savefig(pvtheta, "examples/debug_together/vthetadist" * suffix * ".pdf")
 
     ##### ----- Plot vr distribution ----- #####
     # initialize plot
@@ -85,7 +88,7 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pvx, vr_fromrotor, inputs.rotor_panel_centers; label="Due to Rotor (sources)")
 
     #save
-    savefig(pvr, "examples/vrdist" * suffix * ".pdf")
+    savefig(pvr, "examples/debug_together/vrdist" * suffix * ".pdf")
 
     ##### ----- Plot Wx distribution ----- #####
     # initialize plot
@@ -95,7 +98,7 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pwx, Wx_rotor, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pwx, "examples/Wxdist" * suffix * ".pdf")
+    savefig(pwx, "examples/debug_together/Wxdist" * suffix * ".pdf")
 
     ##### ----- Plot Wtheta distribution ----- #####
     # initialize plot
@@ -105,7 +108,7 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pwt, Wtheta_rotor, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pwt, "examples/Wthetadist" * suffix * ".pdf")
+    savefig(pwt, "examples/debug_together/Wthetadist" * suffix * ".pdf")
 
     ##### ----- Plot Wm distribution ----- #####
     # initialize plot
@@ -115,7 +118,7 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pwm, Wm_rotor, inputs.rotor_panel_centers; label="")
     #
     #save
-    savefig(pwm, "examples/Wmdist" * suffix * ".pdf")
+    savefig(pwm, "examples/debug_together/Wmdist" * suffix * ".pdf")
 
     #---------------------------------#
     #  Plot Circulation Constituents  #
@@ -160,23 +163,23 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pa, alpha * 180.0 / pi, inputs.rotor_panel_centers; label="Angle of Attack")
 
     #save
-    savefig(pa, "examples/angledist" * suffix * ".pdf")
+    savefig(pa, "examples/debug_together/angledist" * suffix * ".pdf")
 
     # plot chord distribution
     pc = plot(; xlabel="Chords", ylabel="r")
     plot!(pc, inputs.blade_elements.chords, inputs.rotor_panel_centers)
-    savefig(pc, "examples/chorddist" * suffix * ".pdf")
+    savefig(pc, "examples/debug_together/chorddist" * suffix * ".pdf")
 
     ### --- generate cl data plot --- ###
     # plot airfoil data!
     aoas = range(minimum(alpha), maximum(alpha), length(alpha) * 5)
-    clrange, cdrange = dt.search_polars(airfoils[1], aoas)
+    clrange, cdrange = dt.search_polars(inputs.blade_elements[1].outer_airfoil[1], aoas)
     pafcl = plot(; xlabel="Angle of Attack", ylabel=L"c_\ell")
     plot!(pafcl, aoas * 180.0 / pi, clrange)
-    savefig(pafcl, "examples/cldata" * suffix * ".pdf")
+    savefig(pafcl, "examples/debug_together/cldata" * suffix * ".pdf")
     pafcd = plot(; xlabel="Angle of Attack", ylabel=L"c_d")
     plot!(pafcd, aoas * 180.0 / pi, cdrange)
-    savefig(pafcd, "examples/cddata" * suffix * ".pdf")
+    savefig(pafcd, "examples/debug_together/cddata" * suffix * ".pdf")
     #plot cl and cd
 
     ##### ----- Plot cl distribution ----- #####
@@ -187,7 +190,7 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pcl, cl, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pcl, "examples/cldist" * suffix * ".pdf")
+    savefig(pcl, "examples/debug_together/cldist" * suffix * ".pdf")
 
     ##### ----- Plot cd distribution ----- #####
     # initialize plot
@@ -197,7 +200,54 @@ function debug_outputs(states, inputs; suffix="")
     plot!(pcd, cd, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pcd, "examples/cddist" * suffix * ".pdf")
+    savefig(pcd, "examples/debug_together/cddist" * suffix * ".pdf")
+
+    #---------------------------------#
+    #      Plot Influences on Body    #
+    #---------------------------------#
+    println("Plotting Influences on Body (RHS)")
+
+    bfree, bwake, brotor = dt.calculate_body_vortex_strengths!(
+        gamb,
+        inputs.A_bb,
+        inputs.b_bf,
+        inputs.kutta_idxs,
+        inputs.A_bw,
+        wake_vortex_strengths,
+        inputs.A_br,
+        sigr;
+        debug=true,
+    )
+
+    ##### ----- Plot duct surface velocity ----- #####
+
+    #prepare outputs
+    dp = inputs.body_panels[1].panel_center[:, 1]
+    _, leidx = findmin(dp)
+    gamd = 1.0 .- (gamb[1:length(dp)] ./ inputs.Vinf) .^ 2
+    gamd = gamb[1:length(dp)] ./ inputs.Vinf
+    #split into inner and outer surfaces
+    dpinner = dp[1:leidx]
+    dpouter = dp[(leidx + 1):end]
+    bfreeinner = bfree[1:leidx]
+    bfreeouter = bfree[(leidx + 1):end]
+    bwakeinner = bwake[1:leidx]
+    bwakeouter = bwake[(leidx + 1):end]
+    brotorinner = brotor[1:leidx]
+    brotorouter = brotor[(leidx + 1):end]
+
+    # initialize plot
+    pb = plot(; xlabel="x", ylabel="Linear System RHS components")
+
+    # plot solution
+    plot!(pb, dpinner, bfreeinner; label="inner surface, freestream")
+    plot!(pb, dpouter, bfreeouter; label="outer surface, freestream")
+    plot!(pb, dpinner, bwakeinner; label="inner surface, wake")
+    plot!(pb, dpouter, bwakeouter; label="outer surface, wake")
+    plot!(pb, dpinner, brotorinner; label="inner surface, rotor")
+    plot!(pb, dpouter, brotorouter; label="outer surface, rotor")
+
+    savefig(pb, "examples/debug_together/linearsystemRHS" * suffix * ".pdf")
 
     return nothing
 end

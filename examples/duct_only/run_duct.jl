@@ -1,4 +1,3 @@
-
 function run_duct(duct_coordinates)
     # include("test/data/naca_662-015.jl")
     # duct_coordinates = [x_duct r_duct] .* scale

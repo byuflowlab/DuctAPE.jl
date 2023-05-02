@@ -1,7 +1,7 @@
 #---------------------------------#
 #             Includes            #
 #---------------------------------#
-project_dir = dirname(dirname(@__FILE__))
+project_dir = dirname(dirname(dirname(@__FILE__)))
 
 using DuctTAPE
 const dt = DuctTAPE
@@ -13,11 +13,11 @@ const ccb = CCBlade
 using FLOWMath
 const fm = FLOWMath
 
-include("../plots_default.jl")
+include(project_dir*"/plots_default.jl")
 
 """
 """
-function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0)
+function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0, prefix="")
 
     # get dimensions
     nr = length(inputs.blade_elements[1].rbe)
@@ -51,7 +51,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pwx, Wx_rotor, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pwx, "examples/Wxdist.pdf")
+    savefig(pwx, "examples/debug_jaggedness/"*prefix*"Wxdist.pdf")
 
     ##### ----- Plot Wtheta distribution ----- #####
     # initialize plot
@@ -61,7 +61,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pwt, Wtheta_rotor, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pwt, "examples/Wthetadist.pdf")
+    savefig(pwt, "examples/debug_jaggedness/"*prefix*"Wthetadist.pdf")
 
     ##### ----- Plot Wm distribution ----- #####
     # initialize plot
@@ -71,7 +71,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pwm, Wm_rotor, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pwm, "examples/Wmdist.pdf")
+    savefig(pwm, "examples/debug_jaggedness/"*prefix*"Wmdist.pdf")
 
     # initialize circulation and source panel strengths
     Gamr, sigr, phi, alpha, cl, cd = dt.calculate_gamma_sigma!(
@@ -100,12 +100,12 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pa, alpha * 180.0 / pi, inputs.rotor_panel_centers; label="Angle of Attack")
 
     #save
-    savefig(pa, "examples/angledist.pdf")
+    savefig(pa, "examples/debug_jaggedness/"*prefix*"angledist.pdf")
 
     # plot chord distribution
     pc = plot(; xlabel="Chords", ylabel="r")
     plot!(pc, blade_elements.chords, inputs.rotor_panel_centers)
-    savefig(pc, "examples/chorddist.pdf")
+    savefig(pc, "examples/debug_jaggedness/"*prefix*"chorddist.pdf")
 
     ### --- generate cl data plot --- ###
     # plot airfoil data!
@@ -113,10 +113,10 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     clrange, cdrange = dt.search_polars(airfoils[1], aoas)
     pafcl = plot(; xlabel="Angle of Attack", ylabel=L"c_\ell")
     plot!(pafcl, aoas * 180.0 / pi, clrange)
-    savefig(pafcl, "examples/cldata.pdf")
+    savefig(pafcl, "examples/debug_jaggedness/"*prefix*"cldata.pdf")
     pafcd = plot(; xlabel="Angle of Attack", ylabel=L"c_d")
     plot!(pafcd, aoas * 180.0 / pi, cdrange)
-    savefig(pafcd, "examples/cddata.pdf")
+    savefig(pafcd, "examples/debug_jaggedness/"*prefix*"cddata.pdf")
 
     ##### ----- Plot cl distribution ----- #####
     # initialize plot
@@ -126,7 +126,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pcl, cl, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pcl, "examples/cldist.pdf")
+    savefig(pcl, "examples/debug_jaggedness/"*prefix*"cldist.pdf")
 
     ##### ----- Plot cd distribution ----- #####
     # initialize plot
@@ -136,7 +136,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pcd, cd, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pcd, "examples/cddist.pdf")
+    savefig(pcd, "examples/debug_jaggedness/"*prefix*"cddist.pdf")
 
     # - Calculate net circulation and enthalpy jumps - #
     Gamma_tilde = dt.calculate_net_circulation(Gamr, inputs.blade_elements.B)
@@ -156,7 +156,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(ph, H_tilde, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(ph, "examples/htildedist.pdf")
+    savefig(ph, "examples/debug_jaggedness/"*prefix*"htildedist.pdf")
 
     ##### ----- Plot Net Circulation ----- #####
     pGt = plot(; xlabel=L"\widetilde{\Gamma}", ylabel="r")
@@ -164,7 +164,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pGt, Gamma_tilde, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pGt, "examples/Gammatildedist.pdf")
+    savefig(pGt, "examples/debug_jaggedness/"*prefix*"Gammatildedist.pdf")
 
     # - update wake strengths - #
     gamw, dhtilde, dgammatilde2, kdb = dt.calculate_wake_vortex_strengths!(
@@ -178,19 +178,19 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
 
     pdh = plot(; xlabel=L"\Delta \widetilde{H}", ylabel="r")
     plot!(pdh, dhtilde, inputs.rotor_panel_edges; label="")
-    savefig(pdh, "examples/DeltaHtildedist.pdf")
+    savefig(pdh, "examples/debug_jaggedness/"*prefix*"DeltaHtildedist.pdf")
 
     pdg2 = plot(; xlabel=L"\Delta \widetilde{\Gamma}^2", ylabel="r")
     plot!(pdg2, dgammatilde2, inputs.rotor_panel_edges; label="")
-    savefig(pdg2, "examples/DeltaGamtilde2dist.pdf")
+    savefig(pdg2, "examples/debug_jaggedness/"*prefix*"DeltaGamtilde2dist.pdf")
 
     pk = plot(; xlabel="constant dgamma is multiplied by", ylabel="r")
     plot!(pk, kdb, inputs.rotor_panel_edges; label="")
-    savefig(pk, "examples/K.pdf")
+    savefig(pk, "examples/debug_jaggedness/"*prefix*"K.pdf")
 
     pKGt = plot(; xlabel=L"K\Delta \widetilde{\Gamma}^2", ylabel="r")
     plot!(pKGt, kdb .* dgammatilde2, inputs.rotor_panel_edges; label="")
-    savefig(pKGt, "examples/KdG2.pdf")
+    savefig(pKGt, "examples/debug_jaggedness/"*prefix*"KdG2.pdf")
 
     #---------------------------------#
     #          Plot States            #
@@ -205,7 +205,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pG, Gamr, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(pG, "examples/circulationdist.pdf")
+    savefig(pG, "examples/debug_jaggedness/"*prefix*"circulationdist.pdf")
 
     ##### ----- Plot Wake Strengths ----- #####
     pg = plot(; xlabel=L"\gamma_\theta", ylabel="r")
@@ -214,7 +214,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(pg, gamw, inputs.rotor_panel_edges; label="")
 
     #save
-    savefig(pg, "examples/gammadist.pdf")
+    savefig(pg, "examples/debug_jaggedness/"*prefix*"gammadist.pdf")
 
     ##### ----- Plot Source Strengths ----- #####
     ps = plot(; xlabel=L"\sigma", ylabel="r")
@@ -222,7 +222,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     plot!(ps, sigr, inputs.rotor_panel_centers; label="")
 
     #save
-    savefig(ps, "examples/sigmadist.pdf")
+    savefig(ps, "examples/debug_jaggedness/"*prefix*"sigmadist.pdf")
 
     return nothing
 end
@@ -271,9 +271,9 @@ chords = propgeom[:, 2] * Rtip
 twists = propgeom[:, 3] * pi / 180
 
 plot(rnondim, chords ./ Rtip; xlabel="r/R", ylabel="c/R")
-savefig("examples/chord_dist_raw.pdf")
+savefig("examples/debug_jaggedness/"*prefix*"chord_dist_raw.pdf")
 plot(rnondim, twists * 180 / pi; xlabel="r/R", ylabel="Twist (deg)")
-savefig("examples/twist_dist_raw.pdf")
+savefig("examples/debug_jaggedness/"*prefix*"twist_dist_raw.pdf")
 
 # use a NACA 4412 airfoils
 airfoil_file = project_dir * "/test/data/xrotor_af_test.dat"
@@ -310,4 +310,10 @@ freestream = (; Vinf)
 
 _, inputs = dt.initialize_rotor_states(rotor_parameters, freestream; wake_length=1.0)
 
-initwake(inputs, inputs.blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0)
+# look at initial case without body
+initwake(inputs, inputs.blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0, prefix="")
+
+# look at converged case without body
+
+# look at initial case with body nearby
+
