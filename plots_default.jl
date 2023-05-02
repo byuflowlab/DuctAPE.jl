@@ -167,7 +167,7 @@ default(;
     #     legendtitlefontrotation,
     #     legendtitlefontsize,
     #     legendtitlefontvalign,
-    margin=10mm,
+    margin=0mm,
     #     projection,
     #     right_margin,
     #     subplot_index,
