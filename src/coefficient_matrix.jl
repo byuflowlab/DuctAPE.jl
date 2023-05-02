@@ -231,6 +231,7 @@ function calculate_ring_vortex_influence_on_body(paneli, panelj, mesh, i, j; deb
     #return appropriate strength
     # if asin(sqrt(m)) != pi / 2
     if mesh.m[i, j] != 1.0
+    # if isapprox(paneli.panel_center[m2p_i,:],panelj.panel_center[m2p_j,:])
 
         #panels are different
         return (

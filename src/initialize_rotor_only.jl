@@ -28,7 +28,6 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
 
     #get rotor panel radial center points for convenience
     rotor_panel_centers = rotor_source_panels[1].panel_center[:, 2]
-    nbe = length(rotor_panel_centers)
 
     ##### ----- Blade Elements ----- #####
     blade_elements = [

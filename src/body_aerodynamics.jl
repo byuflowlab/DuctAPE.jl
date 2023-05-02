@@ -5,7 +5,7 @@ Calculate body vortex strengths
 kid is kutta indices, where kid[1] is the row/column to keep and kid[2] is the row/column to subtract from kid[1] and then delete (1 is the first duct panel, and 2 is the Nth duct panel)
 """
 function calculate_body_vortex_strengths!(
-    gamb, A_bb, b_bf, kidx, A_bw, wake_gamma, A_br, sigr
+    gamb, A_bb, b_bf, kidx, A_bw, wake_gamma, A_br, sigr; debug=false
 )
 
     # problem dimensions
@@ -16,12 +16,22 @@ function calculate_body_vortex_strengths!(
     # note: the negative was already included in the precomputation for the freestream.
     b = similar(gamb) .= b_bf
 
+    if debug
+        #initialize extra outputs
+        bfree = -copy(b_bf)
+        bwake = similar(bfree) .= 0.0
+        brotor = similar(bfree) .= 0.0
+    end
+
     # add wake vortex sheet contributions to right hand side
     # note: the subtraction was not included in the other coefficients in the precomputation, so we need to subract
     for jwake in 1:nwake
 
         # get induced velocity in the x-direction
         b .-= A_bw[jwake] * view(wake_gamma, jwake, :)
+        if debug
+            bwake .+= A_bw[jwake] * view(wake_gamma, jwake, :)
+        end
     end
 
     # add rotor source sheet contributions to right hand side
@@ -30,6 +40,9 @@ function calculate_body_vortex_strengths!(
 
         # get induced velocity in the x-direction
         b .-= A_br[jrotor] * view(sigr, :, jrotor)
+        if debug
+            brotor .+= A_br[jrotor] * view(sigr, :, jrotor)
+        end
     end
 
     #return the residual, rather than solving the linear system.
@@ -44,7 +57,11 @@ function calculate_body_vortex_strengths!(
     view(gamb, :) .= solve_body_system(A_bb, b, kidx)
     # gamb[:] .= solve_body_system(A_bb, b, kidx)
 
-    return nothing
+    if debug
+        return bfree, bwake, brotor
+    else
+        return nothing
+    end
 end
 
 """

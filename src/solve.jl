@@ -116,7 +116,8 @@ function solve(x, p)
     )
 
     # save convergence information
-    converged[1] = NLsolve.converged(res)
+    # converged[1] = NLsolve.converged(res)
+    converged[1] = res.f_converged
 
     # return solution
     return res.zero, inputs, initials
@@ -157,7 +158,12 @@ function update_strengths!(states, inputs, p)
 
     # - Fill out wake strengths - #
     wake_vortex_strengths = fill_out_wake_strengths(
-        gamw, inputs.rotor_indices, inputs.num_wake_x_panels
+        gamw,
+        inputs.rotor_indices,
+        inputs.num_wake_x_panels;
+        ductTE_index=inputs.ductTE_index,
+        hubTE_index=inputs.hubTE_index,
+        interface="hard",
     )
 
     # - Get the induced velocities at the rotor plane - #
@@ -199,18 +205,21 @@ function update_strengths!(states, inputs, p)
         sigr,
     )
 
-    # - Update rotor circulation and source panel strengths - #
-    calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor)
-
-    # - Calculate net circulation and enthalpy jumps - #
-    # TODO: check that your get property override works here for inputting an array of number of blades and rotation rates
+    # - Calculate wake vortex strengths (before updating state dependencies) - #
+    # calculate net circulation
     Gamma_tilde = calculate_net_circulation(Gamr, blade_elements.B)
+
+    # calculate enthalpy jumps
     H_tilde = calculate_enthalpy_jumps(Gamr, blade_elements.Omega, blade_elements.B)
 
-    # - update wake strengths - #
+    # update wake strengths
     calculate_wake_vortex_strengths!(
         gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
     )
+
+    # - Update rotor circulation and source panel strengths - #
+    calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor)
+
     return nothing
 end
 

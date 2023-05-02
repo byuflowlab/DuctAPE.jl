@@ -74,9 +74,11 @@ function discretize_wake(
 
     # get rotor location indices
     ridx = findall(x -> x in xrotors, xwake)
+    ductTE_index = findall(x -> x == xduct_te, xwake)
+    hubTE_index = findall(x -> x == xhub_te, xwake)
 
     # return dimensionalized wake x-coordinates
-    return xwake, ridx
+    return xwake, ridx, ductTE_index, hubTE_index
 end
 
 """

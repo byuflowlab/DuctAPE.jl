@@ -31,7 +31,7 @@ function precomputed_inputs(
     rotor_parameters, #vector of named tuples
     freestream;
     finterp=fm.akima,
-    debug=false
+    debug=false,
 )
 
     # ## -- Rename for Convenience -- ##
@@ -82,7 +82,7 @@ function precomputed_inputs(
 
     # - Discretize Wake x-coordinates - #
     # also returns indices of rotor locations in the wake
-    xwake, rotor_indices = discretize_wake(
+    xwake, rotor_indices, ductTE_index, hubTE_index = discretize_wake(
         duct_coordinates,
         hub_coordinates,
         rotor_parameters.xrotor,
@@ -277,7 +277,11 @@ function precomputed_inputs(
     # - wake to body - #
     A_bw = [
         assemble_induced_velocity_on_body_matrix(
-            mesh_bw[i, j], [wake_vortex_panels[j]], body_panels; singularity="vortex", debug=debug
+            mesh_bw[i, j],
+            [wake_vortex_panels[j]],
+            body_panels;
+            singularity="vortex",
+            debug=debug,
         ) for i in 1:1, j in 1:length(wake_vortex_panels)
     ]
 
@@ -360,6 +364,8 @@ function precomputed_inputs(
         rotor_indices,
         num_wake_x_panels=length(xwake) - 1,
         num_body_panels,
+        ductTE_index=tip_gaps[1] == 0.0 ? ductTE_index[1] : nothing,
+        hubTE_index=!nohub ? hubTE_index[1] : nothing,
         # body_panels, # body paneling
         # rotor_source_panels, # rotor paneling
         # wake_vortex_panels, # wake paneling
@@ -368,6 +374,7 @@ function precomputed_inputs(
         b_bf, # freestream contribution to body boundary conditions
         A_br, # rotor to body (total)
         A_bw, # wake to body (total)
+        A_rb, # body to rotor
         vx_rb, # body to rotor (x-direction)
         vr_rb, # body to rotor (r-direction)
         vx_rr, # rotor to rotor (x-direction)
