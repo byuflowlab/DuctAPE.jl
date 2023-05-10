@@ -266,19 +266,19 @@ function full_clean(;
             #prepare outputs
             dp = inputs.body_panels[1].panel_center[:, 1]
             _, leidx = findmin(dp)
-            gamd = 1.0 .- (gamb[1:length(dp)] ./ Vinf) .^ 2
-            gamd = gamb[1:length(dp)] ./ Vinf
+            # gamd = 1.0 .- (gamb[1:length(dp)] ./ Vinf) .^ 2
+            # gamd = gamb[1:length(dp)] ./ Vinf
             #split into inner and outer surfaces
             dpinner = dp[1:leidx]
             dpouter = dp[(leidx + 1):end]
-            gamdinner = gamd[1:leidx]
-            gamdouter = gamd[(leidx + 1):end]
+            gamdinner = gamb[1:leidx]
+            gamdouter = gamb[(leidx + 1):end]
 
             # initialize plot
             pb = plot(;
                 title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gaps[i])%Rtip",
                 xlabel="x",
-                ylabel=L"\frac{V_s}{V_\infty}",
+                ylabel=L"\gamma_\theta^{body}",
             )
 
             # plot solution
@@ -327,7 +327,7 @@ function full_clean(;
             plot!(
                 pb,
                 xr * ones(2),
-                [minimum(gamd); maximum(gamd)];
+                [minimum(gamb); maximum(gamb)];
                 # linewidth=0.25,
                 linestyle=:dash,
                 color=mycolors[3],
@@ -344,7 +344,7 @@ function full_clean(;
             ##### ----- Plot Wake Strengths ----- #####
             pg = plot(;
                 title="nbodypanel$(nducttot)_npersheet$(npersheet)_tipgap$(tip_gaps[i])%Rtip",
-                xlabel=L"\gamma_\theta",
+                xlabel=L"\gamma_\theta^{wake}",
                 ylabel="r",
             )
 

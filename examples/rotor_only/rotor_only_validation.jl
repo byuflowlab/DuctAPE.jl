@@ -189,11 +189,11 @@ for i in 1:nJ
         states = dt.solve_rotor_only(inputs, (; params..., Vinf=Vinf_sweep))
         Gamrconv, gamwconv, sigrconv = dt.extract_rotor_states(states, params)
 
-        # pG = plot(
-        #     Gamr, params.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial"
-        # )
-        # plot!(pG, Gamrconv, params.rotor_panel_centers; label="converged")
-        # savefig("examples/rotor_only/Circulation_J$(J[i]).pdf")
+        pG = plot(
+            Gamr, params.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial"
+        )
+        plot!(pG, Gamrconv, params.rotor_panel_centers; label="converged")
+        savefig("examples/rotor_only/Circulation_J$(J[i]).pdf")
 
         # pw = plot(
         #     gamw,
@@ -231,7 +231,7 @@ for i in 1:nJ
     eff[i] = aero.eff
 
     # Run CCBlade:
-    ccbouts = run_ccblade(Vinf_sweep)
+    ccbouts = run_ccblade(Vinf_sweep; airfoil="test/data/naca4412.dat")
     effccb[i] = ccbouts.eff
     CTccb[i] = ccbouts.CT
     CQccb[i] = ccbouts.CQ
@@ -239,9 +239,12 @@ for i in 1:nJ
 
     #### --- PLOTS --- ###
     ##Uncomment to see all the details
-    #println()
-    #println("Plotting...")
-    #println()
+    println()
+    println("Plotting...")
+    println()
+
+    plot!(pG, ccbouts.circ, ccbouts.r, label="CCBlade")
+    savefig("examples/rotor_only/circulation_J$(J[i]).pdf")
 
     ## double check geometry
     #plot(

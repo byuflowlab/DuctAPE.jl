@@ -1,0 +1,42 @@
+
+ DFDC Case: FatDuct + CB test case        
+ -------------------------------------------------------
+  Qinf     0.0000     Qref    50.0000
+  Speed of sound (m/s)        340.000
+  Air density   (kg/m^3)      1.22600
+  Air viscosity (kg/m-s)     0.1780E-04
+
+ Geometry name: FatDuct + CB test case        
+ Current duct geometry with 2 elements:
+
+  Xle        0.00000     Rle        0.00000
+  Xte        0.30638     Rte        0.03593
+  Xref       0.00000     Rref       0.00000
+  Vol       0.001693     Asurf     0.081509
+  Xcent     0.165292     Rcent     0.000000
+  rGYRx     0.079279     rGYRr     0.021647
+
+  Xle        0.00523     Rle        0.17991
+  Xte        0.30450     Rte        0.15898
+  Xref       0.00000     Rref       0.00000
+  Vol       0.013412     Asurf     0.704228
+  Xcent     0.126690     Rcent     0.000000
+  rGYRx     0.069174     rGYRr     0.128978
+
+ Current Rotor at Disk  1
+  Omega      837.7581    Rpm        8000.00
+  Rhub        0.04495    Rtip       0.15572
+  #blades     5          Aswept     0.06983
+     r         r/R        Ch      Beta(deg)   Solidity
+  0.5049E-01 0.3242     0.8914E-01  69.01      1.405    
+  0.6157E-01 0.3954     0.7978E-01  59.14      1.031    
+  0.7264E-01 0.4665     0.7130E-01  51.82     0.7810    
+  0.8372E-01 0.5376     0.6398E-01  46.27     0.6081    
+  0.9480E-01 0.6088     0.5778E-01  41.95     0.4850    
+  0.1059     0.6799     0.5254E-01  38.51     0.3949    
+  0.1170     0.7510     0.4810E-01  35.70     0.3273    
+  0.1280     0.8222     0.4432E-01  33.35     0.2755    
+  0.1391     0.8933     0.4106E-01  31.35     0.2349    
+  0.1502     0.9644     0.3824E-01  29.60     0.2026    
+
+ No drag objects defined

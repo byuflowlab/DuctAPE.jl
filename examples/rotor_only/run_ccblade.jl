@@ -1,4 +1,4 @@
-function run_ccblade(Vinf)
+function run_ccblade(Vinf; airfoil="test/data/naca4412.dat")
 
     # set up ccblade example
     Rtip = 10 / 2.0 * 0.0254  # inches to meters
@@ -31,7 +31,8 @@ function run_ccblade(Vinf)
     chord = propgeom[:, 2] * Rtip
     theta = propgeom[:, 3] * pi / 180
     # af = AlphaAF("test/data/naca4412.dat")
-    af = AlphaAF("test/data/xrotor_af_test.dat")
+    # af = AlphaAF("test/data/xrotor_af_test.dat")
+    af = AlphaAF(airfoil)
     sections = Section.(r, chord, theta, Ref(af))
 
     Omega = 5400 * pi / 30  # convert to rad/s
@@ -39,7 +40,7 @@ function run_ccblade(Vinf)
     op = simple_op.(Vinf, Omega, r, rho)
 
     # run ccblade
-    out = solve.(Ref(rotor), sections, op)
+    out = ccb.solve.(Ref(rotor), sections, op)
 
     # run ccblade post processing
     T, Q = thrusttorque(rotor, sections, out)

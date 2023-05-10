@@ -102,7 +102,7 @@ end
 
 """
 """
-function generate_airfoil_data(lift_params, drag_params, Re; filenames=nothing)
+function generate_airfoil_data(lift_params, drag_params, Re; filename=nothing)
     # extract parameters
     (; clmax, clmin, alpha0, dclda, dclda_stall, blend_hardness) = lift_params
     (; cdo, clo, b, Re_ref, f) = drag_params

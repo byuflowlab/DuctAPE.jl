@@ -5,8 +5,14 @@ From APC geometry database
 
 units: inches, degrees
 =#
+
+project_dir = dirname(dirname(dirname(@__FILE__)))
+if project_dir == ""
+    project_dir = "."
+end
+
 using FLOWMath
-include("../../plots_default.jl")
+include(project_dir * "/plots_default.jl")
 
 i2m = 0.0254 #inch to meter conversion
 
@@ -253,12 +259,25 @@ max_thickness =
         # 0.0000
     ] * i2m
 
+##### ----- PLOT CHORD AND TWIST DIST ----- #####
+plot(radial_positions, chords; aspectratio=1,label="", xlabel="r", ylabel="chord")
+savefig(project_dir * "/test/data/APC-5x7.5_chorddist.pdf")
+plot(radial_positions, twist; label="", xlabel="r", ylabel="twist (deg)")
+savefig(project_dir * "/test/data/APC-5x7.5_twistdist.pdf")
+
+
+
+
+#---------------------------------#
+#             AIRFOILS            #
+#---------------------------------#
 airfoil_ranges = [radial_positions[1]; 0.68 * i2m; 1.5 * i2m; radial_positions[end]]
 
-airfoil_files = ["e63_coordinates.dat", "naca4412_coordinates.dat"]
+airfoil_files =
+    project_dir .* "/test/data/" .* ["e63_coordinates.dat", "naca4412_coordinates.dat"]
 airfoil_maxtc = [4.5; 4.5; 12.0; 12.0] / 100.0
 
-save_path = "APC-5x5.75_airfoils/"
+save_path = project_dir * "/test/data/APC-5x5.75_airfoils/"
 
 function write_apc_airfoil_geometries(
     airfoil_files,
@@ -321,9 +340,9 @@ function write_apc_airfoil_geometries(
         zi .*= thickness_scaling
 
         # - Write Geometry - #
-        save_name = rotor_name * "r-$(radial_positions[ir]).coord"
+        save_name = rotor_name * "r-$(radial_positions[ir])"
         push!(saved_files, save_name)
-        f = open(save_path * save_name, "w")
+        f = open(save_path * save_name*".coord", "w")
         for ix in 1:nx
             write(f, "$(x[ix]) $(zi[ix])\n")
         end
@@ -342,7 +361,7 @@ saved_files = write_apc_airfoil_geometries(
     save_path=save_path,
 )
 
-function sanity_plot(saved_files)
+function sanity_plot(saved_files, data_path)
 
     # generate colors
     gr = range(0.0, 255.0 - 93.0, length(saved_files)) ./ 255.0
@@ -352,13 +371,13 @@ function sanity_plot(saved_files)
     p = plot(; aspectratio=1, xlabel="x/c", ylabel="z/c")
 
     # - Read in Raw Airfoil Coordinates - #
-    f = open(data_path * saved_files[1])
+    f = open(data_path * saved_files[1]*".coord")
     nx = countlines(f)
     close(f)
     for iaf in 1:length(saved_files)
         x = zeros(nx)
         z = zeros(nx)
-        open(data_path * saved_files[iaf]) do f
+        open(data_path * saved_files[iaf]*".coord") do f
             ix = 1
             for line in eachline(f)
                 parts = split(line)
@@ -376,4 +395,4 @@ function sanity_plot(saved_files)
     return nothing
 end
 
-sanity_plot(saved_files)
+sanity_plot(saved_files, save_path)
