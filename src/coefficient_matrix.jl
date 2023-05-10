@@ -231,7 +231,7 @@ function calculate_ring_vortex_influence_on_body(paneli, panelj, mesh, i, j; deb
     #return appropriate strength
     # if asin(sqrt(m)) != pi / 2
     if mesh.m[i, j] != 1.0
-    # if isapprox(paneli.panel_center[m2p_i,:],panelj.panel_center[m2p_j,:])
+        # if isapprox(paneli.panel_center[m2p_i,:],panelj.panel_center[m2p_j,:])
 
         #panels are different
         return (
@@ -498,4 +498,75 @@ function get_vr_ring_source_off_body(x, r, rj, m)
     else
         return num1 / den1 * (K - (1.0 - num2 / den2) * E)
     end
+end
+
+######################################################################
+#                                                                    #
+#                       Generalized Functions                        #
+#                                                                    #
+######################################################################
+#TODO: NEED TO TEST ALL OF THESE BELOW
+
+function assemble_induced_velocity_matrices_infield(
+    mesh, panel_array, field_points; singularity="vortex"
+)
+
+    ### --- SETUP --- ###
+
+    # - Rename for Convenience - #
+    pid = mesh.panel_indices
+    N = pid[end][end]
+
+    M = length(field_points[:, 1])
+
+    # initialize coefficient matrix
+    TF = eltype(mesh.m)
+    vxdmat = zeros(TF, (M, N))
+    vrdmat = zeros(TF, (M, N))
+
+    # Loop through system
+
+    ### --- Loop through bodies --- ###
+    for n in 1:length(panel_array)
+        ### --- Loop through panel_array --- ###
+        for fp in 1:M
+            for j in pid[n]
+
+                ### --- Calculate influence coefficient --- ###
+                if singularity == "vortex"
+                    vxdmat[fp, j], vrdmat[fp, j] = calculate_ring_vortex_influence_in_field(
+                        panel_array[n], mesh, fp, j
+                    )
+                elseif singularity == "source"
+                    vxdmat[fp, j], vrdmat[fp, j] = calculate_ring_source_influence_in_field(
+                        panel_array[n], mesh, fp, j
+                    )
+                else
+                    @error "no singularity of type $(singularity)"
+                end
+            end
+        end
+    end
+
+    return [[vxdmat] [vrdmat]]
+end
+
+function calculate_ring_vortex_influence_in_field(panel, mesh, i, j)
+    m2p = mesh.mesh2panel
+
+    #calculate unit velocities
+    vx = get_vx_ring_vortex_off_body(mesh.x[i, j], mesh.r[i, j], mesh.rj[i, j], mesh.m[i, j])
+    vr = get_vr_ring_vortex_off_body(mesh.x[i, j], mesh.r[i, j], mesh.rj[i, j], mesh.m[i, j])
+
+    return vx * panel.panel_length[m2p[j]], vr * panel.panel_length[m2p[j]]
+end
+
+function calculate_ring_source_influence_in_field(panel, mesh, i, j)
+    m2p = mesh.mesh2panel
+
+    #calculate unit velocities
+    vx = get_vx_ring_source_off_body(mesh.x[i, j], mesh.r[i, j], rj[i, j], mesh.m[i, j])
+    vr = get_vr_ring_source_off_body(mesh.x[i, j], mesh.r[i, j], rj[i, j], mesh.m[i, j])
+
+    return vx * panel.panel_length[m2p[j]], vr * panel.panel_length[m2p[j]]
 end

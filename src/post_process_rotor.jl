@@ -154,7 +154,7 @@ function states_to_outputs_body_only(panel_strengths, panels, mesh; Vinf=1.0)
         # - Calculate surface pressure - #
         cp_duct = 1.0 .- (vs_duct ./ Vinf) .^ 2
 
-        return vs_duct ./ Vinf, cp_duct
+        return vs_duct, cp_duct
     else
         vs_duct = panel_strengths[idx[1]]
         vs_hub = panel_strengths[idx[2] .- 1]
@@ -163,6 +163,6 @@ function states_to_outputs_body_only(panel_strengths, panels, mesh; Vinf=1.0)
         cp_duct = 1.0 .- (vs_duct ./ Vinf) .^ 2
         cp_hub = 1.0 .- (vs_hub ./ Vinf) .^ 2
 
-        return vs_duct ./ Vinf, vs_hub ./ Vinf, cp_duct, cp_hub
+        return vs_duct, vs_hub, cp_duct, cp_hub
     end
 end

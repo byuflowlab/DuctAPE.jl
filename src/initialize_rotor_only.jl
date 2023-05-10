@@ -4,7 +4,7 @@ freestream = freestream
 
 currently only capable of a single rotor
 """
-function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
+function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0, wake_x_refine=0.01)
     #---------------------------------#
     #              Rotor              #
     #---------------------------------#
@@ -55,7 +55,7 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0)
     ##### ----- General Geometry ----- #####
 
     # - Choose blade element spacing - #
-    dr = 0.01 * rotor_parameters[1].Rtip
+    dr = wake_x_refine * rotor_parameters[1].Rtip
 
     # - Rotor Diameter - #
     D = 2.0 * rotor_parameters[1].Rtip

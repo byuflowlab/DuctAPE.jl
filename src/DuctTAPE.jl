@@ -53,6 +53,9 @@ include("initialize.jl")
 # Solver
 include("solve.jl")
 
+# Post Process
+include("post_process.jl")
+
 # -- ROTOR ONLY -- ##
 include("solve_rotor_only.jl")
 include("initialize_rotor_only.jl")
