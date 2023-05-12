@@ -103,6 +103,39 @@ function calculate_induced_velocities_on_rotors(
 end
 
 """
+"""
+function calculate_rotor_velocities(Gamr, wake_vortex_strengths, sigr, gamb, inputs)
+
+    vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+        inputs.blade_elements,
+        Gamr,
+        inputs.vx_rw,
+        inputs.vr_rw,
+        wake_vortex_strengths,
+        inputs.vx_rr,
+        inputs.vr_rr,
+        sigr,
+        inputs.vx_rb,
+        inputs.vr_rb,
+        gamb,
+    )
+
+    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
+    Wx_rotor = vx_rotor .+ inputs.Vinf
+
+    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
+    Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.rotor_panel_centers
+
+    # meridional component
+    Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+
+    # Get the inflow magnitude at the rotor as the combination of all the components
+    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+
+    return vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
+end
+
+"""
     calculate_gamma_sigma(blade_elements, Vm, Vθ)
 
 Calculate rotor circulation and source strengths using blade element data and inflow velocities.

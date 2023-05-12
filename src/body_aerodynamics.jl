@@ -18,7 +18,7 @@ function calculate_body_vortex_strengths!(
 
     if debug
         #initialize extra outputs
-        bfree = -copy(b_bf)
+        bfree = copy(b_bf)
         bwake = similar(bfree) .= 0.0
         brotor = similar(bfree) .= 0.0
     end
@@ -30,7 +30,7 @@ function calculate_body_vortex_strengths!(
         # get induced velocity in the x-direction
         b .-= A_bw[jwake] * view(wake_gamma, jwake, :)
         if debug
-            bwake .+= A_bw[jwake] * view(wake_gamma, jwake, :)
+            bwake .-= A_bw[jwake] * view(wake_gamma, jwake, :)
         end
     end
 
@@ -41,7 +41,7 @@ function calculate_body_vortex_strengths!(
         # get induced velocity in the x-direction
         b .-= A_br[jrotor] * view(sigr, :, jrotor)
         if debug
-            brotor .+= A_br[jrotor] * view(sigr, :, jrotor)
+            brotor .-= A_br[jrotor] * view(sigr, :, jrotor)
         end
     end
 

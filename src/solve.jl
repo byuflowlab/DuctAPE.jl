@@ -159,7 +159,7 @@ function update_strengths!(states, inputs, p)
     # - Fill out wake strengths - #
     wake_vortex_strengths = fill_out_wake_strengths(
         gamw,
-        inputs.rotor_indices,
+        inputs.rotor_indices_in_wake,
         inputs.num_wake_x_panels;
         ductTE_index=inputs.ductTE_index,
         hubTE_index=inputs.hubTE_index,
@@ -167,31 +167,35 @@ function update_strengths!(states, inputs, p)
     )
 
     # - Get the induced velocities at the rotor plane - #
-    vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        blade_elements,
-        Gamr,
-        inputs.vx_rw,
-        inputs.vr_rw,
-        wake_vortex_strengths,
-        inputs.vx_rr,
-        inputs.vr_rr,
-        sigr,
-        inputs.vx_rb,
-        inputs.vr_rb,
-        gamb,
+    # vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+    #     blade_elements,
+    #     Gamr,
+    #     inputs.vx_rw,
+    #     inputs.vr_rw,
+    #     wake_vortex_strengths,
+    #     inputs.vx_rr,
+    #     inputs.vr_rr,
+    #     sigr,
+    #     inputs.vx_rb,
+    #     inputs.vr_rb,
+    #     gamb,
+    # )
+
+    # # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
+    # Wx_rotor = vx_rotor .+ inputs.Vinf
+
+    # # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
+    # Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* rpc
+
+    # # meridional component
+    # Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+
+    # # Get the inflow magnitude at the rotor as the combination of all the components
+    # Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+
+    _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+        Gamr, wake_vortex_strengths, sigr, gamb, inputs
     )
-
-    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor .+ inputs.Vinf
-
-    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* rpc
-
-    # meridional component
-    Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
-
-    # Get the inflow magnitude at the rotor as the combination of all the components
-    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
 
     # - Calculate body vortex strengths (before updating state dependencies) - #
     calculate_body_vortex_strengths!(

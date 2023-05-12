@@ -82,7 +82,7 @@ function precomputed_inputs(
 
     # - Discretize Wake x-coordinates - #
     # also returns indices of rotor locations in the wake
-    xwake, rotor_indices, ductTE_index, hubTE_index = discretize_wake(
+    xwake, rotor_indices_in_wake, ductTE_index, hubTE_index = discretize_wake(
         duct_coordinates,
         hub_coordinates,
         rotor_parameters.xrotor,
@@ -142,6 +142,24 @@ function precomputed_inputs(
         body_panels = generate_body_panels(t_duct_coordinates, rp_hub_coordinates)
     end
 
+    # book keep wake wall interfaces
+    if nohub
+        rotor_indices_on_hub =  nothing
+    hubwakeidx = nothing
+    else
+        rotor_indices_on_hub = [findfirst(x->x>rotor_parameters.xrotor[i],body_panels[2].panel_center[:,1]) for i in 1:length(rotor_parameters.xrotor)]
+        hubwakeidx =  [rotor_indices_on_hub[1]:length(body_panels[2].panel_center[:,1])]
+    end
+
+    if noduct
+        rotor_indices_on_duct =  nothing
+        ductwakeidx = nothing
+    else
+        rotor_indices_on_duct = [findfirst(x->x<rotor_parameters.xrotor[i],body_panels[1].panel_center[:,1])-1 for i in 1:length(rotor_parameters.xrotor)]
+        ductwakeidx = [1:rotor_indices_on_duct[end]]
+    end
+
+
     #----------------------------------#
     # Generate Discretized Wake Sheets #
     #----------------------------------#
@@ -181,7 +199,7 @@ function precomputed_inputs(
     # rotor source panel objects
     rotor_source_panels = [
         generate_rotor_panels(
-            rotor_parameters[i].xrotor, rgrid[rotor_indices[i], 1:length(rpe)]
+            rotor_parameters[i].xrotor, rgrid[rotor_indices_in_wake[i], 1:length(rpe)]
         ) for i in 1:nrotor
     ]
 
@@ -343,7 +361,7 @@ function precomputed_inputs(
     ## -- Miscellaneous Values for Indexing -- ##
 
     # - Get rotor panel edges and centers - #
-    rotor_panel_edges = [rgrid[rotor_indices[i], 1:length(rpe)] for i in 1:nrotor]
+    rotor_panel_edges = [rgrid[rotor_indices_in_wake[i], 1:length(rpe)] for i in 1:nrotor]
     rotor_panel_centers = [rotor_source_panels[i].panel_center[:, 2] for i in 1:nrotor]
 
     rotor_panel_edges = reduce(hcat, rotor_panel_edges)
@@ -361,11 +379,15 @@ function precomputed_inputs(
         rotor_panel_edges,
         rotor_panel_centers,
         # panels
-        rotor_indices,
+        rotor_indices_in_wake,
+        rotor_indices_on_duct,
+        rotor_indices_on_hub,
         num_wake_x_panels=length(xwake) - 1,
         num_body_panels,
         ductTE_index=tip_gaps[1] == 0.0 ? ductTE_index[1] : nothing,
         hubTE_index=!nohub ? hubTE_index[1] : nothing,
+        ductwakeidx,
+        hubwakeidx,
         # body_panels, # body paneling
         # rotor_source_panels, # rotor paneling
         # wake_vortex_panels, # wake paneling
@@ -386,8 +408,10 @@ function precomputed_inputs(
         # operating conditions
         Vinf=freestream.Vinf, # freestream parameters
         # - Debugging/Plotting
-        duct_coordinates=t_duct_coordinates,
-        hub_coordinates=rp_hub_coordinates,
+        duct_coordinates=(noduct ? nothing : t_duct_coordinates),
+        hub_coordinates= (nohub ? nothing : rp_hub_coordinates),
+        isduct = !noduct,
+        ishub = !nohub,
         body_panels,
         rotor_source_panels,
         wakexgrid=xgrid[:, 1:length(rpe)],

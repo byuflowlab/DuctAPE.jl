@@ -421,22 +421,23 @@ plot!(
 savefig(pb, project_dir * "/examples/dfdc_comp/body-velocity.pdf")
 
 ##### ----- Plot Surface Pressure ----- #####
-cpd = 1.0 .- (gamb[1:length(dp)] ./ Vref) .^ 2
-cpdinner = cpd[1:leidx]
-cpdouter = cpd[(leidx + 1):length(dp)]
 
-pcp = plot(; xlabel="x", ylabel=L"C_p")
+cpductinner, cpductouter, cphub, xdi, xdo, xh = dt.get_cps(strengths, inputs, Vref)
+
+pcp = plot(; xlabel="x", ylabel=L"C_p", yflip=true)
 
 # plot solution
-plot!(pcp, dpinner, cpdinner; label=convlabel * " inner surface, with rotor")
+plot!(pcp, xdi, cpductinner; label=convlabel * " inner duct surface")
 
-plot!(pcp, dpouter, cpdouter; label=convlabel * " outer surface, with rotor")
+plot!(pcp, xdo, cpductouter; label=convlabel * " outer duct surface")
+
+plot!(pcp, xh, cphub; label=convlabel * " hub surface")
 
 #plot rotor location
 plot!(
     pcp,
     xrotor * ones(2),
-    [minimum([cpdinner; cpdouter]); maximum([cpdinner; cpdouter])];
+    [minimum([cpductinner; cpductouter]); maximum([cpductinner; cpductouter])];
     # linewidth=0.25,
     linestyle=:dash,
     color=mycolors[3],

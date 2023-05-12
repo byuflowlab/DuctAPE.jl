@@ -1,9 +1,18 @@
 """
-    calculate_enthalpy_jumps(Gamr, Ωr, num_blades)
+only used in post-process for cp.
+expression not in dfdc theory, comes from source code.
+todo: derive in theory doc
+"""
+function calculate_entropy_jumps(sigr, Vm)
+    return sigr .* Vm
+end
+
+"""
+    calculate_enthalpy_jumps(Gamr, Omega, num_blades)
 
 Calculate enthalpy jump across each blade.
 """
-function calculate_enthalpy_jumps(Gamr, Ωr, num_blades)
+function calculate_enthalpy_jumps(Gamr, Omega, num_blades)
 
     # number of blade elements (or radial positions) and rotors
     nr, nrotor = size(Gamr)
@@ -12,7 +21,7 @@ function calculate_enthalpy_jumps(Gamr, Ωr, num_blades)
     H_tilde = similar(Gamr) .= 0
     for ir in 1:nr
         for irotor in 1:nrotor
-            Ω = Ωr[irotor]
+            Ω = Omega[irotor]
             B = num_blades[irotor]
 
             Γ = Gamr[ir, irotor]

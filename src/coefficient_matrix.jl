@@ -446,6 +446,7 @@ Calculate x-component of velocity influence of source ring.
 - `uij::Float` : x-component of velocity induced by panel j onto panel i
 """
 function get_vx_ring_source_off_body(x, r, rj, dj, m)
+#TODO: remove dj input, it's not used...
 
     #get values for elliptic integrals
     K, E = get_elliptics(m)
