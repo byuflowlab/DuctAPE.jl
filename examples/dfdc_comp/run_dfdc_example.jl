@@ -135,7 +135,39 @@ function init()
             29.596
         ] * pi / 180.0
 
-    airfoils = fill(ccb.AlphaAF("examples/dfdc_comp/dfdc_polar.dat"), length(r))
+    #Airfoil Data:
+    alpha0 = 0.0
+    clmax = 1.5
+    clmin = -1.0
+    dclda = 2.0 * pi
+    dclda_stall = 0.5
+    dcl_stall = 0.2
+    cdmin = 0.012
+    cldmin = 0.1
+    dcdcl2 = 0.005
+    cmcon = 0.0
+    Re_ref = 2e5
+    Re_exp = 0.35
+    mcrit = 0.7
+
+    afparams = dt.DFDCairfoil(
+        alpha0,
+        clmax,
+        clmin,
+        dclda,
+        dclda_stall,
+        dcl_stall,
+        cdmin,
+        cldmin,
+        dcdcl2,
+        cmcon,
+        Re_ref,
+        Re_exp,
+        mcrit,
+    )
+
+    # airfoils = fill(ccb.AlphaAF("examples/dfdc_comp/dfdc_polar.dat"), length(r))
+    airfoils = fill(afparams, length(r))
 
     #---------------------------------#
     #       Duct and Hub Geometry     #
@@ -553,12 +585,9 @@ function plotbladevelocities(cdump, inputs)
     plot!(pw, dfdcWmag, dfdcr; label="DFDC W")
     savefig(pw, project_dir * "/examples/dfdc_comp/Wmagcomp.pdf")
 
-    plot!(por, omega*rpc, rpc; label="DuctTAPE")
-    plot!(por, omega*dfdcr, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
+    plot!(por, omega * rpc, rpc; label="DuctTAPE")
+    plot!(por, omega * dfdcr, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
     savefig(por, project_dir * "/examples/dfdc_comp/Omegarcomp.pdf")
-
-
-
 
     return nothing
 end
@@ -611,9 +640,7 @@ function plotclcd(cdump, inputs)
     pcd = plot(; xlabel=L"c_d", ylabel="radial positions")
 
     plot!(pcd, cd, rpc; color=mycolors[1], label="DuctTAPE")
-    plot!(
-        pcd, dfdccd, dfdcr; color=mycolors[1], linestyle=:dash, label="DFDC"
-    )
+    plot!(pcd, dfdccd, dfdcr; color=mycolors[1], linestyle=:dash, label="DFDC")
 
     savefig(pcl, project_dir * "/examples/dfdc_comp/clcomp.pdf")
     savefig(pcd, project_dir * "/examples/dfdc_comp/cdcomp.pdf")

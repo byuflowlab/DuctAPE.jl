@@ -29,6 +29,19 @@ dfdcr = [
     0.964
 ] * Rtip
 
+dfdcchord = [
+    0.5724
+    0.5124
+    0.4579
+    0.4109
+    0.3710
+    0.3374
+    0.3089
+    0.2846
+    0.2637
+    0.2456
+] * Rtip
+
 #VTT
 dfdcvtheta = 0.5 * B * dfdcGamr ./ (2.0 * pi * dfdcr)
 
