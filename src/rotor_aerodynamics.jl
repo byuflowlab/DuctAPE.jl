@@ -104,8 +104,28 @@ end
 
 """
 """
-function calculate_rotor_velocities(Gamr, wake_vortex_strengths, sigr, gamb, inputs)
+function reframe_rotor_velocities(
+    vx_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rotor_panel_centers
+)
 
+    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
+    Wx_rotor = vx_rotor .+ Vinf
+
+    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
+    Wtheta_rotor = vtheta_rotor .- Omega .* rotor_panel_centers
+
+    # meridional component
+    Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+
+    # Get the inflow magnitude at the rotor as the combination of all the components
+    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+
+    return Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
+end
+
+"""
+"""
+function calculate_rotor_velocities(Gamr, wake_vortex_strengths, sigr, gamb, inputs)
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
@@ -120,17 +140,14 @@ function calculate_rotor_velocities(Gamr, wake_vortex_strengths, sigr, gamb, inp
         gamb,
     )
 
-    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor .+ inputs.Vinf
-
-    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.rotor_panel_centers
-
-    # meridional component
-    Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
-
-    # Get the inflow magnitude at the rotor as the combination of all the components
-    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+    Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
+        vx_rotor,
+        vr_rotor,
+        vtheta_rotor,
+        inputs.Vinf,
+        inputs.blade_elements[1].Omega,
+        inputs.rotor_panel_centers,
+    )
 
     return vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
@@ -169,6 +186,28 @@ function calculate_gamma_sigma(blade_elements, Wm, Wθ, W; debug=false)
 end
 
 """
+"""
+function gamma_sigma_from_coeffs!(Gamr, sigr, W, B, c, r, cl, cd)
+
+    # calculate vortex strength
+    Gamr[:] .= 1.0 / 2.0 * W * c * cl
+
+    # calculate source strength
+    # TODO: need to figure out if there should be a division by r here or not.
+    #= it doesn't look like DFDC has the division, even though it's in the theory doc
+    #it's possible (but I haven't been able to find it, that they divide by r later for some reason
+    =#
+    # this one is in the theory doc
+    # things converge twice as fast with this one...
+    sigr[:] .= B / (4.0 * pi * r) * W * c * cd
+    # this one is in the DFDC source code
+    # things converge slower, likely because the values are so small...
+    # sigr[:] .= B / (4.0 * pi) * W * c * cd
+
+    # return Gamr, sigr
+    return nothing
+end
+"""
     calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, Vθ)
 
 In-place version of [`calculate_gamma_sigma`](@ref)
@@ -202,8 +241,13 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=fa
             Ω = blade_elements[irotor].Omega # rotation rate
 
             # calculate angle of attack
-            phi = atan(Wm[ir, irotor], -Wθ[ir, irotor])
-            alpha = twist - phi
+            phi, alpha = calculate_inflow_angles(Wm[ir, irotor], Wθ[ir, irotor], twist)
+
+            # printval("Wm[$(ir),$(irotor)]: ", Wm[ir,irotor])
+            # printval("Wtheta[$(ir),$(irotor)]: ", Wθ[ir,irotor])
+            # printval("twist: ", twist)
+            # printval("phi: ", phi)
+            # printval("alpha: ", alpha)
 
             # look up lift and drag data for the nearest two input sections
             # TODO: this breaks rotor aero tests... need to update those.
@@ -217,11 +261,16 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=fa
                 [0.0; 1.0], [cdin, cdout], blade_elements[irotor].inner_fraction[ir]
             )
 
-            # calculate vortex strength
-            Gamr[ir, irotor] = 1 / 2 * W[ir, irotor] * c * cl
-
-            # calculate source strength
-            sigr[ir, irotor] = B / (4 * pi * r) * W[ir, irotor] * c * cd
+            gamma_sigma_from_coeffs!(
+                view(Gamr, ir, irotor),
+                view(sigr, ir, irotor),
+                W[ir, irotor],
+                B,
+                c,
+                r,
+                cl,
+                cd,
+            )
 
             if debug
                 phidb[ir, irotor] = phi
@@ -237,6 +286,18 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=fa
     else
         return Gamr, sigr
     end
+end
+
+"""
+"""
+function calculate_inflow_angles(Wm, Wθ, twist)
+    #inflow angle
+    phi = atan.(Wm, -Wθ)
+
+    #angle of attack
+    alpha = twist .- phi
+
+    return phi, alpha
 end
 
 """
