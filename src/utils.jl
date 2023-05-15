@@ -20,3 +20,12 @@ function insert_and_dedup!(v, x)
         v = (splice!(v, searchsorted(v, x[i]), x[i]); v)
     end
 end
+
+function printval(text, val)
+    if eltype(val) != Float64
+        println(text, val.value)
+    else
+        println(text, val)
+    end
+    return nothing
+end
