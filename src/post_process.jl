@@ -9,7 +9,7 @@ function steady_cp(vs, vinf, vref)
 end
 
 function delta_cp(deltaH, deltaS, Vtheta, Vref)
-    return (2.0 * (deltaH .- deltaS) .- Vtheta .^ 2) / Vref^2
+    return (2.0 * (deltaH - deltaS) .- Vtheta .^ 2) / Vref^2
 end
 
 """
@@ -52,13 +52,14 @@ function split_bodies(vec, panels; duct=true)
 end
 
 """
-calculate pressure coefficient distribution on duct/hub walls
-formulation taken from DFDC source code. TODO: derive where the expressions came from.
 """
-function get_cps(states, inputs, Vref)
-
-    # - Extract States - #
-    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+function calculate_delta_cp(gamb, gamw, Gamr, sigr, inputs, Vref)
+    # - Extract convenient input fields - #
+    Vinf = inputs.Vinf
+    Omega = inputs.blade_elements.Omega
+    B = inputs.blade_elements.B
+    dwi = inputs.ductwakeidx[1]
+    hwi = inputs.hubwakeidx[1]
 
     # Fill out wake strengths
     wake_vortex_strengths = fill_out_wake_strengths(
@@ -70,10 +71,53 @@ function get_cps(states, inputs, Vref)
         interface="hard",
     )
 
+    ## -- Calculate change in pressure coefficient -- ##
+    # - Get the meridional and tangential velocities at the rotor - #
+    _, _, _, _, _, Vm, _ = calculate_rotor_velocities(
+        Gamr, wake_vortex_strengths, sigr, gamb, inputs
+    )
+
+    v_theta_duct, v_theta_hub = vtheta_on_body(
+        B[1] * Gamr,
+        inputs.body_panels[1].panel_center[dwi, 2],
+        inputs.body_panels[2].panel_center[hwi, 2],
+    )
+
+    # - Calculate enthalpy disk jump - #
+    Htilde = calculate_enthalpy_jumps(Gamr, Omega, B)
+
+    # - Calculate entropy disk jump - #
+    Stilde = calculate_entropy_jumps(sigr, Vm)
+
+    # assemble change in cp due to enthalpy and entropy behind rotor(s)
+    deltacphub = delta_cp(Htilde[1], Stilde[1], v_theta_hub, Vref)
+    deltacpduct = delta_cp(Htilde[end], Stilde[end], v_theta_duct, Vref)
+
+    return deltacpduct, deltacphub
+end
+
+"""
+"""
+function vtheta_on_body(BGamr, inner_duct_r, hub_r)
+    v_theta_duct = BGamr[end] ./ (2.0 * pi * inner_duct_r)
+    v_theta_hub = BGamr[1] ./ (2.0 * pi * hub_r)
+
+    return v_theta_duct, v_theta_hub
+end
+
+"""
+calculate pressure coefficient distribution on duct/hub walls
+formulation taken from DFDC source code. TODO: derive where the expressions came from.
+"""
+function get_cps(states, inputs, Vref)
+
     # - Extract convenient input fields - #
     Vinf = inputs.Vinf
-    Omega = inputs.blade_elements.Omega
-    B = inputs.blade_elements.B
+    dwi = inputs.ductwakeidx[1]
+    hwi = inputs.hubwakeidx[1]
+
+    # - Extract States - #
+    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
     # - Split body strengths into inner/outer duct and hub - #
     gamdi, gamdo, gamh, xdi, xdo, xh = split_bodies(
@@ -85,30 +129,103 @@ function get_cps(states, inputs, Vref)
     cpductouter = steady_cp(gamdo, Vinf, Vref)
     cphub = steady_cp(gamh, Vinf, Vref)
 
-    ## -- Calculate change in pressure coefficient -- ##
-    # - Get the meridional and tangential velocities at the rotor - #
-    _, _, _, _, Vtheta, Vm, _ = calculate_rotor_velocities(
-        Gamr, wake_vortex_strengths, sigr, gamb, inputs
-    )
-
-    # - Calculate enthalpy disk jump - #
-    Htilde = calculate_enthalpy_jumps(Gamr, Omega, B)
-
-    # - Calculate entropy disk jump - #
-    Stilde = calculate_entropy_jumps(sigr, Vm)
-
-    # assemble change in cp due to enthalpy and entropy behind rotor(s)
-    deltacphub = delta_cp(Htilde[1], Stilde[1], Vtheta[1], Vref)
-    deltacpduct = delta_cp(Htilde[end], Stilde[end], Vtheta[end], Vref)
+    # - Calculate the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
+    deltacpduct, deltacphub = calculate_delta_cp(gamb, gamw, Gamr, sigr, inputs, Vref)
 
     # - add raw and adjusted cp values together - #
-    # TODO: need to know indices to apply deltacp. only apply to inner walls aft of rotors
-    cpductinner[inputs.ductwakeidx[1]] .+= deltacpduct
-    cphub[inputs.hubwakeidx[1]] .+= deltacphub
+    cpductinner[dwi] .+= deltacpduct
+    cphub[hwi] .+= deltacphub
 
     return cpductinner, cpductouter, cphub, xdi, xdo, xh
 end
 
+"""
+"""
+function dump(states, inputs)
+
+    # - Extract commonly used items from precomputed inputs - #
+    blade_elements = inputs.blade_elements
+    rpc = inputs.rotor_panel_centers
+    Vinf = inputs.Vinf
+
+    # - Extract states - #
+    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+
+    # - Fill out wake strengths - #
+    wake_vortex_strengths = fill_out_wake_strengths(
+        gamw,
+        inputs.rotor_indices_in_wake,
+        inputs.num_wake_x_panels;
+        ductTE_index=inputs.ductTE_index,
+        hubTE_index=inputs.hubTE_index,
+        interface="hard",
+    )
+
+    _, _, _, vxfrombody, vrfrombody, vxfromwake, vrfromwake, vxfromrotor, vrfromrotor = calculate_induced_velocities_on_rotors(
+        blade_elements,
+        Gamr,
+        inputs.vx_rw,
+        inputs.vr_rw,
+        wake_vortex_strengths,
+        inputs.vx_rr,
+        inputs.vr_rr,
+        sigr,
+        inputs.vx_rb,
+        inputs.vr_rb,
+        gamb;
+        debug=true,
+    )
+
+    vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+        Gamr, wake_vortex_strengths, sigr, gamb, inputs
+    )
+
+    Gamma_tilde = calculate_net_circulation(Gamr, blade_elements.B)
+
+    H_tilde = calculate_enthalpy_jumps(Gamr, blade_elements.Omega, blade_elements.B)
+
+    _, _, phi, alpha, cl, cd = calculate_gamma_sigma(
+        blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor; debug=true
+    )
+
+    return (;
+        gamb,
+        gamw,
+        Gamr,
+        sigr,
+        vx_rotor,
+        vr_rotor,
+        vtheta_rotor,
+        Wx_rotor,
+        Wtheta_rotor,
+        Wm_rotor,
+        Wmag_rotor,
+        vxfrombody,
+        vrfrombody,
+        vxfromwake,
+        vrfromwake,
+        vxfromrotor,
+        vrfromrotor,
+        Gamma_tilde,
+        H_tilde,
+        phi,
+        alpha,
+        cl,
+        cd,
+    )
+end
+
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
 """
 NEED TO TEST. NO GUARENTEES THIS OR CONSTITUENT FUNCTIONS ARE CORRECT. (in fact, they are wrong...)
 """

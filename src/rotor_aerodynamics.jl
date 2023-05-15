@@ -147,7 +147,7 @@ Calculate rotor circulation and source strengths using blade element data and in
 `Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
-function calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
+function calculate_gamma_sigma(blade_elements, Wm, Wθ, W; debug=false)
 
     # get floating point type
     TF = promote_type(
@@ -165,7 +165,7 @@ function calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
     sigr = zeros(TF, nr, nrotor)
 
     # call in-place function
-    return calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W)
+    return calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=debug)
 end
 
 """
