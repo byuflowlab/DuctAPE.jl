@@ -307,3 +307,282 @@ Look up lift and drag data for an airfoil using CCBlade
 TODO: add in cascade database search at some point.
 """
 search_polars(airfoil, alpha, re=0.0, ma=0.0) = ccb.afeval(airfoil, alpha, re, ma)
+
+"""
+DFDC-like polar function. copied from dfdc and adjusted for julia
+TODO: add dfdc polar parameters object compatibility for airfoil field in blade elements objects
+TODO: this is only for a single airfoil definition.  need to rememember to interpolate between sections if there are more than one (this happens near where this function is called, rather than in this function itself)
+"""
+function dfdc_clcdcm(
+    inflow_magnitude, local_reynolds, local_solidity, local_stagger, alpha, afparams, asound
+)
+
+    #all these come from user defined inputs.
+    (;
+        alpha0,
+        clmax,
+        clmin,
+        dclda,
+        dclda_stall,
+        dcl_stall,
+        cdmin,
+        cldmin,
+        dcdcl2,
+        cmcon,
+        Re_ref,
+        Re_exp,
+        mcrit,
+    ) = afparams
+
+    # factors for compressibility drag model, hhy 10/23/00
+    # mcrit is set by user
+    # effective mcrit is mcrit_eff = mcrit - clmfactor*(cl-cldmin) - dmdd
+    # dmdd is the delta mach to get cd=cdmdd (usually 0.0020)
+    # compressible drag is cdc = cdmfactor*(mach-mcrit_eff)^mexp
+    # cdmstall is the drag at which compressible stall begins
+
+    cdmfactor = 10.0
+    clmfactor = 0.25
+    mexp = 3.0
+    cdmdd = 0.0020
+    cdmstall = 0.1000
+
+    # prandtl-glauert compressibility factor
+    msq = inflow_magnitude * inflow_magnitude / asound^2
+    msq_w = 2.0 * inflow_magnitude / asound^2
+    if msq >= 1.0
+        @warn "clfunc: local mach number limited to 0.99, was $msq"
+        msq = 0.99
+        msq_w = 0.0
+    end
+
+    pgrt = 1.0 / sqrt(1.0 - msq)
+    pgrt_w = 0.5 * msq_w * pgrt^3
+
+    # mach number and dependence on velocity
+    mach = sqrt(msq)
+    mach_w = 0.0
+    if mach != 0.0
+        mach_w = 0.5 * msq_w / mach
+    end
+
+    # generate clfactor for cascade effects from section solidity
+    clfactor = 1.0
+    if local_solidity > 0.0
+        clfactor = getclfactor(local_solidity, local_stagger)
+    end
+
+    # generate cl from dcl/dalpha and prandtl-glauert scaling
+    cla = dclda * pgrt * (alpha - alpha0) * clfactor
+    cla_alf = dclda * pgrt * clfactor
+    cla_w = dclda * pgrt_w * (alpha - alpha0) * clfactor
+
+    # effective clmax is limited by mach effects
+    # reduces clmax to match the cl of onset of serious compressible drag
+    clmx = clmax
+    clmn = clmin
+    dmstall = (cdmstall / cdmfactor)^(1.0 / mexp)
+    clmaxm = max(0.0, (mcrit + dmstall - mach) / clmfactor) + cldmin
+    clmax = min(clmax, clmaxm)
+    clminm = min(0.0, -(mcrit + dmstall - mach) / clmfactor) + cldmin
+    clmin = max(clmin, clminm)
+
+    # cl limiter function (turns on after +-stall
+    ecmax = exp(min(200.0, (cla - clmax) / dcl_stall))
+    ecmin = exp(min(200.0, (clmin - cla) / dcl_stall))
+    cllim = dcl_stall * log((1.0 + ecmax) / (1.0 + ecmin))
+    cllim_cla = ecmax / (1.0 + ecmax) + ecmin / (1.0 + ecmin)
+
+    # subtract off a (nearly unity) fraction of the limited cl function
+    # this sets the dcl/dalpha in the stalled regions to 1-fstall of that
+    # in the linear lift range
+    fstall = dclda_stall / dclda
+    clift = cla - (1.0 - fstall) * cllim
+    cl_alf = cla_alf - (1.0 - fstall) * cllim_cla * cla_alf
+    cl_w = cla_w - (1.0 - fstall) * cllim_cla * cla_w
+
+    stallf = false
+    if clift > clmax || clift < clmin
+        stallf == true
+    end
+
+    # cm from cmcon and prandtl-glauert scaling
+    cmom = pgrt * cmcon
+    cm_al = 0.0
+    cm_w = pgrt_w * cmcon
+
+    # cd from profile drag, stall drag and compressibility drag
+    # reynolds number scaling factor
+    if (local_reynolds <= 0.0)
+        rcorr = 1.0
+        rcorr_rey = 0.0
+    else
+        rcorr = (local_reynolds / Re_ref)^Re_exp
+        rcorr_rey = Re_exp / local_reynolds
+    end
+
+    # include quadratic lift drag terms from airfoil and annulus
+
+    # cdcl2 = dcdcl2 + dcdcl2_stall
+    cdcl2 = dcdcl2  # no chance of getting messed up...
+
+    # in the basic linear lift range drag is a function of lift
+    # cd = cd0 (constant) + quadratic with cl)
+    cdrag = (cdmin + cdcl2 * (clift - cldmin)^2) * rcorr
+    cd_alf = (2.0 * cdcl2 * (clift - cldmin) * cl_alf) * rcorr
+    cd_w = (2.0 * cdcl2 * (clift - cldmin) * cl_w) * rcorr
+    cd_rey = cdrag * rcorr_rey
+
+    # post-stall drag added
+    fstall = dclda_stall / dclda
+    dcdx = (1.0 - fstall) * cllim / (pgrt * dclda)
+    dcd = 2.0 * dcdx^2
+    dcd_alf = 4.0 * dcdx * (1.0 - fstall) * cllim_cla * cla_alf / (pgrt * dclda)
+    dcd_w =
+        4.0 *
+        dcdx *
+        ((1.0 - fstall) * cllim_cla * cla_w / (pgrt * dclda) - dcd / pgrt * pgrt_w)
+
+    # compressibility drag (accounts for drag rise above mcrit with cl effects
+    # cdc is a function of a scaling factor*(m-mcrit(cl))^mexp
+    # dmdd is the mach difference corresponding to cd rise of cdmdd at mcrit
+    dmdd = (cdmdd / cdmfactor)^(1.0 / mexp)
+    critmach = mcrit - clmfactor * abs(clift - cldmin) - dmdd
+    critmach_alf = -clmfactor * abs(cl_alf)
+    critmach_w = -clmfactor * abs(cl_w)
+    if (mach < critmach)
+        cdc = 0.0
+        cdc_alf = 0.0
+        cdc_w = 0.0
+    else
+        cdc = cdmfactor * (mach - critmach)^mexp
+        cdc_w = mexp * mach_w * cdc / mach - mexp * critmach_w * cdc / critmach
+        cdc_alf = -mexp * critmach_alf * cdc / critmach
+    end
+
+    fac = 1.0
+    fac_w = 0.0
+    # although test data does not show profile drag increases due to mach #
+    # you could use something like this to add increase drag by prandtl-glauert
+    # (or any function you choose)
+    #   fac   = pg
+    #    fac_w = pg_w
+    # total drag terms
+    cdrag = fac * cdrag + dcd + cdc
+    cd_alf = fac * cd_alf + dcd_alf + cdc_alf
+    cd_w = fac * cd_w + fac_w * cdrag + dcd_w + cdc_alf
+    cd_rey = fac * cd_rey
+
+    return clift, cdrag, cmom
+end
+
+"""
+dfdc function copied and adjusted for julia
+calculates multi-plane cascade effects on lift slope as a function of solidity and stagger angle
+solidty: b*c/(2*pi*r)
+stagger angle is from axis (not plane of rotation), in radians
+originally from a table-drive quadratic fit to a figure 6-29 in wallis, axial flow fans and ducts.
+"""
+function getclfactor(solidity, stagger)
+
+    # data from table (these are factors for a quadratic fit
+    x = [0.5; 0.6; 0.7; 0.8; 0.9; 1.0; 1.1; 1.2; 1.3; 1.4; 1.5]
+    a0 = [
+        0.4755
+        0.5255
+        0.5722
+        0.6142
+        0.6647
+        0.7016
+        0.7643
+        0.8302
+        0.8932
+        0.9366
+        0.9814
+    ]
+    a1 = [
+        -0.367495
+        -0.341941
+        -0.300058
+        -0.255883
+        -0.200593
+        -0.114993
+        -0.118602
+        -0.130921
+        -0.133442
+        -0.077980
+        -0.123071
+    ]
+    a2 = [
+        0.489466
+        0.477648
+        0.453027
+        0.430048
+        0.381462
+        0.310028
+        0.298309
+        0.285309
+        0.263084
+        0.184165
+        0.251594
+    ]
+
+    sigi = 1.0 / solidity
+
+    # spline the data
+    # aa0 = fm.akima(x, a0, sigi)
+    # aa1 = fm.akima(x, a1, sigi)
+    # aa2 = fm.akima(x, a2, sigi)
+
+    aa0 = quadspline(x, a0, sigi)
+    aa1 = quadspline(x, a1, sigi)
+    aa2 = quadspline(x, a2, sigi)
+
+    # only valid for stagger 20deg to 90deg,
+    # limit low stagger to 20deg value to give constant lift ratio below that
+    dtr = pi / 180.0 #degrees to radians
+    stagr = stagger
+    if stagr < 20.0 * dtr
+        stagr = 20.0 * dtr
+    end
+    if stagr > 90.0 * dtr
+        stagr = 90.0 * dtr
+    end
+
+    # quadratic fit for clfactor at this sigma as function of stagger
+    clfactor = aa0 + aa1 * stagr + aa2 * stagr * stagr
+
+    # maximum value of lift ratio should be limited to 1.0
+    clfactor = min(1.0, clfactor)
+
+    return clfactor
+end
+
+"""
+"""
+function quadspline(xdata, ydata, xpoint)
+    n = length(xdata)
+
+    if n == 1
+        return xdata[1]
+    end
+
+    ilow = 1
+    i = n
+
+    while (i - ilow > 1)
+        imid = round(Int, (i + ilow) / 2)
+        if (xpoint < xdata[imid])
+            i = imid
+        else
+            ilow = imid
+        end
+    end
+
+    ds = xdata[i] - xdata[i - 1]
+    t = (xpoint - xdata[i - 1]) / ds
+    ypoint = t * ydata[i] + (1.0 - t) * ydata[i - 1]
+    # xxs =  (ydata(i) - ydata(i-1))/ds
+
+    return ypoint
+end
