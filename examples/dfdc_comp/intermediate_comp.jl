@@ -118,22 +118,6 @@ savefig(savepath * "cd-io-comp.pdf")
 # check cls/cds in, gamma/sigma out #
 #-----------------------------------#
 
-Gamr = similar(dfdccl) .= 0.0
-sigr = similar(dfdccd) .= 0.0
-
-for ir in 1:length(dfdcr)
-    dt.gamma_sigma_from_coeffs!(
-        view(Gamr, ir),
-        view(sigr, ir),
-        dfdcWmag[ir],
-        B,
-        dfdcchord[ir],
-        dfdcr[ir],
-        dfdccl[ir],
-        dfdccd[ir],
-    )
-end
-
 #sanity check from prints: Wm, chord, cd, sigr
 dblchk = [
     58.5465393 8.91420543E-02 1.62045527E-02 3.36496867E-02
@@ -147,6 +131,27 @@ dblchk = [
     123.028114 4.10622135E-02 1.69049483E-02 3.40549685E-02
     131.925644 3.82424332E-02 1.69075467E-02 3.40022333E-02
 ]
+
+Gamr = similar(dfdccl) .= 0.0
+sigr = similar(dfdccd) .= 0.0
+
+for ir in 1:length(dfdcr)
+    dt.gamma_sigma_from_coeffs!(
+        view(Gamr, ir),
+        view(sigr, ir),
+        # dfdcWmag[ir],
+        dblchk[ir, 1],
+        B,
+        # dfdcchord[ir],
+        dblchk[ir, 2],
+        dfdcr[ir],
+        dfdccl[ir],
+        # dfdccd[ir],
+        dblchk[ir, 3],
+    )
+end
+
+dcsigrcalc = similar(sigr) .= 0.0
 for i in 1:length(dfdcr)
     if i == 1
         dcsigrcalc[i] = B / (4.0 * pi) .* dblchk[i, 1] .* dblchk[i, 2] .* dblchk[i, 3]
@@ -192,3 +197,13 @@ plot(; xlabel="enthalpy jump across disk", ylabel="r")
 plot!(dH, dfdcr; label="DuctTAPE functions")
 plot!(deltaH, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "enthalpyjump-io-comp.pdf")
+
+
+
+#---------------------------------#
+#  check everything in, gamw out  #
+#---------------------------------#
+gamw = zeros(length(dfdcr))
+
+
+calculate_wake_vortex_strengths!(gamw, Rr_wake, Vmr, Γ_tilde, H_tilde; debug=false)

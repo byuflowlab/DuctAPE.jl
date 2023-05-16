@@ -33,13 +33,14 @@ function runandplot()
     println("Setting Up")
     rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, Vref = init()
 
-    # println("Plotting Geometry")
-    # plotgeom(inputs, paneling_constants)
-
     println("Running Analysis")
     converged_states, inputs, initial_states, convergeflag = rundt(
         duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream
     )
+
+    println("Plotting Geometry")
+    plotgeom(inputs, paneling_constants)
+
 
     println("Dumping Everything")
     cdump = dt.dump(converged_states, inputs)
@@ -50,17 +51,17 @@ function runandplot()
     println("Plotting Blade Velocities")
     plotbladevelocities(cdump, inputs)
 
-    # println("Plotting Blade Angles")
-    # plotangles(cdump, inputs)
+    println("Plotting Blade Angles")
+    plotangles(cdump, inputs)
 
     println("Plotting Lift/Drag on Blade")
     plotclcd(cdump, inputs)
 
-    # println("Plotting Enthalpy and Entropy Disk Jumps")
-    # ploths(cdump, inputs)
+    println("Plotting Enthalpy and Entropy Disk Jumps")
+    ploths(cdump, inputs)
 
-    # println("Plotting Body Aerodynamics")
-    # plotbodyaero(converged_states, inputs, initial_states, convergeflag, Vref)
+    println("Plotting Body Aerodynamics")
+    plotbodyaero(converged_states, inputs, initial_states, convergeflag, Vref)
 
     return cdump
 end
