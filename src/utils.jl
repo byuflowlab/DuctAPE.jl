@@ -22,10 +22,14 @@ function insert_and_dedup!(v, x)
 end
 
 function printval(text, val)
-    if eltype(val) != Float64
-        println(text, val.value)
+    if eltype(val) == Float64
+        println(text, val, " (Float)")
+    elseif eltype(val) <: Int
+        println(text, val, " (Int)")
+    elseif eltype(val) <: String
+        println(text, val, " (String)")
     else
-        println(text, val)
+        println(text, val.value, " (ForDiff)")
     end
     return nothing
 end

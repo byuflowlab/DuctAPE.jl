@@ -372,6 +372,8 @@ function precomputed_inputs(
 
     return (;
         converged=[false],
+        #freestream
+        freestream,
         # body_geometry, # body geometry
         # - rotors
         blade_elements, # blade elements
@@ -488,7 +490,7 @@ function initialize_states(inputs)
 
     # initialize circulation and source panel strengths
     calculate_gamma_sigma!(
-        Gamr, sigr, inputs.blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor
+        Gamr, sigr, inputs.blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, inputs.freestream
     )
 
     # - Calculate net circulation and enthalpy jumps - #

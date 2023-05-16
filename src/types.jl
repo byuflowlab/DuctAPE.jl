@@ -36,7 +36,6 @@ end
 - `Re_ref::Float` : reference Reynolds number
 - `Re_exp::Float` : Reynolds number exponent
 - `mcrit::Float` : critical Mach number
-- `dcdcl2_stall::Float` : quadratic curve factor for cd curve post-stall
 """
 struct DFDCairfoil{TF}
     alpha0::TF

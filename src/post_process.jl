@@ -185,7 +185,7 @@ function dump(states, inputs)
     H_tilde = calculate_enthalpy_jumps(Gamr, blade_elements.Omega, blade_elements.B)
 
     _, _, phi, alpha, cl, cd = calculate_gamma_sigma(
-        blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor; debug=true
+        blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, inputs.freestream; debug=true
     )
 
     return (;

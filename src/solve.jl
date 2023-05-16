@@ -222,7 +222,9 @@ function update_strengths!(states, inputs, p)
     )
 
     # - Update rotor circulation and source panel strengths - #
-    calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor)
+    calculate_gamma_sigma!(
+        Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, inputs.freestream
+    )
 
     return nothing
 end

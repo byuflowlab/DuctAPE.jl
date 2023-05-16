@@ -8,7 +8,7 @@
 # - `r::Vector{TF}`: radial coordinate of each blade element (dimensionalized)
 # - `chords::Vector{TF}` : chord length of each blade element
 # - `twists::Vector{TF}` : twist of each blade element (in radians)
-# - `solidities::Vector{TF}` : solidity of each blade element
+# - `solidity::Vector{TF}` : solidity of each blade element
 # - `outer_airfoils::Vector{TAF}` : outer bounding airfoil polar
 # - `inner_airfoils::Vector{TAF}` : inner bounding airfoil polar
 # - `inner_fraction::Vector{TAF}`: fraction of inner bounding airfoil polar to use
@@ -20,14 +20,14 @@
 #     r::Vector{TF}
 #     chords::Vector{TF}
 #     twists::Vector{TF}
-#     solidities::Vector{TF}
+#     solidity::Vector{TF}
 #     outer_airfoils::Vector{TAF}
 #     inner_airfoils::Vector{TAF}
 #     inner_fraction::Vector{TF}
 # end
 
 """
-    generate_blade_elements(B, Omega, xrotor, rblade, chords, twists, solidities, airfoils,
+    generate_blade_elements(B, Omega, xrotor, rblade, chords, twists, solidity, airfoils,
         duct_coordinates, hub_coordinates, r)
 
 Use the duct and hub geometry to dimensionalize the non-dimensional radial positions in
@@ -60,8 +60,8 @@ function generate_blade_elements(
     # update twists
     twists = fm.akima(rblade, twists, rbe)
 
-    # update solidities
-    solidities = chords ./ (2 * pi * rbe / B)
+    # update solidity
+    solidity = B * chords ./ (2.0 * pi * rbe)
 
     # get bounding airfoil polars
     outer_airfoil = similar(airfoils, length(rbe))
@@ -100,7 +100,7 @@ function generate_blade_elements(
         rbe,
         chords,
         twists,
-        solidities,
+        solidity,
         outer_airfoil,
         inner_airfoil,
         inner_fraction,

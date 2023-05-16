@@ -164,7 +164,7 @@ Calculate rotor circulation and source strengths using blade element data and in
 `Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
-function calculate_gamma_sigma(blade_elements, Wm, Wθ, W; debug=false)
+function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=false)
 
     # get floating point type
     TF = promote_type(
@@ -182,7 +182,9 @@ function calculate_gamma_sigma(blade_elements, Wm, Wθ, W; debug=false)
     sigr = zeros(TF, nr, nrotor)
 
     # call in-place function
-    return calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=debug)
+    return calculate_gamma_sigma!(
+        Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=debug
+    )
 end
 
 """
@@ -199,10 +201,10 @@ function gamma_sigma_from_coeffs!(Gamr, sigr, W, B, c, r, cl, cd)
     =#
     # this one is in the theory doc
     # things converge twice as fast with this one...
-    sigr[:] .= B / (4.0 * pi * r) * W * c * cd
+    # sigr[:] .= B / (4.0 * pi * r) * W * c * cd
     # this one is in the DFDC source code
     # things converge slower, likely because the values are so small...
-    # sigr[:] .= B / (4.0 * pi) * W * c * cd
+    sigr[:] .= B / (4.0 * pi) * W * c * cd
 
     # return Gamr, sigr
     return nothing
@@ -214,7 +216,9 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 
 Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and Vθ)
 """
-function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=false)
+function calculate_gamma_sigma!(
+    Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=false
+)
 
     # problem dimensions
     nr, nrotor = size(Gamr) #num radial stations, num rotors
@@ -237,29 +241,70 @@ function calculate_gamma_sigma!(Gamr, sigr, blade_elements, Wm, Wθ, W; debug=fa
             B = blade_elements[irotor].B # number of blades
             c = blade_elements[irotor].chords[ir] # chord length
             twist = blade_elements[irotor].twists[ir] # twist
+            #stagger is twist angle but from axis
+            stagger = 0.5 * pi - twist
             r = blade_elements[irotor].rbe[ir] # radius
             Ω = blade_elements[irotor].Omega # rotation rate
+            solidity = blade_elements[irotor].solidity[ir]
 
             # calculate angle of attack
             phi, alpha = calculate_inflow_angles(Wm[ir, irotor], Wθ[ir, irotor], twist)
 
             # printval("Wm[$(ir),$(irotor)]: ", Wm[ir,irotor])
             # printval("Wtheta[$(ir),$(irotor)]: ", Wθ[ir,irotor])
-            # printval("twist: ", twist)
-            # printval("phi: ", phi)
-            # printval("alpha: ", alpha)
+            # printval("twist: ", twist*180.0/pi)
+            # printval("phi: ", phi*180.0/pi)
+            # printval("alpha: ", alpha*180.0/pi)
+            # printval("Wmag: ", W[ir, irotor])
 
             # look up lift and drag data for the nearest two input sections
             # TODO: this breaks rotor aero tests... need to update those.
-            clin, cdin = search_polars(blade_elements[irotor].inner_airfoil[ir], alpha)
-            clout, cdout = search_polars(blade_elements[irotor].outer_airfoil[ir], alpha)
-            # linearly interpolate between those two values at your blade element location
+            if typeof(blade_elements[irotor].inner_airfoil[ir]) <: DFDCairfoil
+
+                # get local reynolds number
+                reynolds = c * abs(W[ir, irotor]) * freestream.rho / freestream.mu
+
+                # printval("Re: ", reynolds)
+
+                #get inner values
+                clin, cdin, _ = dfdc_clcdcm(
+                    W[ir, irotor],
+                    reynolds,
+                    solidity,
+                    stagger,
+                    alpha,
+                    blade_elements[irotor].inner_airfoil[ir],
+                    freestream.asound,
+                )
+                # get outer values
+                clout, cdout, _ = dfdc_clcdcm(
+                    W[ir, irotor],
+                    reynolds,
+                    solidity,
+                    stagger,
+                    alpha,
+                    blade_elements[irotor].outer_airfoil[ir],
+                    freestream.asound,
+                )
+
+            else
+                clin, cdin = search_polars(blade_elements[irotor].inner_airfoil[ir], alpha)
+                clout, cdout = search_polars(
+                    blade_elements[irotor].outer_airfoil[ir], alpha
+                )
+                # linearly interpolate between those two values at your blade element location
+            end
+
+            # interpolate inner and outer values
             cl = fm.linear(
                 [0.0; 1.0], [clin, clout], blade_elements[irotor].inner_fraction[ir]
             )
             cd = fm.linear(
                 [0.0; 1.0], [cdin, cdout], blade_elements[irotor].inner_fraction[ir]
             )
+
+            # printval("cl in: ", clin)
+            # printval("cl interp: ", cl)
 
             gamma_sigma_from_coeffs!(
                 view(Gamr, ir, irotor),
@@ -348,7 +393,7 @@ function dfdc_clcdcm(
     cdmstall = 0.1000
 
     # prandtl-glauert compressibility factor
-    msq = inflow_magnitude * inflow_magnitude / asound^2
+    msq = (inflow_magnitude / asound)^2
     msq_w = 2.0 * inflow_magnitude / asound^2
     if msq >= 1.0
         @warn "clfunc: local mach number limited to 0.99, was $msq"
