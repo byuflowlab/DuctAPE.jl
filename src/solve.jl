@@ -1,9 +1,9 @@
-"""
-    analyze_propulsor(x, fx=x->x; maximum_linesearch_step_size=1e-8, iteration_limit=100)
+# """
+#     analyze_propulsor(x, fx=x->x; maximum_linesearch_step_size=1e-8, iteration_limit=100)
 
-Version of `analyze_propeller` designed for sensitivity analysis.  `x` is an input vector
-and `fx` is a function which returns the standard input arguments to `analyze_propeller`.
-"""
+# Version of `analyze_propeller` designed for sensitivity analysis.  `x` is an input vector
+# and `fx` is a function which returns the standard input arguments to `analyze_propeller`.
+# """
 # function analyze_propulsor(x, fx=x -> x; maximum_linesearch_step_size=1e-8, iteration_limit=15)
 
 #     # convergence flag
@@ -94,9 +94,6 @@ function solve(x, p)
     initial_states = initialize_states(inputs)
     initials = copy(initial_states)
 
-    # initialize residual vector
-    # resid = copy(states)
-
     # - Define closure that allows for parameters - #
     rwrap(r, states) = residual!(r, states, inputs, p)
 
@@ -148,53 +145,13 @@ function residual(states, inputs, p)
 end
 
 function update_strengths!(states, inputs, p)
-    # - Extract commonly used items from precomputed inputs - #
-    blade_elements = inputs.blade_elements
-    rpc = inputs.rotor_panel_centers
-    Vinf = inputs.Vinf
 
     # - Extract states - #
     gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
-    # - Fill out wake strengths - #
-    wake_vortex_strengths = fill_out_wake_strengths(
-        gamw,
-        inputs.rotor_indices_in_wake,
-        inputs.num_wake_x_panels;
-        ductTE_index=inputs.ductTE_index,
-        hubTE_index=inputs.hubTE_index,
-        interface="hard",
-    )
-
-    # - Get the induced velocities at the rotor plane - #
-    # vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-    #     blade_elements,
-    #     Gamr,
-    #     inputs.vx_rw,
-    #     inputs.vr_rw,
-    #     wake_vortex_strengths,
-    #     inputs.vx_rr,
-    #     inputs.vr_rr,
-    #     sigr,
-    #     inputs.vx_rb,
-    #     inputs.vr_rb,
-    #     gamb,
-    # )
-
-    # # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    # Wx_rotor = vx_rotor .+ inputs.Vinf
-
-    # # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    # Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* rpc
-
-    # # meridional component
-    # Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
-
-    # # Get the inflow magnitude at the rotor as the combination of all the components
-    # Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
-
+    # - Get velocities at rotor planes (before updating state dependencies) - #
     _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-        Gamr, wake_vortex_strengths, sigr, gamb, inputs
+        Gamr, gamw, sigr, gamb, inputs
     )
 
     # - Calculate body vortex strengths (before updating state dependencies) - #
@@ -204,26 +161,23 @@ function update_strengths!(states, inputs, p)
         inputs.b_bf,
         inputs.kutta_idxs,
         inputs.A_bw,
-        wake_vortex_strengths,
+        gamw,
         inputs.A_br,
         sigr,
     )
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
-    # calculate net circulation
-    Gamma_tilde = calculate_net_circulation(Gamr, blade_elements.B)
-
-    # calculate enthalpy jumps
-    H_tilde = calculate_enthalpy_jumps(Gamr, blade_elements.Omega, blade_elements.B)
-
-    # update wake strengths
-    calculate_wake_vortex_strengths!(
-        gamw, inputs.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
-    )
+    calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=false)
 
     # - Update rotor circulation and source panel strengths - #
     calculate_gamma_sigma!(
-        Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, inputs.freestream
+        Gamr,
+        sigr,
+        inputs.blade_elements,
+        Wm_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        inputs.freestream,
     )
 
     return nothing
@@ -240,16 +194,17 @@ function extract_state_variables(states, inputs)
     nb = inputs.num_body_panels                     # number of body panels
     nr, nrotor = size(inputs.rotor_panel_centers)   # number of blade elements and rotors
     nw = nr + 1                                     # number of wake sheets
+    nx = inputs.num_wake_x_panels                   # number of wake panels per sheet
 
     # State Variable Indices
     iΓb = 1:nb                                      # body vortex strength indices
-    iΓw = (iΓb[end] + 1):(iΓb[end] + nw * nrotor)   # wake vortex strength indices
+    iΓw = (iΓb[end] + 1):(iΓb[end] + nw * nx)       # wake vortex strength indices
     iΓr = (iΓw[end] + 1):(iΓw[end] + nr * nrotor)   # rotor circulation strength indices
     iΣr = (iΓr[end] + 1):(iΓr[end] + nr * nrotor)   # rotor source strength indices
 
     # Extract State variables
     gamb = view(states, iΓb)                        # body vortex strengths
-    gamw = reshape(view(states, iΓw), (nw, nrotor)) # wake vortex strengths
+    gamw = reshape(view(states, iΓw), (nw, nx))     # wake vortex strengths
     Gamr = reshape(view(states, iΓr), (nr, nrotor)) # rotor circulation strengths
     sigr = reshape(view(states, iΣr), (nr, nrotor)) # rotor circulation strengths
 

@@ -125,13 +125,13 @@ end
 
 """
 """
-function calculate_rotor_velocities(Gamr, wake_vortex_strengths, sigr, gamb, inputs)
+function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
         inputs.vx_rw,
         inputs.vr_rw,
-        wake_vortex_strengths,
+        gamw,
         inputs.vx_rr,
         inputs.vr_rr,
         sigr,
@@ -256,6 +256,7 @@ function calculate_gamma_sigma!(
             # printval("phi: ", phi*180.0/pi)
             # printval("alpha: ", alpha*180.0/pi)
             # printval("Wmag: ", W[ir, irotor])
+            printval("Mach: ", W[ir,irotor] / freestream.asound)
 
             # look up lift and drag data for the nearest two input sections
             # TODO: this breaks rotor aero tests... need to update those.
@@ -304,7 +305,7 @@ function calculate_gamma_sigma!(
             )
 
             # printval("cl in: ", clin)
-            # printval("cl interp: ", cl)
+            printval("cl interp: ", cl)
 
             gamma_sigma_from_coeffs!(
                 view(Gamr, ir, irotor),
@@ -396,7 +397,13 @@ function dfdc_clcdcm(
     msq = (inflow_magnitude / asound)^2
     msq_w = 2.0 * inflow_magnitude / asound^2
     if msq >= 1.0
-        @warn "clfunc: local mach number limited to 0.99, was $msq"
+        ma = sqrt(msq)
+        if typeof(ma) != Float64
+            maprint = ma.value
+        else
+            maprint = ma
+        end
+        @warn "clfactor: local mach number limited to 0.99, was $maprint"
         msq = 0.99
         msq_w = 0.0
     end
@@ -630,4 +637,78 @@ function quadspline(xdata, ydata, xpoint)
     # xxs =  (ydata(i) - ydata(i-1))/ds
 
     return ypoint
+end
+
+######################################################################
+#                                                                    #
+#                           STUFF FOR WAKE                           #
+#                                                                    #
+######################################################################
+
+"""
+only used in post-process for cp.
+expression not in dfdc theory, comes from source code.
+todo: derive in theory doc
+"""
+function calculate_entropy_jumps(sigr, Vm)
+    return sigr .* Vm
+end
+
+"""
+    calculate_enthalpy_jumps(Gamr, Omega, num_blades)
+
+Calculate enthalpy jump across each blade.
+"""
+function calculate_enthalpy_jumps(Gamr, Omega, num_blades)
+
+    # number of blade elements (or radial positions) and rotors
+    nr, nrotor = size(Gamr)
+
+    # compute cumulative sum of enthalpy jumps
+    H_tilde = similar(Gamr) .= 0
+    for ir in 1:nr
+        for irotor in 1:nrotor
+            Ω = Omega[irotor]
+            B = num_blades[irotor]
+
+            Γ = Gamr[ir, irotor]
+            H_tilde[ir, irotor] += Ω * B * Γ / (2.0 * pi)
+
+            # add the upstream contributions
+            for jrotor in 1:(irotor - 1)
+                H_tilde[ir, irotor] += H_tilde[ir, jrotor]
+            end
+        end
+    end
+
+    return H_tilde
+end
+
+"""
+    calculate_net_circulation(Gamr, num_blades)
+
+Calculate net circulation from upstream rotors.
+"""
+function calculate_net_circulation(Gamr, num_blades)
+
+    # number of blade elements (or radial positions) and rotors
+    nr, nrotor = size(Gamr)
+
+    # calculate net circulations
+    Γ_tilde = similar(Gamr) .= 0
+    for ir in 1:nr
+        for irotor in 1:nrotor
+            B = num_blades[irotor]
+
+            Γ = Gamr[ir, irotor]
+            Γ_tilde[ir, irotor] += B * Γ
+
+            # add the upstream contributions
+            for jrotor in 1:(irotor - 1)
+                Γ_tilde[ir, irotor] += Γ_tilde[ir, jrotor]
+            end
+        end
+    end
+
+    return Γ_tilde
 end

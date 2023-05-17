@@ -396,13 +396,14 @@ function plotstates(Gamr, sigr, gamw, inputs, convergeflag)
     savefig(pG, project_dir * "/examples/dfdc_comp/rotorcirculation-check.pdf")
 
     ##### ----- Plot Wake Strengths ----- #####
-    pg = plot(; xlabel=L"\gamma_\theta^{wake}", ylabel="r")
 
-    # plot solution
-    plot!(pg, gamw, inputs.rotor_panel_edges; label=convlabel)
+    #pg = plot(; xlabel=L"\gamma_\theta^{wake}", ylabel="r")
 
-    #save
-    savefig(pg, project_dir * "/examples/dfdc_comp/wake-strength.pdf")
+    ## plot solution
+    #plot!(pg, gamw, inputs.rotor_panel_edges; label=convlabel)
+
+    ##save
+    #savefig(pg, project_dir * "/examples/dfdc_comp/wake-strength.pdf")
 
     ##### ----- Plot Source Strengths ----- #####
     ps = plot(; xlabel=L"\sigma", ylabel="r")

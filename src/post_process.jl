@@ -61,20 +61,10 @@ function calculate_delta_cp(gamb, gamw, Gamr, sigr, inputs, Vref)
     dwi = inputs.ductwakeidx[1]
     hwi = inputs.hubwakeidx[1]
 
-    # Fill out wake strengths
-    wake_vortex_strengths = fill_out_wake_strengths(
-        gamw,
-        inputs.rotor_indices_in_wake,
-        inputs.num_wake_x_panels;
-        ductTE_index=inputs.ductTE_index,
-        hubTE_index=inputs.hubTE_index,
-        interface="hard",
-    )
-
     ## -- Calculate change in pressure coefficient -- ##
     # - Get the meridional and tangential velocities at the rotor - #
     _, _, _, _, _, Vm, _ = calculate_rotor_velocities(
-        Gamr, wake_vortex_strengths, sigr, gamb, inputs
+        Gamr, gamw, sigr, gamb, inputs
     )
 
     v_theta_duct, v_theta_hub = vtheta_on_body(
@@ -151,22 +141,12 @@ function dump(states, inputs)
     # - Extract states - #
     gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
-    # - Fill out wake strengths - #
-    wake_vortex_strengths = fill_out_wake_strengths(
-        gamw,
-        inputs.rotor_indices_in_wake,
-        inputs.num_wake_x_panels;
-        ductTE_index=inputs.ductTE_index,
-        hubTE_index=inputs.hubTE_index,
-        interface="hard",
-    )
-
     _, _, _, vxfrombody, vrfrombody, vxfromwake, vrfromwake, vxfromrotor, vrfromrotor = calculate_induced_velocities_on_rotors(
         blade_elements,
         Gamr,
         inputs.vx_rw,
         inputs.vr_rw,
-        wake_vortex_strengths,
+        gamw,
         inputs.vx_rr,
         inputs.vr_rr,
         sigr,
@@ -177,7 +157,7 @@ function dump(states, inputs)
     )
 
     vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-        Gamr, wake_vortex_strengths, sigr, gamb, inputs
+        Gamr, gamw, sigr, gamb, inputs
     )
 
     Gamma_tilde = calculate_net_circulation(Gamr, blade_elements.B)

@@ -9,6 +9,7 @@ if project_dir == ""
     project_dir = "."
 end
 
+datapath = project_dir * "/examples/dfdc_comp/"
 savepath = project_dir * "/examples/dfdc_comp/"
 
 include(project_dir * "/plots_default.jl")
@@ -45,9 +46,9 @@ plot!(dfdcphi, dfdcr; linewidth=2, linestyle=:dash, label="inflow: DFDC")
 plot!(dfdcalpha, dfdcr; linewidth=2, linestyle=:dash, label="aoa: DFDC")
 savefig(project_dir * "/examples/dfdc_comp/inflow-io-comp.pdf")
 
-#---------------------------------#
-#  check angles in, cls, cds out  #
-#---------------------------------#
+#------------------------------------------#
+# check geom&vel in, rey, solid, stagr out #
+#------------------------------------------#
 
 B = 5
 
@@ -85,20 +86,43 @@ afparams = (;
     mcrit,
 )
 
+#CHORD,YRC,ALF,WWB,REY,SECSIG,SECSTAGR,CL,CD
+include(datapath * "CLCD_CHECK.jl")
+
+local_reynolds = clcdcheck[:, 1] .* abs.(clcdcheck[:, 4]) * rho / mu
+local_solidity = B * clcdcheck[:, 1] ./ (2.0 * pi * clcdcheck[:, 2])
+local_stagger = 0.5 * pi .- dfdcbeta * pi / 180.0
+
+plot(; xlabel="Reynolds", ylabel="r")
+plot!(local_reynolds, clcdcheck[:, 2]; label="DuctTAPE Functions")
+plot!(clcdcheck[:, 5], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
+savefig(savepath * "re-io-comp.pdf")
+
+plot(; xlabel="Local Solidity", ylabel="r")
+plot!(local_solidity, clcdcheck[:, 2]; label="DuctTAPE Functions")
+plot!(clcdcheck[:, 6], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
+savefig(savepath * "solidity-io-comp.pdf")
+
+plot(; xlabel="Local Stagger", ylabel="r")
+plot!(local_stagger, clcdcheck[:, 2]; label="DuctTAPE Functions")
+plot!(clcdcheck[:, 7], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
+savefig(savepath * "stagger-io-comp.pdf")
+
+#---------------------------------#
+#  check angles in, cls, cds out  #
+#---------------------------------#
+
 cl = zeros(length(dfdcr))
 cd = zeros(length(dfdcr))
 cm = zeros(length(dfdcr))
-local_reynolds = dfdcchord .* abs.(dfdcWmag) * rho / mu
-local_solidity = B * dfdcchord ./ (2.0 * pi * dfdcr)
-local_stagger = 0.5 * pi .- dfdcbeta * pi / 180.0
 
 for i in 1:length(dfdcr)
     cl[i], cd[i], cm[i] = dt.dfdc_clcdcm(
-        dfdcWmag[i],
-        local_reynolds[i],
-        local_solidity[i],
-        local_stagger[i],
-        dfdcalpha[i] * pi / 180.0,
+        clcdcheck[i, 4],
+        clcdcheck[i, 5],
+        clcdcheck[i, 6],
+        clcdcheck[i, 7],
+        clcdcheck[i, 3],
         afparams,
         asound,
     )
@@ -106,12 +130,12 @@ end
 
 plot(; xlabel=L"c_\ell", ylabel="r")
 plot!(cl, dfdcr; label="DuctTAPE functions")
-plot!(dfdccl, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
+plot!(clcdcheck[:, 8], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "cl-io-comp.pdf")
 
 plot(; xlabel=L"c_d", ylabel="r")
-plot!(cd, dfdcr; label="DuctTAPE functions")
-plot!(dfdccd, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
+plot!(cd, clcdcheck[:, 2]; label="DuctTAPE functions")
+plot!(clcdcheck[:, 9], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "cd-io-comp.pdf")
 
 #-----------------------------------#
@@ -198,12 +222,6 @@ plot!(dH, dfdcr; label="DuctTAPE functions")
 plot!(deltaH, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "enthalpyjump-io-comp.pdf")
 
-
-
 #---------------------------------#
 #  check everything in, gamw out  #
 #---------------------------------#
-gamw = zeros(length(dfdcr))
-
-
-calculate_wake_vortex_strengths!(gamw, Rr_wake, Vmr, Γ_tilde, H_tilde; debug=false)
