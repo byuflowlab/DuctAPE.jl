@@ -256,7 +256,7 @@ function calculate_gamma_sigma!(
             # printval("phi: ", phi*180.0/pi)
             # printval("alpha: ", alpha*180.0/pi)
             # printval("Wmag: ", W[ir, irotor])
-            printval("Mach: ", W[ir,irotor] / freestream.asound)
+            # printval("Mach: ", W[ir,irotor] / freestream.asound)
 
             # look up lift and drag data for the nearest two input sections
             # TODO: this breaks rotor aero tests... need to update those.
@@ -305,7 +305,7 @@ function calculate_gamma_sigma!(
             )
 
             # printval("cl in: ", clin)
-            printval("cl interp: ", cl)
+            # printval("cl interp: ", cl)
 
             gamma_sigma_from_coeffs!(
                 view(Gamr, ir, irotor),

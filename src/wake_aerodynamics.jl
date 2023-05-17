@@ -1,3 +1,11 @@
+function calculate_induced_velocities_on_wakes(Vmr, nx)
+    Vmavg = [Vmr[1]; [0.5 * (Vmr[i] + Vmr[i + 1]) for i in 1:(length(Vmr) - 1)]; Vmr[end]]
+
+    Vms = repeat(Vmavg; inner=(1, nx))
+
+    return Vms
+end
+
 """
 """
 function calculate_induced_velocities_on_wakes(
@@ -17,10 +25,8 @@ function calculate_induced_velocities_on_wakes(
         # initialize outputs
         vxb = similar(gamw) .= 0 # axial induced velocity
         vrb = similar(gamw) .= 0 # radial induced velocity
-
         vxr = similar(gamw) .= 0 # axial induced velocity
         vrr = similar(gamw) .= 0 # radial induced velocity
-
         vxw = similar(gamw) .= 0 # axial induced velocity
         vrw = similar(gamw) .= 0 # radial induced velocity
     end
@@ -32,7 +38,6 @@ function calculate_induced_velocities_on_wakes(
         if gamb != nothing
             @views vx[iwake, :] .+= vx_wb[iwake] * gamb
             @views vr[iwake, :] .+= vr_wb[iwake] * gamb
-
             if debug
                 @views vxb[iwake, :] .+= vx_wb[irotor] * gamb
                 @views vrb[iwake, :] .+= vr_wb[irotor] * gamb
@@ -43,23 +48,22 @@ function calculate_induced_velocities_on_wakes(
         for jrotor in 1:nrotor
             @views vx[iwake, :] .+= vx_wr[iwake, jrotor] * sigr[:, jrotor]
             @views vr[iwake, :] .+= vr_wr[iwake, jrotor] * sigr[:, jrotor]
-
             if debug
                 @views vxr[iwake, :] .+= vx_wr[iwake, jrotor] * sigr[:, jrotor]
                 @views vrr[iwake, :] .+= vr_wr[iwake, jrotor] * sigr[:, jrotor]
             end
         end
 
-        # add wake induced velocities
-        for jwake in 1:nwake
-            @views vx[iwake, :] .+= vx_rw[iwake, jwake] * gamw[jwake, :]
-            @views vr[iwake, :] .+= vr_rw[iwake, jwake] * gamw[jwake, :]
+        # # add wake induced velocities
+        # for jwake in 1:nwake
+        #     @views vx[iwake, :] .+= vx_rw[iwake, jwake] * gamw[jwake, :]
+        #     @views vr[iwake, :] .+= vr_rw[iwake, jwake] * gamw[jwake, :]
+        #     if debug
+        #         @views vxw[iwake, :] .+= vx_rw[iwake, jwake] * gamw[jwake, :]
+        #         @views vrw[iwake, :] .+= vr_rw[iwake, jwake] * gamw[jwake, :]
+        #     end
+        # end
 
-            if debug
-                @views vxw[iwake, :] .+= vx_rw[iwake, jwake] * gamw[jwake, :]
-                @views vrw[iwake, :] .+= vr_rw[iwake, jwake] * gamw[jwake, :]
-            end
-        end
     end
 
     # return raw induced velocities
@@ -139,20 +143,39 @@ function calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=
     # number of streamwise and radial panels
     nw, nx = size(gamw)
 
-    # get induced velocities from body and rotor on wake panels.
-    vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
+    # # get induced velocities from body and rotor on wake panels.
+    # vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
+    #     gamw,
+    #     inputs.vx_wr,
+    #     inputs.vr_wr,
+    #     sigr,
+    #     inputs.vx_wb,
+    #     inputs.vr_wb,
+    #     gamb;
+    #     debug=false,
+    # )
+
+    # # reframe velocities to get meridional velocity on wake panels
+    # Vm = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)
+    vxr, vrr, _ = calculate_induced_velocities_on_rotors(
+        inputs.blade_elements,
+        Gamr,
+        inputs.vx_rw,
+        inputs.vr_rw,
         gamw,
-        inputs.vx_wr,
-        inputs.vr_wr,
+        inputs.vx_rr,
+        inputs.vr_rr,
         sigr,
-        inputs.vx_wb,
-        inputs.vr_wb,
+        inputs.vx_rb,
+        inputs.vr_rb,
         gamb;
-        debug=false,
     )
 
-    # reframe velocities to get meridional velocity on wake panels
-    Vm = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)
+    _, _, Vmr, _ = reframe_rotor_velocities(
+        vxr, vrr, 0.0, inputs.Vinf, inputs.blade_elements.Omega, inputs.rotor_panel_centers
+    )
+
+    Vm = calculate_induced_velocities_on_wakes(Vmr, nx)
 
     # get net circulation of upstream rotors
     Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
