@@ -41,7 +41,6 @@ function runandplot()
     println("Plotting Geometry")
     plotgeom(inputs, paneling_constants)
 
-
     println("Dumping Everything")
     cdump = dt.dump(converged_states, inputs)
 
@@ -259,6 +258,50 @@ function init()
     freestream = (; rho, mu, asound, Vinf)
 
     return rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, Vref
+end
+
+function sanity_check(;debug=false)
+    rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, Vref =  init()
+
+    # initialize various inputs used in analysis
+    inputs = dt.precomputed_inputs(
+        duct_coords,
+        hub_coords,
+        paneling_constants,
+        rotor_parameters,
+        freestream;
+        debug=debug,
+    )
+
+    plot(; xlabel="x", ylabel="r", aspectratio=1)
+
+    println("length affect: ", length(inputs.wake_affect_panels))
+    println("length wake_vortex_panels: ", length(inputs.wake_vortex_panels))
+    for i in 1:length(inputs.wake_vortex_panels)
+        plot!(
+            inputs.wake_vortex_panels[i].panel_center[:, 1],
+            inputs.wake_vortex_panels[i].panel_center[:, 2];
+            seriestype=:scatter,
+            markersize=1,
+            color=mycolors[1],
+            label="",
+        )
+    end
+
+    for i in 1:length(inputs.wake_affect_panels)
+        plot!(
+            inputs.wake_affect_panels[i].panel_center[:, 1],
+            inputs.wake_affect_panels[i].panel_center[:, 2];
+            seriestype=:scatter,
+            markersize = 1,
+            color=mycolors[2],
+            label="",
+        )
+    end
+
+    savefig(project_dir * "/examples/dfdc_comp/wakeandpseudowakegeom.pdf")
+
+    return nothing
 end
 
 function rundt(duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream)
@@ -678,4 +721,5 @@ function ploths(cdump, inputs)
     return nothing
 end
 
-dump = runandplot()
+# dump = runandplot()
+sanity_check()

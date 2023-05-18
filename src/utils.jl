@@ -29,7 +29,11 @@ function printval(text, val)
     elseif eltype(val) <: String
         println(text, val, " (String)")
     else
-        println(text, val.value, " (ForDiff)")
+        if typeof(val) <: AbstractMatrix || typeof(val) <: AbstractVector
+            println(text, (p -> p.value).(val), " (ForDiff)")
+        else
+            println(text, val.value, " (ForDiff)")
+        end
     end
     return nothing
 end
