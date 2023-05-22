@@ -65,6 +65,8 @@ function post_process(states, inputs)
     # get blade element coefficients
     clift, cdrag, inflow_angle, angle_of_attack = get_blade_aero(
         Wmag_rotor,
+        Wm_rotor,
+        Wtheta_rotor,
         solidity,
         stagger,
         chord,
@@ -270,7 +272,7 @@ end
 """
 """
 function calculate_delta_cp(
-    gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Omega, B, dwi, hwi, Vref
+    gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Omega, B, body_panels, dwi, hwi, Vref
 )
 
     ## -- Calculate change in pressure coefficient -- ##
@@ -278,8 +280,8 @@ function calculate_delta_cp(
     # TODO; changes needed for multiple rotors
     v_theta_duct, v_theta_hub = vtheta_on_body(
         B[1] * Gamr,
-        inputs.body_panels[1].panel_center[dwi, 2],
-        inputs.body_panels[2].panel_center[hwi, 2],
+        body_panels[1].panel_center[dwi, 2],
+        body_panels[2].panel_center[hwi, 2],
     )
 
     # - Calculate enthalpy disk jump - #
@@ -314,7 +316,7 @@ function get_cps(
 
     # - Split body strengths into inner/outer duct and hub - #
     gamdi, gamdo, gamh, xdi, xdo, xh = split_bodies(
-        gamb, inputs.body_panels; duct=inputs.isduct
+        gamb, body_panels; duct=isduct
     )
 
     # - Calculate standard pressure coefficient expression - #
@@ -324,7 +326,7 @@ function get_cps(
 
     # - Calculate the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
     deltacpduct, deltacphub = calculate_delta_cp(
-        gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Omega, B, dwi, hwi, Vref
+        gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Omega, B, body_panels, dwi, hwi, Vref
     )
 
     # - add raw and adjusted cp values together - #
@@ -491,6 +493,8 @@ end
 
 function get_blade_aero(
     Wmag_rotor,
+    Wm_rotor,
+    Wtheta_rotor,
     solidity,
     stagger,
     chord,

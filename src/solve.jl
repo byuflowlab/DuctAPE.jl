@@ -62,10 +62,11 @@ function analyze_propulsor(
     # compute various panel and circulation strenghts (updates convergence flag internally)
     strengths, inputs, initials = solve(x, p)
 
-    # TODO: post-processing using the converged strengths
+    # post-processing using the converged strengths
+    out = post_process(strengths, inputs)
 
     # return solution
-    return strengths, inputs, initials, p.converged[1]
+    return out, strengths, inputs, initials, p.converged[1]
 end
 
 """

@@ -34,11 +34,11 @@ function run_only()
     rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, reference_parameters = init()
 
     println("Running Analysis")
-    converged_states, inputs, initial_states, convergeflag = rundt(
+    out, converged_states, inputs, initial_states, convergeflag = rundt(
         duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream, reference_parameters
     )
 
-    return converged_states, inputs
+    return converged_states, inputs, out
 end
 
 function runandplot()
@@ -46,7 +46,7 @@ function runandplot()
     rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, reference_parameters = init()
 
     println("Running Analysis")
-    converged_states, inputs, initial_states, convergeflag = rundt(
+    out, converged_states, inputs, initial_states, convergeflag = rundt(
         duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream, reference_parameters
     )
 
@@ -324,7 +324,7 @@ function rundt(duct_coords, hub_coords, rotor_parameters, paneling_constants, fr
     #           Run Solver            #
     #---------------------------------#
 
-    converged_states, inputs, initial_states, convergeflag = dt.analyze_propulsor(
+    out, converged_states, inputs, initial_states, convergeflag = dt.analyze_propulsor(
         duct_coords,
         hub_coords,
         paneling_constants,
@@ -336,7 +336,7 @@ function rundt(duct_coords, hub_coords, rotor_parameters, paneling_constants, fr
         iteration_limit=100,
     )
 
-    return converged_states, inputs, initial_states, convergeflag
+    return out, converged_states, inputs, initial_states, convergeflag
 end
 
 function plotgeom(inputs, paneling_constants)
@@ -737,6 +737,6 @@ function ploths(cdump, inputs)
     return nothing
 end
 
-dump = runandplot()
+# dump = runandplot()
 # sanity_check()
-# states, inputs = run_only()
+states, inputs, out = run_only()
