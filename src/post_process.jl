@@ -171,6 +171,9 @@ function post_process(states, inputs)
         Wmag_rotor, inflow_angle, clift, cdrag, chord, rho
     )
 
+    # - Thrust and Torque Coefficients - #
+    CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega, Rref)
+
     ## -- Assemble Output Tuple -- ##
 
     out = (;
@@ -193,11 +196,13 @@ function post_process(states, inputs)
         rotor_inviscid_thrust_dist,
         rotor_viscous_thrust,
         rotor_viscous_thrust_dist,
+        CT,
         # rotor torque
         rotor_inviscid_torque,
         rotor_inviscid_torque_dist,
         rotor_viscous_torque,
         rotor_viscous_torque_dist,
+        CQ,
         # rotor power
         rotor_inviscid_power,
         rotor_inviscid_power_dist,
@@ -489,6 +494,23 @@ function get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
     else
         return 0.0
     end
+end
+
+function tqcoeff(thrust, torque, rho, Omega, Rref)
+
+    # reference diameter
+    D = 2.0*Rref
+
+    # rototion in rev per second
+    n = Omega /(2.0*pi)
+
+    # thrust coefficient
+    CT = thrust/(rho*n^2*D^4)
+
+    # torque coefficient
+    CQ = torque/(rho*n^2*D^5)
+
+    return CT, CQ
 end
 
 function get_blade_aero(
