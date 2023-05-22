@@ -80,12 +80,12 @@ function post_process(states, inputs)
     # - Rotor Thrust - #
     # inviscid thrust
     rotor_inviscid_thrust, rotor_inviscid_thrust_dist = inviscid_rotor_trust(
-        vtheta_rotor, Wtheta_rotor, Gamma_tilde, rpl, rho
+        Wtheta_rotor, Gamma_tilde, rpl, rho
     )
 
     # viscous thrust
     rotor_viscous_thrust, rotor_viscous_thrust_dist = viscous_rotor_thrust(
-        vx_rotor, Wmag_rotor, B, chord, rpl, cdrag, rho, Vinf
+        Wx_rotor, Wmag_rotor, B, chord, rpl, cdrag, rho
     )
 
     # total thrust
@@ -94,12 +94,12 @@ function post_process(states, inputs)
     # - Rotor Torque - #
     # inviscid torque
     rotor_inviscid_torque, rotor_inviscid_torque_dist = inviscid_rotor_torque(
-        Wx_rotor, Vinf, rpc, rpl, Gamma_tilde, rho
+        Wx_rotor, rpc, rpl, Gamma_tilde, rho
     )
 
     # viscous torque
     rotor_viscous_torque, rotor_viscous_torque_dist = viscous_rotor_torque(
-        Wtheta_rotor, Wmag_rotor, B, chord, rpc, rpl, cdrag
+        Wtheta_rotor, Wmag_rotor, B, chord, rpc, rpl, cdrag, rho
     )
 
     # - Rotor Power - #
@@ -133,13 +133,19 @@ function post_process(states, inputs)
     duct_cp = [duct_inner_cp; duct_outer_cp]
 
     # - Calculate Thrust from Bodies - #
-    duct_thrust, _ = forces_from_pressure(duct_cp, inputs.body_panels[1]; rho=rho, Vref=Vref)
+
+    duct_thrust, _ = forces_from_pressure(
+        duct_cp, inputs.body_panels[1]; rho=rho, Vref=Vref
+    )
+
     hub_thrust, _ = forces_from_pressure(hub_cp, inputs.body_panels[2]; rho=rho, Vref=Vref)
 
     ## -- Total Outputs -- ##
 
     # - Total Thrust - #
-    total_thrust = sum([rotor_inviscid_thrust; rotor_viscous_thrust; duct_thrust; hub_thrust])
+    total_thrust = sum(
+        [rotor_inviscid_thrust; rotor_viscous_thrust; duct_thrust; hub_thrust]
+    )
 
     # - Total Torque - #
     total_torque = sum([rotor_inviscid_torque; rotor_viscous_torque])
@@ -151,7 +157,9 @@ function post_process(states, inputs)
     total_efficiency = get_total_efficiency(total_thrust, Vinf)
 
     # - Induced Efficiency - #
-    induced_efficiency = get_induced_efficiency(rotor_inviscid_thrust, duct_thrust+hub_thrust, rotor_inviscid_power, Vinf)
+    induced_efficiency = get_induced_efficiency(
+        rotor_inviscid_thrust, duct_thrust + hub_thrust, rotor_inviscid_power, Vinf
+    )
 
     # - Ideal Efficiency - #
     ideal_efficiency = get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
@@ -168,7 +176,7 @@ function post_process(states, inputs)
         # body thrust
         duct_thrust,
         hub_thrust,
-        body_thrust = duct_thrust+hub_thrust,
+        body_thrust=duct_thrust + hub_thrust,
         duct_inner_cp,
         duct_inner_c,
         duct_outer_cp,
@@ -353,10 +361,10 @@ function forces_from_pressure(cps, panels; rho=1.225, Vref=1.0)
     q = 0.5 * rho * Vref^2
 
     #note, thrust is in negative x-direction
-    return -cfx * q, -cfx
+    return cfx * q, cfx
 end
 
-function inviscid_rotor_trust(vtheta_rotor, Wtheta, Gamma_tilde, rotor_panel_length, rho)
+function inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rho)
 
     # problem dimensions
     nr, nrotor = size(Gamma_tilde)
@@ -381,22 +389,19 @@ function inviscid_rotor_trust(vtheta_rotor, Wtheta, Gamma_tilde, rotor_panel_len
     return Tinv, dTi
 end
 
-function viscous_rotor_thrust(
-    vx_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rho, Vinf
-)
+function viscous_rotor_thrust(Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rho)
 
     # get dimensions
-    nr, nrotor = size(vx_rotor)
+    nr, nrotor = size(Wx_rotor)
 
     #initialize
-    dTv = similar(vx_rotor) .= 0.0
+    dTv = similar(Wx_rotor) .= 0.0
 
     for irotor in 1:nrotor
         for ir in 1:nr
             hrwc = 0.5 * rho * Wmag_rotor[ir, irotor] * chord[ir, irotor]
-            si = vx_rotor[ir, irotor] + Vinf
             bdr = B[irotor] * rotor_panel_length[ir, irotor]
-            dTv[ir, irotor] = -hrwc * cd[ir, irotor] * si * bdr
+            dTv[ir, irotor] = -hrwc * cd[ir, irotor] * Wx_rotor[ir, irotor] * bdr
         end
     end
 
@@ -406,7 +411,7 @@ function viscous_rotor_thrust(
 end
 
 function inviscid_rotor_torque(
-    Wx_rotor, Vinf, rotor_panel_center, rotor_panel_length, Gamma_tilde, rho
+    Wx_rotor, rotor_panel_center, rotor_panel_length, Gamma_tilde, rho
 )
 
     # dimensions
@@ -428,11 +433,11 @@ function inviscid_rotor_torque(
 end
 
 function viscous_rotor_torque(
-    Wtheta_rotor, Wmag_rotor, B, chord, rotor_panel_center, rotor_panel_length, cd
+    Wtheta_rotor, Wmag_rotor, B, chord, rotor_panel_center, rotor_panel_length, cd, rho
 )
 
     # dimensions
-    nr, nrotor = size(chord)
+    nr, nrotor = size(Wtheta_rotor)
 
     # initialize
     dQv = similar(chord) .= 0.0
@@ -461,27 +466,27 @@ end
 
 function get_total_efficiency(total_thrust, Vinf)
     if Vinf != 0.0
-    return total_thrust * Vinf / total_power
-else
-    return  0.0
-end
+        return total_thrust * Vinf / total_power
+    else
+        return 0.0
+    end
 end
 
 function get_induced_efficiency(Tinv, Tduct, Pinv, Vinf)
     if Vinf != 0.0
-    return Vinf * (Tinv .+ Tduct) ./ Pinv
-else
-    return 0.0
-end
+        return Vinf * (Tinv .+ Tduct) ./ Pinv
+    else
+        return 0.0
+    end
 end
 
 function get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
     if Vinf != 0.0
-    TC = total_thrust / (0.5 * rho * Vinf^2 * pi * Rref^2)
-    return 2.0 / (1.0 + sqrt(max(TC, -1.0) + 1.0))
-else
-    return 0.0
-end
+        TC = total_thrust / (0.5 * rho * Vinf^2 * pi * Rref^2)
+        return 2.0 / (1.0 + sqrt(max(TC, -1.0) + 1.0))
+    else
+        return 0.0
+    end
 end
 
 function get_blade_aero(
