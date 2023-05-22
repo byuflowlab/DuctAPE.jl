@@ -29,18 +29,29 @@ include(project_dir * "/examples/dfdc_comp/ALL_THE_STUFF.jl")
 # r/R    c/R     beta deg alfa     CL     CD    REx10^3   Mach    B*Gam
 include(project_dir * "/examples/dfdc_comp/DFDC_printout.jl")
 
-function runandplot()
+function run_only()
     println("Setting Up")
-    rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, Vref = init()
+    rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, reference_parameters = init()
 
     println("Running Analysis")
-    converged_states, inputs, initial_states, convergeflag = rundt(
-        duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream
+    out, converged_states, inputs, initial_states, convergeflag = rundt(
+        duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream, reference_parameters
+    )
+
+    return converged_states, inputs, out
+end
+
+function runandplot()
+    println("Setting Up")
+    rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, reference_parameters = init()
+
+    println("Running Analysis")
+    out, converged_states, inputs, initial_states, convergeflag = rundt(
+        duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream, reference_parameters
     )
 
     println("Plotting Geometry")
     plotgeom(inputs, paneling_constants)
-
 
     println("Dumping Everything")
     cdump = dt.dump(converged_states, inputs)
@@ -258,26 +269,74 @@ function init()
     # Freestream Parameters
     freestream = (; rho, mu, asound, Vinf)
 
-    return rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, Vref
+    reference = (; Vref, Rref=Rtip)
+
+    return rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, reference
 end
 
-function rundt(duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream)
-    #---------------------------------#
-    #           Run Solver            #
-    #---------------------------------#
+function sanity_check(;debug=false)
+    rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, reference_parameters =  init()
 
-    converged_states, inputs, initial_states, convergeflag = dt.analyze_propulsor(
+    # initialize various inputs used in analysis
+    inputs = dt.precomputed_inputs(
         duct_coords,
         hub_coords,
         paneling_constants,
         rotor_parameters,
-        freestream;
+        freestream,
+        reference_parameters;
+        debug=debug,
+    )
+
+    plot(; xlabel="x", ylabel="r", aspectratio=1)
+
+    println("length affect: ", length(inputs.wake_affect_panels))
+    println("length wake_vortex_panels: ", length(inputs.wake_vortex_panels))
+    for i in 1:length(inputs.wake_vortex_panels)
+        plot!(
+            inputs.wake_vortex_panels[i].panel_center[:, 1],
+            inputs.wake_vortex_panels[i].panel_center[:, 2];
+            seriestype=:scatter,
+            markersize=1,
+            color=mycolors[1],
+            label="",
+        )
+    end
+
+    for i in 1:length(inputs.wake_affect_panels)
+        plot!(
+            inputs.wake_affect_panels[i].panel_center[:, 1],
+            inputs.wake_affect_panels[i].panel_center[:, 2];
+            seriestype=:scatter,
+            markersize = 1,
+            color=mycolors[2],
+            label="",
+        )
+    end
+
+    savefig(project_dir * "/examples/dfdc_comp/wakeandpseudowakegeom.pdf")
+
+    return nothing
+end
+
+function rundt(duct_coords, hub_coords, rotor_parameters, paneling_constants, freestream, reference_parameters)
+    #---------------------------------#
+    #           Run Solver            #
+    #---------------------------------#
+
+    out, converged_states, inputs, initial_states, convergeflag = dt.analyze_propulsor(
+        duct_coords,
+        hub_coords,
+        paneling_constants,
+        rotor_parameters,
+        freestream,
+        reference_parameters;
         debug=false,
         maximum_linesearch_step_size=1e6,
         iteration_limit=100,
     )
 
-    return converged_states, inputs, initial_states, convergeflag
+    return out, converged_states, inputs, initial_states, convergeflag
 end
 
 function plotgeom(inputs, paneling_constants)
@@ -379,7 +438,7 @@ function plotstates(Gamr, sigr, gamw, inputs, convergeflag)
     #TODO: need sigr and gamw from dfdc
 
     if convergeflag
-        convlabel = "Converged"
+        convlabel = "DuctTAPE Converged"
     else
         convlabel = "NOT converged"
     end
@@ -390,19 +449,20 @@ function plotstates(Gamr, sigr, gamw, inputs, convergeflag)
 
     # plot solution
     plot!(pG, Gamr, inputs.rotor_panel_centers; label=convlabel)
-    plot!(pG, dfdcGamr, dfdcr; label="DFDC Converged")
+    plot!(pG, dfdcGamr, dfdcr; label="DFDC")
 
     #save
     savefig(pG, project_dir * "/examples/dfdc_comp/rotorcirculation-check.pdf")
 
     ##### ----- Plot Wake Strengths ----- #####
-    pg = plot(; xlabel=L"\gamma_\theta^{wake}", ylabel="r")
 
-    # plot solution
-    plot!(pg, gamw, inputs.rotor_panel_edges; label=convlabel)
+    #pg = plot(; xlabel=L"\gamma_\theta^{wake}", ylabel="r")
 
-    #save
-    savefig(pg, project_dir * "/examples/dfdc_comp/wake-strength.pdf")
+    ## plot solution
+    #plot!(pg, gamw, inputs.rotor_panel_edges; label=convlabel)
+
+    ##save
+    #savefig(pg, project_dir * "/examples/dfdc_comp/wake-strength.pdf")
 
     ##### ----- Plot Source Strengths ----- #####
     ps = plot(; xlabel=L"\sigma", ylabel="r")
@@ -677,4 +737,6 @@ function ploths(cdump, inputs)
     return nothing
 end
 
-dump = runandplot()
+# dump = runandplot()
+# sanity_check()
+states, inputs, out = run_only()

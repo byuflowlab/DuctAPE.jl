@@ -52,3 +52,35 @@ struct DFDCairfoil{TF}
     Re_exp::TF
     mcrit::TF
 end
+
+function DFDCairfoil(;
+    alpha0=0.0,
+    clmax=1.5,
+    clmin=-1.0,
+    dclda=2.0 * pi,
+    dclda_stall=0.5,
+    dcl_stall=0.2,
+    cdmin=0.012,
+    cldmin=0.1,
+    dcdcl2=0.005,
+    cmcon=0.0,
+    Re_ref=2e5,
+    Re_exp=0.35,
+    mcrit=0.7,
+)
+    return DFDCairfoil(
+        alpha0,
+        clmax,
+        clmin,
+        dclda,
+        dclda_stall,
+        dcl_stall,
+        cdmin,
+        cldmin,
+        dcdcl2,
+        cmcon,
+        Re_ref,
+        Re_exp,
+        mcrit,
+    )
+end
