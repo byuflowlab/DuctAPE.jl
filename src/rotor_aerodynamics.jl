@@ -354,6 +354,7 @@ TODO: add in cascade database search at some point.
 """
 search_polars(airfoil, alpha, re=0.0, ma=0.0) = ccb.afeval(airfoil, alpha, re, ma)
 
+
 """
 DFDC-like polar function. copied from dfdc and adjusted for julia
 TODO: add dfdc polar parameters object compatibility for airfoil field in blade elements objects

@@ -29,7 +29,8 @@ function precomputed_inputs(
     hub_coordinates,
     paneling_constants,
     rotor_parameters, #vector of named tuples
-    freestream;
+    freestream,
+    reference_parameters;
     finterp=fm.akima,
     debug=false,
 )
@@ -481,6 +482,8 @@ function precomputed_inputs(
         converged=[false],
         #freestream
         freestream,
+        #reference for post process
+        reference_parameters,
         # body_geometry, # body geometry
         # - rotors
         blade_elements, # blade elements
@@ -495,8 +498,8 @@ function precomputed_inputs(
         num_body_panels,
         ductTE_index=tip_gaps[1] == 0.0 ? ductTE_index[1] : nothing,
         hubTE_index=!nohub ? hubTE_index[1] : nothing,
-        ductwakeidx,
-        hubwakeidx,
+        ductwakeidx=ductwakeidx[1],
+        hubwakeidx=hubwakeidx[1],
         # body_panels, # body paneling
         # rotor_source_panels, # rotor paneling
         # wake_vortex_panels, # wake paneling
