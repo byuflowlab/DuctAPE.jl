@@ -31,7 +31,8 @@ function analyze_propulsor(
     hub_coordinates,
     paneling_constants,
     rotor_parameters,
-    freestream;
+    freestream,
+    reference_parameters;
     debug=false,
     maximum_linesearch_step_size=1e6,
     iteration_limit=100,
@@ -48,6 +49,7 @@ function analyze_propulsor(
             paneling_constants,
             rotor_parameters,
             freestream,
+            reference_parameters,
             debug,
         )
 
@@ -60,10 +62,11 @@ function analyze_propulsor(
     # compute various panel and circulation strenghts (updates convergence flag internally)
     strengths, inputs, initials = solve(x, p)
 
-    # TODO: post-processing using the converged strengths
+    # post-processing using the converged strengths
+    out = post_process(strengths, inputs)
 
     # return solution
-    return strengths, inputs, initials, p.converged[1]
+    return out, strengths, inputs, initials, p.converged[1]
 end
 
 """
@@ -76,7 +79,7 @@ function solve(x, p)
     (; fx, maximum_linesearch_step_size, iteration_limit, converged) = p
 
     # unpack inputs
-    (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream, debug) = fx(
+    (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream, reference_parameters, debug) = fx(
         x
     )
 
@@ -86,7 +89,8 @@ function solve(x, p)
         hub_coordinates,
         paneling_constants,
         rotor_parameters,
-        freestream;
+        freestream,
+        reference_parameters;
         debug=debug,
     )
 
