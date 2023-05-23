@@ -619,7 +619,7 @@ function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)
     # Q = blade_elements.B * fm.trapz(rfull, torque)
     # P = Q * blade_elements.Omega
 
-    return Npfull, Tpfull
+    return Np, Tp
 end
 
 """
