@@ -172,7 +172,7 @@ function post_process(states, inputs)
     )
 
     # - Thrust and Torque Coefficients - #
-    CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega, Rref)
+    CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega[1], Rref)
 
     ## -- Assemble Output Tuple -- ##
 
