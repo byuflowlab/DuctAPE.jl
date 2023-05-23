@@ -472,10 +472,10 @@ function viscous_rotor_power(Qvisc, Omega)
 end
 
 function get_total_efficiency(total_thrust, total_power, Vinf)
-    if Vinf != 0.0
-        return total_thrust * Vinf / total_power
-    else
+    if Vinf == 0.0 || total_power <= 0.0
         return 0.0
+    else
+        return total_thrust * Vinf / total_power
     end
 end
 
