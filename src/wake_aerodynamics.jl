@@ -9,7 +9,7 @@ function radially_average_velocity(Vmr, nx)
     end
 end
 
-function calculate_wake_on_wake_average_velocities(vx_ww, vr_ww, gamw, vx_wb, vr_wb, gamb)
+function calculate_wake_on_wake_average_velocities(vx_ww, vr_ww, gamw)
 
     # - Initialize - #
     # get floating point type
@@ -25,19 +25,12 @@ function calculate_wake_on_wake_average_velocities(vx_ww, vr_ww, gamw, vx_wb, vr
     # - Loop through affected wake "rotor" planes - #
     for iplane in 1:nx
 
-        # # add body induced velocities
-        # if gamb != nothing
-        #     @views vxw[:, iplane] .+= vx_wb[iplane] * gamb
-        #     @views vrw[:, iplane] .+= vr_wb[iplane] * gamb
-        # end
-
-
-        # # - Loop through wake vortex sheets - #
-        # # add wake induced velocities
-        # for jwake in 1:nr
-        #     @views vxw[:, iplane] .+= vx_ww[iplane, jwake] * gamw[jwake, :]
-        #     @views vrw[:, iplane] .+= vr_ww[iplane, jwake] * gamw[jwake, :]
-        # end
+        # - Loop through wake vortex sheets - #
+        # add wake induced velocities
+        for jwake in 1:nr
+            @views vxw[:, iplane] .+= vx_ww[iplane, jwake] * gamw[jwake, :]
+            @views vrw[:, iplane] .+= vr_ww[iplane, jwake] * gamw[jwake, :]
+        end
 
     end
 
@@ -214,14 +207,14 @@ function calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=
     ##########
     ##### New Patch: compute wake-induced velocities on dummy rotor planes and average those
 
-    #TODO: nothing now
-    vbarwakex, vbarwaker = calculate_wake_on_wake_average_velocities(
-        inputs.vx_ww, inputs.vr_ww, gamw, inputs.vx_wb, inputs.vr_wb, gamb
-    )
+    ##TODO: nothing now
+    #vbarwakex, vbarwaker = calculate_wake_on_wake_average_velocities(
+    #    inputs.vx_ww, inputs.vr_ww, gamw
+    #)
 
-    # add to other wake induced velocities
-    vx_wake .+= vbarwakex
-    vr_wake .+= vbarwaker
+    # # add to other wake induced velocities
+    # vx_wake .+= vbarwakex
+    # vr_wake .+= vbarwaker
 
     ##########
     #### patch: use wake induced velocity on first rotor plane

@@ -6,6 +6,8 @@ end
 
 include(project_dir * "/plots_default.jl")
 
+savepath = project_dir*"/examples/dfdc_comp/"
+
 using DuctTAPE
 const dt = DuctTAPE
 
@@ -275,18 +277,153 @@ function init()
 end
 
 function sanity_check(;debug=false)
-    rotor_parameters, paneling_constants, freestream, duct_coords, hub_coords, reference_parameters =  init()
 
-    # initialize various inputs used in analysis
-    inputs = dt.precomputed_inputs(
-        duct_coords,
-        hub_coords,
-        paneling_constants,
-        rotor_parameters,
-        freestream,
-        reference_parameters;
-        debug=debug,
-    )
+    converged_states, inputs, out =  run_only()
+
+    # plot_output_geometry(inputs)
+    # plot_body_on_wake(converged_states, inputs)
+    plot_wake_on_wake(converged_states, inputs)
+
+    return nothing
+end
+
+function plot_wake_on_wake(states, inputs)
+
+    # first compare body on wake vortex vs body on wake affect panels
+
+    # - Rename unit velocities for convenience - #
+    #wake on wake affect
+    vx_ww = inputs.vx_ww
+    vr_ww = inputs.vr_ww
+    #body on rotor
+    vx_rw = inputs.vx_rw
+    vr_rw = inputs.vr_rw
+    # rotor geometry
+    Rtip = inputs.reference_parameters.Rref
+    rpc = inputs.rotor_panel_centers./Rtip
+    rpe = inputs.rotor_panel_edges./Rtip
+
+
+    # states has the body strengths
+    gamb, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+
+
+    # get wake-on-rotor velocity for comparision
+    nr, nrotor = size(Gamr)
+    nwake, nxwake = size(gamw)
+    vx_rotor = similar(Gamr) .= 0.0
+    vr_rotor = similar(Gamr) .= 0.0
+
+        for jwake in 1:nwake
+            @views vx_rotor[:, 1] .+= vx_rw[1, jwake] * gamw[jwake, :]
+            @views vr_rotor[:, 1] .+= vr_rw[1, jwake] * gamw[jwake, :]
+        end
+    pvx = plot(;xlabel="wake-induced Axial Velocity", ylabel="r/Rtip")
+    pvr = plot(;xlabel="wake-induced radial Velocity", ylabel="r/Rtip")
+    pvm = plot(;xlabel="wake-induced radial Velocity", ylabel="r/Rtip")
+    plot!(pvx, vx_rotor, rpc,linewidth=2, color=:black,label="On Rotor")
+    plot!(pvr, vr_rotor, rpc,linewidth=2, color=:black,label="On Rotor")
+
+    # get the approximate wake-on-wake velocities
+    vx_wake = zeros(nr, nxwake)
+    vr_wake = zeros(nr, nxwake)
+
+    for iplane in 1:nxwake
+
+        # - Loop through wake vortex sheets - #
+        # add wake induced velocities
+        for jwake in 1:nr
+            @views vx_wake[:, iplane] .+= inputs.vx_ww[iplane, jwake] * gamw[jwake, :]
+            @views vr_wake[:, iplane] .+= inputs.vr_ww[iplane, jwake] * gamw[jwake, :]
+        end
+
+    end
+
+    for i in 1:5:30
+
+    plot!(pvx, vx_wake[:,i], rpc,label="on plane $i stations behind rotor")
+    plot!(pvr, vr_wake[:,i], rpc,label="on plane $i stations behind rotor")
+    # plot!(vxa_bar[:,i], rpe,linestyle=:dot,label="averge at $i stations behind rotor")
+end
+
+    savefig(pvx,savepath*"wakewake-xvel-exp.pdf")
+    savefig(pvr, savepath*"wakewake-rvel-exp.pdf")
+
+    return nothing
+
+end
+
+function plot_body_on_wake(states, inputs)
+
+    # first compare body on wake vortex vs body on wake affect panels
+
+    # - Rename unit velocities for convenience - #
+    # body on wake vortex
+    vx_wb = inputs.vx_wb
+    vr_wb = inputs.vr_wb
+    #body on wake affect
+    vx_wba = inputs.vx_wba
+    vr_wba = inputs.vr_wba
+    #body on rotor
+    vx_rb = inputs.vx_rb
+    vr_rb = inputs.vr_rb
+    Rtip = inputs.reference_parameters.Rref
+
+    # states has the body strengths
+    gamb, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+
+    # grab the loops and get the velocities on all the wake panels and on all the wake affect panels
+
+    nr, nrotor = size(Gamr)
+    nwake, nxwake = size(gamw)
+    vxa_wake = zeros(nr, nxwake)
+    vra_wake = zeros(nr, nxwake)
+    vx_wake = similar(gamw) .= 0.0
+    vr_wake = similar(gamw) .= 0.0
+
+    for iwake in 1:nxwake
+        @views vxa_wake[:, iwake] .+= vx_wba[iwake] * gamb
+        @views vra_wake[:, iwake] .+= vr_wba[iwake] * gamb
+    end
+
+    vxa_bar = similar(gamw) .= 0.0
+    vra_bar = similar(gamw) .= 0.0
+    for i in 1:nxwake
+        vxa_bar[:,i] = dt.radially_average_velocity(vxa_wake[:,i],1)
+    end
+
+    for iwake in 1:nwake
+        @views vx_wake[iwake, :] .+= vx_wb[iwake] * gamb
+        @views vr_wake[iwake, :] .+= vr_wb[iwake] * gamb
+    end
+
+    # for reference, also get the body induced velocities at the rotor plane
+    vx_rotor = vx_rb[1] * gamb
+    vr_rotor = vr_rb[1] * gamb
+
+    # look at the rotor velocties compared to just behind the rotor and one or two other locations
+    rpc = inputs.rotor_panel_centers./Rtip
+    rpe = inputs.rotor_panel_edges./Rtip
+
+    plot(;xlabel="Body-induced Axial Velocity", ylabel="r/Rtip")
+    for i in 1:5:30
+        if i ==1
+    plot!(vx_rotor, rpc,linewidth=2, color=:black, label="On Rotor")
+end
+    # plot!(vxa_wake[:,1], rpc,label="on plane just behind rotor")
+    # plot!(vx_wake[:,1], rpe,label="on wakes just behind rotor")
+
+    # plot!(vxa_wake[:,i], rpc,label="on plane $i stations behind rotor")
+    plot!(vxa_bar[:,i], rpe,label="averge at $i stations behind rotor")
+    plot!(vx_wake[:,i], rpe,linestyle=:dash,label="on wakes $i stations behind rotor")
+end
+
+    savefig(savepath*"bodywake-vel-exp.pdf")
+
+    return nothing
+end
+
+function plot_output_geometry(inputs)
 
     plot(; xlabel="x", ylabel="r", aspectratio=1)
 
@@ -738,5 +875,5 @@ function ploths(cdump, inputs)
 end
 
 # dump = runandplot()
-# sanity_check()
-states, inputs, out = run_only()
+sanity_check()
+# states, inputs, out = run_only()

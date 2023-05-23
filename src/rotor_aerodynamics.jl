@@ -208,7 +208,14 @@ function gamma_sigma_from_coeffs!(Gamr, sigr, W, B, c, r, cl, cd)
 
     # return Gamr, sigr
     return nothing
+
 end
+
+function calc_reynolds(chord, Wmag_rotor, rho, mu)
+    return chord .* abs.(Wmag_rotor) * rho / mu
+end
+
+
 """
     calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, Vθ)
 
@@ -242,7 +249,8 @@ function calculate_gamma_sigma!(
             c = blade_elements[irotor].chords[ir] # chord length
             twist = blade_elements[irotor].twists[ir] # twist
             #stagger is twist angle but from axis
-            stagger = 0.5 * pi - twist
+            # stagger = 0.5 * pi - twist
+            stagger = blade_elements[irotor].stagger[ir]
             r = blade_elements[irotor].rbe[ir] # radius
             Ω = blade_elements[irotor].Omega # rotation rate
             solidity = blade_elements[irotor].solidity[ir]

@@ -279,10 +279,10 @@ function precomputed_inputs(
     # - Relative to Wake - #
     # body to wake
 
-    # mesh_wb = [
-    #     generate_one_way_mesh(body_panels, wake_affect_panels[i]) for
-    #     i in 1:length(wake_affect_panels), j in 1:1
-    # ]
+    mesh_wba = [
+        generate_one_way_mesh(body_panels, wake_affect_panels[i]) for
+        i in 1:length(wake_affect_panels), j in 1:1
+    ]
 
     mesh_wb = [
         generate_one_way_mesh(body_panels, wake_vortex_panels[i]) for
@@ -404,11 +404,11 @@ function precomputed_inputs(
     ##### ----- Induced Velcocities on Wake ----- #####
     # - body to wake - #
 
-    # A_wb = [
-    #     assemble_induced_velocity_matrices(
-    #         mesh_wb[i, j], body_panels, wake_affect_panels[i]
-    #     ) for i in 1:length(wake_affect_panels), j in 1:1
-    # ]
+    A_wba = [
+        assemble_induced_velocity_matrices(
+            mesh_wba[i, j], body_panels, wake_affect_panels[i]
+        ) for i in 1:length(wake_affect_panels), j in 1:1
+    ]
 
     A_wb = [
         assemble_induced_velocity_matrices(
@@ -419,13 +419,13 @@ function precomputed_inputs(
 
     # axial components
 
-    # vx_wb = [A_wb[i, j][1] for i in 1:length(wake_affect_panels), j in 1:1]
+    vx_wba = [A_wba[i, j][1] for i in 1:length(wake_affect_panels), j in 1:1]
 
     vx_wb = [A_wb[i, j][1] for i in 1:length(wake_vortex_panels), j in 1:1]
 
     # radial components
 
-    # vr_wb = [A_wb[i, j][2] for i in 1:length(wake_affect_panels), j in 1:1]
+    vr_wba = [A_wba[i, j][2] for i in 1:length(wake_affect_panels), j in 1:1]
 
     vr_wb = [A_wb[i, j][2] for i in 1:length(wake_vortex_panels), j in 1:1]
 
@@ -510,6 +510,7 @@ function precomputed_inputs(
         A_bw, # wake to body (total)
         A_rb, # body to rotor
         A_wb, # body to wake
+        A_wba, # body to "wake"
         A_wr, # rotor to wake
         A_ww, # rotor to wake
         vx_rb, # body to rotor (x-direction)
@@ -520,6 +521,8 @@ function precomputed_inputs(
         vr_rw, # wake to rotor ( r-direction)
         vx_wb, # body to wake (x-direction)
         vr_wb, # body to wake ( r-direction)
+        vx_wba, # body to "wake" (x-direction)
+        vr_wba, # body to "wake" ( r-direction)
         vx_wr, # rotor to wake (x-direction)
         vr_wr, # rotor to wake ( r-direction)
         vx_ww, # wake to wake (x-direction)

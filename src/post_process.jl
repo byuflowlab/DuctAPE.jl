@@ -33,6 +33,9 @@ function post_process(states, inputs)
     afparamsout = reshape(reduce(vcat, inputs.blade_elements.outer_airfoil), (nr, nrotor))
     innerfrac = reshape(reduce(vcat, inputs.blade_elements.inner_fraction), (nr, nrotor))
     rpc = inputs.rotor_panel_centers
+    rpe = inputs.rotor_panel_edges
+    Rhub = rpe[1]
+    Rtip = rpe[end]
     rpl = reshape(
         reduce(vcat, (p -> p.panel_length).(inputs.rotor_source_panels)), (nr, nrotor)
     )
@@ -167,12 +170,10 @@ function post_process(states, inputs)
     ideal_efficiency = get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
 
     # - Blade Loading - #
-    blade_normal_force_per_unit_span, blade_tangential_force_per_unit_span = get_blade_loads(
-        Wmag_rotor, inflow_angle, clift, cdrag, chord, rho
-    )
+    blade_normal_force_per_unit_span, blade_tangential_force_per_unit_span, ccbThrust, ccbtorQue, ccbPower = get_blade_loads(Wmag_rotor, inflow_angle, clift, cdrag, chord, rho, Rhub, Rtip, rpc, rpl,B, Omega[1])
 
     # - Thrust and Torque Coefficients - #
-    CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega, Rref)
+    CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega[1], Rref)
 
     ## -- Assemble Output Tuple -- ##
 
@@ -576,7 +577,7 @@ function get_blade_aero(
     return cl, cd, phi, alpha
 end
 
-function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)
+function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho, Rhub, Rtip, rpc,rpl ,B, Omega)
 
     # dimensions
     nr, nrotor = size(Wmag_rotor)
@@ -601,25 +602,29 @@ function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)
         end
     end
 
-    Npfull = [zeros(nrotor)'; Np; zeros(nrotor)']
-    Tpfull = [zeros(nrotor)'; Tp; zeros(nrotor)']
+    # Npfull = [zeros(nrotor)'; Np; zeros(nrotor)']
+    # Tpfull = [zeros(nrotor)'; Tp; zeros(nrotor)']
 
-    #TODO: consider comparing this with DFDC versions for them
+    # TODO: consider comparing this with DFDC versions for them
 
-    # ## -- Integrate Loads to get Thrust and Torque
-    # # add hub/tip for complete integration.  loads go to zero at hub/tip.
-    # rfull = [blade_elements.Rhub; blade_elements.rbe; blade_elements.Rtip]
+     ## -- Integrate Loads to get Thrust and Torque
+     # add hub/tip for complete integration.  loads go to zero at hub/tip.
+     # rfull = [Rhub; rpc; Rtip]
 
-    # # thrust and torqe distributions
-    # thrust = Npfull
-    # torque = Tpfull .* rfull
+     # thrust and torqe distributions
+     # thrust = Npfull
+     # torque = Tpfull .* rfull
 
-    # # integrate Thrust and Torque (trapezoidal)
-    # T = blade_elements.B * fm.trapz(rfull, thrust)
-    # Q = blade_elements.B * fm.trapz(rfull, torque)
-    # P = Q * blade_elements.Omega
+     # integrate Thrust and Torque (trapezoidal)
+     # T = B * fm.trapz(rfull, thrust)
+     # Q = B * fm.trapz(rfull, torque)
+     # - Actually use rectangle rather than trapezoid integration
+     T = B * sum(rpl.*Np)
+     Q = B * sum(rpl.* Tp.*rpc)
+     P = Q * Omega
 
-    return Npfull, Tpfull
+    # return Npfull, Tpfull, T, Q, P
+    return Np, Tp, T, Q, P
 end
 
 """

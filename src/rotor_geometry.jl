@@ -60,8 +60,11 @@ function generate_blade_elements(
     # update twists
     twists = fm.akima(rblade, twists, rbe)
 
+    # update stagger
+    stagger = get_stagger(twists)
+
     # update solidity
-    solidity = B * chords ./ (2.0 * pi * rbe)
+    solidity = get_local_solidity(B, chords, rbe)
 
     # get bounding airfoil polars
     outer_airfoil = similar(airfoils, length(rbe))
@@ -100,6 +103,7 @@ function generate_blade_elements(
         rbe,
         chords,
         twists,
+        stagger,
         solidity,
         outer_airfoil,
         inner_airfoil,
@@ -108,6 +112,14 @@ function generate_blade_elements(
         Rhub,
         # wake_index,
     )
+end
+
+function get_local_solidity(B, chord, r)
+    return B .* chord ./ (2.0 * pi * r)
+end
+
+function get_stagger(twists)
+    return 0.5 * pi .- twists
 end
 
 # generates rotor panels
