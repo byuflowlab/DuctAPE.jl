@@ -156,7 +156,7 @@ function post_process(states, inputs)
     total_power = sum([rotor_inviscid_power; rotor_viscous_power])
 
     # - Total Efficiency - #
-    total_efficiency = get_total_efficiency(total_thrust, Vinf)
+    total_efficiency = get_total_efficiency(total_thrust, total_power, Vinf)
 
     # - Induced Efficiency - #
     induced_efficiency = get_induced_efficiency(
@@ -471,7 +471,7 @@ function viscous_rotor_power(Qvisc, Omega)
     return Qvisc .* Omega
 end
 
-function get_total_efficiency(total_thrust, Vinf)
+function get_total_efficiency(total_thrust, total_power, Vinf)
     if Vinf != 0.0
         return total_thrust * Vinf / total_power
     else
