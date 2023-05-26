@@ -601,8 +601,8 @@ function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)
         end
     end
 
-    Npfull = [zeros(nrotor)'; Np; zeros(nrotor)']
-    Tpfull = [zeros(nrotor)'; Tp; zeros(nrotor)']
+    # Npfull = [zeros(nrotor)'; Np; zeros(nrotor)']
+    # Tpfull = [zeros(nrotor)'; Tp; zeros(nrotor)']
 
     #TODO: consider comparing this with DFDC versions for them
 
