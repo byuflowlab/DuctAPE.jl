@@ -34,6 +34,7 @@ function analyze_propulsor(
     freestream,
     reference_parameters;
     debug=false,
+    verbose=false,
     maximum_linesearch_step_size=1e6,
     iteration_limit=100,
 )
@@ -50,14 +51,13 @@ function analyze_propulsor(
             rotor_parameters,
             freestream,
             reference_parameters,
-            debug,
         )
 
     # convergence flag
     converged = [false]
 
     # define parameters
-    p = (; fx, maximum_linesearch_step_size, iteration_limit, converged)
+    p = (; fx, maximum_linesearch_step_size, iteration_limit, converged, debug, verbose)
 
     # compute various panel and circulation strenghts (updates convergence flag internally)
     strengths, inputs, initials = solve(x, p)
@@ -76,10 +76,10 @@ end
 function solve(x, p)
 
     # unpack parameters
-    (; fx, maximum_linesearch_step_size, iteration_limit, converged) = p
+    (; fx, maximum_linesearch_step_size, iteration_limit, converged, debug, verbose) = p
 
     # unpack inputs
-    (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream, reference_parameters, debug) = fx(
+    (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream, reference_parameters) = fx(
         x
     )
 
@@ -112,7 +112,7 @@ function solve(x, p)
         autodiff=:forward,
         method=:newton,
         iterations=iteration_limit,
-        show_trace=true,
+        show_trace=verbose,
         linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
     )
 
@@ -171,7 +171,7 @@ function update_strengths!(states, inputs, p)
     )
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
-    calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=false)
+    calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=p.debug)
 
     # - Update rotor circulation and source panel strengths - #
     calculate_gamma_sigma!(
@@ -181,7 +181,9 @@ function update_strengths!(states, inputs, p)
         Wm_rotor,
         Wtheta_rotor,
         Wmag_rotor,
-        inputs.freestream,
+        inputs.freestream;
+        debug=p.debug,
+        verbose=p.verbose
     )
 
     return nothing

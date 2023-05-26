@@ -164,7 +164,7 @@ Calculate rotor circulation and source strengths using blade element data and in
 `Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
-function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=false)
+function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false)
 
     # get floating point type
     TF = promote_type(
@@ -183,7 +183,7 @@ function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=fal
 
     # call in-place function
     return calculate_gamma_sigma!(
-        Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=debug
+        Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=debug, verbose=verbose
     )
 end
 
@@ -217,7 +217,7 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and Vθ)
 """
 function calculate_gamma_sigma!(
-    Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=false
+    Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false
 )
 
     # problem dimensions
@@ -275,7 +275,8 @@ function calculate_gamma_sigma!(
                     stagger,
                     alpha,
                     blade_elements[irotor].inner_airfoil[ir],
-                    freestream.asound,
+                    freestream.asound;
+                    verbose=verbose,
                 )
                 # get outer values
                 clout, cdout, _ = dfdc_clcdcm(
@@ -285,7 +286,8 @@ function calculate_gamma_sigma!(
                     stagger,
                     alpha,
                     blade_elements[irotor].outer_airfoil[ir],
-                    freestream.asound,
+                    freestream.asound;
+                    verbose=verbose
                 )
 
             else
@@ -354,14 +356,20 @@ TODO: add in cascade database search at some point.
 """
 search_polars(airfoil, alpha, re=0.0, ma=0.0) = ccb.afeval(airfoil, alpha, re, ma)
 
-
 """
 DFDC-like polar function. copied from dfdc and adjusted for julia
 TODO: add dfdc polar parameters object compatibility for airfoil field in blade elements objects
 TODO: this is only for a single airfoil definition.  need to rememember to interpolate between sections if there are more than one (this happens near where this function is called, rather than in this function itself)
 """
 function dfdc_clcdcm(
-    inflow_magnitude, local_reynolds, local_solidity, local_stagger, alpha, afparams, asound
+    inflow_magnitude,
+    local_reynolds,
+    local_solidity,
+    local_stagger,
+    alpha,
+    afparams,
+    asound;
+    verbose=false,
 )
 
     #all these come from user defined inputs.
@@ -404,7 +412,9 @@ function dfdc_clcdcm(
         else
             maprint = ma
         end
-        @warn "clfactor: local mach number limited to 0.99, was $maprint"
+        if verbose
+            @warn "clfactor: local mach number limited to 0.99, was $maprint"
+        end
         msq = 0.99
         msq_w = 0.0
     end
