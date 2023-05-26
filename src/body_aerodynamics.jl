@@ -80,9 +80,11 @@ function solve_body_system(A_bb, b, kidx)
     end
 
     # Solve with subtractive Kutta Condition applied
-    x = ImplicitAD.implicit_linear(
-        A_bb[1:end .∉ [kidx[:, 2]], 1:end .∉ [kidx[:, 2]]], b[1:end .∉ [kidx[:, 2]]]
-    )
+    # x = ImplicitAD.implicit_linear(
+    #     A_bb[1:end .∉ [kidx[:, 2]], 1:end .∉ [kidx[:, 2]]], b[1:end .∉ [kidx[:, 2]]]
+    # )
+
+    x = A_bb[1:end .∉ [kidx[:, 2]], 1:end .∉ [kidx[:, 2]]] \ b[1:end .∉ [kidx[:, 2]]]
 
     # - put things back after solving - #
     for i in 1:length(kidx[:, 1])
