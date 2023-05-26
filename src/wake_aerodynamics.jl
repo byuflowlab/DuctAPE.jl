@@ -28,8 +28,8 @@ function calculate_wake_on_wake_average_velocities(vx_ww, vr_ww, gamw)
         # - Loop through wake vortex sheets - #
         # add wake induced velocities
         for jwake in 1:nr
-            @views vxw[:, iplane] .+= vx_ww[iplane, jwake] * gamw[jwake, :]
-            @views vrw[:, iplane] .+= vr_ww[iplane, jwake] * gamw[jwake, :]
+            @views vxw[:, iplane] .+= vx_ww[iplane,jwake] * gamw[jwake, :]
+            @views vrw[:, iplane] .+= vr_ww[iplane,jwake] * gamw[jwake, :]
         end
 
     end

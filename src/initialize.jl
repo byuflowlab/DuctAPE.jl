@@ -204,7 +204,13 @@ function precomputed_inputs(
     )
 
     # - generate "rotor" panels to receive wake induced velocities - #
-    wake_affect_panels = [generate_rotor_panels(wake_vortex_panels[1].panel_center[i,1], rgrid[i,:]) for i in 1:num_wake_x_panels]
+    wake_affect_panels = [
+        generate_wake_affect_panels(
+            (p -> p.panel_center[i, 1]).(wake_vortex_panels),
+            (p -> p.panel_center[i, 2]).(wake_vortex_panels),
+        ) for i in 1:num_wake_x_panels
+    ]
+
 
     #------------------------------------------#
     # Generate Rotor Panels and Blade Elements #

@@ -21,6 +21,36 @@
 #     return states, converged[1]
 # end
 
+function analyze_propulsor(
+    inputs, debug=false, maximum_linesearch_step_size=1e6, iteration_limit=100
+)
+    initial_states = initialize_states(inputs)
+    initials = copy(initial_states)
+
+    # - Define closure that allows for parameters - #
+    rwrap(r, states) = residual!(r, states, inputs, [])
+
+    # - Call NLsolve function using AD for Jacobian - #
+    #= res is of type NLsolve.SolverResults.
+    The zero field contains the "solution" to the non-linear solve.
+    The converged() function tells us if the solver converged.
+    =#
+    res = NLsolve.nlsolve(
+        rwrap,
+        initial_states;
+        autodiff=:forward,
+        method=:newton,
+        iterations=iteration_limit,
+        show_trace=true,
+        linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
+    )
+
+    # converged[1] = res.f_converged
+
+    # return solution
+    return res.zero, inputs, initials
+end
+
 """
     analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, freestream;
         maximum_linesearch_step_size=1e-8, iteration_limit=100)

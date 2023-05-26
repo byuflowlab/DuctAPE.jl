@@ -117,7 +117,7 @@ function post_process(states, inputs)
     rotor_viscous_power_dist = viscous_rotor_power(rotor_viscous_torque_dist, Omega)
 
     ## -- Pressure on Bodies -- ##
-    duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_c, duct_outer_x, hub_x = get_cps(
+    duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_x, duct_outer_x, hub_x = get_cps(
         gamb,
         gamw,
         Gamr,
@@ -184,7 +184,7 @@ function post_process(states, inputs)
         hub_thrust,
         body_thrust=duct_thrust + hub_thrust,
         duct_inner_cp,
-        duct_inner_c,
+        duct_inner_x,
         duct_outer_cp,
         duct_outer_x,
         hub_cp,

@@ -74,7 +74,7 @@ function runandplot()
     ploths(cdump, inputs)
 
     println("Plotting Body Aerodynamics")
-    plotbodyaero(converged_states, inputs, initial_states, convergeflag, Vref)
+    plotbodyaero(converged_states, inputs, out, convergeflag)
 
     return cdump
 end
@@ -614,7 +614,7 @@ function plotstates(Gamr, sigr, gamw, inputs, convergeflag)
     return nothing
 end
 
-function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
+function plotbodyaero(cstates, inputs, out,convergeflag)
     if convergeflag
         convlabel = "Converged"
     else
@@ -636,8 +636,8 @@ function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
     dpinner = dp[1:leidx]
     dpouter = dp[(leidx + 1):end]
 
-    gamdinner = gamb[1:leidx] / Vref
-    gamdouter = gamb[(leidx + 1):length(dp)] / Vref
+    gamdinner = gamb[1:leidx] / inputs.reference_parameters.Vref
+    gamdouter = gamb[(leidx + 1):length(dp)] / inputs.reference_parameters.Vref
     gamh = gamb[(length(dp) + 1):end]
 
     # initialize plot
@@ -650,14 +650,14 @@ function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
     plot!(
         pb,
         dp,
-        abs.(gamb[1:length(dp)]) ./ Vref;
+        abs.(gamb[1:length(dp)]) ./ inputs.reference_parameters.Vref;
         color=mycolors[1],
         label=convlabel * " DuctTAPE Duct",
     )
     plot!(
         pb,
         duct_cpv[:, 1],
-        duct_cpv[:, 4] ./ Vref;
+        duct_cpv[:, 4] ./ inputs.reference_parameters.Vref;
         color=mycolors[1],
         linestyle=:dash,
         label="DFDC Duct",
@@ -666,14 +666,14 @@ function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
     plot!(
         pb,
         hp,
-        abs.(gamb[(length(dp) + 1):end]) ./ Vref;
+        abs.(gamb[(length(dp) + 1):end]) ./ inputs.reference_parameters.Vref;
         color=mycolors[2],
         label=convlabel * " DuctTAPE Hub",
     )
     plot!(
         pb,
         hub_cpv[:, 1],
-        hub_cpv[:, 4] ./ Vref;
+        hub_cpv[:, 4] ./ inputs.reference_parameters.Vref;
         color=mycolors[2],
         linestyle=:dash,
         label="DFDC Hub",
@@ -683,7 +683,7 @@ function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
     plot!(
         pb,
         inputs.blade_elements[1].xrotor * ones(2),
-        abs.([0.0; maximum(duct_cpv[:, 4] ./ Vref)]);
+        abs.([0.0; maximum(duct_cpv[:, 4] ./ inputs.reference_parameters.Vref)]);
         # linewidth=0.25,
         linestyle=:dot,
         color=mycolors[3],
@@ -695,8 +695,6 @@ function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
 
     ##### ----- Plot Surface Pressure ----- #####
 
-    cpductinner, cpductouter, cphub, xdi, xdo, xh = dt.get_cps(cstates, inputs, Vref)
-
     pcp = plot(; xlabel="x", ylabel=L"C_p", yflip=true)
 
     # plot solution
@@ -706,8 +704,8 @@ function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
 
     plot!(
         pcp,
-        [xdi; xdo],
-        [cpductinner; cpductouter];
+        [out.duct_inner_x; out.duct_outer_x],
+        [out.duct_inner_cp; out.duct_outer_cp];
         color=mycolors[1],
         label=convlabel * " duct surface",
     )
@@ -729,7 +727,7 @@ function plotbodyaero(cstates, inputs, istates, convergeflag, Vref)
         label="DFDC Duct sanity check on indices",
     )
 
-    plot!(pcp, xh, cphub; color=mycolors[2], label=convlabel * " hub surface")
+    plot!(pcp, out.hub_x, out.hub_cp; color=mycolors[2], label=convlabel * " hub surface")
     plot!(
         pcp,
         hub_cpv[:, 1],
@@ -875,5 +873,5 @@ function ploths(cdump, inputs)
 end
 
 # dump = runandplot()
-sanity_check()
+# sanity_check()
 # states, inputs, out = run_only()
