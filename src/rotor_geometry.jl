@@ -51,6 +51,15 @@ function generate_blade_elements(
     B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe
 )
 
+    # get floating point type
+    TF = promote_type(
+        eltype(chords),
+        eltype(twists),
+        eltype(Omega),
+        eltype(rbe),
+        eltype(Rtip),
+    )
+
     # dimensionalize the blade element radial positions
     rblade = fm.linear([0.0; 1.0], [0.0; Rtip], rnondim)
 
@@ -66,7 +75,7 @@ function generate_blade_elements(
     # get bounding airfoil polars
     outer_airfoil = similar(airfoils, length(rbe))
     inner_airfoil = similar(airfoils, length(rbe))
-    inner_fraction = similar(airfoils, Float64, length(rbe))
+    inner_fraction = similar(airfoils, TF, length(rbe))
     for i in 1:(length(rbe))
         # panel radial location
         # ravg = (rwake[i] + rwake[i + 1]) / 2
