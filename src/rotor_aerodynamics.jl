@@ -381,7 +381,7 @@ function dfdc_clcdcm(
         dclda_stall,
         dcl_stall,
         cdmin,
-        cldmin,
+        clcdmin,
         dcdcl2,
         cmcon,
         Re_ref,
@@ -391,7 +391,7 @@ function dfdc_clcdcm(
 
     # factors for compressibility drag model, hhy 10/23/00
     # mcrit is set by user
-    # effective mcrit is mcrit_eff = mcrit - clmfactor*(cl-cldmin) - dmdd
+    # effective mcrit is mcrit_eff = mcrit - clmfactor*(cl-clcdmin) - dmdd
     # dmdd is the delta mach to get cd=cdmdd (usually 0.0020)
     # compressible drag is cdc = cdmfactor*(mach-mcrit_eff)^mexp
     # cdmstall is the drag at which compressible stall begins
@@ -445,9 +445,9 @@ function dfdc_clcdcm(
     clmx = clmax
     clmn = clmin
     dmstall = (cdmstall / cdmfactor)^(1.0 / mexp)
-    clmaxm = max(0.0, (mcrit + dmstall - mach) / clmfactor) + cldmin
+    clmaxm = max(0.0, (mcrit + dmstall - mach) / clmfactor) + clcdmin
     clmax = min(clmax, clmaxm)
-    clminm = min(0.0, -(mcrit + dmstall - mach) / clmfactor) + cldmin
+    clminm = min(0.0, -(mcrit + dmstall - mach) / clmfactor) + clcdmin
     clmin = max(clmin, clminm)
 
     # cl limiter function (turns on after +-stall
@@ -491,9 +491,9 @@ function dfdc_clcdcm(
 
     # in the basic linear lift range drag is a function of lift
     # cd = cd0 (constant) + quadratic with cl)
-    cdrag = (cdmin + cdcl2 * (clift - cldmin)^2) * rcorr
-    cd_alf = (2.0 * cdcl2 * (clift - cldmin) * cl_alf) * rcorr
-    cd_w = (2.0 * cdcl2 * (clift - cldmin) * cl_w) * rcorr
+    cdrag = (cdmin + cdcl2 * (clift - clcdmin)^2) * rcorr
+    cd_alf = (2.0 * cdcl2 * (clift - clcdmin) * cl_alf) * rcorr
+    cd_w = (2.0 * cdcl2 * (clift - clcdmin) * cl_w) * rcorr
     cd_rey = cdrag * rcorr_rey
 
     # post-stall drag added
@@ -510,7 +510,7 @@ function dfdc_clcdcm(
     # cdc is a function of a scaling factor*(m-mcrit(cl))^mexp
     # dmdd is the mach difference corresponding to cd rise of cdmdd at mcrit
     dmdd = (cdmdd / cdmfactor)^(1.0 / mexp)
-    critmach = mcrit - clmfactor * abs(clift - cldmin) - dmdd
+    critmach = mcrit - clmfactor * abs(clift - clcdmin) - dmdd
     critmach_alf = -clmfactor * abs(cl_alf)
     critmach_w = -clmfactor * abs(cl_w)
     if (mach < critmach)

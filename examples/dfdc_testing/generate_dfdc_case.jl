@@ -1,3 +1,8 @@
+using DuctTAPE
+const dt = DuctTAPE
+
+using FLOWMath
+
 """
 function for generating DFDC case files
 """
@@ -28,10 +33,11 @@ function gen_dfdc_case(
     write(f, "    $(op_data.Vinf)     $(op_data.Vref)     $(op_data.RPM)\n")
     write(f, "!         Rho          Vso          Rmu           Alt\n")
     write(f, "    $(op_data.rho)     $(op_data.Vso)     $(op_data.mu)     $(op_data.Alt)\n")
+    #NOTE: Nwake is the number of wake x-stations aft of the duct trailing edge, it is used in calculating the wake expansion spacing in DFDC, the DuctTAPE equivalent is the last entry in the npanels vector
     write(f, "!       XDwake        Nwake\n")
     write(f, "    $(wake_data.xwake)     $(wake_data.nwake)\n")
     write(f, "!       Lwkrlx\n")
-    write(f, "    " * wake_data.rlx_wake)
+    write(f, "    " * wake_data.rlx_wake * "\n")
     write(f, "ENDOPER\n")
     write(f, "\n")
 
@@ -55,7 +61,7 @@ function gen_dfdc_case(
         write(f, "!       Xdisk        Nblds       NRPdef\n")
         write(
             f,
-            "    $(rotor_data[irotor].xrotor)     $(rotor_data[irotor].B)     $(length(rotor_data[irotor].r)+1)\n",
+            "    $(rotor_data[irotor].xrotor)     $(rotor_data[irotor].B)     $(wake_data.nwake_sheets))\n",
         )
         write(f, "!  #stations\n")
         write(f, "    $(length(rotor_data[irotor].r))\n")
@@ -97,15 +103,15 @@ function write_af_section(f, airfoil_data, idx)
     write(f, "!  dCLdAstall     dCLstall      Cmconst         Mcrit\n")
     write(
         f,
-        "    $(airfoil_data.dcldastall)     $(airfoil_data.dclstall)     $(airfoil_data.cmconst)     $(airfoil_data.mcrit)\n",
+        "    $(airfoil_data.dclda_stall)     $(airfoil_data.dcl_stall)     $(airfoil_data.cmcon)     $(airfoil_data.mcrit)\n",
     )
     write(f, "!       CDmin      CLCDmin     dCDdCL^2\n")
     write(
         f,
-        "    $(airfoil_data.cdmin)     $(airfoil_data.clcdmin)     $(airfoil_data.dcddcl2)\n",
+        "    $(airfoil_data.cdmin)     $(airfoil_data.clcdmin)     $(airfoil_data.dcdcl2)\n",
     )
     write(f, "!       REref        REexp\n")
-    write(f, "    $(airfoil_data.Reref)     $(airfoil_data.Reexp)\n")
+    write(f, "    $(airfoil_data.Re_ref)     $(airfoil_data.Re_exp)\n")
 
     return nothing
 end
@@ -123,15 +129,15 @@ function test_gen_dfdc_case()
         dclda=6.2800,
         clmax=1.5000,
         clmin=-1.0000,
-        dcldastall=0.50000,
-        dclstall=0.20000,
-        cmconst=0.0000,
+        dclda_stall=0.50000,
+        dcl_stall=0.20000,
+        cmcon=0.0000,
         mcrit=0.70000,
         cdmin=0.12000E-01,
         clcdmin=0.10000,
-        dcddcl2=0.50000E-02,
-        Reref=0.20000E+06,
-        Reexp=0.35000,
+        dcdcl2=0.50000E-02,
+        Re_ref=0.20000E+06,
+        Re_exp=0.35000,
     )]
 
     rct = [
@@ -257,8 +263,158 @@ function test_gen_dfdc_case()
         rotor_data,
         hub_coordinates,
         duct_coordinates;
-        savepath="examples/dfdc_testing/"
+        savepath="examples/dfdc_testing/",
     )
 
+    return nothing
+end
+
+"""
+function for generating DuctTAPE input parameters
+"""
+function write_ducttape_params(
+    filename,
+    op_data,
+    wake_data,
+    airfoil_data,
+    rotor_data,
+    hub_coordinates,
+    duct_coordinates;
+    savepath="",
+    npanels_inlet=40,
+)
+    f = open(savepath * filename, "w")
+
+    xrotor = rotor_data[1].xrotor
+    write(f, "xrotor = $xrotor\n")
+    B = rotor_data[1].B
+    write(f, "B = $B\n")
+
+    #dimensional radius
+    write(f, "r = $(rotor_data[1].r)\n")
+
+    #dimensional chord
+    write(f, "chords = $(rotor_data[1].chord)\n")
+
+    #twist in degrees converted to radians
+    write(f, "twists = $(rotor_data[1].twist * pi / 180.0)\n")
+
+    #Airfoil Data:
+    (; alpha0, clmax, clmin, dclda, dclda_stall, dcl_stall, cdmin, clcdmin, dcdcl2, cmcon, Re_ref, Re_exp, mcrit) = airfoil_data[1]
+
+    write(
+        f,
+        "afparams = dt.DFDCairfoil(
+   $alpha0,
+   $clmax,
+   $clmin,
+   $dclda,
+   $dclda_stall,
+   $dcl_stall,
+   $cdmin,
+   $clcdmin,
+   $dcdcl2,
+   $cmcon,
+   $Re_ref,
+   $Re_exp,
+   $mcrit,
+   )\n",
+    )
+
+    write(f, "airfoils = fill(afparams, length(r))\n")
+
+    #---------------------------------#
+    #       Duct and Hub Geometry     #
+    #---------------------------------#
+
+    _, duct_leidx = findmin(duct_coordinates[:, 1])
+    ductxin = reverse(duct_coordinates[1:duct_leidx, 1])
+    ductrin = reverse(duct_coordinates[1:duct_leidx, 2])
+
+    # load in duct and hub geometry, spline, and find out what the duct and hub radii are at the rotor positions to figure out what Rtip and Rhub are.
+    Rhub = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], xrotor)
+    Rtip = FLOWMath.akima(ductxin, ductrin, xrotor)
+
+    write(f, "Rtip=$Rtip\n")
+    write(f, "Rhub=$Rhub\n")
+
+    #---------------------------------#
+    #      Operation Conditions       #
+    #---------------------------------#
+
+    (; rho, mu, Vso, Vinf, Vref, Alt, RPM) = op_data
+
+    write(f, "rho=$rho\n")
+    write(f, "mu=$mu\n")
+    write(f, "Vinf=$Vinf\n")
+    write(f, "Vref=$Vref\n")
+    write(f, "Omega = $RPM * pi / 30  # convert from RPM to rad/s\n")
+    write(f, "asound = $Vso\n")
+
+    #---------------------------------#
+    #        Paneling Options         #
+    #---------------------------------#
+    (; xwake, nwake_sheets) = wake_data
+
+    wake_length = xwake #times duct chord
+
+    discscale = 1.0
+
+    ductle = minimum(duct_coordinates[:, 1])
+    ductte = maximum(duct_coordinates[:, 1])
+    ductchord = maximum(duct_coordinates[:, 1]) - minimum(duct_coordinates[:, 1])
+    outletinletratio = (ductte - xrotor) / (xrotor - ductle)
+
+    nhub_inlet = round(Int, npanels_inlet * discscale)
+
+    nduct_inlet = round(Int, npanels_inlet * discscale)
+
+    nduct_outlet = round(Int, nduct_inlet * outletinletratio)
+
+    nwake = round(Int, (nduct_inlet + nduct_outlet) * wake_length)
+
+    write(f, "nhub_inlet = $nhub_inlet\n")
+    write(f, "nduct_inlet = $nduct_inlet\n")
+    write(f, "nwake_sheets = $nwake_sheets\n")
+    write(f, "wake_length = $xwake\n")
+    write(f, "npanels = [$nduct_outlet, $nwake]\n")
+
+    #--------------------------------#
+    #      Assemble Named Tuples      #
+    #---------------------------------#
+
+    # Rotor Parameters
+    write(
+        f,
+        "rotor_parameters = [(;
+   xrotor,
+   nwake_sheets,
+   r=r ./ Rtip, #non-dimensionalize
+   chords,
+   twists,
+   airfoils,
+   Rtip,
+   Rhub,
+   tip_gap=0.0,
+   B,
+   Omega,
+   )]\n",
+    )
+
+    # Paneling Parameters
+    write(
+        f,
+        "paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)\n",
+    )
+
+    # Freestream Parameters
+    write(f, "freestream = (; rho, mu, asound, Vinf)\n")
+
+    write(f, "reference_parameters = (; Vref, Rref=Rtip)\n")
+
+    write(f, "duct_coordinates = $duct_coordinates\n")
+    write(f, "hub_coordinates = $hub_coordinates\n")
+
+    close(f)
     return nothing
 end

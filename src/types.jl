@@ -45,7 +45,7 @@ struct DFDCairfoil{TF}
     dclda_stall::TF
     dcl_stall::TF
     cdmin::TF
-    cldmin::TF
+    clcdmin::TF
     dcdcl2::TF
     cmcon::TF
     Re_ref::TF
@@ -61,7 +61,7 @@ function DFDCairfoil(;
     dclda_stall=0.5,
     dcl_stall=0.2,
     cdmin=0.012,
-    cldmin=0.1,
+    clcdmin=0.1,
     dcdcl2=0.005,
     cmcon=0.0,
     Re_ref=2e5,
@@ -76,7 +76,7 @@ function DFDCairfoil(;
         dclda_stall,
         dcl_stall,
         cdmin,
-        cldmin,
+        clcdmin,
         dcdcl2,
         cmcon,
         Re_ref,
