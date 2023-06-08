@@ -141,6 +141,13 @@ function generate_wake_panels(
     return wake_panels
 end
 
+# generates wake affect panels
+function generate_wake_affect_panels(
+    xwake, rwake, method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
+)
+    return ff.generate_panels(method, [xwake rwake])
+end
+
 """
     initialize_wake_grid(body_geometry, xrotor, rblade)
 
