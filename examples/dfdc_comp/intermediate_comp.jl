@@ -89,9 +89,12 @@ afparams = (;
 #CHORD,YRC,ALF,WWB,REY,SECSIG,SECSTAGR,CL,CD
 include(datapath * "CLCD_CHECK.jl")
 
-local_reynolds = clcdcheck[:, 1] .* abs.(clcdcheck[:, 4]) * rho / mu
-local_solidity = B * clcdcheck[:, 1] ./ (2.0 * pi * clcdcheck[:, 2])
-local_stagger = 0.5 * pi .- dfdcbeta * pi / 180.0
+# local_reynolds = clcdcheck[:, 1] .* abs.(clcdcheck[:, 4]) * rho / mu
+local_reynolds = dt.calc_reynolds.(clcdcheck[:, 1], clcdcheck[:, 4], rho, mu)
+# local_solidity = B * clcdcheck[:, 1] ./ (2.0 * pi * clcdcheck[:, 2])
+local_solidity = dt.get_local_solidity(B, clcdcheck[:, 1], clcdcheck[:, 2])
+# local_stagger = 0.5 * pi .- dfdcbeta * pi / 180.0
+local_stagger = dt.get_stagger(dfdcbeta * pi / 180.0)
 
 plot(; xlabel="Reynolds", ylabel="r")
 plot!(local_reynolds, clcdcheck[:, 2]; label="DuctTAPE Functions")
@@ -195,8 +198,8 @@ savefig(savepath * "rotorcirc-io-comp.pdf")
 
 plot(; xlabel="rotor source strengths", ylabel="r")
 plot!(sigr, dfdcr; label="DuctTAPE functions")
-plot!(dfdcsigma, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
-plot!(dcsigr, dfdcr; label="DFDC double check from prints")
+# plot!(dfdcsigma, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
+plot!(dcsigr, dfdcr; label="DFDC from prints")
 plot!(dcsigrcalc, dfdcr; label="ducttape double check from prints")
 savefig(savepath * "rotorsigma-io-comp.pdf")
 

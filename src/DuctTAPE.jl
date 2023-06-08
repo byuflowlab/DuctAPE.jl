@@ -60,4 +60,7 @@ include("post_process.jl")
 include("solve_rotor_only.jl")
 include("initialize_rotor_only.jl")
 include("post_process_rotor.jl")
+
+# -- Debugging -- ##
+include("initialize_manual.jl")
 end
