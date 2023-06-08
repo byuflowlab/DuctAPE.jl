@@ -166,7 +166,12 @@ function get_sheet_jumps(Gamma_tilde, H_tilde)
 end
 
 function get_wake_k(wake_vortex_panels)
-    K = zeros(length(wake_vortex_panels), length(wake_vortex_panels[1].panel_center[:, 1]))
+
+    # get floating point type
+    TF = eltype(wake_vortex_panels[1].panel_center)
+
+    # initialize
+    K = zeros(TF, length(wake_vortex_panels), length(wake_vortex_panels[1].panel_center[:, 1]))
     nw, np = size(K)
 
     for iw in 1:nw
@@ -339,11 +344,14 @@ get meridional velocities using the marching method for when Vinf outside of wak
 """
 function marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
 
+    #get floating point type
+    TF = eltype(Gamma_tilde)
+
     #rename for convenience
     nr, nrotor = size(Gamma_tilde)
 
     #initialize
-    Vm = zeros(nr, nrotor)
+    Vm = zeros(TF, nr, nrotor)
 
     # Loop through rotors
     for irotor in 1:nrotor

@@ -6,11 +6,38 @@ Various Post-processing functions
 
 function post_process(states, inputs)
 
-    # extract states
-    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+
+        # gamb,
+        # gamw,
+        # Gamr,
+        # sigr,
+        # vx_rotor,
+        # vr_rotor,
+        # vtheta_rotor,
+        # Wx_rotor,
+        # Wtheta_rotor,
+        # Wm_rotor,
+        # Wmag_rotor,
+        # vxfrombody,
+        # vrfrombody,
+        # vxfromwake,
+        # vrfromwake,
+        # vxfromrotor,
+        # vrfromrotor,
+        # Gamma_tilde,
+        # H_tilde,
+        # phi,
+        # alpha,
+        # cl,
+        # cd,
+
+       iv = dump(states, inputs) #intermediate values
+
+    # # extract states
+    # gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
     # get problem dimensions
-    nr, nrotor = size(Gamr)
+    nr, nrotor = size(iv.Gamr)
     nw = nr + 1
 
     # - Extract convenient input fields - #
@@ -40,36 +67,36 @@ function post_process(states, inputs)
         reduce(vcat, (p -> p.panel_length).(inputs.rotor_source_panels)), (nr, nrotor)
     )
 
-    ## -- Rotor Outputs -- ##
-    # - Set Up - #
-    # get induced velocities on the rotor
-    vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        inputs.blade_elements,
-        Gamr,
-        inputs.vx_rw,
-        inputs.vr_rw,
-        gamw,
-        inputs.vx_rr,
-        inputs.vr_rr,
-        sigr,
-        inputs.vx_rb,
-        inputs.vr_rb,
-        gamb,
-    )
+    # ## -- Rotor Outputs -- ##
+    # # - Set Up - #
+    # # get induced velocities on the rotor
+    # vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+    #     inputs.blade_elements,
+    #     Gamr,
+    #     inputs.vx_rw,
+    #     inputs.vr_rw,
+    #     gamw,
+    #     inputs.vx_rr,
+    #     inputs.vr_rr,
+    #     sigr,
+    #     inputs.vx_rb,
+    #     inputs.vr_rb,
+    #     gamb,
+    # )
 
-    # reframe velocities
-    Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
-        vx_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rpc
-    )
+    # # reframe velocities
+    # Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
+    #     vx_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rpc
+    # )
 
     # get net circulation
-    Gamma_tilde = calculate_net_circulation(Gamr, B)
+    Gamma_tilde = calculate_net_circulation(iv.Gamr, B)
 
     # get blade element coefficients
     clift, cdrag, inflow_angle, angle_of_attack = get_blade_aero(
-        Wmag_rotor,
-        Wm_rotor,
-        Wtheta_rotor,
+        iv.Wmag_rotor,
+        iv.Wm_rotor,
+        iv.Wtheta_rotor,
         solidity,
         stagger,
         chord,
@@ -85,12 +112,12 @@ function post_process(states, inputs)
     # - Rotor Thrust - #
     # inviscid thrust
     rotor_inviscid_thrust, rotor_inviscid_thrust_dist = inviscid_rotor_trust(
-        Wtheta_rotor, Gamma_tilde, rpl, rho
+        iv.Wtheta_rotor, iv.Gamma_tilde, rpl, rho
     )
 
     # viscous thrust
     rotor_viscous_thrust, rotor_viscous_thrust_dist = viscous_rotor_thrust(
-        Wx_rotor, Wmag_rotor, B, chord, rpl, cdrag, rho
+        iv.Wx_rotor, iv.Wmag_rotor, B, chord, rpl, iv.cd, rho
     )
 
     # total thrust
@@ -99,12 +126,12 @@ function post_process(states, inputs)
     # - Rotor Torque - #
     # inviscid torque
     rotor_inviscid_torque, rotor_inviscid_torque_dist = inviscid_rotor_torque(
-        Wx_rotor, rpc, rpl, Gamma_tilde, rho
+        iv.Wx_rotor, rpc, rpl, iv.Gamma_tilde, rho
     )
 
     # viscous torque
     rotor_viscous_torque, rotor_viscous_torque_dist = viscous_rotor_torque(
-        Wtheta_rotor, Wmag_rotor, B, chord, rpc, rpl, cdrag, rho
+        iv.Wtheta_rotor, iv.Wmag_rotor, B, chord, rpc, rpl, iv.cd, rho
     )
 
     # - Rotor Power - #
@@ -118,11 +145,11 @@ function post_process(states, inputs)
 
     ## -- Pressure on Bodies -- ##
     duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_x, duct_outer_x, hub_x = get_cps(
-        gamb,
-        gamw,
-        Gamr,
-        sigr,
-        Wm_rotor,
+        iv.gamb,
+        iv.gamw,
+        iv.Gamr,
+        iv.sigr,
+        iv.Wm_rotor,
         Vinf,
         Vref,
         B,
@@ -159,7 +186,7 @@ function post_process(states, inputs)
     total_power = sum([rotor_inviscid_power; rotor_viscous_power])
 
     # - Total Efficiency - #
-    total_efficiency = get_total_efficiency(total_thrust, Vinf)
+    total_efficiency = get_total_efficiency(total_thrust, total_power, Vinf)
 
     # - Induced Efficiency - #
     induced_efficiency = get_induced_efficiency(
@@ -170,7 +197,10 @@ function post_process(states, inputs)
     ideal_efficiency = get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
 
     # - Blade Loading - #
-    blade_normal_force_per_unit_span, blade_tangential_force_per_unit_span, ccbThrust, ccbtorQue, ccbPower = get_blade_loads(Wmag_rotor, inflow_angle, clift, cdrag, chord, rho, Rhub, Rtip, rpc, rpl,B, Omega[1])
+    blade_normal_force_per_unit_span, blade_tangential_force_per_unit_span = get_blade_loads(
+        iv.Wmag_rotor, iv.phi, iv.cl, iv.cd, chord, rho
+    )
+
 
     # - Thrust and Torque Coefficients - #
     CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega[1], Rref)
@@ -178,6 +208,23 @@ function post_process(states, inputs)
     ## -- Assemble Output Tuple -- ##
 
     out = (;
+           # - Geometry - #
+           Rref,
+           rotor_panel_center = rpc,
+           chord,
+           twist,
+           inputs.duct_coordinates,
+           inputs.hub_coordinates,
+           inputs.body_panels,
+           inputs.rotor_source_panels,
+           inputs.wake_vortex_panels,
+        # - Intermediate Values - #
+        intermediate_values=iv,
+        # - States - #
+        gamb = iv.gamb,
+        gamw = iv.gamw,
+        Gamr = iv.Gamr,
+        sigr = iv.sigr,
         # - Body Values - #
         # body thrust
         duct_thrust,
@@ -190,7 +237,6 @@ function post_process(states, inputs)
         hub_cp,
         hub_x,
         # - Rotor Values - #
-        rotor_panel_center=rpc,
         # rotor thrust
         rotor_total_thrust,
         rotor_inviscid_thrust,
@@ -472,11 +518,11 @@ function viscous_rotor_power(Qvisc, Omega)
     return Qvisc .* Omega
 end
 
-function get_total_efficiency(total_thrust, Vinf)
-    if Vinf != 0.0
-        return total_thrust * Vinf / total_power
-    else
+function get_total_efficiency(total_thrust, total_power, Vinf)
+    if Vinf == 0.0 || total_power <= 0.0 || total_thrust <= 0.0
         return 0.0
+    else
+        return total_thrust * Vinf / total_power
     end
 end
 
@@ -623,8 +669,8 @@ function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho, Rhub, Rtip, rpc,r
      Q = B * sum(rpl.* Tp.*rpc)
      P = Q * Omega
 
-    # return Npfull, Tpfull, T, Q, P
-    return Np, Tp, T, Q, P
+    return Np, Tp
+
 end
 
 """

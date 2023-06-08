@@ -164,7 +164,7 @@ Calculate rotor circulation and source strengths using blade element data and in
 `Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
-function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=false)
+function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false)
 
     # get floating point type
     TF = promote_type(
@@ -183,7 +183,7 @@ function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=fal
 
     # call in-place function
     return calculate_gamma_sigma!(
-        Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=debug
+        Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=debug, verbose=verbose
     )
 end
 
@@ -224,7 +224,7 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and Vθ)
 """
 function calculate_gamma_sigma!(
-    Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=false
+    Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false
 )
 
     # problem dimensions
@@ -283,7 +283,8 @@ function calculate_gamma_sigma!(
                     stagger,
                     alpha,
                     blade_elements[irotor].inner_airfoil[ir],
-                    freestream.asound,
+                    freestream.asound;
+                    verbose=verbose,
                 )
                 # get outer values
                 clout, cdout, _ = dfdc_clcdcm(
@@ -293,7 +294,8 @@ function calculate_gamma_sigma!(
                     stagger,
                     alpha,
                     blade_elements[irotor].outer_airfoil[ir],
-                    freestream.asound,
+                    freestream.asound;
+                    verbose=verbose
                 )
 
             else
@@ -362,14 +364,20 @@ TODO: add in cascade database search at some point.
 """
 search_polars(airfoil, alpha, re=0.0, ma=0.0) = ccb.afeval(airfoil, alpha, re, ma)
 
-
 """
 DFDC-like polar function. copied from dfdc and adjusted for julia
 TODO: add dfdc polar parameters object compatibility for airfoil field in blade elements objects
 TODO: this is only for a single airfoil definition.  need to rememember to interpolate between sections if there are more than one (this happens near where this function is called, rather than in this function itself)
 """
 function dfdc_clcdcm(
-    inflow_magnitude, local_reynolds, local_solidity, local_stagger, alpha, afparams, asound
+    inflow_magnitude,
+    local_reynolds,
+    local_solidity,
+    local_stagger,
+    alpha,
+    afparams,
+    asound;
+    verbose=false,
 )
 
     #all these come from user defined inputs.
@@ -381,7 +389,7 @@ function dfdc_clcdcm(
         dclda_stall,
         dcl_stall,
         cdmin,
-        cldmin,
+        clcdmin,
         dcdcl2,
         cmcon,
         Re_ref,
@@ -391,7 +399,7 @@ function dfdc_clcdcm(
 
     # factors for compressibility drag model, hhy 10/23/00
     # mcrit is set by user
-    # effective mcrit is mcrit_eff = mcrit - clmfactor*(cl-cldmin) - dmdd
+    # effective mcrit is mcrit_eff = mcrit - clmfactor*(cl-clcdmin) - dmdd
     # dmdd is the delta mach to get cd=cdmdd (usually 0.0020)
     # compressible drag is cdc = cdmfactor*(mach-mcrit_eff)^mexp
     # cdmstall is the drag at which compressible stall begins
@@ -412,7 +420,9 @@ function dfdc_clcdcm(
         else
             maprint = ma
         end
-        @warn "clfactor: local mach number limited to 0.99, was $maprint"
+        if verbose
+            @warn "clfactor: local mach number limited to 0.99, was $maprint"
+        end
         msq = 0.99
         msq_w = 0.0
     end
@@ -443,9 +453,9 @@ function dfdc_clcdcm(
     clmx = clmax
     clmn = clmin
     dmstall = (cdmstall / cdmfactor)^(1.0 / mexp)
-    clmaxm = max(0.0, (mcrit + dmstall - mach) / clmfactor) + cldmin
+    clmaxm = max(0.0, (mcrit + dmstall - mach) / clmfactor) + clcdmin
     clmax = min(clmax, clmaxm)
-    clminm = min(0.0, -(mcrit + dmstall - mach) / clmfactor) + cldmin
+    clminm = min(0.0, -(mcrit + dmstall - mach) / clmfactor) + clcdmin
     clmin = max(clmin, clminm)
 
     # cl limiter function (turns on after +-stall
@@ -489,9 +499,9 @@ function dfdc_clcdcm(
 
     # in the basic linear lift range drag is a function of lift
     # cd = cd0 (constant) + quadratic with cl)
-    cdrag = (cdmin + cdcl2 * (clift - cldmin)^2) * rcorr
-    cd_alf = (2.0 * cdcl2 * (clift - cldmin) * cl_alf) * rcorr
-    cd_w = (2.0 * cdcl2 * (clift - cldmin) * cl_w) * rcorr
+    cdrag = (cdmin + cdcl2 * (clift - clcdmin)^2) * rcorr
+    cd_alf = (2.0 * cdcl2 * (clift - clcdmin) * cl_alf) * rcorr
+    cd_w = (2.0 * cdcl2 * (clift - clcdmin) * cl_w) * rcorr
     cd_rey = cdrag * rcorr_rey
 
     # post-stall drag added
@@ -508,7 +518,7 @@ function dfdc_clcdcm(
     # cdc is a function of a scaling factor*(m-mcrit(cl))^mexp
     # dmdd is the mach difference corresponding to cd rise of cdmdd at mcrit
     dmdd = (cdmdd / cdmfactor)^(1.0 / mexp)
-    critmach = mcrit - clmfactor * abs(clift - cldmin) - dmdd
+    critmach = mcrit - clmfactor * abs(clift - clcdmin) - dmdd
     critmach_alf = -clmfactor * abs(cl_alf)
     critmach_w = -clmfactor * abs(cl_w)
     if (mach < critmach)
