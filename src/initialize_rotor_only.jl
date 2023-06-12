@@ -28,6 +28,7 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0, 
 
     #get rotor panel radial center points for convenience
     rotor_panel_centers = rotor_source_panels[1].panel_center[:, 2]
+    nbe = length(rotor_panel_centers)
 
     ##### ----- Blade Elements ----- #####
     blade_elements = [
@@ -186,6 +187,25 @@ function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0, 
     )
 
     # - Set Up States and Parameters - #
+    # for ir in 1:length(rotor_panel_centers)
+    #     for irotor in 1:length(rp)
+    #         Wθ[ir,irotor] = -rotor_panel_centers[ir] * rp[irotor].Omega[1]
+    #     end
+    # end
+
+    # use freestream magnitude as meridional velocity at each blade section
+    Wm = similar(Wθ) .= fs.Vinf
+    # magnitude is simply freestream and rotation
+    W = sqrt.(Wθ .^ 2 .+ Wm .^ 2)
+    # initialize circulation and source panel strengths
+    Gamma, sigr = calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
+
+    gamma_wake = initialize_wake_vortex_strengths(
+        fs.Vinf, Gamma, rp.Omega, rp.B, rotor_panel_edges
+    )
+
+    # - Set Up States and Parameters - #
+    # initialize rotor source strengths to zero for now
     states = [Gamma; gamma_wake; sigr]
 
     params = (
