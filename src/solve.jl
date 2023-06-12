@@ -1,241 +1,249 @@
-"""
-    analyze_propulsor(x, fx=x->x; tol=1e-8, maxiter=100)
+# """
+#     analyze_propulsor(x, fx=x->x; maximum_linesearch_step_size=1e-8, iteration_limit=100)
 
-Version of `analyze_propeller` designed for sensitivity analysis.  `x` is an input vector
-and `fx` is a function which returns the standard input arguments to `analyze_propeller`.
-"""
-function analyze_propulsor(x, fx=x -> x; tol=1e-8, maxiter=100)
+# Version of `analyze_propeller` designed for sensitivity analysis.  `x` is an input vector
+# and `fx` is a function which returns the standard input arguments to `analyze_propeller`.
+# """
+# function analyze_propulsor(x, fx=x -> x; maximum_linesearch_step_size=1e-8, iteration_limit=15)
 
-    # convergence flag
-    converged = [false]
+#     # convergence flag
+#     converged = [false]
 
-    # define parameters
-    p = (; fx, tol, maxiter, converged)
+#     # define parameters
+#     p = (; fx, maximum_linesearch_step_size, iteration_limit, converged)
 
-    # compute state variables (updates convergence flag internally)
-    states = ImplicitAD.implicit(solve, residual!, x, p)
+#     # compute state variables (updates convergence flag internally)
+#     states = ImplicitAD.implicit(solve, residual!, x, p)
 
-    # TODO: post-processing using the converged state variables
+#     # TODO: post-processing using the converged state variables
+
+#     # return solution
+#     return states, converged[1]
+# end
+
+function analyze_propulsor(
+    inputs, debug=false, maximum_linesearch_step_size=1e6, iteration_limit=100
+)
+    initial_states = initialize_states(inputs)
+    initials = copy(initial_states)
+
+    # - Define closure that allows for parameters - #
+    rwrap(r, states) = residual!(r, states, inputs, [])
+
+    # - Call NLsolve function using AD for Jacobian - #
+    #= res is of type NLsolve.SolverResults.
+    The zero field contains the "solution" to the non-linear solve.
+    The converged() function tells us if the solver converged.
+    =#
+    res = NLsolve.nlsolve(
+        rwrap,
+        initial_states;
+        autodiff=:forward,
+        method=:newton,
+        iterations=iteration_limit,
+        show_trace=true,
+        linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
+    )
+
+    # converged[1] = res.f_converged
 
     # return solution
-    return states, converged[1]
+    return res.zero, inputs, initials
 end
 
 """
     analyze_propulsor(duct_coordinates, hub_coordinates, rotor_parameters, freestream;
-        tol=1e-8, maxiter=100)
+        maximum_linesearch_step_size=1e-8, iteration_limit=100)
 
-Finds a converged set of circulation and source strengths for a ducted propeller.
 """
 function analyze_propulsor(
-    duct_coordinates, hub_coordinates, rotor_parameters, freestream; tol=1e-8, maxiter=100
+    duct_coordinates,
+    hub_coordinates,
+    paneling_constants,
+    rotor_parameters,
+    freestream,
+    reference_parameters;
+    debug=false,
+    verbose=false,
+    maximum_linesearch_step_size=1e6,
+    iteration_limit=100,
 )
 
     # use empty input vector
     x = Float64[]
 
     # use default input function
-    fx = x -> (duct_coordinates, hub_coordinates, rotor_parameters, freestream)
+    fx =
+        x -> (;
+            duct_coordinates,
+            hub_coordinates,
+            paneling_constants,
+            rotor_parameters,
+            freestream,
+            reference_parameters,
+        )
 
     # convergence flag
     converged = [false]
 
     # define parameters
-    p = (; fx, tol, maxiter, converged)
+    p = (; fx, maximum_linesearch_step_size, iteration_limit, converged, debug, verbose)
 
-    # compute state variables (updates convergence flag internally)
-    states = solve(x, p)
+    # compute various panel and circulation strenghts (updates convergence flag internally)
+    strengths, inputs, initials = solve(x, p)
 
-    # TODO: post-processing using the converged state variables
+    # post-processing using the converged strengths
+    out = post_process(strengths, inputs)
 
     # return solution
-    return states, converged[1]
+    return out, strengths, inputs, initials, p.converged[1]
 end
 
 """
     solve(x, p)
 
-Use fixed point iteration to find a converged set of state variables.
 """
 function solve(x, p)
 
     # unpack parameters
-    (; fx, tol, maxiter, converged) = p
+    (; fx, maximum_linesearch_step_size, iteration_limit, converged, debug, verbose) = p
 
     # unpack inputs
-    (; duct_coordinates, hub_coordinates, rotor_parameters, freestream) = fx(x)
+    (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream, reference_parameters) = fx(
+        x
+    )
 
-    # initialize parameters
-    params = initialize_parameters(
-        duct_coordinates, hub_coordinates, rotor_parameters, freestream
+    # initialize various inputs used in analysis
+    inputs = precomputed_inputs(
+        duct_coordinates,
+        hub_coordinates,
+        paneling_constants,
+        rotor_parameters,
+        freestream,
+        reference_parameters;
+        debug=debug,
     )
 
     # calculate initial guess for state variables
-    states = calculate_initial_states(params)
+    initial_states = initialize_states(inputs)
+    initials = copy(initial_states)
 
-    # initialize residual vector
-    resid = copy(states)
+    # - Define closure that allows for parameters - #
+    rwrap(r, states) = residual!(r, states, inputs, p)
 
-    # set convergence flag to false
-    converged[1] = false
-
-    # perform fixed point iteration
-    for iter in 1:maxiter
-
-        # store previous states in the residual vector
-        resid .= states
-
-        # update state variables
-        update_gamma_sigma!(states, params)
-
-        # calculate difference between updated and original states
-        resid .= states .- resid
-
-        # check if all state variables are converged
-        if all(x -> abs(x) < tol, resid)
-            # set convergence flag to true
-            converged[1] = true
-            # stop iterating
-            break
-        end
-    end
-
-    # return state variables
-    return states
-end
-
-"""
-    residual!(r, y, x, p)
-
-Calculate the residual function (only used for implicit differentiation).
-"""
-function residual!(r, y, x, p)
-
-    # unpack parameters
-    (; fx, tol, maxiter) = p
-
-    # unpack inputs
-    (; duct_coordinates, hub_coordinates, rotor_parameters, freestream) = fx(x)
-
-    # initialize parameters
-    params = initialize_parameters(
-        duct_coordinates, hub_coordinates, rotor_parameters, freestream
+    # - Call NLsolve function using AD for Jacobian - #
+    #= res is of type NLsolve.SolverResults.
+    The zero field contains the "solution" to the non-linear solve.
+    The converged() function tells us if the solver converged.
+    =#
+    res = NLsolve.nlsolve(
+        rwrap,
+        initial_states;
+        autodiff=:forward,
+        method=:newton,
+        iterations=iteration_limit,
+        show_trace=verbose,
+        linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
     )
 
-    # copy states to the residual vector
-    r .= y
+    # save convergence information
+    # converged[1] = NLsolve.converged(res)
+    converged[1] = res.f_converged
 
-    # update states which are stored in the residual vector
-    update_gamma_sigma!(r, params)
-
-    # residual is the difference between the updated and original states
-    r .-= y
-
-    # return residual
-    return r
+    # return solution
+    return res.zero, inputs, initials
 end
 
 """
-    calculate_initial_states(params)
-
-Calculate an initial guess for the state variables
-"""
-function calculate_initial_states(params)
-
-    # initialize body vortex strengths (no-rotor linear problem)
-    A = params.A_bb # AIC matrix for body to body problem
-    b = params.b_fs # right hand side for body to body problem
-    Γb = A \ b # get circulation strengths from solving body to body problem
-
-    # initialize blade circulation and source strengths (assume no body influence)
-    Γr, Σr = calculate_gamma_sigma(params.blade_elements, params.freestream.Vinf)
-
-    # initialize wake vortex strengths
-    Γw = initialize_wake_vortex_strengths(Γr, Σr, params)
-
-    # combine initial states into one vector
-    states = vcat(
-        Γb, # body vortex sheet strengths
-        reduce(vcat, Γw), # wake vortex sheet strengths
-        reduce(vcat, Γr), # rotor vortex strengths
-        reduce(vcat, Σr), # rotor source strengths
-    )
-
-    return states
-end
-
-"""
-    update_gamma_sigma!(states, params)
+    residual!(res, states, inputs, p)
 
 Updates the state variables.
 """
-function update_gamma_sigma!(states, params)
+function residual!(res, states, inputs, p)
+    updated_states = copy(states)
 
-    # extract parameters
-    blade_elements = params.blade_elements
-    wake_panels = params.wake_panels
-    b_fb = params.bc_freestream_to_body
-    Vinf = params.freestream.Vinf
-    rotor_indices = params.rotor_idxs
+    update_strengths!(updated_states, inputs, p)
 
-    # extract vortex and source states
-    Γb, Γw, Γr, Σr = extract_state_variables(states, params)
+    # Update Residual
+    # TODO: need to add the pressure residual here,
+    @. res = updated_states - states
 
-    # calculate net circulation
-    Γ_tilde = calculate_net_circulation(Γr, num_blades)
+    return nothing
+end
 
-    # calculate enthalpy jumps
-    H_tilde = calculate_enthalpy_jumps(Γr, Ωr, num_blades)
+function residual(states, inputs, p)
+    res = copy(states)
 
-    # calculate meridional velocities at wakes
-    wake_velocities = calculate_wake_velocities(
-        vx_wb, vr_wb, Γb, vx_ww, vr_ww, Γw, vx_wr, vr_wr, Σr
+    residual!(res, states, inputs, p)
+
+    return res
+end
+
+function update_strengths!(states, inputs, p)
+
+    # - Extract states - #
+    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+
+    # - Get velocities at rotor planes (before updating state dependencies) - #
+    _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+        Gamr, gamw, sigr, gamb, inputs
     )
 
-    # calculate induced velocity at rotors
-    # TODO:update outputs here
-    Vm, Vθ = calculate_induced_velocities_on_rotors(
-        blade_elements, Γr, vx_rb, vr_rb, Γb, vx_rw, vr_rw, Γw
+    # - Calculate body vortex strengths (before updating state dependencies) - #
+    calculate_body_vortex_strengths!(
+        gamb,
+        inputs.A_bb,
+        inputs.b_bf,
+        inputs.kutta_idxs,
+        inputs.A_bw,
+        gamw,
+        inputs.A_br,
+        sigr,
     )
 
-    # update body vortex strengths
-    calculate_body_vortex_strengths!(Γb, A_bb, b_fb, vx_bw, vr_bw, Γw, vx_br, vr_br, Σr)
+    # - Calculate wake vortex strengths (before updating state dependencies) - #
+    calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=p.debug)
 
-    # update wake vortex strengths
-    calculate_wake_vortex_strengths!(
-        Γw, wake_panels, wake_velocities, Γ_tilde, H_tilde, rotor_indices
+    # - Update rotor circulation and source panel strengths - #
+    calculate_gamma_sigma!(
+        Gamr,
+        sigr,
+        inputs.blade_elements,
+        Wm_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        inputs.freestream;
+        debug=p.debug,
+        verbose=p.verbose
     )
-
-    # update circulation and source strengths
-    calculate_gamma_sigma!(Γr, Σr, blade_elements, Vinf, Vm, Vθ)
 
     return nothing
 end
 
 """
-    extract_state_variables(states, params)
+    extract_state_variables(states, inputs)
 
 Extract circulation and source strengths from the state vector
 """
-function extract_state_variables(states, params)
+function extract_state_variables(states, inputs)
 
     # Problem Dimensions
-    nb = params.num_body_panels                            # number of body panels
-    nrotor = params.num_rotors                             # number of rotors
-    nx = params.num_wake_x_panels                          # number of streamwise coordinates
-    nr = length(params.blade_elements[1].radial_positions) # number of radial coordinates
+    nb = inputs.num_body_panels                     # number of body panels
+    nr, nrotor = size(inputs.rotor_panel_centers)   # number of blade elements and rotors
+    nw = nr + 1                                     # number of wake sheets
+    nx = inputs.num_wake_x_panels                   # number of wake panels per sheet
 
     # State Variable Indices
-    iΓb = 1:nb                                # body vortex strength indices
-    iΓw = (iΓb[end] + 1):(iΓb[end] + nx * nr)     # wake vortex strength indices
-    iΓr = (iΓw[end] + 1):(iΓw[end] + nr * nrotor) # rotor circulation strength indices
-    iΣr = (iΓr[end] + 1):(iΓr[end] + nr * nrotor) # rotor source strength indices
+    iΓb = 1:nb                                      # body vortex strength indices
+    iΓw = (iΓb[end] + 1):(iΓb[end] + nw * nx)       # wake vortex strength indices
+    iΓr = (iΓw[end] + 1):(iΓw[end] + nr * nrotor)   # rotor circulation strength indices
+    iΣr = (iΓr[end] + 1):(iΓr[end] + nr * nrotor)   # rotor source strength indices
 
     # Extract State variables
-    Γb = view(states, iΓb)                        # body vortex strengths
-    Γw = reshape(view(states, iΓw), (nx, nr))     # wake vortex strengths
-    Γr = reshape(view(states, iΓr), (nr, nrotor)) # rotor circulation strengths
-    Σr = reshape(view(states, iΣr), (nr, nrotor)) # rotor circulation strengths
+    gamb = view(states, iΓb)                        # body vortex strengths
+    gamw = reshape(view(states, iΓw), (nw, nx))     # wake vortex strengths
+    Gamr = reshape(view(states, iΓr), (nr, nrotor)) # rotor circulation strengths
+    sigr = reshape(view(states, iΣr), (nr, nrotor)) # rotor circulation strengths
 
-    return Γb, Γw, Γr, Σr
+    return gamb, gamw, Gamr, sigr
 end

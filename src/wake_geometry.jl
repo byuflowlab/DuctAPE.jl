@@ -9,7 +9,6 @@ function discretize_wake(
     hub_coordinates,
     xrotors, # rotor x locations
     wake_length,
-    nwake_sheets,
     npanels;
 )
 
@@ -25,7 +24,7 @@ function discretize_wake(
     duct_chord = max(xduct_te, xhub_te) - min(xduct_le, xhub_le)
 
     # dimensionalize wake_length
-    wake_length = duct_chord * wake_length
+    wake_length *= duct_chord
 
     # ensure rotors are ordered properly
     @assert issorted(xrotors)
@@ -76,8 +75,14 @@ function discretize_wake(
     # get rotor location indices
     ridx = findall(x -> x in xrotors, xwake)
 
+    # get indices of body trailing edges on wake
+    # ductTE_index = findall(x -> x == xduct_te, xwake)
+    # hubTE_index = findall(x -> x == xhub_te, xwake)
+    ductTE_index = searchsortedfirst(xwake, xduct_te)
+    hubTE_index = searchsortedfirst(xwake, xhub_te)
+
     # return dimensionalized wake x-coordinates
-    return xwake, ridx
+    return xwake, ridx, ductTE_index, hubTE_index
 end
 
 """
@@ -138,6 +143,13 @@ function generate_wake_panels(
     wake_panels = ff.generate_panels(method, wake_lines)
 
     return wake_panels
+end
+
+# generates wake affect panels
+function generate_wake_affect_panels(
+    xwake, rwake, method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
+)
+    return ff.generate_panels(method, [xwake rwake])
 end
 
 """

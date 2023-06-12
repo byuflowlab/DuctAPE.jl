@@ -41,7 +41,7 @@ Multiple Dispatch allows for single panel objects as one or both inputs as well 
  # Returns:
  - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 """
-function generate_one_way_mesh(influence_panels, affect_panels; singularity="vortex")
+function generate_one_way_mesh(influence_panels, affect_panels)
 
     ### --- Convenience Variables --- ###
     nbodies_i = length(influence_panels)
@@ -126,13 +126,93 @@ function generate_one_way_mesh(influence_panels, affect_panels; singularity="vor
 end
 
 function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:ff.Panel}
-    return generate_one_way_mesh([influence_panels], affect_panels; singularity=singularity)
+    return generate_one_way_mesh([influence_panels], affect_panels)
 end
 
 function generate_one_way_mesh(influence_panels, affect_panels::TP) where {TP<:ff.Panel}
-    return generate_one_way_mesh(influence_panels, [affect_panels]; singularity=singularity)
+    return generate_one_way_mesh(influence_panels, [affect_panels])
 end
 
 function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:ff.Panel}
     return generate_one_way_mesh([influence_panels], [affect_panels])
+end
+
+"""
+generates body mesh using flowfoil directly, but don't want users to have to know flowfoil to use ducttape
+"""
+function generate_body_mesh(
+    body_panels;
+    method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+)
+    return ff.generate_mesh(method, body_panels)
+end
+
+######################################################################
+#                                                                    #
+#                       Generalized Functions                        #
+#                                                                    #
+######################################################################
+
+#TODO: NEED TO TEST ALL OF THESE BELOW
+"""
+
+calculate "mesh" geometry without creating a mesh object
+"""
+function calculate_xrm(influencing_point, affected_point)
+    xi = (affected_point[1] - influencing_point[1]) / influencing_point[2]
+    rho = affected_point[2] / influencing_point[2]
+    m = (4.0 * rho) / (xi^2 + (rho + 1)^2)
+    rj = influencing_point[2]
+
+    return xi, rho, m, rj
+end
+
+function generate_field_mesh(panels, field_points)
+    ### --- Convenience Variables --- ###
+    nbodies = length(panels)
+    npanels = [panels[i].npanels for i in 1:nbodies]
+    total_panels = sum(npanels)
+    nfield_points = length(field_points[:, 1])
+
+    # - Define Body Indexing - #
+
+    #find starting indices for each body
+    cspanels = cumsum(npanels)
+
+    # put together index ranges of panels for each body
+    panel_indices = [(1 + (i == 1 ? 0 : cspanels[i - 1])):(cspanels[i]) for i in 1:nbodies]
+
+    # - Map indices - #
+    mesh2panel = reduce(vcat, [1:npanels[i] for i in 1:nbodies])
+
+    ### --- Initialize Vectors --- ###
+    TF = typeof(sum([panels[i].panel_length[1] for i in 1:nbodies]))
+
+    # x-component of normalized distance from influencing panel center to field point
+    x = zeros(TF, (nfield_points, total_panels))
+
+    # r-component of normalized distance from influencing panel center to field point
+    r = zeros(TF, (nfield_points, total_panels))
+
+    # variable used in elliptic function calculations
+    k2 = zeros(TF, (nfield_points, total_panels))
+
+    #radial distance used in normalizations
+    rj = zeros(TF, (nfield_points, total_panels))
+
+    ### --- Loop through field points --- ###
+    for fp in 1:nfield_points
+        ### --- Loop through bodies --- ###
+        for b in 1:nbodies
+            ### --- Loop through panels --- ###
+            for pid in panel_indices[b]
+
+                x[fp, pid], r[fp, pid], k2[fp, pid], rj[fp, pid] = calculate_xrm(
+                    field_points[fp,:], panels[b].panel_center[mesh2panel[pid], :]
+                )
+            end #for influenced panel
+        end #for influencing body
+    end #for field points
+
+    return (; x, r, m=k2, rj, panel_indices, mesh2panel)
 end

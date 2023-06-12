@@ -1,26 +1,29 @@
 """
-rp = rotor_paramters
-fs = freestream
+rotor_parameters = rotor_paramters
+freestream = freestream
 
 currently only capable of a single rotor
 """
-function initialize_rotor_states(rp, fs)
+function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0, wake_x_refine=0.01)
     #---------------------------------#
     #              Rotor              #
     #---------------------------------#
 
-    nrotor = length(rp)
-    nbe = rp[1].nwake_sheets
+    nrotor = length(rotor_parameters)
+    nbe = rotor_parameters[1].nwake_sheets - 1
     ##### ----- Panels ----- #####
     # - Rotor Panel Edges - #
-    # rotor_panel_edges = range(rp.Rhub, rp.Rtip, rp.nbe .+ 1)
-    rotor_panel_edges = [range(rp[i].Rhub, rp[i].Rtip, nbe + 1) for i in 1:nrotor]
+    # rotor_panel_edges = range(rotor_parameters.Rhub, rotor_parameters.Rtip, rotor_parameters.nbe .+ 1)
+    rotor_panel_edges = [
+        range(rotor_parameters[i].Rhub, rotor_parameters[i].Rtip, nbe + 1) for i in 1:nrotor
+    ]
     rotor_panel_edges = reduce(hcat, rotor_panel_edges)
 
     # - Generate Panels - #
     # note there will be nbe panels, but we require nbe+1 panel edges.
     rotor_source_panels = [
-        generate_rotor_panels(rp[i].xrotor, rotor_panel_edges[:, i]) for i in 1:nrotor
+        generate_rotor_panels(rotor_parameters[i].xrotor, rotor_panel_edges[:, i]) for
+        i in 1:nrotor
     ]
 
     #get rotor panel radial center points for convenience
@@ -30,15 +33,15 @@ function initialize_rotor_states(rp, fs)
     ##### ----- Blade Elements ----- #####
     blade_elements = [
         generate_blade_elements(
-            rp[i].B,
-            rp[i].Omega,
-            rp[i].xrotor,
-            rp[i].r,
-            rp[i].chords,
-            rp[i].twists,
-            rp[i].airfoils,
-            rp[i].Rtip,
-            rp[i].Rhub,
+            rotor_parameters[i].B,
+            rotor_parameters[i].Omega,
+            rotor_parameters[i].xrotor,
+            rotor_parameters[i].r,
+            rotor_parameters[i].chords,
+            rotor_parameters[i].twists,
+            rotor_parameters[i].airfoils,
+            rotor_parameters[i].Rtip,
+            rotor_parameters[i].Rhub,
             rotor_source_panels[i].panel_center[:, 2],
         ) for i in 1:nrotor
     ]
@@ -53,14 +56,16 @@ function initialize_rotor_states(rp, fs)
     ##### ----- General Geometry ----- #####
 
     # - Choose blade element spacing - #
-    dr = 0.01 * rp[1].Rtip
+    dr = wake_x_refine * rotor_parameters[1].Rtip
 
     # - Rotor Diameter - #
-    D = 2.0 * rp[1].Rtip
+    D = 2.0 * rotor_parameters[1].Rtip
 
     # - Define x grid spacing - #
     #note that by using step rather than length, we aren't guarenteed to have the wake as long as we want, but it will be close.
-    xrange = range(0.0, 5.0 * D; step=dr)
+    xrange = range(
+        rotor_parameters[1].xrotor, rotor_parameters[1].xrotor + wake_length * D; step=dr
+    )
 
     # - Put together the initial grid point matrices - #
     #=
@@ -165,8 +170,23 @@ function initialize_rotor_states(rp, fs)
     #################################
 
     # - Initialize with freestream only - #
-Wθ = -rotor_panel_centers .* rp.Omega'
-    # Wθ = zeros(eltype(rp[1].Omega),length(rotor_panel_centers),length(rp))
+    Wθ = -rotor_panel_centers .* rotor_parameters.Omega'
+    # use freestream magnitude as meridional velocity at each blade section
+    Wm = similar(Wθ) .= freestream.Vinf
+    # magnitude is simply freestream and rotation
+    W = sqrt.(Wθ .^ 2 .+ Wm .^ 2)
+    # initialize circulation and source panel strengths
+    Gamma, sigr = calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
+
+    gamma_wake = initialize_wake_vortex_strengths(
+        freestream.Vinf,
+        Gamma,
+        rotor_parameters.Omega,
+        rotor_parameters.B,
+        rotor_panel_edges,
+    )
+
+    # - Set Up States and Parameters - #
     # for ir in 1:length(rotor_panel_centers)
     #     for irotor in 1:length(rp)
     #         Wθ[ir,irotor] = -rotor_panel_centers[ir] * rp[irotor].Omega[1]
@@ -190,7 +210,7 @@ Wθ = -rotor_panel_centers .* rp.Omega'
 
     params = (
         converged=[false],
-        Vinf=fs.Vinf,
+        Vinf=freestream.Vinf,
         nxwake=length(xrange) - 1,
         vx_rw=vx_rw,
         vr_rw=vr_rw,
@@ -200,6 +220,11 @@ Wθ = -rotor_panel_centers .* rp.Omega'
         num_rotors=1,
         rotor_panel_edges=rotor_panel_edges,
         rotor_panel_centers=rotor_panel_centers,
+        wake_vortex_panels,
+        rotor_source_panels,
+        xrange,
+        x_grid_points,
+        r_grid_points,
     )
 
     return states, params

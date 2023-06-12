@@ -8,7 +8,7 @@
 # - `r::Vector{TF}`: radial coordinate of each blade element (dimensionalized)
 # - `chords::Vector{TF}` : chord length of each blade element
 # - `twists::Vector{TF}` : twist of each blade element (in radians)
-# - `solidities::Vector{TF}` : solidity of each blade element
+# - `solidity::Vector{TF}` : solidity of each blade element
 # - `outer_airfoils::Vector{TAF}` : outer bounding airfoil polar
 # - `inner_airfoils::Vector{TAF}` : inner bounding airfoil polar
 # - `inner_fraction::Vector{TAF}`: fraction of inner bounding airfoil polar to use
@@ -20,14 +20,14 @@
 #     r::Vector{TF}
 #     chords::Vector{TF}
 #     twists::Vector{TF}
-#     solidities::Vector{TF}
+#     solidity::Vector{TF}
 #     outer_airfoils::Vector{TAF}
 #     inner_airfoils::Vector{TAF}
 #     inner_fraction::Vector{TF}
 # end
 
 """
-    generate_blade_elements(B, Omega, xrotor, rblade, chords, twists, solidities, airfoils,
+    generate_blade_elements(B, Omega, xrotor, rblade, chords, twists, solidity, airfoils,
         duct_coordinates, hub_coordinates, r)
 
 Use the duct and hub geometry to dimensionalize the non-dimensional radial positions in
@@ -51,6 +51,15 @@ function generate_blade_elements(
     B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe
 )
 
+    # get floating point type
+    TF = promote_type(
+        eltype(chords),
+        eltype(twists),
+        eltype(Omega),
+        eltype(rbe),
+        eltype(Rtip),
+    )
+
     # dimensionalize the blade element radial positions
     rblade = fm.linear([0.0; 1.0], [0.0; Rtip], rnondim)
 
@@ -60,13 +69,16 @@ function generate_blade_elements(
     # update twists
     twists = fm.akima(rblade, twists, rbe)
 
-    # update solidities
-    solidities = chords ./ (2 * pi * rbe / B)
+    # update stagger
+    stagger = get_stagger(twists)
+
+    # update solidity
+    solidity = get_local_solidity(B, chords, rbe)
 
     # get bounding airfoil polars
     outer_airfoil = similar(airfoils, length(rbe))
     inner_airfoil = similar(airfoils, length(rbe))
-    inner_fraction = similar(airfoils, Float64, length(rbe))
+    inner_fraction = similar(airfoils, TF, length(rbe))
     for i in 1:(length(rbe))
         # panel radial location
         # ravg = (rwake[i] + rwake[i + 1]) / 2
@@ -100,7 +112,8 @@ function generate_blade_elements(
         rbe,
         chords,
         twists,
-        solidities,
+        stagger,
+        solidity,
         outer_airfoil,
         inner_airfoil,
         inner_fraction,
@@ -108,6 +121,14 @@ function generate_blade_elements(
         Rhub,
         # wake_index,
     )
+end
+
+function get_local_solidity(B, chord, r)
+    return B .* chord ./ (2.0 * pi * r)
+end
+
+function get_stagger(twists)
+    return 0.5 * pi .- twists
 end
 
 # generates rotor panels

@@ -98,7 +98,6 @@ function states_to_outputs_rotor_only(states, params)
         twist[ir] = params.blade_elements[1].twists[ir] # twist
         r[ir] = params.blade_elements[1].rbe[ir] # radius
 
-
         # calculate angle of attack
         # phi[ir] = atan(Wm[ir], -Wθ[ir])
         phi[ir] = atan(Wm[ir], -Wθ[ir])
@@ -139,4 +138,31 @@ function states_to_outputs_rotor_only(states, params)
         cdout,
         cd,
     )
+end
+
+"""
+"""
+function states_to_outputs_body_only(panel_strengths, panels, mesh; Vinf=1.0)
+
+    # - Rename for Convenience - #
+    idx = mesh.affect_panel_indices
+
+    # - Extract surface velocity - #
+    if length(idx) == 1
+        vs_duct = panel_strengths[idx[1]]
+
+        # - Calculate surface pressure - #
+        cp_duct = 1.0 .- (vs_duct ./ Vinf) .^ 2
+
+        return vs_duct, cp_duct
+    else
+        vs_duct = panel_strengths[idx[1]]
+        vs_hub = panel_strengths[idx[2] .- 1]
+
+        # - Calculate surface pressure - #
+        cp_duct = 1.0 .- (vs_duct ./ Vinf) .^ 2
+        cp_hub = 1.0 .- (vs_hub ./ Vinf) .^ 2
+
+        return vs_duct, vs_hub, cp_duct, cp_hub
+    end
 end

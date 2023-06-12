@@ -8,6 +8,10 @@
 *.idraw
 /*.pdf
 examples/*.pdf
+examples/rotor_only/*.pdf
+examples/dfdc_comp/*.pdf
+examples/debug_coupling/*.pdf
+examples/*.png
 test/manual_tests/*/*.pdf
 test/manual_tests/*/*.png
 /*.png

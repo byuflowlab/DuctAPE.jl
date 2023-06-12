@@ -53,8 +53,14 @@ include("initialize.jl")
 # Solver
 include("solve.jl")
 
+# Post Process
+include("post_process.jl")
+
 # -- ROTOR ONLY -- ##
 include("solve_rotor_only.jl")
 include("initialize_rotor_only.jl")
 include("post_process_rotor.jl")
+
+# -- Debugging -- ##
+include("initialize_manual.jl")
 end
