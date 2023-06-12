@@ -9,39 +9,39 @@ function radially_average_velocity(Vmr, nx)
     end
 end
 
-function calculate_wake_on_wake_average_velocities(vx_ww, vr_ww, gamw)
+# function calculate_wake_on_wake_average_velocities(vx_ww, vr_ww, gamw)
 
-    # - Initialize - #
-    # get floating point type
-    TF = eltype(gamw)
-    # get dimensions
-    nx = length(gamw[1, :])
-    nr = length(gamw[:, 1]) - 1
-    vxw = zeros(TF, nr, nx) # axial induced velocity
-    vrw = zeros(TF, nr, nx) # radial induced velocity
-    vxbar = similar(gamw) .= 0.0
-    vrbar = similar(gamw) .= 0.0
+#     # - Initialize - #
+#     # get floating point type
+#     TF = eltype(gamw)
+#     # get dimensions
+#     nx = length(gamw[1, :])
+#     nr = length(gamw[:, 1]) - 1
+#     vxw = zeros(TF, nr, nx) # axial induced velocity
+#     vrw = zeros(TF, nr, nx) # radial induced velocity
+#     vxbar = similar(gamw) .= 0.0
+#     vrbar = similar(gamw) .= 0.0
 
-    # - Loop through affected wake "rotor" planes - #
-    for iplane in 1:nx
+#     # - Loop through affected wake "rotor" planes - #
+#     for iplane in 1:nx
 
-        # - Loop through wake vortex sheets - #
-        # add wake induced velocities
-        for jwake in 1:nr
-            @views vxw[:, iplane] .+= vx_ww[iplane,jwake] * gamw[jwake, :]
-            @views vrw[:, iplane] .+= vr_ww[iplane,jwake] * gamw[jwake, :]
-        end
+#         # - Loop through wake vortex sheets - #
+#         # add wake induced velocities
+#         for jwake in 1:nr
+#             @views vxw[:, iplane] .+= vx_ww[iplane,jwake] * gamw[jwake, :]
+#             @views vrw[:, iplane] .+= vr_ww[iplane,jwake] * gamw[jwake, :]
+#         end
 
-    end
+#     end
 
-    # - Average velocities - #
-    for iplane in 1:nx
-        vxbar[:, iplane] = radially_average_velocity(vxw[:, iplane], 1)
-        vrbar[:, iplane] = radially_average_velocity(vrw[:, iplane], 1)
-    end
+#     # - Average velocities - #
+#     for iplane in 1:nx
+#         vxbar[:, iplane] = radially_average_velocity(vxw[:, iplane], 1)
+#         vrbar[:, iplane] = radially_average_velocity(vrw[:, iplane], 1)
+#     end
 
-    return vxbar, vrbar
-end
+#     return vxbar, vrbar
+# end
 
 """
 """
@@ -100,15 +100,15 @@ function calculate_induced_velocities_on_wakes(
             end
         end
 
-        # # add wake induced velocities
-        # for jwake in 1:nwake
-        #     @views vx[iwake, :] .+= vx_ww[iwake, jwake] * gamw[jwake, :]
-        #     @views vr[iwake, :] .+= vr_ww[iwake, jwake] * gamw[jwake, :]
-        #     if debug
-        #         @views vxw[iwake, :] .+= vx_ww[iwake, jwake] * gamw[jwake, :]
-        #         @views vrw[iwake, :] .+= vr_ww[iwake, jwake] * gamw[jwake, :]
-        #     end
-        # end
+        # add wake induced velocities
+        for jwake in 1:nwake
+            @views vx[iwake, :] .+= vx_ww[iwake, jwake] * gamw[jwake, :]
+            @views vr[iwake, :] .+= vr_ww[iwake, jwake] * gamw[jwake, :]
+            if debug
+                @views vxw[iwake, :] .+= vx_ww[iwake, jwake] * gamw[jwake, :]
+                @views vrw[iwake, :] .+= vr_ww[iwake, jwake] * gamw[jwake, :]
+            end
+        end
 
     end
 
@@ -148,7 +148,9 @@ function get_sheet_jumps(Gamma_tilde, H_tilde)
             if iw == 1
                 #minus zero at hub
                 deltaGamma2[iw, irotor] = Gamma_tilde[iw, irotor]^2
-                deltaH[iw, irotor] = H_tilde[iw, irotor]
+                # deltaH[iw, irotor] = H_tilde[iw, irotor]
+                #NOTE: DFDC sets this to zero and comments out their equivalent to the line above this note.  It doesn't seem to affect much in the solve though.
+                deltaH[iw, irotor] = 0.0
             elseif iw == nw
                 # zero minus at duct
                 deltaGamma2[iw, irotor] = -Gamma_tilde[iw - 1, irotor]^2
@@ -194,7 +196,7 @@ function calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=
     # number of streamwise and radial panels
     nw, nx = size(gamw)
 
-    #TODO: this is rotor and body only now
+    # NOTE: this now includes wake
     # get induced velocities from body and rotor on wake panels.
     vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
         inputs.vx_ww,
@@ -209,56 +211,39 @@ function calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=
         debug=false,
     )
 
-    ##########
-    ##### New Patch: compute wake-induced velocities on dummy rotor planes and average those
-
-    ##TODO: nothing now
-    #vbarwakex, vbarwaker = calculate_wake_on_wake_average_velocities(
-    #    inputs.vx_ww, inputs.vr_ww, gamw
+    ## TODO: remove this patch in favor of actual wake-on-wake contributions
+    ## TODO: begin stuff to be removed
+    ########################################
+    ##### patch: use wake induced velocity on first rotor plane
+    # # get induced velocities at rotor plane
+    #vxr, vrr, _, vxb, vrb, vxw, vrw, _, _ = calculate_induced_velocities_on_rotors(
+    #    inputs.blade_elements,
+    #    Gamr,
+    #    inputs.vx_rw,
+    #    inputs.vr_rw,
+    #    gamw,
+    #    inputs.vx_rr,
+    #    inputs.vr_rr,
+    #    sigr,
+    #    inputs.vx_rb,
+    #    inputs.vr_rb,
+    #    gamb;
+    #    debug=true,
     #)
 
-    # # add to other wake induced velocities
-    # vx_wake .+= vbarwakex
-    # vr_wake .+= vbarwaker
+    ## # - average rotor plane velocities
+    ## # TODO: this is part of the patch that needs to be removed
+    #vxavg = radially_average_velocity(vxw, nx)
+    #vravg = radially_average_velocity(vrw, nx)
 
-    ##########
-    #### patch: use wake induced velocity on first rotor plane
-     # get induced velocities at rotor plane
-     vxr, vrr, _, vxb, vrb, vxw, vrw, _, _ = calculate_induced_velocities_on_rotors(
-         inputs.blade_elements,
-         Gamr,
-         inputs.vx_rw,
-         inputs.vr_rw,
-         gamw,
-         inputs.vx_rr,
-         inputs.vr_rr,
-         sigr,
-         inputs.vx_rb,
-         inputs.vr_rb,
-         gamb;
-         debug=true,
-     )
+    ###TODO: also part that needs to be removed
+    ### - add rotor plane velocities to wake (this is to replace the wake-on-wake interactions that you don't have. it won't be right, but hopefully it won't be terribly wrong)
+    #vx_wake .+= vxavg
+    #vr_wake .+= vravg
 
-     # printval("vxb rotor: ", vxb)
-     # printval("vxb wake1: ", vbarwakex[:,1])
+    # TODO: end stuff to be removed
+    #######################################
 
-    # - average rotor plane velocities
-    # TODO: wake only
-    vxavg = radially_average_velocity(vxw, nx)
-    vravg = radially_average_velocity(vrw, nx)
-    # vxavg .+= radially_average_velocity(vxb, nx)
-    # vravg .+= radially_average_velocity(vrb, nx)
-
-    # - add rotor plane velocities to wake (this is to replace the wake-on-wake interactions that you don't have. it won't be right, but hopefully it won't be terribly wrong)
-    vx_wake .+= vxavg
-    vr_wake .+= vravg
-
-    ##############
-    ##### old way: keeping velocities constant
-    # vxavg = radially_average_velocity(vxr, nx)
-    # vravg = radially_average_velocity(vrr, nx)
-    # vx_wake = vxavg
-    # vr_wake = vravg
 
     # reframe velocities to get meridional velocity on wake panels
     Vm = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)

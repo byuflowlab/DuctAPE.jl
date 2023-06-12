@@ -236,11 +236,24 @@ function plotbodyaero(out, convergeflag, Vref)
     dfdc_hub_cp = dfdc_hub_thrust[:, 3]
     include(datapath * "DFDC_DUCT_FORCES.jl")
     dfdc_duct_cp = dfdc_duct_thrust[:, 3]
+    include(datapath * "DFDC_DUCTWAKE_FORCES.jl")
+    dfdc_ductwake_cp = dfdc_ductwake_thrust[:, 3]
+    include(datapath * "DFDC_HUBWAKE_FORCES.jl")
+    dfdc_hubwake_cp = dfdc_hubwake_thrust[:, 2]
     include(datapath * "DFDC_ELEMENT_CENTERS.jl")
     dfdc_hubx = elem1[:, 2]
     dfdc_hubr = elem1[:, 3]
     dfdc_ductx = elem2[:, 2]
     dfdc_ductr = elem2[:, 3]
+    dfdc_ductwakex = elem14[:, 2]
+    dfdc_ductwaker = elem14[:, 3]
+    dfdc_hubwakex = elem4[:, 2]
+    dfdc_hubwaker = elem4[:, 3]
+    include(datapath * "DFDC_SURFACE_VELOCITIES.jl")
+    dfdc_duct_vs = dfdc_vs[Int.(elem2[:, 1]), 2]
+    dfdc_ductwake_vs = dfdc_vs[Int.(elem14[:, 1]), 2]
+    dfdc_hub_vs = dfdc_vs[Int.(elem1[:, 1]), 2]
+    dfdc_hubwake_vs = dfdc_vs[Int.(elem4[:, 1]), 2]
 
     if convergeflag
         convlabel = "Converged"
@@ -249,62 +262,49 @@ function plotbodyaero(out, convergeflag, Vref)
     end
 
     #---------------------------------#
-    #    Extract Outputs and Plot     #
+    #              Plot               #
     #---------------------------------#
-    (; gamb, gamw, Gamr, sigr) = out
+    # (; gamb, gamw, Gamr, sigr) = out
 
-    ##### ----- Plot duct surface velocity ----- #####
+    pvs = plot(; xlabel="x", ylabel=L"V_s")
 
-    # # initialize plot
-    # pb = plot(; xlabel="x", ylabel="Q/Qref")
+    plot!(
+        pvs,
+        [out.duct_inner_x; out.duct_outer_x],
+        abs.([out.duct_inner_vs; out.duct_outer_vs]);
+        color=mycolors[1],
+        label="DuctTAPE Duct surface",
+    )
 
-    # plot!(
-    #     pb,
-    #     dp,
-    #     abs.(gamb[1:length(dp)]) ./ Vref;
-    #     color=mycolors[1],
-    #     label=convlabel * " DuctTAPE Duct",
-    # )
+    plot!(
+        pvs, dfdc_ductx, dfdc_duct_vs; color=mycolors[1], linestyle=:dash, label="DFDC Duct"
+    )
 
-    #plot!(
-    #    pb,
-    #    dfdc_ductx,
-    #    #TODO: get surface velocities
-    #    color=mycolors[1],
-    #    linestyle=:dash,
-    #    label="DFDC Duct",
-    #)
+    plot!(pvs, out.hub_x, out.hub_vs; color=mycolors[2], label="DuctTAPE Hub")
+    plot!(pvs, dfdc_hubx, dfdc_hub_vs; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
-    # plot!(
-    #     pb,
-    #     hp,
-    #     abs.(gamb[(length(dp) + 1):end]) ./ Vref;
-    #     color=mycolors[2],
-    #     label=convlabel * " DuctTAPE Hub",
-    # )
+    # plot!(pvs, out.hubwake_x, out.hubwake_vs; color=mycolors[3], label="DuctTAPE Hub")
+    plot!(
+        pvs,
+        dfdc_ductwakex,
+        dfdc_ductwake_vs;
+        color=mycolors[3],
+        linestyle=:dash,
+        label="DFDC Duct Wake",
+    )
 
-    #plot!(
-    #    pb,
-    #    dfdc_hubx,
-    #   #TODO: get surface velocities
-    #    color=mycolors[2],
-    #    linestyle=:dash,
-    #    label="DFDC Hub",
-    #)
+    # plot!(pvs, out.hubwake_x, out.hubwake_vs; color=mycolors[4], label="DuctTAPE Hub")
+    plot!(
+        pvs,
+        dfdc_hubwakex,
+        dfdc_hubwake_vs;
+        color=mycolors[4],
+        linestyle=:dash,
+        label="DFDC Hub Wake",
+    )
 
-    ##plot rotor location
-    #plot!(
-    #    pb,
-    #    inputs.blade_elements[1].xrotor * ones(2),
-    #    abs.([0.0; maximum(abs.(gamb ./ Vref))]);
-    #    # linewidth=0.25,
-    #    linestyle=:dot,
-    #    color=mycolors[3],
-    #    label="rotor location",
-    #)
-
-    ##save
-    #savefig(pb, datapath * "body-velocity.pdf")
+    #save
+    savefig(pvs, datapath * "body-velocity.pdf")
 
     ##### ----- Plot Surface Pressure ----- #####
 
@@ -325,6 +325,11 @@ function plotbodyaero(out, convergeflag, Vref)
     plot!(pcp, out.hub_x, out.hub_cp; color=mycolors[2], label="DuctTAPE Hub")
     plot!(pcp, dfdc_hubx, dfdc_hub_cp; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
+    # plot!(pcp, out.hubwake_x, out.hubwake_cp; color=mycolors[3], label="DuctTAPE Hub")
+    plot!(pcp, dfdc_ductwakex, dfdc_ductwake_cp; color=mycolors[3], linestyle=:dash, label="DFDC Duct Wake")
+
+    # plot!(pcp, out.hubwake_x, out.hubwake_cp; color=mycolors[4], label="DuctTAPE Hub")
+    plot!(pcp, dfdc_hubwakex, dfdc_hubwake_cp; color=mycolors[4], linestyle=:dash, label="DFDC Hub Wake")
     #save
     savefig(pcp, datapath * "body-pressure.pdf")
 

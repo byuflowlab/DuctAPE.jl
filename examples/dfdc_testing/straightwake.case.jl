@@ -27,11 +27,13 @@ Vinf=20.0
 Vref=20.0
 Omega = 5000.0 * pi / 30  # convert from RPM to rad/s
 asound = 343.0
-nhub_inlet = 90
-nduct_inlet = 90
-nwake_sheets = 11
+npan_ref = 1
+nbe_ref = 1
+nhub_inlet = 40*npan_ref
+nduct_inlet = 40*npan_ref
+nwake_sheets = 11*nbe_ref
 wake_length = 1.0
-npanels = [90, 180]
+npanels = [40, 80].*npan_ref
 rotor_parameters = [(;
    xrotor,
    nwake_sheets,

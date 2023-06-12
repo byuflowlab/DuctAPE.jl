@@ -203,24 +203,26 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
     m2p_j = mesh.mesh2panel_influence
     m2p_i = mesh.mesh2panel_affect
 
-    if mesh.m[i,j] != 1.0
-    # if !isapprox(paneli.panel_center[m2p_i[i],:],panelj.panel_center[m2p_j[j],:])
-    #calculate unit velocities
-    vx = get_vx_ring_vortex_off_body(
-        mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_j[j], 2], mesh.m[i, j]
-    )
+    if mesh.m[i, j] != 1.0
+        # if !isapprox(paneli.panel_center[m2p_i[i],:],panelj.panel_center[m2p_j[j],:])
+        #calculate unit velocities
+        vx = get_vx_ring_vortex_off_body(
+            mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_j[j], 2], mesh.m[i, j]
+        )
 
-    vr = get_vr_ring_vortex_off_body(
-        mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_j[j], 2], mesh.m[i, j]
-    )
+        vr = get_vr_ring_vortex_off_body(
+            mesh.x[i, j], mesh.r[i, j], panelj.panel_center[m2p_j[j], 2], mesh.m[i, j]
+        )
 
-else
-    # println("m = $(mesh.m[i,j]); self-induced wake used at")
-    # printval("point $(m2p_i[i]): ", paneli.panel_center[m2p_i[i],:])
-    # printval("point $(m2p_j[j]): ", panelj.panel_center[m2p_j[j],:])
-    vr = 0.0
-    vx = smoke_ring_vx(paneli.panel_center[m2p_i[i],2],paneli.panel_length[m2p_i[i]])
-end
+    else
+        vr = 0.0
+        vx = smoke_ring_vx(paneli.panel_center[m2p_i[i], 2], paneli.panel_length[m2p_i[i]])
+
+        # println("m = $(mesh.m[i,j]); self-induced wake used at")
+        # printval("point $(m2p_i[i]): ", paneli.panel_center[m2p_i[i],:])
+        # printval("point $(m2p_j[j]): ", panelj.panel_center[m2p_j[j],:])
+        # println("vx*d = ", vx * panelj.panel_length[m2p_j[j]])
+    end
 
     return vx * panelj.panel_length[m2p_j[j]], vr * panelj.panel_length[m2p_j[j]]
 end

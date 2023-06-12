@@ -67,6 +67,8 @@ function post_process(states, inputs)
         reduce(vcat, (p -> p.panel_length).(inputs.rotor_source_panels)), (nr, nrotor)
     )
 
+    ref = (; Vinf, Vref, Rref, rho, mu, asound, Omega, B)
+
     # ## -- Rotor Outputs -- ##
     # # - Set Up - #
     # # get induced velocities on the rotor
@@ -144,7 +146,7 @@ function post_process(states, inputs)
     rotor_viscous_power_dist = viscous_rotor_power(rotor_viscous_torque_dist, Omega)
 
     ## -- Pressure on Bodies -- ##
-    duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_x, duct_outer_x, hub_x = get_cps(
+    duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_vs, duct_outer_vs, hub_vs, duct_inner_x, duct_outer_x, hub_x = get_cps(
         iv.gamb,
         iv.gamw,
         iv.Gamr,
@@ -201,7 +203,6 @@ function post_process(states, inputs)
         iv.Wmag_rotor, iv.phi, iv.cl, iv.cd, chord, rho
     )
 
-
     # - Thrust and Torque Coefficients - #
     CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega[1], Rref)
 
@@ -220,6 +221,8 @@ function post_process(states, inputs)
            inputs.wake_vortex_panels,
         # - Intermediate Values - #
         intermediate_values=iv,
+        # - Reference Values - #
+        reference_values=ref,
         # - States - #
         gamb = iv.gamb,
         gamw = iv.gamw,
@@ -230,10 +233,13 @@ function post_process(states, inputs)
         duct_thrust,
         hub_thrust,
         body_thrust=duct_thrust + hub_thrust,
+        duct_inner_vs,
         duct_inner_cp,
         duct_inner_x,
+        duct_outer_vs,
         duct_outer_cp,
         duct_outer_x,
+        hub_vs,
         hub_cp,
         hub_x,
         # - Rotor Values - #
@@ -283,64 +289,29 @@ function delta_cp(deltaH, deltaS, Vtheta, Vref)
 end
 
 """
-move to utils.jl
-"""
-function split_bodies(vec, panels; duct=true)
-    # get type of vector for consistent outputs
-    TF = eltype(vec)
-
-    #check if duct is used
-    if !duct
-        #hub only
-        return TF[], TF[], vec, TF[], TF[], panels.panel_center[:, 1]
-    else
-        # get duct leading edge index. assumes duct comes first in vector
-        _, leidx = findmin(panels[1].panel_center[:, 1])
-        ndpan = length(panels[1].panel_center[:, 1])
-
-        if length(panels) > 1
-            #duct and hub
-            return vec[1:leidx],
-            vec[(leidx + 1):ndpan],
-            vec[(ndpan + 1):end],
-            panels[1].panel_center[1:leidx, 1],
-            panels[1].panel_center[(leidx + 1):ndpan, 1],
-            panels[2].panel_center[:, 1]
-        else
-            #duct only
-            return vec[1:leidx],
-            vec[(leidx + 1):ndpan],
-            TF[],
-            panels[1].panel_center[1:leidx, 1],
-            panels[1].panel_center[(leidx + 1):ndpan, 1],
-            TF[]
-        end
-    end
-
-    # shouldn't get to this point...
-    return nothing
-end
-
-"""
 """
 function calculate_delta_cp(
     gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Omega, B, body_panels, dwi, hwi, Vref
 )
 
     ## -- Calculate change in pressure coefficient -- ##
-    # - Get the tangential velocities on the bodies - #
-    # TODO; changes needed for multiple rotors
-    v_theta_duct, v_theta_hub = vtheta_on_body(
-        B[1] * Gamr,
-        body_panels[1].panel_center[dwi, 2],
-        body_panels[2].panel_center[hwi, 2],
-    )
+
+    # - Calculate net circulations - #
+    Gamma_tilde = calculate_net_circulation(Gamr, B)
 
     # - Calculate enthalpy disk jump - #
     Htilde = calculate_enthalpy_jumps(Gamr, Omega, B)
 
     # - Calculate entropy disk jump - #
     Stilde = calculate_entropy_jumps(sigr, Vm_rotor)
+
+    # - Get the tangential velocities on the bodies - #
+    v_theta_duct, v_theta_hub = vtheta_on_body(
+        Gamma_tilde,
+        body_panels[1].panel_center[dwi, 2],
+        body_panels[2].panel_center[hwi, 2],
+    )
+
 
     # assemble change in cp due to enthalpy and entropy behind rotor(s)
     deltacphub = delta_cp(Htilde[1], Stilde[1], v_theta_hub, Vref)
@@ -385,7 +356,7 @@ function get_cps(
     cpductinner[dwi] .+= deltacpduct
     cphub[hwi] .+= deltacphub
 
-    return cpductinner, cpductouter, cphub, xdi, xdo, xh
+    return cpductinner, cpductouter, cphub, gamdi, gamdo, gamh, xdi, xdo, xh
 end
 
 """
@@ -623,7 +594,7 @@ function get_blade_aero(
     return cl, cd, phi, alpha
 end
 
-function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho, Rhub, Rtip, rpc,rpl ,B, Omega)
+function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)#, Rhub, Rtip, rpc,rpl ,B, Omega)
 
     # dimensions
     nr, nrotor = size(Wmag_rotor)
@@ -665,9 +636,9 @@ function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho, Rhub, Rtip, rpc,r
      # T = B * fm.trapz(rfull, thrust)
      # Q = B * fm.trapz(rfull, torque)
      # - Actually use rectangle rather than trapezoid integration
-     T = B * sum(rpl.*Np)
-     Q = B * sum(rpl.* Tp.*rpc)
-     P = Q * Omega
+     # T = B * sum(rpl.*Np)
+     # Q = B * sum(rpl.* Tp.*rpc)
+     # P = Q * Omega
 
     return Np, Tp
 

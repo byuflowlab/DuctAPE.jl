@@ -165,6 +165,7 @@ function residual!(res, states, inputs, p)
     update_strengths!(updated_states, inputs, p)
 
     # Update Residual
+    # TODO: need to add the pressure residual here,
     @. res = updated_states - states
 
     return nothing

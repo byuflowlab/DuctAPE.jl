@@ -37,3 +37,42 @@ function printval(text, val)
     end
     return nothing
 end
+
+"""
+move to utils.jl
+"""
+function split_bodies(vec, panels; duct=true)
+    # get type of vector for consistent outputs
+    TF = eltype(vec)
+
+    #check if duct is used
+    if !duct
+        #hub only
+        return TF[], TF[], vec, TF[], TF[], panels.panel_center[:, 1]
+    else
+        # get duct leading edge index. assumes duct comes first in vector
+        _, leidx = findmin(panels[1].panel_center[:, 1])
+        ndpan = length(panels[1].panel_center[:, 1])
+
+        if length(panels) > 1
+            #duct and hub
+            return vec[1:leidx],
+            vec[(leidx + 1):ndpan],
+            vec[(ndpan + 1):end],
+            panels[1].panel_center[1:leidx, 1],
+            panels[1].panel_center[(leidx + 1):ndpan, 1],
+            panels[2].panel_center[:, 1]
+        else
+            #duct only
+            return vec[1:leidx],
+            vec[(leidx + 1):ndpan],
+            TF[],
+            panels[1].panel_center[1:leidx, 1],
+            panels[1].panel_center[(leidx + 1):ndpan, 1],
+            TF[]
+        end
+    end
+
+    # shouldn't get to this point...
+    return nothing
+end

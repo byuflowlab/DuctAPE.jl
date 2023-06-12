@@ -49,16 +49,6 @@ function precomputed_inputs(
     # number of rotors
     nrotor = length(rotor_parameters)
 
-    # - Methods - #
-    # method for the body to body problem
-    # body_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])
-
-    # method for vortex panels
-    # vortex_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
-
-    # method for source panels
-    # source_method = ff.AxisymmetricProblem(Source(Constant()), Neumann(), [true])
-
     #------------------------------------#
     # Discretize Wake and Repanel Bodies #
     #------------------------------------#
@@ -203,13 +193,14 @@ function precomputed_inputs(
         xgrid[:, 1:length(rpe)], rgrid[:, 1:length(rpe)]
     )
 
-    # - generate "rotor" panels to receive wake induced velocities - #
-    wake_affect_panels = [
-        generate_wake_affect_panels(
-            (p -> p.panel_center[i, 1]).(wake_vortex_panels),
-            (p -> p.panel_center[i, 2]).(wake_vortex_panels),
-        ) for i in 1:num_wake_x_panels
-    ]
+    #TODO: probably remove
+    # # - generate "rotor" panels to receive wake induced velocities - #
+    # wake_affect_panels = [
+    #     generate_wake_affect_panels(
+    #         (p -> p.panel_center[i, 1]).(wake_vortex_panels),
+    #         (p -> p.panel_center[i, 2]).(wake_vortex_panels),
+    #     ) for i in 1:num_wake_x_panels
+    # ]
 
 
     #------------------------------------------#
@@ -285,10 +276,11 @@ function precomputed_inputs(
     # - Relative to Wake - #
     # body to wake
 
-    mesh_wba = [
-        generate_one_way_mesh(body_panels, wake_affect_panels[i]) for
-        i in 1:length(wake_affect_panels), j in 1:1
-    ]
+    #TODO: probably remove
+    # mesh_wba = [
+    #     generate_one_way_mesh(body_panels, wake_affect_panels[i]) for
+    #     i in 1:length(wake_affect_panels), j in 1:1
+    # ]
 
     mesh_wb = [
         generate_one_way_mesh(body_panels, wake_vortex_panels[i]) for
@@ -305,8 +297,8 @@ function precomputed_inputs(
 
     # wake to wake
     mesh_ww = [
-        generate_one_way_mesh(wake_vortex_panels[j], wake_affect_panels[i]) for
-        i in 1:length(wake_affect_panels), j in 1:length(wake_vortex_panels)
+        generate_one_way_mesh(wake_vortex_panels[j], wake_vortex_panels[i]) for
+        i in 1:length(wake_vortex_panels), j in 1:length(wake_vortex_panels)
     ]
 
     #---------------------------------#
@@ -410,11 +402,12 @@ function precomputed_inputs(
     ##### ----- Induced Velcocities on Wake ----- #####
     # - body to wake - #
 
-    A_wba = [
-        assemble_induced_velocity_matrices(
-            mesh_wba[i, j], body_panels, wake_affect_panels[i]
-        ) for i in 1:length(wake_affect_panels), j in 1:1
-    ]
+    #TODO: probably remove
+    # A_wba = [
+    #     assemble_induced_velocity_matrices(
+    #         mesh_wba[i, j], body_panels, wake_affect_panels[i]
+    #     ) for i in 1:length(wake_affect_panels), j in 1:1
+    # ]
 
     A_wb = [
         assemble_induced_velocity_matrices(
@@ -425,13 +418,15 @@ function precomputed_inputs(
 
     # axial components
 
-    vx_wba = [A_wba[i, j][1] for i in 1:length(wake_affect_panels), j in 1:1]
+    #TODO: probably remove
+    # vx_wba = [A_wba[i, j][1] for i in 1:length(wake_affect_panels), j in 1:1]
 
     vx_wb = [A_wb[i, j][1] for i in 1:length(wake_vortex_panels), j in 1:1]
 
     # radial components
 
-    vr_wba = [A_wba[i, j][2] for i in 1:length(wake_affect_panels), j in 1:1]
+    #TODO: probably remove
+    # vr_wba = [A_wba[i, j][2] for i in 1:length(wake_affect_panels), j in 1:1]
 
     vr_wb = [A_wb[i, j][2] for i in 1:length(wake_vortex_panels), j in 1:1]
 
@@ -457,19 +452,19 @@ function precomputed_inputs(
     # - wake to wake - #
     A_ww = [
         assemble_induced_velocity_matrices(
-            mesh_ww[i, j], wake_vortex_panels[j], wake_affect_panels[i]
-        ) for i in 1:length(wake_affect_panels), j in 1:length(wake_vortex_panels)
+            mesh_ww[i, j], wake_vortex_panels[j], wake_vortex_panels[i]
+        ) for i in 1:length(wake_vortex_panels), j in 1:length(wake_vortex_panels)
     ]
 
     # axial components
     vx_ww = [
-        A_ww[i, j][1] for i in 1:length(wake_affect_panels),
+        A_ww[i, j][1] for i in 1:length(wake_vortex_panels),
         j in 1:length(wake_vortex_panels)
     ]
 
     # radial components
     vr_ww = [
-        A_ww[i, j][2] for i in 1:length(wake_affect_panels),
+        A_ww[i, j][2] for i in 1:length(wake_vortex_panels),
         j in 1:length(wake_vortex_panels)
     ]
     ## -- Miscellaneous Values for Indexing -- ##
@@ -502,8 +497,8 @@ function precomputed_inputs(
         rotor_indices_on_hub,
         num_wake_x_panels=num_wake_x_panels,
         num_body_panels,
-        ductTE_index=tip_gaps[1] == 0.0 ? ductTE_index[1] : nothing,
-        hubTE_index=!nohub ? hubTE_index[1] : nothing,
+        ductTE_index=tip_gaps[1] == 0.0 ? ductTE_index : nothing,
+        hubTE_index=!nohub ? hubTE_index : nothing,
         ductwakeidx=ductwakeidx[1],
         hubwakeidx=hubwakeidx[1],
         # body_panels, # body paneling
@@ -516,7 +511,7 @@ function precomputed_inputs(
         A_bw, # wake to body (total)
         A_rb, # body to rotor
         A_wb, # body to wake
-        A_wba, # body to "wake"
+        # A_wba, # body to "wake"
         A_wr, # rotor to wake
         A_ww, # rotor to wake
         vx_rb, # body to rotor (x-direction)
@@ -527,13 +522,13 @@ function precomputed_inputs(
         vr_rw, # wake to rotor ( r-direction)
         vx_wb, # body to wake (x-direction)
         vr_wb, # body to wake ( r-direction)
-        vx_wba, # body to "wake" (x-direction)
-        vr_wba, # body to "wake" ( r-direction)
+        # vx_wba, # body to "wake" (x-direction)
+        # vr_wba, # body to "wake" ( r-direction)
         vx_wr, # rotor to wake (x-direction)
         vr_wr, # rotor to wake ( r-direction)
         vx_ww, # wake to wake (x-direction)
         vr_ww, # wake to wake ( r-direction)
-        # kutta condition indices
+        # kutta condition indices (body of rev=false for duct, true for hub)
         kutta_idxs=get_kutta_indices([false; true], mesh_bb),
         # operating conditions
         Vinf=freestream.Vinf, # freestream parameters
@@ -547,7 +542,7 @@ function precomputed_inputs(
         wakexgrid=xgrid[:, 1:length(rpe)],
         wakergrid=rgrid[:, 1:length(rpe)],
         wake_vortex_panels,
-        wake_affect_panels,
+        # wake_affect_panels,
         mesh_bb,
         mesh_rb,
         mesh_br,
