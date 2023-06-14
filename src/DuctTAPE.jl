@@ -16,6 +16,8 @@ using ImplicitAD
 
 using SpecialFunctions
 
+using LinearAlgebra: factorize
+
 ## -- INCLUDES -- ##
 
 include("types.jl")
@@ -46,6 +48,9 @@ include("wake_aerodynamics.jl")
 
 # Body Aerodynamic Functions
 include("body_aerodynamics.jl")
+
+# Kutta Condition Residual
+include("pressure_residual.jl")
 
 # Pre-solve initializations
 include("initialize.jl")

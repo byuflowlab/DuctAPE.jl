@@ -7,6 +7,7 @@ Various Post-processing functions
 function post_process(states, inputs)
 
 
+    # - things contained in iv tuple
         # gamb,
         # gamw,
         # Gamr,
@@ -32,9 +33,6 @@ function post_process(states, inputs)
         # cd,
 
        iv = dump(states, inputs) #intermediate values
-
-    # # extract states
-    # gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
     # get problem dimensions
     nr, nrotor = size(iv.Gamr)
@@ -68,31 +66,6 @@ function post_process(states, inputs)
     )
 
     ref = (; Vinf, Vref, Rref, rho, mu, asound, Omega, B)
-
-    # ## -- Rotor Outputs -- ##
-    # # - Set Up - #
-    # # get induced velocities on the rotor
-    # vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-    #     inputs.blade_elements,
-    #     Gamr,
-    #     inputs.vx_rw,
-    #     inputs.vr_rw,
-    #     gamw,
-    #     inputs.vx_rr,
-    #     inputs.vr_rr,
-    #     sigr,
-    #     inputs.vx_rb,
-    #     inputs.vr_rb,
-    #     gamb,
-    # )
-
-    # # reframe velocities
-    # Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
-    #     vx_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rpc
-    # )
-
-    # get net circulation
-    Gamma_tilde = calculate_net_circulation(iv.Gamr, B)
 
     # get blade element coefficients
     clift, cdrag, inflow_angle, angle_of_attack = get_blade_aero(
@@ -146,9 +119,8 @@ function post_process(states, inputs)
     rotor_viscous_power_dist = viscous_rotor_power(rotor_viscous_torque_dist, Omega)
 
     ## -- Pressure on Bodies -- ##
-    duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_vs, duct_outer_vs, hub_vs, duct_inner_x, duct_outer_x, hub_x = get_cps(
+    duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_vs, duct_outer_vs, hub_vs, duct_inner_x, duct_outer_x, hub_x = get_body_cps(
         iv.gamb,
-        iv.gamw,
         iv.Gamr,
         iv.sigr,
         iv.Wm_rotor,
@@ -161,6 +133,50 @@ function post_process(states, inputs)
         inputs.body_panels,
         inputs.isduct,
     )
+
+    ## -- Pressure on Body Wakes -- ##
+
+ductwake_cp, ductwake_vs = get_bodywake_cps(
+                                            iv.Gamr,
+    inputs.vx_dww,
+    inputs.vr_dww,
+    iv.gamw,
+    inputs.vx_dwr,
+    inputs.vr_dwr,
+    iv.sigr,
+    inputs.vx_dwb,
+    inputs.vr_dwb,
+    iv.gamb,
+    inputs.duct_wake_panels,
+    iv.Wm_rotor,
+    Omega,
+    B,
+    Vinf,
+    Vref;
+    body="duct"
+    )
+
+hubwake_cp, hubwake_vs = get_bodywake_cps(
+                                          iv.Gamr,
+    inputs.vx_hww,
+    inputs.vr_hww,
+    iv.gamw,
+    inputs.vx_hwr,
+    inputs.vr_hwr,
+    iv.sigr,
+    inputs.vx_hwb,
+    inputs.vr_hwb,
+    iv.gamb,
+    inputs.hub_wake_panels,
+    iv.Wm_rotor,
+    Omega,
+    B,
+    Vinf,
+    Vref;
+    body="hub"
+    )
+
+
 
     ## -- Duct Outputs -- ##
     # - Put duct pressures together - #
@@ -233,6 +249,7 @@ function post_process(states, inputs)
         duct_thrust,
         hub_thrust,
         body_thrust=duct_thrust + hub_thrust,
+        # surface velocities and pressures
         duct_inner_vs,
         duct_inner_cp,
         duct_inner_x,
@@ -242,6 +259,14 @@ function post_process(states, inputs)
         hub_vs,
         hub_cp,
         hub_x,
+        # - Body Wake Values - #
+        # surface velocities and pressures
+        ductwake_vs,
+        ductwake_cp,
+        ductwake_x=inputs.duct_wake_panels.panel_center[:,1],
+        hubwake_vs,
+        hubwake_cp,
+        hubwake_x=inputs.hub_wake_panels.panel_center[:,1],
         # - Rotor Values - #
         # rotor thrust
         rotor_total_thrust,
@@ -280,21 +305,39 @@ function post_process(states, inputs)
     return out
 end
 
+
+######################################################################
+#                                                                    #
+#                        Pressure Functions                          #
+#                                                                    #
+######################################################################
+
+"""
+Calculate steady pressure coefficient
+"""
 function steady_cp(vs, vinf, vref)
     return (vinf^2 .- vs .^ 2) / vref^2
 end
 
+"""
+Calculate change in pressure coefficient aft of rotor, due to rotor
+"""
 function delta_cp(deltaH, deltaS, Vtheta, Vref)
     return (2.0 * (deltaH - deltaS) .- Vtheta .^ 2) / Vref^2
 end
 
 """
+Calculate tangential velocity for a given net circulation and radial location
 """
-function calculate_delta_cp(
-    gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Omega, B, body_panels, dwi, hwi, Vref
-)
+function calculate_vtheta(Gamma_tilde, r)
+    return Gamma_tilde ./ (2.0 * pi * r)
+end
 
-    ## -- Calculate change in pressure coefficient -- ##
+
+"""
+Calculate net circulation and enthalpy and entropy disk jumps
+"""
+function calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
 
     # - Calculate net circulations - #
     Gamma_tilde = calculate_net_circulation(Gamr, B)
@@ -305,13 +348,29 @@ function calculate_delta_cp(
     # - Calculate entropy disk jump - #
     Stilde = calculate_entropy_jumps(sigr, Vm_rotor)
 
+    return Gamma_tilde, Htilde, Stilde
+end
+
+"""
+Calculate change in pressure coefficient due to rotors specifically on the body panels aft of the rotors
+"""
+function calculate_body_delta_cp(
+    Gamr, sigr, Vm_rotor,Vref, Omega, B, body_panels, dwi, hwi
+)
+
+    ## -- Calculate change in pressure coefficient -- ##
+
+     Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
+
     # - Get the tangential velocities on the bodies - #
-    v_theta_duct, v_theta_hub = vtheta_on_body(
-        Gamma_tilde,
+    v_theta_duct = calculate_vtheta(
+                                                 Gamma_tilde[end],
         body_panels[1].panel_center[dwi, 2],
+    )
+    v_theta_hub = calculate_vtheta(
+                                   Gamma_tilde[1,end],
         body_panels[2].panel_center[hwi, 2],
     )
-
 
     # assemble change in cp due to enthalpy and entropy behind rotor(s)
     deltacphub = delta_cp(Htilde[1], Stilde[1], v_theta_hub, Vref)
@@ -321,20 +380,42 @@ function calculate_delta_cp(
 end
 
 """
+Calculate change in pressure coefficient due to rotors specifically on the body wakes
 """
-function vtheta_on_body(BGamr, inner_duct_r, hub_r)
-    v_theta_duct = BGamr[end] ./ (2.0 * pi * inner_duct_r)
-    v_theta_hub = BGamr[1] ./ (2.0 * pi * hub_r)
+function calculate_bodywake_delta_cp(
+    Gamr, sigr, Vm_rotor, Vref, Omega, B, r; body="duct"
+)
 
-    return v_theta_duct, v_theta_hub
+    ## -- Calculate change in pressure coefficient -- ##
+
+     Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
+
+    # - Get the tangential velocities on the bodies - #
+    if body=="duct"
+                  gt =                                Gamma_tilde[end]
+                  ht =                                Htilde[end]
+                  st =                                Stilde[end]
+else
+                  gt =                                Gamma_tilde[1,end]
+                  ht =                                Htilde[1,end]
+                  st =                                Stilde[1,end]
+end
+
+v_theta_wake = calculate_vtheta(gt, r)
+
+    # assemble change in cp due to enthalpy and entropy behind rotor(s)
+    deltacp = delta_cp(ht,st, v_theta_wake, Vref)
+
+    return deltacp
 end
 
 """
 calculate pressure coefficient distribution on duct/hub walls
 formulation taken from DFDC source code. TODO: derive where the expressions came from.
+
 """
-function get_cps(
-    gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Vref, B, Omega, dwi, hwi, body_panels, isduct
+function get_body_cps(
+    gamb, Gamr, sigr, Vm_rotor, Vinf, Vref, B, Omega, dwi, hwi, body_panels, isduct
 )
 
     # - Split body strengths into inner/outer duct and hub - #
@@ -348,8 +429,8 @@ function get_cps(
     cphub = steady_cp(gamh, Vinf, Vref)
 
     # - Calculate the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
-    deltacpduct, deltacphub = calculate_delta_cp(
-        gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Omega, B, body_panels, dwi, hwi, Vref
+    deltacpduct, deltacphub = calculate_body_delta_cp(
+    Gamr, sigr, Vm_rotor,Vref, Omega, B, body_panels, dwi, hwi
     )
 
     # - add raw and adjusted cp values together - #
@@ -360,7 +441,103 @@ function get_cps(
 end
 
 """
+Calculate the induced velocities on one of the body wakes (unit velocity inputs determine which one)
+"""
+function calculate_induced_velocities_on_bodywake(
+    vx_w,
+    vr_w,
+    gamw,
+    vx_r,
+    vr_r,
+    sigr,
+    vx_b,
+    vr_b,
+    gamb
+)
 
+    # problem dimensions
+    _, nrotor = size(sigr) # number of rotors
+    nwake, _ = size(gamw) # number of wake sheets
+    np, _ = size(vx_b[1])
+
+    # initialize outputs
+    vx = zeros(eltype(gamw),np) # axial induced velocity
+    vr = zeros(eltype(gamw),np) # radial induced velocity
+
+    # add body induced velocities
+    @views vx[:] .+= vx_b[1] * gamb
+    @views vr[:] .+= vr_b[1] * gamb
+
+    # add wake induced velocities
+    for jwake in 1:nwake
+        @views vx[:] .+= vx_w[jwake] * gamw[jwake, :]
+        @views vr[:] .+= vr_w[jwake] * gamw[jwake, :]
+    end
+
+    # add rotor induced velocities
+    for jrotor in 1:nrotor
+        @views vx[:] .+= vx_r[jrotor] * sigr[:, jrotor]
+        @views vr[:] .+= vr_r[jrotor] * sigr[:, jrotor]
+    end
+
+    # return raw induced velocities
+    return vx, vr
+end
+
+"""
+Calculate the pressure coefficient distributions on one of the body wakes
+"""
+function get_bodywake_cps(
+        Gamr,
+    vx_w,
+    vr_w,
+    gamw,
+    vx_r,
+    vr_r,
+    sigr,
+    vx_b,
+    vr_b,
+    gamb,
+    panels,
+    Vm_rotor,
+    Omega,
+    B,
+    Vinf,
+    Vref;
+    body="duct"
+    )
+
+    # - Get "surface" velocities - #
+
+    # get induced velocities
+vx_bodywake, vr_bodywake = calculate_induced_velocities_on_bodywake(
+    vx_w,
+    vr_w,
+    gamw,
+    vx_r,
+    vr_r,
+    sigr,
+    vx_b,
+    vr_b,
+    gamb
+)
+
+# get "surface" velocities
+vs = (vx_bodywake.+Vinf).*cos.(panels.panel_angle) .+ vr_bodywake.*sin.(panels.panel_angle)
+
+# - Get steady pressure coefficients - #
+cp_steady = steady_cp(vs, Vinf, Vref)
+
+# - Get delta cp - #
+deltacp = calculate_bodywake_delta_cp(
+                                      Gamr, sigr, Vm_rotor, Vref, Omega, B, panels.panel_center[:,2], body=body)
+
+
+return cp_steady .+ deltacp, vs
+
+end
+
+"""
 Calculate dimensional and non-dimensional axial force on a single body
 """
 function forces_from_pressure(cps, panels; rho=1.225, Vref=1.0)
@@ -388,6 +565,13 @@ function forces_from_pressure(cps, panels; rho=1.225, Vref=1.0)
     #note, thrust is in negative x-direction
     return cfx * q, cfx
 end
+
+
+######################################################################
+#                                                                    #
+#                       Rotor Aero Performance                       #
+#                                                                    #
+######################################################################
 
 function inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rho)
 
@@ -644,6 +828,12 @@ function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)#, Rhub, Rtip, rpc
 
 end
 
+
+######################################################################
+#                                                                    #
+#                      Dump Intermediate Values                      #
+#                                                                    #
+######################################################################
 """
 """
 function dump(states, inputs)

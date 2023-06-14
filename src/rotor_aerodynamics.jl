@@ -126,6 +126,8 @@ end
 """
 """
 function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
+
+    # - Get induced velocities on rotor planes - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
@@ -140,6 +142,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         gamb,
     )
 
+    # - Reframe rotor velocities into blade element frames
     Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
         vx_rotor,
         vr_rotor,

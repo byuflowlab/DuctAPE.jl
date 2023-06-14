@@ -1,11 +1,11 @@
 """
-    calculate_body_strengths_residual(gamb, A_bb, b_bf, vx_bw, vr_bw, wake_gamma)
+    calculate_body_strengths_residual(gamb, A_bb, b_bf, vx_bw, vr_bw, gamw)
 
 Calculate body vortex strengths
 kid is kutta indices, where kid[1] is the row/column to keep and kid[2] is the row/column to subtract from kid[1] and then delete (1 is the first duct panel, and 2 is the Nth duct panel)
 """
 function calculate_body_vortex_strengths!(
-    gamb, A_bb, b_bf, kidx, A_bw, wake_gamma, A_br, sigr; debug=false
+    gamb, A_bb, b_bf, kidx, A_bw, gamw, A_br, sigr, ductwakeidx; debug=false
 )
 
     # problem dimensions
@@ -28,9 +28,9 @@ function calculate_body_vortex_strengths!(
     for jwake in 1:nwake
 
         # get induced velocity in the x-direction
-        b .-= A_bw[jwake] * view(wake_gamma, jwake, :)
+        b .-= A_bw[jwake] * view(gamw, jwake, :)
         if debug
-            bwake .-= A_bw[jwake] * view(wake_gamma, jwake, :)
+            bwake .-= A_bw[jwake] * view(gamw, jwake, :)
         end
     end
 
@@ -54,8 +54,10 @@ function calculate_body_vortex_strengths!(
     # TODO: precompute factorization, test if implicit_linear is faster
     # return ldiv!(gamb, factorize(A_bb), b)
 
-    view(gamb, :) .= solve_body_system(A_bb, b, kidx)
-    # gamb[:] .= solve_body_system(A_bb, b, kidx)
+    bk = [b[1:kidx[end]]; -gamw[ductwakeidx[1], ductwakeidx[2]]; b[(kidx[end] + 1):end]]
+
+    view(gamb, :) .= (A_bb \ bk)[1:end .∉ kidx[end]+1]
+    # view(gamb, :) .= solve_body_system(A_bb, b, kidx)
 
     if debug
         return bfree, bwake, brotor
@@ -79,7 +81,7 @@ function solve_body_system(A_bb, b, kidx)
         b[kidx[i, 1]] -= b[kidx[i, 2]]
     end
 
-    # Solve with subtractive Kutta Condition applied
+    # - Solve with subtractive Kutta Condition applied - #
     # x = ImplicitAD.implicit_linear(
     #     A_bb[1:end .∉ [kidx[:, 2]], 1:end .∉ [kidx[:, 2]]], b[1:end .∉ [kidx[:, 2]]]
     # )
@@ -96,7 +98,7 @@ function solve_body_system(A_bb, b, kidx)
         b[kidx[i, 1]] += b[kidx[i, 2]]
     end
 
-    # recover the final body panel strength value
+    # - recover the final body panel strength value - #
     for i in 1:length(kidx[:, 1])
         insert!(x, kidx[i, 2], -x[kidx[i, 1]])
     end

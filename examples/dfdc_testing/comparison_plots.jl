@@ -48,7 +48,7 @@ function runandplot(; filename="straightwake.case.jl")
     println("Plotting Body Aerodynamics")
     plotbodyaero(out, convergeflag, Vref)
 
-    return out
+    return out, inputs
 end
 
 function rundt(
@@ -268,6 +268,7 @@ function plotbodyaero(out, convergeflag, Vref)
 
     pvs = plot(; xlabel="x", ylabel=L"V_s")
 
+    # duct surface
     plot!(
         pvs,
         [out.duct_inner_x; out.duct_outer_x],
@@ -276,14 +277,19 @@ function plotbodyaero(out, convergeflag, Vref)
         label="DuctTAPE Duct surface",
     )
 
+    # dfdc duct surface
     plot!(
         pvs, dfdc_ductx, dfdc_duct_vs; color=mycolors[1], linestyle=:dash, label="DFDC Duct"
     )
 
-    plot!(pvs, out.hub_x, out.hub_vs; color=mycolors[2], label="DuctTAPE Hub")
+    # hub surface
+    plot!(pvs, out.hub_x, abs.(out.hub_vs); color=mycolors[2], label="DuctTAPE Hub")
+    # dfdc hub surface
     plot!(pvs, dfdc_hubx, dfdc_hub_vs; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
-    # plot!(pvs, out.hubwake_x, out.hubwake_vs; color=mycolors[3], label="DuctTAPE Hub")
+    # duct wake
+    plot!(pvs, out.ductwake_x, abs.(out.ductwake_vs); color=mycolors[3], label="DuctTAPE Duct Wake")
+    # dfdc duct wake
     plot!(
         pvs,
         dfdc_ductwakex,
@@ -293,7 +299,9 @@ function plotbodyaero(out, convergeflag, Vref)
         label="DFDC Duct Wake",
     )
 
-    # plot!(pvs, out.hubwake_x, out.hubwake_vs; color=mycolors[4], label="DuctTAPE Hub")
+    # hub wake
+    plot!(pvs, out.hubwake_x, abs.(out.hubwake_vs); color=mycolors[4], label="DuctTAPE Hub Wake")
+    # dfdc hub wake
     plot!(
         pvs,
         dfdc_hubwakex,
@@ -310,6 +318,7 @@ function plotbodyaero(out, convergeflag, Vref)
 
     pcp = plot(; xlabel="x", ylabel=L"C_p", yflip=true)
 
+    #duct surface
     plot!(
         pcp,
         [out.duct_inner_x; out.duct_outer_x],
@@ -317,23 +326,44 @@ function plotbodyaero(out, convergeflag, Vref)
         color=mycolors[1],
         label="DuctTAPE Duct surface",
     )
-
+    #dfdc duct surface
     plot!(
         pcp, dfdc_ductx, dfdc_duct_cp; color=mycolors[1], linestyle=:dash, label="DFDC Duct"
     )
 
+    #hub surface
     plot!(pcp, out.hub_x, out.hub_cp; color=mycolors[2], label="DuctTAPE Hub")
+    #dfdc hub surface
     plot!(pcp, dfdc_hubx, dfdc_hub_cp; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
-    # plot!(pcp, out.hubwake_x, out.hubwake_cp; color=mycolors[3], label="DuctTAPE Hub")
-    plot!(pcp, dfdc_ductwakex, dfdc_ductwake_cp; color=mycolors[3], linestyle=:dash, label="DFDC Duct Wake")
+    #duct wake
+    plot!(pcp, out.ductwake_x, out.ductwake_cp; color=mycolors[3], label="DuctTAPE Duct Wake")
+    # dfdc duct wake
+    plot!(
+        pcp,
+        dfdc_ductwakex,
+        dfdc_ductwake_cp;
+        color=mycolors[3],
+        linestyle=:dash,
+        label="DFDC Duct Wake",
+    )
 
-    # plot!(pcp, out.hubwake_x, out.hubwake_cp; color=mycolors[4], label="DuctTAPE Hub")
-    plot!(pcp, dfdc_hubwakex, dfdc_hubwake_cp; color=mycolors[4], linestyle=:dash, label="DFDC Hub Wake")
+    #hub wake
+    plot!(pcp, out.hubwake_x, out.hubwake_cp; color=mycolors[4], label="DuctTAPE Hub Wake")
+    #dfdc hub wake
+    plot!(
+        pcp,
+        dfdc_hubwakex,
+        dfdc_hubwake_cp;
+        color=mycolors[4],
+        linestyle=:dash,
+        label="DFDC Hub Wake",
+    )
+
     #save
     savefig(pcp, datapath * "body-pressure.pdf")
 
     return nothing
 end
 
-out = runandplot(; filename="straightwake.case.jl")
+out, inputs = runandplot(; filename="straightwake.case.jl")

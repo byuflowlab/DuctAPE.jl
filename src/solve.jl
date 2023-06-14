@@ -165,14 +165,18 @@ function residual!(res, states, inputs, p)
     update_strengths!(updated_states, inputs, p)
 
     # Update Residual
-    # TODO: need to add the pressure residual here,
     @. res = updated_states - states
+    # TODO: need to add the pressure residual here,
+    # TODO: this adds one more equation than there are states.
+    # TODO; remove the first state residual (associated with the inner duct TE panel strength) and replace with the pressure coefficient residual.
+    # @. res[2:end] = updated_states[2:end] - states[2:end]
+    # res[1] = cp_residual(states, inputs)
 
     return nothing
 end
 
 function residual(states, inputs, p)
-    res = copy(states)
+    res = Inf .* ones(eltype(states), length(states) + 1)
 
     residual!(res, states, inputs, p)
 
@@ -199,6 +203,7 @@ function update_strengths!(states, inputs, p)
         gamw,
         inputs.A_br,
         sigr,
+        (length(gamw[:,1]),inputs.ductTE_index)
     )
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
@@ -214,7 +219,7 @@ function update_strengths!(states, inputs, p)
         Wmag_rotor,
         inputs.freestream;
         debug=p.debug,
-        verbose=p.verbose
+        verbose=p.verbose,
     )
 
     return nothing
