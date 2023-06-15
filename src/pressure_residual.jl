@@ -1,6 +1,6 @@
 """
 """
-function steady_cp(vs, vinf, vref)
+function steady_cps(vs, vinf, vref)
     return (vinf^2 .- vs .^ 2) / vref^2
 end
 
@@ -62,8 +62,8 @@ function cp_residual(states, inputs)
     body_r = inputs.body_panels[1].panel_center[1, 2]
 
     # - get steady pressure coefficient values - #
-    cpductouterTE = steady_cp(gamb[ndpan], Vinf, Vref)
-    cpductinnerTE = steady_cp(gamb[1], Vinf, Vref)
+    cpductouterTE = steady_cps(gamb[ndpan], Vinf, Vref)
+    cpductinnerTE = steady_cps(gamb[1], Vinf, Vref)
 
     # - Calculate the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
     deltacpduct = calculate_delta_cp_TE(Gamr, sigr, Vm_rotor, Omega, B, body_r, Vref)
