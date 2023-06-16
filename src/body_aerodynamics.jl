@@ -54,7 +54,8 @@ function calculate_body_vortex_strengths!(
     # TODO: precompute factorization, test if implicit_linear is faster
     # return ldiv!(gamb, factorize(A_bb), b)
 
-    bk = [b[1:kidx[end]]; -gamw[ductwakeidx[1], ductwakeidx[2]]; b[(kidx[end] + 1):end]]
+    # bk = [b[1:kidx[end]]; -gamw[ductwakeidx[1], ductwakeidx[2]]; b[(kidx[end] + 1):end]]
+    bk = [b[1:kidx[end]]; 0.0; b[(kidx[end] + 1):end]]
 
     view(gamb, :) .= (A_bb \ bk)[1:end .∉ kidx[end]+1]
     # view(gamb, :) .= solve_body_system(A_bb, b, kidx)
