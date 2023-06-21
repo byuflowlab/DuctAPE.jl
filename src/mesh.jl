@@ -99,7 +99,6 @@ function generate_one_way_mesh(influence_panels, affect_panels)
                     rj = influence_panels[n].panel_center[mesh2panel_i[j], 2]
 
                     # Calculate normalized distance components for current set of panels
-                    # TODO: suspect this should be the same for both cases, Lewis seems to have a typo normalizing x by ri instead of rj.
                     x[i, j] = (xi - xj) / rj
                     r[i, j] = ri / rj
 
