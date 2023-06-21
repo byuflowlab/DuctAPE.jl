@@ -20,6 +20,7 @@ function generate_panels( coordinates::Matrix{TF}) where {TF}
     npanel = length(x) - 1
 
     # - Initialize Outputs - #
+    TF = eltype(coordinates)
     panel_center = zeros(TF, npanel, 2)
     panel_edges = zeros(TF, npanel, 2, 2) # panel, edge, x-r
     panel_length = zeros(TF, npanel)
@@ -36,7 +37,7 @@ function generate_panels( coordinates::Matrix{TF}) where {TF}
         panel_center[ip, :] = [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
 
         # Calculate panel length
-        panel_vector, panel_length[ip] = get_r(panel_edges[ip][1,:], panel_edges[ip][2,:])
+        panel_vector, panel_length[ip] = get_r(panel_edges[ip,1,:], panel_edges[ip,2,:])
 
         # Calculate panel unit normal
         panel_normal[ip, :] = get_panel_normal(panel_vector, panel_length[ip])
