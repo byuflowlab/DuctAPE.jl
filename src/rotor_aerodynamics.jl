@@ -112,7 +112,11 @@ function reframe_rotor_velocities(
     Wx_rotor = vx_rotor .+ Vinf
 
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wtheta_rotor = vtheta_rotor .- Omega .* rotor_panel_centers
+    Wtheta_rotor = similar(vtheta_rotor) .= vtheta_rotor
+
+    for i in 1:length(Omega)
+        Wtheta_rotor[:,i] .-= Omega[i] .* rotor_panel_centers[:,i]
+    end
 
     # meridional component
     Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
@@ -148,7 +152,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         vr_rotor,
         vtheta_rotor,
         inputs.Vinf,
-        inputs.blade_elements[1].Omega,
+        inputs.blade_elements.Omega,
         inputs.rotor_panel_centers,
     )
 
