@@ -146,7 +146,8 @@ function precomputed_inputs(
                 x -> x > rotor_parameters.xrotor[i], body_panels[2].panel_center[:, 1]
             ) for i in 1:length(rotor_parameters.xrotor)
         ]
-        hubwakeidx = [rotor_indices_on_hub[1]:length(body_panels[2].panel_center[:, 1])]
+        hwidraw = sort([length(body_panels[2].panel_center[:,1]); rotor_indices_on_hub.-1])
+        hubwakeidx = reduce(vcat, [[hwidraw[i]+1:hwidraw[i+1]] for i in 1:nrotor])
     end
 
     if noduct
@@ -158,7 +159,8 @@ function precomputed_inputs(
                 x -> x < rotor_parameters.xrotor[i], body_panels[1].panel_center[:, 1]
             ) - 1 for i in 1:length(rotor_parameters.xrotor)
         ]
-        ductwakeidx = [1:rotor_indices_on_duct[end]]
+        dwidraw = sort([0;rotor_indices_on_duct])
+        ductwakeidx = reduce(vcat, [[dwidraw[i]+1:dwidraw[i+1]] for i in 1:nrotor])
     end
 
     #----------------------------------#
@@ -657,8 +659,8 @@ A_bb_kc[kidx[end]+1,kidx[end]+1] = eltype(A_bb_kc)(0.0)
         num_body_panels,
         ductTE_index=tip_gaps[1] == 0.0 ? ductTE_index : nothing,
         hubTE_index=!nohub ? hubTE_index : nothing,
-        ductwakeidx=ductwakeidx[1],
-        hubwakeidx=hubwakeidx[1],
+        ductwakeidx=ductwakeidx,
+        hubwakeidx=hubwakeidx,
         # body_panels, # body paneling
         # rotor_source_panels, # rotor paneling
         # wake_vortex_panels, # wake paneling

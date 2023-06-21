@@ -32,7 +32,7 @@ function post_process(states, inputs)
         # cl,
         # cd,
 
-       iv = dump(states, inputs) #intermediate values
+    iv = get_intermediate_values(states, inputs) #intermediate values
 
     # get problem dimensions
     nr, nrotor = size(iv.Gamr)
@@ -59,8 +59,8 @@ function post_process(states, inputs)
     innerfrac = reshape(reduce(vcat, inputs.blade_elements.inner_fraction), (nr, nrotor))
     rpc = inputs.rotor_panel_centers
     rpe = inputs.rotor_panel_edges
-    Rhub = rpe[1]
-    Rtip = rpe[end]
+    Rhub = rpe[1,:]
+    Rtip = rpe[end,:]
     rpl = reshape(
         reduce(vcat, (p -> p.panel_length).(inputs.rotor_source_panels)), (nr, nrotor)
     )
@@ -111,12 +111,19 @@ function post_process(states, inputs)
 
     # - Rotor Power - #
     # inviscid power
-    rotor_inviscid_power = inviscid_rotor_power(rotor_inviscid_torque, Omega)
-    rotor_inviscid_power_dist = inviscid_rotor_power(rotor_inviscid_torque_dist, Omega)
+    rotor_inviscid_power = inviscid_rotor_power(rotor_inviscid_torque', Omega)
+
+    rotor_inviscid_power_dist = similar(rotor_inviscid_torque_dist) .= 0.0
+    for ir = 1:nrotor
+        rotor_inviscid_power_dist[:,ir] = inviscid_rotor_power(rotor_inviscid_torque_dist[:,ir], Omega[ir])
+    end
 
     # viscous power
-    rotor_viscous_power = viscous_rotor_power(rotor_viscous_torque, Omega)
-    rotor_viscous_power_dist = viscous_rotor_power(rotor_viscous_torque_dist, Omega)
+    rotor_viscous_power = viscous_rotor_power(rotor_viscous_torque', Omega)
+    rotor_viscous_power_dist = similar(rotor_viscous_torque_dist) .= 0.0
+    for ir = 1:nrotor
+        rotor_inviscid_power_dist[:,ir] = viscous_rotor_power(rotor_inviscid_torque_dist[:,ir], Omega[ir])
+    end
 
     ## -- Pressure on Bodies -- ##
     duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_vs, duct_outer_vs, hub_vs, duct_inner_x, duct_outer_x, hub_x = get_body_cps(
@@ -194,7 +201,7 @@ hubwake_cp, hubwake_vs = get_bodywake_cps(
 
     # - Total Thrust - #
     total_thrust = sum(
-        [rotor_inviscid_thrust; rotor_viscous_thrust; duct_thrust; hub_thrust]
+        [rotor_inviscid_thrust'; rotor_viscous_thrust'; duct_thrust; hub_thrust]
     )
 
     # - Total Torque - #
@@ -207,9 +214,7 @@ hubwake_cp, hubwake_vs = get_bodywake_cps(
     total_efficiency = get_total_efficiency(total_thrust, total_power, Vinf)
 
     # - Induced Efficiency - #
-    induced_efficiency = get_induced_efficiency(
-        rotor_inviscid_thrust, duct_thrust + hub_thrust, rotor_inviscid_power, Vinf
-    )
+    induced_efficiency = [get_induced_efficiency(                                       rotor_inviscid_thrust[ir], duct_thrust + hub_thrust, rotor_inviscid_power[ir], Vinf) for ir in 1:nrotor]
 
     # - Ideal Efficiency - #
     ideal_efficiency = get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
@@ -354,29 +359,35 @@ end
 """
 Calculate change in pressure coefficient due to rotors specifically on the body panels aft of the rotors
 """
-function calculate_body_delta_cp(
-    Gamr, sigr, Vm_rotor,Vref, Omega, B, body_panels, dwi, hwi
+function calculate_body_delta_cp!(
+        cpductinner, cphub, Gamr, sigr, Vm_rotor,Vref, Omega, B, body_panels, dwi, hwi
 )
 
     ## -- Calculate change in pressure coefficient -- ##
 
      Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
 
-    # - Get the tangential velocities on the bodies - #
-    v_theta_duct = calculate_vtheta(
-                                                 Gamma_tilde[end],
-        body_panels[1].panel_center[dwi, 2],
-    )
-    v_theta_hub = calculate_vtheta(
-                                   Gamma_tilde[1,end],
-        body_panels[2].panel_center[hwi, 2],
-    )
+     _, nrotor = size(Gamr)
 
-    # assemble change in cp due to enthalpy and entropy behind rotor(s)
-    deltacphub = delta_cp(Htilde[1], Stilde[1], v_theta_hub, Vref)
-    deltacpduct = delta_cp(Htilde[end], Stilde[end], v_theta_duct, Vref)
+     for ir in 1:nrotor
 
-    return deltacpduct, deltacphub
+        # - Get the tangential velocities on the bodies - #
+        v_theta_duct = calculate_vtheta(
+            Gamma_tilde[end,ir],
+            body_panels[1].panel_center[dwi[ir], 2],
+        )
+        v_theta_hub = calculate_vtheta(
+            Gamma_tilde[1,ir],
+            body_panels[2].panel_center[hwi[ir], 2],
+        )
+
+        # assemble change in cp due to enthalpy and entropy behind rotor(s)
+        cphub[hwi[ir]] .+= delta_cp(Htilde[1,ir], Stilde[1,ir], v_theta_hub, Vref)
+        cpductinner[dwi[ir]] .+= delta_cp(Htilde[end,ir], Stilde[end,ir], v_theta_duct, Vref)
+
+    end
+
+    return nothing
 end
 
 """
@@ -428,14 +439,10 @@ function get_body_cps(
     cpductouter = steady_cp(gamdo, Vinf, Vref)
     cphub = steady_cp(gamh, Vinf, Vref)
 
-    # - Calculate the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
-    deltacpduct, deltacphub = calculate_body_delta_cp(
-    Gamr, sigr, Vm_rotor,Vref, Omega, B, body_panels, dwi, hwi
+    # - add the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
+    calculate_body_delta_cp!(
+    cpductinner, cphub, Gamr, sigr, Vm_rotor,Vref, Omega, B, body_panels, dwi, hwi
     )
-
-    # - add raw and adjusted cp values together - #
-    cpductinner[dwi] .+= deltacpduct
-    cphub[hwi] .+= deltacphub
 
     return cpductinner, cpductouter, cphub, gamdi, gamdo, gamh, xdi, xdo, xh
 end
@@ -682,10 +689,10 @@ function get_total_efficiency(total_thrust, total_power, Vinf)
 end
 
 function get_induced_efficiency(Tinv, Tduct, Pinv, Vinf)
-    if Vinf != 0.0
-        return Vinf * (Tinv .+ Tduct) ./ Pinv
-    else
+    if Vinf == 0.0 || Pinv == 0.0
         return 0.0
+    else
+        return Vinf * (Tinv .+ Tduct) ./ Pinv
     end
 end
 
@@ -831,12 +838,12 @@ end
 
 ######################################################################
 #                                                                    #
-#                      Dump Intermediate Values                      #
+#                      get_intermediate_values Intermediate Values                      #
 #                                                                    #
 ######################################################################
 """
 """
-function dump(states, inputs)
+function get_intermediate_values(states, inputs)
 
     # - Extract commonly used items from precomputed inputs - #
     blade_elements = inputs.blade_elements

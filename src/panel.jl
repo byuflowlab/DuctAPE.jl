@@ -20,7 +20,6 @@ function generate_panels( coordinates::Matrix{TF}) where {TF}
     npanel = length(x) - 1
 
     # - Initialize Outputs - #
-    TF = eltype(coordinates)
     panel_center = zeros(TF, npanel, 2)
     panel_edges = zeros(TF, npanel, 2, 2) # panel, edge, x-r
     panel_length = zeros(TF, npanel)
@@ -238,14 +237,14 @@ function get_relative_geometry(influence_panels, affect_panels)
     )
 end
 
-function generate_one_way_mesh(influence_panels::TP, affect_panels) where {TP<:NamedTuple}
-    return generate_one_way_mesh([influence_panels], affect_panels)
+function get_relative_geometry(influence_panels::TP, affect_panels) where {TP<:NamedTuple}
+    return get_relative_geometry([influence_panels], affect_panels)
 end
 
-function generate_one_way_mesh(influence_panels, affect_panels::TP) where {TP<:NamedTuple}
-    return generate_one_way_mesh(influence_panels, [affect_panels])
+function get_relative_geometry(influence_panels, affect_panels::TP) where {TP<:NamedTuple}
+    return get_relative_geometry(influence_panels, [affect_panels])
 end
 
-function generate_one_way_mesh(influence_panels::TP, affect_panels::TP) where {TP<:NamedTuple}
-    return generate_one_way_mesh([influence_panels], [affect_panels])
+function get_relative_geometry(influence_panels::TP, affect_panels::TP) where {TP<:NamedTuple}
+    return get_relative_geometry([influence_panels], [affect_panels])
 end

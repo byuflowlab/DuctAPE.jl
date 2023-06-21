@@ -91,6 +91,7 @@ function analyze_propulsor(
 
     # compute various panel and circulation strenghts (updates convergence flag internally)
     strengths, inputs, initials = solve(x, p)
+    if debug; println("NLSolve Complete"); end;
 
     # post-processing using the converged strengths
     out = post_process(strengths, inputs)
