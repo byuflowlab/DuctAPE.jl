@@ -73,7 +73,7 @@ function write_openvsp_bem(;
     num_sections=41,
     num_blades=3,
     diameter=5.0,
-    beta=20.0,
+    beta=0.0,
     feather=0.0,
     precone=0.0,
     center=[0.0; 0.0; 0.0],
@@ -139,6 +139,99 @@ function write_openvsp_bem(;
     end
 
     # close file
+    close(f)
+
+    return nothing
+end
+
+"""
+TODO: DOES NOT WORK WITH OPENVSP. CAN'T FIGURE OUT WHAT THE ERROR IS
+"""
+function write_openvsp_af(;
+    # File Info
+    savepath="",
+    filename="test_prop.af",
+    # Header
+    info="Airfoil Geometry File",
+    airfoilname="af0000",
+    symmetric=false,
+    # DATA
+    upper_coordinates=[],
+    lower_coordinates=[],
+    )
+
+    nupper = length(upper_coordinates[:,1])
+    nlower = length(lower_coordinates[:,1])
+
+    if upper_coordinates[1,1] > upper_coordinates[end,1]
+        reverse!(upper_coordinates,dims=1)
+    end
+
+    if lower_coordinates[1,1] > lower_coordinates[end,1]
+        reverse!(lower_coordinates,dims=1)
+    end
+
+    f = open(savepath*filename, "w")
+
+    write(f, info*"\n")
+    write(f, airfoilname*"\n")
+    symflag = symmetric ? 1 : 0
+    write(f, "$symflag\tSym Flag (0 - No, 1 - Yes)\n")
+    write(f, "$nupper\tNum Pnts Upper\n")
+    write(f, "$nlower\tNum Pnts Lower\n")
+
+    for iu in 1:nupper
+        write(f, "$(upper_coordinates[iu,1])\t$(upper_coordinates[iu,2])\n")
+    end
+
+    write(f, "\n")
+
+    for il in 1:nlower
+        write(f, "$(lower_coordinates[il,1])\t$(lower_coordinates[il,2])\n")
+    end
+
+    close(f)
+
+    return nothing
+end
+
+function write_openvsp_dat(;
+    # File Info
+    savepath="",
+    filename="test_prop.dat",
+    # Header
+    airfoilname="af0000",
+    # DATA
+    upper_coordinates=[],
+    lower_coordinates=[],
+    )
+
+    nupper = length(upper_coordinates[:,1])
+    nlower = length(lower_coordinates[:,1])
+
+    if upper_coordinates[1,1] > upper_coordinates[end,1]
+        reverse!(upper_coordinates,dims=1)
+    end
+
+    if lower_coordinates[1,1] > lower_coordinates[end,1]
+        reverse!(lower_coordinates,dims=1)
+    end
+
+    f = open(savepath*filename, "w")
+
+    write(f, airfoilname*"\n")
+    write(f, "$nlower\t$nupper\n")
+
+    for iu in 1:nupper
+        write(f, "$(upper_coordinates[iu,1])\t$(upper_coordinates[iu,2])\n")
+    end
+
+    write(f, "\n")
+
+    for il in 1:nlower
+        write(f, "$(lower_coordinates[il,1])\t$(lower_coordinates[il,2])\n")
+    end
+
     close(f)
 
     return nothing

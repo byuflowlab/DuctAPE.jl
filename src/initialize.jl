@@ -85,7 +85,7 @@ function precomputed_inputs(
     num_wake_x_panels=length(xwake) - 1
 
     # - Repanel Bodies - #
-    rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
+rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
         duct_coordinates,
         hub_coordinates,
         xwake,
@@ -196,6 +196,7 @@ function precomputed_inputs(
     )
 
     # generate body wake panels for convenience
+    # TODO: move panel generation into DuctTAPE
     duct_wake_panels = ff.generate_panels(ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]), [xgrid[ductTE_index:end, end] rgrid[ductTE_index:end,end]])
     hub_wake_panels = ff.generate_panels(ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]), [xgrid[hubTE_index:end, 1] rgrid[hubTE_index:end,1]])
 
@@ -524,7 +525,6 @@ A_bb_kc[kidx[end]+1,kidx[end]+1] = eltype(A_bb_kc)(0.0)
 
     ##### ----- Induced Velcocities on Duct Wake ----- #####
     # - body to duct wake - #
-
     A_dwb = [
         assemble_induced_velocity_matrices(
             mesh_dwb[i, j], body_panels, duct_wake_panels
@@ -762,7 +762,6 @@ function initialize_states(inputs)
     sigr = zeros(TF, nr, nrotor)
     gamw = zeros(TF, nr + 1, nxwake)
     # wake_vortex_strengths = repeat(gamw; inner=(1, inputs.num_wake_x_panels))
-
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,

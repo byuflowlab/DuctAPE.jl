@@ -208,6 +208,8 @@ function update_strengths!(states, inputs, p)
     )
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
+    # TODO: is it a problem that gamb got updated before this? Do we need to use the old gamb here or does it not matter?
+    # probably could calculate velocities induced on wake first too, then that would remove the problem, just like was done below for the rotor circulation and sources
     calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=p.debug)
 
     # - Update rotor circulation and source panel strengths - #
