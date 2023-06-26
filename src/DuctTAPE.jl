@@ -27,6 +27,7 @@ include("utils.jl")
 
 # Body Geometry Functions
 include("body_geometry.jl")
+include("panel.jl")
 
 # Rotor Geometry Functions
 include("rotor_geometry.jl")

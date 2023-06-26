@@ -4,49 +4,59 @@
 #                                       #
 #########################################
 """
+generates NamedTuple of panel geometry items from a vector of matrices of coordinates
 """
-function generate_panels( coordinates::Matrix{TF}) where {TF}
+function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
 
     ## -- SETUP -- ##
-
-    # Separate coordinates
-    x = coordinates[:, 1]
-    r = coordinates[:, 2]
-
-    # Check if any r coordinates are negative (not allowed in axisymmetric method)
-    @assert all(r -> r >= 0.0, r)
-
-    # - Rename for Convenience - #
-    npanel = length(x) - 1
+    # Get total number of panels (sum of nedges-1 for each body)
+    npanel = [length(eachrow(c))-1 for c in coordinates]
+    totpanel = sum(npanel)
 
     # - Initialize Outputs - #
-    panel_center = zeros(TF, npanel, 2)
-    panel_edges = zeros(TF, npanel, 2, 2) # panel, edge, x-r
-    panel_length = zeros(TF, npanel)
-    panel_normal = zeros(TF, npanel, 2)
-    panel_tangent = zeros(TF, npanel, 2)
+    control_point = zeros(TF, totpanel, 2)
+    nodes = zeros(TF, totpanel, 2, 2) # panel, edge, x-r
+    panel_length = zeros(TF, totpanel)
+    normal = zeros(TF, totpanel, 2)
+    tangent = zeros(TF, totpanel, 2)
 
-    ## -- Loop Through Coordinates -- ##
-    for ip in 1:npanel
+    # initialize index for entire array
+    pidx = 1
 
-        # Get nodes (panel edges)
-        panel_edges[ip,:,:] = [x[ip] r[ip]; x[ip+1] r[ip+1]]
+    # loop through bodies
+    for (ib,c) in enumerate(coordinates)
 
-        # Calculate control point (panel center)
-        panel_center[ip, :] = [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
+        # Separate coordinates
+        x = c[:, 1]
+        r = c[:, 2]
 
-        # Calculate panel length
-        panel_vector, panel_length[ip] = get_r(panel_edges[ip,1,:], panel_edges[ip,2,:])
+        # Check if any r coordinates are negative (not allowed in axisymmetric method)
+        @assert all(r -> r >= 0.0, r)
 
-        # Calculate panel unit normal
-        panel_normal[ip, :] = get_panel_normal(panel_vector, panel_length[ip])
+        ## -- Loop Through Coordinates -- ##
+        for ip in 1:npanel[ib]
 
-        # Calculate panel unit tangent
-        panel_tangent[ip, :] = get_panel_tangent(panel_vector, panel_length[ip])
+            # Get nodes (panel edges)
+            nodes[pidx,:,:] = [x[ip] r[ip]; x[ip+1] r[ip+1]]
 
+            # Calculate control point (panel center)
+            control_point[pidx, :] = [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
+
+            # Calculate panel length
+            panel_vector, panel_length[pidx] = get_r(nodes[pidx,1,:], nodes[pidx,2,:])
+
+            # Calculate panel unit normal
+            normal[pidx, :] = get_panel_normal(panel_vector, panel_length[pidx])
+
+            # Calculate panel unit tangent
+            tangent[pidx, :] = get_panel_tangent(panel_vector, panel_length[pidx])
+
+            # iterate "global" panel index
+            pidx += 1
+        end
     end
 
-    return (; panel_center, panel_edges, panel_length, panel_normal, panel_tangent)
+    return  (;control_point, nodes, length=panel_length, normal, tangent)
 end
 
 #########################################
@@ -140,6 +150,11 @@ function calculate_xrm(influencing_point, affected_point)
 
     return xi, rho, m, rj
 end
+
+
+# TODO: YOU ARE HERE!!!
+# TODO: DECIDE IF YOU WILL PRE-CALCULATE THE "MESH" OR IF YOU WILL JUST DIRECTLY COMPUTE THE AIC MATRICES...
+
 
 """
     get_relative_geometry(influence_panels, affect_panels; kwargs)
