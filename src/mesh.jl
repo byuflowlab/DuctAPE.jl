@@ -155,16 +155,15 @@ end
 #TODO: NEED TO TEST ALL OF THESE BELOW
 """
 
-calculate "mesh" geometry without creating a mesh object
-"""
-function calculate_xrm(influencing_point, affected_point)
-    xi = (affected_point[1] - influencing_point[1]) / influencing_point[2]
-    rho = affected_point[2] / influencing_point[2]
-    m = (4.0 * rho) / (xi^2 + (rho + 1)^2)
-    rj = influencing_point[2]
-
-    return xi, rho, m, rj
-end
+# calculate "mesh" geometry without creating a mesh object
+# """
+# function calculate_xrm(influencing_point, affected_point)
+#     xi = (affected_point[1] - influencing_point[1]) / influencing_point[2]
+#     rho = affected_point[2] / influencing_point[2]
+#     m = (4.0 * rho) / (xi^2 + (rho + 1)^2)
+#     rj = influencing_point[2]
+#     return xi, rho, m, rj
+# end
 
 function generate_field_mesh(panels, field_points)
     ### --- Convenience Variables --- ###

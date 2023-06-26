@@ -4,6 +4,13 @@
 #                                       #
 #########################################
 """
+avoid issues with single bodies being input not as vectors
+"""
+function generate_panels(coordinates::Matrix{TF}) where {TF}
+    return generate_panels([coordinates])
+end
+
+"""
 generates NamedTuple of panel geometry items from a vector of matrices of coordinates
 """
 function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
