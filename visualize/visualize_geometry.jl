@@ -1,11 +1,11 @@
-function visualize_paneling(panels; coordinates=nothing, control_points=true, nodes=true, normals=true, savepath="", filename="paneling.pdf")
+function visualize_paneling(panels; coordinates=nothing, control_points=true, nodes=true, normals=true, normal_scaling = 0.1, savepath="", filename="paneling.pdf")
 
     # plot generated panels
     plot(aspectratio=1, xlabel="x", ylabel="r")
 
     # plot inputs
     if !isnothing(coordinates)
-        plot!(coordinates[:,1],coordinates[:,2], color=:black, linestyle=:dot, label="input coordinates")
+        plot!(coordinates[:,1],coordinates[:,2], color=gray[1], linewidth=0.5, label="input coordinates")
     end
 
     #plot control points
@@ -25,7 +25,7 @@ function visualize_paneling(panels; coordinates=nothing, control_points=true, no
     if normals
         for i in 1:length(panels.length)
             lab= i==1 ? "Normals" : ""
-        plot!([0.0;panels.normal[i,1]].+panels.control_point[i,1],[0.0;panels.normal[i,2]].+panels.control_point[i,2], label=lab, color=blue[3])
+        plot!([0.0;normal_scaling*panels.normal[i,1]].+panels.control_point[i,1],[0.0;normal_scaling*panels.normal[i,2]].+panels.control_point[i,2], label=lab, color=blue[3])
         end
     end
 
