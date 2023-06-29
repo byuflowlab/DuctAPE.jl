@@ -12,6 +12,7 @@ end
 
 """
 generates NamedTuple of panel geometry items from a vector of matrices of coordinates
+assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
 """
 function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
 
@@ -23,6 +24,8 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
     # - Initialize Outputs - #
     control_point = zeros(TF, totpanel, 2)
     nodes = zeros(TF, totpanel, 2, 2) # panel, edge, x-r
+    TEnodes = zeros(TF, length(coordinates), 2, 2) # TE, upper-lower, x-r
+    TEidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx
     panel_length = zeros(TF, totpanel)
     normal = zeros(TF, totpanel, 2)
     tangent = zeros(TF, totpanel, 2)
@@ -42,6 +45,13 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
 
         ## -- Loop Through Coordinates -- ##
         for ip in 1:npanel[ib]
+            if ip == 1
+                TEnodes[ib,1,:] = [x[ip] r[ip]]
+                TEidxs[ib,1] = pidx
+            elseif ip == npanel[ib]
+                TEnodes[ib,2,:] = [x[ip+1] r[ip+1]]
+                TEidxs[ib,2] = pidx
+            end
 
             # Get nodes (panel edges)
             nodes[pidx,:,:] = [x[ip] r[ip]; x[ip+1] r[ip+1]]
@@ -63,7 +73,7 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         end
     end
 
-    return  (;control_point, nodes, length=panel_length, normal, tangent)
+    return  (;control_point, nodes, length=panel_length, normal, tangent, TEnodes, TEidxs, npanels=totpanel)
 end
 
 #########################################
@@ -138,135 +148,4 @@ Get unit tangent to panel.
 """
 function get_panel_tangent(d, dmag)
     return (dmag == 0.0) ? [0.0; 0.0] : (d / dmag)
-end
-
-#########################################
-#                                       #
-#          "Mesh" Generation            #
-#                                       #
-#########################################
-"""
-
-calculate "mesh" geometry without creating a mesh object
-"""
-function calculate_xrm(influencing_point, affected_point)
-    xi = (affected_point[1] - influencing_point[1]) / influencing_point[2]
-    rho = affected_point[2] / influencing_point[2]
-    m = (4.0 * rho) / (xi^2 + (rho + 1)^2)
-    rj = influencing_point[2]
-
-    return xi, rho, m, rj
-end
-
-
-# TODO: YOU ARE HERE!!!
-# TODO: DECIDE IF YOU WILL PRE-CALCULATE THE "MESH" OR IF YOU WILL JUST DIRECTLY COMPUTE THE AIC MATRICES...
-
-
-"""
-    get_relative_geometry(influence_panels, affect_panels; kwargs)
-
-Function similar to FLOWFoil's meshing function, but only creates the mesh one way rather
-than both ways (i.e. doesn't loop through both inputs as both sources and targets).
-
- # Arguments
- - `influence_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects doing the influencing
- - `affect_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects being affected
-
-Multiple Dispatch allows for single panel objects as one or both inputs as well if there is only one body influencing and/or being affected.
-
- # Returns:
- - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
-"""
-function get_relative_geometry(influence_panels, affect_panels)
-
-    ### --- Convenience Variables --- ###
-    nbodies_i = length(influence_panels)
-    nbodies_a = length(affect_panels)
-    npanels_i = [influence_panels[i].npanels for i in 1:nbodies_i]
-    npanels_a = [affect_panels[i].npanels for i in 1:nbodies_a]
-    total_influence_panels = sum(npanels_i)
-    total_affect_panels = sum(npanels_a)
-
-    # - Define Body Indexing - #
-
-    #find starting indices for each body
-    cspanels_i = cumsum(npanels_i)
-    cspanels_a = cumsum(npanels_a)
-
-    # put together index ranges of panels for each body
-    panel_indices_i = [
-        (1 + (i == 1 ? 0 : cspanels_i[i - 1])):(cspanels_i[i]) for i in 1:nbodies_i
-    ]
-    panel_indices_a = [
-        (1 + (i == 1 ? 0 : cspanels_a[i - 1])):(cspanels_a[i]) for i in 1:nbodies_a
-    ]
-
-    # - Map indices - #
-    mesh2panel_i = reduce(vcat, [1:npanels_i[i] for i in 1:nbodies_i])
-    mesh2panel_a = reduce(vcat, [1:npanels_a[i] for i in 1:nbodies_a])
-
-    ### --- Initialize Vectors --- ###
-    TF = typeof(sum([influence_panels[i].panel_length[1] for i in 1:nbodies_i]))
-
-    ### --- General Mesh Fields --- ###
-
-    # x-component of normalized distance from influencing panel center to field point
-    xi = zeros(TF, (total_affect_panels, total_influence_panels))
-
-    # r-component of normalized distance from influencing panel center to field point
-    rho = zeros(TF, (total_affect_panels, total_influence_panels))
-
-    # variable used in elliptic function calculations
-    k2 = zeros(TF, (total_affect_panels, total_influence_panels))
-
-    ### --- Loop through bodies --- ###
-    for m in 1:nbodies_a
-        for n in 1:nbodies_i
-            ### --- Loop through panels --- ###
-            for i in panel_indices_a[m]
-                for j in panel_indices_i[n]
-
-                    #TODO: this will likely change depending on how the panel method gets set up.
-                    # Get xi-locations of influencing and influenced panels
-                    xi = affect_panels[m].panel_center[mesh2panel_a[i], 1]
-                    xj = influence_panels[n].panel_center[mesh2panel_i[j], 1]
-
-                    # Get rho-locations of influencing and influenced panels
-                    ri = affect_panels[m].panel_center[mesh2panel_a[i], 2]
-                    rj = influence_panels[n].panel_center[mesh2panel_i[j], 2]
-
-                    # Get normalized relative geometry
-                    xi[i,j], rho[i,j], k2[i,j], _ = calculate_xrm(influencing_point, affected_point)
-
-                end #for jth influencing panel
-            end #for ith influenced panel
-        end #for nth influencing body
-    end #for mth influenced body
-
-    # Return Mesh
-    # return AxisymmetricMesh(nbodies, panel_indices, mesh2panel,xi, rho, k2)
-    return (;
-        nbodies_i,
-        nbodies_a,
-        panel_indices_i,
-        panel_indices_a,
-        mesh2panel_i,
-        mesh2panel_a,
-        xi,
-        rho,
-        k2,
-    )
-end
-
-function get_relative_geometry(influence_panels::TP, affect_panels) where {TP<:NamedTuple}
-    return get_relative_geometry([influence_panels], affect_panels)
-end
-
-function get_relative_geometry(influence_panels, affect_panels::TP) where {TP<:NamedTuple}
-    return get_relative_geometry(influence_panels, [affect_panels])
-end
-
-function get_relative_geometry(influence_panels::TP, affect_panels::TP) where {TP<:NamedTuple}
-    return get_relative_geometry([influence_panels], [affect_panels])
 end

@@ -1,4 +1,4 @@
-function visualize_paneling(panels; coordinates=nothing, control_points=true, nodes=true, normals=true, normal_scaling = 0.1, savepath="", filename="paneling.pdf")
+function visualize_paneling(panels; coordinates=nothing, control_points=true, nodes=true, TEnodes=true, normals=true, normal_scaling = 0.1, savepath="", filename="paneling.pdf")
 
     # plot generated panels
     plot(aspectratio=1, xlabel="x", ylabel="r")
@@ -18,6 +18,14 @@ function visualize_paneling(panels; coordinates=nothing, control_points=true, no
         for i in 1:length(panels.length)
             lab= i==1 ? "Nodes" : ""
             plot!(panels.nodes[i,:,1],panels.nodes[i,:,2], label=lab, color=blue[2], seriestype=:scatter)
+        end
+    end
+
+    # plot trailing edge (wake) nodes
+    if TEnodes
+        for i in 1:length(panels.TEnodes[:,1,1])
+            lab = i == 1 ? "TE Nodes" : ""
+            plot!(panels.TEnodes[i,:,1], panels.TEnodes[i,:,2], label=lab, color = red[3], seriestype=:scatter, markersize=3)
         end
     end
 

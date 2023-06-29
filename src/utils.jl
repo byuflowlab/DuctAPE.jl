@@ -76,3 +76,8 @@ function split_bodies(vec, panels; duct=true)
     # shouldn't get to this point...
     return nothing
 end
+
+# dot product
+dot(A, B) = sum(a*b for (a,b) in zip(A, B))
+# norm of vector
+norm(A) = sqrt(mapreduce(x->x^2, +, A))

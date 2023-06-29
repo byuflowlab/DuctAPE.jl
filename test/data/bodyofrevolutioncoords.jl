@@ -208,7 +208,7 @@ end
 
 N = 30
 avg_ds = pi / 2.0 / N
-xcirc, ycirc = circlecoords(N)
+xcirc, ycirc = circlecoords(round(Int,N/3))
 xcylendidx = findlast(x -> x == 0.16, r)
 xcyl = collect(range(0.16, x[xcylendidx]; step=avg_ds))
 ycyl = 0.16 * ones(length(xcyl))

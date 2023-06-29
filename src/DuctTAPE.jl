@@ -16,7 +16,7 @@ using ImplicitAD
 
 using SpecialFunctions
 
-using LinearAlgebra: factorize
+using LinearAlgebra: factorize, mul!
 
 ## -- INCLUDES -- ##
 
@@ -40,6 +40,7 @@ include("mesh.jl")
 
 # Additional Influence Coefficient Functions
 include("coefficient_matrix.jl")
+include("velocities.jl")
 
 # Rotor Aerodynamic Functions
 include("rotor_aerodynamics.jl")

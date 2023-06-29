@@ -3,9 +3,11 @@ if project_dir == ""
     project_dir = "."
 end
 
+savedir = project_dir*"/examples/new_panels/"
+
 using DuctTAPE
 const dt = DuctTAPE
-include(project_dir*"/plots_default_new.jl")
+include(project_dir*"/visualize/plots_default_new.jl")
 
 # define coordinates
 x1 = [1.0; 0.5; 0.0; 0.5; 1.0]
@@ -44,4 +46,4 @@ for i in 1:length(panels.length)
 plot!([0.0;panels.normal[i,1]].+panels.control_point[i,1],[0.0;panels.normal[i,2]].+panels.control_point[i,2], label=lab, color=blue[3])
 end
 
-savefig(project_dir*"/checkpaneling.pdf")
+savefig(savedir*"/checkpaneling.pdf")

@@ -19,13 +19,20 @@ println("Running Tests...")
 include("compare_objects.jl")
 
 # Active Development
-include("post_processing_tests.jl")
+include("new_panel_tests.jl")
+
+# Backburnere
+# include("post_processing_tests.jl")
+
+
+
+## Deprecated??
 
 # # WORKING:
-include("body_aero_tests.jl")
+# include("body_aero_tests.jl")
 
 # # In Development
-include("body_geometry_tests.jl")
+# include("body_geometry_tests.jl")
 # # TODO: need to add source and body induced velocities to induced velocity on rotor test
 # include("rotor_aero_tests.jl")
 # # TODO: need to update most of this test after having added sources and bodies in.
