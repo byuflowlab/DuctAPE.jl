@@ -36,9 +36,9 @@ function get_rotor_loads(W, phi, cl, cd, blade_element, fs)
     D = 2 * blade_element.Rtip
 
     # if T < 0
-        # eff = 0.0  # creating drag not thrust
+    # eff = 0.0  # creating drag not thrust
     # else
-        eff = T * fs.Vinf / P
+    eff = T * fs.Vinf / P
     # end
     CT = T / (fs.rho * n^2 * D^4)
     CQ = Q / (fs.rho * n^2 * D^5)

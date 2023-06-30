@@ -227,8 +227,8 @@ function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
     return vx * panelj.panel_length[m2p_j[j]], vr * panelj.panel_length[m2p_j[j]]
 end
 
-function smoke_ring_vx(r,d)
-    return - 1.0/(4.0*pi*r) * (log(8.0*pi*r/d) - 0.25)
+function smoke_ring_vx(r, d)
+    return -1.0 / (4.0 * pi * r) * (log(8.0 * pi * r / d) - 0.25)
 end
 
 function calculate_ring_vortex_influence_on_body(paneli, panelj, mesh, i, j; debug=false)
@@ -462,7 +462,7 @@ Calculate x-component of velocity influence of source ring.
 - `uij::Float` : x-component of velocity induced by panel j onto panel i
 """
 function get_vx_ring_source_off_body(x, r, rj, dj, m)
-#TODO: remove dj input, it's not used...
+    #TODO: remove dj input, it's not used...
 
     #get values for elliptic integrals
     K, E = get_elliptics(m)
@@ -572,8 +572,12 @@ function calculate_ring_vortex_influence_in_field(panel, mesh, i, j)
     m2p = mesh.mesh2panel
 
     #calculate unit velocities
-    vx = get_vx_ring_vortex_off_body(mesh.x[i, j], mesh.r[i, j], mesh.rj[i, j], mesh.m[i, j])
-    vr = get_vr_ring_vortex_off_body(mesh.x[i, j], mesh.r[i, j], mesh.rj[i, j], mesh.m[i, j])
+    vx = get_vx_ring_vortex_off_body(
+        mesh.x[i, j], mesh.r[i, j], mesh.rj[i, j], mesh.m[i, j]
+    )
+    vr = get_vr_ring_vortex_off_body(
+        mesh.x[i, j], mesh.r[i, j], mesh.rj[i, j], mesh.m[i, j]
+    )
 
     return vx * panel.panel_length[m2p[j]], vr * panel.panel_length[m2p[j]]
 end

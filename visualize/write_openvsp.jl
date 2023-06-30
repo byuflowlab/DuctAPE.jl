@@ -158,23 +158,22 @@ function write_openvsp_af(;
     # DATA
     upper_coordinates=[],
     lower_coordinates=[],
-    )
+)
+    nupper = length(upper_coordinates[:, 1])
+    nlower = length(lower_coordinates[:, 1])
 
-    nupper = length(upper_coordinates[:,1])
-    nlower = length(lower_coordinates[:,1])
-
-    if upper_coordinates[1,1] > upper_coordinates[end,1]
-        reverse!(upper_coordinates,dims=1)
+    if upper_coordinates[1, 1] > upper_coordinates[end, 1]
+        reverse!(upper_coordinates; dims=1)
     end
 
-    if lower_coordinates[1,1] > lower_coordinates[end,1]
-        reverse!(lower_coordinates,dims=1)
+    if lower_coordinates[1, 1] > lower_coordinates[end, 1]
+        reverse!(lower_coordinates; dims=1)
     end
 
-    f = open(savepath*filename, "w")
+    f = open(savepath * filename, "w")
 
-    write(f, info*"\n")
-    write(f, airfoilname*"\n")
+    write(f, info * "\n")
+    write(f, airfoilname * "\n")
     symflag = symmetric ? 1 : 0
     write(f, "$symflag\tSym Flag (0 - No, 1 - Yes)\n")
     write(f, "$nupper\tNum Pnts Upper\n")
@@ -204,22 +203,21 @@ function write_openvsp_dat(;
     # DATA
     upper_coordinates=[],
     lower_coordinates=[],
-    )
+)
+    nupper = length(upper_coordinates[:, 1])
+    nlower = length(lower_coordinates[:, 1])
 
-    nupper = length(upper_coordinates[:,1])
-    nlower = length(lower_coordinates[:,1])
-
-    if upper_coordinates[1,1] > upper_coordinates[end,1]
-        reverse!(upper_coordinates,dims=1)
+    if upper_coordinates[1, 1] > upper_coordinates[end, 1]
+        reverse!(upper_coordinates; dims=1)
     end
 
-    if lower_coordinates[1,1] > lower_coordinates[end,1]
-        reverse!(lower_coordinates,dims=1)
+    if lower_coordinates[1, 1] > lower_coordinates[end, 1]
+        reverse!(lower_coordinates; dims=1)
     end
 
-    f = open(savepath*filename, "w")
+    f = open(savepath * filename, "w")
 
-    write(f, airfoilname*"\n")
+    write(f, airfoilname * "\n")
     write(f, "$nlower\t$nupper\n")
 
     for iu in 1:nupper

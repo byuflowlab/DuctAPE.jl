@@ -4,7 +4,9 @@ freestream = freestream
 
 currently only capable of a single rotor
 """
-function initialize_rotor_states(rotor_parameters, freestream; wake_length=5.0, wake_x_refine=0.01)
+function initialize_rotor_states(
+    rotor_parameters, freestream; wake_length=5.0, wake_x_refine=0.01
+)
     #---------------------------------#
     #              Rotor              #
     #---------------------------------#

@@ -35,7 +35,7 @@ default(;
     #     plot_titlefontvalign,
     #     pos,
     #     show,
-    size=(400, 300).*5.0./4.0, #it appears that 100 ≈ 1inch in LaTeX
+    size=(400, 300) .* 5.0 ./ 4.0, #it appears that 100 ≈ 1inch in LaTeX
     # size=(600, 450), #it appears that 100 ≈ 1inch in LaTeX
     # size=(800, 600), #it appears that 100 ≈ 1inch in LaTeX
     #     tex_output_standalone,
@@ -117,25 +117,25 @@ default(;
     #     camera,
     #     clims,
     color_palette=[
-#polynesian blue
-RGB(0/255, 75/255, 150/255),
-#004B96
-#argentinian blue
-RGB(100/255,175/255,250/255),
-#64AFFA
-#imperial red
-RGB(250/255,75/255,75/255),
-#FA4B4B
-#melon
-RGB(250/255,175/255,150/255),
-#FAAF96
-#lime green
-RGB(75/255,200/255,75/255),
-#4BC84B
-#light green
-RGB(150/255,250/255,150/255),
-#96FA96
-                  ],
+        #polynesian blue
+        RGB(0 / 255, 75 / 255, 150 / 255),
+        #004B96
+        #argentinian blue
+        RGB(100 / 255, 175 / 255, 250 / 255),
+        #64AFFA
+        #imperial red
+        RGB(250 / 255, 75 / 255, 75 / 255),
+        #FA4B4B
+        #melon
+        RGB(250 / 255, 175 / 255, 150 / 255),
+        #FAAF96
+        #lime green
+        RGB(75 / 255, 200 / 255, 75 / 255),
+        #4BC84B
+        #light green
+        RGB(150 / 255, 250 / 255, 150 / 255),
+        #96FA96
+    ],
     #color_palette=[
     #    RGB(0.0, 46.0 / 255.0, 93.0 / 255.0), #BYU Blue
     #    RGB(155.0 / 255.0, 0.0, 0.0), #"BYU" Red
@@ -250,46 +250,46 @@ RGB(150/255,250/255,150/255),
 )
 
 blue = [
-#oxford blue
-RGB(0/255,25/255,50/255),
-#01932
-#polynesian blue
-RGB(0/255, 75/255, 150/255),
-#004B96
-#argentinian blue
-RGB(100/255,175/255,250/255)
-#64AFFA
+    #oxford blue
+    RGB(0 / 255, 25 / 255, 50 / 255),
+    #01932
+    #polynesian blue
+    RGB(0 / 255, 75 / 255, 150 / 255),
+    #004B96
+    #argentinian blue
+    RGB(100 / 255, 175 / 255, 250 / 255),
+    #64AFFA
 ]
 red = [
-#dark purple (very dark red)
-RGB(50/255,0/255,25/255),
-#320019
-#imperial red
-RGB(250/255,75/255,75/255),
-#FA4B4B
-#melon
-RGB(250/255,175/255,150/255),
-#FAAF96
-           ]
+    #dark purple (very dark red)
+    RGB(50 / 255, 0 / 255, 25 / 255),
+    #320019
+    #imperial red
+    RGB(250 / 255, 75 / 255, 75 / 255),
+    #FA4B4B
+    #melon
+    RGB(250 / 255, 175 / 255, 150 / 255),
+    #FAAF96
+]
 green = [
-#dark green
-RGB(0/255,50/255,25/255),
-#003219
-#lime green
-RGB(75/255,200/255,75/255),
-#4BC84B
-#light green
-RGB(150/255,250/255,150/255),
-#96FA96
-           ]
+    #dark green
+    RGB(0 / 255, 50 / 255, 25 / 255),
+    #003219
+    #lime green
+    RGB(75 / 255, 200 / 255, 75 / 255),
+    #4BC84B
+    #light green
+    RGB(150 / 255, 250 / 255, 150 / 255),
+    #96FA96
+]
 gray = [
-#battleship gray
-RGB(150/255,150/255,150/255),
-#969696
-#davy's gray
-RGB(75/255,75/255,75/255),
-#4B4B4B
-          ]
+    #battleship gray
+    RGB(150 / 255, 150 / 255, 150 / 255),
+    #969696
+    #davy's gray
+    RGB(75 / 255, 75 / 255, 75 / 255),
+    #4B4B4B
+]
 
 #mycolors = [
 #    RGB(0, 46 / 255, 93 / 255), #BYU Blue

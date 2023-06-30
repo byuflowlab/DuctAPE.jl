@@ -115,7 +115,7 @@ function reframe_rotor_velocities(
     Wtheta_rotor = similar(vtheta_rotor) .= vtheta_rotor
 
     for i in 1:length(Omega)
-        Wtheta_rotor[:,i] .-= Omega[i] .* rotor_panel_centers[:,i]
+        Wtheta_rotor[:, i] .-= Omega[i] .* rotor_panel_centers[:, i]
     end
 
     # meridional component
@@ -171,7 +171,9 @@ Calculate rotor circulation and source strengths using blade element data and in
 `Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
-function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false)
+function calculate_gamma_sigma(
+    blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false
+)
 
     # get floating point type
     TF = promote_type(
@@ -215,13 +217,11 @@ function gamma_sigma_from_coeffs!(Gamr, sigr, W, B, c, r, cl, cd)
 
     # return Gamr, sigr
     return nothing
-
 end
 
 function calc_reynolds(chord, Wmag_rotor, rho, mu)
     return chord .* abs.(Wmag_rotor) * rho / mu
 end
-
 
 """
     calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, Vθ)
@@ -302,7 +302,7 @@ function calculate_gamma_sigma!(
                     alpha,
                     blade_elements[irotor].outer_airfoil[ir],
                     freestream.asound;
-                    verbose=verbose
+                    verbose=verbose,
                 )
 
             else

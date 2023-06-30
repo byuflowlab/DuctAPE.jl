@@ -35,7 +35,7 @@ default(;
     #     plot_titlefontvalign,
     #     pos,
     #     show,
-    size=(400, 300).*5.0./4.0, #it appears that 100 ≈ 1inch in LaTeX
+    size=(400, 300) .* 5.0 ./ 4.0, #it appears that 100 ≈ 1inch in LaTeX
     # size=(600, 450), #it appears that 100 ≈ 1inch in LaTeX
     # size=(800, 600), #it appears that 100 ≈ 1inch in LaTeX
     #     tex_output_standalone,

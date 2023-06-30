@@ -57,7 +57,7 @@ function calculate_body_vortex_strengths!(
     # bk = [RHS[1:kidx[end]]; -gamw[ductwakeidx[1], ductwakeidx[2]]; RHS[(kidx[end] + 1):end]]
     bk = [RHS[1:kidx[end]]; 0.0; RHS[(kidx[end] + 1):end]]
 
-    view(gamb, :) .= (A_bb \ bk)[1:end .∉ kidx[end]+1]
+    view(gamb, :) .= (A_bb \ bk)[1:end .∉ kidx[end] + 1]
     # view(gamb, :) .= solve_body_system(A_bb, RHS, kidx)
 
     if debug
@@ -107,8 +107,6 @@ function solve_body_system(A_bb, RHS, kidx)
     return x
 end
 
-
-
 ######################################################################
 #                                                                    #
 #                           New LHS setup                            #
@@ -118,7 +116,6 @@ end
 """
 """
 function init_body_lhs(panels)
-
     (; nodes, control_point, normal) = panels
 
     T = promote_type(eltype(nodes), eltype(control_point))
@@ -129,7 +126,6 @@ function init_body_lhs(panels)
     init_body_lhs!(LHS, nodes, control_point, normal)
 
     return LHS
-
 end
 
 """
@@ -139,35 +135,33 @@ function init_body_lhs!(LHS, nodes, control_point, normal)
     # Loop through control points being influenced
     for (i, (cp, nhat)) in enumerate(zip(eachrow(control_point), eachrow(normal)))
         # loop through panels doing the influencing
-        for (j, (p1, p2)) in enumerate(zip(eachrow(nodes[:,1,:]), eachrow(nodes[:,2,:])))
+        for (j, (p1, p2)) in
+            enumerate(zip(eachrow(nodes[:, 1, :]), eachrow(nodes[:, 2, :])))
 
             # get unit induced velocity from the panel onto the control point
             vel = constant_doublet_band_induced_velocity(p1, p2, cp)
 
             # fill the matrix
-            LHS[i,j] += dot(vel, nhat)
-
+            LHS[i, j] += dot(vel, nhat)
         end
     end
 
     return nothing
-
 end
 
 """
 adds wake panel influence (from trailing edge panels) to the LHS matrix for the Kutta condition
 """
-function body_lhs_kutta!(LHS, panels; tol = 1e1*eps(), verbose=false)
-
+function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
     (; TEnodes, control_point, normal) = panels
 
-    for (i, (te1, te2)) in enumerate(zip(eachrow(TEnodes[:,1,:]), eachrow(TEnodes[:,2,:])))
+    for (i, (te1, te2)) in
+        enumerate(zip(eachrow(TEnodes[:, 1, :]), eachrow(TEnodes[:, 2, :])))
 
         # check that trailing edge points are coincident
-        if norm(te2-te1) < tol
-
-            idxl = panels.TEidxs[i,1]
-            idxu = panels.TEidxs[i,2]
+        if norm(te2 - te1) < tol
+            idxl = panels.TEidxs[i, 1]
+            idxu = panels.TEidxs[i, 2]
 
             # Loop through control points being influenced
             for (m, (cp, nhat)) in enumerate(zip(eachrow(control_point), eachrow(normal)))
@@ -183,7 +177,6 @@ function body_lhs_kutta!(LHS, panels; tol = 1e1*eps(), verbose=false)
                 vx = vortex_ring_vx(xi, rho, k2, rj)
                 vr = vortex_ring_vr(xi, rho, k2, rj)
                 LHS[m, idxu] -= dot([vx; vr], nhat)
-
             end
 
         elseif verbose
@@ -194,7 +187,6 @@ function body_lhs_kutta!(LHS, panels; tol = 1e1*eps(), verbose=false)
     return nothing
 end
 
-
 ######################################################################
 #                                                                    #
 #                           New RHS setup                            #
@@ -202,29 +194,21 @@ end
 ######################################################################
 
 function gen_body_rhs(normals::AbstractMatrix{T1}, Vs::AbstractMatrix{T2}) where {T1,T2}
-
     T = promote_type(T1, T2)
     N, _ = size(normals)
     RHS = zeros(T, N)
     gen_body_rhs!(RHS, normals, Vs)
 
     return RHS
-
 end
 
 function gen_body_rhs!(RHS, normals, Vs)
-
     for (i, (n, v)) in enumerate(zip(eachrow(normals), eachrow(Vs)))
-
         RHS[i] -= dot(v, n)
-
     end
 
     return nothing
-
 end
-
-
 
 ######################################################################
 #                                                                    #
@@ -257,34 +241,35 @@ function prep_leastsquares!(Gred, Glsq, blsq, LHS, RHS, prescribedpanels)
     npres = length(prescribedpanels)
 
     # Error cases
-    @assert size(LHS, 1)==n && size(LHS, 2)==n ""*
+    @assert size(LHS, 1) == n && size(LHS, 2) == n "" *
         "Invalid $(size(LHS, 1))x$(size(LHS, 2)) matrix LHS; expected $(n)x$(n)"
-    @assert size(Gred, 1)==n && size(Gred, 2)==n-npres ""*
+    @assert size(Gred, 1) == n && size(Gred, 2) == n - npres "" *
         "Invalid $(size(Gred, 1))x$(size(Gred, 2)) matrix Gred; expected $(n)x$(n-npres)"
-    @assert size(Glsq, 1)==n-npres && size(Glsq, 2)==n-npres ""*
+    @assert size(Glsq, 1) == n - npres && size(Glsq, 2) == n - npres "" *
         "Invalid $(size(Glsq, 1))x$(size(Glsq, 2)) matrix Glsq; expected $(n-npres)x$(n-npres)"
 
-    @assert length(RHS)==n "Invalid RHS length $(length(RHS)); expected $(n)"
-    @assert length(blsq)==n-npres "Invalid blsq length $(length(blsq)); expected $(n-npres)"
+    @assert length(RHS) == n "Invalid RHS length $(length(RHS)); expected $(n)"
+    @assert length(blsq) == n - npres "Invalid blsq length $(length(blsq)); expected $(n-npres)"
 
     # Sort prescribed elements by index
-    sort!(prescribedpanels, by = x -> x[1])
+    sort!(prescribedpanels; by=x -> x[1])
 
     # Move influence of prescribed panels to right-hand side
     for (paneli, strength) in prescribedpanels
         for i in 1:length(RHS)
-            RHS[i] -= strength*LHS[i, paneli]
+            RHS[i] -= strength * LHS[i, paneli]
         end
     end
 
     # Reduce LHS: copy LHS into Gred without the prescribed panels
     prev_paneli = 0
     for (i, (paneli, strength)) in enumerate(prescribedpanels)
+        Gred[:, (prev_paneli + 2 - i):(paneli - i)] .= view(
+            LHS, :, (prev_paneli + 1):(paneli - 1)
+        )
 
-        Gred[:, (prev_paneli+2-i):(paneli-i)] .= view(LHS, :, (prev_paneli+1):(paneli-1))
-
-        if i==length(prescribedpanels) && paneli!=size(LHS, 2)
-            Gred[:, (paneli-i+1):end] .= view(LHS, :, paneli+1:size(LHS, 2))
+        if i == length(prescribedpanels) && paneli != size(LHS, 2)
+            Gred[:, (paneli - i + 1):end] .= view(LHS, :, (paneli + 1):size(LHS, 2))
         end
 
         prev_paneli = paneli
@@ -301,17 +286,19 @@ function prep_leastsquares!(Gred, Glsq, blsq, LHS, RHS, prescribedpanels)
     return Glsq, blsq
 end
 
-function prep_leastsquares(LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2},
-                        prescribedpanels::AbstractArray{Tuple{Int, T3}}) where {T1, T2, T3}
-
+function prep_leastsquares(
+    LHS::AbstractMatrix{T1},
+    RHS::AbstractVector{T2},
+    prescribedpanels::AbstractArray{Tuple{Int,T3}},
+) where {T1,T2,T3}
     T = promote_type(T1, T2, T3)
 
     n = length(RHS)
     npres = length(prescribedpanels)
 
-    Gred = zeros(T, n, n-npres)
-    Glsq = zeros(T, n-npres, n-npres)
-    blsq = zeros(T, n-npres)
+    Gred = zeros(T, n, n - npres)
+    Glsq = zeros(T, n - npres, n - npres)
+    blsq = zeros(T, n - npres)
 
     prep_leastsquares!(Gred, Glsq, blsq, LHS, RHS, prescribedpanels)
 
@@ -330,22 +317,22 @@ function mured2mu!(mu, mured, prescribedpanels)
     npres = length(prescribedpanels)
 
     # Case of no prescrbied panels
-    if npres==0
-
+    if npres == 0
         mu .= mured
         return mu
-
     end
 
     prev_paneli = 0
 
     # Iterate over prescribed panels building the full vector
     for (i, (paneli, strength)) in enumerate(prescribedpanels)
-        mu[(prev_paneli+1):(paneli-1)] .= view(mured, (prev_paneli+2-i):(paneli-i))
+        mu[(prev_paneli + 1):(paneli - 1)] .= view(
+            mured, (prev_paneli + 2 - i):(paneli - i)
+        )
         mu[paneli] = strength
 
-        if i==npres && paneli!=n
-            mu[paneli+1:end] .= view(mured, (paneli-i+1):length(mured))
+        if i == npres && paneli != n
+            mu[(paneli + 1):end] .= view(mured, (paneli - i + 1):length(mured))
         end
 
         prev_paneli = paneli
@@ -354,10 +341,9 @@ function mured2mu!(mu, mured, prescribedpanels)
     return mu
 end
 
-function mured2mu(mured::AbstractVector{T1},
-                    prescribedpanels::AbstractArray{Tuple{Int, T2}}
-                    ) where {T1, T2}
-
+function mured2mu(
+    mured::AbstractVector{T1}, prescribedpanels::AbstractArray{Tuple{Int,T2}}
+) where {T1,T2}
     T = promote_type(T1, T2)
 
     n = length(mured) + length(prescribedpanels)
@@ -368,29 +354,28 @@ function mured2mu(mured::AbstractVector{T1},
     return mu
 end
 
-
 #---------------------------------#
 #             Solvers             #
 #---------------------------------#
 # TODO: need to think about this in the context of the intitialziation functions. probably can cache most of the matrices here.
-function intialize_body_strengths(panels, Vs; prescribedpanels=[(1,0.0)])
+function intialize_body_strengths(panels, Vs; prescribedpanels=[(1, 0.0)])
 
     # - Set up raw Matrices - #
     LHS = dt.init_body_lhs(panels)
     RHS = dt.gen_body_rhs(panels.normal, Vs)
 
     # - Adding Kutta Condition - #
-    dt.body_lhs_kutta!(LHS, panels; tol = 1e1*eps(), verbose=true)
+    dt.body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=true)
 
     # - Prepping for Least Sqaures Solve - #
     LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
 
-    mu = mured2mu(LHSlsq\RHSlsq, prescribedpanels)
+    mu = mured2mu(LHSlsq \ RHSlsq, prescribedpanels)
 
     return mu
 end
 
-function solve_body_strengths(mu, LHS, panels, Vs; prescribedpanels=[(1,0.0)])
+function solve_body_strengths(mu, LHS, panels, Vs; prescribedpanels=[(1, 0.0)])
 
     # - Set up raw Matrices - #
     RHS = dt.gen_body_rhs(panels.normal, Vs)
@@ -398,7 +383,7 @@ function solve_body_strengths(mu, LHS, panels, Vs; prescribedpanels=[(1,0.0)])
     # - Prepping for Least Sqaures Solve - #
     LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
 
-    mured2mu!(mu, LHSlsq\RHSlsq, prescribedpanels)
+    mured2mu!(mu, LHSlsq \ RHSlsq, prescribedpanels)
 
     return nothing
 end

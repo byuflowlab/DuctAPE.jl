@@ -91,7 +91,9 @@ function analyze_propulsor(
 
     # compute various panel and circulation strenghts (updates convergence flag internally)
     strengths, inputs, initials = solve(x, p)
-    if debug; println("NLSolve Complete"); end;
+    if debug
+        println("NLSolve Complete")
+    end
 
     # post-processing using the converged strengths
     out = post_process(strengths, inputs)
@@ -204,7 +206,7 @@ function update_strengths!(states, inputs, p)
         gamw,
         inputs.A_br,
         sigr,
-        (length(gamw[:,1]),inputs.ductTE_index)
+        (length(gamw[:, 1]), inputs.ductTE_index),
     )
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #

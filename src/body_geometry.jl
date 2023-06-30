@@ -1,7 +1,12 @@
 """
 """
 function update_body_geometry(
-    duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=FLOWMath.akima
+    duct_coordinates,
+    hub_coordinates,
+    xwake,
+    nhub_inlet,
+    nduct_inlet;
+    finterp=FLOWMath.akima,
 )
 
     # - separate inner and outer duct coordinates - #

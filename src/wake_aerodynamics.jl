@@ -109,7 +109,6 @@ function calculate_induced_velocities_on_wakes(
                 @views vrw[iwake, :] .+= vr_ww[iwake, jwake] * gamw[jwake, :]
             end
         end
-
     end
 
     # return raw induced velocities
@@ -173,7 +172,9 @@ function get_wake_k(wake_vortex_panels)
     TF = eltype(wake_vortex_panels[1].panel_center)
 
     # initialize
-    K = zeros(TF, length(wake_vortex_panels), length(wake_vortex_panels[1].panel_center[:, 1]))
+    K = zeros(
+        TF, length(wake_vortex_panels), length(wake_vortex_panels[1].panel_center[:, 1])
+    )
     nw, np = size(K)
 
     for iw in 1:nw
@@ -243,7 +244,6 @@ function calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=
 
     # TODO: end stuff to be removed
     #######################################
-
 
     # reframe velocities to get meridional velocity on wake panels
     Vm = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)

@@ -18,7 +18,7 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
 
     ## -- SETUP -- ##
     # Get total number of panels (sum of nedges-1 for each body)
-    npanel = [length(eachrow(c))-1 for c in coordinates]
+    npanel = [length(eachrow(c)) - 1 for c in coordinates]
     totpanel = sum(npanel)
 
     # - Initialize Outputs - #
@@ -34,7 +34,7 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
     pidx = 1
 
     # loop through bodies
-    for (ib,c) in enumerate(coordinates)
+    for (ib, c) in enumerate(coordinates)
 
         # Separate coordinates
         x = c[:, 1]
@@ -46,21 +46,21 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         ## -- Loop Through Coordinates -- ##
         for ip in 1:npanel[ib]
             if ip == 1
-                TEnodes[ib,1,:] = [x[ip] r[ip]]
-                TEidxs[ib,1] = pidx
+                TEnodes[ib, 1, :] = [x[ip] r[ip]]
+                TEidxs[ib, 1] = pidx
             elseif ip == npanel[ib]
-                TEnodes[ib,2,:] = [x[ip+1] r[ip+1]]
-                TEidxs[ib,2] = pidx
+                TEnodes[ib, 2, :] = [x[ip + 1] r[ip + 1]]
+                TEidxs[ib, 2] = pidx
             end
 
             # Get nodes (panel edges)
-            nodes[pidx,:,:] = [x[ip] r[ip]; x[ip+1] r[ip+1]]
+            nodes[pidx, :, :] = [x[ip] r[ip]; x[ip + 1] r[ip + 1]]
 
             # Calculate control point (panel center)
             control_point[pidx, :] = [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
 
             # Calculate panel length
-            panel_vector, panel_length[pidx] = get_r(nodes[pidx,1,:], nodes[pidx,2,:])
+            panel_vector, panel_length[pidx] = get_r(nodes[pidx, 1, :], nodes[pidx, 2, :])
 
             # Calculate panel unit normal
             normal[pidx, :] = get_panel_normal(panel_vector, panel_length[pidx])
@@ -73,7 +73,16 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         end
     end
 
-    return  (;control_point, nodes, length=panel_length, normal, tangent, TEnodes, TEidxs, npanels=totpanel)
+    return (;
+        control_point,
+        nodes,
+        length=panel_length,
+        normal,
+        tangent,
+        TEnodes,
+        TEidxs,
+        npanels=totpanel,
+    )
 end
 
 #########################################

@@ -82,10 +82,10 @@ function precomputed_inputs(
     )
 
     # Save number of wake panels in x-direction
-    num_wake_x_panels=length(xwake) - 1
+    num_wake_x_panels = length(xwake) - 1
 
     # - Repanel Bodies - #
-rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
+    rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
         duct_coordinates,
         hub_coordinates,
         xwake,
@@ -146,8 +146,10 @@ rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
                 x -> x > rotor_parameters.xrotor[i], body_panels[2].panel_center[:, 1]
             ) for i in 1:length(rotor_parameters.xrotor)
         ]
-        hwidraw = sort([length(body_panels[2].panel_center[:,1]); rotor_indices_on_hub.-1])
-        hubwakeidx = reduce(vcat, [[hwidraw[i]+1:hwidraw[i+1]] for i in 1:nrotor])
+        hwidraw = sort(
+            [length(body_panels[2].panel_center[:, 1]); rotor_indices_on_hub .- 1]
+        )
+        hubwakeidx = reduce(vcat, [[(hwidraw[i] + 1):hwidraw[i + 1]] for i in 1:nrotor])
     end
 
     if noduct
@@ -159,8 +161,8 @@ rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
                 x -> x < rotor_parameters.xrotor[i], body_panels[1].panel_center[:, 1]
             ) - 1 for i in 1:length(rotor_parameters.xrotor)
         ]
-        dwidraw = sort([0;rotor_indices_on_duct])
-        ductwakeidx = reduce(vcat, [[dwidraw[i]+1:dwidraw[i+1]] for i in 1:nrotor])
+        dwidraw = sort([0; rotor_indices_on_duct])
+        ductwakeidx = reduce(vcat, [[(dwidraw[i] + 1):dwidraw[i + 1]] for i in 1:nrotor])
     end
 
     #----------------------------------#
@@ -197,8 +199,14 @@ rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
 
     # generate body wake panels for convenience
     # TODO: move panel generation into DuctTAPE
-    duct_wake_panels = ff.generate_panels(ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]), [xgrid[ductTE_index:end, end] rgrid[ductTE_index:end,end]])
-    hub_wake_panels = ff.generate_panels(ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]), [xgrid[hubTE_index:end, 1] rgrid[hubTE_index:end,1]])
+    duct_wake_panels = ff.generate_panels(
+        ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
+        [xgrid[ductTE_index:end, end] rgrid[ductTE_index:end, end]],
+    )
+    hub_wake_panels = ff.generate_panels(
+        ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true]),
+        [xgrid[hubTE_index:end, 1] rgrid[hubTE_index:end, 1]],
+    )
 
     #TODO: probably remove
     # # - generate "rotor" panels to receive wake induced velocities - #
@@ -208,7 +216,6 @@ rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
     #         (p -> p.panel_center[i, 2]).(wake_vortex_panels),
     #     ) for i in 1:num_wake_x_panels
     # ]
-
 
     #------------------------------------------#
     # Generate Rotor Panels and Blade Elements #
@@ -294,7 +301,6 @@ rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
         i in 1:length(wake_vortex_panels), j in 1:1
     ]
 
-
     # rotor to wake
     # mesh_rw = generate_one_way_mesh.(wake_vortex_panels, rotor_source_panels')
     mesh_wr = [
@@ -310,40 +316,34 @@ rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
 
     # - Relative to duct wake - #
     # body to duct wake
-    mesh_dwb = [
-        generate_one_way_mesh(body_panels, duct_wake_panels) for
-        i in 1:1, j in 1:1
-    ]
+    mesh_dwb = [generate_one_way_mesh(body_panels, duct_wake_panels) for i in 1:1, j in 1:1]
 
     # rotor to duct wake
     mesh_dwr = [
-        generate_one_way_mesh(rotor_source_panels[j], duct_wake_panels) for
-        i in 1:1, j in 1:length(rotor_source_panels)
+        generate_one_way_mesh(rotor_source_panels[j], duct_wake_panels) for i in 1:1,
+        j in 1:length(rotor_source_panels)
     ]
 
     # rotor wake to duct wake
     mesh_dww = [
-        generate_one_way_mesh(wake_vortex_panels[j], duct_wake_panels) for
-        i in 1:1, j in 1:length(wake_vortex_panels)
+        generate_one_way_mesh(wake_vortex_panels[j], duct_wake_panels) for i in 1:1,
+        j in 1:length(wake_vortex_panels)
     ]
 
     # - Relative to hub wake - #
     # body to hub wake
-    mesh_hwb = [
-        generate_one_way_mesh(body_panels, hub_wake_panels) for
-        i in 1:1, j in 1:1
-    ]
+    mesh_hwb = [generate_one_way_mesh(body_panels, hub_wake_panels) for i in 1:1, j in 1:1]
 
     # rotor to hub wake
     mesh_hwr = [
-        generate_one_way_mesh(rotor_source_panels[j], hub_wake_panels) for
-        i in 1:1, j in 1:length(rotor_source_panels)
+        generate_one_way_mesh(rotor_source_panels[j], hub_wake_panels) for i in 1:1,
+        j in 1:length(rotor_source_panels)
     ]
 
     # rotor wake to hub wake
     mesh_hww = [
-        generate_one_way_mesh(wake_vortex_panels[j], hub_wake_panels) for
-        i in 1:1, j in 1:length(wake_vortex_panels)
+        generate_one_way_mesh(wake_vortex_panels[j], hub_wake_panels) for i in 1:1,
+        j in 1:length(wake_vortex_panels)
     ]
 
     #---------------------------------#
@@ -364,12 +364,18 @@ rp_duct_coordinates, rp_hub_coordinates = update_body_geometry(
     )
 
     # add kutta condition to coefficient matrix
-kidx = get_kutta_indices(false, mesh_bb)
-A_bb_kr = [A_bb_raw[1:kidx[end],:]; zeros(eltype(A_bb_raw),length(A_bb_raw[1,:]))'; A_bb_raw[kidx[end]+1:end,:]]
-A_bb_kc = [A_bb_kr[:, 1:kidx[end]] ones(eltype(A_bb_kr),length(A_bb_kr[:,1])) A_bb_kr[:, kidx[end]+1:end]]
-A_bb_kc[kidx[end]+1,kidx[end]] = eltype(A_bb_kc)(1.0)
-A_bb_kc[kidx[end]+1,1] = eltype(A_bb_kc)(1.0)
-A_bb_kc[kidx[end]+1,kidx[end]+1] = eltype(A_bb_kc)(0.0)
+    kidx = get_kutta_indices(false, mesh_bb)
+    A_bb_kr = [
+        A_bb_raw[1:kidx[end], :]
+        zeros(eltype(A_bb_raw), length(A_bb_raw[1, :]))'
+        A_bb_raw[(kidx[end] + 1):end, :]
+    ]
+    A_bb_kc = [A_bb_kr[:, 1:kidx[end]] ones(eltype(A_bb_kr), length(A_bb_kr[:, 1])) A_bb_kr[
+        :, (kidx[end] + 1):end
+    ]]
+    A_bb_kc[kidx[end] + 1, kidx[end]] = eltype(A_bb_kc)(1.0)
+    A_bb_kc[kidx[end] + 1, 1] = eltype(A_bb_kc)(1.0)
+    A_bb_kc[kidx[end] + 1, kidx[end] + 1] = eltype(A_bb_kc)(0.0)
 
     # Factorize Matrix using LinearAlgebra
     A_bb = factorize(A_bb_kc)
@@ -471,7 +477,6 @@ A_bb_kc[kidx[end]+1,kidx[end]+1] = eltype(A_bb_kc)(0.0)
         ) for i in 1:length(wake_vortex_panels), j in 1:1
     ]
 
-
     # axial components
     #TODO: probably remove
     # vx_wba = [A_wba[i, j][1] for i in 1:length(wake_affect_panels), j in 1:1]
@@ -526,9 +531,8 @@ A_bb_kc[kidx[end]+1,kidx[end]+1] = eltype(A_bb_kc)(0.0)
     ##### ----- Induced Velcocities on Duct Wake ----- #####
     # - body to duct wake - #
     A_dwb = [
-        assemble_induced_velocity_matrices(
-            mesh_dwb[i, j], body_panels, duct_wake_panels
-        ) for i in 1:1, j in 1:1
+        assemble_induced_velocity_matrices(mesh_dwb[i, j], body_panels, duct_wake_panels)
+        for i in 1:1, j in 1:1
     ]
 
     # axial components
@@ -545,42 +549,29 @@ A_bb_kc[kidx[end]+1,kidx[end]+1] = eltype(A_bb_kc)(0.0)
     ]
 
     # axial components
-    vx_dwr = [
-        A_dwr[i, j][1] for i in 1:1,
-        j in 1:length(rotor_source_panels)
-    ]
+    vx_dwr = [A_dwr[i, j][1] for i in 1:1, j in 1:length(rotor_source_panels)]
 
     # radial components
-    vr_dwr = [
-        A_dwr[i, j][2] for i in 1:1,
-        j in 1:length(rotor_source_panels)
-    ]
+    vr_dwr = [A_dwr[i, j][2] for i in 1:1, j in 1:length(rotor_source_panels)]
 
     # - wake to duct wake - #
     A_dww = [
         assemble_induced_velocity_matrices(
             mesh_dww[i, j], wake_vortex_panels[j], duct_wake_panels
-           ) for i in 1:1, j in 1:length(wake_vortex_panels)
+        ) for i in 1:1, j in 1:length(wake_vortex_panels)
     ]
 
     # axial components
-    vx_dww = [
-        A_dww[i, j][1] for i in 1:1,
-        j in 1:length(wake_vortex_panels)
-    ]
+    vx_dww = [A_dww[i, j][1] for i in 1:1, j in 1:length(wake_vortex_panels)]
 
     # radial components
-    vr_dww = [
-        A_dww[i, j][2] for i in 1:1,
-        j in 1:length(wake_vortex_panels)
-    ]
+    vr_dww = [A_dww[i, j][2] for i in 1:1, j in 1:length(wake_vortex_panels)]
 
     ##### ----- Induced Velcocities on Hub Wake ----- #####
     # - body to hub wake - #
     A_hwb = [
-        assemble_induced_velocity_matrices(
-            mesh_hwb[i, j], body_panels, hub_wake_panels
-        ) for i in 1:1, j in 1:1
+        assemble_induced_velocity_matrices(mesh_hwb[i, j], body_panels, hub_wake_panels) for
+        i in 1:1, j in 1:1
     ]
 
     # axial components
@@ -597,35 +588,23 @@ A_bb_kc[kidx[end]+1,kidx[end]+1] = eltype(A_bb_kc)(0.0)
     ]
 
     # axial components
-    vx_hwr = [
-        A_hwr[i, j][1] for i in 1:1,
-        j in 1:length(rotor_source_panels)
-    ]
+    vx_hwr = [A_hwr[i, j][1] for i in 1:1, j in 1:length(rotor_source_panels)]
 
     # radial components
-    vr_hwr = [
-        A_hwr[i, j][2] for i in 1:1,
-        j in 1:length(rotor_source_panels)
-    ]
+    vr_hwr = [A_hwr[i, j][2] for i in 1:1, j in 1:length(rotor_source_panels)]
 
     # - wake to hub wake - #
     A_hww = [
         assemble_induced_velocity_matrices(
             mesh_hww[i, j], wake_vortex_panels[j], hub_wake_panels
-           ) for i in 1:1, j in 1:length(wake_vortex_panels)
+        ) for i in 1:1, j in 1:length(wake_vortex_panels)
     ]
 
     # axial components
-    vx_hww = [
-        A_hww[i, j][1] for i in 1:1,
-        j in 1:length(wake_vortex_panels)
-    ]
+    vx_hww = [A_hww[i, j][1] for i in 1:1, j in 1:length(wake_vortex_panels)]
 
     # radial components
-    vr_hww = [
-        A_hww[i, j][2] for i in 1:1,
-        j in 1:length(wake_vortex_panels)
-    ]
+    vr_hww = [A_hww[i, j][2] for i in 1:1, j in 1:length(wake_vortex_panels)]
 
     ## -- Miscellaneous Values for Indexing -- ##
 
@@ -799,7 +778,9 @@ function initialize_states(inputs)
     )
 
     # - update wake strengths - #
-    calculate_wake_vortex_strengths!(Gamr, gamw, similar(sigr).=0.0, similar(gamb).=0.0, inputs; debug=false)
+    calculate_wake_vortex_strengths!(
+        Gamr, gamw, similar(sigr) .= 0.0, similar(gamb) .= 0.0, inputs; debug=false
+    )
 
     # - Combine initial states into one vector - #
     states = vcat(

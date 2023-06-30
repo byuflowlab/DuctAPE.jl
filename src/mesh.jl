@@ -204,9 +204,8 @@ function generate_field_mesh(panels, field_points)
         for b in 1:nbodies
             ### --- Loop through panels --- ###
             for pid in panel_indices[b]
-
                 x[fp, pid], r[fp, pid], k2[fp, pid], rj[fp, pid] = calculate_xrm(
-                    field_points[fp,:], panels[b].panel_center[mesh2panel[pid], :]
+                    field_points[fp, :], panels[b].panel_center[mesh2panel[pid], :]
                 )
             end #for influenced panel
         end #for influencing body
