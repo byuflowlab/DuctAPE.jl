@@ -128,11 +128,9 @@ function get_stagger(twists)
 end
 
 # generates rotor panels
-function generate_rotor_panels(
-    xrotor, rwake, method=ff.AxisymmetricProblem(Source(Constant()), Dirichlet(), [true])
-)
+function generate_rotor_panels(xrotor, rwake)
     x = fill(xrotor, length(rwake))
     xr = [x rwake]
 
-    return ff.generate_panels(method, xr)
+    return generate_panels(xr)
 end
