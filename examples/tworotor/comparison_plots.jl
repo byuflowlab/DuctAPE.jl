@@ -5,7 +5,7 @@ end
 
 datapath = project_dir * "/examples/tworotor/"
 
-include(project_dir * "/plots_default.jl")
+include(project_dir * "/visualize/plots_default.jl")
 
 using DuctTAPE
 const dt = DuctTAPE
@@ -13,7 +13,7 @@ const dt = DuctTAPE
 using FLOWMath
 const fm = FLOWMath
 
-function runandplot(; filename="straightwake.case.jl")
+function runandplot(; filename="test.case.jl")
     println("Setting Up")
     include(datapath * filename)
 
@@ -86,27 +86,28 @@ function plotgeom(inputs, paneling_constants)
     pgeom = plot(; aspectratio=1, xlabel="x", ylabel="r")
     nrotor = length(inputs.blade_elements.xrotor)
     for ir in 1:nrotor
-    plot!(
-        pgeom,
-        inputs.blade_elements[ir].xrotor * ones(length(inputs.rotor_panel_edges[:,ir])),
-        inputs.rotor_panel_edges[:,ir];
-        color=mycolors[2],
-        linewidth=0.25,
-        markersize=0.5,
-        markershape=:rect,
-        label="Rotor Panel Edges",
-    )
+        plot!(
+            pgeom,
+            inputs.blade_elements[ir].xrotor *
+            ones(length(inputs.rotor_panel_edges[:, ir])),
+            inputs.rotor_panel_edges[:, ir];
+            color=mycolors[2],
+            linewidth=0.25,
+            markersize=0.5,
+            markershape=:rect,
+            label="Rotor Panel Edges",
+        )
 
-    plot!(
-        pgeom,
-        inputs.rotor_source_panels[ir].panel_center[:, 1],
-        inputs.rotor_source_panels[ir].panel_center[:, 2];
-        color=mycolors[3],
-        seriestype=:scatter,
-        markersize=0.75,
-        markershape=:circle,
-        label="Rotor Panel Centers",
-    )
+        plot!(
+            pgeom,
+            inputs.rotor_source_panels[ir].panel_center[:, 1],
+            inputs.rotor_source_panels[ir].panel_center[:, 2];
+            color=mycolors[3],
+            seriestype=:scatter,
+            markersize=0.75,
+            markershape=:circle,
+            label="Rotor Panel Centers",
+        )
     end
 
     for iw in 1:(paneling_constants.nwake_sheets)
@@ -300,7 +301,13 @@ function plotbodyaero(out, convergeflag, Vref)
     # )
 
     # hub wake
-    plot!(pvs, out.hubwake_x, abs.(out.hubwake_vs); color=mycolors[4], label="DuctTAPE Hub Wake")
+    plot!(
+        pvs,
+        out.hubwake_x,
+        abs.(out.hubwake_vs);
+        color=mycolors[4],
+        label="DuctTAPE Hub Wake",
+    )
 
     # # dfdc hub wake
     # plot!(
@@ -340,7 +347,9 @@ function plotbodyaero(out, convergeflag, Vref)
     #plot!(pcp, dfdc_hubx, dfdc_hub_cp; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
     #duct wake
-    plot!(pcp, out.ductwake_x, out.ductwake_cp; color=mycolors[3], label="DuctTAPE Duct Wake")
+    plot!(
+        pcp, out.ductwake_x, out.ductwake_cp; color=mycolors[3], label="DuctTAPE Duct Wake"
+    )
 
     # # dfdc duct wake
     # plot!(
@@ -390,7 +399,7 @@ function testpieces(; filename="tworotorcase.jl")
     initial_states = dt.initialize_states(inputs)
     initials = copy(initial_states)
 
-    p = (;debug=false, verbose=false)
+    p = (; debug=false, verbose=false)
 
     # - Define closure that allows for parameters - #
     rwrap(r, states) = dt.residual!(r, states, inputs, p)
@@ -405,12 +414,10 @@ function testpieces(; filename="tworotorcase.jl")
         linesearch=BackTracking(; maxstep=1e6),
     )
 
-
     return inputs, res.zero
 end
 
-
 # out, inputs = runandplot(; filename="test.case.jl")
-out, inputs = runandplot(; filename="tworotorcase.jl")
+# out, inputs = runandplot(; filename="tworotorcase.jl")
 
 # inputs, states = testpieces(; filename="tworotorcase.jl")

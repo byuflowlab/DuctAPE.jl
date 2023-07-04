@@ -46,10 +46,10 @@ placing the coordinate matrix in a vector as an input.
 panels = dt.generate_panels([duct_coordinates, hub_coordinates])
 
 ##### ----- Visualize to Check ----- #####
-visualize_paneling(
-    panels;
+visualize_paneling(;
+    body_panels=panels,
     coordinates=duct_coordinates,
-    control_points=true,
+    controlpoints=true,
     nodes=true,
     normals=true,
     savepath=savepath,
@@ -73,8 +73,8 @@ prescribedpanels = [(1, 0.0)]
 #---------------------------------#
 
 # - Initial System Matrices - #
-LHS = dt.init_body_lhs(panels)
-RHS = dt.gen_body_rhs(panels.normal, Vsmat)
+LHS = dt.doublet_panel_influence_matrix(panels.nodes, panels)
+RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
 LHSnokutta = deepcopy(LHS)
 RHSnokutta = deepcopy(RHS)
 
@@ -87,7 +87,7 @@ LHSlsq_nokutta, RHSlsq_nokutta = dt.prep_leastsquares(
     LHSnokutta, RHSnokutta, prescribedpanels
 )
 # with kutta condition
-LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
+LHSlsq, RHSlsq = dt.prep_leastsquares(LHS, RHS, prescribedpanels)
 
 #---------------------------------#
 #             Solving             #
@@ -109,14 +109,12 @@ mu = dt.mured2mu(mured, prescribedpanels)
 
 ### --- Velocity Contributions --- ###
 # - Body-induced Surface Velocity - #
-Vb_nokutta = dt.vfromdoubletpanels(panels.control_point, panels.nodes, mu_nokutta)
-Vb = dt.vfromdoubletpanels(panels.control_point, panels.nodes, mu)
+Vb_nokutta = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu_nokutta)
+Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
 
 # - "Wake"-induced Surface Velocity - #
-Vb_nokutta_wake = dt.vfromTE(
-    panels.control_point, panels.TEnodes, panels.TEidxs, mu_nokutta
-)
-Vb_wake = dt.vfromTE(panels.control_point, panels.TEnodes, panels.TEidxs, mu)
+Vb_nokutta_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, panels.TEidxs, mu_nokutta)
+Vb_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, panels.TEidxs, mu)
 
 # - ∇μ/2 surface velocity - #
 Vb_gradmu = dt.vfromgradmu(panels, mu)
@@ -158,7 +156,7 @@ plot!(
     markershape=:dtriangle,
     label="exp inner",
 )
-xs = panels.control_point[:, 1]
+xs = panels.controlpoint[:, 1]
 # plot!(xs,cp_nokutta,label="no Kutta")
 # plot!(xs,cp_nogradmu,label=L"no~ \nabla\mu")
 ncut = 2
@@ -176,7 +174,7 @@ plot!(
     markershape=:utriangle,
     label="experimental",
 )
-xs = panels.control_point[:, 1]
+xs = panels.controlpoint[:, 1]
 plot!(pv, xs[41:end], dt.norm.(eachrow(Vtot[41:end, :])) ./ Vinf; label="DuctTAPE")
 
 savefig(pv, savepath * "bodj-vel-comp.pdf")

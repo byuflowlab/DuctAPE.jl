@@ -32,18 +32,18 @@ plot!(x1,r1, color=:black, linestyle=:dot, label="input coordinates")
 plot!(x2,r2, color=:black, linestyle=:dot, label="")
 
 #plot control points
-plot!(panels.control_point[:,1], panels.control_point[:,2], color=red[2], seriestype=:scatter, markershape=:rect, label="Control Points")
+plot!(panels.controlpoint[:,1], panels.controlpoint[:,2], color=red[2], seriestype=:scatter, markershape=:rect, label="Control Points")
 
 #plot nodes
-for i in 1:length(panels.length)
+for i in 1:length(panels.len)
     lab= i==1 ? "Nodes" : ""
     plot!(panels.nodes[i,:,1],panels.nodes[i,:,2], label=lab, color=blue[2], seriestype=:scatter)
 end
 
 #plot normal
-for i in 1:length(panels.length)
+for i in 1:length(panels.len)
     lab= i==1 ? "Normals" : ""
-plot!([0.0;panels.normal[i,1]].+panels.control_point[i,1],[0.0;panels.normal[i,2]].+panels.control_point[i,2], label=lab, color=blue[3])
+plot!([0.0;panels.normal[i,1]].+panels.controlpoint[i,1],[0.0;panels.normal[i,2]].+panels.controlpoint[i,2], label=lab, color=blue[3])
 end
 
 savefig(savedir*"/checkpaneling.pdf")

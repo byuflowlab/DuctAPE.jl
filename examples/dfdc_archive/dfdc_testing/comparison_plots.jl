@@ -1,11 +1,11 @@
-project_dir = dirname(dirname(dirname(@__FILE__)))
+project_dir = dirname(dirname(dirname(dirname(@__FILE__)))
 if project_dir == ""
     project_dir = "."
 end
 
-datapath = project_dir * "/examples/dfdc_testing/"
+datapath = project_dir * "/examples/dfdc_archive/dfdc_testing/"
 
-include(project_dir * "/plots_default.jl")
+include(project_dir * "/visualize/plots_default.jl")
 
 using DuctTAPE
 const dt = DuctTAPE

@@ -44,7 +44,7 @@ panels = dt.generate_panels(coordinates)
 visualize_paneling(
     panels;
     coordinates=coordinates,
-    control_points=true,
+    controlpoints=true,
     nodes=true,
     TEnodes=true,
     normals=true,
@@ -90,10 +90,10 @@ mu = dt.mured2mu(mured, prescribedpanels)
 
 ### --- Velocity Contributions --- ###
 # - Body-induced Surface Velocity - #
-Vb = dt.vfromdoubletpanels(panels.control_point, panels.nodes, mu)
+Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
 
 # - "Wake"-induced Surface Velocity - #
-Vb_wake = dt.vfromTE(panels.control_point, panels.TEnodes, panels.TEidxs, mu)
+Vb_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, panels.TEidxs, mu)
 
 # - ∇μ/2 surface velocity - #
 Vb_gradmu = dt.vfromgradmu(panels, mu)
@@ -115,7 +115,7 @@ plot!(
     markershape=:utriangle,
     label="experimental",
 )
-xs = panels.control_point[:, 1]
+xs = panels.controlpoint[:, 1]
 plot!(pp, xs, dt.norm.(eachrow(Vtot)) ./ Vinf; label="DuctTAPE")
 
 savefig(savepath * "hub-vel-comp.pdf")
