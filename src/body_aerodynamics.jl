@@ -109,72 +109,36 @@ end
 
 ######################################################################
 #                                                                    #
-#                           New LHS setup                            #
+#                          New Kutta setup                           #
 #                                                                    #
 ######################################################################
-
-"""
-"""
-function init_body_lhs(panels)
-    (; nodes, control_point, normal) = panels
-
-    T = promote_type(eltype(nodes), eltype(control_point))
-    N, _ = size(control_point)
-
-    LHS = zeros(T, N, N)
-
-    init_body_lhs!(LHS, nodes, control_point, normal)
-
-    return LHS
-end
-
-"""
-"""
-function init_body_lhs!(LHS, nodes, control_point, normal)
-
-    # Loop through control points being influenced
-    for (i, (cp, nhat)) in enumerate(zip(eachrow(control_point), eachrow(normal)))
-        # loop through panels doing the influencing
-        for (j, (p1, p2)) in
-            enumerate(zip(eachrow(nodes[:, 1, :]), eachrow(nodes[:, 2, :])))
-
-            # get unit induced velocity from the panel onto the control point
-            vel = constant_doublet_band_induced_velocity(p1, p2, cp)
-
-            # fill the matrix
-            LHS[i, j] += dot(vel, nhat)
-        end
-    end
-
-    return nothing
-end
 
 """
 adds wake panel influence (from trailing edge panels) to the LHS matrix for the Kutta condition
 """
 function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
-    (; TEnodes, control_point, normal) = panels
+    (; endpoints, controlpoint, normal) = panels
 
     for (i, (te1, te2)) in
-        enumerate(zip(eachrow(TEnodes[:, 1, :]), eachrow(TEnodes[:, 2, :])))
+        enumerate(zip(eachrow(endpoints[:, 1, :]), eachrow(endpoints[:, 2, :])))
 
         # check that trailing edge points are coincident
         if norm(te2 - te1) < tol
-            idxl = panels.TEidxs[i, 1]
-            idxu = panels.TEidxs[i, 2]
+            idxl = panels.endpointidxs[i, 1]
+            idxu = panels.endpointidxs[i, 2]
 
             # Loop through control points being influenced
-            for (m, (cp, nhat)) in enumerate(zip(eachrow(control_point), eachrow(normal)))
+            for (m, (cp, nhat)) in enumerate(zip(eachrow(controlpoint), eachrow(normal)))
 
                 # influence due to lower TE
                 xi, rho, k2, rj = calculate_xrm(te1, cp)
-                vx = -vortex_ring_vx(xi, rho, k2, rj)
+                vx = -vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
                 vr = -vortex_ring_vr(xi, rho, k2, rj)
                 LHS[m, idxl] -= dot([vx; vr], nhat)
 
                 # influence due to upper TE
                 xi, rho, k2, rj = calculate_xrm(te2, cp)
-                vx = vortex_ring_vx(xi, rho, k2, rj)
+                vx = vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
                 vr = vortex_ring_vr(xi, rho, k2, rj)
                 LHS[m, idxu] -= dot([vx; vr], nhat)
             end
