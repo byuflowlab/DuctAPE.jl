@@ -73,7 +73,7 @@ default(;
     #     markeralpha,
     #     markercolor,
     #     markershape,
-    markersize=2,
+    markersize=1.5,
     markerstrokealpha=0,
     #     markerstrokecolor,
     #     markerstrokestyle,
@@ -249,7 +249,7 @@ default(;
     #     widen,
 )
 
-blue = [
+myblue = [
     #oxford blue
     RGB(0 / 255, 25 / 255, 50 / 255),
     #01932
@@ -260,7 +260,7 @@ blue = [
     RGB(100 / 255, 175 / 255, 250 / 255),
     #64AFFA
 ]
-red = [
+myred = [
     #dark purple (very dark red)
     RGB(50 / 255, 0 / 255, 25 / 255),
     #320019
@@ -271,7 +271,7 @@ red = [
     RGB(250 / 255, 175 / 255, 150 / 255),
     #FAAF96
 ]
-green = [
+mygreen = [
     #dark green
     RGB(0 / 255, 50 / 255, 25 / 255),
     #003219
@@ -282,7 +282,7 @@ green = [
     RGB(150 / 255, 250 / 255, 150 / 255),
     #96FA96
 ]
-gray = [
+mygray = [
     #battleship gray
     RGB(150 / 255, 150 / 255, 150 / 255),
     #969696
