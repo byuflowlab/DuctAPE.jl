@@ -1,5 +1,5 @@
 """
-    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vx_rb, vr_rb, gamb,
+    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vx_rb, vr_rb, mub,
         vx_rw, vr_rw, gamw)
 
 Calculate axial, radial, and tangential induced velocity on the rotors.
@@ -19,13 +19,12 @@ function calculate_induced_velocities_on_rotors(
     sigr,
     vx_rb=nothing,
     vr_rb=nothing,
-    gamb=nothing;
+    mub=nothing;
     debug=false,
 )
 
     # problem dimensions
     _, nrotor = size(Gamr) # number of rotors
-    nwake, _ = size(gamw) # number of wake sheets
 
     # initialize outputs
     vx = similar(Gamr) .= 0 # axial induced velocity
@@ -49,25 +48,23 @@ function calculate_induced_velocities_on_rotors(
     for irotor in 1:nrotor
 
         # add body induced velocities
-        if gamb != nothing
-            @views vx[:, irotor] .+= vx_rb[irotor] * gamb
-            @views vr[:, irotor] .+= vr_rb[irotor] * gamb
+        if mub != nothing
+            @views vx[:, irotor] .+= vx_rb[irotor] * mub
+            @views vr[:, irotor] .+= vr_rb[irotor] * mub
 
             if debug
-                @views vxb[:, irotor] .+= vx_rb[irotor] * gamb
-                @views vrb[:, irotor] .+= vr_rb[irotor] * gamb
+                @views vxb[:, irotor] .+= vx_rb[irotor] * mub
+                @views vrb[:, irotor] .+= vr_rb[irotor] * mub
             end
         end
 
         # add wake induced velocities
-        for jwake in 1:nwake
-            @views vx[:, irotor] .+= vx_rw[irotor, jwake] * gamw[jwake, :]
-            @views vr[:, irotor] .+= vr_rw[irotor, jwake] * gamw[jwake, :]
+        @views vx[:, irotor] .+= vx_rw[irotor] * gamw
+        @views vr[:, irotor] .+= vr_rw[irotor] * gamw
 
-            if debug
-                @views vxw[:, irotor] .+= vx_rw[irotor, jwake] * gamw[jwake, :]
-                @views vrw[:, irotor] .+= vr_rw[irotor, jwake] * gamw[jwake, :]
-            end
+        if debug
+            @views vxw[:, irotor] .+= vx_rw[irotor] * gamw[:]
+            @views vrw[:, irotor] .+= vr_rw[irotor] * gamw[:]
         end
 
         # add rotor induced velocities
@@ -129,7 +126,7 @@ end
 
 """
 """
-function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
+function calculate_rotor_velocities(Gamr, gamw, sigr, mub, inputs)
 
     # - Get induced velocities on rotor planes - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
@@ -143,7 +140,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         sigr,
         inputs.vx_rb,
         inputs.vr_rb,
-        gamb,
+        mub,
     )
 
     # - Reframe rotor velocities into blade element frames
