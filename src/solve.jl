@@ -189,33 +189,32 @@ end
 function update_strengths!(states, inputs, p)
 
     # - Extract states - #
-    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+    mub, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
-    # - Get velocities at rotor planes (before updating state dependencies) - #
-    _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-        Gamr, gamw, sigr, gamb, inputs
+    ### --- Get Velocities Before Updating States --- ###
+    # - Get velocities at rotor planes - #
+    # TODO: need to add body wake panel contribution
+    _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = dt.calculate_rotor_velocities(
+        Gamr, gamw, sigr, mub, inputs
+    )
+
+    # - Get velocities on wake panels - #
+    # TODO: need to add body wake panel contribution
+    Wm_wake = dt.calculate_wake_velocities(gamw, sigr, mub, inputs)
+
+    # - Update Velocities on Body, viz. the RHS of the linear solve - #
+    dt.update_RHS!(
+        inputs.body_system_matrices.RHS, inputs.b_bf, inputs.A_bw, gamw, inputs.A_br, sigr
     )
 
     # - Calculate body vortex strengths (before updating state dependencies) - #
-    calculate_body_vortex_strengths!(
-        gamb,
-        inputs.A_bb,
-        inputs.b_bf,
-        inputs.kutta_idxs,
-        inputs.A_bw,
-        gamw,
-        inputs.A_br,
-        sigr,
-        (length(gamw[:, 1]), inputs.ductTE_index),
-    )
+    dt.solve_body_strengths!(mub, inputs.body_system_matrices)
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
-    # TODO: is it a problem that gamb got updated before this? Do we need to use the old gamb here or does it not matter?
-    # probably could calculate velocities induced on wake first too, then that would remove the problem, just like was done below for the rotor circulation and sources
-    calculate_wake_vortex_strengths!(Gamr, gamw, sigr, gamb, inputs; debug=p.debug)
+    dt.calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
 
     # - Update rotor circulation and source panel strengths - #
-    calculate_gamma_sigma!(
+    dt.calculate_gamma_sigma!(
         Gamr,
         sigr,
         inputs.blade_elements,
@@ -223,8 +222,6 @@ function update_strengths!(states, inputs, p)
         Wtheta_rotor,
         Wmag_rotor,
         inputs.freestream;
-        debug=p.debug,
-        verbose=p.verbose,
     )
 
     return nothing
@@ -244,16 +241,16 @@ function extract_state_variables(states, inputs)
     nx = inputs.num_wake_x_panels                   # number of wake panels per sheet
 
     # State Variable Indices
-    iΓb = 1:nb                                      # body vortex strength indices
-    iΓw = (iΓb[end] + 1):(iΓb[end] + nw * nx)       # wake vortex strength indices
+    iμb = 1:nb                                      # body vortex strength indices
+    iΓw = (iμb[end] + 1):(iμb[end] + nw * nx)       # wake vortex strength indices
     iΓr = (iΓw[end] + 1):(iΓw[end] + nr * nrotor)   # rotor circulation strength indices
     iΣr = (iΓr[end] + 1):(iΓr[end] + nr * nrotor)   # rotor source strength indices
 
     # Extract State variables
-    gamb = view(states, iΓb)                        # body vortex strengths
-    gamw = reshape(view(states, iΓw), (nw, nx))     # wake vortex strengths
+    mub = view(states, iμb)                        # body vortex strengths
+    gamw = view(states, iΓw)     # wake vortex strengths
     Gamr = reshape(view(states, iΓr), (nr, nrotor)) # rotor circulation strengths
     sigr = reshape(view(states, iΣr), (nr, nrotor)) # rotor circulation strengths
 
-    return gamb, gamw, Gamr, sigr
+    return mub, gamw, Gamr, sigr
 end
