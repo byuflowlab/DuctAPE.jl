@@ -40,10 +40,10 @@ function discretize_wake(
     # combine all discrete locations into one ordered array
     if isapprox(xhub_te, xduct_te)
         xd = vcat(xrotors, xhub_te, xhub_te + wake_length)
-        @assert length(npanels) == length(xrotors) + 1 "Length of vector `npanels` should be one more than the length of vector `xrotors` when the duct and hub trailing edges do not align."
+        @assert length(npanels) == length(xrotors) + 1 "Length of vector `npanels` should be one more than the length of vector `xrotors` when the duct and hub trailing edges align."
     elseif xduct_te < xhub_te
         xd = vcat(xrotors, xduct_te, xhub_te, xhub_te + wake_length)
-        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges align."
+        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges do not align."
     else
         xd = vcat(xrotors, xhub_te, xduct_te, xduct_te + wake_length)
         @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges align."
@@ -140,7 +140,7 @@ function generate_wake_panels(
     wake_lines = [[xgrid[:, ir] rgrid[:, ir]] for ir in 1:nr]
 
     # generate paneling for each wake line
-    wake_panels = ff.generate_panels(method, wake_lines)
+    wake_panels = generate_panels(wake_lines)
 
     return wake_panels
 end
