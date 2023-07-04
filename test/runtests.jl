@@ -3,23 +3,24 @@ using Test
 println("Compiling Package")
 using DuctTAPE
 const dt = DuctTAPE
-using CCBlade
-const ccb = CCBlade
-using FLOWFoil
-const ff = FLOWFoil
-using ForwardDiff
-const frd = ForwardDiff
-using FiniteDiff
-const fnd = FiniteDiff
+# using CCBlade
+# const ccb = CCBlade
+# using FLOWFoil
+# const ff = FLOWFoil
+# using ForwardDiff
+# const frd = ForwardDiff
+# using FiniteDiff
+# const fnd = FiniteDiff
 using FLOWMath
 const fm = FLOWMath
-using ImplicitAD
+# using ImplicitAD
 
 println("Running Tests...")
 include("compare_objects.jl")
 
 # Active Development
 include("new_panel_tests.jl")
+include("basic_singularity.jl")
 
 # Backburnere
 # include("post_processing_tests.jl")
@@ -41,7 +42,6 @@ include("new_panel_tests.jl")
 # include("derivative_checks.jl")
 
 # # BROKEN:
-# include("basic_singularity.jl")
 # include("constant_initialization.jl")
 # include("wake_aero_tests.jl")
 
