@@ -22,10 +22,10 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
     totpanel = sum(npanel)
 
     # - Initialize Outputs - #
-    control_point = zeros(TF, totpanel, 2)
+    controlpoint = zeros(TF, totpanel, 2)
     nodes = zeros(TF, totpanel, 2, 2) # panel, edge, x-r
-    TEnodes = zeros(TF, length(coordinates), 2, 2) # TE, upper-lower, x-r
-    TEidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx
+    endpoints = zeros(TF, length(coordinates), 2, 2) # TE, upper-lower, x-r
+    endpointidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx
     panel_length = zeros(TF, totpanel)
     normal = zeros(TF, totpanel, 2)
     tangent = zeros(TF, totpanel, 2)
@@ -46,18 +46,18 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         ## -- Loop Through Coordinates -- ##
         for ip in 1:npanel[ib]
             if ip == 1
-                TEnodes[ib, 1, :] = [x[ip] r[ip]]
-                TEidxs[ib, 1] = pidx
+                endpoints[ib, 1, :] = [x[ip] r[ip]]
+                endpointidxs[ib, 1] = pidx
             elseif ip == npanel[ib]
-                TEnodes[ib, 2, :] = [x[ip + 1] r[ip + 1]]
-                TEidxs[ib, 2] = pidx
+                endpoints[ib, 2, :] = [x[ip + 1] r[ip + 1]]
+                endpointidxs[ib, 2] = pidx
             end
 
             # Get nodes (panel edges)
             nodes[pidx, :, :] = [x[ip] r[ip]; x[ip + 1] r[ip + 1]]
 
             # Calculate control point (panel center)
-            control_point[pidx, :] = [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
+            controlpoint[pidx, :] = [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
 
             # Calculate panel length
             panel_vector, panel_length[pidx] = get_r(nodes[pidx, 1, :], nodes[pidx, 2, :])
@@ -74,13 +74,13 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
     end
 
     return (;
-        control_point,
+        controlpoint,
         nodes,
-        length=panel_length,
+        len=panel_length,
         normal,
         tangent,
-        TEnodes,
-        TEidxs,
+        endpoints,
+        endpointidxs,
         npanels=totpanel,
     )
 end
