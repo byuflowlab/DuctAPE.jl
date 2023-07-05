@@ -19,7 +19,10 @@ function calculate_induced_velocities_on_rotors(
     sigr,
     vx_rb=nothing,
     vr_rb=nothing,
-    mub=nothing;
+    mub=nothing,
+    vx_rbte=nothing,
+    vr_rbte=nothing,
+    TEidxs=nothing;
     debug=false,
 )
 
@@ -55,6 +58,13 @@ function calculate_induced_velocities_on_rotors(
             if debug
                 @views vxb[:, irotor] .+= vx_rb[irotor] * mub
                 @views vrb[:, irotor] .+= vr_rb[irotor] * mub
+            end
+
+            @views vx .+= sum(vx_rbte[irotor] * mub[TEidxs]; dims=2)
+            @views vr .+= sum(vr_rbte[irotor] * mub[TEidxs]; dims=2)
+            if debug
+                @views vxb .+= sum(vx_rbte[irotor] * mub[TEidxs]; dims=2)
+                @views vrb .+= sum(vr_rbte[irotor] * mub[TEidxs]; dims=2)
             end
         end
 
@@ -141,6 +151,9 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, mub, inputs)
         inputs.vx_rb,
         inputs.vr_rb,
         mub,
+        inputs.vx_rbte,
+        inputs.vr_rbte,
+        inputs.body_doublet_panels.endpointidxs,
     )
 
     # - Reframe rotor velocities into blade element frames
@@ -275,7 +288,7 @@ function calculate_gamma_sigma!(
             if typeof(blade_elements[irotor].inner_airfoil[ir]) <: DFDCairfoil
 
                 # get local reynolds number
-                reynolds = c * abs(W[ir, irotor]) * freestream.rho / freestream.mu
+                reynolds = c * abs(W[ir, irotor]) * freestream.rhoinf / freestream.muinf
 
                 # printval("Re: ", reynolds)
 
