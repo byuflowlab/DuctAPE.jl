@@ -54,12 +54,15 @@ function calculate_induced_velocities_on_wakes(
     sigr,
     vx_wb=nothing,
     vr_wb=nothing,
-    mub=nothing;
+    mub=nothing,
+    vx_wbte=nothing,
+    vr_wbte=nothing,
+    TEidxs=nothing;
     debug=false,
 )
 
     # get number of rotors
-    _, nrotor = size(sigr)
+    nrotor = size(sigr, 2)
 
     # initialize outputs
     vx = similar(gamw) .= 0 # axial induced velocity
@@ -80,8 +83,15 @@ function calculate_induced_velocities_on_wakes(
         @views vx .+= vx_wb * mub
         @views vr .+= vr_wb * mub
         if debug
-            @views vxb .+= vx_wb[irotor] * mub
-            @views vrb .+= vr_wb[irotor] * mub
+            @views vxb .+= vx_wb * mub
+            @views vrb .+= vr_wb * mub
+        end
+
+        @views vx .+= sum(vx_wbte * mub[TEidxs]; dims=2)
+        @views vr .+= sum(vr_wbte * mub[TEidxs]; dims=2)
+        if debug
+            @views vxb .+= sum(vx_wbte * mub[TEidxs]; dims=2)
+            @views vrb .+= sum(vr_wbte * mub[TEidxs]; dims=2)
         end
     end
 
@@ -134,6 +144,9 @@ function calculate_wake_velocities(gamw, sigr, mub, inputs)
         inputs.vx_wb,
         inputs.vr_wb,
         mub,
+        inputs.vx_wbte,
+        inputs.vr_wbte,
+        inputs.body_doublet_panels.endpointidxs,
     )
 
     # - Reframe rotor velocities into blade element frames
@@ -179,8 +192,22 @@ function get_sheet_jumps(Gamma_tilde, H_tilde)
     return deltaGamma2, deltaH
 end
 
+# TODO: THIS SHOULD BE PRECOMPUTED!!!
 function get_wake_k(wake_vortex_panels)
-    return -1.0 ./ (8.0 .* pi^2 .* wake_vortex_panels.controlpoint[:, 2] .^ 2)
+    # initialize output
+    K = zeros(eltype(wake_vortex_panels.controlpoint), wake_vortex_panels.npanels)
+
+    # Loop through panels
+    for iw in 1:(wake_vortex_panels.npanels)
+        # check if panel has zero radius
+        if isapprox(wake_vortex_panels.controlpoint[iw, 2], 0.0)
+            K[iw] = 0.0
+        else
+            K[iw] = -1.0 ./ (8.0 .* pi^2 .* wake_vortex_panels.controlpoint[iw, 2] .^ 2)
+        end
+    end
+
+    return K
 end
 
 """
@@ -220,9 +247,6 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Vm, inputs; debug=false)
     # get the circulation squared and enthalpy jumps across the wake sheets
     deltaGamma2, deltaH = get_sheet_jumps(Gamma_tilde, H_tilde)
 
-    # calculate radius dependent "constant" for wake strength calcualtion
-    K = get_wake_k(inputs.wake_vortex_panels)
-
     for iw in 1:nw
 
         # calculate the wake vortex strength
@@ -234,7 +258,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Vm, inputs; debug=false)
             # wake strength density taken from rotor to next rotor constant along streamlines
             gamw[iw] =
                 (
-                    K[iw] *
+                    inputs.wakeK[iw] *
                     deltaGamma2[inputs.rotorwakeid[iw, 1], inputs.rotorwakeid[iw, 2]] +
                     deltaH[inputs.rotorwakeid[iw], inputs.rotorwakeid[iw, 2]]
                 ) / Vm[iw]
