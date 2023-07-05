@@ -7,7 +7,7 @@ Various Post-processing functions
 function post_process(states, inputs)
 
     # - things contained in iv tuple
-    # gamb,
+    # mub,
     # gamw,
     # Gamr,
     # sigr,
@@ -41,11 +41,11 @@ function post_process(states, inputs)
     Vinf = inputs.Vinf
     Vref = inputs.reference_parameters.Vref
     Rref = inputs.reference_parameters.Rref
-    rho = inputs.freestream.rho
-    mu = inputs.freestream.mu
+    rhoinf = inputs.freestream.rhoinf
+    muinf = inputs.freestream.muinf
     asound = inputs.freestream.asound
-    dwi = inputs.ductwakeidx
-    hwi = inputs.hubwakeidx
+    didr = inputs.ductidsaftofrotors
+    hidr = inputs.hubidsaftofrotors
     Omega = inputs.blade_elements.Omega
     B = inputs.blade_elements.B
     chord = reshape(reduce(vcat, inputs.blade_elements.chords), (nr, nrotor))
@@ -60,11 +60,9 @@ function post_process(states, inputs)
     rpe = inputs.rotor_panel_edges
     Rhub = rpe[1, :]
     Rtip = rpe[end, :]
-    rpl = reshape(
-        reduce(vcat, (p -> p.panel_length).(inputs.rotor_source_panels)), (nr, nrotor)
-    )
+    rpl = reshape(reduce(vcat, (p -> p.len).(inputs.rotor_source_panels)), (nr, nrotor))
 
-    ref = (; Vinf, Vref, Rref, rho, mu, asound, Omega, B)
+    ref = (; Vinf, Vref, Rref, rhoinf, muinf, asound, Omega, B)
 
     # get blade element coefficients
     clift, cdrag, inflow_angle, angle_of_attack = get_blade_aero(
@@ -78,20 +76,20 @@ function post_process(states, inputs)
         afparamsin,
         afparamsout,
         innerfrac,
-        rho,
-        mu,
+        rhoinf,
+        muinf,
         asound,
     )
 
     # - Rotor Thrust - #
     # inviscid thrust
     rotor_inviscid_thrust, rotor_inviscid_thrust_dist = inviscid_rotor_trust(
-        iv.Wtheta_rotor, iv.Gamma_tilde, rpl, rho
+        iv.Wtheta_rotor, iv.Gamma_tilde, rpl, rhoinf
     )
 
     # viscous thrust
     rotor_viscous_thrust, rotor_viscous_thrust_dist = viscous_rotor_thrust(
-        iv.Wx_rotor, iv.Wmag_rotor, B, chord, rpl, iv.cd, rho
+        iv.Wx_rotor, iv.Wmag_rotor, B, chord, rpl, iv.cd, rhoinf
     )
 
     # total thrust
@@ -100,12 +98,12 @@ function post_process(states, inputs)
     # - Rotor Torque - #
     # inviscid torque
     rotor_inviscid_torque, rotor_inviscid_torque_dist = inviscid_rotor_torque(
-        iv.Wx_rotor, rpc, rpl, iv.Gamma_tilde, rho
+        iv.Wx_rotor, rpc, rpl, iv.Gamma_tilde, rhoinf
     )
 
     # viscous torque
     rotor_viscous_torque, rotor_viscous_torque_dist = viscous_rotor_torque(
-        iv.Wtheta_rotor, iv.Wmag_rotor, B, chord, rpc, rpl, iv.cd, rho
+        iv.Wtheta_rotor, iv.Wmag_rotor, B, chord, rpc, rpl, iv.cd, rhoinf
     )
 
     # - Rotor Power - #
@@ -138,14 +136,13 @@ function post_process(states, inputs)
         Vref,
         B,
         Omega,
-        dwi,
-        hwi,
-        inputs.body_panels,
+        didr,
+        hidr,
+        inputs.body_doublet_panels,
         inputs.isduct,
     )
 
     ## -- Pressure on Body Wakes -- ##
-
     ductwake_cp, ductwake_vs = get_bodywake_cps(
         iv.Gamr,
         inputs.vx_dww,
@@ -156,7 +153,10 @@ function post_process(states, inputs)
         iv.sigr,
         inputs.vx_dwb,
         inputs.vr_dwb,
-        iv.gamb,
+        iv.mub,
+        inputs.vx_dwbte,
+        inputs.vr_dwbte,
+        inputs.body_doublet_panels.endpointidxs,
         inputs.duct_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -176,7 +176,10 @@ function post_process(states, inputs)
         iv.sigr,
         inputs.vx_hwb,
         inputs.vr_hwb,
-        iv.gamb,
+        iv.mub,
+        inputs.vx_dwbte,
+        inputs.vr_dwbte,
+        inputs.body_doublet_panels.endpointidxs,
         inputs.hub_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -192,18 +195,14 @@ function post_process(states, inputs)
 
     # - Calculate Thrust from Bodies - #
 
-    duct_thrust, _ = forces_from_pressure(
-        duct_cp, inputs.body_panels[1]; rho=rho, Vref=Vref
+    body_thrust, _ = forces_from_pressure(
+        duct_cp, inputs.body_doublet_panels; rhoinf=rhoinf, Vref=Vref
     )
-
-    hub_thrust, _ = forces_from_pressure(hub_cp, inputs.body_panels[2]; rho=rho, Vref=Vref)
 
     ## -- Total Outputs -- ##
 
     # - Total Thrust - #
-    total_thrust = sum(
-        [rotor_inviscid_thrust'; rotor_viscous_thrust'; duct_thrust; hub_thrust]
-    )
+    total_thrust = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust])
 
     # - Total Torque - #
     total_torque = sum([rotor_inviscid_torque; rotor_viscous_torque])
@@ -217,27 +216,24 @@ function post_process(states, inputs)
     # - Induced Efficiency - #
     induced_efficiency = [
         get_induced_efficiency(
-            rotor_inviscid_thrust[ir],
-            duct_thrust + hub_thrust,
-            rotor_inviscid_power[ir],
-            Vinf,
+            rotor_inviscid_thrust[ir], body_thrust, rotor_inviscid_power[ir], Vinf
         ) for ir in 1:nrotor
     ]
 
     # - Ideal Efficiency - #
-    ideal_efficiency = get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
+    ideal_efficiency = get_ideal_efficiency(total_thrust, rhoinf, Vinf, Rref)
 
     # - Blade Loading - #
     blade_normal_force_per_unit_span, blade_tangential_force_per_unit_span = get_blade_loads(
-        iv.Wmag_rotor, iv.phi, iv.cl, iv.cd, chord, rho
+        iv.Wmag_rotor, iv.phi, iv.cl, iv.cd, chord, rhoinf
     )
 
     # - Thrust and Torque Coefficients - #
-    CT, CQ = tqcoeff(total_thrust, total_torque, rho, Omega[1], Rref)
+    CT, CQ = tqcoeff(total_thrust, total_torque, rhoinf, Omega, Rref)
 
     ## -- Assemble Output Tuple -- ##
 
-    out = (;
+    return (;
         # - Geometry - #
         Rref,
         rotor_panel_center=rpc,
@@ -245,7 +241,7 @@ function post_process(states, inputs)
         twist,
         inputs.duct_coordinates,
         inputs.hub_coordinates,
-        inputs.body_panels,
+        inputs.body_doublet_panels,
         inputs.rotor_source_panels,
         inputs.wake_vortex_panels,
         # - Intermediate Values - #
@@ -253,15 +249,13 @@ function post_process(states, inputs)
         # - Reference Values - #
         reference_values=ref,
         # - States - #
-        gamb=iv.gamb,
+        mub=iv.mub,
         gamw=iv.gamw,
         Gamr=iv.Gamr,
         sigr=iv.sigr,
         # - Body Values - #
         # body thrust
-        duct_thrust,
-        hub_thrust,
-        body_thrust=duct_thrust + hub_thrust,
+        body_thrust,
         # surface velocities and pressures
         duct_inner_vs,
         duct_inner_cp,
@@ -276,10 +270,10 @@ function post_process(states, inputs)
         # surface velocities and pressures
         ductwake_vs,
         ductwake_cp,
-        ductwake_x=inputs.duct_wake_panels.panel_center[:, 1],
+        ductwake_x=inputs.duct_wake_panels.controlpoint[:, 1],
         hubwake_vs,
         hubwake_cp,
-        hubwake_x=inputs.hub_wake_panels.panel_center[:, 1],
+        hubwake_x=inputs.hub_wake_panels.controlpoint[:, 1],
         # - Rotor Values - #
         # rotor thrust
         rotor_total_thrust,
@@ -335,14 +329,11 @@ end
 Calculate change in pressure coefficient aft of rotor, due to rotor
 """
 function delta_cp(deltaH, deltaS, Vtheta, Vref)
-    return (2.0 * (deltaH - deltaS) .- Vtheta .^ 2) / Vref^2
-end
-
-"""
-Calculate tangential velocity for a given net circulation and radial location
-"""
-function calculate_vtheta(Gamma_tilde, r)
-    return Gamma_tilde ./ (2.0 * pi * r)
+    if isapprox(Vref, 0.0)
+        return 0.0
+    else
+        return (2.0 * (deltaH - deltaS) .- Vtheta .^ 2) / Vref^2
+    end
 end
 
 """
@@ -366,30 +357,28 @@ end
 Calculate change in pressure coefficient due to rotors specifically on the body panels aft of the rotors
 """
 function calculate_body_delta_cp!(
-    cpductinner, cphub, Gamr, sigr, Vm_rotor, Vref, Omega, B, body_panels, dwi, hwi
+    cp, Gamr, sigr, Vm_rotor, Vref, Omega, B, body_doublet_panels, didr, hidr
 )
 
     ## -- Calculate change in pressure coefficient -- ##
 
     Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
 
-    _, nrotor = size(Gamr)
+    nrotor = size(Gamr, 2)
 
     for ir in 1:nrotor
 
         # - Get the tangential velocities on the bodies - #
         v_theta_duct = calculate_vtheta(
-            Gamma_tilde[end, ir], body_panels[1].panel_center[dwi[ir], 2]
+            Gamma_tilde[end, ir], body_doublet_panels.controlpoint[didr[ir], 2]
         )
         v_theta_hub = calculate_vtheta(
-            Gamma_tilde[1, ir], body_panels[2].panel_center[hwi[ir], 2]
+            Gamma_tilde[1, ir], body_doublet_panels.controlpoint[hidr[ir], 2]
         )
 
         # assemble change in cp due to enthalpy and entropy behind rotor(s)
-        cphub[hwi[ir]] .+= delta_cp(Htilde[1, ir], Stilde[1, ir], v_theta_hub, Vref)
-        cpductinner[dwi[ir]] .+= delta_cp(
-            Htilde[end, ir], Stilde[end, ir], v_theta_duct, Vref
-        )
+        cp[hidr[ir]] .+= delta_cp(Htilde[1, ir], Stilde[1, ir], v_theta_hub, Vref)
+        cp[didr[ir]] .+= delta_cp(Htilde[end, ir], Stilde[end, ir], v_theta_duct, Vref)
     end
 
     return nothing
@@ -497,7 +486,10 @@ function get_bodywake_cps(
     sigr,
     vx_b,
     vr_b,
-    gamb,
+    mub,
+    vx_bte,
+    vr_bte,
+    TEidxs,
     panels,
     Vm_rotor,
     Omega,
@@ -533,15 +525,15 @@ end
 """
 Calculate dimensional and non-dimensional axial force on a single body
 """
-function forces_from_pressure(cps, panels; rho=1.225, Vref=1.0)
+function forces_from_pressure(cps, panels; rhoinf=1.225, Vref=1.0)
 
     # - rename for convenience - #
     #just want x-component of normals since it's axisymmetric
-    ns = panels.panel_normal[:, 1]
+    ns = panels.normal[:, 1]
     #radial positions
-    rs = panels.panel_center[:, 2]
+    rs = panels.controlpoint[:, 2]
     #panel lengths
-    ds = panels.panel_length
+    ds = panels.len
     # dimensions
     np = length(cps)
 
@@ -553,7 +545,7 @@ function forces_from_pressure(cps, panels; rho=1.225, Vref=1.0)
     end
 
     #dimensionalize
-    q = 0.5 * rho * Vref^2
+    q = 0.5 * rhoinf * Vref^2
 
     #note, thrust is in negative x-direction
     return cfx * q, cfx
@@ -565,7 +557,7 @@ end
 #                                                                    #
 ######################################################################
 
-function inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rho)
+function inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rhoinf)
 
     # problem dimensions
     nr, nrotor = size(Gamma_tilde)
@@ -577,7 +569,7 @@ function inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rho)
         for ir in 1:nr
             # section thrust
             dTi[ir, irotor] =
-                -rho *
+                -rhoinf *
                 Gamma_tilde[ir, irotor] *
                 Wtheta[ir, irotor] *
                 rotor_panel_length[ir, irotor]
@@ -590,7 +582,9 @@ function inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rho)
     return Tinv, dTi
 end
 
-function viscous_rotor_thrust(Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rho)
+function viscous_rotor_thrust(
+    Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rhoinf
+)
 
     # get dimensions
     nr, nrotor = size(Wx_rotor)
@@ -600,7 +594,7 @@ function viscous_rotor_thrust(Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length
 
     for irotor in 1:nrotor
         for ir in 1:nr
-            hrwc = 0.5 * rho * Wmag_rotor[ir, irotor] * chord[ir, irotor]
+            hrwc = 0.5 * rhoinf * Wmag_rotor[ir, irotor] * chord[ir, irotor]
             bdr = B[irotor] * rotor_panel_length[ir, irotor]
             dTv[ir, irotor] = -hrwc * cd[ir, irotor] * Wx_rotor[ir, irotor] * bdr
         end
@@ -612,7 +606,7 @@ function viscous_rotor_thrust(Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length
 end
 
 function inviscid_rotor_torque(
-    Wx_rotor, rotor_panel_center, rotor_panel_length, Gamma_tilde, rho
+    Wx_rotor, rotor_panel_center, rotor_panel_length, Gamma_tilde, rhoinf
 )
 
     # dimensions
@@ -624,7 +618,7 @@ function inviscid_rotor_torque(
     for irotor in 1:nrotor
         for ir in 1:nr
             rdr = rotor_panel_center[ir, irotor] * rotor_panel_length[ir, irotor]
-            dQi[ir, irotor] = rho * Gamma_tilde[ir, irotor] * Wx_rotor[ir, irotor] * rdr
+            dQi[ir, irotor] = rhoinf * Gamma_tilde[ir, irotor] * Wx_rotor[ir, irotor] * rdr
         end
     end
 
@@ -634,7 +628,7 @@ function inviscid_rotor_torque(
 end
 
 function viscous_rotor_torque(
-    Wtheta_rotor, Wmag_rotor, B, chord, rotor_panel_center, rotor_panel_length, cd, rho
+    Wtheta_rotor, Wmag_rotor, B, chord, rotor_panel_center, rotor_panel_length, cd, rhoinf
 )
 
     # dimensions
@@ -645,7 +639,7 @@ function viscous_rotor_torque(
 
     for irotor in 1:nrotor
         for ir in 1:nr
-            hrwc = 0.5 * rho * Wmag_rotor[ir, irotor] * chord[ir, irotor]
+            hrwc = 0.5 * rhoinf * Wmag_rotor[ir, irotor] * chord[ir, irotor]
             brdr =
                 B[irotor] * rotor_panel_center[ir, irotor] * rotor_panel_length[ir, irotor]
             dQv[ir, irotor] = -hrwc * cd[ir, irotor] * Wtheta_rotor[ir, irotor] * brdr
@@ -681,28 +675,37 @@ function get_induced_efficiency(Tinv, Tduct, Pinv, Vinf)
     end
 end
 
-function get_ideal_efficiency(total_thrust, rho, Vinf, Rref)
+function get_ideal_efficiency(total_thrust, rhoinf, Vinf, Rref)
     if Vinf != 0.0
-        TC = total_thrust / (0.5 * rho * Vinf^2 * pi * Rref^2)
+        TC = total_thrust / (0.5 * rhoinf * Vinf^2 * pi * Rref^2)
         return 2.0 / (1.0 + sqrt(max(TC, -1.0) + 1.0))
     else
         return 0.0
     end
 end
 
-function tqcoeff(thrust, torque, rho, Omega, Rref)
+function tqcoeff(thrust, torque, rhoinf, Omega, Rref)
+    T = promote_type(eltype(thrust), eltype(torque), eltype(Omega))
+    CT = zeros(T, length(Omega))
+    CQ = zeros(T, length(Omega))
 
-    # reference diameter
-    D = 2.0 * Rref
+    for (i, o) in enumerate(Omega)
+        if isapprox(o, 0.0)
+            CT[i] = CQ[i] = 0.0
+        else
+            # reference diameter
+            D = 2.0 * Rref
 
-    # rototion in rev per second
-    n = Omega / (2.0 * pi)
+            # rototion in rev per second
+            n = o / (2.0 * pi)
 
-    # thrust coefficient
-    CT = thrust / (rho * n^2 * D^4)
+            # thrust coefficient
+            CT[i] = thrust / (rhoinf * n^2 * D^4)
 
-    # torque coefficient
-    CQ = torque / (rho * n^2 * D^5)
+            # torque coefficient
+            CQ[i] = torque / (rhoinf * n^2 * D^5)
+        end
+    end
 
     return CT, CQ
 end
@@ -718,8 +721,8 @@ function get_blade_aero(
     afparamsin,
     afparamsout,
     innerfrac,
-    rho,
-    mu,
+    rhoinf,
+    muinf,
     asound,
 )
 
@@ -734,7 +737,7 @@ function get_blade_aero(
 
     for irotor in 1:nrotor
         for ir in 1:nr
-            reynolds = chord[ir, irotor] * abs(Wmag_rotor[ir, irotor]) * rho / mu
+            reynolds = chord[ir, irotor] * abs(Wmag_rotor[ir, irotor]) * rhoinf / muinf
 
             phi[ir, irotor], alpha[ir, irotor] = calculate_inflow_angles(
                 Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], twist[ir, irotor]
@@ -770,7 +773,7 @@ function get_blade_aero(
     return cl, cd, phi, alpha
 end
 
-function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)#, Rhub, Rtip, rpc,rpl ,B, Omega)
+function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rhoinf)#, Rhub, Rtip, rpc,rpl ,B, Omega)
 
     # dimensions
     nr, nrotor = size(Wmag_rotor)
@@ -790,8 +793,10 @@ function get_blade_loads(Wmag_rotor, phi, cl, cd, chords, rho)#, Rhub, Rtip, rpc
             ct = cl[ir, irotor] * sphi + cd[ir, irotor] * cphi
 
             # get the normal and tangential loads per unit length N' and T'
-            Np[ir, irotor] = cn * 0.5 * rho * Wmag_rotor[ir, irotor]^2 * chords[ir, irotor]
-            Tp[ir, irotor] = ct * 0.5 * rho * Wmag_rotor[ir, irotor]^2 * chords[ir, irotor]
+            Np[ir, irotor] =
+                cn * 0.5 * rhoinf * Wmag_rotor[ir, irotor]^2 * chords[ir, irotor]
+            Tp[ir, irotor] =
+                ct * 0.5 * rhoinf * Wmag_rotor[ir, irotor]^2 * chords[ir, irotor]
         end
     end
 
@@ -834,7 +839,7 @@ function get_intermediate_values(states, inputs)
     Vinf = inputs.Vinf
 
     # - Extract states - #
-    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+    mub, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
     _, _, _, vxfrombody, vrfrombody, vxfromwake, vrfromwake, vxfromrotor, vrfromrotor = calculate_induced_velocities_on_rotors(
         blade_elements,
@@ -847,12 +852,15 @@ function get_intermediate_values(states, inputs)
         sigr,
         inputs.vx_rb,
         inputs.vr_rb,
-        gamb;
+        mub,
+        inputs.vx_rbte,
+        inputs.vr_rbte,
+        inputs.body_doublet_panels.endpointidxs;
         debug=true,
     )
 
     vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-        Gamr, gamw, sigr, gamb, inputs
+        Gamr, gamw, sigr, mub, inputs
     )
 
     Gamma_tilde = calculate_net_circulation(Gamr, blade_elements.B)
@@ -864,7 +872,7 @@ function get_intermediate_values(states, inputs)
     )
 
     return (;
-        gamb,
+        mub,
         gamw,
         Gamr,
         sigr,
@@ -908,7 +916,7 @@ function probe_velocity_field(
     field_points,
     Vinf;
     body_strengths=nothing,
-    body_panels=nothing,
+    body_doublet_panels=nothing,
     wake_strengths=nothing,
     wake_panels=nothing,
     source_strengths=nothing,
@@ -926,12 +934,12 @@ function probe_velocity_field(
     source_induced_r = similar(field_points) .= 0.0
 
     # - add body induced velocity to total
-    if !isnothing(body_strengths) && !isnothing(body_panels)
+    if !isnothing(body_strengths) && !isnothing(body_doublet_panels)
         # set up influence coefficients based on field points and body panels
-        mesh_fpb = generate_field_mesh(body_panels, field_points)
+        mesh_fpb = generate_field_mesh(body_doublet_panels, field_points)
 
         A_fpb = assemble_induced_velocity_matrices_infield(
-            mesh_fpb, body_panels, field_points
+            mesh_fpb, body_doublet_panels, field_points
         )
 
         # axial components
