@@ -1,4 +1,3 @@
-
 project_dir = dirname(dirname(dirname(@__FILE__)))
 if project_dir == ""
     project_dir = "."
@@ -71,7 +70,9 @@ function plot_inputs(inputs)
         wake_panels=inputs.wake_vortex_panels,
         controlpoints=true,
         nodes=true,
-        wakeinterfaceid=reduce(vcat, [inputs.ductwakeinterfaceid; inputs.hubwakeinterfaceid]),
+        wakeinterfaceid=reduce(
+            vcat, [inputs.ductwakeinterfaceid; inputs.hubwakeinterfaceid]
+        ),
         normals=false,
         savepath=savepath,
         filename="test-wake-geometry.pdf",
@@ -86,7 +87,9 @@ function plot_inputs(inputs)
         controlpoints=true,
         nodes=true,
         normals=false,
-        wakeinterfaceid=reduce(vcat, [inputs.ductwakeinterfaceid, inputs.hubwakeinterfaceid]),
+        wakeinterfaceid=reduce(
+            vcat, [inputs.ductwakeinterfaceid, inputs.hubwakeinterfaceid]
+        ),
         prescribedpanels=inputs.body_system_matrices.prescribedpanels,
         savepath=savepath,
         filename="test-all-geometry.pdf",
@@ -96,7 +99,11 @@ function plot_inputs(inputs)
 end
 
 # inputs = init_inputs(; datapath=datapath,filename="test.case..jl")
-inputs = init_inputs(; datapath="",filename=project_dir*"/test/data/basic_two_rotor_for_test.jl")
+inputs = init_inputs(;
+    datapath="", filename=project_dir * "/test/data/basic_two_rotor_for_test.jl"
+)
 println("Plotting")
 plot_inputs(inputs)
 states = init_states(inputs)
+out = dt.post_process(states, inputs)
+;

@@ -113,8 +113,8 @@ Vb_nokutta = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu_nokutta
 Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
 
 # - "Wake"-induced Surface Velocity - #
-Vb_nokutta_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, panels.TEidxs, mu_nokutta)
-Vb_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, panels.TEidxs, mu)
+Vb_nokutta_wake = dt.vfromTE(panels.controlpoint, panels.endpoints, panels.endpointidxs, mu_nokutta)
+Vb_wake = dt.vfromTE(panels.controlpoint, panels.endpoints, panels.endpointidxs, mu)
 
 # - ∇μ/2 surface velocity - #
 Vb_gradmu = dt.vfromgradmu(panels, mu)
@@ -143,7 +143,7 @@ plot!(
     pressurexupper,
     pressureupper;
     seriestype=:scatter,
-    color=blue[1],
+    color=myblue[1],
     markershape=:utriangle,
     label="exp outer",
 )
@@ -152,7 +152,7 @@ plot!(
     pressurexlower,
     pressurelower;
     seriestype=:scatter,
-    color=blue[1],
+    color=myblue[1],
     markershape=:dtriangle,
     label="exp inner",
 )
@@ -170,12 +170,11 @@ plot!(
     Vs_over_Vinf_x,
     Vs_over_Vinf_vs;
     seriestype=:scatter,
-    color=blue[1],
+    color=myblue[1],
     markershape=:utriangle,
     label="experimental",
 )
 xs = panels.controlpoint[:, 1]
 plot!(pv, xs[41:end], dt.norm.(eachrow(Vtot[41:end, :])) ./ Vinf; label="DuctTAPE")
 
-savefig(pv, savepath * "bodj-vel-comp.pdf")
-# TODO: need to coordinate with Eduardo on who is adding what where for this stuff
+savefig(pv, savepath * "body-vel-comp.pdf")

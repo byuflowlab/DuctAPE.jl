@@ -1,4 +1,4 @@
-project_dir = dirname(dirname(dirname(dirname(@__FILE__)))
+project_dir = dirname(dirname(dirname(dirname(@__FILE__))))
 if project_dir == ""
     project_dir = "."
 end
@@ -18,7 +18,8 @@ function runandplot(; filename="straightwake.case.jl")
     include(datapath * filename)
 
     println("Running Analysis")
-    out, converged_states, inputs, initial_states, convergeflag = rundt(
+
+    out, converged_states, inputs, initial_states, convergeflag = @time rundt(
         duct_coordinates,
         hub_coordinates,
         rotor_parameters,
@@ -97,8 +98,8 @@ function plotgeom(inputs, paneling_constants)
 
     plot!(
         pgeom,
-        inputs.rotor_source_panels[1].panel_center[:, 1],
-        inputs.rotor_source_panels[1].panel_center[:, 2];
+        inputs.rotor_source_panels[1].controlpoint[:, 1],
+        inputs.rotor_source_panels[1].controlpoint[:, 2];
         color=mycolors[3],
         seriestype=:scatter,
         markersize=0.75,
@@ -109,10 +110,8 @@ function plotgeom(inputs, paneling_constants)
     for iw in 1:(paneling_constants.nwake_sheets)
         if iw == 1
             wakelab = "Wake Panel Edges"
-            wakelab2 = "Wake Panel Centers"
         else
             wakelab = ""
-            wakelab2 = ""
         end
         plot!(
             pgeom,
@@ -124,18 +123,19 @@ function plotgeom(inputs, paneling_constants)
             color=:black,
             label=wakelab,
         )
-
-        plot!(
-            pgeom,
-            inputs.wake_vortex_panels[iw].panel_center[:, 1],
-            inputs.wake_vortex_panels[iw].panel_center[:, 2];
-            seriestype=:scatter,
-            markersize=0.75,
-            markershape=:circle,
-            color=mycolors[2],
-            label=wakelab2,
-        )
     end
+
+    wakelab2 = "Wake Panel Centers"
+    plot!(
+        pgeom,
+        inputs.wake_vortex_panels.controlpoint[:, 1],
+        inputs.wake_vortex_panels.controlpoint[:, 2];
+        seriestype=:scatter,
+        markersize=0.75,
+        markershape=:circle,
+        color=mycolors[2],
+        label=wakelab2,
+    )
 
     savefig(datapath * "precomputed-rotor-wake-geometry.pdf")
 
@@ -163,23 +163,16 @@ function plotgeom(inputs, paneling_constants)
     )
 
     # Plot body panel centers
-    for ib in 1:2
-        # for ib in 1:1
-        if ib == 1
-            bodlab = "Body Panel Centers"
-        else
-            bodlab = ""
-        end
-        plot!(
-            pgeom,
-            inputs.body_panels[ib].panel_center[:, 1],
-            inputs.body_panels[ib].panel_center[:, 2];
-            color=mycolors[1],
-            seriestype=:scatter,
-            markersize=0.75,
-            label=bodlab,
-        )
-    end
+    bodlab = "Body Panel Centers"
+    plot!(
+        pgeom,
+        inputs.body_doublet_panels.controlpoint[:, 1],
+        inputs.body_doublet_panels.controlpoint[:, 2];
+        color=mycolors[1],
+        seriestype=:scatter,
+        markersize=0.75,
+        label=bodlab,
+    )
 
     savefig(pgeom, datapath * "precomputed-full-geometry.pdf")
 
@@ -288,7 +281,13 @@ function plotbodyaero(out, convergeflag, Vref)
     plot!(pvs, dfdc_hubx, dfdc_hub_vs; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
     # duct wake
-    plot!(pvs, out.ductwake_x, abs.(out.ductwake_vs); color=mycolors[3], label="DuctTAPE Duct Wake")
+    plot!(
+        pvs,
+        out.ductwake_x,
+        abs.(out.ductwake_vs);
+        color=mycolors[3],
+        label="DuctTAPE Duct Wake",
+    )
     # dfdc duct wake
     plot!(
         pvs,
@@ -300,7 +299,13 @@ function plotbodyaero(out, convergeflag, Vref)
     )
 
     # hub wake
-    plot!(pvs, out.hubwake_x, abs.(out.hubwake_vs); color=mycolors[4], label="DuctTAPE Hub Wake")
+    plot!(
+        pvs,
+        out.hubwake_x,
+        abs.(out.hubwake_vs);
+        color=mycolors[4],
+        label="DuctTAPE Hub Wake",
+    )
     # dfdc hub wake
     plot!(
         pvs,
@@ -337,7 +342,9 @@ function plotbodyaero(out, convergeflag, Vref)
     plot!(pcp, dfdc_hubx, dfdc_hub_cp; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
     #duct wake
-    plot!(pcp, out.ductwake_x, out.ductwake_cp; color=mycolors[3], label="DuctTAPE Duct Wake")
+    plot!(
+        pcp, out.ductwake_x, out.ductwake_cp; color=mycolors[3], label="DuctTAPE Duct Wake"
+    )
     # dfdc duct wake
     plot!(
         pcp,
@@ -363,6 +370,8 @@ function plotbodyaero(out, convergeflag, Vref)
     #save
     savefig(pcp, datapath * "body-pressure.pdf")
 
+    plot(out.body_doublet_panels.controlpoint[:,1], out.mub, seriestype=:scatter, label="body panel strengths")
+    savefig(datapath*"body-panel-strengths.pdf")
     return nothing
 end
 

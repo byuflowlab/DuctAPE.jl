@@ -21,7 +21,7 @@ include(project_dir * "/visualize/plots_default_new.jl")
 
 # # - load geometry - #
 # # read data file
-include(project_dir*"/test/data/naca_662-015.jl")
+include(project_dir * "/test/data/naca_662-015.jl")
 # # put coordinates together
 # coordinates = [x_duct r_duct]
 
@@ -33,7 +33,7 @@ filename = "/home/juddmehr/code-development/julia_devs/FLOWPanel.jl/examples/dat
 contour = CSV.read(filename, DataFrame)
 aspectratio = 0.6                       # Duct trailing edge aspect ratio l/d
 d = 2 * 0.835                   # (m) duct diameter
-n_rfl = 20                        # This controls the number of chordwise panels
+n_rfl = 10                        # This controls the number of chordwise panels
 
 NDIVS_rfl_up = [                            # Discretization of airfoil upper surface
     # 0 to 0.25 of the airfoil has `n_rfl` panels at a geometric expansion of 10 that is not central
@@ -78,8 +78,8 @@ placing the coordinate matrix in a vector as an input.
 panels = dt.generate_panels(coordinates)
 
 ##### ----- Visualize to Check ----- #####
-visualize_paneling(
-    panels;
+visualize_paneling(;
+    body_panels=panels,
     coordinates=coordinates,
     controlpoints=true,
     nodes=true,
@@ -107,7 +107,7 @@ prescribedpanels = [(1, 0.0)]
 
 # - Initial System Matrices - #
 # LHS = dt.init_body_lhs(panels)
-LHS = dt.doublet_panel_influence_matrix(panels.nodes,panels)
+LHS = dt.doublet_panel_influence_matrix(panels.nodes, panels)
 RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
 LHSnokutta = deepcopy(LHS)
 RHSnokutta = deepcopy(RHS)
@@ -179,7 +179,7 @@ plot!(
     pressurexupper,
     pressureupper;
     seriestype=:scatter,
-    color=blue[1],
+    color=myblue[1],
     markershape=:utriangle,
     label="exp outer",
 )
@@ -188,7 +188,7 @@ plot!(
     pressurexlower,
     pressurelower;
     seriestype=:scatter,
-    color=blue[1],
+    color=myblue[1],
     markershape=:dtriangle,
     label="exp inner",
 )
