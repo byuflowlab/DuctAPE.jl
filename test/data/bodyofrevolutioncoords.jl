@@ -206,7 +206,7 @@ function circlecoords(npts, r=0.16)
     return r .+ r * cos.(t), r * sin.(t)
 end
 
-N = 30
+N = 60
 avg_ds = pi / 2.0 / N
 xcirc, ycirc = circlecoords(round(Int,N/3))
 xcylendidx = findlast(x -> x == 0.16, r)

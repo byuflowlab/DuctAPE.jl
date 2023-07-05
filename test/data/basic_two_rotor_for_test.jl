@@ -42,7 +42,7 @@ paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_she
 freestream = (; rhoinf, muinf, asound, Vinf)
 reference_parameters = (; Vref, Rref=Rtip)
 duct_coordinates = [1.0 2.0; 0.5 1.5; 0.0 2.0; 0.5 2.5; 1.0 2.0]
-hub_coordinates = [0.0 0.0; 0.5 0.5; 1.0 0.5]
+hub_coordinates = [0.0 0.0; 0.5 0.5; 1.0 0.0]
 
 # initialize the inputs
 inputs = dt.precomputed_inputs(
