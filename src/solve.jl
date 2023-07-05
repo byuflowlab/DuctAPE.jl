@@ -193,28 +193,24 @@ function update_strengths!(states, inputs, p)
 
     ### --- Get Velocities Before Updating States --- ###
     # - Get velocities at rotor planes - #
-    # TODO: need to add body wake panel contribution
-    _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = dt.calculate_rotor_velocities(
+    _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
         Gamr, gamw, sigr, mub, inputs
     )
 
     # - Get velocities on wake panels - #
-    # TODO: need to add body wake panel contribution
-    Wm_wake = dt.calculate_wake_velocities(gamw, sigr, mub, inputs)
+    Wm_wake = calculate_wake_velocities(gamw, sigr, mub, inputs)
 
-    # - Update Velocities on Body, viz. the RHS of the linear solve - #
-    dt.update_RHS!(
-        inputs.body_system_matrices.RHS, inputs.b_bf, inputs.A_bw, gamw, inputs.A_br, sigr
-    )
+    # - Generate raw RHS for linear solve - #
+    RHS = update_RHS(inputs.b_bf, inputs.A_bw, gamw, inputs.A_br, sigr)
 
     # - Calculate body vortex strengths (before updating state dependencies) - #
-    dt.solve_body_strengths!(mub, inputs.body_system_matrices)
+    solve_body_strengths!(mub, inputs.A_bb, RHS, inputs.prescribedpanels)
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
-    dt.calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
+    calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
 
     # - Update rotor circulation and source panel strengths - #
-    dt.calculate_gamma_sigma!(
+    calculate_gamma_sigma!(
         Gamr,
         sigr,
         inputs.blade_elements,
