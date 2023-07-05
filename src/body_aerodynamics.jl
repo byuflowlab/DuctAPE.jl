@@ -153,22 +153,36 @@ end
 
 ######################################################################
 #                                                                    #
-#                           New RHS setup                            #
+#                            NEW RHS SETUP                           #
 #                                                                    #
 ######################################################################
+function update_RHS(
+    b_bf::AbstractVector{T1}, A_bw, gamw::AbstractVector{T2}, A_br, sigr::AbstractMatrix{T3}
+) where {T1,T2,T3}
+    T = promote_type(T1, T2, T3)
 
-function gen_body_rhs(normals::AbstractMatrix{T1}, Vs::AbstractMatrix{T2}) where {T1,T2}
-    T = promote_type(T1, T2)
-    N, _ = size(normals)
-    RHS = zeros(T, N)
-    gen_body_rhs!(RHS, normals, Vs)
+    RHS = zeros(T, size(b_bf, 1))
+
+    update_RHS!(RHS, b_bf, A_bw, gamw, A_br, sigr)
 
     return RHS
 end
 
-function gen_body_rhs!(RHS, normals, Vs)
-    for (i, (n, v)) in enumerate(zip(eachrow(normals), eachrow(Vs)))
-        RHS[i] -= dot(v, n)
+function update_RHS!(RHS, b_bf, A_bw, gamw, A_br, sigr)
+
+    # start with freestream contributions to right hand side
+    # note: the negative was already included in the precomputation for the freestream.
+    RHS .+= b_bf
+
+    # add wake vortex sheet contributions to right hand side
+    # note: the subtraction was not included in the other coefficients in the precomputation, so we need to subract here
+    RHS .-= A_bw * gamw
+
+    # add rotor source sheet contributions to right hand side
+    # note: the subtraction was not included in the other coefficients in the precomputation, so we need to subract here
+    for jrotor in 1:length(A_br)
+        # get induced velocity in the x-direction
+        RHS .-= A_br[jrotor] * view(sigr, :, jrotor)
     end
 
     return nothing
@@ -180,6 +194,7 @@ end
 #                                                                    #
 ######################################################################
 
+#TODO; need to check that RHS isn't overwritten here, or if it is, need to make sure that doesn't mess things up elsewhere
 """
 Given the original system of equations LHS*mu = RHS, it converts it into its
 equivalent least-squares problem by prescribing the strengths of the
@@ -260,13 +275,13 @@ function prep_leastsquares(
     n = length(RHS)
     npres = length(prescribedpanels)
 
-    Gred = zeros(T, n, n - npres)
-    Glsq = zeros(T, n - npres, n - npres)
-    blsq = zeros(T, n - npres)
+    LHSred = zeros(T, n, n - npres)
+    LHSlsq = zeros(T, n - npres, n - npres)
+    RHSlsq = zeros(T, n - npres)
 
-    prep_leastsquares!(Gred, Glsq, blsq, LHS, RHS, prescribedpanels)
+    prep_leastsquares!(LHSred, LHSlsq, RHSlsq, LHS, RHS, prescribedpanels)
 
-    return Glsq, blsq
+    return LHSlsq, RHSlsq
 end
 
 """
@@ -321,33 +336,57 @@ end
 #---------------------------------#
 #             Solvers             #
 #---------------------------------#
-# TODO: need to think about this in the context of the intitialziation functions. probably can cache most of the matrices here.
-function intialize_body_strengths(panels, Vs; prescribedpanels=[(1, 0.0)])
+function solve_body_strengths(
+    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2}, prescribedpanels
+) where {T1,T2}
+    T = promote_type(T1, T2)
 
-    # - Set up raw Matrices - #
-    LHS = dt.init_body_lhs(panels)
-    RHS = dt.gen_body_rhs(panels.normal, Vs)
-
-    # - Adding Kutta Condition - #
-    dt.body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=true)
-
-    # - Prepping for Least Sqaures Solve - #
-    LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
-
-    mu = mured2mu(LHSlsq \ RHSlsq, prescribedpanels)
+    mu = zeros(T, size(RHS, 1))
+    solve_body_strengths!(mu, LHS, RHS, prescribedpanels)
 
     return mu
 end
 
-function solve_body_strengths(mu, LHS, panels, Vs; prescribedpanels=[(1, 0.0)])
-
-    # - Set up raw Matrices - #
-    RHS = dt.gen_body_rhs(panels.normal, Vs)
-
-    # - Prepping for Least Sqaures Solve - #
+function solve_body_strengths!(mu, LHS, RHS, prescribedpanels)
     LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
 
-    mured2mu!(mu, LHSlsq \ RHSlsq, prescribedpanels)
+    mured = LHSlsq \ RHSlsq
+
+    mured2mu!(mu, mured, prescribedpanels)
+
+    return nothing
+end
+
+#TODO: for when cache is implemented
+# function solve_body_strengths!(mu, body_system_matrices)
+
+#     # - Extract Matrices - #
+#     (; LHS, LHSred, LHSlsq, RHS, RHSlsq, prescribedpanels) = body_system_matrices
+
+#     # - Prepping for Least Sqaures Solve - #
+#     prep_leastsquares!(LHSred, LHSlsq, RHSlsq, LHS, RHS, prescribedpanels)
+
+#     mured = LHSlsq \ RHSlsq
+
+#     mured2mu!(mu, mured, prescribedpanels)
+
+#     return nothing
+# end
+
+#---------------------------------#
+#            Post Solve           #
+#---------------------------------#
+function update_stagnation_point_index!(mu, prescribedpanels; prescribedstrength=0.0)
+
+    ## -- find the index at which the sign of mu changes -- ##
+
+    # check that the sign actually changes
+    if !all(sign.(mu) .== 1.0) && !all(sign.(mu) .== -1.0)
+        # find the change in sign
+
+        # set that index to be the prescribed panel index
+        prescribedpanels[1] = (stagidx, prescribedstrength)
+    end
 
     return nothing
 end
