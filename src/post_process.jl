@@ -126,9 +126,14 @@ function post_process(states, inputs)
         )
     end
 
+    ## -- Surface Velocity on Bodies -- ##
+    body_surface_velocity, duct_inner_vs, duct_outer_vs, hub_vs, vtot_on_body, vsfromvinf, vsfrombodypanels, vsfromTEpanels, vsfromgradmu, vsfromwake, vsfromrotors = get_body_vs(
+        iv.mub, iv.gamw, iv.sigr, inputs
+    )
+
     ## -- Pressure on Bodies -- ##
-    duct_inner_cp, duct_outer_cp, hub_cp, duct_inner_vs, duct_outer_vs, hub_vs, duct_inner_x, duct_outer_x, hub_x = get_body_cps(
-        iv.gamb,
+    body_cp, duct_inner_cp, duct_outer_cp, hub_cp, body_x, duct_inner_x, duct_outer_x, hub_x = get_body_cps(
+        body_surface_velocity,
         iv.Gamr,
         iv.sigr,
         iv.Wm_rotor,
@@ -266,6 +271,15 @@ function post_process(states, inputs)
         hub_vs,
         hub_cp,
         hub_x,
+        #individual body velocity contributions
+        body_surface_velocity,
+        vtot_on_body,
+        vsfromvinf,
+        vsfrombodypanels,
+        vsfromTEpanels,
+        vsfromgradmu,
+        vsfromwake,
+        vsfromrotors,
         # - Body Wake Values - #
         # surface velocities and pressures
         ductwake_vs,
@@ -308,8 +322,126 @@ function post_process(states, inputs)
         induced_efficiency,
         ideal_efficiency,
     )
+end
 
-    return out
+######################################################################
+#                                                                    #
+#                        Velocity Functions                          #
+#                                                                    #
+######################################################################
+
+function get_body_vs(mub, gamw, sigr, inputs)
+    # - rename for convenience - #
+    (; body_doublet_panels, A_br, A_bw) = inputs
+    nrotor = size(sigr, 2)
+
+    # - Influence from Freestream - #
+    Vinf = inputs.Vinf * [1.0 0.0] # axisymmetric, so no radial component
+    Vinfmat = repeat(Vinf, body_doublet_panels.npanels) # need velocity on each panel
+
+    ## -- Velocity Contributions from body -- ##
+
+    # - Body-induced Surface Velocity - #
+    Vb = vfromdoubletpanels(
+        body_doublet_panels.controlpoint, body_doublet_panels.nodes, mub
+    )
+
+    # - "Wake"-induced Surface Velocity - #
+    Vb_TE = vfromTE(
+        body_doublet_panels.controlpoint,
+        body_doublet_panels.TEnodes,
+        mub,
+    )
+
+    # - ∇μ/2 surface velocity - #
+    Vb_gradmu = vfromgradmu(body_doublet_panels, mub)
+
+    ## -- Velocity Contributions from rotors and wake -- ##
+    # - wake velocity components - #
+    Vw = vfromvortexpanels(
+        inputs.body_doublet_panels.controlpoint,
+        inputs.wake_vortex_panels.controlpoint,
+        inputs.wake_vortex_panels.len,
+        gamw,
+    )
+
+    # - rotor velocity components - #
+    Vr = similar(Vw) .= 0.0
+    for jrotor in 1:nrotor
+        vfromsourcepanels!(
+            Vr,
+            inputs.body_doublet_panels.controlpoint,
+            inputs.rotor_source_panels[jrotor].controlpoint,
+            inputs.rotor_source_panels[jrotor].len,
+            sigr[:, jrotor],
+        )
+    end
+
+    ## -- Total Velocity -- ##
+    #theoretically, Vtot dot nhat should be zero and Vtot dot that should be norm(Vtot)
+    Vtot = Vinfmat .+ Vb .+ Vb_TE .+ Vb_gradmu .+ Vw .+ Vr
+
+    # - Get magnitude and split - #
+    vs_body = norm.(eachrow(Vtot))
+
+    vsdi, vsdo, vsh, _, _, _ = split_bodies(vs_body, body_doublet_panels; duct=true)
+
+    return vs_body, vsdi, vsdo, vsh, Vtot, Vinfmat, Vb, Vb_TE, Vb_gradmu, Vw, Vr
+end
+
+"""
+Calculate tangential velocity for a given net circulation and radial location
+"""
+function calculate_vtheta(Gamma_tilde, r)
+    T = promote_type(eltype(Gamma_tilde), eltype(r))
+    vtheta = zeros(eltype(T), length(r))
+
+    for (i, (gti, ri)) in enumerate(zip(Gamma_tilde, r))
+        if isapprox(ri, 0.0)
+            vtheta[i] = 0.0
+        else
+            vtheta[i] = gti ./ (2.0 * pi * ri)
+        end
+    end
+
+    return vtheta
+end
+
+"""
+Calculate the induced velocities on one of the body wakes (unit velocity inputs determine which one)
+"""
+function calculate_induced_velocities_on_bodywake(
+    vx_w, vr_w, gamw, vx_r, vr_r, sigr, vx_b, vr_b, mub, vx_bte, vr_bte, TEidxs, Vinf
+)
+
+    # problem dimensions
+    nrotor = size(sigr, 2) # number of rotors
+    np = size(vx_b, 1) # number of panels in bodywake
+
+    # initialize outputs
+    vx = Vinf*ones(eltype(gamw), np) # axial induced velocity
+    vr = zeros(eltype(gamw), np) # radial induced velocity
+
+    # add body induced velocities
+    @views vx[:] .+= vx_b * mub
+    @views vr[:] .+= vr_b * mub
+
+    # add body TE induced velocities
+    @views vx[:] .+= sum(vx_bte * mub[TEidxs]; dims=2)
+    @views vr[:] .+= sum(vr_bte * mub[TEidxs]; dims=2)
+
+    # add wake induced velocities
+    @views vx[:] .+= vx_w * gamw
+    @views vr[:] .+= vr_w * gamw
+
+    # add rotor induced velocities
+    for jrotor in 1:nrotor
+        @views vx[:] .+= vx_r[jrotor] * sigr[:, jrotor]
+        @views vr[:] .+= vr_r[jrotor] * sigr[:, jrotor]
+    end
+
+    # return raw induced velocities
+    return vx, vr
 end
 
 ######################################################################
@@ -377,8 +509,8 @@ function calculate_body_delta_cp!(
         )
 
         # assemble change in cp due to enthalpy and entropy behind rotor(s)
-        cp[hidr[ir]] .+= delta_cp(Htilde[1, ir], Stilde[1, ir], v_theta_hub, Vref)
         cp[didr[ir]] .+= delta_cp(Htilde[end, ir], Stilde[end, ir], v_theta_duct, Vref)
+        cp[hidr[ir]] .+= delta_cp(Htilde[1, ir], Stilde[1, ir], v_theta_hub, Vref)
     end
 
     return nothing
@@ -418,59 +550,21 @@ formulation taken from DFDC source code. TODO: derive where the expressions came
 
 """
 function get_body_cps(
-    gamb, Gamr, sigr, Vm_rotor, Vinf, Vref, B, Omega, dwi, hwi, body_panels, isduct
+    Vs, Gamr, sigr, Vm_rotor, Vinf, Vref, B, Omega, didr, hidr, body_doublet_panels, isduct
 )
 
-    # - Split body strengths into inner/outer duct and hub - #
-    gamdi, gamdo, gamh, xdi, xdo, xh = split_bodies(gamb, body_panels; duct=isduct)
-
     # - Calculate standard pressure coefficient expression - #
-    cpductinner = steady_cp(gamdi, Vinf, Vref)
-    cpductouter = steady_cp(gamdo, Vinf, Vref)
-    cphub = steady_cp(gamh, Vinf, Vref)
+    cp = steady_cp(Vs, Vinf, Vref)
 
     # - add the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
     calculate_body_delta_cp!(
-        cpductinner, cphub, Gamr, sigr, Vm_rotor, Vref, Omega, B, body_panels, dwi, hwi
+        cp, Gamr, sigr, Vm_rotor, Vref, Omega, B, body_doublet_panels, didr, hidr
     )
 
-    return cpductinner, cpductouter, cphub, gamdi, gamdo, gamh, xdi, xdo, xh
-end
+    # - Split body strengths into inner/outer duct and hub - #
+    cpdi, cpdo, cph, xdi, xdo, xh = split_bodies(cp, body_doublet_panels; duct=isduct)
 
-"""
-Calculate the induced velocities on one of the body wakes (unit velocity inputs determine which one)
-"""
-function calculate_induced_velocities_on_bodywake(
-    vx_w, vr_w, gamw, vx_r, vr_r, sigr, vx_b, vr_b, gamb
-)
-
-    # problem dimensions
-    _, nrotor = size(sigr) # number of rotors
-    nwake, _ = size(gamw) # number of wake sheets
-    np, _ = size(vx_b[1])
-
-    # initialize outputs
-    vx = zeros(eltype(gamw), np) # axial induced velocity
-    vr = zeros(eltype(gamw), np) # radial induced velocity
-
-    # add body induced velocities
-    @views vx[:] .+= vx_b[1] * gamb
-    @views vr[:] .+= vr_b[1] * gamb
-
-    # add wake induced velocities
-    for jwake in 1:nwake
-        @views vx[:] .+= vx_w[jwake] * gamw[jwake, :]
-        @views vr[:] .+= vr_w[jwake] * gamw[jwake, :]
-    end
-
-    # add rotor induced velocities
-    for jrotor in 1:nrotor
-        @views vx[:] .+= vx_r[jrotor] * sigr[:, jrotor]
-        @views vr[:] .+= vr_r[jrotor] * sigr[:, jrotor]
-    end
-
-    # return raw induced velocities
-    return vx, vr
+    return cp, cpdi, cpdo, cph, body_doublet_panels.controlpoint[:, 1], xdi, xdo, xh
 end
 
 """
@@ -503,20 +597,19 @@ function get_bodywake_cps(
 
     # get induced velocities
     vx_bodywake, vr_bodywake = calculate_induced_velocities_on_bodywake(
-        vx_w, vr_w, gamw, vx_r, vr_r, sigr, vx_b, vr_b, gamb
+        vx_w, vr_w, gamw, vx_r, vr_r, sigr, vx_b, vr_b, mub, vx_bte, vr_bte, TEidxs, Vinf
     )
 
     # get "surface" velocities
-    vs =
-        (vx_bodywake .+ Vinf) .* cos.(panels.panel_angle) .+
-        vr_bodywake .* sin.(panels.panel_angle)
+    Vmat = [vx_bodywake vr_bodywake]
+    vs = [dot(v, t) for (v, t) in zip(eachrow(Vmat), panels.tangent)]
 
     # - Get steady pressure coefficients - #
     cp_steady = steady_cp(vs, Vinf, Vref)
 
     # - Get delta cp - #
     deltacp = calculate_bodywake_delta_cp(
-        Gamr, sigr, Vm_rotor, Vref, Omega, B, panels.panel_center[:, 2]; body=body
+        Gamr, sigr, Vm_rotor, Vref, Omega, B, panels.controlpoint[:, 2]; body=body
     )
 
     return cp_steady .+ deltacp, vs
@@ -855,7 +948,7 @@ function get_intermediate_values(states, inputs)
         mub,
         inputs.vx_rbte,
         inputs.vr_rbte,
-        inputs.body_doublet_panels.endpointidxs;
+        (p->p.idx).(inputs.body_doublet_panels.TEnodes);
         debug=true,
     )
 

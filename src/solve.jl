@@ -200,7 +200,7 @@ function update_strengths!(states, inputs, p)
     # - Get velocities on wake panels - #
     Wm_wake = calculate_wake_velocities(gamw, sigr, mub, inputs)
 
-    # - Generate raw RHS for linear solve - #
+    # - Generate raw RHS, viz. velocities on body, (before updating state dependencies) - #
     RHS = update_RHS(inputs.b_bf, inputs.A_bw, gamw, inputs.A_br, sigr)
 
     # - Calculate body vortex strengths (before updating state dependencies) - #

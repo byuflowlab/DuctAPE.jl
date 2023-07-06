@@ -60,11 +60,13 @@ function calculate_induced_velocities_on_rotors(
                 @views vrb[:, irotor] .+= vr_rb[irotor] * mub
             end
 
-            @views vx .+= sum(vx_rbte[irotor] * mub[TEidxs]; dims=2)
-            @views vr .+= sum(vr_rbte[irotor] * mub[TEidxs]; dims=2)
+            #note: v?_rbte[irotor] should have been defined as zeros for endpoints that are not coincident.
+            @views vx .+= vx_rbte[irotor] * mub[TEidxs]
+            @views vr .+= vr_rbte[irotor] * mub[TEidxs]
+
             if debug
-                @views vxb .+= sum(vx_rbte[irotor] * mub[TEidxs]; dims=2)
-                @views vrb .+= sum(vr_rbte[irotor] * mub[TEidxs]; dims=2)
+                @views vxb .+= vx_rbte[irotor] * mub[TEidxs]
+                @views vrb .+= vr_rbte[irotor] * mub[TEidxs]
             end
         end
 
@@ -153,7 +155,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, mub, inputs)
         mub,
         inputs.vx_rbte,
         inputs.vr_rbte,
-        inputs.body_doublet_panels.endpointidxs,
+        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
     )
 
     # - Reframe rotor velocities into blade element frames

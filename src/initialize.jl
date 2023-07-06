@@ -278,7 +278,7 @@ function precomputed_inputs(
     Nsys = size(A_bb, 1)
     Npp = length(prescribedpanels)
     body_system_matrices = (;
-        cache=false
+        cache=false,
         # LHS=A_bb,
         # LHSred=zeros(TF, Nsys, Nsys - Npp),
         # LHSlsq=zeros(TF, Nsys - Npp, Nsys - Npp),
@@ -299,7 +299,6 @@ function precomputed_inputs(
 
     ##### ----- Induced Velcocities on Rotors ----- #####
     # - rotor to rotor - #
-
     v_rr = [
         influencefromsourcepanels(
             rotor_source_panels[i].controlpoint,
@@ -341,8 +340,7 @@ function precomputed_inputs(
     v_rbte = [
         influencefromTE(
             rotor_source_panels[i].controlpoint,
-            body_doublet_panels.endpoints,
-            body_doublet_panels.endpointidxs,
+            body_doublet_panels.TEnodes,
             ones(TF, body_doublet_panels.npanels),
         ) for i in 1:length(rotor_source_panels)
     ]
@@ -387,8 +385,7 @@ function precomputed_inputs(
     # - body TE to wake - #
     v_wbte = influencefromTE(
         wake_vortex_panels.controlpoint,
-        body_doublet_panels.endpoints,
-        body_doublet_panels.endpointidxs,
+        body_doublet_panels.TEnodes,
         ones(TF, body_doublet_panels.npanels),
     )
 
@@ -443,8 +440,7 @@ function precomputed_inputs(
     # - body TE to ductwake - #
     v_dwbte = influencefromTE(
         duct_wake_panels.controlpoint,
-        body_doublet_panels.endpoints,
-        body_doublet_panels.endpointidxs,
+        body_doublet_panels.TEnodes,
         ones(TF, body_doublet_panels.npanels),
     )
 
@@ -504,8 +500,7 @@ function precomputed_inputs(
     # - body TE to hubwake - #
     v_hwbte = influencefromTE(
         hub_wake_panels.controlpoint,
-        body_doublet_panels.endpoints,
-        body_doublet_panels.endpointidxs,
+        body_doublet_panels.TEnodes,
         ones(TF, body_doublet_panels.npanels),
     )
 

@@ -87,11 +87,11 @@ function calculate_induced_velocities_on_wakes(
             @views vrb .+= vr_wb * mub
         end
 
-        @views vx .+= sum(vx_wbte * mub[TEidxs]; dims=2)
-        @views vr .+= sum(vr_wbte * mub[TEidxs]; dims=2)
+        @views vx .+= vx_wbte * mub[TEidxs]
+        @views vr .+= vr_wbte * mub[TEidxs]
         if debug
-            @views vxb .+= sum(vx_wbte * mub[TEidxs]; dims=2)
-            @views vrb .+= sum(vr_wbte * mub[TEidxs]; dims=2)
+            @views vxb .+= vx_wbte * mub[TEidxs]
+            @views vrb .+= vr_wbte * mub[TEidxs]
         end
     end
 
@@ -146,7 +146,7 @@ function calculate_wake_velocities(gamw, sigr, mub, inputs)
         mub,
         inputs.vx_wbte,
         inputs.vr_wbte,
-        inputs.body_doublet_panels.endpointidxs,
+        (p->p.idx).(inputs.body_doublet_panels.TEnodes),
     )
 
     # - Reframe rotor velocities into blade element frames

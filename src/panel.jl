@@ -25,7 +25,8 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
     controlpoint = zeros(TF, totpanel, 2)
     nodes = zeros(TF, totpanel, 2, 2) # panel, edge, x-r
     endpoints = zeros(TF, length(coordinates), 2, 2) # TE, upper-lower, x-r
-    endpointidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx
+    # endpointidxs = ones(Int, length(coordinates), 2, 2) # lower idx, upper idx, lower or upper
+    endpointidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx, lower or upper
     panel_length = zeros(TF, totpanel)
     normal = zeros(TF, totpanel, 2)
     tangent = zeros(TF, totpanel, 2)
@@ -46,11 +47,15 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         ## -- Loop Through Coordinates -- ##
         for ip in 1:npanel[ib]
             if ip == 1
+                #lower
                 endpoints[ib, 1, :] = [x[ip] r[ip]]
+                # endpointidxs[ib, 1, :] = [pidx; -1]
                 endpointidxs[ib, 1] = pidx
             elseif ip == npanel[ib]
+                #upper
                 endpoints[ib, 2, :] = [x[ip + 1] r[ip + 1]]
                 endpointidxs[ib, 2] = pidx
+                # endpointidxs[ib, 2, :] = [pidx; 1]
             end
 
             # Get nodes (panel edges)
@@ -73,14 +78,25 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         end
     end
 
+    TEnodes = []
+    for t in 1:length(endpoints[:, 1, 1])
+        if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=1e1 * eps())
+            push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=-1)) # lower is negative
+            push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=1)) #upper is positive
+        end
+    end
+
     return (;
         controlpoint,
         nodes,
         len=panel_length,
         normal,
         tangent,
+        # endpoints=reshape(endpoints, (length(npanel)*2, 2)),
         endpoints,
+        # endpointidxs=reshape(endpointidxs, (length(npanel)*2,2)),
         endpointidxs,
+        TEnodes,
         npanels=totpanel,
     )
 end

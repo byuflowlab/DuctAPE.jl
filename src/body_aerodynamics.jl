@@ -117,34 +117,21 @@ end
 adds wake panel influence (from trailing edge panels) to the LHS matrix for the Kutta condition
 """
 function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
-    (; endpoints, controlpoint, normal) = panels
+    (; TEnodes, controlpoint, normal) = panels
 
-    for (i, (te1, te2)) in
-        enumerate(zip(eachrow(endpoints[:, 1, :]), eachrow(endpoints[:, 2, :])))
+    for (i, te) in enumerate(TEnodes)
 
         # check that trailing edge points are coincident
-        if norm(te2 - te1) < tol
-            idxl = panels.endpointidxs[i, 1]
-            idxu = panels.endpointidxs[i, 2]
 
-            # Loop through control points being influenced
-            for (m, (cp, nhat)) in enumerate(zip(eachrow(controlpoint), eachrow(normal)))
+        # Loop through control points being influenced
+        for (m, (cp, nhat)) in enumerate(zip(eachrow(controlpoint), eachrow(normal)))
 
-                # influence due to lower TE
-                xi, rho, k2, rj = calculate_xrm(te1, cp)
-                vx = -vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
-                vr = -vortex_ring_vr(xi, rho, k2, rj)
-                LHS[m, idxl] -= dot([vx; vr], nhat)
+            # influence due TE node
+            xi, rho, k2, rj = calculate_xrm(te.pos, cp)
+            vx = vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
+            vr = vortex_ring_vr(xi, rho, k2, rj)
 
-                # influence due to upper TE
-                xi, rho, k2, rj = calculate_xrm(te2, cp)
-                vx = vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
-                vr = vortex_ring_vr(xi, rho, k2, rj)
-                LHS[m, idxu] -= dot([vx; vr], nhat)
-            end
-
-        elseif verbose
-            @warn "Trailing edge points for body $i are not coincident, skipping Kutta condtition."
+            LHS[m, te.idx] -= dot(te.sign*[vx; vr], nhat)
         end
     end
 
