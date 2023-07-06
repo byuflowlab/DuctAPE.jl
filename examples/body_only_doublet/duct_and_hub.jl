@@ -113,7 +113,9 @@ Vb_nokutta = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu_nokutta
 Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
 
 # - "Wake"-induced Surface Velocity - #
-Vb_nokutta_wake = dt.vfromTE(panels.controlpoint, panels.endpoints, panels.endpointidxs, mu_nokutta)
+Vb_nokutta_wake = dt.vfromTE(
+    panels.controlpoint, panels.endpoints, panels.endpointidxs, mu_nokutta
+)
 Vb_wake = dt.vfromTE(panels.controlpoint, panels.endpoints, panels.endpointidxs, mu)
 
 # - ∇μ/2 surface velocity - #
@@ -178,3 +180,7 @@ xs = panels.controlpoint[:, 1]
 plot!(pv, xs[41:end], dt.norm.(eachrow(Vtot[41:end, :])) ./ Vinf; label="DuctTAPE")
 
 savefig(pv, savepath * "body-vel-comp.pdf")
+
+ps = plot(; xlabel="x", ylabel="panel strength")
+plot!(ps, xs, mu; seriestype=:scatter)
+savefig(ps, savepath * "body-panel-strengths.pdf")

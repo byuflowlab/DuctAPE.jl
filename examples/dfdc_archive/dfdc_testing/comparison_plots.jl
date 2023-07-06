@@ -80,6 +80,71 @@ function rundt(
     return out, converged_states, inputs, initial_states, convergeflag
 end
 
+function run_nopost(; filename="straightwake.case.jl")
+    println("Setting Up")
+    include(datapath * filename)
+
+    println("Running Analysis")
+
+    converged_states, inputs, initial_states, convergeflag = analyze_propulsor_nopost(
+        duct_coordinates,
+        hub_coordinates,
+        paneling_constants,
+        rotor_parameters,
+        freestream,
+        reference_parameters;
+        debug=false,
+        verbose=true,
+        maximum_linesearch_step_size=1e6,
+        iteration_limit=100,
+    )
+
+    return converged_states, inputs, initial_states
+end
+
+function analyze_propulsor_nopost(
+    duct_coordinates,
+    hub_coordinates,
+    paneling_constants,
+    rotor_parameters,
+    freestream,
+    reference_parameters;
+    debug=false,
+    verbose=false,
+    maximum_linesearch_step_size=1e6,
+    iteration_limit=100,
+)
+
+    # use empty input vector
+    x = Float64[]
+
+    # use default input function
+    fx =
+        x -> (;
+            duct_coordinates,
+            hub_coordinates,
+            paneling_constants,
+            rotor_parameters,
+            freestream,
+            reference_parameters,
+        )
+
+    # convergence flag
+    converged = [false]
+
+    # define parameters
+    p = (; fx, maximum_linesearch_step_size, iteration_limit, converged, debug, verbose)
+
+    # compute various panel and circulation strenghts (updates convergence flag internally)
+    strengths, inputs, initials = dt.solve(x, p)
+    if debug
+        println("NLSolve Complete")
+    end
+
+    # return solution
+    return strengths, inputs, initials, p.converged[1]
+end
+
 function plotgeom(inputs, paneling_constants)
 
     ##### ----- Plot GEOMETRY ----- #####
@@ -370,9 +435,20 @@ function plotbodyaero(out, convergeflag, Vref)
     #save
     savefig(pcp, datapath * "body-pressure.pdf")
 
-    plot(out.body_doublet_panels.controlpoint[:,1], out.mub, seriestype=:scatter, label="body panel strengths")
-    savefig(datapath*"body-panel-strengths.pdf")
+    plot(
+        out.body_doublet_panels.controlpoint[:, 1],
+        out.mub;
+        seriestype=:scatter,
+        label="body panel strengths",
+    )
+    savefig(datapath * "body-panel-strengths.pdf")
     return nothing
 end
 
-out, inputs = runandplot(; filename="straightwake.case.jl")
+# out, inputs = runandplot(; filename="straightwake.case.jl")
+# states, inputs, initstates =  @time run_nopost(; filename="straightwake.case.jl")
+
+println("Post Processing")
+out = dt.post_process(states, inputs)
+mub, gamw, Gamr, sigr = dt.extract_state_variables(states,inputs)
+plotbodyaero(out, true, inputs.reference_parameters.Vref)

@@ -9,6 +9,8 @@ savepath = datapath
 include(project_dir * "/visualize/visualize_geometry.jl")
 include(project_dir * "/visualize/plots_default_new.jl")
 
+include(datapath * "run_body_only.jl")
+
 using DuctTAPE
 const dt = DuctTAPE
 
@@ -39,6 +41,23 @@ function init_states(inputs)
     return dt.initialize_states(inputs)
 end
 
+function check_mu_init(inputs)
+    states = init_states(inputs)
+
+    mub, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+
+    panels = inputs.body_doublet_panels
+
+    mu = run_body_only(panels, inputs.Vinf, inputs.prescribedpanels)
+
+    println("mu_init = ", mub)
+    println("mu_body_only = ", mu)
+    println("mu_init - mu_body_only: ")
+    display(mub .- mu)
+
+    return nothing
+end
+
 function plot_inputs(inputs)
     println("\tplotting body")
     # plot body panels
@@ -48,7 +67,7 @@ function plot_inputs(inputs)
         nodes=true,
         normals=true,
         normal_scaling=0.02,
-        prescribedpanels=inputs.body_system_matrices.prescribedpanels,
+        prescribedpanels=inputs.prescribedpanels,
         savepath=savepath,
         filename="test-body-geometry.pdf",
     )
@@ -90,7 +109,7 @@ function plot_inputs(inputs)
         wakeinterfaceid=reduce(
             vcat, [inputs.ductwakeinterfaceid, inputs.hubwakeinterfaceid]
         ),
-        prescribedpanels=inputs.body_system_matrices.prescribedpanels,
+        prescribedpanels=inputs.prescribedpanels,
         savepath=savepath,
         filename="test-all-geometry.pdf",
     )
@@ -104,6 +123,7 @@ inputs = init_inputs(;
 )
 println("Plotting")
 plot_inputs(inputs)
-states = init_states(inputs)
-out = dt.post_process(states, inputs)
+check_mu_init(inputs)
+# states = init_states(inputs)
+# out = dt.post_process(states, inputs)
 ;
