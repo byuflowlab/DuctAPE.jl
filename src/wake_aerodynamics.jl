@@ -17,8 +17,8 @@ end
 #     # get dimensions
 #     nx = length(gamw[1, :])
 #     nr = length(gamw[:, 1]) - 1
-#     vxw = zeros(TF, nr, nx) # axial induced velocity
-#     vrw = zeros(TF, nr, nx) # radial induced velocity
+#     vxw_wake = zeros(TF, nr, nx) # axial induced velocity
+#     vrw_wake = zeros(TF, nr, nx) # radial induced velocity
 #     vxbar = similar(gamw) .= 0.0
 #     vrbar = similar(gamw) .= 0.0
 
@@ -28,16 +28,16 @@ end
 #         # - Loop through wake vortex sheets - #
 #         # add wake induced velocities
 #         for jwake in 1:nr
-#             @views vxw[:, iplane] .+= vx_ww[iplane,jwake] * gamw[jwake, :]
-#             @views vrw[:, iplane] .+= vr_ww[iplane,jwake] * gamw[jwake, :]
+#             @views vxw_wake[:, iplane] .+= vx_ww[iplane,jwake] * gamw[jwake, :]
+#             @views vrw_wake[:, iplane] .+= vr_ww[iplane,jwake] * gamw[jwake, :]
 #         end
 
 #     end
 
 #     # - Average velocities - #
 #     for iplane in 1:nx
-#         vxbar[:, iplane] = radially_average_velocity(vxw[:, iplane], 1)
-#         vrbar[:, iplane] = radially_average_velocity(vrw[:, iplane], 1)
+#         vxbar[:, iplane] = radially_average_velocity(vxw_wake[:, iplane], 1)
+#         vrbar[:, iplane] = radially_average_velocity(vrw_wake[:, iplane], 1)
 #     end
 
 #     return vxbar, vrbar
@@ -65,68 +65,68 @@ function calculate_induced_velocities_on_wakes(
     nrotor = size(sigr, 2)
 
     # initialize outputs
-    vx = similar(gamw) .= 0 # axial induced velocity
-    vr = similar(gamw) .= 0 # radial induced velocity
+    vx_wake = similar(gamw) .= 0 # axial induced velocity
+    vr_wake = similar(gamw) .= 0 # radial induced velocity
 
     if debug
         # initialize outputs
-        vxb = similar(gamw) .= 0 # axial induced velocity
-        vrb = similar(gamw) .= 0 # radial induced velocity
-        vxr = similar(gamw) .= 0 # axial induced velocity
-        vrr = similar(gamw) .= 0 # radial induced velocity
-        vxw = similar(gamw) .= 0 # axial induced velocity
-        vrw = similar(gamw) .= 0 # radial induced velocity
+        vxb_wake = similar(gamw) .= 0 # axial induced velocity
+        vrb_wake = similar(gamw) .= 0 # radial induced velocity
+        vxr_wake = similar(gamw) .= 0 # axial induced velocity
+        vrr_wake = similar(gamw) .= 0 # radial induced velocity
+        vxw_wake = similar(gamw) .= 0 # axial induced velocity
+        vrw_wake = similar(gamw) .= 0 # radial induced velocity
     end
 
     # add body induced velocities
     if mub != nothing
-        @views vx .+= vx_wb * mub
-        @views vr .+= vr_wb * mub
+        @views vx_wake .+= vx_wb * mub
+        @views vr_wake .+= vr_wb * mub
         if debug
-            @views vxb .+= vx_wb * mub
-            @views vrb .+= vr_wb * mub
+            @views vxb_wake .+= vx_wb * mub
+            @views vrb_wake .+= vr_wb * mub
         end
 
-        @views vx .+= vx_wbte * mub[TEidxs]
-        @views vr .+= vr_wbte * mub[TEidxs]
+        @views vx_wake .+= vx_wbte * mub[TEidxs]
+        @views vr_wake .+= vr_wbte * mub[TEidxs]
         if debug
-            @views vxb .+= vx_wbte * mub[TEidxs]
-            @views vrb .+= vr_wbte * mub[TEidxs]
+            @views vxb_wake .+= vx_wbte * mub[TEidxs]
+            @views vrb_wake .+= vr_wbte * mub[TEidxs]
         end
     end
 
     # add rotor induced velocities
     for jrotor in 1:nrotor
-        @views vx .+= vx_wr[jrotor] * sigr[:, jrotor]
-        @views vr .+= vr_wr[jrotor] * sigr[:, jrotor]
+        @views vx_wake .+= vx_wr[jrotor] * sigr[:, jrotor]
+        @views vr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
         if debug
-            @views vxr .+= vx_wr[jrotor] * sigr[:, jrotor]
-            @views vrr .+= vr_wr[jrotor] * sigr[:, jrotor]
+            @views vxr_wake .+= vx_wr[jrotor] * sigr[:, jrotor]
+            @views vrr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
         end
     end
 
     # add wake induced velocities
-    @views vx .+= vx_ww * gamw
-    @views vr .+= vr_ww * gamw
+    @views vx_wake .+= vx_ww * gamw
+    @views vr_wake .+= vr_ww * gamw
     if debug
-        @views vxw .+= vx_ww * gamw
-        @views vrw .+= vr_ww * gamw
+        @views vxw_wake .+= vx_ww * gamw
+        @views vrw_wake .+= vr_ww * gamw
     end
 
     # return raw induced velocities
     if debug
-        return vx, vr, vxb, vrb, vxr, vrr, vxw, vrw
+        return vx_wake, vr_wake, vxb_wake, vrb_wake, vxr_wake, vrr_wake, vxw_wake, vrw_wake
     else
-        return vx, vr
+        return vx_wake, vr_wake
     end
 end
 
 function reframe_wake_velocities(vx_wake, vr_wake, Vinf)
     #add freestream to induced axial velocity
-    Vx = vx_wake .+ Vinf
+    Vx_wake = vx_wake .+ Vinf
 
     # return meridional velocities
-    return sqrt.(Vx .^ 2 .+ vr_wake .^ 2)
+    return sqrt.(Vx_wake .^ 2 .+ vr_wake .^ 2)
 end
 
 """
@@ -215,26 +215,10 @@ end
 Calculate wake vortex strengths
 
 """
-function calculate_wake_vortex_strengths!(gamw, Gamr, Vm, inputs; debug=false)
+function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=false)
 
     # - get problem sizes - #
     nw = length(gamw)
-
-    # # get induced velocities from body and rotor on wake panels.
-    # vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
-    #     inputs.vx_ww,
-    #     inputs.vr_ww,
-    #     gamw,
-    #     inputs.vx_wr,
-    #     inputs.vr_wr,
-    #     sigr,
-    #     inputs.vx_wb,
-    #     inputs.vr_wb,
-    #     mub
-    # )
-
-    # # reframe velocities to get meridional velocity on wake panels
-    # Vm = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)
 
     # get net circulation of upstream rotors
     Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
@@ -250,7 +234,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Vm, inputs; debug=false)
     for iw in 1:nw
 
         # calculate the wake vortex strength
-        if Vm[iw] <= 0.0
+        if Wm_wake[iw] <= 0.0
             # avoid division by zero
             gamw[iw] = 0.0
         else
@@ -261,7 +245,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Vm, inputs; debug=false)
                     inputs.wakeK[iw] *
                     deltaGamma2[inputs.rotorwakeid[iw, 1], inputs.rotorwakeid[iw, 2]] +
                     deltaH[inputs.rotorwakeid[iw], inputs.rotorwakeid[iw, 2]]
-                ) / Vm[iw]
+                ) / Wm_wake[iw]
         end
     end
 
@@ -296,13 +280,13 @@ function initialize_wake_vortex_strengths(Vinf, Gamr, Omega, B, rotor_panel_edge
     # get enthalpy jumps
     H_tilde = calculate_enthalpy_jumps(Gamr, Omega, B)
 
-    # initialize vm with freestream and rotation assuming open rotor
-    vm = marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
+    # initialize Wm_wake with freestream and rotation assuming open rotor
+    Wm_wake = marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
 
     # return initialized wake vortex strengths
-    gwhub = vm[1, :] .- Vinf
-    gw = vm[2:end, :] .- vm[1:(end - 1), :]
-    gwduct = Vinf .- vm[end, :]
+    gwhub = Wm_wake[1, :] .- Vinf
+    gw = Wm_wake[2:end, :] .- Wm_wake[1:(end - 1), :]
+    gwduct = Vinf .- Wm_wake[end, :]
     return [gwhub'; gw; gwduct']
 end
 
@@ -318,7 +302,7 @@ function marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
     nr, nrotor = size(Gamma_tilde)
 
     #initialize
-    Vm = zeros(TF, nr, nrotor)
+    Wm_wake = zeros(TF, nr, nrotor)
 
     # Loop through rotors
     for irotor in 1:nrotor
@@ -337,7 +321,7 @@ function marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
 
                 #otherwise, we just take the differences inside as-is
                 radical =
-                    Vm[ir + 1, irotor]^2 +
+                    Wm_wake[ir + 1, irotor]^2 +
                     (1.0 / (2.0 * pi * rotor_panel_edges[ir, irotor]))^2 *
                     (Gamma_tilde[ir + 1, irotor]^2 - Gamma_tilde[ir, irotor]^2) -
                     2.0 * (H_tilde[ir + 1, irotor] - H_tilde[ir, irotor])
@@ -345,13 +329,13 @@ function marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
 
             # compute the meridional velocity value, avoiding negative square roots and divisions by zero later
             if radical > 0.0
-                Vm[ir, irotor] = sqrt(radical)
+                Wm_wake[ir, irotor] = sqrt(radical)
             else
-                Vm[ir, irotor] = 0.1 * Vinf
+                Wm_wake[ir, irotor] = 0.1 * Vinf
             end
         end
     end
 
-    #Vm should now be in the order of hub to tip
-    return Vm
+    #Wm_wake should now be in the order of hub to tip
+    return Wm_wake
 end

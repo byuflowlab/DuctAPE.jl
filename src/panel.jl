@@ -81,8 +81,8 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
     TEnodes = []
     for t in 1:length(endpoints[:, 1, 1])
         if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=1e1 * eps())
-            push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=-1)) # lower is negative
-            push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=1)) #upper is positive
+            push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=1)) # lower is negative
+            push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=-1)) #upper is positive
         end
     end
 

@@ -142,11 +142,11 @@ end
 """
 """
 function constant_vortex_band_induced_velocity!(
-    vel, node, influence_panel_length, fieldpoint, gamma=1.0
+    vel, controlpoint, influence_panel_length, fieldpoint, gamma=1.0
 )
 
     # get relative geometry
-    xi, rho, m, rj = calculate_xrm(node, fieldpoint)
+    xi, rho, m, rj = calculate_xrm(controlpoint, fieldpoint)
 
     # get unit induced velocities of vortex ring
     vel[1] += vortex_ring_vx(xi, rho, m, rj, influence_panel_length)#length needed here in case of self-induced case
@@ -161,7 +161,7 @@ end
 """
 """
 function constant_vortex_band_induced_velocity(
-    node::AbstractVector{T1},
+    controlpoint::AbstractVector{T1},
     influence_panel_length::T2,
     fieldpoint::AbstractVector{T3},
     gamma::T4=1.0,
@@ -173,7 +173,7 @@ function constant_vortex_band_induced_velocity(
 
     # get velocities
     constant_vortex_band_induced_velocity!(
-        vel, node, influence_panel_length, fieldpoint, gamma
+        vel, controlpoint, influence_panel_length, fieldpoint, gamma
     )
 
     return vel
@@ -804,22 +804,22 @@ end
 """
 """
 function freestream_influence_vector(
-    normals::AbstractMatrix{T1}, Vs::AbstractMatrix{T2}
+    normals::AbstractMatrix{T1}, Vinfmat::AbstractMatrix{T2}
 ) where {T1,T2}
     T = promote_type(T1, T2)
     N = size(normals, 1)
 
     RHS = zeros(T, N)
 
-    freestream_influence_vector!(RHS, normals, Vs)
+    freestream_influence_vector!(RHS, normals, Vinfmat)
 
     return RHS
 end
 
 """
 """
-function freestream_influence_vector!(RHS, normals, Vs)
-    for (i, (n, v)) in enumerate(zip(eachrow(normals), eachrow(Vs)))
+function freestream_influence_vector!(RHS, normals, Vinfmat)
+    for (i, (n, v)) in enumerate(zip(eachrow(normals), eachrow(Vinfmat)))
         RHS[i] -= dot(v, n)
     end
 

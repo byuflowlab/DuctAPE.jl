@@ -131,7 +131,7 @@ function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
             vx = vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
             vr = vortex_ring_vr(xi, rho, k2, rj)
 
-            LHS[m, te.idx] -= dot(te.sign*[vx; vr], nhat)
+            LHS[m, te.idx] += dot(te.sign*[vx; vr], nhat)
         end
     end
 
@@ -363,6 +363,10 @@ end
 #---------------------------------#
 #            Post Solve           #
 #---------------------------------#
+"""
+if using the stagnation point as the point to prescribe to zero, probably want to update the panel being used based on where the stagnation point ends up on each iteration.
+(could also be used for a 1-way boundary layer approximation)
+"""
 function update_stagnation_point_index!(mu, prescribedpanels; prescribedstrength=0.0)
 
     ## -- find the index at which the sign of mu changes -- ##

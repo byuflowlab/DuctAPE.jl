@@ -152,9 +152,7 @@ Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
 # Vb_nokutta_wake = dt.vfromTE(
 # panels.controlpoint, panels.endpoints, panels.endpointidxs, mu_nokutta
 # )
-Vb_wake = dt.vfromTE(
-    panels.controlpoint, panels.endpoints, panels.endpointidxs, mu; verbose=true
-)
+Vb_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, mu; verbose=true)
 
 # - ∇μ/2 surface velocity - #
 Vb_gradmu = dt.vfromgradmu(panels, mu)

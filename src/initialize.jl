@@ -278,7 +278,7 @@ function precomputed_inputs(
     Nsys = size(A_bb, 1)
     Npp = length(prescribedpanels)
     body_system_matrices = (;
-        cache=false,
+        cache=false
         # LHS=A_bb,
         # LHSred=zeros(TF, Nsys, Nsys - Npp),
         # LHSlsq=zeros(TF, Nsys - Npp, Nsys - Npp),

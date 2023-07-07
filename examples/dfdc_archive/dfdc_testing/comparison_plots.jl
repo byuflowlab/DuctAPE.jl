@@ -446,7 +446,7 @@ function plotbodyaero(out, convergeflag, Vref)
 end
 
 # out, inputs = runandplot(; filename="straightwake.case.jl")
-# states, inputs, initstates =  @time run_nopost(; filename="straightwake.case.jl")
+states, inputs, initstates =  @time run_nopost(; filename="straightwake.case.jl")
 
 println("Post Processing")
 out = dt.post_process(states, inputs)
