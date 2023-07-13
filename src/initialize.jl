@@ -121,6 +121,7 @@ function precomputed_inputs(
     if nohub
         rp_hub_coordinates[:, 2] .= rotor_parameters[1].r[1] * rotor_parameters[1].Rtip
     end
+
     t_duct_coordinates, Rtips, Rhubs = place_duct(
         rp_duct_coordinates,
         rp_hub_coordinates,
@@ -132,7 +133,8 @@ function precomputed_inputs(
     # get prescribed panel to be near duct leading edge
     _, leidx = findmin(t_duct_coordinates[:, 1])
     # prescribedpanels = [(leidx, 0.0)]
-    prescribedpanels = [(1, 0.0)]
+    # here prescribed inner duct TE and hub LE panels, arbitrarily chosen
+    prescribedpanels = [(1, 0.0); (length(t_duct_coordinates[:, 1]), 0.0)]
 
     # generate body paneling
     if nohub
@@ -209,16 +211,13 @@ function precomputed_inputs(
     wakeK = get_wake_k(wake_vortex_panels)
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
-    rotorwakeid = ones(Int, paneling_constants.nwake_sheets, num_wake_x_panels, 2)
-    rotorwakeid[:, :, 1] .= range(1, paneling_constants.nwake_sheets)
-    for i in 1:num_wake_x_panels
-        rotorwakeid[:, i, 2] .= findlast(
-            x -> x < wake_vortex_panels.controlpoint[i, 1], rotor_parameters.xrotor
-        )
+    rotorwakeid = ones(Int, wake_vortex_panels.npanels, 2)
+    for i in 1:(paneling_constants.nwake_sheets)
+        rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
     end
-    rotorwakeid = reshape(
-        rotorwakeid, (paneling_constants.nwake_sheets * num_wake_x_panels, 2)
-    )
+    for (i, cp) in enumerate(eachrow(wake_vortex_panels.controlpoint))
+        rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.xrotor)
+    end
 
     # Go through the wake panels and determine the indices that have interfaces with the hub and wake
     hubwakeinterfaceid = 1:(hubTE_index - 1) #first rotor-wake-body interface is at index 1, this is also on the first wake sheet, so the hub trailing edge index in the xwake vector should be (or one away from, need to check) the last interface point
@@ -358,7 +357,7 @@ function precomputed_inputs(
             wake_vortex_panels.controlpoint,
             wake_vortex_panels.len,
             ones(TF, wake_vortex_panels.npanels),
-        ) for i in 1:length(rotor_source_panels), j in 1:length(wake_vortex_panels)
+        ) for i in 1:length(rotor_source_panels)
     ]
 
     # axial components

@@ -161,7 +161,7 @@ function post_process(states, inputs)
         iv.mub,
         inputs.vx_dwbte,
         inputs.vr_dwbte,
-        inputs.body_doublet_panels.endpointidxs,
+        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
         inputs.duct_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -182,9 +182,9 @@ function post_process(states, inputs)
         inputs.vx_hwb,
         inputs.vr_hwb,
         iv.mub,
-        inputs.vx_dwbte,
-        inputs.vr_dwbte,
-        inputs.body_doublet_panels.endpointidxs,
+        inputs.vx_hwbte,
+        inputs.vr_hwbte,
+        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
         inputs.hub_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -347,11 +347,7 @@ function get_body_vs(mub, gamw, sigr, inputs)
     )
 
     # - "Wake"-induced Surface Velocity - #
-    Vb_TE = vfromTE(
-        body_doublet_panels.controlpoint,
-        body_doublet_panels.TEnodes,
-        mub,
-    )
+    Vb_TE = vfromTE(body_doublet_panels.controlpoint, body_doublet_panels.TEnodes, mub)
 
     # - ∇μ/2 surface velocity - #
     Vb_gradmu = vfromgradmu(body_doublet_panels, mub)
@@ -419,7 +415,7 @@ function calculate_induced_velocities_on_bodywake(
     np = size(vx_b, 1) # number of panels in bodywake
 
     # initialize outputs
-    vx = Vinf*ones(eltype(gamw), np) # axial induced velocity
+    vx = Vinf * ones(eltype(gamw), np) # axial induced velocity
     vr = zeros(eltype(gamw), np) # radial induced velocity
 
     # add body induced velocities
@@ -427,8 +423,8 @@ function calculate_induced_velocities_on_bodywake(
     @views vr[:] .+= vr_b * mub
 
     # add body TE induced velocities
-    @views vx[:] .+= sum(vx_bte * mub[TEidxs]; dims=2)
-    @views vr[:] .+= sum(vr_bte * mub[TEidxs]; dims=2)
+    @views vx[:] .+= vx_bte * mub[TEidxs]
+    @views vr[:] .+= vr_bte * mub[TEidxs]
 
     # add wake induced velocities
     @views vx[:] .+= vx_w * gamw
@@ -948,7 +944,7 @@ function get_intermediate_values(states, inputs)
         mub,
         inputs.vx_rbte,
         inputs.vr_rbte,
-        (p->p.idx).(inputs.body_doublet_panels.TEnodes);
+        (p -> p.idx).(inputs.body_doublet_panels.TEnodes);
         debug=true,
     )
 

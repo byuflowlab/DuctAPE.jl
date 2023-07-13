@@ -1,16 +1,16 @@
 """
 This is the function being solved
 """
-function rotor_only_residual!(F, inputs, params)
+function rotor_only_residual!(F, init_states, inputs)
 
     # Initialize outputs
-    states = deepcopy(inputs)
+    states = deepcopy(init_states)
 
-    # - Calculated Updated Gamma and Sigma Values - #
-    update_rotor_states!(states, params)
+    # - Calculated Updated Gamr and sigr Values - #
+    update_rotor_states!(states, inputs)
 
     # - Return Difference in State Variable Values - #
-    @. F = inputs - states
+    @. F = init_states - states
 
     return nothing
 end
@@ -19,19 +19,19 @@ end
  This function wraps the residual function in order to allow for additional parameters as inputs
  params.converged is updated in place in this function.
  """
-function solve_rotor_only(inputs, params)
+function solve_rotor_only(states, inputs)
 
     # - Define closure that allows for parameters - #
-    rwrap(F, inputs) = rotor_only_residual!(F, inputs, params)
+    rwrap(F, states) = rotor_only_residual!(F, states, inputs)
 
     # - Call NLsolve function using AD for Jacobian - #
     #= res is of type NLsolve.SolverResults.
     The zero field contains the "solution" to the non-linear solve.
     The converged() function tells us if the solver converged.
     =#
-    res = NLsolve.nlsolve(
+res = NLsolve.nlsolve(
         rwrap,
-        inputs;
+        states;
         autodiff=:forward,
         method=:newton,
         # iterations=25, #keep iterations low for initial testing/plotting
@@ -42,85 +42,81 @@ function solve_rotor_only(inputs, params)
 
     println("converged? ", converged(res))
     # - Overwrite the convergence flag in the parameters - #
-    params.converged[1] = converged(res)
+    inputs.converged[1] = converged(res)
 
     # - Return the values driving the residual to zero
     return res.zero
 end
 
-function update_rotor_states!(states, params)
+function update_rotor_states!(states, inputs)
 
     # - Unpack - #
-    Gamma, gamma_theta, sigma = extract_rotor_states(states, params)
-    # Gamma, gamma_theta = extract_rotor_states(states, params)
+    Gamr, gamw, sigr = extract_rotor_states(states, inputs)
 
-    wake_vortex_strengths = repeat(gamma_theta; inner=(1, params.nxwake))
+    rpc = inputs.rotor_panel_centers
 
-    rpc = params.rotor_panel_centers
-
-    TF = eltype(Gamma)
+    TF = eltype(Gamr)
 
     # - get the induced velocities at the rotor plane - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        params.blade_elements,
-        Gamma,
-        params.vx_rw,
-        params.vr_rw,
-        wake_vortex_strengths,
-        params.vx_rr,
-        params.vr_rr,
-        sigma,
+        inputs.blade_elements,
+        Gamr,
+        inputs.vx_rw,
+        inputs.vr_rw,
+        gamw,
+        inputs.vx_rr,
+        inputs.vr_rr,
+        sigr,
     )
 
-    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor .+ params.Vinf
-    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wtheta_rotor = vtheta_rotor .- params.blade_elements[1].Omega .* rpc
+    Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
+        vx_rotor, vr_rotor, vtheta_rotor, inputs.Vinf, inputs.blade_elements.Omega, rpc
+    )
 
-    Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+    vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
+        inputs.vx_ww, inputs.vr_ww, gamw, inputs.vx_wr, inputs.vr_wr, sigr
+    )
 
-    # - Get the inflow magnitude at the rotor as the combination of all the components - #
-    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+    Wm_wake = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)
 
-    # - Update Gamma - #
+    # - Update Gamr - #
     calculate_gamma_sigma!(
-        Gamma,
-        # similar(Gamma) .= 0,
-        sigma,
-        params.blade_elements,
+        Gamr,
+        sigr,
+        inputs.blade_elements,
         Wm_rotor,
-        # Wx_rotor,
         Wtheta_rotor,
         Wmag_rotor,
+        inputs.freestream,
     )
 
-    Gamma_tilde = calculate_net_circulation(Gamma, params.blade_elements[1].B)
+    Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements[1].B)
     H_tilde = calculate_enthalpy_jumps(
-        Gamma, params.blade_elements[1].Omega, params.blade_elements[1].B
+        Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B
     )
 
     # - update wake strengths - #
-    calculate_wake_vortex_strengths!(
-        gamma_theta, params.rotor_panel_edges, Wm_rotor, Gamma_tilde, H_tilde
-    )
+    # TODO: update inputs to have wakeK's
+    calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
 
     return nothing
 end
 
-function extract_rotor_states(states, params)
+function extract_rotor_states(states, inputs)
 
     # Problem Dimensions
-    nrotor = params.num_rotors                             # number of rotors
-    nr = length(params.blade_elements[1].rbe) # number of radial coordinates
+    nrotor = inputs.num_rotors                             # number of rotors
+    nr = inputs.nrotor_panels # number of rotor panels (length for Gamr and sigr)
+    nw = inputs.nwake_panels # number of wake panels (length for gamw)
 
     # State Variable Indices
     iGamr = 1:(nr * nrotor) # rotor circulation strength indices
-    igamw = (iGamr[end] + 1):(iGamr[end] + nrotor * (nr + 1))     # wake vortex strength indices
+    igamw = (iGamr[end] + 1):(iGamr[end] + nw)
     isigr = (igamw[end] + 1):(igamw[end] + nr * nrotor) # rotor source strenght indices
 
     # Extract State variables
     Gamr = reshape(view(states, iGamr), (nr, nrotor)) # rotor circulation strengths
-    gamw = reshape(view(states, igamw), (nr + 1, nrotor)) # wake circulation strengths
+    gamw = view(states, igamw) # wake vortex strengths
     sigr = reshape(view(states, isigr), (nr, nrotor)) # rotor source strengths
 
     return Gamr, gamw, sigr

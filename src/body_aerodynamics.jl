@@ -121,8 +121,6 @@ function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
 
     for (i, te) in enumerate(TEnodes)
 
-        # check that trailing edge points are coincident
-
         # Loop through control points being influenced
         for (m, (cp, nhat)) in enumerate(zip(eachrow(controlpoint), eachrow(normal)))
 
@@ -131,7 +129,7 @@ function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
             vx = vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
             vr = vortex_ring_vr(xi, rho, k2, rj)
 
-            LHS[m, te.idx] += dot(te.sign*[vx; vr], nhat)
+            LHS[m, te.idx] += dot(te.sign * [vx; vr], nhat)
         end
     end
 
@@ -253,11 +251,9 @@ function prep_leastsquares!(Gred, Glsq, blsq, LHS, RHS, prescribedpanels)
 end
 
 function prep_leastsquares(
-    LHS::AbstractMatrix{T1},
-    RHS::AbstractVector{T2},
-    prescribedpanels::AbstractArray{Tuple{Int,T3}},
-) where {T1,T2,T3}
-    T = promote_type(T1, T2, T3)
+    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2}, prescribedpanels
+) where {T1,T2}
+    T = promote_type(T1, T2)
 
     n = length(RHS)
     npres = length(prescribedpanels)

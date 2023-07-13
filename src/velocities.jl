@@ -29,6 +29,30 @@ end
 
 ######################################################################
 #                                                                    #
+#                        Elliptic Functions                          #
+#                                                                    #
+######################################################################
+"""
+    get_elliptics(m)
+
+Calculate value of elliptic functions for the given geometry parameter.
+
+**Arguments:**
+- `m::Float` : Elliptic Function parameter
+
+**Returns:**
+- `K::Float` : K(m), value of elliptic function of the first kind at m.
+- `E::Float` : E(m), value of eeliptic function of the second kind at m.
+"""
+function get_elliptics(m)
+    if m > 1 || isnan(m)
+        #m cannot be greater than 1 for elliptic functions, and cannot mathematically be either, but numerically might be infinitesimally larger.
+        m = 1.0
+    end
+    return SpecialFunctions.ellipk(m), SpecialFunctions.ellipe(m)
+end
+######################################################################
+#                                                                    #
 #                         INDUCED VELOCITIES                         #
 #                                                                    #
 ######################################################################
@@ -76,6 +100,7 @@ function vortex_ring_vr(xi, rho, m, r_influence)
         num1 = xi / rho
         den1 = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
 
+        #get numerator and denominator of second fraction
         num2 = 2.0 * rho
         den2 = xi^2 + (rho - 1.0)^2
 
@@ -784,13 +809,13 @@ end
 function doublet_panel_influence_matrix!(AIC, nodes, controlpoint, normal)
 
     # Loop through control points being influenced
-    for (i, (cp, nhat)) in enumerate(zip(eachrow(controlpoint), eachrow(normal)))
+    for (i, (fp, nhat)) in enumerate(zip(eachrow(controlpoint), eachrow(normal)))
         # loop through panels doing the influencing
         for (j, (p1, p2)) in
             enumerate(zip(eachrow(nodes[:, 1, :]), eachrow(nodes[:, 2, :])))
 
             # get unit induced velocity from the panel onto the control point
-            vel = constant_doublet_band_induced_velocity(p1, p2, cp)
+            vel = constant_doublet_band_induced_velocity(p1, p2, fp)
 
             # fill the matrix
             AIC[i, j] += dot(vel, nhat)

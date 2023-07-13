@@ -117,6 +117,7 @@ function solve(x, p)
     )
 
     # initialize various inputs used in analysis
+    # repanels bodies and rotors, generates wake "grid", precomputes influence matrices, etc.
     inputs = precomputed_inputs(
         duct_coordinates,
         hub_coordinates,

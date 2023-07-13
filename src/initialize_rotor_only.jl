@@ -4,9 +4,12 @@ freestream = freestream
 
 currently only capable of a single rotor
 """
-function initialize_rotor_states(
-    rotor_parameters, freestream; wake_length=5.0, wake_x_refine=0.01
+function precompute_inputs_rotor_only(
+    rotor_parameters, freestream; wake_length=5.0, wake_x_refine=0.05
 )
+
+    # TODO: udpate if needed:
+    TF = Float64
     #---------------------------------#
     #              Rotor              #
     #---------------------------------#
@@ -29,7 +32,7 @@ function initialize_rotor_states(
     ]
 
     #get rotor panel radial center points for convenience
-    rotor_panel_centers = rotor_source_panels[1].panel_center[:, 2]
+    rotor_panel_centers = rotor_source_panels[1].controlpoint[:, 2]
     nbe = length(rotor_panel_centers)
 
     ##### ----- Blade Elements ----- #####
@@ -44,7 +47,7 @@ function initialize_rotor_states(
             rotor_parameters[i].airfoils,
             rotor_parameters[i].Rtip,
             rotor_parameters[i].Rhub,
-            rotor_source_panels[i].panel_center[:, 2],
+            rotor_source_panels[i].controlpoint[:, 2],
         ) for i in 1:nrotor
     ]
 
@@ -69,6 +72,8 @@ function initialize_rotor_states(
         rotor_parameters[1].xrotor, rotor_parameters[1].xrotor + wake_length * D; step=dr
     )
 
+    num_wake_x_panels = length(xrange) - 1
+
     # - Put together the initial grid point matrices - #
     #=
     For the grid relaxation (which adjusts the grid points such that the grids lie along streamlines) the function expects the grid points to be formatted such that there are x rows, and r columns.
@@ -90,6 +95,17 @@ function initialize_rotor_states(
     =#
     wake_vortex_panels = generate_wake_panels(x_grid_points, r_grid_points)
 
+    wakeK = get_wake_k(wake_vortex_panels)
+
+    # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
+    rotorwakeid = ones(Int, wake_vortex_panels.npanels, 2)
+    for i in 1:(rotor_parameters[1].nwake_sheets)
+        rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
+    end
+    for (i, cp) in enumerate(eachrow(wake_vortex_panels.controlpoint))
+        rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.xrotor)
+    end
+
     ######################################################################
     #                                                                    #
     #                  PRECOMPUTE UNIT INDUCED VELOCITIES                #
@@ -97,127 +113,94 @@ function initialize_rotor_states(
     ######################################################################
 
     #---------------------------------#
-    #             MESHES              #
-    #---------------------------------#
-    #=
-    Meshes contain the relative geometry used to calculate the unit induced velocities of the panels doing the influencing to the panels being affected.
-    the first input is the influencing panel arrays
-    the second input is the affected panel arrays
-    the output is a matrix of [affect index, influence index] for the various panel arrays
-    =#
-
-    ##### ----- Wake to Rotor ----- #####
-    wake_to_rotor_mesh = [
-        generate_one_way_mesh(wake_vortex_panels[j], rotor_source_panels[i]) for
-        i in 1:length(rotor_source_panels), j in 1:length(wake_vortex_panels)
-    ]
-
-    ##### ----- Rotor to Rotor ----- #####
-    rotor_to_rotor_mesh = [
-        generate_one_way_mesh(rotor_source_panels[j], rotor_source_panels[i]) for
-        i in 1:length(rotor_source_panels), j in 1:length(rotor_source_panels)
-    ]
-
-    #---------------------------------#
     #           Velocities            #
     #---------------------------------#
-    #=
-    To get the induced velocities, we take the meshes just created, then input the influencing panel arrays again, then the affected panel arrays.
-    The output is a matrix again with index [affected, influencing]
 
-    We then separate out the inputs into the x and r components
-    =#
-
-    ##### ----- Wake to Rotor ----- #####
-    A_wake_to_rotor = [
-        assemble_induced_velocity_matrices(
-            wake_to_rotor_mesh[i, j], wake_vortex_panels[j], rotor_source_panels[i]
-        ) for i in 1:length(rotor_source_panels), j in 1:length(wake_vortex_panels)
+    # - wake to rotor - #
+    v_rw = [
+        influencefromvortexpanels(
+            rotor_source_panels[i].controlpoint,
+            wake_vortex_panels.controlpoint,
+            wake_vortex_panels.len,
+            ones(TF, wake_vortex_panels.npanels),
+        ) for i in 1:length(rotor_source_panels)
     ]
 
-    # - Axial - #
-    vx_rw = [
-        A_wake_to_rotor[i, j][1] for i in 1:length(rotor_source_panels),
-        j in 1:length(wake_vortex_panels)
-    ]
+    # axial components
+    vx_rw = [v_rw[i][:, :, 1] for i in 1:length(rotor_source_panels)]
 
-    # - Radial - #
-    vr_rw = [
-        A_wake_to_rotor[i, j][2] for i in 1:length(rotor_source_panels),
-        j in 1:length(wake_vortex_panels)
-    ]
+    # radial components
+    vr_rw = [v_rw[i][:, :, 2] for i in 1:length(rotor_source_panels)]
 
     ##### ----- Rotor to Rotor ----- #####
-    A_rotor_to_rotor = [
-        assemble_induced_velocity_matrices(
-            rotor_to_rotor_mesh[i, j],
-            rotor_source_panels[j],
-            rotor_source_panels[i];
-            singularity="source",
+    # - rotor to rotor - #
+    v_rr = [
+        influencefromsourcepanels(
+            rotor_source_panels[i].controlpoint,
+            rotor_source_panels[j].controlpoint,
+            rotor_source_panels[j].len,
+            ones(TF, rotor_source_panels[j].npanels),
         ) for i in 1:length(rotor_source_panels), j in 1:length(rotor_source_panels)
     ]
 
-    # - Axial - #
+    # axial components
     vx_rr = [
-        A_rotor_to_rotor[i, j][1] for i in 1:length(rotor_source_panels),
+        v_rr[i, j][:, :, 1] for i in 1:length(rotor_source_panels),
         j in 1:length(rotor_source_panels)
     ]
 
-    # - Radial - #
+    # radial components
     vr_rr = [
-        A_rotor_to_rotor[i, j][2] for i in 1:length(rotor_source_panels),
+        v_rr[i, j][:, :, 2] for i in 1:length(rotor_source_panels),
         j in 1:length(rotor_source_panels)
     ]
 
-    #################################
+    # - rotor to wake - #
+    v_wr = [
+        influencefromsourcepanels(
+            wake_vortex_panels.controlpoint,
+            rotor_source_panels[j].controlpoint,
+            rotor_source_panels[j].len,
+            ones(TF, rotor_source_panels[j].npanels),
+        ) for j in 1:length(rotor_source_panels)
+    ]
 
-    # - Initialize with freestream only - #
-    Wθ = -rotor_panel_centers .* rotor_parameters.Omega'
-    # use freestream magnitude as meridional velocity at each blade section
-    Wm = similar(Wθ) .= freestream.Vinf
-    # magnitude is simply freestream and rotation
-    W = sqrt.(Wθ .^ 2 .+ Wm .^ 2)
-    # initialize circulation and source panel strengths
-    Gamma, sigr = calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
+    # axial components
+    vx_wr = [v_wr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 
-    gamma_wake = initialize_wake_vortex_strengths(
-        freestream.Vinf,
-        Gamma,
-        rotor_parameters.Omega,
-        rotor_parameters.B,
-        rotor_panel_edges,
+    # radial components
+    vr_wr = [v_wr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
+
+    # - wake to wake - #
+    v_ww = influencefromvortexpanels(
+        wake_vortex_panels.controlpoint,
+        wake_vortex_panels.controlpoint,
+        wake_vortex_panels.len,
+        ones(TF, wake_vortex_panels.npanels),
     )
 
-    # - Set Up States and Parameters - #
-    # for ir in 1:length(rotor_panel_centers)
-    #     for irotor in 1:length(rp)
-    #         Wθ[ir,irotor] = -rotor_panel_centers[ir] * rp[irotor].Omega[1]
-    #     end
-    # end
+    # axial components
+    vx_ww = v_ww[:, :, 1]
 
-    # use freestream magnitude as meridional velocity at each blade section
-    Wm = similar(Wθ) .= fs.Vinf
-    # magnitude is simply freestream and rotation
-    W = sqrt.(Wθ .^ 2 .+ Wm .^ 2)
-    # initialize circulation and source panel strengths
-    Gamma, sigr = calculate_gamma_sigma(blade_elements, Wm, Wθ, W)
+    # radial components
+    vr_ww = v_ww[:, :, 2]
 
-    gamma_wake = initialize_wake_vortex_strengths(
-        fs.Vinf, Gamma, rp.Omega, rp.B, rotor_panel_edges
-    )
-
-    # - Set Up States and Parameters - #
-    # initialize rotor source strengths to zero for now
-    states = [Gamma; gamma_wake; sigr]
-
-    params = (
+    inputs = (;
         converged=[false],
         Vinf=freestream.Vinf,
-        nxwake=length(xrange) - 1,
+        freestream,
+        # nxwake=length(xrange) - 1,
+        num_wake_x_panels,
+        wakeK,
+        rotorwakeid,
         vx_rw=vx_rw,
         vr_rw=vr_rw,
         vx_rr=vx_rr,
         vr_rr=vr_rr,
+        vx_wr=vx_wr,
+        vr_wr=vr_wr,
+        vx_ww=vx_ww,
+        vr_ww=vr_ww,
         blade_elements,
         num_rotors=1,
         rotor_panel_edges=rotor_panel_edges,
@@ -227,7 +210,43 @@ function initialize_rotor_states(
         xrange,
         x_grid_points,
         r_grid_points,
+        nrotor_panels=sum(rotor_source_panels.npanels),
+        nwake_panels=wake_vortex_panels.npanels,
+        ductwakeinterfaceid=nothing,
+        hubwakeinterfaceid=nothing,
     )
 
-    return states, params
+    return inputs
+end
+
+function initilize_states_rotor_only(inputs)
+
+    # - Initialize with freestream only - #
+    Wθ = -inputs.rotor_panel_centers .* inputs.blade_elements.Omega'
+    # use freestream magnitude as meridional velocity at each blade section
+    Wm = similar(Wθ) .= inputs.Vinf
+    # magnitude is simply freestream and rotation
+    W = sqrt.(Wθ .^ 2 .+ Wm .^ 2)
+
+    # initialize circulation and source panel strengths
+    Gamr, sigr = calculate_gamma_sigma(inputs.blade_elements, Wm, Wθ, W, inputs.freestream)
+
+    nwake = inputs.wake_vortex_panels.npanels
+    gamw = zeros(nwake)
+    calculate_wake_vortex_strengths!(
+        gamw, Gamr, inputs.Vinf * ones(length(gamw)), inputs; debug=false
+    )
+
+    # gamw = initialize_wake_vortex_strengths(
+    #     inputs.Vinf,
+    #     Gamr,
+    #     inputs.blade_elements.Omega,
+    #     inputs.blade_elements.B,
+    #     inputs.rotor_panel_edges,
+    #     inputs.num_wake_x_panels,
+    # )
+
+    # - Set Up States and Parameters - #
+    # initialize rotor source strengths to zero for now
+    return [Gamr; gamw; sigr]
 end

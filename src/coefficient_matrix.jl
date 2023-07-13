@@ -358,26 +358,6 @@ function get_vr_ring_vortex_off_body(x, r, rj, m)
     end
 end
 
-"""
-    get_elliptics(m)
-
-Calculate value of elliptic functions for the given geometry parameter.
-
-**Arguments:**
-- `m::Float` : Elliptic Function parameter
-
-**Returns:**
-- `K::Float` : K(m), value of elliptic function of the first kind at m.
-- `E::Float` : E(m), value of eeliptic function of the second kind at m.
-"""
-function get_elliptics(m)
-    if m > 1 || isnan(m)
-        #m cannot be greater than 1 for elliptic functions, and cannot mathematically be either, but numerically might be infinitesimally larger.
-        m = 1.0
-    end
-    return SpecialFunctions.ellipk(m), SpecialFunctions.ellipe(m)
-end
-
 #---------------------------------#
 #       Source Coefficients       #
 #---------------------------------#
