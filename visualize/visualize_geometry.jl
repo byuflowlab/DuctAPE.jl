@@ -7,16 +7,17 @@ function visualize_paneling(;
     nodes=true,
     wakeinterfaceid=[],
     prescribedpanels=nothing,
-    endpoints=true,
+    TEnodes=true,
     normals=true,
     normal_scaling=0.1,
     savepath="",
     filename="paneling.pdf",
+    legendloc=:best,
 )
 
     ## -- Initialize Plot -- ##
     # plot generated body_panels
-    plot(; aspectratio=1, xlabel="x", ylabel="r")
+    p = plot(; aspectratio=1, xlabel="x", ylabel="r", legend=legendloc)
 
     #---------------------------------#
     #         Plot Body body_Panels        #
@@ -25,22 +26,26 @@ function visualize_paneling(;
 
         # plot inputs
         if !isnothing(coordinates)
-            plot!(
-                coordinates[:, 1],
-                coordinates[:, 2];
-                color=mygray[1],
-                linewidth=0.5,
-                label="body input coordinates",
-            )
+            for coords in coordinates
+                plot!(
+                    p,
+                    coords[:, 1],
+                    coords[:, 2];
+                    color=mygray[1],
+                    linewidth=0.5,
+                    label="body input coordinates",
+                )
+            end
         end
 
         # plot trailing edge (wake) nodes
-        if endpoints
-            for i in 1:length(body_panels.endpoints[:, 1, 1])
+        if TEnodes
+            for i in 1:length(body_panels.TEnodes)
                 lab = i == 1 ? "Body TE Nodes" : ""
                 plot!(
-                    body_panels.endpoints[i, :, 1],
-                    body_panels.endpoints[i, :, 2];
+                    p,
+                    [body_panels.TEnodes[i].pos[1]],
+                    [body_panels.TEnodes[i].pos[2]];
                     label=lab,
                     color=mygray[1],
                     seriestype=:scatter,
@@ -54,6 +59,7 @@ function visualize_paneling(;
             for i in 1:length(body_panels.len)
                 lab = i == 1 ? "Body Nodes" : ""
                 plot!(
+                    p,
                     body_panels.nodes[i, :, 1],
                     body_panels.nodes[i, :, 2];
                     label=lab,
@@ -66,6 +72,7 @@ function visualize_paneling(;
         #plot control points
         if controlpoints
             plot!(
+                p,
                 body_panels.controlpoint[:, 1],
                 body_panels.controlpoint[:, 2];
                 color=myblue[3],
@@ -79,6 +86,7 @@ function visualize_paneling(;
             for ipp in 1:length(prescribedpanels)
                 lab = ipp == 1 ? "Prescribed Panel(s)" : ""
                 plot!(
+                    p,
                     [body_panels.controlpoint[prescribedpanels[ipp][1], 1]],
                     [body_panels.controlpoint[prescribedpanels[ipp][1], 2]];
                     seriestype=:scatter,
@@ -95,6 +103,7 @@ function visualize_paneling(;
             for i in 1:length(body_panels.len)
                 lab = i == 1 ? "Body Normals" : ""
                 plot!(
+                    p,
                     [0.0; normal_scaling * body_panels.normal[i, 1]] .+
                     body_panels.controlpoint[i, 1],
                     [0.0; normal_scaling * body_panels.normal[i, 2]] .+
@@ -115,6 +124,7 @@ function visualize_paneling(;
             #plot control points
             if controlpoints
                 plot!(
+                    p,
                     rotor_panels[irotor].controlpoint[:, 1],
                     rotor_panels[irotor].controlpoint[:, 2];
                     color=mygray[irotor],
@@ -129,6 +139,7 @@ function visualize_paneling(;
                 for i in 1:length(rotor_panels[irotor].len)
                     lab = i == 1 ? "Rotor $irotor Nodes" : ""
                     plot!(
+                        p,
                         rotor_panels[irotor].nodes[i, :, 1],
                         rotor_panels[irotor].nodes[i, :, 2];
                         label=lab,
@@ -149,6 +160,7 @@ function visualize_paneling(;
             for i in 1:length(wake_panels.len)
                 lab = i == 1 ? "Wake Nodes" : ""
                 plot!(
+                    p,
                     wake_panels.nodes[i, :, 1],
                     wake_panels.nodes[i, :, 2];
                     label=lab,
@@ -161,6 +173,7 @@ function visualize_paneling(;
         #plot control points
         if controlpoints
             plot!(
+                p,
                 wake_panels.controlpoint[:, 1],
                 wake_panels.controlpoint[:, 2];
                 color=myred[3],
@@ -171,6 +184,7 @@ function visualize_paneling(;
 
             if !isempty(wakeinterfaceid)
                 plot!(
+                    p,
                     wake_panels.controlpoint[wakeinterfaceid, 1],
                     wake_panels.controlpoint[wakeinterfaceid, 2];
                     color=mygreen[2],
@@ -185,6 +199,22 @@ function visualize_paneling(;
 
     # save figure
     savefig(savepath * filename)
+
+    return nothing
+end
+
+function write_coordinates(
+    coordinates; varname="coords", savepath="", filename="coordinates.jl"
+)
+    f = open(savepath * filename, "w")
+    write(f, varname * " = [\n")
+
+    for xr in eachrow(coordinates)
+        write(f, "$(xr[1]) $(xr[2])\n")
+    end
+
+    write(f, "]")
+    close(f)
 
     return nothing
 end
