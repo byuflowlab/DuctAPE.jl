@@ -1,12 +1,9 @@
-#=
+project_dir = dirname(dirname(dirname(dirname(@__FILE__))))
+if project_dir == ""
+    project_dir = "."
+end
 
-Example script for running the rotor-only case.
-
-Rotor data comes from the APC 10x5 data available on the UIUC database.
-
-Authors: Judd Mehr, Andrew Ning
-
-=#
+datapath = project_dir * "/examples/isolated_archive/rotor_only/"
 
 #---------------------------------#
 #             Includes            #
@@ -17,12 +14,10 @@ const dt = DuctTAPE
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
 const ccb = CCBlade
-include("run_ccblade.jl")
+include(datapath*"run_ccblade.jl")
+include(datapath*"plot_geometry.jl")
 
-# using Plots
-# pyplot()
-# using LaTeXStrings
-include("../../plots_default.jl")
+include(project_dir * "/visualize/plots_default_new.jl")
 
 #---------------------------------#
 #             Geometry            #
@@ -67,9 +62,9 @@ chords = propgeom[:, 2] * Rtip
 twists = propgeom[:, 3] * pi / 180
 
 # plot(r, chords, xlabel=L"r/R_\mathrm{tip}", ylabel=L"c/R_\mathrm{tip}", label="",ylim=(0.0,0.22),xlim=(0.0,1.0))
-# savefig("examples/rotor_only/apc_chord.pdf")
+# savefig("examples/isolated_archive/rotor_only/apc_chord.pdf")
 # plot(r, twists, xlabel=L"r/R_\mathrm{tip}", ylabel="twist (deg)",label="",ylim=(0.0,39),xlim=(0.0,1.0))
-# savefig("examples/rotor_only/apc_twist.pdf")
+# savefig("examples/isolated_archive/rotor_only/apc_twist.pdf")
 
 # use a NACA 4412 airfoils
 #=
@@ -84,6 +79,7 @@ airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(r))
 Note: the solver with interpolate the rotor data using the given number of blade element inputs
 =#
 nwake_sheets = 15
+# nwake_sheets = 5
 
 # x position of rotor
 xrotor = 0.0
@@ -111,7 +107,7 @@ rotor_parameters = [(;
 
 # Freestream Parameters
 Vinf = 5.0
-freestream = (; rho, mu, asound, Vinf)
+freestream = (; rhoinf=rho, muinf=mu, asound, Vinf)
 
 #---------------------------------#
 #        Experimental Data        #
@@ -157,13 +153,18 @@ nJ = length(J)
 
 # Initialize Inputs
 wake_length = 1.0
-inputs, params = dt.initialize_rotor_states(
+
+inputs = dt.precompute_inputs_rotor_only(
     rotor_parameters, freestream; wake_length=wake_length
 )
 
-Gamr, gamw, sigr = dt.extract_rotor_states(inputs, params)
+plot_rotor_geometry(inputs, datapath; num=true)
 
-rbe = params.blade_elements[1].rbe
+init_states = dt.initilize_states_rotor_only(inputs)
+
+Gamr, gamw, sigr = dt.extract_rotor_states(init_states, inputs)
+
+rbe = inputs.blade_elements[1].rbe
 # nwake_sheets = length(rbe)
 
 # initialize outputs
@@ -176,6 +177,7 @@ CQccb = zeros(nJ)
 
 # Loop through advance ratios
 for i in 1:nJ
+# for i in 1:1
     println()
     println("Running for J = $(J[i])")
     println()
@@ -186,40 +188,43 @@ for i in 1:nJ
     @time begin
         # run solver
         # remember to update freestream velocity in parameters
-        states = dt.solve_rotor_only(inputs, (; params..., Vinf=Vinf_sweep))
-        Gamrconv, gamwconv, sigrconv = dt.extract_rotor_states(states, params)
+        states = dt.solve_rotor_only(init_states, (; inputs..., Vinf=Vinf_sweep))
+        Gamrconv, gamwconv, sigrconv = dt.extract_rotor_states(states, inputs)
 
         pG = plot(
-            Gamr, params.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial"
+            Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial"
         )
-        plot!(pG, Gamrconv, params.rotor_panel_centers; label="converged")
-        savefig("examples/rotor_only/Circulation_J$(J[i]).pdf")
+        plot!(pG, Gamrconv, inputs.rotor_panel_centers; label="converged")
+        savefig("examples/isolated_archive/rotor_only/Circulation_J$(J[i]).pdf")
 
+        # TODO: need to reshape gamw and decide how to plot it
+        gamwinit = reshape(gamw, (inputs.num_wake_x_panels, inputs.nrotor_panels + 1))
+        gamwconv = reshape(gamwconv, (inputs.nrotor_panels + 1, inputs.num_wake_x_panels))
         # pw = plot(
         #     gamw,
-        #     params.rotor_panel_edges;
+        #     inputs.rotor_panel_edges;
         #     xlabel=L"\gamma_\theta",
         #     ylabel="r",
         #     label="initial",
         # )
-        # plot!(pw, gamwconv, params.rotor_panel_edges; label="converged")
-        # savefig("examples/rotor_only/wake-strengths_J$(J[i]).pdf")
+        # plot!(pw, gamwconv, inputs.rotor_panel_edges; label="converged")
+        # savefig("examples/isolated_archive/rotor_only/wake-strengths_J$(J[i]).pdf")
 
-        # ps = plot(
-        #     sigr, params.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="initial"
-        # )
-        # plot!(ps, sigrconv, params.rotor_panel_centers; label="converged")
-        # savefig("examples/rotor_only/source-strenghts_J$(J[i]).pdf")
+        ps = plot(
+            sigr, inputs.rotor_panel_centers; xlabel=L"\sigma", ylabel="r", label="initial"
+        )
+        plot!(ps, sigrconv, inputs.rotor_panel_centers; label="converged")
+        savefig("examples/isolated_archive/rotor_only/source-strenghts_J$(J[i]).pdf")
 
         # - Post Process - #
-        dtout = dt.states_to_outputs_rotor_only(states, (; params..., Vinf=Vinf_sweep))
+        dtout = dt.states_to_outputs_rotor_only(states, (; inputs..., Vinf=Vinf_sweep))
 
         aero = dt.get_rotor_loads(
             dtout.W,
             dtout.phi,
             dtout.cl,
             dtout.cd,
-            params.blade_elements[1],
+            inputs.blade_elements[1],
             (; freestream..., Vinf=Vinf_sweep),
         )
 
@@ -243,175 +248,175 @@ for i in 1:nJ
     println("Plotting...")
     println()
 
-    plot!(pG, ccbouts.circ, ccbouts.r, label="CCBlade")
-    savefig("examples/rotor_only/circulation_J$(J[i]).pdf")
+    plot!(pG, ccbouts.circ, ccbouts.r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/circulation_J$(J[i]).pdf")
 
-    ## double check geometry
-    #plot(
-    #    dtout.r,
-    #    dtout.chord;
-    #    xlabel="r",
-    #    ylabel="chords",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(r * Rtip, chords; label="CCBlade")
-    #savefig("examples/rotor_only/chord_J$(J[i]).pdf")
+    # double check geometry
+    plot(
+        dtout.r,
+        dtout.chord;
+        xlabel="r",
+        ylabel="chords",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(r * Rtip, chords; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/chord_J$(J[i]).pdf")
 
-    #plot(
-    #    dtout.r,
-    #    dtout.twist * 180 / pi;
-    #    ylabel="twists (deg)",
-    #    xlabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(r * Rtip, twists * 180 / pi; label="CCBlade")
-    #savefig("examples/rotor_only/twist_J$(J[i]).pdf")
+    plot(
+        dtout.r,
+        dtout.twist * 180 / pi;
+        ylabel="twists (deg)",
+        xlabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(r * Rtip, twists * 180 / pi; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/twist_J$(J[i]).pdf")
 
-    ## axial induced velocity
-    #plot(
-    #    dtout.vx_rotor,
-    #    rbe / Rtip;
-    #    xlabel=L"v_x",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.u, r; label="CCBlade")
-    #savefig("examples/rotor_only/vx_J$(J[i]).pdf")
+    # axial induced velocity
+    plot(
+        dtout.vx_rotor,
+        rbe / Rtip;
+        xlabel=L"v_x",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.u, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/vx_J$(J[i]).pdf")
 
-    ## tangential induced velocity
-    #plot(
-    #    dtout.vtheta_rotor,
-    #    rbe / Rtip;
-    #    xlabel=L"v_\theta",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.v, r; label="CCBlade")
-    #savefig("examples/rotor_only/vtheta_J$(J[i]).pdf")
+    # tangential induced velocity
+    plot(
+        dtout.vtheta_rotor,
+        rbe / Rtip;
+        xlabel=L"v_\theta",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.v, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/vtheta_J$(J[i]).pdf")
 
-    ## tangential total velocity
-    #plot(
-    #    dtout.Wθ,
-    #    rbe / Rtip;
-    #    xlabel=L"W_\theta",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.v .- Omega * r * Rtip, r; label="CCBlade")
-    #savefig("examples/rotor_only/Wtheta_J$(J[i]).pdf")
+    # tangential total velocity
+    plot(
+        dtout.Wθ,
+        rbe / Rtip;
+        xlabel=L"W_\theta",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.v .- Omega * r * Rtip, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/Wtheta_J$(J[i]).pdf")
 
-    ## meridional total velocity
-    #plot(
-    #    dtout.Wm,
-    #    rbe / Rtip;
-    #    xlabel=L"W_m",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.u .+ Vinf_sweep, r; label="CCBlade")
-    #savefig("examples/rotor_only/Wm_J$(J[i]).pdf")
+    # meridional total velocity
+    plot(
+        dtout.Wm,
+        rbe / Rtip;
+        xlabel=L"W_m",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.u .+ Vinf_sweep, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/Wm_J$(J[i]).pdf")
 
-    ## inflow angle
-    #plot(
-    #    dtout.phi * 180 / pi,
-    #    rbe / Rtip;
-    #    xlabel=L"\phi~(deg)",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.phi * 180 / pi, r; label="CCBlade")
-    #savefig("examples/rotor_only/phi_J$(J[i]).pdf")
+    # inflow angle
+    plot(
+        dtout.phi * 180 / pi,
+        rbe / Rtip;
+        xlabel=L"\phi~(deg)",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.phi * 180 / pi, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/phi_J$(J[i]).pdf")
 
-    ## angle of attack
-    #plot(
-    #    dtout.alpha * 180 / pi,
-    #    rbe / Rtip;
-    #    xlabel=L"\alpha~(deg)",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.alpha * 180 / pi, r; label="CCBlade")
-    #savefig("examples/rotor_only/alpha_J$(J[i]).pdf")
+    # angle of attack
+    plot(
+        dtout.alpha * 180 / pi,
+        rbe / Rtip;
+        xlabel=L"\alpha~(deg)",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.alpha * 180 / pi, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/alpha_J$(J[i]).pdf")
 
-    ## inflow magnitude
-    #plot(
-    #    dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctTAPE", title="J = $(J[i])"
-    #)
-    #plot!(out.W, r; label="CCBlade")
-    #savefig("examples/rotor_only/W_J$(J[i]).pdf")
+    # inflow magnitude
+    plot(
+        dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctTAPE", title="J = $(J[i])"
+    )
+    plot!(out.W, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/W_J$(J[i]).pdf")
 
-    ## Lift
-    #plot(
-    #    dtout.cl,
-    #    rbe / Rtip;
-    #    xlabel=L"c_\ell",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
-    #plot!(dtout.clout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
-    #plot!(out.cl, r; label="CCBlade")
-    #savefig("examples/rotor_only/cl_J$(J[i]).pdf")
+    # Lift
+    plot(
+        dtout.cl,
+        rbe / Rtip;
+        xlabel=L"c_\ell",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
+    plot!(dtout.clout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
+    plot!(out.cl, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/cl_J$(J[i]).pdf")
 
-    ## Drag
-    #plot(
-    #    dtout.cd,
-    #    rbe / Rtip;
-    #    xlabel=L"c_d",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(dtout.cdin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
-    #plot!(dtout.cdout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
-    #plot!(out.cd, r; label="CCBlade")
-    #savefig("examples/rotor_only/cd_J$(J[i]).pdf")
+    # Drag
+    plot(
+        dtout.cd,
+        rbe / Rtip;
+        xlabel=L"c_d",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(dtout.cdin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
+    plot!(dtout.cdout, rbe / Rtip; label="outer", linestyle=:dot, color=mycolors[1])
+    plot!(out.cd, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/cd_J$(J[i]).pdf")
 
-    ## normal coeff
-    #plot(
-    #    aero.cn,
-    #    rbe / Rtip;
-    #    xlabel=L"c_n",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.cn, r; label="CCBlade")
-    #savefig("examples/rotor_only/cn_J$(J[i]).pdf")
+    # normal coeff
+    plot(
+        aero.cn,
+        rbe / Rtip;
+        xlabel=L"c_n",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.cn, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/cn_J$(J[i]).pdf")
 
-    ## tangential coeff
-    #plot(
-    #    aero.ct,
-    #    rbe / Rtip;
-    #    xlabel=L"c_t",
-    #    ylabel="r",
-    #    label="DuctTAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.ct, r; label="CCBlade")
-    #savefig("examples/rotor_only/ct_J$(J[i]).pdf")
+    # tangential coeff
+    plot(
+        aero.ct,
+        rbe / Rtip;
+        xlabel=L"c_t",
+        ylabel="r",
+        label="DuctTAPE",
+        title="J = $(J[i])",
+    )
+    plot!(out.ct, r; label="CCBlade")
+    savefig("examples/isolated_archive/rotor_only/ct_J$(J[i]).pdf")
 
-    ## Distributed Loads
-    #plot(
-    #    rbe / Rtip,
-    #    aero.Np;
-    #    xlabel="r/Rtip",
-    #    label="Normal load per unit length",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(r, out.Np; label="CCBlade Np")
-    #plot!(rbe / Rtip, aero.Tp; label="Tangential load per unit length")
-    #plot!(r, out.Tp; label="CCBlade Tp")
-    #savefig("examples/rotor_only/distributed_loads_J$(J[i]).pdf")
+    # Distributed Loads
+    plot(
+        rbe / Rtip,
+        aero.Np;
+        xlabel="r/Rtip",
+        label="Normal load per unit length",
+        title="J = $(J[i])",
+    )
+    plot!(r, out.Np; label="CCBlade Np")
+    plot!(rbe / Rtip, aero.Tp; label="Tangential load per unit length")
+    plot!(r, out.Tp; label="CCBlade Tp")
+    savefig("examples/isolated_archive/rotor_only/distributed_loads_J$(J[i]).pdf")
 end
 
 #---------------------------------#
@@ -424,11 +429,11 @@ plot!(J, CTccb; label=L"C_T~CCBlade", color=mycolors[1], linestyle=:dash)
 plot!(J, CQccb * 2 * pi; label=L"C_P~CCBlade", color=mycolors[2], linestyle=:dash)
 plot!(Jexp, CTexp; seriestype=:scatter, label="C_T~experimental", color=mycolors[1])
 plot!(Jexp, CPexp; seriestype=:scatter, label="C_P~experimental", color=mycolors[2])
-savefig("examples/rotor_only/rotor-only-thrust-and-power-validation.pdf")
-# savefig("examples/rotor_only/rotor-only-thrust-and-power-validation.png")
+savefig("examples/isolated_archive/rotor_only/rotor-only-thrust-and-power-validation.pdf")
+# savefig("examples/isolated_archive/rotor_only/rotor-only-thrust-and-power-validation.png")
 
 plot(J, eff; xlabel=L"J", ylabel=L"\eta", label="DuctTAPE")
 plot!(J, effccb; label="CCBlade")
 plot!(Jexp, etaexp; seriestype=:scatter, label="experimental")
-savefig("examples/rotor_only/rotor-only-efficiency-validation.pdf")
-# savefig("examples/rotor_only/rotor-only-efficiency-validation.png")
+savefig("examples/isolated_archive/rotor_only/rotor-only-efficiency-validation.pdf")
+# savefig("examples/isolated_archive/rotor_only/rotor-only-efficiency-validation.png")

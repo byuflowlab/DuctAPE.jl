@@ -33,7 +33,7 @@ filename = "/home/juddmehr/code-development/julia_devs/FLOWPanel.jl/examples/dat
 contour = CSV.read(filename, DataFrame)
 aspectratio = 0.6                       # Duct trailing edge aspect ratio l/d
 d = 2 * 0.835                   # (m) duct diameter
-n_rfl = 10                        # This controls the number of chordwise panels
+n_rfl = 20                        # This controls the number of chordwise panels
 
 NDIVS_rfl_up = [                            # Discretization of airfoil upper surface
     # 0 to 0.25 of the airfoil has `n_rfl` panels at a geometric expansion of 10 that is not central
@@ -80,10 +80,10 @@ panels = dt.generate_panels(coordinates)
 ##### ----- Visualize to Check ----- #####
 visualize_paneling(;
     body_panels=panels,
-    coordinates=coordinates,
+    coordinates=[coordinates],
     controlpoints=true,
     nodes=true,
-    endpoints=true,
+    TEnodes=true,
     normals=true,
     savepath=savepath,
     filename="duct-geometry.pdf",

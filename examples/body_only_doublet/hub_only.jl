@@ -46,7 +46,7 @@ visualize_paneling(;
     coordinates=coordinates,
     controlpoints=true,
     nodes=true,
-    endpoints=true,
+    TEnodes=true,
     normals=true,
     savepath=savepath,
     filename="hub-geometry.pdf",
@@ -94,7 +94,7 @@ mu = dt.mured2mu(mured, prescribedpanels)
 Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
 
 # - "Wake"-induced Surface Velocity - #
-Vb_wake = dt.vfromTE(panels.controlpoint, panels.endpoints, panels.endpointidxs, mu)
+Vb_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, mu)
 
 # - ∇μ/2 surface velocity - #
 Vb_gradmu = dt.vfromgradmu(panels, mu)
@@ -106,7 +106,7 @@ Vtot = Vsmat .+ Vb .+ Vb_wake .+ Vb_gradmu
 #---------------------------------#
 #             PLOTTING            #
 #---------------------------------#
-pp = plot(; xlabel="x", ylabel=L"Vs/V_\infty")
+pp = plot(; xlabel="x", ylabel=L"V_s/V_\infty")
 plot!(
     pp,
     Vs_over_Vinf_x,

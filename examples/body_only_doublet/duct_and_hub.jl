@@ -66,7 +66,8 @@ Vsmat = repeat(Vs, panels.npanels) # need velocity on each panel
 
 # prescribe a panel for the least squares solve:
 # choose the first panel to be prescirbed to zero (assumes first panel is not hub leading/traling edge).
-prescribedpanels = [(1, 0.0)]
+prescribedpanels = [(1, 0.0); (panels.npanels, 0.0)]
+# prescribedpanels = [(1, 0.0)]
 
 #---------------------------------#
 #        Induced Velocities       #
@@ -113,10 +114,8 @@ Vb_nokutta = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu_nokutta
 Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
 
 # - "Wake"-induced Surface Velocity - #
-Vb_nokutta_wake = dt.vfromTE(
-    panels.controlpoint, panels.endpoints, panels.endpointidxs, mu_nokutta
-)
-Vb_wake = dt.vfromTE(panels.controlpoint, panels.endpoints, panels.endpointidxs, mu)
+Vb_nokutta_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, mu_nokutta)
+Vb_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, mu)
 
 # - ∇μ/2 surface velocity - #
 Vb_gradmu = dt.vfromgradmu(panels, mu)

@@ -1,0 +1,20 @@
+        ! OPEN(UNIT=99,FILE="DFDC_CPS.jl")
+        ! WRITE(99,*) "#COLUMNS: X, R, CPR, CPL "
+        ! IF(IEL.EQ.1) THEN
+        !   WRITE(99,*) "dfdc_hub_cp = ["
+        ! ELSEIF(IEL.EQ.2) THEN
+        !   WRITE(99,*) "dfdc_duct_cp = ["
+        ! ELSEIF(IEL.EQ.3) THEN
+        !   WRITE(99,*) "dfdc_rotor_cp = ["
+        ! ELSE
+        !   WRITE(99,'(A4, I0)') "dfdc_wake", IEL, "_cp = ["
+        ! ENDIF
+
+        IC1 = ICFRST(IEL)
+        IC2 = ICLAST(IEL)
+        ! N = IC2 - IC1 + 1
+        ! DO IC = IC1, IC2
+        !   WRITE(99,*) XC(IC), YC(IC), CPL(IC), CPR(IC)
+        ! ENDDO
+        ! WRITE(99,*) "]"
+        ! CLOSE(99)
