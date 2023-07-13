@@ -208,7 +208,7 @@ end
 
 N = 60
 avg_ds = pi / 2.0 / N
-xcirc, ycirc = circlecoords(round(Int,N/3))
+xcirc, ycirc = circlecoords(round(Int, N / 3))
 xcylendidx = findlast(x -> x == 0.16, r)
 xcyl = collect(range(0.16, x[xcylendidx]; step=avg_ds))
 ycyl = 0.16 * ones(length(xcyl))
@@ -219,4 +219,6 @@ ywedge = 0.16 .- 0.16 / (xwedge[end] - xwedge[1]) * (xwedge .- xwedge[1])
 
 x_hub = [xcirc; xcyl[2:(end - 1)]; xwedge]
 r_hub = [ycirc; ycyl[2:(end - 1)]; ywedge]
+r_hub[end] = 0.0 # because it over shoots to slightly negative
 
+hub_coordinates = [x_hub r_hub]
