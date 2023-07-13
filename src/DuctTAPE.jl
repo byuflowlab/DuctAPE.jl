@@ -2,8 +2,8 @@ module DuctTAPE
 
 ## -- DEPENDENCIES -- ##
 
-using FLOWFoil
-const ff = FLOWFoil #rename FLOWFoil for convenience
+# using FLOWFoil
+# const ff = FLOWFoil #rename FLOWFoil for convenience
 
 using FLOWMath
 const fm = FLOWMath #rename FLOWMath for convenience
@@ -36,10 +36,10 @@ include("rotor_geometry.jl")
 include("wake_geometry.jl")
 
 # Additional Meshing Functions
-include("mesh.jl")
+# include("mesh.jl")
 
 # Additional Influence Coefficient Functions
-include("coefficient_matrix.jl")
+# include("coefficient_matrix.jl")
 include("velocities.jl")
 
 # Rotor Aerodynamic Functions
