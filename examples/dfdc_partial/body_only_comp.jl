@@ -11,7 +11,8 @@ savepath = datapath
 
 include(project_dir * "/visualize/visualize_geometry.jl")
 include(project_dir * "/visualize/plots_default_new.jl")
-pyplot()
+# pyplot()
+gr()
 
 # - Initialize Plots - #
 pv = plot(; xlabel="x", ylabel=L"V_s", ylim=(0.0, 30.0))
@@ -20,41 +21,44 @@ pc = plot(; xlabel="x", ylabel=L"c_p", ylim=(-1.25, 1.0), yflip=true)
 #---------------------------------#
 #               DFDC              #
 #---------------------------------#
-include(datapath * "DFDC_VELOCITY_BREAKDOWN.jl")
-include(datapath * "DFDC_SURFACE_VELOCITIES.jl")
-include(datapath * "DFDC_ELEMENT_IDS.jl")
+# include(datapath * "DFDC_VELOCITY_BREAKDOWN.jl")
+# include(datapath * "DFDC_SURFACE_VELOCITIES.jl")
+# include(datapath * "DFDC_ELEMENT_IDS.jl")
+include(datapath * "DFDC_CPS.jl")
 
-hubid = elids[1, 2]:elids[1, 3]
-ductid = elids[2, 2]:elids[2, 3]
-hwid = elids[4, 2]:elids[4, 3]
-dwid = elids[14, 2]:elids[14, 3]
+# hubid = elids[1, 2]:elids[1, 3]
+# ductid = elids[2, 2]:elids[2, 3]
+# hwid = elids[4, 2]:elids[4, 3]
+# dwid = elids[14, 2]:elids[14, 3]
 
-hubx = dfdc_velocities[hubid, 10]
-hubr = dfdc_velocities[hubid, 11]
-hubvs = dfdc_vs[hubid, 2]
-ductx = dfdc_velocities[ductid, 10]
-ductr = dfdc_velocities[ductid, 11]
-ductvs = dfdc_vs[ductid, 2]
-# hubwakex = dfdc_velocities[hwid, 10]
-# hubwakevs = dfdc_vs[hwid, 2]
-ductwakex = dfdc_velocities[dwid, 10]
-ductwakevs = dfdc_vs[dwid, 2]
+hubx = dfdc_hub_cp[:, 1]
+hubr = dfdc_hub_cp[:, 2]
+hubvs = dfdc_hub_cp[:, end - 1]
+hubcp = dfdc_hub_cp[:, 4]
 
-Vinf = 20.0
-hubcp = 1.0 .- (hubvs ./ Vinf) .^ 2
-ductcp = 1.0 .- (ductvs ./ Vinf) .^ 2
-# hubwakecp = 1.0 .- (hubwakevs ./ Vinf) .^ 2
-# ductwakecp = 1.0 .- (ductwakevs ./ Vinf) .^ 2
+ductx = dfdc_duct_cp[:, 1]
+ductr = dfdc_duct_cp[:, 2]
+ductvs = dfdc_duct_cp[:, end - 1]
+ductcp = dfdc_duct_cp[:, 4]
 
-plot!(pv, hubx, hubvs; linestyle=:dash, label="DFDC Hub")
-plot!(pv, ductx, ductvs; linestyle=:dash, label="DFDC Duct")
+ductwakex = dfdc_wake14_cp[:, 1]
+ductwaker = dfdc_wake14_cp[:, 2]
+ductwakevs = dfdc_wake14_cp[:, end - 1]
+ductwakecp = dfdc_wake14_cp[:, 4]
+
+plot!(pv, hubx, hubvs; linestyle=:dash, color=myred[2], label="DFDC Hub")
+plot!(pv, ductx, ductvs; linestyle=:dash, color=myblue[2], label="DFDC Duct")
 # plot!(pv, hubwakex, hubwakevs; linestyle=:dash, label="DFDC Hub Wake")
 # plot!(pv, ductwakex, ductwakevs; linestyle=:dash, label="DFDC Duct Wake")
 
-plot!(pc, hubx, hubcp; linestyle=:dash, label="DFDC Hub")
-plot!(pc, ductx, ductcp; linestyle=:dash, label="DFDC Duct")
+plot!(pc, hubx, hubcp; linestyle=:dash, color=myred[2], label="DFDC Hub")
+plot!(pc, ductx, ductcp; linestyle=:dash, color=myblue[2], label="DFDC Duct")
 # plot!(pc, hubwakex, hubwakecp; linestyle=:dash, label="DFDC Hub Wake")
 # plot!(pc, ductwakex, ductwakecp; linestyle=:dash, label="DFDC Duct Wake")
+
+dfdc_duct_coordinates = reverse([ductx ductr]; dims=1)
+dfdc_hub_coordinates = reverse([hubx hubr]; dims=1)
+dfdc_panels = dt.generate_panels([dfdc_duct_coordinates, dfdc_hub_coordinates])
 
 #---------------------------------#
 #             DuctTAPE            #
@@ -80,9 +84,10 @@ write_coordinates(
     varname="hub_coordinates",
 )
 
-panels = dt.generate_panels([duct_coordinates, hub_coordinates])
+# panels = dt.generate_panels([duct_coordinates, hub_coordinates])
 # panels = dt.generate_panels([hub_coordinates])
-# panels = dt.generate_panels([duct_coordinates])
+panels = dt.generate_panels([duct_coordinates])
+
 
 ##### ----- Visualize to Check ----- #####
 visualize_paneling(;
@@ -103,26 +108,33 @@ Vinf = 20.0 #magnitude doesn't matter yet.
 Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
 Vsmat = repeat(Vs, panels.npanels) # need velocity on each panel
 
-prescribedpanels = [(1, 0.0); (panels.npanels, 0.0)]
-# prescribedpanels = [(1, 0.0)]
+_, leid = findmin(duct_coordinates[:, 1])
+# prescribedpanels = [(1, 0.0); (panels.npanels, 0.0)]
+prescribedpanels = [(1, 0.0)]
+# prescribedpanels = [(leid, 0.0)]
 # prescribedpanels = []
 
 ## -- Induced Velocities -- ##
 
 # - Initial System Matrices - #
-LHS = dt.doublet_panel_influence_matrix(panels.nodes, panels)
-RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
+A_bb = dt.doublet_panel_influence_matrix(panels.nodes, panels)
+# - add internal panel stuff - #
+LHS = dt.doublet_panel_influence_on_internal_panels(A_bb, panels, panels)
+b_bf = dt.freestream_influence_vector(panels.normal, Vsmat)
+# - add internal panel stuff - #
+RHS = dt.freestream_influence_on_internal_panels(b_bf, panels, Vs)
 
 # - Adding Kutta Condition - #
 dt.body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=true)
 
-# - Prepping for Least Sqaures Solve - #
-LHSlsq, RHSlsq = dt.prep_leastsquares(LHS, RHS, prescribedpanels)
+mu = dt.solve_body_strengths(LHS,RHS, prescribedpanels, panels.nbodies)
 
-# - Solving - #
-mured = LHSlsq \ RHSlsq
-mu = dt.mured2mu(mured, prescribedpanels)
-# mu = LHS \ RHS
+# # - Prepping for Least Sqaures Solve - #
+# LHSlsq, RHSlsq = dt.prep_leastsquares(LHS, RHS, prescribedpanels)
+# # - Solving - #
+# mured = LHSlsq \ RHSlsq
+# mu = dt.mured2mu(mured, prescribedpanels, panels.nbodies)
+# # mu = LHS \ RHS
 
 # - Post-processing - #
 # - Body-induced Surface Velocity - #
@@ -160,7 +172,7 @@ plot!(
     color=myblue[1],
     markershape=:utriangle,
     markersize=3,
-    label="exp outer",
+    label="exp duct outer",
 )
 plot!(
     pc,
@@ -170,7 +182,7 @@ plot!(
     color=myblue[1],
     markershape=:dtriangle,
     markersize=3,
-    label="exp inner",
+    label="exp duct inner",
 )
 
 plot!(
@@ -181,8 +193,10 @@ plot!(
     color=myblue[1],
     markershape=:utriangle,
     markersize=3,
-    label="experimental",
+    label="hub experimental",
 )
 ###########################################
+savefig(pv, savepath * "velocity-comp.png")
+savefig(pc, savepath * "pressure-comp.png")
 savefig(pv, savepath * "velocity-comp.pdf")
 savefig(pc, savepath * "pressure-comp.pdf")

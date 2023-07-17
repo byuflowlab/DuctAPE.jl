@@ -5,11 +5,14 @@ end
 
 using DuctTAPE
 const dt = DuctTAPE
+using PrettyTables
+const pt = PrettyTables
 
 datapath = project_dir * "/examples/dfdc_partial/"
 savepath = datapath
 
 include(project_dir * "/visualize/visualize_geometry.jl")
+include(project_dir * "/visualize/visualize_flowfield.jl")
 include(project_dir * "/visualize/plots_default_new.jl")
 # pyplot()
 
@@ -20,30 +23,25 @@ pc = plot(; xlabel="x", ylabel=L"c_p", ylim=(-2.25, 1.0), yflip=true)
 #---------------------------------#
 #               DFDC              #
 #---------------------------------#
-include(datapath * "DFDC_VELOCITY_BREAKDOWN.jl")
+# include(datapath * "DFDC_VELOCITY_BREAKDOWN.jl")
 # include(datapath * "DFDC_SURFACE_VELOCITIES.jl")
-include(datapath * "DFDC_ELEMENT_IDS.jl")
-include(datapath * "DFDC_CPS.jl")
-
-hubid = elids[1, 2]:elids[1, 3]
-ductid = elids[2, 2]:elids[2, 3]
-hwid = elids[4, 2]:elids[4, 3]
-dwid = elids[14, 2]:elids[14, 3]
-
+# include(datapath * "DFDC_ELEMENT_IDS.jl")
+include(datapath * "dfdc_outs/lewis_coupled/DFDC_CPS.jl")
+include(datapath * "dfdc_outs/lewis_coupled/DFDC_CIRC.jl")
 
 hubx = dfdc_hub_cp[:, 1]
 hubr = dfdc_hub_cp[:, 2]
-hubvs = dfdc_hub_cp[:, end-1]
+hubvs = dfdc_hub_cp[:, end - 1]
 hubcp = dfdc_hub_cp[:, 4]
 
 ductx = dfdc_duct_cp[:, 1]
 ductr = dfdc_duct_cp[:, 2]
-ductvs = dfdc_duct_cp[:, end-1]
+ductvs = dfdc_duct_cp[:, end - 1]
 ductcp = dfdc_duct_cp[:, 4]
 
 ductwakex = dfdc_wake14_cp[:, 1]
 ductwaker = dfdc_wake14_cp[:, 2]
-ductwakevs = dfdc_wake14_cp[:, end-1]
+ductwakevs = dfdc_wake14_cp[:, end - 1]
 ductwakecp = dfdc_wake14_cp[:, 4]
 
 plot!(pv, hubx, hubvs; linestyle=:dash, color=myred[2], label="DFDC Hub")
@@ -152,7 +150,7 @@ paneling_constants = (;
 
 # # - Define closure that allows for parameters - #
 # p = (;)
-# rwrap(r, states) = dt.residual!(r, states, inputs, p)
+# rwrap(r, statesvars) = dt.residual!(r, statesvars, inputs, p)
 
 # res = dt.NLsolve.nlsolve(
 #     rwrap,
@@ -164,25 +162,60 @@ paneling_constants = (;
 #     linesearch=dt.BackTracking(; maxstep=1e6),
 # )
 
-# out = dt.post_process(res.zero, inputs)
+# states = res.zero
 
-# run analyze_propulsor function
-out, converged_states, inputs, initial_states, convergeflag = dt.analyze_propulsor(
-    duct_coordinates,
-    hub_coordinates,
-    paneling_constants,
-    rotor_parameters,
-    freestream,
-    reference_parameters;
-    debug=false,
-    verbose=true,
-    maximum_linesearch_step_size=1e6,
-    iteration_limit=50,
+# out = dt.post_process(states, inputs)
+
+# # run analyze_propulsor function
+# out, converged_states, inputs, initial_states, convergeflag = dt.analyze_propulsor(
+#     duct_coordinates,
+#     hub_coordinates,
+#     paneling_constants,
+#     rotor_parameters,
+#     freestream,
+#     reference_parameters;
+#     debug=false,
+#     verbose=true,
+#     maximum_linesearch_step_size=1e6,
+#     iteration_limit=50,
+# )
+
+#---------------------------------#
+#           Comparisons           #
+#---------------------------------#
+## -- Print Post Processed Comparsion Values -- ##
+include(datapath * "dfdc_outs/lewis_coupled/DFDC_FORCES.jl")
+
+function perr(x, y)
+    return 100.0 * (y - x) / x
+end
+
+# things to print:
+outcomps = [
+    "Total Thrust (N):" dfdc_total_thrust out.total_thrust perr(dfdc_total_thrust, out.total_thrust)
+    "Total Torque (N-m):" sum(dfdc_rotor_torque) out.total_torque perr(sum(dfdc_rotor_torque), out.total_torque)
+    "Total Power (W):" sum(dfdc_rotor_power) out.total_power perr(sum(dfdc_rotor_power), out.total_power)
+    "Total Efficiency:" dfdc_total_efficiency out.total_efficiency perr(dfdc_total_efficiency, out.total_efficiency)
+    "Body Thrust (N):" dfdc_body_thrust out.body_thrust perr(dfdc_body_thrust, out.body_thrust)
+]
+
+outscomprot = [
+    [
+        "Rotor $ir Thrust (N):" dfdc_rotor_thrust[ir] out.rotor_thrust[ir] perr(dfdc_rotor_thrust[ir], out.rotor_thrust[ir])
+        "Rotor $ir Torque (N-m):" dfdc_rotor_torque[ir] out.rotor_torque[ir] perr(dfdc_rotor_torque[ir], out.rotor_torque[ir])
+        "Rotor $ir Power (W):" dfdc_rotor_power[ir] out.rotor_power[ir] perr(dfdc_rotor_power[ir], out.rotor_power[ir])
+        "Rotor $ir Efficiency:" dfdc_rotor_efficiency[ir] out.rotor_efficiency[ir] perr(dfdc_rotor_efficiency[ir], out.rotor_efficiency[ir])
+    ] for ir in 1:(inputs.num_rotors)
+]
+
+# print the table
+pt.pretty_table(
+    [outcomps; reduce(vcat, outscomprot)]; header=["Value", "DFDC", "DuctTAPE", "% Error"]
 )
 
-# TODO: extract outputs you want to plot
+## -- Plotting -- ##
 
-# - Plotting - #
+println("Visualizing Paneling")
 # check normals
 visualize_paneling(;
     body_panels=inputs.body_doublet_panels,
@@ -211,7 +244,56 @@ visualize_paneling(;
     legendloc=:outerright,
 )
 
-#TODO: plot surface velocity and pressure
+# everything
+visualize_paneling(;
+    body_panels=inputs.body_doublet_panels,
+    rotor_panels=inputs.rotor_source_panels,
+    wake_panels=inputs.wake_vortex_panels,
+    wakeinterfaceid=inputs.ductwakeinterfaceid,
+    coordinates=[duct_coordinates, hub_coordinates],
+    controlpoints=true,
+    nodes=true,
+    TEnodes=false,
+    normals=false,
+    normal_scaling=0.1,
+    savepath=savepath,
+    filename="lewis-with-rotor-fullgeometry-zoom.pdf",
+    legendloc=:outerright,
+    limits=(; ylim=(0.65, 0.8), xlim=(0.4, 0.6)),
+    zoom=true,
+)
+
+println("Generating VTKs of Velocity Field")
+# Flowfield VTK generation
+visualize_flowfield(
+    inputs.Vinf;
+    body_panels=inputs.body_doublet_panels,
+    rotor_panels=inputs.rotor_source_panels,
+    wake_panels=inputs.wake_vortex_panels,
+    mub=out.mub,
+    sigr=out.sigr,
+    gamw=out.gamw,
+    # Pmax=nothing,
+    # Pmin=nothing,
+    verbose=true,
+    run_name="velocity_fields",
+    save_path=savepath,
+    cellsizescale=0.005,
+)
+
+visualize_surfaces(
+    inputs.Vinf;
+    body_panels=inputs.body_doublet_panels,
+    rotor_panels=inputs.rotor_source_panels,
+    wake_panels=inputs.wake_vortex_panels,
+    mub=out.mub,
+    sigr=out.sigr,
+    gamw=out.gamw,
+    run_name="velocity_field",
+    save_path=savepath,
+)
+
+# - Plot surface Velocity and Pressure - #
 plot!(pv, out.duct_inner_x, out.duct_inner_vs; color=myblue[2], label="DuctTAPE Duct inner")
 plot!(pv, out.duct_outer_x, out.duct_outer_vs; color=myblue[3], label="DuctTAPE Duct outer")
 plot!(pv, out.hub_x, out.hub_vs; color=myred[2], label="DuctTAPE Hub")
@@ -219,7 +301,28 @@ plot!(pc, out.duct_inner_x, out.duct_inner_cp; color=myblue[2], label="DuctTAPE 
 plot!(pc, out.duct_outer_x, out.duct_outer_cp; color=myblue[3], label="DuctTAPE Duct outer")
 plot!(pc, out.hub_x, out.hub_cp; color=myred[2], label="DuctTAPE Hub")
 
+#- plot rotor circulation - #
+pr = plot(; xlabel="Circulation", ylable="r")
+for ir in inputs.num_rotors
+    plot!(
+        pr,
+        dfdc_circulation / inputs.blade_elements[ir].B,
+        inputs.blade_elements[ir].rbe;
+        linestyle=:dash,
+        color=myblue[ir],
+        label="DFDC Rotor $ir",
+    )
+    plot!(
+        pr,
+        out.Gamr[:, ir],
+        inputs.blade_elements[ir].rbe;
+        color=myblue[ir],
+        label="DuctTAPE Rotor $ir",
+    )
+end
+
 savefig(pv, savepath * "lewis-with-rotor-velocity-comp.pdf")
 savefig(pc, savepath * "lewis-with-rotor-pressure-comp.pdf")
+savefig(pr, savepath * "lewis-with-rotor-circulation-comp.pdf")
 savefig(pv, savepath * "lewis-with-rotor-velocity-comp.png")
 savefig(pc, savepath * "lewis-with-rotor-pressure-comp.png")

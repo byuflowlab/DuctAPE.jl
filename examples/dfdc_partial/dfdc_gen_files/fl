@@ -1,0 +1,43 @@
+DFDC Version 0.70
+FatDuct + CB test case
+
+OPER
+! Vinf    Vref     RPM
+  20.0     20.0     8000
+! Rho     Mu       Vso     altkm
+  0.0     0.0      0.0     0.0
+! XDwake  Nwake
+  0.1     20
+! Lwkrlx
+  F
+ENDOPER
+
+ACTDISK
+! Xdisk   NRPdef
+  0.05     11
+! #stations
+  3
+! r     BGam
+ 0.02   0.0
+ 0.06   0.0
+ 0.10   0.0
+ENDACTDISK
+
+
+AERO
+! #sections
+  1
+! Xisect
+  0.0
+! A0deg        dCLda      CLmax   CLmin
+  0.0          6.28       1.5     -1.0
+! dCLda_stall  dCL_stall  CM      Mcrit
+  0.5          0.2        0.0     0.7
+! CDmin        CL@CDmin   dCDdCL2
+  0.012        0.1        0.005
+! REref        REexp
+  200000.      0.35
+ENDAERO
+
+GEOM
+Sm. centerbody

@@ -56,19 +56,19 @@ r = range(
 
 rotor_data = [(; naf=1, xrotor=0.5/scale, B=5, r, chord=rct[:, 2], twist=rct[:, 3])]
 
-filename = "lwr"
-gen_dfdc_case(
-    filename,
-    op_data,
-    wake_data,
-    airfoil_data,
-    rotor_data,
-    hub_coordinates./scale,
-    duct_coordinates./scale;
-    savepath=savepath,
-    version=0.70,
-    case_name="Lewis with Rotor",
-)
+# filename = "lwr"
+# gen_dfdc_case(
+#     filename,
+#     op_data,
+#     wake_data,
+#     airfoil_data,
+#     rotor_data,
+#     hub_coordinates./scale,
+#     duct_coordinates./scale;
+#     savepath=savepath,
+#     version=0.70,
+#     case_name="Lewis with Rotor",
+# )
 
 filename = "lewis_with_rotor.case.jl"
 write_ducttape_params(
