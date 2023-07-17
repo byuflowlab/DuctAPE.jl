@@ -27,3 +27,6 @@ _*
 
 Manifest.toml
 
+# dfdc
+/examples/*/fort*
+
