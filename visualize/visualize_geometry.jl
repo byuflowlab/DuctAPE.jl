@@ -13,11 +13,47 @@ function visualize_paneling(;
     savepath="",
     filename="paneling.pdf",
     legendloc=:best,
+    zoom=false,
+    limits=nothing,
 )
 
     ## -- Initialize Plot -- ##
     # plot generated body_panels
-    p = plot(; aspectratio=1, xlabel="x", ylabel="r", legend=legendloc)
+    if limits != nothing
+        p = plot(;
+            ylim=limits.ylim,
+            xlim=limits.xlim,
+            aspectratio=1,
+            xlabel="x",
+            ylabel="r",
+            legend=legendloc,
+        )
+    else
+        p = plot(; aspectratio=1, xlabel="x", ylabel="r", legend=legendloc)
+    end
+
+    if zoom
+        bcpsize = 6
+        bnsize = 6
+        rnsize = 5
+        rcpsize = 4
+        wcpsize = 3
+        wnsize = 3
+        tesize = 8
+        psize = 3
+        ifsize = 2
+
+    else
+        bcpsize = 2
+        bnsize = 2
+        rnsize = 2
+        rcpsize = 2
+        wcpsize = 2
+        wnsize = 2
+        tesize = 3
+        psize = 3
+        ifsize = 1.5
+    end
 
     #---------------------------------#
     #         Plot Body body_Panels        #
@@ -26,14 +62,15 @@ function visualize_paneling(;
 
         # plot inputs
         if !isnothing(coordinates)
-            for coords in coordinates
+            for (ic, coords) in enumerate(coordinates)
+                blab = ic == 1 ? "Input Body Coordinates" : ""
                 plot!(
                     p,
                     coords[:, 1],
                     coords[:, 2];
                     color=mygray[1],
                     linewidth=0.5,
-                    label="body input coordinates",
+                    label=blab,
                 )
             end
         end
@@ -49,7 +86,7 @@ function visualize_paneling(;
                     label=lab,
                     color=mygray[1],
                     seriestype=:scatter,
-                    markersize=3,
+                    markersize=tesize,
                 )
             end
         end
@@ -65,6 +102,7 @@ function visualize_paneling(;
                     label=lab,
                     color=myblue[2],
                     seriestype=:scatter,
+                    markersize=bnsize,
                 )
             end
         end
@@ -78,6 +116,7 @@ function visualize_paneling(;
                 color=myblue[3],
                 seriestype=:scatter,
                 markershape=:rect,
+                markersize=bcpsize,
                 label="Body Control Points",
             )
         end
@@ -91,7 +130,7 @@ function visualize_paneling(;
                     [body_panels.controlpoint[prescribedpanels[ipp][1], 2]];
                     seriestype=:scatter,
                     color=mygreen[2],
-                    markersize=3,
+                    markersize=psize,
                     markershape=:diamond,
                     label=lab,
                 )
@@ -129,15 +168,15 @@ function visualize_paneling(;
                     rotor_panels[irotor].controlpoint[:, 2];
                     color=mygray[irotor],
                     seriestype=:scatter,
-                    markershape=:rect,
-                    label="Rotor $irotor Control Points",
+                    markersize=rcpsize,
+                    label="Rotor $irotor Nodes",
                 )
             end
 
             #plot nodes
             if nodes
                 for i in 1:length(rotor_panels[irotor].len)
-                    lab = i == 1 ? "Rotor $irotor Nodes" : ""
+                    lab = i == 1 ? "Rotor $irotor Panel Edges" : ""
                     plot!(
                         p,
                         rotor_panels[irotor].nodes[i, :, 1],
@@ -145,6 +184,8 @@ function visualize_paneling(;
                         label=lab,
                         color=mygray[irotor],
                         seriestype=:scatter,
+                        markershape=:diamond,
+                        markersize=rnsize,
                     )
                 end
             end
@@ -158,7 +199,7 @@ function visualize_paneling(;
         #plot nodes
         if nodes
             for i in 1:length(wake_panels.len)
-                lab = i == 1 ? "Wake Nodes" : ""
+                lab = i == 1 ? "Wake Panel Edges" : ""
                 plot!(
                     p,
                     wake_panels.nodes[i, :, 1],
@@ -166,6 +207,8 @@ function visualize_paneling(;
                     label=lab,
                     color=myred[2],
                     seriestype=:scatter,
+                    markershape=:diamond,
+                    markersize=wnsize,
                 )
             end
         end
@@ -178,8 +221,8 @@ function visualize_paneling(;
                 wake_panels.controlpoint[:, 2];
                 color=myred[3],
                 seriestype=:scatter,
-                markershape=:rect,
-                label="Wake Control Points",
+                markersize=wcpsize,
+                label="Wake Nodes",
             )
 
             if !isempty(wakeinterfaceid)
@@ -190,7 +233,7 @@ function visualize_paneling(;
                     color=mygreen[2],
                     seriestype=:scatter,
                     markershape=:utriangle,
-                    markersize=1.5,
+                    markersize=ifsize,
                     label="Body Interface Points",
                 )
             end
