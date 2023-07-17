@@ -850,3 +850,140 @@ function freestream_influence_vector!(RHS, normals, Vinfmat)
 
     return nothing
 end
+
+######################################################################
+#                                                                    #
+#               Augment with influence on Internal Panels            #
+#                                                                    #
+######################################################################
+
+##### ----- Vortex ----- #####
+
+function vortex_panel_influence_on_internal_panels(RHS, itpanels, influencepanels)
+    M, N = size(RHS)
+    nit = length(itpanels.itcontrolpoint[:, 1])
+
+    augRHS = zeros(eltype(RHS), M + nit, N)
+    augRHS[1:M, 1:N] .= RHS
+
+    vortex_panel_influence_on_internal_panels!(augRHS, itpanels, influencepanels)
+
+    return augRHS
+end
+
+function vortex_panel_influence_on_internal_panels!(augRHS, itpanels, influencepanels)
+    M = itpanels.npanels
+
+    for (j, (cp, lj)) in
+        enumerate(zip(eachrow(influencepanels.controlpoint), influencepanels.len))
+        for (i, (fp, nhat)) in
+            enumerate(zip(eachrow(itpanels.controlpoint), eachrow(itpanels.itnormal)))
+
+            # get unit induced velocity from the panel onto the control point
+            vel = constant_vortex_band_induced_velocity(cp, lj, fp)
+
+            #TODO: double check if this should be + or - or if it matters
+            augRHS[M + i, j] += dot(vel, nhat)
+        end
+    end
+
+    return nothing
+end
+
+##### ----- Source ----- #####
+
+function source_panel_influence_on_internal_panels(RHS, itpanels, influencepanels)
+    M, N = size(RHS)
+    nit = length(itpanels.itcontrolpoint[:, 1])
+
+    augRHS = zeros(eltype(RHS), M + nit, N)
+    augRHS[1:M, 1:N] .= RHS
+
+    source_panel_influence_on_internal_panels!(augRHS, itpanels, influencepanels)
+
+    return augRHS
+end
+
+function source_panel_influence_on_internal_panels!(augRHS, itpanels, influencepanels)
+    M = itpanels.npanels
+
+    for (j, (cp, lj)) in
+        enumerate(zip(eachrow(influencepanels.controlpoint), influencepanels.len))
+        for (i, (fp, nhat)) in
+            enumerate(zip(eachrow(itpanels.controlpoint), eachrow(itpanels.itnormal)))
+
+            # get unit induced velocity from the panel onto the control point
+            vel = constant_source_band_induced_velocity(cp, lj, fp)
+
+            #TODO: double check if this should be + or - or if it matters
+            augRHS[M + i, j] += dot(vel, nhat)
+        end
+    end
+
+    return nothing
+end
+
+##### ----- Doublet ----- #####
+
+function doublet_panel_influence_on_internal_panels(LHS, itpanels, influencepanels)
+    M, N = size(LHS)
+    nit = length(influencepanels.itcontrolpoint[:, 1])
+
+    augLHS = zeros(eltype(LHS), M + nit, N + nit)
+    augLHS[1:M, 1:N] .= LHS
+
+    for (i, eid) in enumerate(eachrow(itpanels.endpointidxs))
+        augLHS[eid[1]:eid[2], N + i] .= -1.0
+    end
+
+    doublet_panel_influence_on_internal_panels!(augLHS, influencepanels, itpanels)
+
+    return augLHS
+end
+
+function doublet_panel_influence_on_internal_panels!(augLHS, influencepanels, itpanels)
+
+    # rename for convenience
+    nodes = influencepanels.nodes
+    M = itpanels.npanels
+
+    for (i, (fp, nhat)) in
+        enumerate(zip(eachrow(itpanels.itcontrolpoint), eachrow(itpanels.itnormal)))
+        for (j, (p1, p2)) in
+            enumerate(zip(eachrow(nodes[:, 1, :]), eachrow(nodes[:, 2, :])))
+
+            # get unit induced velocity from the panel onto the control point
+            vel = constant_doublet_band_induced_velocity(p1, p2, fp)
+
+            # fill the matrix
+            augLHS[M + i, j] += dot(vel, nhat)
+        end
+    end
+
+    return nothing
+end
+
+##### ----- Freestream ----- #####
+
+function freestream_influence_on_internal_panels(RHS, panels, Vinfvec)
+    M = length(RHS)
+    nit = length(panels.itcontrolpoint[:, 1])
+
+    augRHS = zeros(eltype(RHS), M + nit)
+    augRHS[1:M] .= RHS
+
+    freestream_influence_on_internal_panels!(augRHS, panels, Vinfvec)
+
+    return augRHS
+end
+
+function freestream_influence_on_internal_panels!(augRHS, panels, Vinfvec)
+    M = panels.npanels
+
+    for (i, nhat) in enumerate(eachrow(panels.itnormal))
+        #TODO: double check if this should be + or - or if it matters
+        augRHS[M + i] -= dot(Vinfvec, nhat)
+    end
+
+    return nothing
+end

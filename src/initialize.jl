@@ -134,7 +134,8 @@ function precomputed_inputs(
     _, leidx = findmin(t_duct_coordinates[:, 1])
     # prescribedpanels = [(leidx, 0.0)]
     # here prescribed inner duct TE and hub LE panels, arbitrarily chosen
-    prescribedpanels = [(1, 0.0); (length(t_duct_coordinates[:, 1]), 0.0)]
+    # prescribedpanels = [(1, 0.0); (length(t_duct_coordinates[:, 1]), 0.0)]
+    prescribedpanels = [(leidx, 0.0); (length(t_duct_coordinates[:, 1]), 0.0)]
 
     # generate body paneling
     if nohub
@@ -266,15 +267,27 @@ function precomputed_inputs(
     # - body to body - #
     A_bb = doublet_panel_influence_matrix(body_doublet_panels.nodes, body_doublet_panels)
 
+    # LHS = A_bb
+
+    # - add internal panel stuff - #
+    LHS = doublet_panel_influence_on_internal_panels(
+        A_bb, body_doublet_panels, body_doublet_panels
+    )
+
     # apply Kutta condition
-    body_lhs_kutta!(A_bb, body_doublet_panels)
+    body_lhs_kutta!(LHS, body_doublet_panels)
 
     # right hand side from freestream
-    Vinfmat = repeat([freestream.Vinf 0], body_doublet_panels.npanels)
+    Vinfmat = repeat([freestream.Vinf 0.0], body_doublet_panels.npanels)
     b_bf = freestream_influence_vector(body_doublet_panels.normal, Vinfmat)
 
+    # - add internal panel stuff - #
+    RHS = freestream_influence_on_internal_panels(
+        b_bf, body_doublet_panels, [freestream.Vinf 0.0]
+    )
+
     # Set up matrices for body linear system
-    Nsys = size(A_bb, 1)
+    Nsys = size(LHS, 1)
     Npp = length(prescribedpanels)
     body_system_matrices = (;
         cache=false
@@ -293,8 +306,18 @@ function precomputed_inputs(
         j in 1:length(rotor_source_panels)
     ]
 
+    RHSr = [
+        source_panel_influence_on_internal_panels(
+            A_br[j], body_doublet_panels, rotor_source_panels[j]
+        ) for j in 1:length(rotor_source_panels)
+    ]
+
     # - wake to body - #
     A_bw = vortex_panel_influence_matrix(wake_vortex_panels, body_doublet_panels)
+
+    RHSw = vortex_panel_influence_on_internal_panels(
+        A_bw, body_doublet_panels, wake_vortex_panels
+    )
 
     ##### ----- Induced Velcocities on Rotors ----- #####
     # - rotor to rotor - #
@@ -583,11 +606,15 @@ function precomputed_inputs(
         # - Linear System - #
         body_system_matrices, # includes the various LHS and RHS matrics and vectors for solving the linear system for the body
         # - Influence Matrices - #
-        A_bb, # body to body
-        b_bf, # freestream contribution to body boundary conditions
+        A_bb=LHS, # body to body
+        A_bb_raw=A_bb, # body to body
+        b_bf=RHS, # freestream contribution to body boundary conditions
+        b_bf_raw=b_bf, # freestream contribution to body boundary conditions
         prescribedpanels, # prescribed panels
-        A_br, # rotor to body (total)
-        A_bw, # wake to body (total)
+        A_br=RHSr, # rotor to body (total)
+        A_br_raw=A_br, # rotor to body (total)
+        A_bw=RHSw, # wake to body (total)
+        A_bw_raw=A_bw, # wake to body (total)
         v_rb, # body to rotor
         v_rbte,
         v_wb, # body to wake
@@ -669,8 +696,10 @@ function initialize_states(inputs)
         zeros(TF, inputs.rotor_source_panels[1].npanels, 2),
     )
 
+    #rename for convenience later
+    nbodies = inputs.body_doublet_panels.nbodies
     # solve body-only problem
-    mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels)
+    mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels, nbodies)
 
     # - Initialize blade circulation and source strengths (assume open rotor) - #
 

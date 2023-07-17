@@ -181,7 +181,7 @@ end
 
 #TODO; need to check that RHS isn't overwritten here, or if it is, need to make sure that doesn't mess things up elsewhere
 """
-Given the original system of equations LHS*mu = RHS, it converts it into its
+Given the original system of equations LHS*mub = RHS, it converts it into its
 equivalent least-squares problem by prescribing the strengths of the
 panels under `prescribedpanels` and returning Glsq and blsq.
 
@@ -270,78 +270,78 @@ end
 """
 Converts the reduced vector of strengths to the full vector of strengths
 """
-function mured2mu!(mu, mured, prescribedpanels)
+function mured2mu!(mub, mured, prescribedpanels)
 
     # Total number of panels
-    n = length(mu)
+    n = length(mub)
 
     # Number of prescribed panels
     npres = length(prescribedpanels)
 
     # Case of no prescrbied panels
     if npres == 0
-        mu .= mured
-        return mu
+        mub .= mured
+        return mub
     end
 
     prev_paneli = 0
 
     # Iterate over prescribed panels building the full vector
     for (i, (paneli, strength)) in enumerate(prescribedpanels)
-        mu[(prev_paneli + 1):(paneli - 1)] .= view(
+        mub[(prev_paneli + 1):(paneli - 1)] .= view(
             mured, (prev_paneli + 2 - i):(paneli - i)
         )
-        mu[paneli] = strength
+        mub[paneli] = strength
 
         if i == npres && paneli != n
-            mu[(paneli + 1):end] .= view(mured, (paneli - i + 1):length(mured))
+            mub[(paneli + 1):end] .= view(mured, (paneli - i + 1):length(mured))
         end
 
         prev_paneli = paneli
     end
 
-    return mu
+    return mub
 end
 
 function mured2mu(
-    mured::AbstractVector{T1}, prescribedpanels::AbstractArray{Tuple{Int,T2}}
+    mured::AbstractVector{T1}, prescribedpanels::AbstractArray{Tuple{Int,T2}}, nbodies
 ) where {T1,T2}
     T = promote_type(T1, T2)
 
-    n = length(mured) + length(prescribedpanels)
-    mu = zeros(T, n)
+    n = length(mured) + length(prescribedpanels) - nbodies
+    mub = zeros(T, n)
 
-    mured2mu!(mu, mured, prescribedpanels)
+    mured2mu!(mub, mured, prescribedpanels)
 
-    return mu
+    return mub
 end
 
 #---------------------------------#
 #             Solvers             #
 #---------------------------------#
 function solve_body_strengths(
-    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2}, prescribedpanels
+    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2}, prescribedpanels, nbodies
 ) where {T1,T2}
     T = promote_type(T1, T2)
 
-    mu = zeros(T, size(RHS, 1))
-    solve_body_strengths!(mu, LHS, RHS, prescribedpanels)
+    mub = zeros(T, size(RHS, 1) - nbodies)
+    solve_body_strengths!(mub, LHS, RHS, prescribedpanels, nbodies)
 
-    return mu
+    return mub
 end
 
-function solve_body_strengths!(mu, LHS, RHS, prescribedpanels)
+function solve_body_strengths!(mub, LHS, RHS, prescribedpanels, nbodies)
     LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
 
     mured = LHSlsq \ RHSlsq
 
-    mured2mu!(mu, mured, prescribedpanels)
+    mured2mu!(mub, mured[1:(end - nbodies)], prescribedpanels)
 
     return nothing
 end
 
 #TODO: for when cache is implemented
-# function solve_body_strengths!(mu, body_system_matrices)
+# function solve_body_strengths!(mub, body_system_matrices)
 
 #     # - Extract Matrices - #
 #     (; LHS, LHSred, LHSlsq, RHS, RHSlsq, prescribedpanels) = body_system_matrices
@@ -351,7 +351,7 @@ end
 
 #     mured = LHSlsq \ RHSlsq
 
-#     mured2mu!(mu, mured, prescribedpanels)
+#     mured2mu!(mub, mured, prescribedpanels)
 
 #     return nothing
 # end
@@ -363,12 +363,12 @@ end
 if using the stagnation point as the point to prescribe to zero, probably want to update the panel being used based on where the stagnation point ends up on each iteration.
 (could also be used for a 1-way boundary layer approximation)
 """
-function update_stagnation_point_index!(mu, prescribedpanels; prescribedstrength=0.0)
+function update_stagnation_point_index!(mub, prescribedpanels; prescribedstrength=0.0)
 
-    ## -- find the index at which the sign of mu changes -- ##
+    ## -- find the index at which the sign of mub changes -- ##
 
     # check that the sign actually changes
-    if !all(sign.(mu) .== 1.0) && !all(sign.(mu) .== -1.0)
+    if !all(sign.(mub) .== 1.0) && !all(sign.(mub) .== -1.0)
         # find the change in sign
 
         # set that index to be the prescribed panel index

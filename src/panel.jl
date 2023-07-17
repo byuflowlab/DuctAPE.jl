@@ -14,7 +14,9 @@ end
 generates NamedTuple of panel geometry items from a vector of matrices of coordinates
 assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
 """
-function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
+function generate_panels(
+    coordinates::Vector{Matrix{TF}}; itpanelscale=0.05, axistol=1e-15
+) where {TF}
 
     ## -- SETUP -- ##
     # Get total number of panels (sum of nedges-1 for each body)
@@ -86,6 +88,39 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         end
     end
 
+    itcontrolpoint = zeros(TF, length(npanel), 2)
+    itnormal = zeros(TF, length(npanel), 2)
+
+    for ib in 1:length(npanel)
+
+        #TODO: for more robust, consider splining the coordinates, then getting the midpoint of the bodies, the normals can probably just be arbitrary, [1,0] should work, then there's no axial flow on the panel.
+
+        #rename for convenience
+        p1id = endpointidxs[ib, 1]
+        pnid = endpointidxs[ib, 2]
+
+        # get node coordinates
+        n11 = nodes[p1id, 1, :]
+        n12 = nodes[p1id, 2, :]
+        nn1 = nodes[pnid, 1, :]
+        nn2 = nodes[pnid, 2, :]
+
+        xtan = n11[1] - n12[1] + nn2[1] - nn1[1]
+        rtan = n11[2] - n12[2] + nn2[2] - nn1[2]
+        stan = sqrt(xtan^2 + rtan^2)
+
+        lenbar = 0.5 * (panel_length[p1id] + panel_length[pnid])
+
+        itcontrolpoint[ib, 1] =
+            0.5 * (n11[1] + nn2[1]) - itpanelscale * lenbar * xtan / stan
+        itcpr = 0.5 * (n11[2] + nn2[2]) - itpanelscale * lenbar * rtan / stan
+        #TODO: need to update this to be more robust
+        itcontrolpoint[ib, 2] = itcpr < axistol ? 1e-3 : itcpr
+
+        itnormal[ib, 1] = xtan / stan
+        itnormal[ib, 2] = rtan / stan
+    end
+
     return (;
         controlpoint,
         nodes,
@@ -98,6 +133,9 @@ function generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
         endpointidxs,
         TEnodes,
         npanels=totpanel,
+        itcontrolpoint,
+        itnormal,
+        nbodies=length(npanel),
     )
 end
 

@@ -93,7 +93,7 @@ function post_process(states, inputs)
     )
 
     # total thrust
-    rotor_total_thrust = rotor_inviscid_thrust .+ rotor_viscous_thrust
+    rotor_thrust = rotor_inviscid_thrust .+ rotor_viscous_thrust
 
     # - Rotor Torque - #
     # inviscid torque
@@ -207,15 +207,19 @@ function post_process(states, inputs)
     ## -- Total Outputs -- ##
 
     # - Total Thrust - #
+    rotor_thrust = rotor_inviscid_thrust .+ rotor_viscous_thrust
     total_thrust = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust])
 
     # - Total Torque - #
+    rotor_torque = rotor_inviscid_torque .+ rotor_viscous_torque
     total_torque = sum([rotor_inviscid_torque; rotor_viscous_torque])
 
     # - Total Power - #
+    rotor_power = rotor_inviscid_power .+ rotor_viscous_power
     total_power = sum([rotor_inviscid_power; rotor_viscous_power])
 
     # - Total Efficiency - #
+    rotor_efficiency = get_total_efficiency(rotor_thrust, rotor_power, Vinf)
     total_efficiency = get_total_efficiency(total_thrust, total_power, Vinf)
 
     # - Induced Efficiency - #
@@ -289,24 +293,26 @@ function post_process(states, inputs)
         hubwake_cp,
         hubwake_x=inputs.hub_wake_panels.controlpoint[:, 1],
         # - Rotor Values - #
-        # rotor thrust
-        rotor_total_thrust,
+        rotor_efficiency,
         rotor_inviscid_thrust,
         rotor_inviscid_thrust_dist,
         rotor_viscous_thrust,
         rotor_viscous_thrust_dist,
+        rotor_thrust,
         CT,
         # rotor torque
         rotor_inviscid_torque,
         rotor_inviscid_torque_dist,
         rotor_viscous_torque,
         rotor_viscous_torque_dist,
+        rotor_torque,
         CQ,
         # rotor power
         rotor_inviscid_power,
         rotor_inviscid_power_dist,
         rotor_viscous_power,
         rotor_viscous_power_dist,
+        rotor_power,
         # - Blade Values - #
         clift,
         cdrag,
@@ -318,7 +324,7 @@ function post_process(states, inputs)
         total_thrust,
         total_torque,
         total_power,
-        total_efficiency,
+        total_efficiency=total_efficiency[1],
         induced_efficiency,
         ideal_efficiency,
     )
@@ -749,11 +755,15 @@ function viscous_rotor_power(Qvisc, Omega)
 end
 
 function get_total_efficiency(total_thrust, total_power, Vinf)
-    if Vinf == 0.0 || total_power <= 0.0 || total_thrust <= 0.0
-        return 0.0
-    else
-        return total_thrust * Vinf / total_power
+    eta = zeros(eltype(total_thrust), length(total_thrust))
+    for i in 1:length(total_thrust)
+        if Vinf == 0.0 || total_power[i] <= 0.0 || total_thrust[i] <= 0.0
+            #do nothing
+        else
+            eta[i] = total_thrust[i] * Vinf / total_power[i]
+        end
     end
+    return eta
 end
 
 function get_induced_efficiency(Tinv, Tduct, Pinv, Vinf)

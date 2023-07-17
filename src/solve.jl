@@ -205,7 +205,9 @@ function update_strengths!(states, inputs, p)
     RHS = update_RHS(inputs.b_bf, inputs.A_bw, gamw, inputs.A_br, sigr)
 
     # - Calculate body vortex strengths (before updating state dependencies) - #
-    solve_body_strengths!(mub, inputs.A_bb, RHS, inputs.prescribedpanels)
+    solve_body_strengths!(
+        mub, inputs.A_bb, RHS, inputs.prescribedpanels, inputs.body_doublet_panels.nbodies
+    )
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
     calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
