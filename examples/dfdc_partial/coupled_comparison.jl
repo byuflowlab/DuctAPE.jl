@@ -9,7 +9,7 @@ using PrettyTables
 const pt = PrettyTables
 
 datapath = project_dir * "/examples/dfdc_partial/"
-savepath = datapath
+savepath = datapath * "outputs/"
 
 include(project_dir * "/visualize/visualize_geometry.jl")
 include(project_dir * "/visualize/visualize_flowfield.jl")
@@ -67,7 +67,7 @@ visualize_paneling(;
     normals=true,
     normal_scaling=0.1,
     savepath=savepath,
-    filename="lewis-with-rotor-dfdcbodygeometry.pdf",
+    filename=["lc-dfdcbodygeometry.pdf"],
     legendloc=:right,
 )
 
@@ -111,8 +111,8 @@ include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
 # )
 
 ###########################################
-savefig(pv, savepath * "lewis-with-rotor-velocity-dfdc.pdf")
-savefig(pc, savepath * "lewis-with-rotor-pressure-dfdc.pdf")
+# savefig(pv, savepath * "lewis-with-rotor-velocity-dfdc.pdf")
+# savefig(pc, savepath * "lewis-with-rotor-pressure-dfdc.pdf")
 
 #---------------------------------#
 #             DuctTAPE            #
@@ -129,45 +129,24 @@ duct_coordinates = reverse([ductx ductr]; dims=1)
 duct_coordinates[1, :] .= duct_coordinates[end, :]
 hub_coordinates = reverse([hubx hubr]; dims=1)
 
+# - Use Smooth Duct Coordinates - #
+include(datapath * "nacasmoothgeom.jl")
+revductcoords = reverse(smoothnormduct; dims=1)
+revductcoords[:, 2] .+= duct_coordinates[1, 2]
+duct_coordinates = dt.repanel_airfoil(revductcoords; normalize=false, N=200)
+
 #overwite npanels for now (should put conditions for this in auto generation function)
+npi = 40
+pref = 1.5
 paneling_constants = (;
-    paneling_constants..., nhub_inlet=30, nduct_inlet=30, npanels=[30, 20, 40]
+    paneling_constants...,
+    nhub_inlet=ceil(Int, pref*npi),
+    nduct_inlet=ceil(Int, pref*npi),
+    npanels=ceil.(Int,pref .* [30, 20, 40]),
 )
 
-# # run inputs first to check things
-# # initialize various inputs used in analysis
-# inputs = dt.precomputed_inputs(
-#     duct_coordinates,
-#     hub_coordinates,
-#     paneling_constants,
-#     rotor_parameters,
-#     freestream,
-#     reference_parameters;
-# )
-
-# # calculate initial guess for state variables
-# initial_states = dt.initialize_states(inputs)
-
-# # - Define closure that allows for parameters - #
-# p = (;)
-# rwrap(r, statesvars) = dt.residual!(r, statesvars, inputs, p)
-
-# res = dt.NLsolve.nlsolve(
-#     rwrap,
-#     initial_states;
-#     autodiff=:forward,
-#     method=:newton,
-#     iterations=50,
-#     show_trace=true,
-#     linesearch=dt.BackTracking(; maxstep=1e6),
-# )
-
-# states = res.zero
-
-# out = dt.post_process(states, inputs)
-
 # # run analyze_propulsor function
-# out, converged_states, inputs, initial_states, convergeflag = dt.analyze_propulsor(
+# out, converged_states, inputs, initial_states, convergeflag = @time dt.analyze_propulsor(
 #     duct_coordinates,
 #     hub_coordinates,
 #     paneling_constants,
@@ -180,9 +159,46 @@ paneling_constants = (;
 #     iteration_limit=50,
 # )
 
+## -- do things one at a time, step by step -- ##
+
+# initialize various inputs used in analysis
+inputs = dt.precomputed_inputs(
+    duct_coordinates,
+    hub_coordinates,
+    paneling_constants,
+    rotor_parameters,
+    freestream,
+    reference_parameters;
+)
+
+# calculate initial guess for state variables
+initial_states = dt.initialize_states(inputs)
+
+# - Define closure that allows for parameters - #
+p = (;)
+rwrap(r, statesvars) = dt.residual!(r, statesvars, inputs, p)
+
+@time "Solve" begin
+    res = dt.NLsolve.nlsolve(
+        rwrap,
+        initial_states;
+        autodiff=:forward,
+        method=:newton,
+        iterations=50,
+        show_trace=true,
+        linesearch=dt.BackTracking(; maxstep=1e6),
+    )
+end
+
+states = res.zero
+
+out = @time "Post-process" dt.post_process(states, inputs)
+
 #---------------------------------#
 #           Comparisons           #
 #---------------------------------#
+println("\n\nGENERATING COMPARISON AND VISUALZITION\n")
+
 ## -- Print Post Processed Comparsion Values -- ##
 include(datapath * "dfdc_outs/lewis_coupled/DFDC_FORCES.jl")
 
@@ -215,53 +231,55 @@ pt.pretty_table(
 
 ## -- Plotting -- ##
 
-println("Visualizing Paneling")
-# check normals
-visualize_paneling(;
-    body_panels=inputs.body_doublet_panels,
-    coordinates=[duct_coordinates, hub_coordinates],
-    controlpoints=true,
-    nodes=true,
-    normals=true,
-    normal_scaling=0.1,
-    savepath=savepath,
-    filename="lewis-with-rotor-bodygeometry.pdf",
-    legendloc=:right,
-)
+@time "Visualize 2D" begin
+    println("Visualizing Paneling")
+    # check normals
+    visualize_paneling(;
+        body_panels=inputs.body_doublet_panels,
+        coordinates=[duct_coordinates, hub_coordinates],
+        controlpoints=true,
+        nodes=true,
+        normals=true,
+        normal_scaling=0.1,
+        savepath=savepath,
+        filename=["lc-bodygeometry.pdf"; "lc-bodygeomtry.png"],
+        legendloc=:right,
+    )
 
-# everything
-visualize_paneling(;
-    body_panels=inputs.body_doublet_panels,
-    rotor_panels=inputs.rotor_source_panels,
-    wake_panels=inputs.wake_vortex_panels,
-    coordinates=[duct_coordinates, hub_coordinates],
-    controlpoints=true,
-    nodes=true,
-    normals=false,
-    normal_scaling=0.1,
-    savepath=savepath,
-    filename="lewis-with-rotor-fullgeometry.pdf",
-    legendloc=:outerright,
-)
+    # everything
+    visualize_paneling(;
+        body_panels=inputs.body_doublet_panels,
+        rotor_panels=inputs.rotor_source_panels,
+        wake_panels=inputs.wake_vortex_panels,
+        coordinates=[duct_coordinates, hub_coordinates],
+        controlpoints=true,
+        nodes=true,
+        normals=false,
+        normal_scaling=0.1,
+        savepath=savepath,
+        filename=["lc-fullgeometry.pdf"; "lc-fullgeometry.png"],
+        legendloc=:outerright,
+    )
 
-# everything
-visualize_paneling(;
-    body_panels=inputs.body_doublet_panels,
-    rotor_panels=inputs.rotor_source_panels,
-    wake_panels=inputs.wake_vortex_panels,
-    wakeinterfaceid=inputs.ductwakeinterfaceid,
-    coordinates=[duct_coordinates, hub_coordinates],
-    controlpoints=true,
-    nodes=true,
-    TEnodes=false,
-    normals=false,
-    normal_scaling=0.1,
-    savepath=savepath,
-    filename="lewis-with-rotor-fullgeometry-zoom.pdf",
-    legendloc=:outerright,
-    limits=(; ylim=(0.65, 0.8), xlim=(0.4, 0.6)),
-    zoom=true,
-)
+    # everything
+    visualize_paneling(;
+        body_panels=inputs.body_doublet_panels,
+        rotor_panels=inputs.rotor_source_panels,
+        wake_panels=inputs.wake_vortex_panels,
+        wakeinterfaceid=inputs.ductwakeinterfaceid,
+        coordinates=[duct_coordinates, hub_coordinates],
+        controlpoints=true,
+        nodes=true,
+        TEnodes=false,
+        normals=false,
+        normal_scaling=0.1,
+        savepath=savepath,
+        filename=["lc-fullgeometry-zoom.pdf"; "lc-fullgeometry-zoom.png"],
+        legendloc=:outerright,
+        limits=(; ylim=(0.65, 0.8), xlim=(0.4, 0.6)),
+        zoom=true,
+    )
+end
 
 println("Generating VTKs of Velocity Field")
 # Flowfield VTK generation
@@ -273,23 +291,20 @@ visualize_flowfield(
     mub=out.mub,
     sigr=out.sigr,
     gamw=out.gamw,
+    Gamr=out.Gamr,
     # Pmax=nothing,
     # Pmin=nothing,
     verbose=true,
-    run_name="velocity_fields",
+    run_name="lc-velocity_fields",
     save_path=savepath,
     cellsizescale=0.005,
 )
 
-visualize_surfaces(
-    inputs.Vinf;
+visualize_surfaces(;
     body_panels=inputs.body_doublet_panels,
     rotor_panels=inputs.rotor_source_panels,
     wake_panels=inputs.wake_vortex_panels,
-    mub=out.mub,
-    sigr=out.sigr,
-    gamw=out.gamw,
-    run_name="velocity_field",
+    run_name="lc-surfaces",
     save_path=savepath,
 )
 
@@ -321,8 +336,26 @@ for ir in inputs.num_rotors
     )
 end
 
-savefig(pv, savepath * "lewis-with-rotor-velocity-comp.pdf")
-savefig(pc, savepath * "lewis-with-rotor-pressure-comp.pdf")
-savefig(pr, savepath * "lewis-with-rotor-circulation-comp.pdf")
-savefig(pv, savepath * "lewis-with-rotor-velocity-comp.png")
-savefig(pc, savepath * "lewis-with-rotor-pressure-comp.png")
+# - plot body surface velocity components - #
+duct_inner_vxr_nogradmu = repeat([inputs.Vinf 0], length(out.duct_inner_x))
+duct_inner_vxr_nogradmu .+= out.duct_inner_vs_from_body .+ out.duct_inner_vs_from_TE
+duct_inner_vs_nogradmu = dt.norm.(eachrow(duct_inner_vxr_nogradmu))
+duct_outer_vxr_nogradmu = repeat([inputs.Vinf 0], length(out.duct_outer_x))
+duct_outer_vxr_nogradmu .+= out.duct_outer_vs_from_body .+ out.duct_outer_vs_from_TE
+duct_outer_vs_nogradmu = dt.norm.(eachrow(duct_outer_vxr_nogradmu))
+hub_vxr_nogradmu = repeat([inputs.Vinf 0], length(out.hub_x))
+hub_vxr_nogradmu .+= out.hub_vs_from_body .+ out.hub_vs_from_TE
+hub_vs_nogradmu = dt.norm.(eachrow(hub_vxr_nogradmu))
+pvngm = plot(; xlabel="x", ylabel=L"V_s")
+plot!(pvngm, out.duct_inner_x, duct_inner_vs_nogradmu; label="Duct Inner Surface")
+plot!(pvngm, out.duct_outer_x, duct_outer_vs_nogradmu; label="Duct Outer Surface")
+# plot!(pvngm, out.hub_x, hub_vs_nogradmu; label="Hub Surface")
+savefig(pvngm, savepath * "lc-vs-without-gradmu.pdf")
+savefig(pvngm, savepath * "lc-vs-without-gradmu.png")
+
+savefig(pv, savepath * "lc-velocity-comp.pdf")
+savefig(pc, savepath * "lc-pressure-comp.pdf")
+savefig(pr, savepath * "lc-circulation-comp.pdf")
+savefig(pv, savepath * "lc-velocity-comp.png")
+savefig(pc, savepath * "lc-pressure-comp.png")
+savefig(pr, savepath * "lc-circulation-comp.png")
