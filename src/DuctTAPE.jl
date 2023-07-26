@@ -39,7 +39,7 @@ include("wake_geometry.jl")
 # include("mesh.jl")
 
 # Additional Influence Coefficient Functions
-# include("coefficient_matrix.jl")
+include("coefficient_matrix.jl")
 include("velocities.jl")
 
 # Rotor Aerodynamic Functions
