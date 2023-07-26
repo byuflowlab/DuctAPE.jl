@@ -117,7 +117,9 @@ end
 adds wake panel influence (from trailing edge panels) to the LHS matrix for the Kutta condition
 """
 function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
-    (; TEnodes, controlpoint, normal) = panels
+    (; TEnodes, controlpoint, normal, itcontrolpoint, itnormal) = panels
+
+    M = size(controlpoint, 1)
 
     for (i, te) in enumerate(TEnodes)
 
@@ -131,6 +133,17 @@ function body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=false)
 
             LHS[m, te.idx] += dot(te.sign * [vx; vr], nhat)
         end
+
+        # # get the internal panels too.
+        # for (ip, (cpit, nhatit)) in
+        #     enumerate(zip(eachrow(itcontrolpoint), eachrow(itnormal)))
+        #     # influence due TE node
+        #     xi, rho, k2, rj = calculate_xrm(te.pos, cpit)
+        #     vx = vortex_ring_vx(xi, rho, k2, rj, 19.5733 * rho)#lengths shouldn't be needed here, set such that self-induced case returns zero.
+        #     vr = vortex_ring_vr(xi, rho, k2, rj)
+        #     LHS[M + ip, te.idx] += dot(te.sign * [vx; vr], nhatit)
+        # end
+
     end
 
     return nothing
@@ -272,6 +285,12 @@ Converts the reduced vector of strengths to the full vector of strengths
 """
 function mured2mu!(mub, mured, prescribedpanels)
 
+    # if eltype(mured) != Float64
+    #     println("mured end: ", (p -> p.value).(mured)[end])
+    # else
+    #     println("mured end: ", mured[end])
+    # end
+
     # Total number of panels
     n = length(mub)
 
@@ -304,11 +323,16 @@ function mured2mu!(mub, mured, prescribedpanels)
 end
 
 function mured2mu(
-    mured::AbstractVector{T1}, prescribedpanels::AbstractArray{Tuple{Int,T2}}, nbodies
+    mured::AbstractVector{T1},
+    prescribedpanels::AbstractArray{Tuple{Int,T2}},
+    nbodies=nothing,
 ) where {T1,T2}
     T = promote_type(T1, T2)
 
-    n = length(mured) + length(prescribedpanels) - nbodies
+    n = length(mured) + length(prescribedpanels)
+    if nbodies != nothing
+        n -= nbodies
+    end
     mub = zeros(T, n)
 
     mured2mu!(mub, mured, prescribedpanels)
@@ -320,22 +344,30 @@ end
 #             Solvers             #
 #---------------------------------#
 function solve_body_strengths(
-    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2}, prescribedpanels, nbodies
+    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2}, prescribedpanels, nbodies=nothing
 ) where {T1,T2}
     T = promote_type(T1, T2)
 
-    mub = zeros(T, size(RHS, 1) - nbodies)
+    if nbodies != nothing
+        mub = zeros(T, size(RHS, 1) - nbodies)
+    else
+        mub = zeros(T, size(RHS, 1))
+    end
     solve_body_strengths!(mub, LHS, RHS, prescribedpanels, nbodies)
 
     return mub
 end
 
-function solve_body_strengths!(mub, LHS, RHS, prescribedpanels, nbodies)
+function solve_body_strengths!(mub, LHS, RHS, prescribedpanels, nbodies=nothing)
     LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
 
     mured = LHSlsq \ RHSlsq
 
-    mured2mu!(mub, mured[1:(end - nbodies)], prescribedpanels)
+    if nbodies != nothing
+        mured2mu!(mub, mured[1:(end - nbodies)], prescribedpanels)
+    else
+        mured2mu!(mub, mured, prescribedpanels)
+    end
 
     return nothing
 end
