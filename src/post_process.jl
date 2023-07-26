@@ -127,9 +127,37 @@ function post_process(states, inputs)
     end
 
     ## -- Surface Velocity on Bodies -- ##
-    body_surface_velocity, duct_inner_vs, duct_outer_vs, hub_vs, vtot_on_body, vsfromvinf, vsfrombodypanels, vsfromTEpanels, vsfromgradmu, vsfromwake, vsfromrotors = get_body_vs(
-        iv.mub, iv.gamw, iv.sigr, inputs
-    )
+    # body_surface_velocity, duct_inner_vs, duct_outer_vs, hub_vs, vtot_on_body, vsfromvinf, vsfrombodypanels, vsfromTEpanels, vsfromgradmu, vsfromwake, vsfromrotors
+    bodyv = get_body_vs(iv.mub, iv.gamw, iv.sigr, inputs)
+
+    (;
+        vtot_on_body,
+        body_surface_velocity,
+        duct_inner_vs,
+        duct_outer_vs,
+        hub_vs,
+        vsfromvinf,
+        vsfrombodypanels,
+        duct_inner_vs_from_body,
+        duct_outer_vs_from_body,
+        hub_vs_from_body,
+        vsfromTEpanels,
+        duct_inner_vs_from_TE,
+        duct_outer_vs_from_TE,
+        hub_vs_from_TE,
+        vsfromgradmu,
+        duct_inner_vs_from_gradmu,
+        duct_outer_vs_from_gradmu,
+        hub_vs_from_gradmu,
+        vsfromwake,
+        duct_inner_vs_from_wake,
+        duct_outer_vs_from_wake,
+        hub_vs_from_wake,
+        vsfromrotors,
+        duct_inner_vs_from_rotor,
+        duct_outer_vs_from_rotor,
+        hub_vs_from_rotor,
+    ) = bodyv
 
     ## -- Pressure on Bodies -- ##
     body_cp, duct_inner_cp, duct_outer_cp, hub_cp, body_x, duct_inner_x, duct_outer_x, hub_x = get_body_cps(
@@ -266,24 +294,50 @@ function post_process(states, inputs)
         # body thrust
         body_thrust,
         # surface velocities and pressures
-        duct_inner_vs,
+        # duct_inner_vs,
         duct_inner_cp,
         duct_inner_x,
-        duct_outer_vs,
+        # duct_outer_vs,
         duct_outer_cp,
         duct_outer_x,
-        hub_vs,
+        # hub_vs,
         hub_cp,
         hub_x,
         #individual body velocity contributions
-        body_surface_velocity,
         vtot_on_body,
+        body_surface_velocity,
+        duct_inner_vs,
+        duct_outer_vs,
+        hub_vs,
         vsfromvinf,
         vsfrombodypanels,
+        duct_inner_vs_from_body,
+        duct_outer_vs_from_body,
+        hub_vs_from_body,
         vsfromTEpanels,
+        duct_inner_vs_from_TE,
+        duct_outer_vs_from_TE,
+        hub_vs_from_TE,
         vsfromgradmu,
+        duct_inner_vs_from_gradmu,
+        duct_outer_vs_from_gradmu,
+        hub_vs_from_gradmu,
         vsfromwake,
+        duct_inner_vs_from_wake,
+        duct_outer_vs_from_wake,
+        hub_vs_from_wake,
         vsfromrotors,
+        duct_inner_vs_from_rotor,
+        duct_outer_vs_from_rotor,
+        hub_vs_from_rotor,
+        # body_surface_velocity,
+        # vtot_on_body,
+        # vsfromvinf,
+        # vsfrombodypanels,
+        # vsfromTEpanels,
+        # vsfromgradmu,
+        # vsfromwake,
+        # vsfromrotors,
         # - Body Wake Values - #
         # surface velocities and pressures
         ductwake_vs,
@@ -343,24 +397,26 @@ function get_body_vs(mub, gamw, sigr, inputs)
 
     # - Influence from Freestream - #
     Vinf = inputs.Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    Vinfmat = repeat(Vinf, body_doublet_panels.npanels) # need velocity on each panel
+    vsfromvinf = repeat(Vinf, body_doublet_panels.npanels) # need velocity on each panel
 
     ## -- Velocity Contributions from body -- ##
 
     # - Body-induced Surface Velocity - #
-    Vb = vfromdoubletpanels(
+    vsfrombodypanels = vfromdoubletpanels(
         body_doublet_panels.controlpoint, body_doublet_panels.nodes, mub
     )
 
     # - "Wake"-induced Surface Velocity - #
-    Vb_TE = vfromTE(body_doublet_panels.controlpoint, body_doublet_panels.TEnodes, mub)
+    vsfromTEpanels = vfromTE(
+        body_doublet_panels.controlpoint, body_doublet_panels.TEnodes, mub
+    )
 
     # - ∇μ/2 surface velocity - #
-    Vb_gradmu = vfromgradmu(body_doublet_panels, mub)
+    vsfromgradmu = vfromgradmutry3b(body_doublet_panels, mub)
 
     ## -- Velocity Contributions from rotors and wake -- ##
     # - wake velocity components - #
-    Vw = vfromvortexpanels(
+    vsfromwake = vfromvortexpanels(
         inputs.body_doublet_panels.controlpoint,
         inputs.wake_vortex_panels.controlpoint,
         inputs.wake_vortex_panels.len,
@@ -368,10 +424,10 @@ function get_body_vs(mub, gamw, sigr, inputs)
     )
 
     # - rotor velocity components - #
-    Vr = similar(Vw) .= 0.0
+    vsfromrotors = similar(vsfromwake) .= 0.0
     for jrotor in 1:nrotor
         vfromsourcepanels!(
-            Vr,
+            vsfromrotors,
             inputs.body_doublet_panels.controlpoint,
             inputs.rotor_source_panels[jrotor].controlpoint,
             inputs.rotor_source_panels[jrotor].len,
@@ -380,15 +436,53 @@ function get_body_vs(mub, gamw, sigr, inputs)
     end
 
     ## -- Total Velocity -- ##
-    #theoretically, Vtot dot nhat should be zero and Vtot dot that should be norm(Vtot)
-    Vtot = Vinfmat .+ Vb .+ Vb_TE .+ Vb_gradmu .+ Vw .+ Vr
+    #theoretically, vtot_on_body dot nhat should be zero and vtot_on_body dot that should be norm(vtot_on_body)
+    vtot_on_body =
+        vsfromvinf .+ vsfrombodypanels .+ vsfromTEpanels .+ vsfromgradmu .+ vsfromwake .+
+        vsfromrotors
 
     # - Get magnitude and split - #
-    vs_body = norm.(eachrow(Vtot))
+    vs_body = norm.(eachrow(vtot_on_body))
 
     vsdi, vsdo, vsh, _, _, _ = split_bodies(vs_body, body_doublet_panels; duct=true)
+    vbdi, vbdo, vbh, _, _, _ = split_bodies(
+        vsfrombodypanels, body_doublet_panels; duct=true
+    )
+    vtedi, vtedo, vteh, _, _, _ = split_bodies(
+        vsfromTEpanels, body_doublet_panels; duct=true
+    )
+    vgmdi, vgmdo, vgmh, _, _, _ = split_bodies(vsfromgradmu, body_doublet_panels; duct=true)
+    vwdi, vwdo, vwh, _, _, _ = split_bodies(vsfromwake, body_doublet_panels; duct=true)
+    vrdi, vrdo, vrh, _, _, _ = split_bodies(vsfromrotors, body_doublet_panels; duct=true)
 
-    return vs_body, vsdi, vsdo, vsh, Vtot, Vinfmat, Vb, Vb_TE, Vb_gradmu, Vw, Vr
+    return (;
+        vtot_on_body=vtot_on_body,
+        body_surface_velocity=vs_body,
+        duct_inner_vs=vsdi,
+        duct_outer_vs=vsdo,
+        hub_vs=vsh,
+        vsfromvinf=vsfromvinf,
+        vsfrombodypanels=vsfrombodypanels,
+        duct_inner_vs_from_body=vbdi,
+        duct_outer_vs_from_body=vbdo,
+        hub_vs_from_body=vbh,
+        vsfromTEpanels=vsfromTEpanels,
+        duct_inner_vs_from_TE=vtedi,
+        duct_outer_vs_from_TE=vtedo,
+        hub_vs_from_TE=vteh,
+        vsfromgradmu=vsfromgradmu,
+        duct_inner_vs_from_gradmu=vgmdi,
+        duct_outer_vs_from_gradmu=vgmdo,
+        hub_vs_from_gradmu=vgmh,
+        vsfromwake=vsfromwake,
+        duct_inner_vs_from_wake=vwdi,
+        duct_outer_vs_from_wake=vwdo,
+        hub_vs_from_wake=vwh,
+        vsfromrotors=vsfromrotors,
+        duct_inner_vs_from_rotor=vrdi,
+        duct_outer_vs_from_rotor=vrdo,
+        hub_vs_from_rotor=vrh,
+    )
 end
 
 """
