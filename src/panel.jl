@@ -15,12 +15,13 @@ generates NamedTuple of panel geometry items from a vector of matrices of coordi
 assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
 """
 function generate_panels(
-    coordinates::Vector{Matrix{TF}}; itpanelscale=0.05, axistol=1e-15
+    coordinates::Vector{Matrix{TF}}; itpanelscale=0.05, axistol=1e-15, tetol=1e1 * eps()
 ) where {TF}
 
     ## -- SETUP -- ##
     # Get total number of panels (sum of nedges-1 for each body)
     npanel = [length(eachrow(c)) - 1 for c in coordinates]
+    nbodies = length(npanel)
     totpanel = sum(npanel)
 
     # - Initialize Outputs - #
@@ -80,18 +81,20 @@ function generate_panels(
         end
     end
 
+    # - Trailing Edge Nodes - #
     TEnodes = []
     for t in 1:length(endpoints[:, 1, 1])
-        if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=1e1 * eps())
+        if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=tetol)
             push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=1)) # lower is negative
             push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=-1)) #upper is positive
         end
     end
 
-    itcontrolpoint = zeros(TF, length(npanel), 2)
-    itnormal = zeros(TF, length(npanel), 2)
+    # - Internal Panel Stuff - #
+    itcontrolpoint = zeros(TF, nbodies, 2)
+    itnormal = zeros(TF, nbodies, 2)
 
-    for ib in 1:length(npanel)
+    for ib in 1:nbodies
 
         #TODO: for more robust, consider splining the coordinates, then getting the midpoint of the bodies, the normals can probably just be arbitrary, [1,0] should work, then there's no axial flow on the panel.
 
@@ -114,11 +117,41 @@ function generate_panels(
         itcontrolpoint[ib, 1] =
             0.5 * (n11[1] + nn2[1]) - itpanelscale * lenbar * xtan / stan
         itcpr = 0.5 * (n11[2] + nn2[2]) - itpanelscale * lenbar * rtan / stan
-        #TODO: need to update this to be more robust
+        #TODO: need to update this to be more robust for center bodies
         itcontrolpoint[ib, 2] = itcpr < axistol ? 1e-3 : itcpr
 
         itnormal[ib, 1] = xtan / stan
         itnormal[ib, 2] = rtan / stan
+    end
+
+    # - ∇μ prep stuff - #
+    # get min and max points to split up geometry
+    xmm = []
+    rmm = []
+    for ib in 1:nbodies
+        brange = endpointidxs[ib, 1]:endpointidxs[ib, 2]
+        append!(xmm, findlocalmax(controlpoint[brange, 1]))
+        append!(xmm, findlocalmin(controlpoint[brange, 1]))
+        append!(rmm, findlocalmax(controlpoint[brange, 2]))
+        append!(rmm, findlocalmin(controlpoint[brange, 2]))
+    end
+    sort!(xmm)
+    sort!(rmm)
+
+    # put together ranges over which to take gradients
+    dxrange = [[xmm[i] xmm[i + 1] 0] for i in 1:(length(xmm) - 1)]
+    drrange = [[rmm[i] rmm[i + 1] 0] for i in 1:(length(rmm) - 1)]
+
+    # identify which ranges will need to be reversed
+    for xr in dxrange
+        if controlpoint[xr[1], 1] > controlpoint[xr[2], 1]
+            xr[3] = 1
+        end
+    end
+    for rr in drrange
+        if controlpoint[rr[1], 2] > controlpoint[rr[2], 2]
+            rr[3] = 1
+        end
     end
 
     return (;
@@ -127,15 +160,17 @@ function generate_panels(
         len=panel_length,
         normal,
         tangent,
-        # endpoints=reshape(endpoints, (length(npanel)*2, 2)),
+        # endpoints=reshape(endpoints, (nbodies*2, 2)),
         endpoints,
-        # endpointidxs=reshape(endpointidxs, (length(npanel)*2,2)),
+        # endpointidxs=reshape(endpointidxs, (nbodies*2,2)),
         endpointidxs,
         TEnodes,
         npanels=totpanel,
         itcontrolpoint,
         itnormal,
-        nbodies=length(npanel),
+        nbodies,
+        dxrange,
+        drrange,
     )
 end
 
