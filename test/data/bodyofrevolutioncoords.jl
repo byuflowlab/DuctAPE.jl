@@ -221,4 +221,4 @@ x_hub = [xcirc; xcyl[2:(end - 1)]; xwedge]
 r_hub = [ycirc; ycyl[2:(end - 1)]; ywedge]
 r_hub[end] = 0.0 # because it over shoots to slightly negative
 
-hub_coordinates = [x_hub r_hub]
+lewis_hub_coordinates = [x_hub r_hub]
