@@ -594,7 +594,7 @@ end
 
 """
 """
-function calc_gradmu(gradmu, len1, cpi, cpi1, mui, mui1)
+function calc_gradmu!(gradmu, len1, cpi, cpi1, mui, mui1)
 
     # TODO: also somewhat handwavy to set infinite gradients to zero
     if !isapprox(cpi[1] - cpi1[1], 0.0)
@@ -640,7 +640,7 @@ function vfromgradmu!(V, panels, mu)
                     # if !isapprox(cp[i,2]-cp[i-1,2], 0.0)
                     #     gradmu1[2] = len[i-1]*(mu[i]-mu[i-1])./(cp[i,2]-cp[i-1,2])
                     # end
-                    calc_gradmu(
+                    calc_gradmu!(
                         gradmu1, len[i - 1], cp[i, :], cp[i - 1, :], mu[i], mu[i - 1]
                     )
 
@@ -652,15 +652,15 @@ function vfromgradmu!(V, panels, mu)
                     # if !isapprox(cp[i,2]-cp[i+1,2], 0.0)
                     #     gradmu2[2] = len[i+1]*(mu[i]-mu[i+1])./(cp[i,2]-cp[i+1,2])
                     # end
-                    calc_gradmu(
+                    calc_gradmu!(
                         gradmu2, len[i + 1], cp[i, :], cp[i + 1, :], mu[i], mu[i + 1]
                     )
                 end
             end
 
         else
-            calc_gradmu(gradmu1, len[i - 1], cp[i, :], cp[i - 1, :], mu[i], mu[i - 1])
-            calc_gradmu(gradmu2, len[i + 1], cp[i, :], cp[i + 1, :], mu[i], mu[i + 1])
+            calc_gradmu!(gradmu1, len[i - 1], cp[i, :], cp[i - 1, :], mu[i], mu[i - 1])
+            calc_gradmu!(gradmu2, len[i + 1], cp[i, :], cp[i + 1, :], mu[i], mu[i + 1])
         end
 
         # get total weighting
@@ -685,6 +685,173 @@ function vfromgradmu!(V, panels, mu)
     end
 
     return nothing
+end
+
+"""
+rough draft for proof of concept.  seems to come out similar to Ed's version.
+"""
+function gradmutry2a(panels, mu)
+    len = panels.len
+    cp = panels.controlpoint
+    nhat = panels.normal
+    that = panels.tangent
+    nodes = panels.nodes
+    np = panels.npanels
+    nb = panels.nbodies
+    endpoints = panels.endpoints
+    endpointidxs = panels.endpointidxs
+    phibarnums = mu ./ (0.5 * len) #other source doesn't squre the lengths, which is probably good numerically here
+    phibardims = 1.0 ./ (0.5 * len)
+    #point, vec, 1/2
+    nf = reshape([-that that], (np, 2, 2))
+    A = 2 * pi .* cp[:, 2] .* len
+    lf = 2.0 * pi * nodes[:, :, 2]
+
+    mubarf = zeros(np, 2)
+    for i in 1:np
+        if i == 1
+            mubarf[i, 1] = mu[i]
+        else
+            mubarf[i, 1] =
+                (phibarnums[i - 1] + phibarnums[i]) / (phibardims[i - 1] + phibardims[i])
+            # mubarf[i, 1] = (mu[i - 1] + mu[i]) / 2.0
+        end
+        if i == np
+            mubarf[i, 2] = mu[i]
+        else
+            mubarf[i, 2] =
+                (phibarnums[i + 1] + phibarnums[i]) / (phibardims[i + 1] + phibardims[i])
+            # mubarf[i, 2] = (mu[i + 1] + mu[i]) / 2.0
+        end
+    end
+
+    # wrong, but tangent
+    gradmu = zeros(np, 2)
+    for i in 1:np
+        gradmu1 = mubarf[i, 1] * nf[i, :, 1] * lf[i, 1]
+        gradmu2 = mubarf[i, 2] * nf[i, :, 2] * lf[i, 2]
+        gradmu[i, :] = (gradmu1 .+ gradmu2) / A[i]
+    end
+
+    return -gradmu ./ 2.0
+end
+
+"""
+after re-deriving things from super scratch
+"""
+function gradmutry2b(panels, mu)
+    len = panels.len
+    cp = panels.controlpoint
+    nhat = panels.normal
+    that = panels.tangent
+    nodes = panels.nodes
+    np = panels.npanels
+    nb = panels.nbodies
+    endpoints = panels.endpoints
+    endpointidxs = panels.endpointidxs
+
+    gradmu = zeros(np, 2)
+    for ib in 1:nb
+        epid = endpointidxs[ib, 1]:endpointidxs[ib, 2]
+        for i in epid
+            x = cp[i, :]
+            xf1 = nodes[i, 1, :]
+            ri1 = xf1[2]
+            xf2 = nodes[i, 2, :]
+            ri2 = xf2[2]
+
+            # if at first panel
+            if i == 1
+                mu1avg = mu[i]
+            else
+                xm1 = cp[i - 1, :]
+                f1 = norm(xf1 - x) / norm(x - xm1)
+                mu1avg = mu[i] * f1 + mu[i - 1] * (1 - f1)
+            end
+
+            # if at last panel
+            if i == np
+                mu2avg = mu[i]
+            else
+                xp1 = cp[i + 1, :]
+                f2 = norm(xf2 - x) / norm(x - xp1)
+                mu2avg = mu[i] * f2 + mu[i + 1] * (1 - f2)
+            end
+
+            int1 = ri1 * (that[i, :]) * mu1avg
+            int2 = ri2 * (that[i, :]) * mu2avg
+
+            gradmu[i, :] = 2.0 / (len[i] * (ri1 + ri2)) * (-int1 + int2)
+        end
+    end
+
+    return -gradmu ./ 2.0
+end
+
+"""
+    # try deconstructing, then splining, getting gradient, then reassembling things
+"""
+function vfromgradmutry3a(panels, mu)
+
+    ## -- Rename for Convenience -- ##
+    cp = panels.controlpoint
+    dxr = panels.dxrange
+    drr = panels.drrange
+
+    # - Initialize - #
+    gradmu = zeros(eltype(mu), length(mu), 2)
+
+    # - dμ/dx - #
+    for dx in dxr
+        span = dx[1]:dx[2]
+        x = view(cp, span, 1)
+        m = view(mu, span)
+        if dx[end] == 1
+            #reverse
+            sp = fm.Akima(reverse(x), reverse(m))
+        else
+            #no reverse
+            sp = fm.Akima(x, m)
+        end
+        gradmu[span, 1] = gradient(sp, x)
+    end
+
+    # - dμ/dr - #
+    # TODO: you are here.  there's something causing the dmu/drs to be very huge...
+    # try doing things manually to see if it even works...
+    # do you need to dot with the tangent vector? (or is it inherently tangent?)
+    for dr in drr
+        span = dr[1]:dr[2]
+        r = view(cp, span, 2)
+        m = view(mu, span)
+        if dr[end] == 1
+            #reverse
+            sp = fm.Akima(reverse(r), reverse(m))
+        else
+            #no reverse
+            sp = fm.Akima(r, m)
+        end
+        gradmu[span, 2] = gradient(sp, r)
+    end
+
+    return -(gradmu .* panels.tangent .^ 2) / 2
+    # return -gradmu / 2
+end
+
+"""
+try simply splining based on arclength
+"""
+function vfromgradmutry3b(panels, mu)
+    gradmu = zeros(eltype(mu), panels.npanels,2)
+    for ib in 1:(panels.nbodies)
+        epid = panels.endpointidxs[ib, 1]:panels.endpointidxs[ib, 2]
+        s = cumsum(panels.len[epid])
+        musp = fm.Akima(s, mu[epid])
+        dmuds = fm.gradient(musp, s)
+        gradmu[epid,:] .= dmuds .* panels.tangent[epid,:]
+    end
+
+    return -gradmu / 2
 end
 
 #---------------------------------#
@@ -925,15 +1092,23 @@ end
 
 ##### ----- Doublet ----- #####
 
-function doublet_panel_influence_on_internal_panels(LHS, itpanels, influencepanels)
+function doublet_panel_influence_on_internal_panels(
+    LHS,
+    itpanels,
+    influencepanels, #prescribedpanels
+)
     M, N = size(LHS)
-    nit = length(influencepanels.itcontrolpoint[:, 1])
+    nit = length(itpanels.itcontrolpoint[:, 1])
+    # pid = (p -> p[1]).(prescribedpanels)
 
     augLHS = zeros(eltype(LHS), M + nit, N + nit)
     augLHS[1:M, 1:N] .= LHS
 
     for (i, eid) in enumerate(eachrow(itpanels.endpointidxs))
         augLHS[eid[1]:eid[2], N + i] .= -1.0
+        # for ip in pid
+        #     augLHS[ip, N + i] = 0.0
+        # end
     end
 
     doublet_panel_influence_on_internal_panels!(augLHS, influencepanels, itpanels)
@@ -981,7 +1156,6 @@ function freestream_influence_on_internal_panels!(augRHS, panels, Vinfvec)
     M = panels.npanels
 
     for (i, nhat) in enumerate(eachrow(panels.itnormal))
-        #TODO: double check if this should be + or - or if it matters
         augRHS[M + i] -= dot(Vinfvec, nhat)
     end
 
