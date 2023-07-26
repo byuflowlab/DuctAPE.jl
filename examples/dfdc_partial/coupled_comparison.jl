@@ -99,16 +99,16 @@ include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
 #     label="Exp Inner Duct",
 # )
 
-# plot!(
-#     pv,
-#     Vs_over_Vinf_x,
-#     Vs_over_Vinf_vs * Vinf;
-#     seriestype=:scatter,
-#     color=myred[1],
-#     markershape=:utriangle,
-#     markersize=3,
-#     label="Exp Hub",
-# )
+plot!(
+    pv,
+    Vs_over_Vinf_x,
+    Vs_over_Vinf_vs * Vinf;
+    seriestype=:scatter,
+    color=myred[1],
+    markershape=:utriangle,
+    markersize=3,
+    label="Exp Hub",
+)
 
 ###########################################
 # savefig(pv, savepath * "lewis-with-rotor-velocity-dfdc.pdf")
@@ -137,12 +137,12 @@ duct_coordinates = dt.repanel_airfoil(revductcoords; normalize=false, N=200)
 
 #overwite npanels for now (should put conditions for this in auto generation function)
 npi = 40
-pref = 1.5
+pref = 1
 paneling_constants = (;
     paneling_constants...,
-    nhub_inlet=ceil(Int, pref*npi),
-    nduct_inlet=ceil(Int, pref*npi),
-    npanels=ceil.(Int,pref .* [30, 20, 40]),
+    nhub_inlet=ceil(Int, pref * npi),
+    nduct_inlet=ceil(Int, pref * npi),
+    npanels=ceil.(Int, pref .* [30, 20, 40]),
 )
 
 # # run analyze_propulsor function
@@ -178,21 +178,21 @@ initial_states = dt.initialize_states(inputs)
 p = (;)
 rwrap(r, statesvars) = dt.residual!(r, statesvars, inputs, p)
 
-@time "Solve" begin
-    res = dt.NLsolve.nlsolve(
-        rwrap,
-        initial_states;
-        autodiff=:forward,
-        method=:newton,
-        iterations=50,
-        show_trace=true,
-        linesearch=dt.BackTracking(; maxstep=1e6),
-    )
-end
+# @time "Solve" begin
+#     res = dt.NLsolve.nlsolve(
+#         rwrap,
+#         initial_states;
+#         autodiff=:forward,
+#         method=:newton,
+#         iterations=50,
+#         show_trace=true,
+#         linesearch=dt.BackTracking(; maxstep=1e6),
+#     )
+# end
 
-states = res.zero
+# states = res.zero
 
-out = @time "Post-process" dt.post_process(states, inputs)
+# out = @time "Post-process" dt.post_process(states, inputs)
 
 #---------------------------------#
 #           Comparisons           #
@@ -253,7 +253,7 @@ pt.pretty_table(
         wake_panels=inputs.wake_vortex_panels,
         coordinates=[duct_coordinates, hub_coordinates],
         controlpoints=true,
-        nodes=true,
+        nodes=false,
         normals=false,
         normal_scaling=0.1,
         savepath=savepath,

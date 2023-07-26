@@ -17,6 +17,7 @@ const ccb = CCBlade
 include(datapath*"run_ccblade.jl")
 include(datapath*"plot_geometry.jl")
 
+include(project_dir * "/visualize/plots_default.jl")
 include(project_dir * "/visualize/plots_default_new.jl")
 
 #---------------------------------#
@@ -78,7 +79,7 @@ airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(r))
 #=
 Note: the solver with interpolate the rotor data using the given number of blade element inputs
 =#
-nwake_sheets = 15
+nwake_sheets = 18
 # nwake_sheets = 5
 
 # x position of rotor
@@ -197,9 +198,10 @@ for i in 1:nJ
         plot!(pG, Gamrconv, inputs.rotor_panel_centers; label="converged")
         savefig("examples/isolated_archive/rotor_only/Circulation_J$(J[i]).pdf")
 
-        # TODO: need to reshape gamw and decide how to plot it
-        gamwinit = reshape(gamw, (inputs.num_wake_x_panels, inputs.nrotor_panels + 1))
-        gamwconv = reshape(gamwconv, (inputs.nrotor_panels + 1, inputs.num_wake_x_panels))
+        # # TODO: need to reshape gamw and decide how to plot it
+        # gamwinit = reshape(gamw, (inputs.num_wake_x_panels, inputs.nrotor_panels + 1))
+        # gamwconv = reshape(gamwconv, (inputs.nrotor_panels + 1, inputs.num_wake_x_panels))
+
         # pw = plot(
         #     gamw,
         #     inputs.rotor_panel_edges;
