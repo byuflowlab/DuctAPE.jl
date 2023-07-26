@@ -160,29 +160,29 @@ function get_kutta_indices(body_of_revolution, mesh)
     return kutta_idxs
 end
 
-function assemble_induced_velocity_matrices(
-    mesh, influence_panels::TP, affect_panels; singularity="vortex"
-) where {TP<:ff.Panel}
-    return assemble_induced_velocity_matrices(
-        mesh, [influence_panels], affect_panels; singularity=singularity
-    )
-end
+# function assemble_induced_velocity_matrices(
+#     mesh, influence_panels::TP, affect_panels; singularity="vortex"
+# ) where {TP<:ff.Panel}
+#     return assemble_induced_velocity_matrices(
+#         mesh, [influence_panels], affect_panels; singularity=singularity
+#     )
+# end
 
-function assemble_induced_velocity_matrices(
-    mesh, influence_panels, affect_panels::TP; singularity="vortex"
-) where {TP<:ff.Panel}
-    return assemble_induced_velocity_matrices(
-        mesh, influence_panels, [affect_panels]; singularity=singularity
-    )
-end
+# function assemble_induced_velocity_matrices(
+#     mesh, influence_panels, affect_panels::TP; singularity="vortex"
+# ) where {TP<:ff.Panel}
+#     return assemble_induced_velocity_matrices(
+#         mesh, influence_panels, [affect_panels]; singularity=singularity
+#     )
+# end
 
-function assemble_induced_velocity_matrices(
-    mesh, influence_panels::TP, affect_panels::TP; singularity="vortex"
-) where {TP<:ff.Panel}
-    return assemble_induced_velocity_matrices(
-        mesh, [influence_panels], [affect_panels]; singularity=singularity
-    )
-end
+# function assemble_induced_velocity_matrices(
+#     mesh, influence_panels::TP, affect_panels::TP; singularity="vortex"
+# ) where {TP<:ff.Panel}
+#     return assemble_induced_velocity_matrices(
+#         mesh, [influence_panels], [affect_panels]; singularity=singularity
+#     )
+# end
 
 """
     calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
