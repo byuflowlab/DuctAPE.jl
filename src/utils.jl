@@ -69,17 +69,17 @@ function split_bodies(vec, body_panels; duct=true, hub=true)
         _, leidx = findmin(body_panels.controlpoint[1:ndpan, 1])
         if !hub
             #duct only
-            return vec[1:leidx],
-            vec[(leidx + 1):ndpan],
+            return vec[1:leidx,:],
+            vec[(leidx + 1):ndpan,:],
             TF[],
             body_panels.controlpoint[1:leidx, 1],
             body_panels.controlpoint[(leidx + 1):ndpan, 1],
             TF[]
         else
             #duct and hub
-            return vec[1:leidx],
-            vec[(leidx + 1):ndpan],
-            vec[(ndpan + 1):end],
+            return vec[1:leidx,:],
+            vec[(leidx + 1):ndpan,:],
+            vec[(ndpan + 1):end,:],
             body_panels.controlpoint[1:leidx, 1],
             body_panels.controlpoint[(leidx + 1):ndpan, 1],
             body_panels.controlpoint[(ndpan + 1):end, 1]
@@ -250,4 +250,46 @@ function normalize_airfoil!(x, z)
     z ./= chord #scale z coordinates to match
 
     return nothing
+end
+
+"""
+finds local maxima on given vector, x
+"""
+function findlocalmax(x::AbstractVector{TF}) where {TF}
+    inds = Int[]
+    if length(x) > 1
+        if x[1] > x[2]
+            push!(inds, 1)
+        end
+        for i in 2:(length(x) - 1)
+            if x[i - 1] < x[i] > x[i + 1]
+                push!(inds, i)
+            end
+        end
+        if x[end] > x[end - 1]
+            push!(inds, length(x))
+        end
+    end
+    return inds
+end
+
+"""
+finds local minima on given vector, x
+"""
+function findlocalmin(x::AbstractVector{TF}) where {TF}
+    inds = Int[]
+    if length(x) > 1
+        if x[2] > x[1]
+            push!(inds, 1)
+        end
+        for i in 2:(length(x) - 1)
+            if x[i + 1] > x[i] < x[i - 1]
+                push!(inds, i)
+            end
+        end
+        if x[end - 1] > x[end]
+            push!(inds, length(x))
+        end
+    end
+    return inds
 end
