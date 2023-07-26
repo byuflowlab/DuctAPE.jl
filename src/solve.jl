@@ -206,7 +206,8 @@ function update_strengths!(states, inputs, p)
 
     # - Calculate body vortex strengths (before updating state dependencies) - #
     solve_body_strengths!(
-        mub, inputs.A_bb, RHS, inputs.prescribedpanels, inputs.body_doublet_panels.nbodies
+        # mub, inputs.A_bb, RHS, inputs.prescribedpanels, inputs.body_doublet_panels.nbodies
+        mub, inputs.A_bb, RHS, inputs.prescribedpanels
     )
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
