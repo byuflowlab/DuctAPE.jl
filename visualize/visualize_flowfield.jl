@@ -2,6 +2,8 @@ using GeometricTools
 const gt = GeometricTools
 using DuctTAPE
 const dt = DuctTAPE
+using FLOWMath
+const fm = FLOWMath
 
 function visualize_flowfield(
     Vinf;
@@ -11,6 +13,9 @@ function visualize_flowfield(
     mub=nothing,
     sigr=nothing,
     gamw=nothing,
+    Gamr=nothing,
+    num_blades=[1],
+    xrotor=[0.0],
     Pmax=nothing,
     Pmin=nothing,
     verbose=false,
@@ -74,7 +79,7 @@ function visualize_flowfield(
     ## -- ADD VELOCITIES -- ##
 
     # - Freestream velocities - #
-    Uinf = repeat([Vinf 0.0], ntargets)
+    Uinf = repeat([Vinf 0.0 0.0], ntargets)
     Usinf = [[U[1], U[2], 0] for U in eachrow(Uinf)]
     gt.add_field(fieldgrid, "Usinf", "vector", Usinf, "node")
 
@@ -91,7 +96,7 @@ function visualize_flowfield(
         # body+bodywake
         Ubbw = Ubody .+ Ubodywake
 
-        Utot .+= Ubbw
+        Utot[:, 1:2] .+= Ubbw
 
         Usbody = [[U[1], U[2], 0] for U in eachrow(Ubody)]
         Usbodywake = [[U[1], U[2], 0] for U in eachrow(Ubodywake)]
@@ -102,7 +107,7 @@ function visualize_flowfield(
     end
 
     if rotor_panels != nothing
-        # - Rotor-induced velocities - #
+        # - Rotor panel-induced velocities - #
         Urotor = similar(Ubody) .= 0.0
         for (ir, rp) in enumerate(rotor_panels)
             dt.vfromsourcepanels!(
@@ -110,9 +115,73 @@ function visualize_flowfield(
             )
         end
 
-        Utot .+= Urotor
+        Utot[:, 1:2] .+= Urotor
         Usrotor = [[U[1], U[2], 0] for U in eachrow(Urotor)]
-        gt.add_field(fieldgrid, "Urotor$ir", "vector", Usrotor, "node")
+        gt.add_field(fieldgrid, "Urotor", "vector", Usrotor, "node")
+    end
+
+    if Gamr != nothing && wake_panels != nothing
+        # - Rotor induced tangential velocity - #
+        # TODO: only within the wake, only defined on wake lines.
+        # TODO: need to get the x spacing of the targets,
+        # then need to get the wake values at those points,
+        # then need to interpolate the wake values to the target radial locations
+
+        # Initialize
+        Utheta = zeros(size(targets, 1))
+
+        # reshape the wake panel control points into the wake sheets
+        nsheets = size(Gamr, 1) + 1
+        nwakex = Int(wake_panels.npanels / nsheets)
+        wakecpx = reshape(wake_panels.controlpoint[:, 1], (nwakex, nsheets))'
+        wakecpr = reshape(wake_panels.controlpoint[:, 2], (nwakex, nsheets))'
+
+        # get the target xpositions between the wake start and end points.
+        tx1 = findfirst(x -> x >= wakecpx[1, 1], targets[:, 1])
+        tx2 = findfirst(x -> x >= wakecpx[1, end], targets[:, 1]) - 1
+        tgridx = repeat(targets[tx1:tx2, 1]; inner=(1, nsheets))'
+
+        # spline the wake sheets
+        tgridr = similar(tgridx) .= 0.0
+        for i in 1:nsheets
+            tgridr[i, :] = fm.linear(wakecpx[i, :], wakecpr[i, :], tgridx[i, :])
+        end
+
+        # Third, get the vtheta values at the interpolated points
+        vthetagrid = similar(tgridx) .= 0.0
+
+        Gamma_tilde_be = dt.calculate_net_circulation(Gamr, num_blades)
+        Gamma_tilde_ws = [
+            Gamma_tilde_be[1]
+            (Gamma_tilde_be[2:end] .+ Gamma_tilde_be[1:(end - 1)]) / 2
+            Gamma_tilde_be[end]
+        ]
+        for ix in 1:size(tgridx, 2)
+            gtid = findlast(x -> x <= tgridx[1, ix], xrotor)
+            vthetagrid[:, ix] = dt.calculate_vtheta(Gamma_tilde_ws[:, gtid], tgridr[:, ix])
+        end
+
+        # Fourth, loop through targets, if they are within the wake, interpolate vtheta values.
+        for (it, tar) in enumerate(eachrow(targets))
+            if tgridx[1, 1] <= tar[1] <= tgridx[1, end]
+                # println("target: ", tar, "inside xrange")
+                #we're inside the wake x range
+                # find which xstation we're at
+                xid = searchsortedfirst(tgridx[1, :], tar[1])
+                if tgridr[1, xid] <= tar[2] <= tgridr[end, xid]
+                    # println("target: ", tar, "inside rrange")
+                    # we're inside the wake radially
+                    # get the tangential velocity
+                    Utheta[it] = fm.akima(tgridr[:, xid], vthetagrid[:, xid], tar[2])
+                end
+            end
+        end
+
+        # put Utheta into Utot
+        Utot[:, 3] .+= Utheta
+
+        Ustheta = [[0, 0, U[1]] for U in eachrow(Utheta)]
+        gt.add_field(fieldgrid, "Utheta", "vector", Ustheta, "node")
     end
 
     if wake_panels != nothing
@@ -121,13 +190,13 @@ function visualize_flowfield(
             targets[:, 1:2], wake_panels.controlpoint, wake_panels.len, gamw
         )
 
-        Utot .+= Uwake
+        Utot[:, 1:2] .+= Uwake
         Uswake = [[U[1], U[2], 0] for U in eachrow(Uwake)]
         gt.add_field(fieldgrid, "Uwake", "vector", Uswake, "node")
     end
 
     # Put the Velocities together in the right formats
-    Ustot = [[U[1], U[2], 0] for U in eachrow(Utot)]
+    Ustot = [[U[1], U[2], U[3]] for U in eachrow(Utot)]
 
     # - Save VTKs - #
     # Save fields
@@ -139,16 +208,12 @@ function visualize_flowfield(
     return nothing
 end
 
-function visualize_surfaces(
-    Vinf;
+function visualize_surfaces(;
     body_panels=nothing,
     rotor_panels=nothing,
     wake_panels=nothing,
-    mub=nothing,
-    sigr=nothing,
-    gamw=nothing,
     verbose=false,
-    run_name="velocity_field",
+    run_name="",
     save_path="",
 )
     if body_panels != nothing
@@ -169,7 +234,9 @@ function visualize_surfaces(
             ),
         ]
 
-        gt.generateVTK("body_controlpoints", cps; point_data=point_data, path=save_path)
+        gt.generateVTK(
+            run_name * "body_controlpoints", cps; point_data=point_data, path=save_path
+        )
     end
 
     if wake_panels != nothing
@@ -190,7 +257,9 @@ function visualize_surfaces(
             ),
         ]
 
-        gt.generateVTK("wake_controlpoints", cps; point_data=point_data, path=save_path)
+        gt.generateVTK(
+            run_name * "wake_controlpoints", cps; point_data=point_data, path=save_path
+        )
     end
     if rotor_panels != nothing
         for (ir, rp) in enumerate(rotor_panels)
@@ -211,7 +280,10 @@ function visualize_surfaces(
             ]
 
             gt.generateVTK(
-                "rotor$(ir)_controlpoints", cps; point_data=point_data, path=save_path
+                run_name * "rotor$(ir)_controlpoints",
+                cps;
+                point_data=point_data,
+                path=save_path,
             )
         end
     end

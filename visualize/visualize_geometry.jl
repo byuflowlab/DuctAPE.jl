@@ -11,7 +11,7 @@ function visualize_paneling(;
     normals=true,
     normal_scaling=0.1,
     savepath="",
-    filename="paneling.pdf",
+    filename=["paneling.pdf"],
     legendloc=:best,
     zoom=false,
     limits=nothing,
@@ -241,7 +241,9 @@ function visualize_paneling(;
     end
 
     # save figure
-    savefig(savepath * filename)
+    for fn in filename
+        savefig(savepath * fn)
+    end
 
     return nothing
 end
