@@ -178,21 +178,21 @@ initial_states = dt.initialize_states(inputs)
 p = (;)
 rwrap(r, statesvars) = dt.residual!(r, statesvars, inputs, p)
 
-# @time "Solve" begin
-#     res = dt.NLsolve.nlsolve(
-#         rwrap,
-#         initial_states;
-#         autodiff=:forward,
-#         method=:newton,
-#         iterations=50,
-#         show_trace=true,
-#         linesearch=dt.BackTracking(; maxstep=1e6),
-#     )
-# end
+@time "Solve" begin
+    res = dt.NLsolve.nlsolve(
+        rwrap,
+        initial_states;
+        autodiff=:forward,
+        method=:newton,
+        iterations=50,
+        show_trace=true,
+        linesearch=dt.BackTracking(; maxstep=1e6),
+    )
+end
 
-# states = res.zero
+states = res.zero
 
-# out = @time "Post-process" dt.post_process(states, inputs)
+out = @time "Post-process" dt.post_process(states, inputs)
 
 #---------------------------------#
 #           Comparisons           #

@@ -1,160 +1,86 @@
-using FiniteDiff
-using ForwardDiff
-# using ReverseDiff
-using FLOWFoil
-const ff = FLOWFoil
-using CCBlade
-const ccb = CCBlade
+include("derivative_wrappers.jl")
 
-@testset "Derivatives" begin
-
-    # set up inputs
-    #---------------------------------#
-    #         ROTOR Geometry          #
-    #---------------------------------#
-
-    # Blade Tip Radius, in meters
-    Rtip = 10 / 2.0 * 0.0254  # inches to meters
-
-    tip_gap = 0.0
-
-    # Blade Hub radius, in meters
-    Rhub = 0.10 * Rtip
-
-    # number of blades
-    B = 2
-
-    # x position of rotor
-    xrotor = 0.25
-
-    # Blade section non-dimensional radial positions, chords lengths, and local twists angles in degrees
-    propgeom = [
-        0.15 0.130 32.76
-        0.20 0.149 37.19
-        0.25 0.173 33.54
-        0.30 0.189 29.25
-        0.35 0.197 25.64
-        0.40 0.201 22.54
-        0.45 0.200 20.27
-        0.50 0.194 18.46
-        0.55 0.186 17.05
-        0.60 0.174 15.97
-        0.65 0.160 14.87
-        0.70 0.145 14.09
-        0.75 0.128 13.39
-        0.80 0.112 12.84
-        0.85 0.096 12.25
-        0.90 0.081 11.37
-        0.95 0.061 10.19
-        # 1.00 0.041 8.99
+@testset "Automaic Derivatives" begin
+    Vinf = 20.0
+    chords = [
+        0.089142
+        0.079785
+        0.0713
+        0.063979
+        0.057777
+        0.052541
+        0.048103
+        0.044316
+        0.041061
+        0.038243
     ]
+    ductr = [
+        0.835
+        0.834496
+        0.832676
+        0.828558
+        0.820991
+        0.810449
+        0.797709
+        0.784153
+        0.771912
+        0.764112
+        0.7605
+        0.760275
+        0.762716
+        0.767502
+        0.774294
+        0.7827
+        0.792384
+        0.802639
+        0.812809
+        0.822477
+        0.835
+        0.847523
+        0.857191
+        0.867361
+        0.877616
+        0.8873
+        0.895706
+        0.902498
+        0.907284
+        0.909725
+        0.9095
+        0.905888
+        0.898088
+        0.885847
+        0.872291
+        0.859551
+        0.849009
+        0.841442
+        0.837324
+        0.835504
+        0.835
+    ]
+    r = collect(0.16:0.06669722222222223:0.760275)
 
-    # extract non-dimensional radial positions
-    rnondim = propgeom[:, 1]
-    # Dimensionalize chords
-    chords = propgeom[:, 2] * Rtip
-    # convert twists to radians
-    twists = propgeom[:, 3] * pi / 180
+    inputs = [Vinf; chords; ductr]
 
-    # use a NACA 4412 airfoils
-    airfoils = fill(ccb.AlphaAF("test/data/naca4412.dat"), length(rnondim))
-
-    #---------------------------------#
-    #         Paneling Options        #
-    #---------------------------------#
-    nwake_sheets = 15
-
-    # non-dimensional wake length
-    wake_length = 1.0
-
-    # number of panels between discrete points
-    # npanels = [10; 5; 25]
-    npanels = [10; 25]
-
-    nhub_inlet = 20
-    nduct_inlet = 20
-
-    #---------------------------------#
-    #       Operating Conditions      #
-    #---------------------------------#
-
-    #Vinf
-    Vinf = 5.0
-
-    # rotor rotation rate in rad/s
-    Omega = 5400 * pi / 30  # convert from RPM to rad/s
-
-    # freestream conditions
-    rho = 1.225 #kg/m^3
-    mu = 1.81e-5 # kg/(m⋅s)
-    asound = 341.0 #m/s
-
-    #---------------------------------#
-    #      Define BODY Coordinates    #
-    #---------------------------------#
-
-    # - Duct Coordinates - #
-    # use duct coordinates from FLOWFoil validation cases
-    include("data/naca_662-015.jl")
-    duct_coordinates = [x_duct r_duct] ./ 2.0
-
-    # - Hub Coordinates - #
-    # use hub coordinates from FLOWFoil validation cases
-    # include("../test/data/bodyofrevolutioncoords.jl")
-    # hub_coordinates = [x_hub[1:(end - 1)] ./ 2.0 r_hub[1:(end - 1)] * Rhub / maximum(r_hub)]
-    hub_coordinates = nothing
-
-    #---------------------------------#
-    #          Define Inputs          #
-    #---------------------------------#
-
-    # Rotor Parameters
-    rotor_parameters = [(;
-        xrotor,
-        nwake_sheets,
-        r=rnondim,
-        chords,
-        twists,
-        airfoils,
-        Rtip,
-        Rhub,
-        tip_gap,
-        B,
-        Omega,
-    )]
-
-    # Paneling Parameters
-    paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
-
-    # Freestream Parameters
-    freestream = (; rho, mu, asound, Vinf)
-
-    # initialize various inputs used in analysis
-    inputs = dt.precomputed_inputs(
-        duct_coordinates,
-        # hub_coordinates,
-        nothing,
-        paneling_constants,
-        rotor_parameters,
-        freestream;
-        finterp=FLOWMath.linear,
-    )
-
-    # initialize states
-    states = dt.initialize_states(inputs)
-
-
-    p = (converged=[false],)
-
+    # - Pre and Post computation test Test - #
+    precompinputs = chords
     # ForwardDiff Jacobian
-    rfor = copy(states)
-    rwrapfor(r, states) = dt.residual!(r, states, inputs, p)
-    fordiff_j = ForwardDiff.jacobian(rwrapfor, rfor, states)
-
+    fordiff_j = ForwardDiff.jacobian(dt_prepost_wrapper, precompinputs)
     # FiniteDiff Jacobian
-    rwrapfin(r, states) = dt.residual!(r .= NaN, states, inputs, p)
-    findiff_j = similar(fordiff_j) .= 0.0
-    FiniteDiff.finite_difference_jacobian!(findiff_j, rwrapfin, states)
+    findiff_j = FiniteDiff.finite_difference_jacobian(dt_prepost_wrapper, precompinputs)
+    # compare, note scaling is an issue here, there are some really large and really small numbers
+    @test isapprox(findiff_j, fordiff_j; atol=1.2e-2)
 
-    @test isapprox(findiff_j, fordiff_j; atol=1e-3)
+    # TODO: need to speed up the solver significantly before running this.
+    # # - Full Solver Test - #
+    # # ForwardDiff Jacobian
+    # println("\tCalculating ForwardDiff Jacobian")
+    # fordiff_j = ForwardDiff.jacobian(dt_full_wrapper, inputs)
+
+    # # FiniteDiff Jacobian
+    # findiff_j = similar(fordiff_j) .= 0.0
+    # println("\tCalculating FiniteDiff Jacobian")
+    # FiniteDiff.finite_difference_jacobian!(findiff_j, dt_full_wrapper, inputs)
+
+    # @test isapprox(findiff_j, fordiff_j; atol=1e-3)
+
 end

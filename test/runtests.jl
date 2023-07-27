@@ -3,14 +3,10 @@ using Test
 println("Compiling Package")
 using DuctTAPE
 const dt = DuctTAPE
-# using CCBlade
-# const ccb = CCBlade
-# using FLOWFoil
-# const ff = FLOWFoil
-# using ForwardDiff
-# const frd = ForwardDiff
-# using FiniteDiff
-# const fnd = FiniteDiff
+using ForwardDiff
+const frd = ForwardDiff
+using FiniteDiff
+const fnd = FiniteDiff
 using FLOWMath
 const fm = FLOWMath
 # using ImplicitAD
@@ -18,28 +14,22 @@ const fm = FLOWMath
 println("Running Tests...")
 include("compare_objects.jl")
 
-# Active Development
+# - Active Development - #
+include("derivative_checks.jl")
+
 include("new_panel_tests.jl")
 include("basic_singularity.jl")
 
-# Backburnere
-# include("post_processing_tests.jl")
 
 
 
-## Deprecated??
-
-# # WORKING:
+# - Need to update, add, fix, etc. - #
 # include("body_aero_tests.jl")
-
-# # In Development
 # include("body_geometry_tests.jl")
 # # TODO: need to add source and body induced velocities to induced velocity on rotor test
 # include("rotor_aero_tests.jl")
 # # TODO: need to update most of this test after having added sources and bodies in.
 # include("dimension_tests.jl")
-# # TODO: need tofigure out what to do for testing derivative
-# include("derivative_checks.jl")
 
 # # BROKEN:
 # include("constant_initialization.jl")

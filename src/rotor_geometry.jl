@@ -53,7 +53,15 @@ function generate_blade_elements(
 
     # get floating point type
     TF = promote_type(
-        eltype(chords), eltype(twists), eltype(Omega), eltype(rbe), eltype(Rtip)
+        eltype(B),
+        eltype(Omega),
+        eltype(xrotor),
+        eltype(rnondim),
+        eltype(chords),
+        eltype(twists),
+        eltype(Rtip),
+        eltype(Rhub),
+        eltype(rbe),
     )
 
     # dimensionalize the blade element radial positions
