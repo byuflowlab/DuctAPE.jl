@@ -84,3 +84,6 @@ function DFDCairfoil(;
         mcrit,
     )
 end
+
+# Cascade type
+abstract type DTCascade end

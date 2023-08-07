@@ -25,6 +25,9 @@ include("types.jl")
 # Utility Functions
 include("utils.jl")
 
+# Cascade Functions
+include("cascade.jl")
+
 # Body Geometry Functions
 include("body_geometry.jl")
 include("panel.jl")
