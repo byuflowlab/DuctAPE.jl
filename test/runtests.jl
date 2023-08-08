@@ -17,6 +17,8 @@ include("compare_objects.jl")
 # - Active Development - #
 # include("derivative_checks.jl")
 
+# - Should be Working - #
+include("test_cascade_functions.jl")
 include("blade_element_aero_lookups.jl")
 
 include("new_panel_tests.jl")
