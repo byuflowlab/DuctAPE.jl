@@ -304,10 +304,11 @@ function calculate_gamma_sigma!(
             )
 
             # get local Reynolds number
-            reynolds = c * abs(Wmag) * freestream.rhoinf / freestream.muinf
+            reynolds =
+                c * abs(Wmag_rotor[ir, irotor]) * freestream.rhoinf / freestream.muinf
 
             # get local Mach number
-            mach = Wmag / freestream.asound
+            mach = Wmag_rotor[ir, irotor] / freestream.asound
 
             cl, cd = lookup_clcd(
                 blade_elements[irotor].inner_airfoil[ir],
