@@ -154,7 +154,7 @@ function StaggerInflowCAS(filenames::Vector{String}; radians=true)
 end
 
 function caseval(
-    cas::StaggerInflowCAS, inflow, stagger, Re=nothing, Mach=nothing, solidity=nothing
+    cas::StaggerInflowCAS, stagger, inflow, Re=nothing, Mach=nothing, solidity=nothing
 )
     cl = FLOWMath.interp2d(
         FLOWMath.akima, cas.inflow, cas.stagger, cas.cl, [inflow], [stagger]
@@ -259,7 +259,9 @@ function StaggerInflowReCAS(filenames::Matrix{String}; radians=true)
     return StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info)
 end
 
-function caseval(cas::StaggerInflowReCAS, stagger, inflow, Re)
+function caseval(
+    cas::StaggerInflowReCAS, stagger, inflow, Re, Mach=nothing, solidity=nothing
+)
     cl = FLOWMath.interp3d(
         FLOWMath.akima, cas.stagger, cas.inflow, cas.Re, cas.cl, [stagger], [inflow], [Re]
     )[1]
@@ -371,7 +373,7 @@ function StaggerInflowReMachCAS(filenames::AbstractArray{String}; radians=true)
     return StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cdrag, info, solidity)
 end
 
-function caseval(cas::StaggerInflowReMachCAS, stagger, inflow, Re, Mach)
+function caseval(cas::StaggerInflowReMachCAS, stagger, inflow, Re, Mach, solidity=nothing)
     cl = FLOWMath.interp4d(
         FLOWMath.akima,
         cas.stagger,
@@ -462,18 +464,18 @@ struct StaggerInflowReMachSolidityCAS{TF,TS} <: DTCascade
 end
 
 function StaggerInflowReMachSolidityCAS(stagger, inflow, Re, Mach, solidity, cl, cd)
-    return StaggerInflowReMachCAS(
+    return StaggerInflowReMachSolidityCAS(
         stagger, inflow, Re, Mach, solidity, cl, cd, "DuctTAPE written cascade"
     )
 end
 
 function StaggerInflowReMachSolidityCAS(filenames::AbstractArray{String}; radians=true)
-    info, _, _, _, inflow, _, _ = parsefile(filenames[1, 1], radians)  # assumes common inflow and info across files
+    info, _, _, _, _, inflow, _, _ = parsecascadefile(filenames[1, 1, 1, 1], radians)  # assumes common inflow and info across files
     ninflow = length(inflow)
     nstagger, nRe, nMach, nsolidity = size(filenames)
 
-    cl = Array{Float64}(undef, ninflow, nRe, nMach, nsolidity)
-    cd = Array{Float64}(undef, ninflow, nRe, nMach, nsolidity)
+    cl = Array{Float64}(undef, ninflow, nstagger, nRe, nMach, nsolidity)
+    cd = Array{Float64}(undef, ninflow, nstagger, nRe, nMach, nsolidity)
     Re = Array{Float64}(undef, nRe)
     Mach = Array{Float64}(undef, nMach)
     stagger = Array{Float64}(undef, nstagger)
@@ -483,25 +485,25 @@ function StaggerInflowReMachSolidityCAS(filenames::AbstractArray{String}; radian
         for k in 1:nMach
             for j in 1:nRe
                 for i in 1:nstagger
-                    staggeri, Rej, Machk, solidityell, _, clijkl, cdijkl = parsefile(
+                    _, staggeri, Rej, Machk, solidityell, _, clijkl, cdijkl = parsecascadefile(
                         filenames[i, j, k, ell], radians
                     )
                     cl[:, i, j, k, ell] = clijkl
-                    cd[:, i, j, ell] = cdijkl
+                    cd[:, i, j, k, ell] = cdijkl
                     stagger[i] = staggeri
                     Re[j] = Rej
-                    Mach[k] = Mach[k]
+                    Mach[k] = Machk
                     solidity[ell] = solidityell
                 end
             end
         end
     end
 
-    return StaggerInflowReMachCAS(stagger, inflow, Re, Mach, solidity, cl, cd, info)
+    return StaggerInflowReMachSolidityCAS(stagger, inflow, Re, Mach, solidity, cl, cd, info)
 end
 
 function caseval(cas::StaggerInflowReMachSolidityCAS, stagger, inflow, Re, Mach, solidity)
-    cl = FLOWMath.interp5d(
+    cl = interp5d(
         FLOWMath.akima,
         cas.stagger,
         cas.inflow,
@@ -516,7 +518,7 @@ function caseval(cas::StaggerInflowReMachSolidityCAS, stagger, inflow, Re, Mach,
         [solidity],
     )[1]
 
-    cd = FLOWMath.interp5d(
+    cd = interp5d(
         FLOWMath.akima,
         cas.stagger,
         cas.inflow,
@@ -591,7 +593,9 @@ end
 
 Same as FLOWMath.interp4d, ex1cept in five dimensions.
 """
-function interp5d(interp1d, x1data, x2data, x3data, x4data, fdata, x1pt, x2pt, x3pt, x4pt)
+function interp5d(
+    interp1d, x1data, x2data, x3data, x4data, x5data, fdata, x1pt, x2pt, x3pt, x4pt, x5pt
+)
     nd = length(x5data)
     nx1pt = length(x1pt)
     nx2pt = length(x2pt)
@@ -599,7 +603,7 @@ function interp5d(interp1d, x1data, x2data, x3data, x4data, fdata, x1pt, x2pt, x
     nx4pt = length(x4pt)
     nx5pt = length(x5pt)
 
-    R = promote_tx2pe(eltype(x1pt), eltype(x2pt), eltype(x3pt), eltype(x4pt), eltype(x5pt))
+    R = promote_type(eltype(x1pt), eltype(x2pt), eltype(x3pt), eltype(x4pt), eltype(x5pt))
     x5interp = Array{R}(undef, nd, nx1pt, nx2pt, nx3pt, nx4pt)
     output = Array{R}(undef, nx1pt, nx2pt, nx3pt, nx4pt, nx5pt)
 

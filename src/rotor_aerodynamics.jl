@@ -105,7 +105,9 @@ function calculate_induced_velocities_on_rotors(
 
     # return raw induced velocities
     if debug
-        return vx_rotor, vr_rotor, vtheta_rotor, vxb_rotor, vrb_rotor, vxw_rotor, vrw_rotor, vxr_rotor, vrr_rotor
+        return vx_rotor,
+        vr_rotor, vtheta_rotor, vxb_rotor, vrb_rotor, vxw_rotor, vrw_rotor, vxr_rotor,
+        vrr_rotor
     else
         return vx_rotor, vr_rotor, vtheta_rotor
     end
@@ -184,7 +186,13 @@ Calculate rotor circulation and source strengths using blade element data and in
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
 function calculate_gamma_sigma(
-    blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, freestream; debug=false, verbose=false
+    blade_elements,
+    Wm_rotor,
+    Wtheta_rotor,
+    Wmag_rotor,
+    freestream;
+    debug=false,
+    verbose=false,
 )
 
     # get floating point type
@@ -204,7 +212,15 @@ function calculate_gamma_sigma(
 
     # call in-place function
     return calculate_gamma_sigma!(
-        Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, freestream; debug=debug, verbose=verbose
+        Gamr,
+        sigr,
+        blade_elements,
+        Wm_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        freestream;
+        debug=debug,
+        verbose=verbose,
     )
 end
 
@@ -243,7 +259,15 @@ In-place version of [`calculate_gamma_sigma`](@ref)
 Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and vtheta_rotor)
 """
 function calculate_gamma_sigma!(
-    Gamr, sigr, blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, freestream; debug=false, verbose=false
+    Gamr,
+    sigr,
+    blade_elements,
+    Wm_rotor,
+    Wtheta_rotor,
+    Wmag_rotor,
+    freestream;
+    debug=false,
+    verbose=false,
 )
 
     # problem dimensions
@@ -275,67 +299,32 @@ function calculate_gamma_sigma!(
             solidity = blade_elements[irotor].solidity[ir]
 
             # calculate angle of attack
-            phi, alpha = calculate_inflow_angles(Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], twist)
-
-            # printval("Wm_rotor[$(ir),$(irotor)]: ", Wm_rotor[ir,irotor])
-            # printval("Wtheta[$(ir),$(irotor)]: ", Wtheta_rotor[ir,irotor])
-            # printval("twist: ", twist*180.0/pi)
-            # printval("phi: ", phi*180.0/pi)
-            # printval("alpha: ", alpha*180.0/pi)
-            # printval("Wmag: ", Wmag_rotor[ir, irotor])
-            # printval("Mach: ", Wmag_rotor[ir,irotor] / freestream.asound)
-
-            # look up lift and drag data for the nearest two input sections
-            # TODO: this breaks rotor aero tests... need to update those.
-            if typeof(blade_elements[irotor].inner_airfoil[ir]) <: DFDCairfoil
-
-                # get local reynolds number
-                reynolds = c * abs(Wmag_rotor[ir, irotor]) * freestream.rhoinf / freestream.muinf
-
-                # printval("Re: ", reynolds)
-
-                #get inner values
-                clin, cdin, _ = dfdc_clcdcm(
-                    Wmag_rotor[ir, irotor],
-                    reynolds,
-                    solidity,
-                    stagger,
-                    alpha,
-                    blade_elements[irotor].inner_airfoil[ir],
-                    freestream.asound;
-                    verbose=verbose,
-                )
-                # get outer values
-                clout, cdout, _ = dfdc_clcdcm(
-                    Wmag_rotor[ir, irotor],
-                    reynolds,
-                    solidity,
-                    stagger,
-                    alpha,
-                    blade_elements[irotor].outer_airfoil[ir],
-                    freestream.asound;
-                    verbose=verbose,
-                )
-
-            else
-                clin, cdin = search_polars(blade_elements[irotor].inner_airfoil[ir], alpha)
-                clout, cdout = search_polars(
-                    blade_elements[irotor].outer_airfoil[ir], alpha
-                )
-                # linearly interpolate between those two values at your blade element location
-            end
-
-            # interpolate inner and outer values
-            cl = fm.linear(
-                [0.0; 1.0], [clin, clout], blade_elements[irotor].inner_fraction[ir]
-            )
-            cd = fm.linear(
-                [0.0; 1.0], [cdin, cdout], blade_elements[irotor].inner_fraction[ir]
+            phi, alpha = calculate_inflow_angles(
+                Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], twist
             )
 
-            # printval("cl in: ", clin)
-            # printval("cl interp: ", cl)
+            # get local Reynolds number
+            reynolds = c * abs(Wmag) * freestream.rhoinf / freestream.muinf
 
+            # get local Mach number
+            mach = Wmag / freestream.asound
+
+            cl, cd = lookup_clcd(
+                blade_elements[irotor].inner_airfoil[ir],
+                blade_elements[irotor].outer_airfoil[ir],
+                blade_elements[irotor].inner_fraction[ir],
+                Wmag_rotor[ir, irotor],
+                solidity,
+                stagger,
+                alpha,
+                phi,
+                reynolds,
+                mach,
+                freestream.asound;
+                verbose=verbose,
+            )
+
+            # - get circulation and source strengths - #
             gamma_sigma_from_coeffs!(
                 view(Gamr, ir, irotor),
                 view(sigr, ir, irotor),
@@ -361,6 +350,58 @@ function calculate_gamma_sigma!(
     else
         return Gamr, sigr
     end
+end
+
+function lookup_clcd(
+    inner_airfoil,
+    outer_airfoil,
+    inner_fraction,
+    Wmag,
+    solidity,
+    stagger,
+    alpha,
+    inflow,
+    reynolds,
+    mach,
+    asound;
+    verbose=false,
+)
+
+    # look up lift and drag data for the nearest two input sections
+    # TODO: this breaks rotor aero tests... need to update those.
+    if typeof(inner_airfoil) <: DFDCairfoil
+        # - DFDC Airfoil Parameter - #
+
+        # get inner values
+        clin, cdin, _ = dfdc_clcdcm(
+            Wmag, reynolds, solidity, stagger, alpha, inner_airfoil, asound; verbose=verbose
+        )
+        # get outer values
+        clout, cdout, _ = dfdc_clcdcm(
+            Wmag, reynolds, solidity, stagger, alpha, outer_airfoil, asound; verbose=verbose
+        )
+
+    elseif typeof(inner_airfoil) <: DTCascade
+        # - Cascade Lookups - #
+        # get inner values
+        clin, cdin = caseval(inner_airfoil, stagger, inflow, reynolds, mach, solidity)
+        # get outer values
+        clout, cdout = caseval(outer_airfoil, stagger, inflow, reynolds, mach, solidity)
+    elseif typeof(inner_airfoil) <: ccb.AFType
+        # - Airfoil Lookups - #
+        # get inner values
+        clin, cdin = search_polars(inner_airfoil, alpha)
+        # get outer values
+        clout, cdout = search_polars(outer_airfoil, alpha)
+    else
+        @error "No blade element datatype: $(typeof(inner_airfoil)) defined."
+    end
+
+    # interpolate inner and outer values
+    cl = fm.linear([0.0; 1.0], [clin, clout], inner_fraction)
+    cd = fm.linear([0.0; 1.0], [cdin, cdout], inner_fraction)
+
+    return cl, cd
 end
 
 """

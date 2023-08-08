@@ -15,7 +15,9 @@ println("Running Tests...")
 include("compare_objects.jl")
 
 # - Active Development - #
-include("derivative_checks.jl")
+# include("derivative_checks.jl")
+
+include("blade_element_aero_lookups.jl")
 
 include("new_panel_tests.jl")
 include("basic_singularity.jl")

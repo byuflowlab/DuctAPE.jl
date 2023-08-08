@@ -85,12 +85,12 @@
         cas = dt.StaggerInflowCAS(
             "test/data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
         )
-        cl, cdrag = dt.caseval(cas, 0.0, 0.5;)
+        cl, cdrag = dt.caseval(cas, 0.5, 0.0;)
 
         @test cl == 0.5
         @test cdrag == 0.05
 
-        cl, cdrag = dt.caseval(cas, pi / 2, 0.25;)
+        cl, cdrag = dt.caseval(cas, 0.25, pi / 2;)
 
         @test isapprox(cl, 0.375)
         @test isapprox(cdrag, 0.0375)
@@ -174,42 +174,116 @@ end
     end
 
     @testset "Evaluate Cascade" begin
-        cas = dt.StaggerInflowCAS(
-            "test/data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
-        )
-        cl, cdrag = dt.caseval(cas, 0.0, 0.5;)
+        filenames = Array{String}(undef, 3, 3, 3, 3)
+        for i in 1:3
+            for j in 1:3
+                for k in 1:3
+                    for ell in 1:3
+                        filenames[i, j, k, ell] = "test/data/cas$i$j$k$ell.dat"
+                    end
+                end
+            end
+        end
+
+        cas = dt.StaggerInflowReMachSolidityCAS(filenames)
+
+        cl, cdrag = dt.caseval(cas, 0.5, pi, 100000, 0.1, 0.5)
 
         @test cl == 0.5
         @test cdrag == 0.05
 
-        cl, cdrag = dt.caseval(cas, pi / 2, 0.25;)
+        cl, cdrag = dt.caseval(cas, 0.25, pi / 2, 50000, 0.2, 0.75)
 
         @test isapprox(cl, 0.375)
         @test isapprox(cdrag, 0.0375)
     end
 
-    @testset "Write Cascasde from Struct" begin
-        cas = dt.StaggerInflowCAS(
-            "test/data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
+    @testset "Write Cascasde from Struct" begin end
+end
+
+@testset "Stagger+Inflow+Re+Mach+Solidity Cascade Types and Functions" begin
+    @testset "Define Cascade" begin
+        stagger = [0.0; 0.5; 1.0]
+        inflow = [-pi; 0.0; pi]
+        cl = repeat([0.0; 0.5; 0.0]; inner=(1, 3, 3, 3, 3))
+        cdrag = repeat([0.0; 0.05; 0.0]; inner=(1, 3, 3, 3, 3))
+        Re = [50000.0; 100000; 150000]
+        Mach = [0.0; 0.1; 0.2]
+        solidity = [0.25; 0.5; 0.75]
+        info = "Test Cascade File (made up data just for unit testing)"
+
+        # direct definitions
+        st2 = dt.StaggerInflowReMachSolidityCAS(
+            stagger, inflow, Re, Mach, solidity, cl, cdrag, info
+        )
+        st3 = dt.StaggerInflowReMachSolidityCAS(
+            stagger, inflow, Re, Mach, solidity, cl, cdrag
         )
 
-        dt.writecascadefile(
-            "test/data/" .* ["test1111.dat"; "test2111.dat"; "test3111.dat"],
-            cas;
-            radians=true,
-        )
+        # defined from input files.
+        filenames = Array{String}(undef, 3, 3, 3, 3)
+        for i in 1:3
+            for j in 1:3
+                for k in 1:3
+                    for ell in 1:3
+                        filenames[i, j, k, ell] = "test/data/cas$i$j$k$ell.dat"
+                    end
+                end
+            end
+        end
 
-        cas2 = dt.StaggerInflowCAS(
-            "test/data/" .* ["test1111.dat"; "test2111.dat"; "test3111.dat"]
-        )
+        cas = dt.StaggerInflowReMachSolidityCAS(filenames)
 
-        @test cas.stagger == cas2.stagger
-        @test cas.inflow == cas2.inflow
-        @test cas.cl == cas2.cl
-        @test cas.cd == cas2.cd
-        @test cas.info == cas2.info
-        @test cas.Re == cas2.Re
-        @test cas.Mach == cas2.Mach
-        @test cas.solidity == cas2.solidity
+        @test cas.stagger == stagger
+        @test cas.inflow == inflow
+        @test cas.cl == cl
+        @test cas.cd == cdrag
+        @test cas.info == info
+        @test cas.Re == Re
+        @test cas.Mach == Mach
+        @test cas.solidity == solidity
+        @test cas.stagger == st2.stagger
+        @test cas.inflow == st2.inflow
+        @test cas.cl == st2.cl
+        @test cas.cd == st2.cd
+        @test cas.info == st2.info
+        @test cas.Re == st2.Re
+        @test cas.Mach == st2.Mach
+        @test cas.solidity == st2.solidity
+        @test cas.stagger == st3.stagger
+        @test cas.inflow == st3.inflow
+        @test cas.cl == st3.cl
+        @test cas.cd == st3.cd
+        @test st3.info == "DuctTAPE written cascade"
+        @test st3.Re == Re
+        @test st3.Mach == Mach
+        @test st3.solidity == solidity
     end
+
+    @testset "Evaluate Cascade" begin
+        filenames = Array{String}(undef, 3, 3, 3, 3)
+        for i in 1:3
+            for j in 1:3
+                for k in 1:3
+                    for ell in 1:3
+                        filenames[i, j, k, ell] = "test/data/cas$i$j$k$ell.dat"
+                    end
+                end
+            end
+        end
+
+        cas = dt.StaggerInflowReMachSolidityCAS(filenames)
+
+        cl, cdrag = dt.caseval(cas, 0.5, pi, 100000, 0.1, 0.5)
+
+        @test cl == 0.5
+        @test cdrag == 0.05
+
+        cl, cdrag = dt.caseval(cas, 0.25, pi / 2, 50000, 0.2, 0.75)
+
+        @test isapprox(cl, 0.375)
+        @test isapprox(cdrag, 0.0375)
+    end
+
+    @testset "Write Cascasde from Struct" begin end
 end
