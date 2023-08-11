@@ -34,7 +34,7 @@ wake_length = 1.0
 npanels = [20, 40]
 rotor_parameters = [(;
    xrotor,
-   nwake_sheets,
+   # nwake_sheets,
    r=r ./ Rtip, #non-dimensionalize
    chords,
    twists,

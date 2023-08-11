@@ -1091,129 +1091,48 @@ function get_intermediate_values(states, inputs)
     )
 end
 
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
+######################################################################
+#                                                                    #
+#                        Post-Post-Processing                        #
+#                                                                    #
+######################################################################
+
 """
-NEED TO TEST. NO GUARENTEES THIS OR CONSTITUENT FUNCTIONS ARE CORRECT. (in fact, they are wrong...)
 """
-function probe_velocity_field(
-    field_points,
-    Vinf;
-    body_strengths=nothing,
-    body_doublet_panels=nothing,
-    wake_strengths=nothing,
-    wake_panels=nothing,
-    source_strengths=nothing,
-    source_panels=nothing,
-)
+function probe_velocity_field(probe_poses, inputs, states)
 
-    # Initialize velocities
-    Vfield_x = similar(field_points) .= Vinf
-    body_induced_x = similar(field_points) .= 0.0
-    wake_induced_x = similar(field_points) .= 0.0
-    source_induced_x = similar(field_points) .= 0.0
-    Vfield_r = similar(field_points) .= 0.0
-    body_induced_r = similar(field_points) .= 0.0
-    wake_induced_r = similar(field_points) .= 0.0
-    source_induced_r = similar(field_points) .= 0.0
+    # - Types - #
+    TF = promote_type(eltype(probe_poses), eltype(states))
 
-    # - add body induced velocity to total
-    if !isnothing(body_strengths) && !isnothing(body_doublet_panels)
-        # set up influence coefficients based on field points and body panels
-        mesh_fpb = generate_field_mesh(body_doublet_panels, field_points)
+    # - dimensions - #
+    nv = size(probe_poses, 1)
 
-        A_fpb = assemble_induced_velocity_matrices_infield(
-            mesh_fpb, body_doublet_panels, field_points
-        )
+    # - initialize - #
+    vx = zeros(TF, nv)
+    vr = zeros(TF, nv)
+    vt = zeros(TF, nv)
 
-        # axial components
-        vx_s = A_fpb[1]
+    #=
+    PLAN
+    - ASSUME NOT on body or outside of wake for now. want to be able to probe ahead of rotor, at rotor, and aft of rotor. (need this for report)
+    - for each probe station (just do them all together), need to get induced axial and radial unit velocities from all the other geometry
+    - multiply by the strengths to get the velocities. output dimensional velocities.
+    - need to find nearest wake points (radially and axially) and interpolate probably to get tangenetial velocities (need to check that we're inside the wake as well)
+    =#
 
-        # radial components
-        vr_s = A_fpb[2]
+    ##### ----- Set Up ----- #####
 
-        # Mutliply things out to get induced velocities
-        body_induced_x = vx_s * body_strengths
-        body_induced_r = vx_s * body_strengths
+    ## -- Body-induced Unit Velocities -- ##
 
-        # Add to total velocity field
-        Vfield_x .+= body_induced_x
-        Vfield_r .+= body_induced_r
-    end
+    ## -- Rotor-induced Unit Velocities -- ##
 
-    # - add wake induced velocity to total
-    if !isnothing(wake_strengths) && !isnothing(wake_panels)
-        # set up influence coefficients based on field points and body panels
-        mesh_fpw = [
-            generate_field_mesh([wake_panels[j]], field_points) for i in 1:1,
-            j in 1:length(wake_panels)
-        ]
+    ## -- Wake-induced Unit Velocities -- ##
 
-        A_fpw = [
-            assemble_induced_velocity_matrices_infield(
-                mesh_fpw[i, j], [wake_panels[j]], field_points
-            ) for i in 1:1, j in 1:length(wake_panels)
-        ]
+    ##### ----- Axial Velocity ----- #####
 
-        # axial components
-        vx_s = [A_fpw[i, j][1] for i in 1:1, j in 1:length(wake_panels)]
+    ##### ----- Radial Velocity ----- #####
 
-        # radial components
-        vr_s = [A_fpw[i, j][2] for i in 1:1, j in 1:length(wake_panels)]
+    ##### ----- Tangential Velocity ----- #####
 
-        # Mutliply things out to get induced velocities
-        wake_induced_x = vx_s * wake_strengths
-        wake_induced_r = vx_s * wake_strengths
-
-        # Add to total velocity field
-        Vfield_x .+= wake_induced_x
-        Vfield_r .+= wake_induced_r
-    end
-
-    # - add source induced velocity to total
-    if !isnothing(source_strengths) && !isnothing(source_panels)
-        # set up influence coefficients based on field points and body panels
-        mesh_fps = [
-            generate_field_mesh([source_panels[j]], field_points) for i in 1:1,
-            j in 1:length(source_panels)
-        ]
-
-        A_fps = [
-            assemble_induced_velocity_matrices_infield(
-                mesh_fps[i, j], [source_panels[j]], field_points
-            ) for i in 1:1, j in 1:length(source_panels)
-        ]
-
-        # axial components
-        vx_s = [A_fps[i, j][1] for i in 1:1, j in 1:length(source_panels)]
-
-        # radial components
-        vr_s = [A_fps[i, j][2] for i in 1:1, j in 1:length(source_panels)]
-
-        # Mutliply things out to get induced velocities
-        source_induced_x = vx_s * source_strengths
-        source_induced_r = vx_s * source_strengths
-
-        # Add to total velocity field
-        Vfield_x .+= source_induced_x
-        Vfield_r .+= source_induced_r
-    end
-
-    return Vfield_x,
-    Vfield_r,
-    body_induced_x,
-    body_induced_r,
-    wake_induced_x,
-    wake_induced_r,
-    source_induced_x,
-    source_induced_r
+    return vx, vr, vt
 end

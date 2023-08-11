@@ -16,6 +16,9 @@ include(project_dir * "/visualize/visualize_flowfield.jl")
 include(project_dir * "/visualize/plots_default_new.jl")
 # pyplot()
 
+# read in parameters file
+include(datapath * "lewis_with_rotor.case.jl")
+
 # - Initialize Plots - #
 pv = plot(; xlabel="x", ylabel=L"V_s", ylim=(0.0, 50.0))
 pc = plot(; xlabel="x", ylabel=L"c_p", ylim=(-2.25, 1.0), yflip=true)
@@ -121,8 +124,6 @@ plot!(
 # include(datapath * "lewis_refined_hub.jl")
 
 # - Generate Panels - #
-# TODO: create parameters file to read in
-include(datapath * "lewis_with_rotor.case.jl")
 
 #overwrite geometry with DFDC input geometry
 duct_coordinates = reverse([ductx ductr]; dims=1)
