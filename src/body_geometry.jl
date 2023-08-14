@@ -135,38 +135,38 @@ function place_duct(duct_coordinates, hub_coordinates, Rtip, tip_gaps, xrotors)
     return duct_coordinates, Rtips, Rhubs
 end
 
-"""
-    generate_body_panels(duct_coordinates, hub_coordinates, discretization; kwargs...)
+# """
+#     generate_body_panels(duct_coordinates, hub_coordinates, discretization; kwargs...)
 
-Define the paneling (see [`FLOWFoil.AxisymmetricPanel`](@ref)) for the duct and hub.
+# Define the paneling (see [`FLOWFoil.AxisymmetricPanel`](@ref)) for the duct and hub.
 
-# Arguments:
-- `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
-- `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
+# # Arguments:
+# - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
+# - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
 
-# Keyword Arguments:
-- `method` : Axisymmetric method as defined by FLOWFoil, defaults to `AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])`
+# # Keyword Arguments:
+# - `method` : Axisymmetric method as defined by FLOWFoil, defaults to `AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])`
 
-"""
-function generate_body_panels(duct_coordinates, hub_coordinates)
-    # use FLOWFoil to generate panels
-    if duct_coordinates != nothing
-        duct_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false])
-        duct_panels = ff.generate_panels(duct_method, duct_coordinates)
-    end
+# """
+# function generate_body_panels(duct_coordinates, hub_coordinates)
+#     # use FLOWFoil to generate panels
+#     if duct_coordinates != nothing
+#         duct_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false])
+#         duct_panels = ff.generate_panels(duct_method, duct_coordinates)
+#     end
 
-    if hub_coordinates != nothing
-        hub_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
-        hub_panels = ff.generate_panels(hub_method, hub_coordinates)
-    end
+#     if hub_coordinates != nothing
+#         hub_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
+#         hub_panels = ff.generate_panels(hub_method, hub_coordinates)
+#     end
 
-    if duct_coordinates != nothing && hub_coordinates != nothing
-        return [duct_panels; hub_panels]
-    elseif duct_coordinates == nothing && hub_coordinates != nothing
-        return [hub_panels]
-    elseif duct_coordinates != nothing && hub_coordinates == nothing
-        return [duct_panels]
-    else
-        return []
-    end
-end
+#     if duct_coordinates != nothing && hub_coordinates != nothing
+#         return [duct_panels; hub_panels]
+#     elseif duct_coordinates == nothing && hub_coordinates != nothing
+#         return [hub_panels]
+#     elseif duct_coordinates != nothing && hub_coordinates == nothing
+#         return [duct_panels]
+#     else
+#         return []
+#     end
+# end
