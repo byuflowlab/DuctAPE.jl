@@ -300,6 +300,22 @@ function precomputed_inputs(
         # prescribedpanels,
     )
 
+    # - Pre-compute fixed terms of the least-squares problem: Gred, Gls=Gred'*Gred, Glu=LU(Gls), and -bp - #
+
+    # Set Vinf = 0 so then RHS becomes simply -bp
+    Vinfmat0 = repeat([0.0 0.0], body_doublet_panels.npanels)
+    b_bf0 = freestream_influence_vector(body_doublet_panels.normal, Vinfmat0)
+    RHS0 = b_bf0
+
+    # Compute left and right-hand sides of least-squares problem
+    LHSlsq, RHSlsq0, tLHSred = prep_leastsquares(LHS, RHS0, prescribedpanels)
+
+    # Compute LU-decomposition of the least-squares LHS
+    LHSlsqlu = calc_Alu(LHSlsq)
+
+    # Cache memory reduced body strengths
+    mured = zeros(promote_type(eltype(LHS), eltype(RHS)), length(RHS)-length(prescribedpanels))
+
     # - rotor to body - #
     A_br = [
         source_panel_influence_matrix(rotor_source_panels[j], body_doublet_panels) for
@@ -610,6 +626,12 @@ function precomputed_inputs(
         # - Influence Matrices - #
         A_bb=LHS, # body to body
         A_bb_raw=A_bb, # body to body
+        LHSlsq=LHSlsq, # left-hand-side in least-squares problem (body to body)
+        LHSlsqlu=LHSlsqlu, # LU-decomposition of LHS in least-squares problem (body to body)
+        tLHSred=tLHSred, # transposed of the reduced LHS in least-squares problem (body to body)
+        RHSlsq=RHSlsq0, # cache memory for right-hand-side of least-squares problem
+        mured=mured, # cache memory for reduced strengths
+        b_bf0=RHS0, # right-hand-side of body to body when Vinf = 0 (which is the -bp term of the least-squares problem)
         b_bf=RHS, # freestream contribution to body boundary conditions
         b_bf_raw=b_bf, # freestream contribution to body boundary conditions
         prescribedpanels, # prescribed panels
@@ -702,7 +724,13 @@ function initialize_states(inputs)
     nbodies = inputs.body_doublet_panels.nbodies
     # solve body-only problem
     # mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels, nbodies)
-    mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels)
+    # mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels)
+
+    mub = solve_body_strengths(
+        inputs.A_bb, RHS,
+        inputs.LHSlsq, inputs.LHSlsqlu, inputs.tLHSred, inputs.b_bf0,
+        inputs.prescribedpanels
+    )
 
     # - Initialize blade circulation and source strengths (assume open rotor) - #
 
