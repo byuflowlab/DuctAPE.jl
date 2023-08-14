@@ -1098,18 +1098,29 @@ end
 ######################################################################
 
 """
+probe_poses : matrix of x,r coordinates of locations at which to probe velocity field
 """
 function probe_velocity_field(probe_poses, inputs, states)
 
     # - Types - #
     TF = promote_type(eltype(probe_poses), eltype(states))
 
+    # - rename for convenience - #
+    (; rotor_source_panels, wake_vortex_panels, body_doublet_panels, blade_elements) =
+        inputs
+
+    # get number of rotor blades
+    num_blades = blade_elements.B
+
+    # - extract states - #
+    mub, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+
     # - dimensions - #
     nv = size(probe_poses, 1)
+    nr = size(sigr, 2)
 
     # - initialize - #
-    vx = zeros(TF, nv)
-    vr = zeros(TF, nv)
+    Vxr = zeros(TF, nv, 2)
     vt = zeros(TF, nv)
 
     #=
@@ -1120,19 +1131,74 @@ function probe_velocity_field(probe_poses, inputs, states)
     - need to find nearest wake points (radially and axially) and interpolate probably to get tangenetial velocities (need to check that we're inside the wake as well)
     =#
 
-    ##### ----- Set Up ----- #####
+    ##### ----- Axial and Radial Velocity ----- #####
+    vfromdoubletpanels!(Vxr, probe_poses, body_doublet_panels.nodes, mub)
+    for i in 1:length(rotor_source_panels)
+        vfromsourcepanels!(
+            Vxr,
+            probe_poses,
+            rotor_source_panels[i].controlpoint,
+            rotor_source_panels[i].len,
+            sigr[:, i],
+        )
+    end
+    vfromvortexpanels!(
+        Vxr, probe_poses, wake_vortex_panels.controlpoint, wake_vortex_panels.len, gamw
+    )
 
-    ## -- Body-induced Unit Velocities -- ##
+    # TODO: need to get this working for multiple rotors
 
-    ## -- Rotor-induced Unit Velocities -- ##
+    ###### ----- Tangential Velocity ----- #####
+    ## reshape the wake panel control points into the wake sheets
+    #nsheets = size(Gamr, 1) + 1
+    #nwakex = Int(wake_vortex_panels.npanels / nsheets)
+    #wakecpx = reshape(wake_vortex_panels.controlpoint[:, 1], (nwakex, nsheets))'
+    #wakecpr = reshape(wake_vortex_panels.controlpoint[:, 2], (nwakex, nsheets))'
 
-    ## -- Wake-induced Unit Velocities -- ##
+    ## get the target xpositions between the wake start and end points.
+    #tx1 = findfirst(x -> x >= wakecpx[1, 1], probe_poses[:, 1])
+    #tx2 = findfirst(x -> x >= wakecpx[1, end], probe_poses[:, 1]) - 1
+    #tgridx = repeat(probe_poses[tx1:tx2, 1]; inner=(1, nsheets))'
 
-    ##### ----- Axial Velocity ----- #####
+    ## spline the wake sheets
+    #tgridr = similar(tgridx) .= 0.0
+    #for i in 1:nsheets
+    #    tgridr[i, :] = fm.linear(wakecpx[i, :], wakecpr[i, :], tgridx[i, :])
+    #end
 
-    ##### ----- Radial Velocity ----- #####
+    ## get the vtheta values at the interpolated points
+    #vthetagrid = similar(tgridx) .= 0.0
 
-    ##### ----- Tangential Velocity ----- #####
+    #Gamma_tilde_be = calculate_net_circulation(Gamr, num_blades)
+    #Gamma_tilde_ws = [
+    #    Gamma_tilde_be[1]
+    #    (Gamma_tilde_be[2:end] .+ Gamma_tilde_be[1:(end - 1)]) / 2
+    #    Gamma_tilde_be[end]
+    #]
+    #for ix in 1:size(tgridx, 2)
 
-    return vx, vr, vt
+    #    # TODO: need to select the correct x rotor here. probably need to create a new xrotor related array that is based on this tgridx stuff.
+
+    #    gtid = findlast(x -> x <= tgridx[1, ix], xrotor)
+    #    vthetagrid[:, ix] = calculate_vtheta(Gamma_tilde_ws[:, gtid], tgridr[:, ix])
+    #end
+
+    ## loop through probe_poses, if they are within the wake, interpolate vtheta values.
+    #for (it, tar) in enumerate(eachrow(probe_poses))
+    #    if tgridx[1, 1] <= tar[1] <= tgridx[1, end]
+    #        # println("target: ", tar, "inside xrange")
+    #        #we're inside the wake x range
+    #        # find which xstation we're at
+    #        xid = searchsortedfirst(tgridx[1, :], tar[1])
+    #        if tgridr[1, xid] <= tar[2] <= tgridr[end, xid]
+    #            # println("target: ", tar, "inside rrange")
+    #            # we're inside the wake radially
+    #            # get the tangential velocity
+    #            vt[it] = fm.akima(tgridr[:, xid], vthetagrid[:, xid], tar[2])
+    #        end
+    #    end
+    #end
+
+    #TODO: need to unit test this function
+    return Vxr[:, 1], Vxr[:, 2], vt
 end
