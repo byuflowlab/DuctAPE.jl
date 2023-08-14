@@ -12,7 +12,7 @@
     B = 5
     Vinf = 0.0
     Vref = 50.0
-    rho = 1.226
+    rhoinf = 1.226
     Omega = 8000 * pi / 30
 
     # columns: B*Gamma,Wtheta,dr,section thrust
@@ -21,7 +21,7 @@
     rotor_panel_length = dfdc_thrust_inviscid[:, 3]
     dfdc_tinv_dist = dfdc_thrust_inviscid[:, 4]
 
-    tinv, tinv_dist = dt.inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rho)
+    tinv, tinv_dist = dt.inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rhoinf)
 
     @test all(isapprox.(dfdc_tinv_dist, tinv_dist; atol=1e-6))
 
@@ -34,7 +34,7 @@
     dfdc_tvis_dist = dfdc_thrust_viscous[:, 6]
 
     tvis, tvis_dist = dt.viscous_rotor_thrust(
-        Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rho
+        Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rhoinf
     )
 
     @test all(isapprox.(dfdc_tvis_dist, tvis_dist; atol=1e-6))
@@ -55,7 +55,7 @@
     dfdc_qinv_dist = dfdc_torque_inviscid[:, 5]
 
     rotor_inviscid_torque, rotor_inviscid_torque_dist = dt.inviscid_rotor_torque(
-        Wx_rotor, rpc, rpl, Gamma_tilde, rho
+        Wx_rotor, rpc, rpl, Gamma_tilde, rhoinf
     )
 
     @test all(isapprox.(dfdc_qinv_dist, rotor_inviscid_torque_dist; atol=1e-6))
@@ -70,7 +70,7 @@
     dfdc_qvis_dist = dfdc_torque_viscous[:, 7]
 
     rotor_viscous_torque, rotor_viscous_torque_dist = dt.viscous_rotor_torque(
-        Wtheta_rotor, Wmag_rotor, B, chord, rpc, rpl, cdrag, rho
+        Wtheta_rotor, Wmag_rotor, B, chord, rpc, rpl, cdrag, rhoinf
     )
 
     @test all(isapprox.(dfdc_qvis_dist, rotor_viscous_torque_dist; atol=1e-6))
@@ -100,16 +100,16 @@
     xnormal = dfdc_duct_thrust[:, 4]
     panel_length = dfdc_duct_thrust[:, 5]
     panel_radial_position = dfdc_duct_thrust[:, 6]
-    dfdc_d_thrust = -0.5 * rho * Vref^2 * dfdc_duct_thrust[end, 7]
+    dfdc_d_thrust = -0.5 * rhoinf * Vref^2 * dfdc_duct_thrust[end, 7]
 
     ductpanel = (;
-        panel_normal=xnormal,
-        panel_length,
-        panel_center=[zeros(length(panel_radial_position)) panel_radial_position],
+        normal=xnormal,
+        len=panel_length,
+        controlpoint=[zeros(length(panel_radial_position)) panel_radial_position],
     )
 
     duct_thrust, _ = dt.forces_from_pressure(
-        cpleft .- cpright, ductpanel; rho=rho, Vref=Vref
+        cpleft .- cpright, ductpanel; rhoinf=rhoinf, Vref=Vref
     )
 
     @test isapprox(-duct_thrust, dfdc_d_thrust; atol=1e-4)
@@ -120,15 +120,15 @@
     xnormal = dfdc_hub_thrust[:, 4]
     panel_length = dfdc_hub_thrust[:, 5]
     panel_radial_position = dfdc_hub_thrust[:, 6]
-    dfdc_h_thrust = -0.5 * rho * Vref^2 * dfdc_hub_thrust[end, 7]
+    dfdc_h_thrust = -0.5 * rhoinf * Vref^2 * dfdc_hub_thrust[end, 7]
 
     hubpanel = (;
-        panel_normal=xnormal,
-        panel_length,
-        panel_center=[zeros(length(panel_radial_position)) panel_radial_position],
+        normal=xnormal,
+        len=panel_length,
+        controlpoint=[zeros(length(panel_radial_position)) panel_radial_position],
     )
 
-    hub_thrust, _ = dt.forces_from_pressure(cpleft.-cpright, hubpanel; rho=rho, Vref=Vref)
+    hub_thrust, _ = dt.forces_from_pressure(cpleft.-cpright, hubpanel; rhoinf=rhoinf, Vref=Vref)
 
     @test isapprox(-hub_thrust, dfdc_h_thrust; atol=1e-4)
 
