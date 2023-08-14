@@ -174,11 +174,15 @@ function constant_vortex_band_induced_velocity!(
     xi, rho, m, rj = calculate_xrm(controlpoint, fieldpoint)
 
     # get unit induced velocities of vortex ring
-    vel[1] += vortex_ring_vx(xi, rho, m, rj, influence_panel_length)#length needed here in case of self-induced case
-    vel[2] += vortex_ring_vr(xi, rho, m, rj)
+    vel[1] +=
+        vortex_ring_vx(xi, rho, m, rj, influence_panel_length) *
+        gamma *
+        influence_panel_length#length needed here in case of self-induced case
+    vel[2] += vortex_ring_vr(xi, rho, m, rj) * gamma * influence_panel_length
 
-    # multiply by panel length and strength
-    vel[:] .*= gamma * influence_panel_length
+    # TODO; this is causing problems
+    # # multiply by panel length and strength
+    # vel[:] .*= gamma * influence_panel_length
 
     return nothing
 end
@@ -285,11 +289,12 @@ function constant_source_band_induced_velocity!(
     xi, rho, m, rj = calculate_xrm(node, fieldpoint)
 
     # get unit induced velocities of source ring
-    vel[1] += source_ring_vx(xi, rho, m, rj)
-    vel[2] += source_ring_vr(xi, rho, m, rj)
+    vel[1] += source_ring_vx(xi, rho, m, rj) * sigma * influence_panel_length
+    vel[2] += source_ring_vr(xi, rho, m, rj) * sigma * influence_panel_length
 
+    #TODO: this is causing problems...
     # multiply by panel length and strength
-    vel[:] .*= sigma * influence_panel_length
+    # vel[:] .*= sigma * influence_panel_length
 
     return nothing
 end
@@ -842,13 +847,13 @@ end
 try simply splining based on arclength
 """
 function vfromgradmutry3b(panels, mu)
-    gradmu = zeros(eltype(mu), panels.npanels,2)
+    gradmu = zeros(eltype(mu), panels.npanels, 2)
     for ib in 1:(panels.nbodies)
         epid = panels.endpointidxs[ib, 1]:panels.endpointidxs[ib, 2]
         s = cumsum(panels.len[epid])
         musp = fm.Akima(s, mu[epid])
         dmuds = fm.gradient(musp, s)
-        gradmu[epid,:] .= dmuds .* panels.tangent[epid,:]
+        gradmu[epid, :] .= dmuds .* panels.tangent[epid, :]
     end
 
     return -gradmu / 2
