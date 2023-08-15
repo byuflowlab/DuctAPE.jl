@@ -260,7 +260,7 @@ function prep_leastsquares!(Gred, Glsq, blsq, LHS, RHS, prescribedpanels)
     # Store Gred'*Gred under Glsq
     mul!(Glsq, tGred, Gred)
 
-    return Glsq, blsq
+    return Glsq, blsq, tGred
 end
 
 function prep_leastsquares(
@@ -275,9 +275,9 @@ function prep_leastsquares(
     LHSlsq = zeros(T, n - npres, n - npres)
     RHSlsq = zeros(T, n - npres)
 
-    prep_leastsquares!(LHSred, LHSlsq, RHSlsq, LHS, RHS, prescribedpanels)
+    _, _, tLHSred = prep_leastsquares!(LHSred, LHSlsq, RHSlsq, LHS, RHS, prescribedpanels)
 
-    return LHSlsq, RHSlsq
+    return LHSlsq, RHSlsq, tLHSred
 end
 
 """
@@ -344,7 +344,8 @@ end
 #             Solvers             #
 #---------------------------------#
 function solve_body_strengths(
-    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2}, prescribedpanels, nbodies=nothing
+    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2},
+    LHSlsq, LHSlsqlu, tLHSred, mbp, prescribedpanels, nbodies=nothing
 ) where {T1,T2}
     T = promote_type(T1, T2)
 
@@ -353,23 +354,44 @@ function solve_body_strengths(
     else
         mub = zeros(T, size(RHS, 1))
     end
-    solve_body_strengths!(mub, LHS, RHS, prescribedpanels, nbodies)
+
+    nred = length(RHS)-length(prescribedpanels)
+    mured = zeros(T, nred)
+    RHSlsq = zeros(T, nred)
+
+    solve_body_strengths!(mub, mured, LHS, RHS,
+                            LHSlsq, LHSlsqlu, RHSlsq, tLHSred, mbp,
+                            prescribedpanels, nbodies)
 
     return mub
 end
 
-function solve_body_strengths!(mub, LHS, RHS, prescribedpanels, nbodies=nothing)
-    LHSlsq, RHSlsq = prep_leastsquares(LHS, RHS, prescribedpanels)
+function solve_body_strengths!(mub, mured, LHS, RHS,
+                                LHSlsq, LHSlsqlu, RHSlsq, tLHSred, mbp,
+                                prescribedpanels, nbodies=nothing)
 
-    mured = LHSlsq \ RHSlsq
 
+    # mured = LHSlsq \ RHSlsq
+
+
+    # Convert boundary condition into least-squares boundary condition (RHS = -b-bp)
+    RHS += mbp
+
+    # Convert boundary condition into least-squares RHS (RHSls = -G'*(b+bp))
+    RHSlsq .= 0
+    mul!(RHSlsq, tLHSred, RHS)
+
+    # Solve linear system of least-squares equations using precomputed LU decomposition
+    mured .= ImplicitAD.implicit_linear(LHSlsq, RHSlsq; lsolve=ldiv!, Af=LHSlsqlu)
+
+    # Convert reduced strengths into full array of strengths
     if nbodies != nothing
         mured2mu!(mub, mured[1:(end - nbodies)], prescribedpanels)
     else
         mured2mu!(mub, mured, prescribedpanels)
     end
 
-    return nothing
+    return mub
 end
 
 #TODO: for when cache is implemented

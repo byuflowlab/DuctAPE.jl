@@ -205,10 +205,20 @@ function update_strengths!(states, inputs, p)
     RHS = update_RHS(inputs.b_bf, inputs.A_bw, gamw, inputs.A_br, sigr)
 
     # - Calculate body vortex strengths (before updating state dependencies) - #
-    solve_body_strengths!(
-        # mub, inputs.A_bb, RHS, inputs.prescribedpanels, inputs.body_doublet_panels.nbodies
-        mub, inputs.A_bb, RHS, inputs.prescribedpanels
+    # solve_body_strengths!(
+    #     # mub, inputs.A_bb, RHS, inputs.prescribedpanels, inputs.body_doublet_panels.nbodies
+    #     mub, inputs.mured, inputs.A_bb, RHS,
+    #     inputs.LHSlsq, inputs.LHSlsqlu, inputs.RHSlsq, inputs.tLHSred, inputs.b_bf0,
+    #     inputs.prescribedpanels
+    # )
+
+
+    strengths = solve_body_strengths(
+        inputs.A_bb, RHS,
+        inputs.LHSlsq, inputs.LHSlsqlu, inputs.tLHSred, inputs.b_bf0,
+        inputs.prescribedpanels
     )
+    mub .= strengths
 
     # - Calculate wake vortex strengths (before updating state dependencies) - #
     calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
@@ -254,3 +264,120 @@ function extract_state_variables(states, inputs)
 
     return mub, gamw, Gamr, sigr
 end
+
+
+
+
+
+
+################################################################################
+# PREPROCESSING OF LINEAR SYSTEM
+################################################################################
+"""
+    calc_Alu!(Apivot::AbstractMatrix, A::AbstractMatrix) -> Alu
+
+Returns the LU decomposition of `A` using `Apivot` as storage memory to pivot
+leaving `A` unchanged.
+"""
+function calc_Alu!(Apivot, A::AbstractMatrix{T}) where {T}
+
+    # Prepare pivot array
+    calc_Avalue!(Apivot, A)
+
+    # LU decomposition
+    Alu = lu!(Apivot)
+
+    return Alu
+end
+
+
+"""
+    calc_Alu!(A::AbstractMatrix) -> Alu
+
+Returns the LU decomposition of `A`. If `A` does not carry Dual nor TrackedReal
+numbers, computation will be done in-place using `A`; hence `A` should not be
+reused for multiple solves or for implicit differentiation (use `calc_Alu(A)`
+and `calc_Alu!(Apivot, A)` instead).
+"""
+function calc_Alu!(A::AbstractMatrix{T}) where {T}
+
+    # Allocate memory for pivot
+    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+
+        Tprimal = T.parameters[T<:ImplicitAD.ForwardDiff.Dual ? 2 : 1]
+        Apivot = zeros(Tprimal, size(A))
+
+        # LU decomposition
+        Alu = calc_Alu!(Apivot, A)
+
+    else
+        # LU decomposition
+        Alu =  LA.lu!(A)
+    end
+
+    return Alu
+end
+
+"""
+    calc_Alu(A::AbstractMatrix) -> Alu
+
+Returns the LU decomposition of `A`.
+"""
+function calc_Alu(A::AbstractMatrix{T}) where {T}
+
+    # Allocate memory for pivot
+    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+
+        Tprimal = T.parameters[T<:ImplicitAD.ForwardDiff.Dual ? 2 : 1]
+        Apivot = zeros(Tprimal, size(A))
+
+    else
+        Apivot = zeros(T, size(A))
+    end
+
+    # LU decomposition
+    return calc_Alu!(Apivot, A)
+end
+
+"""
+    calc_Avalue!(Avalue::AbstractMatrix, A::AbstractMatrix)
+
+Copy the primal values of `A` into `Avalue`.
+"""
+function calc_Avalue!(Avalue, A::AbstractMatrix{T}) where {T}
+
+    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+
+        # Extract primal values of A
+        value = T<:ImplicitAD.ForwardDiff.Dual ? ImplicitAD.ForwardDiff.value : ImplicitAD.ForwardDiff.value
+        map!(value, Avalue, A)
+
+    else                                # Normal case
+        # Deep copy A
+        Avalue .= A
+    end
+
+    return Avalue
+end
+
+"""
+    calc_Avalue(A::AbstractMatrix)
+
+Return the primal values of matrix `A`, which is simply `A` if the elements
+of `A` are not Dual nor TrackedReal numbers.
+"""
+function calc_Avalue(A::AbstractMatrix{T}) where {T}
+
+    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+
+        Tprimal = T.parameters[T<:ImplicitAD.ForwardDiff.Dual ? 2 : 1]
+        Avalue = zeros(Tprimal, size(A))
+        calc_Avalue!(Avalue, A)
+
+        return Avalue
+    else                                # Normal case
+
+        return A
+    end
+end
+#### END OF LINEAR-SOLVER PREPROCESSING ########################################
