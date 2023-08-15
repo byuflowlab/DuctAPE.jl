@@ -5,7 +5,7 @@
         -1.0 1.0 # out in front
         0.25 0.01 # out below
         0.375 2.5 # out above
-        1.25 1.0 # out behind
+        1.75 1.0 # out behind
         0.0 1.0 # on rotor mid
         0.0 1.5 # on rotor top edge
         0.0 0.5 # on rotor bottom edge
@@ -14,7 +14,8 @@
         0.375 0.5 # on wake bottom edge
         0.75 0.75 # on wake back edge
         0.25 1.0 # aligned with first wake cp
-        0.625 0.75 # arbitrary postition in wake, not on anything
+        0.625 0.75 # arbitrary postition in wake, close to rotor
+        1.25 0.75 # arbitrary postition in wake, not on anything
     ]
 
     np = length(probe_poses[:, 1])
@@ -38,8 +39,8 @@
     blade_elements = [(; B=1, xrotor=0.0); (; B=1, xrotor=0.5)]
 
     # define required wake geometry
-    xwake = [0.0 0.0 0.0; 0.5 0.5 0.5; 1.0 1.0 1.0]
-    rwake = [0.5 1.0 1.5; 0.5 1.0 1.5; 0.5 1.0 1.5]
+    xwake = [0.0 0.0 0.0; 0.5 0.5 0.5; 1.0 1.0 1.0; 1.5 1.5 1.5]
+    rwake = [0.5 1.0 1.5; 0.5 1.0 1.5; 0.5 1.0 1.5; 0.5 1.0 1.5]
     wake_vortex_panels = dt.generate_wake_panels(xwake, rwake)
 
     # sanity plot for manual check
@@ -78,6 +79,7 @@
     # prescribe strengths for the panels (body, wake, circulation, rotor)
     states = ones(15)
     mub, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
+    Gamr[2, :] .= 2.0
 
     # run velocity probing function
     vx, vr, vt = dt.probe_velocity_field(probe_poses, inputs, states)
@@ -94,7 +96,7 @@
         probe_poses,
         rotor_source_panels[1].controlpoint,
         rotor_source_panels[1].len,
-        sigr[:,1],
+        sigr[:, 1],
     )
 
     vr2 = zeros(np, 2)
@@ -103,7 +105,7 @@
         probe_poses,
         rotor_source_panels[2].controlpoint,
         rotor_source_panels[2].len,
-        sigr[:,2],
+        sigr[:, 2],
     )
 
     # wake induced velocities
@@ -125,15 +127,16 @@
         0.0 # out below
         0.0 # out above
         0.0 # out behind
-        0.5 / (2 * pi) # on rotor mid
-        0.5 / (2 * pi * 1.5) # on rotor top edge
+        0.75 / (2 * pi) # on rotor mid
+        1.0 / (2 * pi * 1.5) # on rotor top edge
         0.5 / (2 * pi * 0.5) # on rotor bottom edge
-        1.0 / (2 * pi * 1.5) # on wake top edge on control point
-        1.0 / (2 * pi * 1.5) # on wake top edge not on control point
+        2.0 / (2 * pi * 1.5) # on wake top edge on control point
+        2.0 / (2 * pi * 1.5) # on wake top edge not on control point
         1.0 / (2 * pi * 0.5) # on wake bottom edge
-        2.0 / (2 * pi * probe_poses[11, 2]) # on wake back edge
-        1.0 / (2 * pi * probe_poses[12, 2]) # aligned with first wake cp
-        1.875 / (2 * pi * probe_poses[13, 2]) # arbitrary postition in wake, not on anything
+        2.5 / (2 * pi * probe_poses[11, 2]) # on wake back edge
+        1.5 / (2 * pi * probe_poses[12, 2]) # aligned with first wake cp
+        2.34375 / (2 * pi * probe_poses[13, 2]) # arbitrary postition in wake, close to rotor
+        2.5 / (2 * pi * probe_poses[13, 2]) # arbitrary postition in wake, not on anything
     ]
 
     @test vt == vtmanual
