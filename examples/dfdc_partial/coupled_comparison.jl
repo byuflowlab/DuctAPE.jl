@@ -193,6 +193,11 @@ end
 
 states = res.zero
 
+f = open("sanity_check_after_speedup---converged_state_comparison.jl", "w")
+write(f, "slow_states = ")
+write(f, "$states")
+close(f)
+
 out = @time "Post-process" dt.post_process(states, inputs)
 
 #---------------------------------#
