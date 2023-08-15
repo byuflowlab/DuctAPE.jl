@@ -344,8 +344,14 @@ end
 #             Solvers             #
 #---------------------------------#
 function solve_body_strengths(
-    LHS::AbstractMatrix{T1}, RHS::AbstractVector{T2},
-    LHSlsq, LHSlsqlu, tLHSred, mbp, prescribedpanels, nbodies=nothing
+    LHS::AbstractMatrix{T1},
+    RHS::AbstractVector{T2},
+    LHSlsq,
+    LHSlsqlu,
+    tLHSred,
+    mbp,
+    prescribedpanels,
+    nbodies=nothing,
 ) where {T1,T2}
     T = promote_type(T1, T2)
 
@@ -355,24 +361,42 @@ function solve_body_strengths(
         mub = zeros(T, size(RHS, 1))
     end
 
-    nred = length(RHS)-length(prescribedpanels)
+    nred = length(RHS) - length(prescribedpanels)
     mured = zeros(T, nred)
     RHSlsq = zeros(T, nred)
 
-    solve_body_strengths!(mub, mured, LHS, RHS,
-                            LHSlsq, LHSlsqlu, RHSlsq, tLHSred, mbp,
-                            prescribedpanels, nbodies)
+    solve_body_strengths!(
+        mub,
+        mured,
+        LHS,
+        RHS,
+        LHSlsq,
+        LHSlsqlu,
+        RHSlsq,
+        tLHSred,
+        mbp,
+        prescribedpanels,
+        nbodies,
+    )
 
     return mub
 end
 
-function solve_body_strengths!(mub, mured, LHS, RHS,
-                                LHSlsq, LHSlsqlu, RHSlsq, tLHSred, mbp,
-                                prescribedpanels, nbodies=nothing)
-
+function solve_body_strengths!(
+    mub,
+    mured,
+    LHS,
+    RHS,
+    LHSlsq,
+    LHSlsqlu,
+    RHSlsq,
+    tLHSred,
+    mbp,
+    prescribedpanels,
+    nbodies=nothing,
+)
 
     # mured = LHSlsq \ RHSlsq
-
 
     # Convert boundary condition into least-squares boundary condition (RHS = -b-bp)
     RHS += mbp
@@ -382,7 +406,10 @@ function solve_body_strengths!(mub, mured, LHS, RHS,
     mul!(RHSlsq, tLHSred, RHS)
 
     # Solve linear system of least-squares equations using precomputed LU decomposition
-    mured .= ImplicitAD.implicit_linear(LHSlsq, RHSlsq; lsolve=ldiv!, Af=LHSlsqlu)
+    # mured .= ImplicitAD.implicit_linear(LHSlsq, RHSlsq; lsolve=ldiv!, Af=LHSlsqlu)
+    # mured .= ImplicitAD.implicit_linear(LHSlsq, RHSlsq; Af=LHSlsqlu)
+    ldiv!(mured, LHSlsqlu, RHSlsq)
+    # mured .= LHSlsq\RHSlsq
 
     # Convert reduced strengths into full array of strengths
     if nbodies != nothing

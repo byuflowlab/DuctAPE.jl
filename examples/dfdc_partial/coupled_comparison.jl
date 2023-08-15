@@ -193,8 +193,8 @@ end
 
 states = res.zero
 
-f = open("sanity_check_after_speedup---converged_state_comparison.jl", "w")
-write(f, "slow_states = ")
+f = open("after_speedups_merged_converged_states.jl", "w")
+write(f, "fast_states = ")
 write(f, "$states")
 close(f)
 

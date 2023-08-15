@@ -4,7 +4,50 @@ function dt_full_wrapper(inputs)
     # - unpack the variables you're going to use - #
     Vinf = inputs[1]
     chords = inputs[2:11]
-    ductr = inputs[12:end]
+    # ductr = inputs[12:end]
+    ductr = [
+        0.835
+        0.834496
+        0.832676
+        0.828558
+        0.820991
+        0.810449
+        0.797709
+        0.784153
+        0.771912
+        0.764112
+        0.7605
+        0.760275
+        0.762716
+        0.767502
+        0.774294
+        0.7827
+        0.792384
+        0.802639
+        0.812809
+        0.822477
+        0.835
+        0.847523
+        0.857191
+        0.867361
+        0.877616
+        0.8873
+        0.895706
+        0.902498
+        0.907284
+        0.909725
+        0.9095
+        0.905888
+        0.898088
+        0.885847
+        0.872291
+        0.859551
+        0.849009
+        0.841442
+        0.837324
+        0.835504
+        0.835
+    ]
 
     # - set up the rest of the parameters/inputs to the analysis - #
     xrotor = 0.5
@@ -165,8 +208,9 @@ function dt_full_wrapper(inputs)
         1.3396208450880929 0.007272727272727265
     ]
 
-    println("\t\tRunning DuctTAPE Analysis")
+    # println("\t\tRunning DuctTAPE Analysis")
     # - run analyze_propulsor function - #
+    # out, _, _, _, _ = @time dt.analyze_propulsor(
     out, _, _, _, _ = dt.analyze_propulsor(
         duct_coordinates,
         hub_coordinates,
@@ -177,7 +221,7 @@ function dt_full_wrapper(inputs)
         debug=false,
         verbose=false,
         maximum_linesearch_step_size=1e6,
-        iteration_limit=50,
+        iteration_limit=25,
     )
 
     # - return some representative outputs - #
@@ -188,15 +232,21 @@ function dt_full_wrapper(inputs)
         out.blade_tangential_force_per_unit_span[1]
     ]
 
+    # outputs[1] = out.total_thrust
+    # outputs[2] = out.total_efficiency
+    # outputs[3] = out.blade_normal_force_per_unit_span[1]
+    # outputs[4] = out.blade_tangential_force_per_unit_span[1]
+
     return outputs
 end
 
 function dt_prepost_wrapper(inputs)
 
     # - unpack the variables you're going to use - #
-    chords = inputs
+    Vinf = inputs[1]
+    chords = inputs[2:end]
 
-    Vinf = 20.0
+    # Vinf = 20.0
     # chords = [
     #     0.089142
     #     0.079785
@@ -411,7 +461,7 @@ function dt_prepost_wrapper(inputs)
         1.3396208450880929 0.007272727272727265
     ]
 
-    println("\tRunning DuctTAPE precomputations")
+    # println("\tRunning DuctTAPE precomputations")
     # initialize various inputs used in analysis
     precomps = dt.precomputed_inputs(
         duct_coordinates,
@@ -426,7 +476,7 @@ function dt_prepost_wrapper(inputs)
 
     mub, gamw, Gamr, sigr = dt.extract_state_variables(initial_states, precomps)
 
-    println("\tRunning DuctTAPE post-processing")
+    # println("\tRunning DuctTAPE post-processing")
     out = dt.post_process(initial_states, precomps)
 
     # - return some representative outputs - #

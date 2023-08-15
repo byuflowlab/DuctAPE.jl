@@ -59,28 +59,42 @@ include("derivative_wrappers.jl")
     ]
     r = collect(0.16:0.06669722222222223:0.760275)
 
-    inputs = [Vinf; chords; ductr]
+    inputs = [Vinf; chords]
+    # outs = @time dt_full_wrapper(inputs)
 
-    # - Pre and Post computation test Test - #
-    precompinputs = chords
-    # ForwardDiff Jacobian
-    fordiff_j = ForwardDiff.jacobian(dt_prepost_wrapper, precompinputs)
-    # FiniteDiff Jacobian
-    findiff_j = FiniteDiff.finite_difference_jacobian(dt_prepost_wrapper, precompinputs)
-    # compare, note scaling is an issue here, there are some really large and really small numbers
-    @test isapprox(findiff_j, fordiff_j; atol=1.2e-2)
-
-    # TODO: need to speed up the solver significantly before running this.
-    # # - Full Solver Test - #
+    # println("\trunning pre/post AD tests")
+    # # - Pre and Post computation test Test - #
+    # precompinputs = [Vinf; chords]
     # # ForwardDiff Jacobian
-    # println("\tCalculating ForwardDiff Jacobian")
-    # fordiff_j = ForwardDiff.jacobian(dt_full_wrapper, inputs)
-
+    # fordiff_j = ForwardDiff.jacobian(dt_prepost_wrapper, precompinputs)
     # # FiniteDiff Jacobian
+    # findiff_j = FiniteDiff.finite_difference_jacobian(dt_prepost_wrapper, precompinputs)
+    # # compare, note scaling is an issue here, there are some really large and really small numbers
+    # @test isapprox(findiff_j, fordiff_j; atol=1.2e-2)
+
+    # - Full Solver Test - #
+    # ForwardDiff Jacobian
+    println("\tCalculating ForwardDiff Jacobian")
+    # cnfg = ForwardDiff.JacobianConfig(dt_full_wrapper, inputs, ForwardDiff.Chunk{41}())
+    # fordiff_j = zeros(4, length(inputs))
+    # fordiff_j = @time ForwardDiff.jacobian(dt_full_wrapper, inputs, cnfg)
+    fordiff_j = @time ForwardDiff.jacobian(dt_full_wrapper, inputs)
+
+    fo = open("fordiff_j.jl", "w")
+    write(fo, "fordiff_j=")
+    write(fo, "$(fordiff_j)")
+    close(fo)
+
+    # FiniteDiff Jacobian
+    println("\tCalculating FiniteDiff Jacobian")
     # findiff_j = similar(fordiff_j) .= 0.0
-    # println("\tCalculating FiniteDiff Jacobian")
-    # FiniteDiff.finite_difference_jacobian!(findiff_j, dt_full_wrapper, inputs)
+    # @time FiniteDiff.finite_difference_jacobian!(findiff_j, dt_full_wrapper, inputs)
+    findiff_j = @time FiniteDiff.finite_difference_jacobian(dt_full_wrapper, inputs)
 
-    # @test isapprox(findiff_j, fordiff_j; atol=1e-3)
+    fi = open("findiff_j.jl", "w")
+    write(fi, "findiff_j=")
+    write(fi, "$(findiff_j)")
+    close(fi)
 
+    @test all(isapprox.(findiff_j, fordiff_j; atol=1e-3))
 end
