@@ -1117,7 +1117,7 @@ function probe_velocity_field(probe_poses, inputs, states)
 
     # - dimensions - #
     nv = size(probe_poses, 1)
-    nr = size(sigr, 2)
+    nr, nrotor = size(Gamr)
 
     # - initialize - #
     Vxr = zeros(TF, nv, 2)
@@ -1138,17 +1138,7 @@ function probe_velocity_field(probe_poses, inputs, states)
         Vxr, probe_poses, wake_vortex_panels.controlpoint, wake_vortex_panels.len, gamw
     )
 
-    # TODO: need to get this working for multiple rotors
-
     ###### ----- Tangential Velocity ----- #####
-
-    #=
-    PLAN
-    - Want to be able to probe ahead of rotor, at rotor, and aft of rotor. (need this for report), but for now assume that we are not above or below wake.
-    - for each probe point, find the nearest surrounding wake control points, if there are none greater axially, just use the end points of the wake for now. if there are none less than axially, need to have an if to allow for being on a rotor (need this in general anyway)
-    - calculate tangential velocity on those wake points
-    - interpolate linearly between those points to get the tangential velocity.
-    =#
 
     # reshape the wake panel control points into the wake sheets
     nsheets = size(Gamr, 1) + 1
@@ -1157,16 +1147,12 @@ function probe_velocity_field(probe_poses, inputs, states)
     wakecpr = reshape(wake_vortex_panels.controlpoint[:, 2], (nwakex, nsheets))'
     xrotor = inputs.blade_elements.xrotor
 
-    #TODO: need to rethink this.  need to add in previous B*Gamr's to aft rotors and take self-influence into account as needed.
-    #TODO: maybe just compute Gamma_tilde over the whole grid (using repeats, so you just calucate it at the rotors and between the rotors)
-    #then do similar things to what you have
-
     # get B*Circulation on each rotor at each wake shedding location
     if size(Gamr, 1) > 1
         Gambar = [
-            Gamr[1, :]
+            Gamr[1, :]'
             (Gamr[2:end, :] .+ Gamr[1:(end - 1), :]) ./ 2
-            Gamr[end, :]
+            Gamr[end, :]'
         ]
     else
         Gambar = [
@@ -1174,9 +1160,26 @@ function probe_velocity_field(probe_poses, inputs, states)
             Gamr[end, :]
         ]
     end
-    BGambar = reshape(Gambar, (nsheets, nr)) .* num_blades'
+    BGambar = reshape(Gambar, (nsheets, nrotor)) .* num_blades'
 
-    # TODO: now calculate gamma tildes everywhere
+    # Get Gamma_tilde on rotors
+    Gamma_tilde_rotor = similar(BGambar) .= 0.0
+    for irotor in 1:nrotor
+        Gamma_tilde_rotor[:, irotor] .+= 0.5 * BGambar[:, irotor]
+        Gamma_tilde_rotor[:, (irotor + 1):end] .+= BGambar[:, irotor]
+    end
+
+    # Get Gamma_tilde at each wake control point
+    Gamma_tilde = cumsum(BGambar; dims=2)
+    Gamma_tilde_grid = similar(wakecpx) .= 0.0
+    xids = [searchsortedfirst(wakecpx[1, :], xrotor[i]) for i in 1:nrotor]
+    for i in 1:nrotor
+        if i == nrotor
+            Gamma_tilde_grid[:, xids[i]:end] .= Gamma_tilde[:, i]
+        else
+            Gamma_tilde_grid[:, xids[i]:(xids[i + 1] - 1)] .= Gamma_tilde[:, i]
+        end
+    end
 
     for (ip, probe) in enumerate(eachrow(probe_poses))
 
@@ -1184,6 +1187,7 @@ function probe_velocity_field(probe_poses, inputs, states)
         wxid1 = findlast(x -> x <= probe[1], wakecpx[1, :])
         wxid2 = findfirst(x -> x >= probe[1], wakecpx[1, :])
 
+        # check if outside the wake or on the edge
         if isnothing(wxid1)
             if probe[1] < xrotor[1]
                 #outside of wake
@@ -1193,8 +1197,8 @@ function probe_velocity_field(probe_poses, inputs, states)
                 wxid1 = wxid2
             end
 
-        elseif isnothing(wrid2)
-            if probe[1] > wakecpr[end, end]
+        elseif isnothing(wxid2)
+            if probe[1] > wakecpx[end, end]
                 #outside of wake
                 vtheta[ip] = 0.0
                 continue
@@ -1210,6 +1214,7 @@ function probe_velocity_field(probe_poses, inputs, states)
         wrid1 = findlast(x -> x <= probe[2], wakecpr[:, wxid1])
         wrid2 = findfirst(x -> x >= probe[2], wakecpr[:, wxid2])
 
+        # Check if outside the wake, or on the edge
         if isnothing(wrid1)
             if probe[2] < (wakecpr[wxid1, 1] + wakecpr[wxid2, 1]) / 2
                 #outside of wake
@@ -1234,51 +1239,60 @@ function probe_velocity_field(probe_poses, inputs, states)
             # On the a rotor need to use self-induced rotor tangential velocity and interpolate in r only
 
             #on edges, just use the edge value
-            if isnothing(wrid1)
+            if wrid1 == wrid2
                 vtheta[ip] =
-                    0.5 * B[xrid] .* Gambar[wrid2, xrid] ./
-                    (2 * pi .* wakecpr[wrid2, wxid1])
-            elseif isnothing(wrid2)
-                vtheta[ip] =
-                    0.5 * B .* Gambar[wrid1, xrid] ./ (2 * pi * wakecpr[wrid1, wxid1])
+                    Gamma_tilde_rotor[wrid2, xrid] ./ (2 * pi .* wakecpr[wrid2, wxid1])
             else
-                vthetaself1 =
-                    0.5 * B .* Gambar[wrid1, xrid] ./ (2 * pi * wakecpr[wrid1, wxid1])
-                vthetaself2 =
-                    0.5 * B .* Gambar[wrid2, xrid] ./ (2 * pi * wakecpr[wrid2, wxid1])
-                vtheta[ip] = fm.linear(
-                    [wakecpr[wrid1, wxid1]; wakecpr[wrid2, wxid1]],
-                    [vthetaself1; vthetaself2],
-                    probe[2],
-                )
+                vthetaself1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1, wxid1])
+                vthetaself2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2, wxid1])
+                vtheta[ip] =
+                    fm.linear(
+                        [wakecpr[wrid1, wxid1]; wakecpr[wrid2, wxid1]],
+                        [vthetaself1; vthetaself2],
+                        probe[2],
+                    ) ./ (2 * pi * probe[2])
             end
 
         elseif wxid1 == wxid2
             # inline with wake control points need to interpolate in r only
 
             #on edges, just use the edge value
-            if isnothing(wrid1)
-                vtheta[ip] = B .* Gambar[wrid2, xrid] ./ (2 * pi * wakecpr[wrid2, wxid1])
-            elseif isnothing(wrid2)
-                vtheta[ip] = B .* Gambar[wrid1, xrid] ./ (2 * pi * wakecpr[wrid1, wxid1])
-            elseif wrid1 == wrid2
-                vtheta[ip] = B .* Gambar[wrid1, xrid] ./ (2 * pi * wakecpr[wrid1, wxid1])
+            if wrid1 == wrid2
+                vtheta[ip] =
+                    Gamma_tilde_grid[wrid1, wxid1] ./ (2 * pi * wakecpr[wrid1, wxid1])
             else
-                vtheta1 = B .* Gambar[wrid1, xrid] ./ (2 * pi * wakecpr[wrid1, wxid1])
-                vtheta2 = B .* Gambar[wrid2, xrid] ./ (2 * pi * wakecpr[wrid2, wxid1])
-                vtheta[ip] = fm.linear(
-                    [wakecpr[wrid1, wxid1]; wakecpr[wrid2, wxid1]],
-                    [vtheta1; vtheta2],
-                    probe[2],
-                )
+                vtheta1 = Gamma_tilde_grid[wrid1, wxid1]# ./ (2 * pi * wakecpr[wrid1, wxid1])
+                vtheta2 = Gamma_tilde_grid[wrid2, wxid1]#./ (2 * pi * wakecpr[wrid2, wxid1])
+                vtheta[ip] =
+                    fm.linear(
+                        [wakecpr[wrid1, wxid1]; wakecpr[wrid2, wxid1]],
+                        [vtheta1; vtheta2],
+                        probe[2],
+                    ) ./ (2 * pi * probe[2])
             end
 
+        elseif wrid1 == wrid2
+            #wake radius doesn't change, just use first radial point
+            vtheta[ip] = Gamma_tilde_grid[wrid1, wxid1] ./ (2 * pi * wakecpr[wrid1, wxid1])
+
         else
-            # need to interpolate in x and r
-            vt11 = B .* Gambar[wrid1, xrid] ./ (2 * pi * wakecpr[wrid1])
-            vt12 = B .* Gambar[wrid1, xrid] ./ (2 * pi * wakecpr[wrid2])
-            vt21 = B .* Gambar[wrid2, xrid] ./ (2 * pi * wakecpr[wrid1])
-            vt22 = B .* Gambar[wrid2, xrid] ./ (2 * pi * wakecpr[wrid2])
+
+            # use rotor self induced value if it's closer than the nearest wake control point
+            if probe[1] < xrotor[xrid]
+                vtx2r1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1])
+                vtx2x2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2])
+            else
+                vtx2r1 = Gamma_tilde_grid[wrid1, wxid2]# ./ (2 * pi * wakecpr[wrid1])
+                vtx2x2 = Gamma_tilde_grid[wrid2, wxid2]# ./ (2 * pi * wakecpr[wrid2])
+            end
+
+            if probe[1] > xrotor[xrid]
+                vtx1r1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1])
+                vtx1r2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2])
+            else
+                vtx1r1 = Gamma_tilde_grid[wrid1, wxid1]# ./ (2 * pi * wakecpr[wrid1])
+                vtx1r2 = Gamma_tilde_grid[wrid2, wxid1]# ./ (2 * pi * wakecpr[wrid2])
+            end
 
             r1 = fm.linear(
                 [wakecpx[wrid1, wxid1]; wakecpx[wrid1, wxid2]],
@@ -1292,16 +1306,15 @@ function probe_velocity_field(probe_poses, inputs, states)
             )
 
             vt1 = fm.linear(
-                [wakecpx[wrid1, wxid1]; wakecpx[wrid1, wxid2]], [vt11; vt12], probe[1]
+                [wakecpx[wrid1, wxid1]; wakecpx[wrid1, wxid2]], [vtx1r1; vtx2r1], probe[1]
             )
             vt2 = fm.linear(
-                [wakecpx[wrid2, wxid1]; wakecpx[wrid2, wxid2]], [vt21; vt22], probe[1]
+                [wakecpx[wrid2, wxid1]; wakecpx[wrid2, wxid2]], [vtx1r2; vtx2x2], probe[1]
             )
 
-            vtheta[ip] = fm.linear([r1; r2], [vt1; vt2], probe[2])
+            vtheta[ip] = fm.linear([r1; r2], [vt1; vt2], probe[2]) ./ (2 * pi * probe[2])
         end
     end
 
-    #TODO: need to unit test this function
     return Vxr[:, 1], Vxr[:, 2], vtheta
 end

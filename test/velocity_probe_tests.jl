@@ -1,7 +1,23 @@
 @testset "Velocity Probe" begin
 
     # define probe locations
-    probe_poses = [0.25 1.5; 0.75 1.0]
+    probe_poses = [
+        -1.0 1.0 # out in front
+        0.25 0.01 # out below
+        0.375 2.5 # out above
+        1.25 1.0 # out behind
+        0.0 1.0 # on rotor mid
+        0.0 1.5 # on rotor top edge
+        0.0 0.5 # on rotor bottom edge
+        0.25 1.5 # on wake top edge on control point
+        0.375 1.5 # on wake top edge not on control point
+        0.375 0.5 # on wake bottom edge
+        0.75 0.75 # on wake back edge
+        0.25 1.0 # aligned with first wake cp
+        0.625 0.75 # arbitrary postition in wake, not on anything
+    ]
+
+    np = length(probe_poses[:, 1])
 
     # define required body panel geometry
     duct_coordinates = [1.0 2.0; 0.0 2.0]
@@ -13,26 +29,38 @@
     # define required rotor geometry
     nrotor = 2
     rotor_parameters = [(; xrotor=0.0); (; xrotor=0.5)]
-    rrotor = [0.5; 1.5]
+    rrotor = [0.5; 1.0; 1.5]
     rotor_source_panels = [
         dt.generate_rotor_panels(rotor_parameters[i].xrotor, rrotor) for i in 1:nrotor
     ]
 
     # define required blade element stuff
-    blade_elements = [(; B=1); (; B=1)]
+    blade_elements = [(; B=1, xrotor=0.0); (; B=1, xrotor=0.5)]
 
     # define required wake geometry
-    xwake = [0.0 0.0; 0.5 0.5; 1.0 1.0]
-    rwake = [0.5 1.5; 0.5 1.5; 0.5 1.5]
+    xwake = [0.0 0.0 0.0; 0.5 0.5 0.5; 1.0 1.0 1.0]
+    rwake = [0.5 1.0 1.5; 0.5 1.0 1.5; 0.5 1.0 1.5]
     wake_vortex_panels = dt.generate_wake_panels(xwake, rwake)
 
-    # # sanity plot for manual check
-    # plot()
-    # plot!(probe_poses[:,1], probe_poses[:,2], seriestype=:scatter,label="")
-    # plot!(duct_coordinates[:,1], duct_coordinates[:,2], seriestype=:scatter, label="",color=:red)
+    # sanity plot for manual check
+    plot()
+    plot!(probe_poses[:, 1], probe_poses[:, 2]; seriestype=:scatter, label="")
+    plot!(
+        duct_coordinates[:, 1],
+        duct_coordinates[:, 2];
+        seriestype=:scatter,
+        label="",
+        color=:red,
+    )
     # plot!(hub_coordinates[:,1], hub_coordinates[:,2], seriestype=:scatter, label="",color=:red)
-    # plot!(xwake,rwake, seriestype=:scatter, label="",color=:gray)
-    # plot!(xrotor*ones(2),rrotor, seriestype=:scatter, label="",color=:black)
+    plot!(xwake, rwake; seriestype=:scatter, label="", color=:gray)
+    plot!(
+        [0.0; 0.5; 0.0; 0.5],
+        [0.5; 0.5; 1.5; 1.5];
+        seriestype=:scatter,
+        label="",
+        color=:black,
+    )
 
     # put geometry into inputs along with Vinf
     inputs = (;
@@ -48,39 +76,40 @@
     )
 
     # prescribe strengths for the panels (body, wake, circulation, rotor)
-    states = ones(12)
+    states = ones(15)
+    mub, gamw, Gamr, sigr = dt.extract_state_variables(states, inputs)
 
     # run velocity probing function
     vx, vr, vt = dt.probe_velocity_field(probe_poses, inputs, states)
 
     # Get manual x and r values
     # body induced velocities
-    vb = zeros(2, 2)
-    dt.vfromdoubletpanels!(vb, probe_poses, body_doublet_panels.nodes, [1.0])
+    vb = zeros(np, 2)
+    dt.vfromdoubletpanels!(vb, probe_poses, body_doublet_panels.nodes, mub)
 
     # rotor induced velocities
-    vr1 = zeros(2, 2)
+    vr1 = zeros(np, 2)
     dt.vfromsourcepanels!(
         vr1,
         probe_poses,
         rotor_source_panels[1].controlpoint,
         rotor_source_panels[1].len,
-        [1.0],
+        sigr[:,1],
     )
 
-    vr2 = zeros(2, 2)
+    vr2 = zeros(np, 2)
     dt.vfromsourcepanels!(
         vr2,
         probe_poses,
         rotor_source_panels[2].controlpoint,
         rotor_source_panels[2].len,
-        [1.0],
+        sigr[:,2],
     )
 
     # wake induced velocities
-    vw = zeros(2, 2)
+    vw = zeros(np, 2)
     dt.vfromvortexpanels!(
-        vw, probe_poses, wake_vortex_panels.controlpoint, wake_vortex_panels.len, ones(4)
+        vw, probe_poses, wake_vortex_panels.controlpoint, wake_vortex_panels.len, gamw
     )
 
     vxmanual = vb[:, 1] .+ vr1[:, 1] .+ vr2[:, 1] .+ vw[:, 1]
@@ -91,9 +120,21 @@
 
     # get manual tangential values
 
-    vtmanual = zeros(2,2)
-
-
+    vtmanual = [
+        0.0 # out in front
+        0.0 # out below
+        0.0 # out above
+        0.0 # out behind
+        0.5 / (2 * pi) # on rotor mid
+        0.5 / (2 * pi * 1.5) # on rotor top edge
+        0.5 / (2 * pi * 0.5) # on rotor bottom edge
+        1.0 / (2 * pi * 1.5) # on wake top edge on control point
+        1.0 / (2 * pi * 1.5) # on wake top edge not on control point
+        1.0 / (2 * pi * 0.5) # on wake bottom edge
+        2.0 / (2 * pi * probe_poses[11, 2]) # on wake back edge
+        1.0 / (2 * pi * probe_poses[12, 2]) # aligned with first wake cp
+        1.875 / (2 * pi * probe_poses[13, 2]) # arbitrary postition in wake, not on anything
+    ]
 
     @test vt == vtmanual
 end
