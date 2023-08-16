@@ -1,18 +1,18 @@
 """
-    precomputed_inputs(duct_coordinates, hub_coordinates, rotor_parameters, freestream; kwargs...)
+    precomputed_inputs(duct_coordinates, hub_coordinates, rotorstator_parameters, freestream; kwargs...)
 
 Initializes the geometry, panels, and aerodynamic influence coefficient matrices.
 
 # Arguments:
 - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
 - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
-- `rotor_parameters`: named tuple of rotor parameters
+- `rotorstator_parameters`: named tuple of rotor parameters
 - `freestream`: freestream parameters
 
 # Keyword Arguments
 - `paneling_constants.wake_length=1.0` : non-dimensional length (based on maximum duct chord) that the wake
     extends past the furthest trailing edge.
-- `nwake_sheets=length(rotor_parameters[1].rblade)`: Number of radial stations to use when defining
+- `nwake_sheets=length(rotorstator_parameters[1].rblade)`: Number of radial stations to use when defining
     the wake
 - `finterp=FLOWMath.akima`: Method used to interpolate the duct and hub geometries.
 - `xwake`: May be used to define a custom set of x-coordinates for the wake.
@@ -28,7 +28,7 @@ function precomputed_inputs(
     duct_coordinates,
     hub_coordinates,
     paneling_constants,
-    rotor_parameters, #vector of named tuples
+    rotorstator_parameters, #vector of named tuples
     freestream,
     reference_parameters;
     finterp=fm.akima,
@@ -38,16 +38,16 @@ function precomputed_inputs(
     ## -- Rename for Convenience -- ##
     # promoted type
     TF = promote_type(
-        eltype(rotor_parameters[1].chords),
-        eltype(rotor_parameters[1].twists),
-        eltype(rotor_parameters[1].Omega),
+        eltype(rotorstator_parameters[1].chords),
+        eltype(rotorstator_parameters[1].twists),
+        eltype(rotorstator_parameters[1].Omega),
         eltype(duct_coordinates),
         eltype(hub_coordinates),
         eltype(freestream.Vinf),
     )
 
     # number of rotors
-    nrotor = length(rotor_parameters)
+    nrotor = length(rotorstator_parameters)
 
     #------------------------------------#
     # Discretize Wake and Repanel Bodies #
@@ -76,7 +76,7 @@ function precomputed_inputs(
     xwake, rotor_indices_in_wake, ductTE_index, hubTE_index = discretize_wake(
         duct_coordinates,
         hub_coordinates,
-        rotor_parameters.xrotor,
+        rotorstator_parameters.xrotor,
         paneling_constants.wake_length,
         paneling_constants.npanels,
     )
@@ -99,35 +99,35 @@ function precomputed_inputs(
     #-----------------------------------#
     # check that tip gap isn't too small
     # set vector of tip gaps to zero for initialization (any overrides to zero thus taken c of automatically)
-    tip_gaps = zeros(eltype(rotor_parameters.tip_gap), nrotor)
-    if rotor_parameters[1].tip_gap != 0.0
-        if rotor_parameters[1].tip_gap < 1e-4
+    tip_gaps = zeros(eltype(rotorstator_parameters.tip_gap), nrotor)
+    if rotorstator_parameters[1].tip_gap != 0.0
+        if rotorstator_parameters[1].tip_gap < 1e-4
             @warn "You have selected a tip gap for the foremost rotor that is smaller than 1e-4. Overriding to 0.0 to avoid near singularity issues."
         else
-            tip_gaps[1] = rotor_parameters[1].tip_gap
+            tip_gaps[1] = rotorstator_parameters[1].tip_gap
         end
     end
 
     # can't have non-zero tip gaps for aft rotors
     for ir in 2:nrotor
-        if rotor_parameters[ir].tip_gap != 0.0
+        if rotorstator_parameters[ir].tip_gap != 0.0
             @warn "DuctTAPE does not currently have capabilities for adding tip gap to any but the foremost rotor. Overriding to 0.0."
         else
-            tip_gaps[ir] = rotor_parameters[ir].tip_gap
+            tip_gaps[ir] = rotorstator_parameters[ir].tip_gap
         end
     end
 
     # if hub was nothing, set hub radius to dimensional inner rotor radius
     if nohub
-        rp_hub_coordinates[:, 2] .= rotor_parameters[1].r[1] * rotor_parameters[1].Rtip
+        rp_hub_coordinates[:, 2] .= rotorstator_parameters[1].r[1] * rotorstator_parameters[1].Rtip
     end
 
     t_duct_coordinates, Rtips, Rhubs = place_duct(
         rp_duct_coordinates,
         rp_hub_coordinates,
-        rotor_parameters[1].Rtip,
+        rotorstator_parameters[1].Rtip,
         tip_gaps,
-        rotor_parameters.xrotor,
+        rotorstator_parameters.xrotor,
     )
 
     # get prescribed panel to be near duct leading edge
@@ -152,8 +152,8 @@ function precomputed_inputs(
     else
         rotor_indices_on_hub = [
             findlast(
-                x -> x < rotor_parameters.xrotor[i], body_doublet_panels.controlpoint[:, 1]
-            ) for i in 1:length(rotor_parameters.xrotor)
+                x -> x < rotorstator_parameters.xrotor[i], body_doublet_panels.controlpoint[:, 1]
+            ) for i in 1:length(rotorstator_parameters.xrotor)
         ]
         hwidraw = sort([body_doublet_panels.npanels; rotor_indices_on_hub])
         hubidsaftofrotors = reduce(
@@ -167,8 +167,8 @@ function precomputed_inputs(
     else
         rotor_indices_on_duct = [
             findfirst(
-                x -> x < rotor_parameters.xrotor[i], body_doublet_panels.controlpoint[:, 1]
-            ) - 1 for i in 1:length(rotor_parameters.xrotor)
+                x -> x < rotorstator_parameters.xrotor[i], body_doublet_panels.controlpoint[:, 1]
+            ) - 1 for i in 1:length(rotorstator_parameters.xrotor)
         ]
         dwidraw = sort([0; rotor_indices_on_duct])
         ductidsaftofrotors = reverse(
@@ -217,7 +217,7 @@ function precomputed_inputs(
         rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
     end
     for (i, cp) in enumerate(eachrow(wake_vortex_panels.controlpoint))
-        rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.xrotor)
+        rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotorstator_parameters.xrotor)
     end
 
     # Go through the wake panels and determine the indices that have interfaces with the hub and wake
@@ -238,23 +238,24 @@ function precomputed_inputs(
     # rotor source panel objects
     rotor_source_panels = [
         generate_rotor_panels(
-            rotor_parameters[i].xrotor, rgrid[rotor_indices_in_wake[i], 1:length(rpe)]
+            rotorstator_parameters[i].xrotor, rgrid[rotor_indices_in_wake[i], 1:length(rpe)]
         ) for i in 1:nrotor
     ]
 
     # rotor blade element objects
     blade_elements = [
         generate_blade_elements(
-            rotor_parameters[i].B,
-            rotor_parameters[i].Omega,
-            rotor_parameters[i].xrotor,
-            rotor_parameters[i].r,
-            rotor_parameters[i].chords,
-            rotor_parameters[i].twists,
-            rotor_parameters[i].airfoils,
+            rotorstator_parameters[i].B,
+            rotorstator_parameters[i].Omega,
+            rotorstator_parameters[i].xrotor,
+            rotorstator_parameters[i].r,
+            rotorstator_parameters[i].chords,
+            rotorstator_parameters[i].twists,
+            rotorstator_parameters[i].airfoils,
             Rtips[i],
             Rhubs[i],
-            rotor_source_panels[i].controlpoint[:, 2],
+            rotor_source_panels[i].controlpoint[:, 2];
+            fliplift=rotorstator_parameters[i].fliplift,
         ) for i in 1:nrotor
     ]
 
@@ -314,7 +315,9 @@ function precomputed_inputs(
     LHSlsqlu = calc_Alu(LHSlsq)
 
     # Cache memory reduced body strengths
-    mured = zeros(promote_type(eltype(LHS), eltype(RHS)), length(RHS)-length(prescribedpanels))
+    mured = zeros(
+        promote_type(eltype(LHS), eltype(RHS)), length(RHS) - length(prescribedpanels)
+    )
 
     # - rotor to body - #
     A_br = [
@@ -727,9 +730,13 @@ function initialize_states(inputs)
     # mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels)
 
     mub = solve_body_strengths(
-        inputs.A_bb, RHS,
-        inputs.LHSlsq, inputs.LHSlsqlu, inputs.tLHSred, inputs.b_bf0,
-        inputs.prescribedpanels
+        inputs.A_bb,
+        RHS,
+        inputs.LHSlsq,
+        inputs.LHSlsqlu,
+        inputs.tLHSred,
+        inputs.b_bf0,
+        inputs.prescribedpanels,
     )
 
     # - Initialize blade circulation and source strengths (assume open rotor) - #

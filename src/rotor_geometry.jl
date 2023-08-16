@@ -48,7 +48,7 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 Future Work: add tip-gap capabilities
 """
 function generate_blade_elements(
-    B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe
+    B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe; fliplift=false
 )
 
     # get floating point type
@@ -105,9 +105,6 @@ function generate_blade_elements(
         end
     end
 
-    # find index of the rotor's position in the wake grid
-    # _, wake_index = findmin(x -> abs(x - xrotor), xwake)
-
     # return blade elements
     return (;
         B,
@@ -123,7 +120,7 @@ function generate_blade_elements(
         inner_fraction,
         Rtip,
         Rhub,
-        # wake_index,
+        fliplift,
     )
 end
 

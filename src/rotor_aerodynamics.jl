@@ -291,12 +291,11 @@ function calculate_gamma_sigma!(
             B = blade_elements[irotor].B # number of blades
             c = blade_elements[irotor].chords[ir] # chord length
             twist = blade_elements[irotor].twists[ir] # twist
-            #stagger is twist angle but from axis
-            # stagger = 0.5 * pi - twist
             stagger = blade_elements[irotor].stagger[ir]
             r = blade_elements[irotor].rbe[ir] # radius
             Ω = blade_elements[irotor].Omega # rotation rate
             solidity = blade_elements[irotor].solidity[ir]
+            fliplift = blade_elements[irotor].fliplift
 
             # calculate angle of attack
             phi, alpha = calculate_inflow_angles(
@@ -323,6 +322,7 @@ function calculate_gamma_sigma!(
                 mach,
                 freestream.asound;
                 verbose=verbose,
+                fliplift=fliplift,
             )
 
             # - get circulation and source strengths - #
@@ -366,6 +366,7 @@ function lookup_clcd(
     mach,
     asound;
     verbose=false,
+    fliplift=false,
 )
 
     # look up lift and drag data for the nearest two input sections
@@ -375,11 +376,27 @@ function lookup_clcd(
 
         # get inner values
         clin, cdin, _ = dfdc_clcdcm(
-            Wmag, reynolds, solidity, stagger, alpha, inner_airfoil, asound; verbose=verbose
+            Wmag,
+            reynolds,
+            solidity,
+            stagger,
+            alpha,
+            inner_airfoil,
+            asound;
+            verbose=verbose,
+            fliplift=fliplift,
         )
         # get outer values
         clout, cdout, _ = dfdc_clcdcm(
-            Wmag, reynolds, solidity, stagger, alpha, outer_airfoil, asound; verbose=verbose
+            Wmag,
+            reynolds,
+            solidity,
+            stagger,
+            alpha,
+            outer_airfoil,
+            asound;
+            verbose=verbose,
+            fliplift=fliplift,
         )
 
     elseif typeof(inner_airfoil) <: DTCascade
@@ -439,6 +456,7 @@ function dfdc_clcdcm(
     afparams,
     asound;
     verbose=false,
+    fliplift=false,
 )
 
     #all these come from user defined inputs.
@@ -605,7 +623,8 @@ function dfdc_clcdcm(
     cd_w = fac * cd_w + fac_w * cdrag + dcd_w + cdc_alf
     cd_rey = fac * cd_rey
 
-    return clift, cdrag, cmom
+    # if flip lift is true, return negative of clift (for stators)
+    return fliplift ? -clift : clift, cdrag, cmom
 end
 
 """
