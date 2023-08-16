@@ -48,7 +48,7 @@ function analyze_propulsor(
     # converged[1] = res.f_converged
 
     # return solution
-    return res.zero, inputs, initials
+    return res.zero, initials, res.f_converged
 end
 
 """
