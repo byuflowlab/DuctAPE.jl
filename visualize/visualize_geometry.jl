@@ -15,6 +15,8 @@ function visualize_paneling(;
     legendloc=:best,
     zoom=false,
     limits=nothing,
+    nodemarkersize=2,
+    cpmarkersize=2,
 )
 
     ## -- Initialize Plot -- ##
@@ -44,12 +46,12 @@ function visualize_paneling(;
         ifsize = 2
 
     else
-        bcpsize = 2
-        bnsize = 2
-        rnsize = 2
-        rcpsize = 2
-        wcpsize = 2
-        wnsize = 2
+        bcpsize = cpmarkersize
+        bnsize = nodemarkersize
+        rnsize = nodemarkersize
+        rcpsize = cpmarkersize - 0.5
+        wcpsize = cpmarkersize - 0.5
+        wnsize = nodemarkersize - 0.5
         tesize = 3
         psize = 3
         ifsize = 1.5
@@ -69,7 +71,7 @@ function visualize_paneling(;
                     coords[:, 1],
                     coords[:, 2];
                     color=mygray[1],
-                    linewidth=0.5,
+                    linewidth=cpmarkersize / 4,
                     label=blab,
                 )
             end
@@ -148,6 +150,7 @@ function visualize_paneling(;
                     [0.0; normal_scaling * body_panels.normal[i, 2]] .+
                     body_panels.controlpoint[i, 2];
                     label=lab,
+                    linewidth=cpmarkersize / 4,
                     color=myblue[1],
                 )
             end
