@@ -33,7 +33,7 @@ import FLOWMath as fm
 - `ambient_static_temperature::Float` : ambient static temperature, default = 288.15 K
 - `flow_coeff::Float` : tip flow coefficient (ϕ), default = 0.4
 - `adiabatic_stage_efficiency::Float` : adiabatic stage efficiency, default = 0.85
-- `c_p::Float` : specific heat at constant pressure, default is 1.005 kJ/kg-K
+- `c_p::Float` : specific heat at constant pressure, default is 1005 J/kg-K
 - `lift_coefficients::Vector{Float}` : desired operating lift coefficient for each blade section, default = [0.6] (constant along blade)
 - `verbose::Bool` : if true, will print out warning if solidity exceeds 0.3
 - `debug::Bool` : if true, function returns intermediate values in a named tuple
@@ -57,7 +57,7 @@ function opt_prelim(
     ambient_static_pressure=101325.0,
     ambient_static_temperature=288.15,
     adiabatic_stage_efficiency=0.85,
-    c_p=1.005,
+    c_p=1005.0,
     lift_coefficients=[0.6],
     verbose=true,
 )
@@ -91,7 +91,7 @@ function opt_prelim(
         pressure_ratio; gamma=1.4, adiabatic_stage_efficiency=adiabatic_stage_efficiency
     )
 
-    # Compute Total Specific Enthalpy Rise kJ/kg
+    # Compute Total Specific Enthalpy Rise J/kg
     enthalpy_rise = compute_total_specific_enthalpy_rise(
         temperature_ratio,
         Vinf;
@@ -99,37 +99,37 @@ function opt_prelim(
         ambient_static_temperature=ambient_static_temperature,
     )
 
-    # Compute the Required Work Coefficient
-    work_coeff = compute_work_coefficient(enthalpy_rise * 1000.0, tip_rotational_velocity)
+    # Compute the Required Work Coefficient (non-dimensional)
+    work_coeff = compute_work_coefficient(enthalpy_rise, tip_rotational_velocity)
 
-    # Compute Change in Swirl Velocity at Tip
+    # Compute Change in Swirl Velocity at Tip m/s
     change_in_swirl = compute_change_in_swirl(work_coeff, tip_rotational_velocity)
 
-    # Compute Inflow Angles
+    # Compute Inflow Angles radians
     inflow_angles = compute_inflow_angles(
         fan_face_axial_velocity, tip_rotational_velocity, Rtip, radii
     )
 
-    # Compute Swirl Velocity Distribution
+    # Compute Swirl Velocity Distribution m/s
     swirl_velocities = compute_swirl_velocity_distribution(Rtip, radii, change_in_swirl)
 
-    # Look up Section Angles of Attack
+    # Look up Section Angles of Attack radians
     angles_of_attack = look_up_angle_of_attack(
         lift_polars, lift_coefficients, length(radii)
     )
 
-    # Calculate Stagger Angles
+    # Calculate Stagger Angles radians
     stagger_angles = calculate_stagger_angles(inflow_angles, angles_of_attack)
 
-    # Calculate Circulation Distribution
+    # Calculate Circulation Distribution m2/s
     circulations = calculate_circulation(change_in_swirl, radii, num_blades)
 
-    # Calculate Chord
+    # Calculate Chord m
     chords = calculate_chord(
         circulations, lift_coefficients, fan_face_axial_velocity, change_in_swirl
     )
 
-    # Check Solidity
+    # Check Solidity (non-dimensional)
     if verbose
         check_solidity(chords, radii, num_blades)
     end
@@ -313,76 +313,3 @@ function check_solidity(chords, radii, num_blades)
     end
     return nothing
 end
-######################################################################
-#                                                                    #
-#                              SCRATCH                               #
-#                                                                    #
-######################################################################
-
-# """
-# """
-# function compute_exit_flow_angles()
-# end
-
-#
-#
-#
-#
-#
-#
-
-#=
-#-----------------------------------#
-# Potentially useful relationships  #
-#-----------------------------------#
-Thrust = mdot * (exit_velocity - freestream_velocity) (conservation of momentum)
-=#
-
-#=
-
-Known (or can be approximated): Rtip, Rhub, chord, twist, airfoil parameters, reynolds number, rotation rate, number of blades, open rotor performance data (CT, c_p, CQ, eta), freestream conditions (Vinf, rhoinf, muinf, asound).
-
-Want to Find: inlet area, outlet area for reasonable ducted performance (at least as much thrust and efficiency as without the duct if possible)
-
-=#
-
-"""
-not sure what's happening here, but seems like we might need something along these lines
-"""
-function pressure_from_open_ct(CT, disk_area)
-    T = CT * rho * n^2 * disk_area^4 # is this valid
-    dp = T / disk_area
-
-    return dp
-end
-
-"""
-function to call the other functions and find what reasonable inlet and outlet areas might be
-"""
-function find_io_areas(
-    Rtip, # rotor tip radius
-    Rhub, # rotor hub radius
-    radial_stations, # radial stations between Rhub and Rtip
-    chord, # chord distribution
-    twist, # twist distribution (better for this to be stagger?)
-    ambient_static_pressure=101325.0, # Pa standard at sea level
-)
-
-    # solver variable initial guesses, just set to disk annulus area for now
-    inlet_area = pi * (Rtip^2 - Rhub^2)
-    outlet_area = inlet_area
-
-    #TODO: choose a reasonable solver approach (NLSolve?)
-
-    return res.zero
-end
-
-######################################################################
-#                                                                    #
-#                         1D Model Option 2                          #
-#                                                                    #
-######################################################################
-#######################################################################
-#                                                                    #
-######################################################################
-
