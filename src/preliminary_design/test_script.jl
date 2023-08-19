@@ -1,0 +1,45 @@
+include("1Dmodel_try1.jl")
+include("../../visualize/plots_default_new.jl")
+
+# Base Values
+Vinf_base = 10.0 #m/s
+thrust_base = 3.0 #N
+exit_area_base = pi * (2.25 * 0.0254)^2 #m
+Rtip_base = 2.5 * 0.0254 #m
+Rhub_base = 0.3 * Rtip
+radii_base = collect(range(Rhub, Rtip, 10))
+num_blades_base = 2
+lift_polars_base = [[5.0 * pi/180.0 0.7; 6.0 * pi/180.0 0.9]]
+
+function plotstuff(p, x, y, lab, labprefix)
+    return plot!(p, x, y; label=labprefix * "$lab")
+end
+
+# - Vinf Sweeps - #
+Vinf_sweep = range(0.0, 20.0, 5)
+labprefix = "Vinf = "
+pv = plot(; xlabel="chords", ylabel="radial positions")
+
+for v in Vinf_sweep
+    chords, twists, debug = opt_prelim(
+        v,
+        thrust_base,
+        exit_area_base,
+        Rtip_base,
+        Rhub_base,
+        radii_base,
+        num_blades_base,
+        lift_polars;
+        rho=1.225,
+        flow_coeff=0.4,
+        ambient_static_pressure=101325.0,
+        ambient_static_temperature=288.15,
+        adiabatic_stage_efficiency=0.85,
+        c_p=1.005,
+        lift_coefficients=[0.8],
+        verbose=true,
+    )
+
+    plotstuff(pv, chords, radii_base, v, labprefix)
+end
+savefig(pv, "chord-vs-vinf.pdf")
