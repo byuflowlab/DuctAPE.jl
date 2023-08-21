@@ -93,6 +93,7 @@ function dt_full_wrapper(inputs)
         tip_gap=0.0,
         B,
         Omega,
+        fliplift=false,
     )]
     paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
     freestream = (; rhoinf, muinf, asound, Vinf)
@@ -222,6 +223,7 @@ function dt_full_wrapper(inputs)
         verbose=false,
         maximum_linesearch_step_size=1e6,
         iteration_limit=25,
+        ftol=1e-12,
     )
 
     # - return some representative outputs - #
@@ -346,6 +348,7 @@ function dt_prepost_wrapper(inputs)
         tip_gap=0.0,
         B,
         Omega,
+        fliplift=false,
     )]
     paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
     freestream = (; rhoinf, muinf, asound, Vinf)

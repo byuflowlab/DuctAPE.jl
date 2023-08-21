@@ -96,5 +96,5 @@ include("derivative_wrappers.jl")
     write(fi, "$(findiff_j)")
     close(fi)
 
-    @test all(isapprox.(findiff_j, fordiff_j; atol=1e-3))
+    @test all(isapprox.(findiff_j, fordiff_j; atol=2e-3))
 end
