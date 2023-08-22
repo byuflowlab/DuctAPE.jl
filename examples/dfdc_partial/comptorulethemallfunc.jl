@@ -316,6 +316,8 @@ function run_isolated_geometry(
         legendloc=:right,
     )
 
+    println("\tNumber of Body Panels: ", panels.npanels)
+
     println("Solving System")
     ## -- Initialize and solve strenths a la init function -- ##
     # - body to body - #
@@ -451,7 +453,7 @@ pv, pc, plotcount = run_isolated_geometry(
 )
 
 #---------------------------------#
-#           Convergence           #
+#        Smooth Convergence       #
 #---------------------------------#
 options = (;
     Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=50
@@ -488,7 +490,7 @@ pv, pc, plotcount = run_isolated_geometry(
 )
 
 options = (;
-    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=300
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=400
 )
 pv, pc, plotcount = run_isolated_geometry(
     options,
@@ -501,7 +503,7 @@ pv, pc, plotcount = run_isolated_geometry(
 )
 
 options = (;
-    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=400
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=800
 )
 pv, pc, plotcount = run_isolated_geometry(
     options,
@@ -512,3 +514,99 @@ pv, pc, plotcount = run_isolated_geometry(
     plotcount=plotcount,
     prefix="800_Smooth_Panels",
 )
+
+#---------------------------------#
+#        DTpane Convergence       #
+#---------------------------------#
+refine = 4
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 8
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 16
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 32
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 64
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
