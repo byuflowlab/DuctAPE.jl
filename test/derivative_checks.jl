@@ -1,6 +1,6 @@
 include("derivative_wrappers.jl")
 
-@testset "Automaic Derivatives" begin
+@testset "Automatic Derivatives" begin
     Vinf = 20.0
     chords = [
         0.089142
@@ -78,23 +78,28 @@ include("derivative_wrappers.jl")
     # cnfg = ForwardDiff.JacobianConfig(dt_full_wrapper, inputs, ForwardDiff.Chunk{41}())
     # fordiff_j = zeros(4, length(inputs))
     # fordiff_j = @time ForwardDiff.jacobian(dt_full_wrapper, inputs, cnfg)
-    fordiff_j = @time ForwardDiff.jacobian(dt_full_wrapper, inputs)
+    fordiff_j = ForwardDiff.jacobian(dt_full_wrapper, inputs)
+    # fordiff_j = @time ForwardDiff.jacobian(dt_full_wrapper, inputs)
 
-    fo = open("fordiff_j.jl", "w")
-    write(fo, "fordiff_j=")
-    write(fo, "$(fordiff_j)")
-    close(fo)
+    # fo = open("fordiff_j.jl", "w")
+    # write(fo, "fordiff_j=")
+    # write(fo, "$(fordiff_j)")
+    # close(fo)
 
     # FiniteDiff Jacobian
     println("\tCalculating FiniteDiff Jacobian")
     # findiff_j = similar(fordiff_j) .= 0.0
     # @time FiniteDiff.finite_difference_jacobian!(findiff_j, dt_full_wrapper, inputs)
-    findiff_j = @time FiniteDiff.finite_difference_jacobian(dt_full_wrapper, inputs)
+    findiff_j = FiniteDiff.finite_difference_jacobian(dt_full_wrapper, inputs)
+    # findiff_j = @time FiniteDiff.finite_difference_jacobian(dt_full_wrapper, inputs)
 
-    fi = open("findiff_j.jl", "w")
-    write(fi, "findiff_j=")
-    write(fi, "$(findiff_j)")
-    close(fi)
+    # fi = open("findiff_j.jl", "w")
+    # write(fi, "findiff_j=")
+    # write(fi, "$(findiff_j)")
+    # close(fi)
 
-    @test all(isapprox.(findiff_j, fordiff_j; atol=2e-3))
+    for (fi, fo) in zip(findiff_j, fordiff_j)
+        omag = floor(Int, log10(abs(fi)))
+        @test isapprox.(fi, fo; atol=1.0*10.0^(omag-3.0))
+    end
 end
