@@ -50,157 +50,119 @@ out, converged_strengths, inputs, initial_strengths, convergeflag = @time dt.ana
 #---------------------------------#
 mub0, gamw0, Gamr0, sigr0 = dt.extract_state_variables(converged_strengths, inputs)
 
-# Get velocities at rotor
-vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = dt.calculate_rotor_velocities(
-    Gamr0, gamw0, sigr0, mub0, inputs
-)
+overwriterpm = range(1000, 7808; step=25)
+overwriteomega = overwriterpm .* pi / 30
+for (io, omega) in enumerate(overwriteomega)
+    println("Running at RPM = ", overwriterpm[io])
 
-# get the inflow and attack angles
-rotor_inflow, rotor_aoa = dt.calculate_inflow_angles(
-    Wm_rotor[:, 1], Wtheta_rotor[:, 1], inputs.blade_elements[1].twists
-)
+    global initial_strengths, converged_strengths, inputs
 
-stator_inflow, stator_aoa = dt.calculate_inflow_angles(
-    Wm_rotor[:, 2], Wtheta_rotor[:, 2], inputs.blade_elements[2].twists
-)
+    overwrite_params = [(; rotor_parameters..., Omega=omega), stator_parameters]
+    # repanels bodies and rotors, generates wake "grid", precomputes influence matrices, etc.
+    inputs = dt.precomputed_inputs(
+        duct_coordinates,
+        hub_coordinates,
+        paneling_constants,
+        overwrite_params,
+        freestream,
+        reference_parameters;
+    )
 
-#---------------------------------#
-#              PLOT               #
-#---------------------------------#
-rotor_r = inputs.rotor_panel_centers[:, 1] ./ inputs.reference_parameters.Rref
-stator_r = inputs.rotor_panel_centers[:, 2] ./ inputs.reference_parameters.Rref
+    # calculate initial guess for state variables
+    initial_strengths = converged_strengths
+    initials = copy(initial_strengths)
 
-pr = plot(;
-    title="Rotor Angles, rotor RPM=$RPM_rotor",
-    xlabel="Angles (degrees)",
-    ylabel="Normalized Radial Position",
-)
-plot!(pr, inputs.blade_elements[1].twists * 180 / pi, rotor_r; label="Twist")
-plot!(pr, rotor_inflow * 180 / pi, rotor_r; label="Inflow")
-plot!(pr, rotor_aoa * 180 / pi, rotor_r; label="Attack")
-savefig(pr, savepath * "rotor_initial_angles$RPM_rotor.pdf")
-savefig(pr, savepath * "rotor_initial_angles$RPM_rotor.png")
+    # - Define closure that allows for parameters - #
+    p = []
+    rwrap(r, states) = dt.residual!(r, states, inputs, p)
 
-ps = plot(;
-    title="Stator Angles, rotor RPM=$RPM_rotor",
-    xlabel="Angles (degrees)",
-    ylabel="Normalized Radial Position",
-)
-plot!(ps, inputs.blade_elements[2].twists * 180 / pi, stator_r; label="Twist")
-plot!(ps, stator_inflow * 180 / pi, stator_r; label="Inflow")
-plot!(ps, stator_aoa * 180 / pi, stator_r; label="Attack")
-savefig(ps, savepath * "stator_initial_angles$RPM_rotor.pdf")
-savefig(ps, savepath * "stator_initial_angles$RPM_rotor.png")
-## Run higher RPM with converged strengths as inputs
+    # - Call NLsolve function using AD for Jacobian - #
+    #= res is of type NLsolve.SolverResults.
+    The zero field contains the "solution" to the non-linear solve.
+    The converged() function tells us if the solver converged.
+    =#
+    res = NLsolve.nlsolve(
+        rwrap,
+        initial_strengths;
+        autodiff=:forward,
+        method=:newton,
+        iterations=25,
+        show_trace=true,
+        linesearch=BackTracking(; maxstep=1e6),
+        ftol=1e-8,
+    )
 
-RPM_rotor = 1100
-overwriterpm = RPM_rotor*pi/30
+    converged_strengths = res.zero
+end
 
-overwrite_params = [(; rotor_parameters..., Omega=overwriterpm), stator_parameters]
-# repanels bodies and rotors, generates wake "grid", precomputes influence matrices, etc.
-inputs = dt.precomputed_inputs(
-    duct_coordinates,
-    hub_coordinates,
-    paneling_constants,
-    overwrite_params,
-    freestream,
-    reference_parameters;
-)
+##---------------------------------#
+##            Get Angles           #
+##---------------------------------#
+#mub0, gamw0, Gamr0, sigr0 = dt.extract_state_variables(converged_strengths, inputs)
 
-# calculate initial guess for state variables
-initial_states = converged_strengths
-initials = copy(initial_states)
+## Get velocities at rotor
+#vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = dt.calculate_rotor_velocities(
+#    Gamr0, gamw0, sigr0, mub0, inputs
+#)
 
-# - Define closure that allows for parameters - #
-p=[]
-rwrap(r, states) = dt.residual!(r, states, inputs, p)
+## get the inflow and attack angles
+#rotor_inflow, rotor_aoa = dt.calculate_inflow_angles(
+#    Wm_rotor[:, 1], Wtheta_rotor[:, 1], inputs.blade_elements[1].twists
+#)
 
-# - Call NLsolve function using AD for Jacobian - #
-#= res is of type NLsolve.SolverResults.
-The zero field contains the "solution" to the non-linear solve.
-The converged() function tells us if the solver converged.
-=#
-res = NLsolve.nlsolve(
-    rwrap,
-    initial_states;
-    autodiff=:forward,
-    method=:newton,
-    iterations=25,
-    show_trace=true,
-    linesearch=BackTracking(; maxstep=1e6),
-    ftol=1e-8,
-)
+#stator_inflow, stator_aoa = dt.calculate_inflow_angles(
+#    Wm_rotor[:, 2], Wtheta_rotor[:, 2], inputs.blade_elements[2].twists
+#)
 
-converged_strengths = res.zero
+##---------------------------------#
+##              PLOT               #
+##---------------------------------#
+#rotor_r = inputs.rotor_panel_centers[:, 1] ./ inputs.reference_parameters.Rref
+#stator_r = inputs.rotor_panel_centers[:, 2] ./ inputs.reference_parameters.Rref
 
-#---------------------------------#
-#            Get Angles           #
-#---------------------------------#
-mub0, gamw0, Gamr0, sigr0 = dt.extract_state_variables(initial_strengths, inputs)
+#pr = plot(;
+#    title="Rotor Angles, rotor RPM=$RPM_rotor",
+#    xlabel="Angles (degrees)",
+#    ylabel="Normalized Radial Position",
+#)
+#plot!(pr, inputs.blade_elements[1].twists * 180 / pi, rotor_r; label="Twist")
+#plot!(pr, rotor_inflow * 180 / pi, rotor_r; label="Inflow")
+#plot!(pr, rotor_aoa * 180 / pi, rotor_r; label="Attack")
+#savefig(pr, savepath * "rotor_initial_angles$RPM_rotor.pdf")
+#savefig(pr, savepath * "rotor_initial_angles$RPM_rotor.png")
 
-# Get velocities at rotor
-vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = dt.calculate_rotor_velocities(
-    Gamr0, gamw0, sigr0, mub0, inputs
-)
-
-# get the inflow and attack angles
-rotor_inflow, rotor_aoa = dt.calculate_inflow_angles(
-    Wm_rotor[:, 1], Wtheta_rotor[:, 1], inputs.blade_elements[1].twists
-)
-
-stator_inflow, stator_aoa = dt.calculate_inflow_angles(
-    Wm_rotor[:, 2], Wtheta_rotor[:, 2], inputs.blade_elements[2].twists
-)
-
-#---------------------------------#
-#              PLOT               #
-#---------------------------------#
-rotor_r = inputs.rotor_panel_centers[:, 1] ./ inputs.reference_parameters.Rref
-stator_r = inputs.rotor_panel_centers[:, 2] ./ inputs.reference_parameters.Rref
-
-pr = plot(;
-    title="Rotor Angles, rotor RPM=$RPM_rotor",
-    xlabel="Angles (degrees)",
-    ylabel="Normalized Radial Position",
-)
-plot!(pr, inputs.blade_elements[1].twists * 180 / pi, rotor_r; label="Twist")
-plot!(pr, rotor_inflow * 180 / pi, rotor_r; label="Inflow")
-plot!(pr, rotor_aoa * 180 / pi, rotor_r; label="Attack")
-savefig(pr, savepath * "rotor_initial_angles$RPM_rotor.pdf")
-savefig(pr, savepath * "rotor_initial_angles$RPM_rotor.png")
-
-ps = plot(;
-    title="Stator Angles, rotor RPM=$RPM_rotor",
-    xlabel="Angles (degrees)",
-    ylabel="Normalized Radial Position",
-)
-plot!(ps, inputs.blade_elements[2].twists * 180 / pi, stator_r; label="Twist")
-plot!(ps, stator_inflow * 180 / pi, stator_r; label="Inflow")
-plot!(ps, stator_aoa * 180 / pi, stator_r; label="Attack")
-savefig(ps, savepath * "stator_initial_angles$RPM_rotor.pdf")
-savefig(ps, savepath * "stator_initial_angles$RPM_rotor.png")
-# plot re-paneled geometry
-include("../../DuctTAPE.jl/visualize/visualize_geometry.jl")
-visualize_paneling(;
-    body_panels=inputs.body_doublet_panels,
-    rotor_panels=inputs.rotor_source_panels,
-    wake_panels=inputs.wake_vortex_panels,
-    coordinates=[duct_coordinates, hub_coordinates],
-    controlpoints=true,
-    nodes=true,
-    wakeinterfaceid=[],
-    prescribedpanels=nothing,
-    TEnodes=false,
-    normals=false,
-    normal_scaling=0.05,
-    savepath=savepath,
-    filename=["NASA_geometry_repanel.pdf"],
-    legendloc=false,
-    zoom=false,
-    limits=nothing,
-    nodemarkersize=1,
-    cpmarkersize=1,
-)
+#ps = plot(;
+#    title="Stator Angles, rotor RPM=$RPM_rotor",
+#    xlabel="Angles (degrees)",
+#    ylabel="Normalized Radial Position",
+#)
+#plot!(ps, inputs.blade_elements[2].twists * 180 / pi, stator_r; label="Twist")
+#plot!(ps, stator_inflow * 180 / pi, stator_r; label="Inflow")
+#plot!(ps, stator_aoa * 180 / pi, stator_r; label="Attack")
+#savefig(ps, savepath * "stator_initial_angles$RPM_rotor.pdf")
+#savefig(ps, savepath * "stator_initial_angles$RPM_rotor.png")
+## plot re-paneled geometry
+#include("../../DuctTAPE.jl/visualize/visualize_geometry.jl")
+#visualize_paneling(;
+#    body_panels=inputs.body_doublet_panels,
+#    rotor_panels=inputs.rotor_source_panels,
+#    wake_panels=inputs.wake_vortex_panels,
+#    coordinates=[duct_coordinates, hub_coordinates],
+#    controlpoints=true,
+#    nodes=true,
+#    wakeinterfaceid=[],
+#    prescribedpanels=nothing,
+#    TEnodes=false,
+#    normals=false,
+#    normal_scaling=0.05,
+#    savepath=savepath,
+#    filename=["NASA_geometry_repanel.pdf"],
+#    legendloc=false,
+#    zoom=false,
+#    limits=nothing,
+#    nodemarkersize=1,
+#    cpmarkersize=1,
+#)
 
 # # - Generate DFDC Case File - #
 # include("../../DuctTAPE.jl/convenience_functions/generate_dfdc_case.jl")
@@ -294,6 +256,7 @@ px = plot(;
 )
 
 # hot-wire axial velocity
+
 plot!(
     px,
     vxexpbar,
@@ -324,7 +287,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE",
+    label="DuctTAPE Converged States",
 )
 
 # - Radial Velocity Comparison - #
@@ -410,4 +373,8 @@ plot!(
 savefig(px, "figures/axial_velocity_comparison.pdf")
 savefig(pr, "figures/radial_velocity_comparison.pdf")
 savefig(pt, "figures/tangential_velocity_comparison.pdf")
+
+savefig(px, "figures/axial_velocity_comparison.png")
+savefig(pr, "figures/radial_velocity_comparison.png")
+savefig(pt, "figures/tangential_velocity_comparison.png")
 
