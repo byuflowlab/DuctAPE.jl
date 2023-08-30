@@ -8,7 +8,7 @@ Rtip_base = 2.5 * 0.0254 #m
 Rhub_base = 0.25 * Rtip_base #m
 radii_base = collect(range(Rhub_base, Rtip_base, 10)) #m
 num_blades_base = 2
-lift_polars_base = [[5.0 * pi/180.0 0.7; 6.0 * pi/180.0 0.9]]
+lift_polars_base = [[5.0 * pi/180.0 0.5; 6.0 * pi/180.0 0.7]]
 
 chords, twists, debug = opt_prelim(
     Vinf_base,
@@ -20,14 +20,33 @@ chords, twists, debug = opt_prelim(
     num_blades_base,
     lift_polars_base;
     rho=1.225, #kg/m3
-    flow_coeff=0.4,
+    flow_coeff=0.9,
     ambient_static_pressure=101325.0, #Pa
     ambient_static_temperature=288.15, #K
     adiabatic_stage_efficiency=0.85,
-    c_p=1005.0, #J/kg-K #TODO: putting this in J instead of kJ seems to get correct units
-    lift_coefficients=[0.8],
+    c_p=1005.0, #J/kg-K
+    lift_coefficients=[0.6],
     verbose=true,
 )
+(;
+    solidity,
+    circulations,
+    stagger_angles,
+    angles_of_attack,
+    swirl_velocities,
+    inflow_angles,
+    omega,
+    change_in_tip_swirl,
+    work_coeff,
+    enthalpy_rise,
+    temperature_ratio,
+    pressure_ratio,
+    exhaust_total_pressure,
+    tip_rotational_velocity,
+    fan_face_axial_velocity,
+    fan_annulus_area,
+    Vexit,
+) = debug
 
 # using Plots
 # function plotstuff(p, x, y, lab, labprefix, units="")

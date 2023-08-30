@@ -73,14 +73,14 @@ function opt_prelim(
         fan_face_axial_velocity; flow_coeff=flow_coeff
     )
 
-    # Compute Exhaust Total Pressue Pa = N/m2 = kg/m-s2
-    exhaust_total_pressue = compute_exhaust_total_pressure(
+    # Compute Exhaust Total pressure Pa = N/m2 = kg/m-s2
+    exhaust_total_pressure = compute_exhaust_total_pressure(
         Vexit; rho=rho, ambient_static_pressure=ambient_static_pressure
     )
 
     # Compute the Fan Pressure Ratio (non-dimensional)
     pressure_ratio = compute_fan_pressure_ratio(
-        exhaust_total_pressue,
+        exhaust_total_pressure,
         Vinf;
         rho=rho,
         ambient_static_pressure=ambient_static_pressure,
@@ -103,7 +103,7 @@ function opt_prelim(
     work_coeff = compute_work_coefficient(enthalpy_rise, tip_rotational_velocity)
 
     # Compute Change in Swirl Velocity at Tip m/s
-    change_in_swirl = compute_change_in_swirl(work_coeff, tip_rotational_velocity)
+    change_in_tip_swirl = compute_change_in_swirl(work_coeff, tip_rotational_velocity)
 
     # Compute Inflow Angles radians
     inflow_angles = compute_inflow_angles(
@@ -111,7 +111,7 @@ function opt_prelim(
     )
 
     # Compute Swirl Velocity Distribution m/s
-    swirl_velocities = compute_swirl_velocity_distribution(Rtip, radii, change_in_swirl)
+    swirl_velocities = compute_swirl_velocity_distribution(Rtip, radii, change_in_tip_swirl)
 
     # Look up Section Angles of Attack radians
     angles_of_attack = look_up_angle_of_attack(
@@ -122,33 +122,32 @@ function opt_prelim(
     stagger_angles = calculate_stagger_angles(inflow_angles, angles_of_attack)
 
     # Calculate Circulation Distribution m2/s
-    circulations = calculate_circulation(change_in_swirl, radii, num_blades)
+    circulations = calculate_circulation(swirl_velocities, radii, num_blades)
 
     # Calculate Chord m
     chords = calculate_chord(
-        circulations, lift_coefficients, fan_face_axial_velocity, change_in_swirl
+        circulations, lift_coefficients, fan_face_axial_velocity, swirl_velocities
     )
 
     # Check Solidity (non-dimensional)
-    if verbose
-        check_solidity(chords, radii, num_blades)
-    end
+    solidity = check_solidity(chords, radii, num_blades, verbose)
 
     return chords,
     pi / 2.0 .- stagger_angles,
     (;
+        solidity,
         circulations,
         stagger_angles,
         angles_of_attack,
         swirl_velocities,
         inflow_angles,
         omega=compute_omega(tip_rotational_velocity, Rtip),
-        change_in_swirl,
+        change_in_tip_swirl,
         work_coeff,
         enthalpy_rise,
         temperature_ratio,
         pressure_ratio,
-        exhaust_total_pressue,
+        exhaust_total_pressure,
         tip_rotational_velocity,
         fan_face_axial_velocity,
         fan_annulus_area=compute_annulus_area(Rtip, Rhub),
@@ -161,7 +160,7 @@ end
 Apply conservation of mass and momentum to obtain exit velocity.
 """
 function compute_exit_velocity(Vinf, thrust, exit_area; rho=1.225)
-    return Vinf + 0.5 * sqrt(2.0 * Vinf + 4.0 * thrust / (rho * exit_area))
+    return 0.5 * (Vinf + sqrt(Vinf^2 + 4.0 * thrust / (rho * exit_area)))
 end
 
 """
@@ -206,15 +205,17 @@ end
 function compute_fan_temperature_ratio(
     pressure_ratio; gamma=1.4, adiabatic_stage_efficiency=0.85
 )
-    return (pressure_ratio^((gamma - 1) / gamma) - 1.0) / adiabatic_stage_efficiency + 1.0
+    return 1.0 + (pressure_ratio^((gamma - 1) / gamma) - 1.0) / adiabatic_stage_efficiency
 end
 
 """
 """
 function compute_total_specific_enthalpy_rise(
-    temperature_ratio, Vinf; c_p=1.005, ambient_static_temperature=288.15
+    temperature_ratio, Vinf; c_p=1005.0, ambient_static_temperature=288.15
 )
-    return c_p * (temperature_ratio - 1.0) * ambient_static_temperature
+    ambient_total_temperature = ambient_static_temperature + Vinf^2 / (2.0 * c_p)
+
+    return c_p * (temperature_ratio - 1.0) * ambient_total_temperature
 end
 
 """
@@ -249,8 +250,8 @@ end
 
 """
 """
-function compute_swirl_velocity_distribution(Rtip, radii, change_in_swirl)
-    return Rtip * change_in_swirl ./ radii
+function compute_swirl_velocity_distribution(Rtip, radii, change_in_tip_swirl)
+    return Rtip * change_in_tip_swirl ./ radii
 end
 
 """
@@ -291,25 +292,26 @@ end
 
 """
 """
-function calculate_circulation(change_in_swirl, radii, num_blades)
-    return 2.0 * pi * change_in_swirl .* radii / num_blades
+function calculate_circulation(swirl_velocities, radii, num_blades)
+    return 2.0 * pi * swirl_velocities .* radii / num_blades
 end
 
 """
 """
 function calculate_chord(
-    circulations, lift_coefficients, fan_face_axial_velocity, change_in_swirl
+    circulations, lift_coefficients, fan_face_axial_velocity, swirl_velocities
 )
-    average_relative_velocity = sqrt(fan_face_axial_velocity^2 + (change_in_swirl / 2.0)^2)
+    average_relative_velocity =
+        sqrt.(fan_face_axial_velocity^2 .+ (swirl_velocities / 2.0) .^ 2)
 
-    return 2.0 * circulations ./ (lift_coefficients * average_relative_velocity)
+    return 2.0 * circulations ./ (lift_coefficients .* average_relative_velocity)
 end
 
-function check_solidity(chords, radii, num_blades)
+function check_solidity(chords, radii, num_blades, verbose)
     solidity = chords * num_blades ./ (2.0 * pi * radii)
     warnid = findall(x -> x > 0.3, solidity)
-    if !isempty(warnid)
+    if verbose && !isempty(warnid)
         @warn "Solidity greater than 0.3 at sections $(warnid)"
     end
-    return nothing
+    return solidity
 end
