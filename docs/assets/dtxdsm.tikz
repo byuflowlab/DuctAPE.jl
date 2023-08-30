@@ -1,0 +1,109 @@
+
+%%% Preamble Requirements %%%
+% \usepackage{geometry}
+% \usepackage{amsfonts}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{tikz}
+
+% Optional packages such as sfmath set through python interface
+% \usepackage{sfmath}
+
+% \usetikzlibrary{arrows,chains,positioning,scopes,shapes.geometric,shapes.misc,shadows}
+
+%%% End Preamble Requirements %%%
+
+\input{"/home/juddmehr/.local/lib/python3.10/site-packages/pyxdsm/diagram_styles"}
+\begin{tikzpicture}
+
+\matrix[MatrixSetup]{
+%Row 0
+&
+\node [DataIO] (output_precomp) {$\text{Inputs}$};&
+&
+&
+&
+&
+\\
+%Row 1
+&
+\node [Function] (precomp) {$\text{Precomputations}$};&
+\node [DataInter] (precomp-solver) {$\mu^{(0)},\Gamma^{(0)},\sigma^{(0)},\gamma^{(0)}$};&
+\node [DataInter] (precomp-body) {$\begin{array}{c}\text{LU Decomposed LHS} \\ \text{Freestream Boundary Condition}\end{array}$};&
+\node [DataInter] (precomp-rotor) {$\begin{array}{c}\text{Unit Induced Velocities} \\ \text{Interpolated Geometry} \\ \text{Operating Conditions}\end{array}$};&
+\node [DataInter] (precomp-wake) {$\begin{array}{c}\text{Unit Induced Velocities} \\ \text{Freestream Velocity}\end{array}$};&
+\\
+%Row 2
+\node [DataIO] (left_output_solver) {$\mu^*,\Gamma^*,\sigma^*,\gamma^*$};&
+&
+\node [MDA] (solver) {$\text{Solver}$};&
+\node [DataInter] (solver-body) {$\mu, \Gamma, \sigma, \gamma$};&
+\node [DataInter] (solver-rotor) {$\mu, \Gamma, \sigma, \gamma$};&
+\node [DataInter] (solver-wake) {$\mu, \Gamma, \sigma, \gamma$};&
+\\
+%Row 3
+&
+&
+\node [DataInter] (body-solver) {$\Delta \mu$};&
+\node [Function] (body) {$\text{Duct / Center Body}$};&
+&
+&
+\\
+%Row 4
+&
+&
+\node [DataInter] (rotor-solver) {$\Delta \Gamma, \Delta \sigma$};&
+&
+\node [Function] (rotor) {$\text{Rotor / Stator}$};&
+&
+\\
+%Row 5
+&
+&
+\node [DataInter] (wake-solver) {$\Delta \gamma$};&
+&
+&
+\node [Function] (wake) {$\text{Wake}$};&
+\\
+%Row 6
+&
+&
+&
+&
+&
+&
+\\
+};
+
+% XDSM process chains
+
+
+\begin{pgfonlayer}{data}
+\path
+% Horizontal edges
+(solver) edge [DataLine] (solver-body)
+(solver) edge [DataLine] (solver-rotor)
+(solver) edge [DataLine] (solver-wake)
+(body) edge [DataLine] (body-solver)
+(rotor) edge [DataLine] (rotor-solver)
+(wake) edge [DataLine] (wake-solver)
+(precomp) edge [DataLine] (precomp-body)
+(precomp) edge [DataLine] (precomp-rotor)
+(precomp) edge [DataLine] (precomp-wake)
+(precomp) edge [DataLine] (precomp-solver)
+(solver) edge [DataLine] (left_output_solver)
+% Vertical edges
+(solver-body) edge [DataLine] (body)
+(solver-rotor) edge [DataLine] (rotor)
+(solver-wake) edge [DataLine] (wake)
+(body-solver) edge [DataLine] (solver)
+(rotor-solver) edge [DataLine] (solver)
+(wake-solver) edge [DataLine] (solver)
+(precomp-body) edge [DataLine] (body)
+(precomp-rotor) edge [DataLine] (rotor)
+(precomp-wake) edge [DataLine] (wake)
+(precomp-solver) edge [DataLine] (solver)
+(precomp) edge [DataLine] (output_precomp);
+\end{pgfonlayer}
+
+\end{tikzpicture}

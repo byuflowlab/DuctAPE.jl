@@ -27,7 +27,7 @@
             for j in 1:3
                 for k in 1:3
                     for ell in 1:3
-                        filenames[i, j, k, ell] = "test/data/cas$i$j$k$ell.dat"
+                        filenames[i, j, k, ell] = "data/cas$i$j$k$ell.dat"
                     end
                 end
             end

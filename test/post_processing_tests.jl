@@ -132,7 +132,8 @@
 
     @test isapprox(-hub_thrust, dfdc_h_thrust; atol=1e-4)
 
-    display(hub_thrust)
-    display(duct_thrust)
-    display(hub_thrust + duct_thrust)
+    # display(hub_thrust)
+    # display(duct_thrust)
+    # display(hub_thrust + duct_thrust)
+
 end

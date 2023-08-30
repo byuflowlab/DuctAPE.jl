@@ -11,6 +11,9 @@ examples/*.pdf
 examples/rotor_only/*.pdf
 examples/dfdc_comp/*.pdf
 examples/debug_coupling/*.pdf
+examples/dfdc_partial/outputs/*.pdf
+examples/dfdc_partial/outputs/*.png
+examples/dfdc_partial/outputs/*.vtk
 examples/*.png
 test/manual_tests/*/*.pdf
 test/manual_tests/*/*.png

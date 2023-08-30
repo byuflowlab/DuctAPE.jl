@@ -22,7 +22,7 @@
 # end
 
 function analyze_propulsor(
-    inputs, debug=false, maximum_linesearch_step_size=1e6, iteration_limit=100
+    inputs; debug=false, maximum_linesearch_step_size=1e6, iteration_limit=100, ftol=1e-8
 )
     initial_states = initialize_states(inputs)
     initials = copy(initial_states)
@@ -41,6 +41,7 @@ function analyze_propulsor(
         autodiff=:forward,
         method=:newton,
         iterations=iteration_limit,
+        ftol=ftol,
         show_trace=true,
         linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
     )
@@ -67,6 +68,7 @@ function analyze_propulsor(
     verbose=false,
     maximum_linesearch_step_size=1e6,
     iteration_limit=100,
+    ftol=1e-8,
 )
 
     # use empty input vector
@@ -87,7 +89,9 @@ function analyze_propulsor(
     converged = [false]
 
     # define parameters
-    p = (; fx, maximum_linesearch_step_size, iteration_limit, converged, debug, verbose)
+    p = (;
+        fx, maximum_linesearch_step_size, iteration_limit, ftol, converged, debug, verbose
+    )
 
     # compute various panel and circulation strenghts (updates convergence flag internally)
     strengths, inputs, initials = solve(x, p)
@@ -109,7 +113,8 @@ end
 function solve(x, p)
 
     # unpack parameters
-    (; fx, maximum_linesearch_step_size, iteration_limit, converged, debug, verbose) = p
+    (; fx, maximum_linesearch_step_size, iteration_limit, ftol, converged, debug, verbose) =
+        p
 
     # unpack inputs
     (; duct_coordinates, hub_coordinates, paneling_constants, rotor_parameters, freestream, reference_parameters) = fx(
@@ -148,6 +153,7 @@ function solve(x, p)
         iterations=iteration_limit,
         show_trace=verbose,
         linesearch=BackTracking(; maxstep=maximum_linesearch_step_size),
+        ftol=ftol,
     )
 
     # save convergence information
@@ -212,11 +218,14 @@ function update_strengths!(states, inputs, p)
     #     inputs.prescribedpanels
     # )
 
-
     strengths = solve_body_strengths(
-        inputs.A_bb, RHS,
-        inputs.LHSlsq, inputs.LHSlsqlu, inputs.tLHSred, inputs.b_bf0,
-        inputs.prescribedpanels
+        inputs.A_bb,
+        RHS,
+        inputs.LHSlsq,
+        inputs.LHSlsqlu,
+        inputs.tLHSred,
+        inputs.b_bf0,
+        inputs.prescribedpanels,
     )
     mub .= strengths
 
@@ -265,12 +274,8 @@ function extract_state_variables(states, inputs)
     return mub, gamw, Gamr, sigr
 end
 
-
-
-
-
-
 ################################################################################
+#TODO: move to initialize.jl
 # PREPROCESSING OF LINEAR SYSTEM
 ################################################################################
 """
@@ -290,7 +295,6 @@ function calc_Alu!(Apivot, A::AbstractMatrix{T}) where {T}
     return Alu
 end
 
-
 """
     calc_Alu!(A::AbstractMatrix) -> Alu
 
@@ -302,9 +306,8 @@ and `calc_Alu!(Apivot, A)` instead).
 function calc_Alu!(A::AbstractMatrix{T}) where {T}
 
     # Allocate memory for pivot
-    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
-
-        Tprimal = T.parameters[T<:ImplicitAD.ForwardDiff.Dual ? 2 : 1]
+    if T <: ImplicitAD.ForwardDiff.Dual || T <: ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+        Tprimal = T.parameters[T <: ImplicitAD.ForwardDiff.Dual ? 2 : 1]
         Apivot = zeros(Tprimal, size(A))
 
         # LU decomposition
@@ -312,7 +315,7 @@ function calc_Alu!(A::AbstractMatrix{T}) where {T}
 
     else
         # LU decomposition
-        Alu =  LA.lu!(A)
+        Alu = LA.lu!(A)
     end
 
     return Alu
@@ -326,9 +329,8 @@ Returns the LU decomposition of `A`.
 function calc_Alu(A::AbstractMatrix{T}) where {T}
 
     # Allocate memory for pivot
-    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
-
-        Tprimal = T.parameters[T<:ImplicitAD.ForwardDiff.Dual ? 2 : 1]
+    if T <: ImplicitAD.ForwardDiff.Dual || T <: ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+        Tprimal = T.parameters[T <: ImplicitAD.ForwardDiff.Dual ? 2 : 1]
         Apivot = zeros(Tprimal, size(A))
 
     else
@@ -345,11 +347,14 @@ end
 Copy the primal values of `A` into `Avalue`.
 """
 function calc_Avalue!(Avalue, A::AbstractMatrix{T}) where {T}
-
-    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+    if T <: ImplicitAD.ForwardDiff.Dual || T <: ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
 
         # Extract primal values of A
-        value = T<:ImplicitAD.ForwardDiff.Dual ? ImplicitAD.ForwardDiff.value : ImplicitAD.ForwardDiff.value
+        value = if T <: ImplicitAD.ForwardDiff.Dual
+            ImplicitAD.ForwardDiff.value
+        else
+            ImplicitAD.ForwardDiff.value
+        end
         map!(value, Avalue, A)
 
     else                                # Normal case
@@ -367,16 +372,13 @@ Return the primal values of matrix `A`, which is simply `A` if the elements
 of `A` are not Dual nor TrackedReal numbers.
 """
 function calc_Avalue(A::AbstractMatrix{T}) where {T}
-
-    if T<:ImplicitAD.ForwardDiff.Dual || T<:ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
-
-        Tprimal = T.parameters[T<:ImplicitAD.ForwardDiff.Dual ? 2 : 1]
+    if T <: ImplicitAD.ForwardDiff.Dual || T <: ImplicitAD.ReverseDiff.TrackedReal  # Automatic differentiation case
+        Tprimal = T.parameters[T <: ImplicitAD.ForwardDiff.Dual ? 2 : 1]
         Avalue = zeros(Tprimal, size(A))
         calc_Avalue!(Avalue, A)
 
         return Avalue
     else                                # Normal case
-
         return A
     end
 end

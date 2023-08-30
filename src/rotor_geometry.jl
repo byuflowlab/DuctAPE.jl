@@ -39,7 +39,7 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 - `xrotor::Float` : x-position of the the rotor (dimensional)
 - `rblade::Vector{Float}` : non-dimensional radial positions of each blade element (zero at hub, one at tip)
 - `chords::Vector{Float}` : values of the chord lengths of the blade elements
-- `twists::Vector{Float}` : values of the twist (in degrees) of the blade elements
+- `twists::Vector{Float}` : values of the twist from the plane of rotation (in radians) of the blade elements
 - `airfoils::Vector{Airfoil Function Type}` : Airfoil polar data objects associated with each blade element
 - `body_geometry::BodyGeometry` : BodyGeometry object for duct and hub
 - `nr::Int64` : desired number of radial stations on the blade

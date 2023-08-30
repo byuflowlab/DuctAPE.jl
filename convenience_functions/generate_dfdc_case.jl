@@ -50,7 +50,7 @@ function gen_dfdc_case(
             write_af_section(f, airfoil_data[irotor], 1)
         else
             for iaf in 1:(rotor_data[irotor].naf)
-                write_af_section(f, airfoil_data[irotor], iaf)
+                write_af_section(f, airfoil_data[irotor][iaf])
             end
         end
         write(f, "ENDAERO\n")
@@ -92,7 +92,8 @@ function gen_dfdc_case(
     return nothing
 end
 
-function write_af_section(f, airfoil_data, idx)
+function write_af_section(f, airfoil_data)
+
     write(f, "!   Xisection\n")
     write(f, "    $(airfoil_data.xisection)\n")
     write(f, "!       A0deg        dCLdA        CLmax         CLmin\n")

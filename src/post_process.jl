@@ -1100,7 +1100,7 @@ end
 """
 probe_poses : matrix of x,r coordinates of locations at which to probe velocity field
 """
-function probe_velocity_field(probe_poses, inputs, states)
+function probe_velocity_field(probe_poses, inputs, states; debug=false)
 
     # - Types - #
     TF = promote_type(eltype(probe_poses), eltype(states))
@@ -1121,13 +1121,16 @@ function probe_velocity_field(probe_poses, inputs, states)
 
     # - initialize - #
     Vxr = zeros(TF, nv, 2)
+    Vb = zeros(TF, nv, 2)
+    Vr = zeros(TF, nv, 2)
+    Vw = zeros(TF, nv, 2)
     vtheta = zeros(TF, nv)
 
     ##### ----- Axial and Radial Velocity ----- #####
-    vfromdoubletpanels!(Vxr, probe_poses, body_doublet_panels.nodes, mub)
+    vfromdoubletpanels!(Vb, probe_poses, body_doublet_panels.nodes, mub)
     for i in 1:length(rotor_source_panels)
         vfromsourcepanels!(
-            Vxr,
+            Vr,
             probe_poses,
             rotor_source_panels[i].controlpoint,
             rotor_source_panels[i].len,
@@ -1135,10 +1138,15 @@ function probe_velocity_field(probe_poses, inputs, states)
         )
     end
     vfromvortexpanels!(
-        Vxr, probe_poses, wake_vortex_panels.controlpoint, wake_vortex_panels.len, gamw
+        Vw, probe_poses, wake_vortex_panels.controlpoint, wake_vortex_panels.len, gamw
     )
 
+    Vxr .+= Vb .+ Vr .+ Vw
+
     ###### ----- Tangential Velocity ----- #####
+    # TODO: there is something here that is making things jump around.
+    # TODO: thinking about it more, probably can't try and make it continuous
+    # TODO: comment all of this out and just find the Gamma_tilde for the associated blade element and use the probe radial position.  I don't think there's a way to properly smooth this out.
 
     # reshape the wake panel control points into the wake sheets
     nsheets = size(Gamr, 1) + 1
@@ -1316,5 +1324,11 @@ function probe_velocity_field(probe_poses, inputs, states)
         end
     end
 
-    return Vxr[:, 1], Vxr[:, 2], vtheta
+    if debug
+        return Vxr[:, 1],
+        Vxr[:, 2], vtheta, Vb[:, 1], Vb[:, 2], Vr[:, 1], Vr[:, 2], Vw[:, 1],
+        Vw[:, 2]
+    else
+        return Vxr[:, 1], Vxr[:, 2], vtheta
+    end
 end

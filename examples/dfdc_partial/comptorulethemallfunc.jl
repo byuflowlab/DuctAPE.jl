@@ -81,7 +81,17 @@ include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
 #---------------------------------#
 """
 """
-function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_input)
+function run_isolated_geometry(
+    options,
+    duct_coordinates_input,
+    hub_coordinates_input;
+    pv=nothing,
+    pc=nothing,
+    prefix="",
+    plotcount=0,
+)
+    plotcount += 1
+
     (; geomtype, comptype, geomsource, dtpane, Vinf, npanref) = options
 
     gc = geomtype * comptype
@@ -90,9 +100,19 @@ function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_
     println("Initializing Plots and Plotting EXP Data")
     # - Initialize Plots - #
     # surface velocity
-    pv = plot(; xlabel="x", ylabel=L"V_s", ylim=(0.0, 30.0))
+    if isnothing(pv)
+        pv = plot(; xlabel="x", ylabel=L"V_s", ylim=(0.0, 30.0))
+        plotpv = true
+    else
+        plotpv = false
+    end
     # surface pressure
-    pc = plot(; xlabel="x", ylabel=L"c_p", ylim=(-1.25, 1.0), yflip=true)
+    if isnothing(pc)
+        pc = plot(; xlabel="x", ylabel=L"c_p", ylim=(-1.25, 1.0), yflip=true)
+        plotpc = true
+    else
+        plotpc = false
+    end
 
     ## -- PLOT EXP DATA -- ##
     # - and select dfdc data file while you're at it - #
@@ -104,75 +124,82 @@ function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_
             dfdcfile = "lewis_duct/"
         end
 
-        plot!(
-            pc,
-            pressurexupper,
-            pressureupper;
-            seriestype=:scatter,
-            color=myblue[1],
-            markershape=:utriangle,
-            markersize=3,
-            label="exp duct outer",
-        )
-        plot!(
-            pc,
-            pressurexlower,
-            pressurelower;
-            seriestype=:scatter,
-            color=myblue[1],
-            markershape=:dtriangle,
-            markersize=3,
-            label="exp duct inner",
-        )
+        if plotpc
+            plot!(
+                pc,
+                pressurexupper,
+                pressureupper;
+                seriestype=:scatter,
+                color=myblue[1],
+                markershape=:utriangle,
+                markersize=3,
+                label="exp duct outer",
+            )
+            plot!(
+                pc,
+                pressurexlower,
+                pressurelower;
+                seriestype=:scatter,
+                color=myblue[1],
+                markershape=:dtriangle,
+                markersize=3,
+                label="exp duct inner",
+            )
+        end
 
     elseif gc == "lh"
         # - get DFDC data - #
         dfdcfile = "lewis_hub/"
-
-        plot!(
-            pv,
-            Vs_over_Vinf_x,
-            Vs_over_Vinf_vs * Vinf;
-            seriestype=:scatter,
-            color=myblue[1],
-            markershape=:utriangle,
-            markersize=3,
-            label="hub experimental",
-        )
+        if plotpv
+            plot!(
+                pv,
+                Vs_over_Vinf_x,
+                Vs_over_Vinf_vs * Vinf;
+                seriestype=:scatter,
+                color=myblue[1],
+                markershape=:utriangle,
+                markersize=3,
+                label="hub experimental",
+            )
+        end
     elseif gc == "lb"
         # - get DFDC data - #
         dfdcfile = "lewis_body/"
 
-        plot!(
-            pc,
-            pressurexupper,
-            pressureupper;
-            seriestype=:scatter,
-            color=myblue[1],
-            markershape=:utriangle,
-            markersize=3,
-            label="exp duct outer",
-        )
-        plot!(
-            pc,
-            pressurexlower,
-            pressurelower;
-            seriestype=:scatter,
-            color=myblue[1],
-            markershape=:dtriangle,
-            markersize=3,
-            label="exp duct inner",
-        )
-        plot!(
-            pv,
-            Vs_over_Vinf_x,
-            Vs_over_Vinf_vs * Vinf;
-            seriestype=:scatter,
-            color=myblue[1],
-            markershape=:utriangle,
-            markersize=3,
-            label="hub experimental",
-        )
+        if plotpc
+            plot!(
+                pc,
+                pressurexupper,
+                pressureupper;
+                seriestype=:scatter,
+                color=myblue[1],
+                markershape=:utriangle,
+                markersize=3,
+                label="exp duct outer",
+            )
+            plot!(
+                pc,
+                pressurexlower,
+                pressurelower;
+                seriestype=:scatter,
+                color=myblue[1],
+                markershape=:dtriangle,
+                markersize=3,
+                label="exp duct inner",
+            )
+        end
+        if plotpv
+            plot!(
+                pv,
+                Vs_over_Vinf_x,
+                Vs_over_Vinf_vs * Vinf;
+                seriestype=:scatter,
+                color=myblue[1],
+                markershape=:utriangle,
+                markersize=3,
+                label="hub experimental",
+            )
+        end
     elseif gc == "lc"
         # - get DFDC data - #
         dfdcfile = "lewis_coupled/"
@@ -198,17 +225,19 @@ function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_
     ductcp = dfdc_duct_cp[:, 4]
 
     ## -- PLOT DFDC DATA -- ##
-    if comptype == "d"
-        plot!(pv, ductx, ductvs; linestyle=:dash, color=myblue[2], label="DFDC Duct")
-        plot!(pc, ductx, ductcp; linestyle=:dash, color=myblue[2], label="DFDC Duct")
-    elseif comptype == "h"
-        plot!(pv, hubx, hubvs; linestyle=:dash, color=myred[2], label="DFDC Hub")
-        plot!(pc, hubx, hubcp; linestyle=:dash, color=myred[2], label="DFDC Hub")
-    else
-        plot!(pv, hubx, hubvs; linestyle=:dash, color=myred[2], label="DFDC Hub")
-        plot!(pc, hubx, hubcp; linestyle=:dash, color=myred[2], label="DFDC Hub")
-        plot!(pv, ductx, ductvs; linestyle=:dash, color=myblue[2], label="DFDC Duct")
-        plot!(pc, ductx, ductcp; linestyle=:dash, color=myblue[2], label="DFDC Duct")
+    if plotpv && plotpc
+        if comptype == "d"
+            plot!(pv, ductx, ductvs; linestyle=:dash, color=myblue[2], label="DFDC Duct")
+            plot!(pc, ductx, ductcp; linestyle=:dash, color=myblue[2], label="DFDC Duct")
+        elseif comptype == "h"
+            plot!(pv, hubx, hubvs; linestyle=:dash, color=myred[2], label="DFDC Hub")
+            plot!(pc, hubx, hubcp; linestyle=:dash, color=myred[2], label="DFDC Hub")
+        else
+            plot!(pv, hubx, hubvs; linestyle=:dash, color=myred[2], label="DFDC Hub")
+            plot!(pc, hubx, hubcp; linestyle=:dash, color=myred[2], label="DFDC Hub")
+            plot!(pv, ductx, ductvs; linestyle=:dash, color=myblue[2], label="DFDC Duct")
+            plot!(pc, ductx, ductcp; linestyle=:dash, color=myblue[2], label="DFDC Duct")
+        end
     end
 
     println("Setting up DuctTAPE Stuff")
@@ -259,11 +288,11 @@ function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_
         end
 
         #TODO: need to fix why hub get's repaneled into having a negative last panel...
-        if hub_coordinates[end,2] <= 0.0
-            hub_coordinates = hub_coordinates[1:end-1,:]
+        if hub_coordinates[end, 2] <= 0.0
+            hub_coordinates = hub_coordinates[1:(end - 1), :]
         end
 
-        println("min hubr: ",hub_coordinates[end,2])
+        println("min hubr: ", hub_coordinates[end, 2])
 
         _, leid = findmin(duct_coordinates[:, 1])
         coordinates = [duct_coordinates, hub_coordinates]
@@ -283,9 +312,11 @@ function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_
         normals=true,
         normal_scaling=0.1,
         savepath=savepath,
-        filename=["$gcg-body-geometry.png"; "$gcg-body-geometry.pdf"],
+        filename=[prefix * "$gcg-body-geometry.png"; prefix * "$gcg-body-geometry.pdf"],
         legendloc=:right,
     )
+
+    println("\tNumber of Body Panels: ", panels.npanels)
 
     println("Solving System")
     ## -- Initialize and solve strenths a la init function -- ##
@@ -338,13 +369,13 @@ function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_
     println("Plotting and Saving Outputs")
     ## -- Plot -- ##
     xs = panels.controlpoint[:, 1]
-    plot!(pv, xs, vs; label="DuctTAPE")
-    plot!(pc, xs, cp; label="DuctTAPE")
+    plot!(pv, xs, vs; color=plotcount, label="DuctTAPE " * prefix)
+    plot!(pc, xs, cp; color=plotcount, label="DuctTAPE " * prefix)
 
-    savefig(pv, savepath * gcg * "-velocity-comp.pdf")
-    savefig(pv, savepath * gcg * "-velocity-comp.png")
-    savefig(pc, savepath * gcg * "-pressure-comp.pdf")
-    savefig(pc, savepath * gcg * "-pressure-comp.png")
+    savefig(pv, savepath * prefix * gcg * "-velocity-comp.pdf")
+    savefig(pv, savepath * prefix * gcg * "-velocity-comp.png")
+    savefig(pc, savepath * prefix * gcg * "-pressure-comp.pdf")
+    savefig(pc, savepath * prefix * gcg * "-pressure-comp.png")
 
     println("Visualizing Flowfield")
     # - Visualize Flow field - #
@@ -354,37 +385,228 @@ function run_isolated_geometry(options, duct_coordinates_input, hub_coordinates_
     visualize_surfaces(; body_panels=panels, run_name=gc)
 
     #TODO: return plot objects?
-    return nothing
+    return pv, pc, plotcount
 end
-
-# # Duct: use ducttape repaneling with smooth input geometry
-# options = (;
-#     Vinf=20,
-#     geomtype="l",
-#     comptype="d",
-#     geomsource="s",
-#     dtpane=2*[40, 30, 20, 40],
-#     npanref=200,
-# )
-
-# # Duct: dont use ducttape repanling, keep smooth geometry
-# options = (;
-#     Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=400
-# )
 
 # # Body:  use smooth input for duct
 # options = (;
 #     Vinf=20, geomtype="l", comptype="b", geomsource="s", dtpane=nothing, npanref=400
 # )
 
-# Body: use ducttape repaneling
+# # Body: use ducttape repaneling
+# options = (;
+#     Vinf=20,
+#     geomtype="l",
+#     comptype="b",
+#     geomsource="s",
+#     dtpane=[40, 30, 20, 40],
+#     npanref=200,
+# )
+
+#---------------------------------#
+#             Paneling            #
+#---------------------------------#
 options = (;
     Vinf=20,
     geomtype="l",
-    comptype="b",
+    comptype="d",
+    geomsource="s",
+    dtpane=[10, 20, 20, 20],
+    npanref=200,
+)
+
+pv, pc, plotcount = run_isolated_geometry(
+    options, lewis_duct_coordinates, lewis_hub_coordinates; prefix="Poor_Paneling"
+)
+
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
     geomsource="s",
     dtpane=[40, 30, 20, 40],
     npanref=200,
 )
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="Better_Paneling",
+)
 
-run_isolated_geometry(options, lewis_duct_coordinates, lewis_hub_coordinates)
+# Duct: dont use ducttape repanling, keep smooth geometry
+options = (;
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=200
+)
+
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="Smooth_Paneling",
+)
+
+#---------------------------------#
+#        Smooth Convergence       #
+#---------------------------------#
+options = (;
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=50
+)
+
+pv, pc, plotcount = run_isolated_geometry(
+    options, lewis_duct_coordinates, lewis_hub_coordinates; prefix="50_Smooth_Panels"
+)
+
+options = (;
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=100
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="100_Smooth_Panels",
+)
+
+options = (;
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=200
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="200_Smooth_Panels",
+)
+
+options = (;
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=400
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="400_Smooth_Panels",
+)
+
+options = (;
+    Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=800
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="800_Smooth_Panels",
+)
+
+#---------------------------------#
+#        DTpane Convergence       #
+#---------------------------------#
+refine = 4
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 8
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 16
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 32
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+
+refine = 64
+options = (;
+    Vinf=20,
+    geomtype="l",
+    comptype="d",
+    geomsource="s",
+    npanref=200,
+    dtpane=ceil.(Int, [4 * refine, 3 * refine, 2 * refine, 4 * refine]),
+)
+pv, pc, plotcount = run_isolated_geometry(
+    options,
+    lewis_duct_coordinates,
+    lewis_hub_coordinates;
+    pv=pv,
+    pc=pc,
+    plotcount=plotcount,
+    prefix="$(ceil(Int,14*refine))_Panels",
+)
+

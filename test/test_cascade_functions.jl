@@ -1,7 +1,7 @@
 @testset "Stagger+Inflow Cascade Types and Functions" begin
     @testset "Parse and Write File" begin
         info, stagger, Re, Mach, solidity, inflow, cl, cdrag = dt.parsecascadefile(
-            "test/data/cas1111.dat", true
+            "data/cas1111.dat", true
         )
 
         @test info == "Test Cascade File (made up data just for unit testing)"
@@ -14,7 +14,7 @@
         @test isapprox(cdrag, [0.0; 0.05; 0.0])
 
         dt.writecascadefile(
-            "test/data/cascadewritecheck.dat",
+            "data/cascadewritecheck.dat",
             info,
             stagger,
             inflow,
@@ -27,7 +27,7 @@
         )
 
         info, stagger, Re, Mach, solidity, inflow, cl, cdrag = dt.parsecascadefile(
-            "test/data/cascadewritecheck.dat", true
+            "data/cascadewritecheck.dat", true
         )
 
         @test info == "Test Cascade File (made up data just for unit testing)"
@@ -50,7 +50,7 @@
         solidity = 0.25
         info = "Test Cascade File (made up data just for unit testing)"
         cas = dt.StaggerInflowCAS(
-            "test/data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
+            "data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
         )
         st2 = dt.StaggerInflowCAS(stagger, inflow, cl, cdrag, info, Re, Mach, solidity)
         st3 = dt.StaggerInflowCAS(stagger, inflow, cl, cdrag)
@@ -83,7 +83,7 @@
 
     @testset "Evaluate Cascade" begin
         cas = dt.StaggerInflowCAS(
-            "test/data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
+            "data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
         )
         cl, cdrag = dt.caseval(cas, 0.5, 0.0;)
 
@@ -98,17 +98,17 @@
 
     @testset "Write Cascasde from Struct" begin
         cas = dt.StaggerInflowCAS(
-            "test/data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
+            "data/" .* ["cas1111.dat"; "cas2111.dat"; "cas3111.dat"]
         )
 
         dt.writecascadefile(
-            "test/data/" .* ["test1111.dat"; "test2111.dat"; "test3111.dat"],
+            "data/" .* ["test1111.dat"; "test2111.dat"; "test3111.dat"],
             cas;
             radians=true,
         )
 
         cas2 = dt.StaggerInflowCAS(
-            "test/data/" .* ["test1111.dat"; "test2111.dat"; "test3111.dat"]
+            "data/" .* ["test1111.dat"; "test2111.dat"; "test3111.dat"]
         )
 
         @test cas.stagger == cas2.stagger
@@ -135,7 +135,7 @@ end
         for i in 1:3
             for j in 1:3
                 for k in 1:3
-                    filenames[i, j, k] = "test/data/cas$i$j$(k)1.dat"
+                    filenames[i, j, k] = "data/cas$i$j$(k)1.dat"
                 end
             end
         end
@@ -179,7 +179,7 @@ end
             for j in 1:3
                 for k in 1:3
                     for ell in 1:3
-                        filenames[i, j, k, ell] = "test/data/cas$i$j$k$ell.dat"
+                        filenames[i, j, k, ell] = "data/cas$i$j$k$ell.dat"
                     end
                 end
             end
@@ -226,7 +226,7 @@ end
             for j in 1:3
                 for k in 1:3
                     for ell in 1:3
-                        filenames[i, j, k, ell] = "test/data/cas$i$j$k$ell.dat"
+                        filenames[i, j, k, ell] = "data/cas$i$j$k$ell.dat"
                     end
                 end
             end
@@ -266,7 +266,7 @@ end
             for j in 1:3
                 for k in 1:3
                     for ell in 1:3
-                        filenames[i, j, k, ell] = "test/data/cas$i$j$k$ell.dat"
+                        filenames[i, j, k, ell] = "data/cas$i$j$k$ell.dat"
                     end
                 end
             end

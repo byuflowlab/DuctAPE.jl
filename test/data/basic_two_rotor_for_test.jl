@@ -36,6 +36,7 @@ rotor_parameters = [
         tip_gap=0.0,
         B=B[i],
         Omega=Omega[i],
+        fliplift=false,
     ) for i in 1:length(Omega)
 ]
 paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)

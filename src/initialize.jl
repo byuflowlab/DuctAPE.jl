@@ -119,7 +119,8 @@ function precomputed_inputs(
 
     # if hub was nothing, set hub radius to dimensional inner rotor radius
     if nohub
-        rp_hub_coordinates[:, 2] .= rotorstator_parameters[1].r[1] * rotorstator_parameters[1].Rtip
+        rp_hub_coordinates[:, 2] .=
+            rotorstator_parameters[1].r[1] * rotorstator_parameters[1].Rtip
     end
 
     t_duct_coordinates, Rtips, Rhubs = place_duct(
@@ -152,7 +153,8 @@ function precomputed_inputs(
     else
         rotor_indices_on_hub = [
             findlast(
-                x -> x < rotorstator_parameters.xrotor[i], body_doublet_panels.controlpoint[:, 1]
+                x -> x < rotorstator_parameters.xrotor[i],
+                body_doublet_panels.controlpoint[:, 1],
             ) for i in 1:length(rotorstator_parameters.xrotor)
         ]
         hwidraw = sort([body_doublet_panels.npanels; rotor_indices_on_hub])
@@ -167,7 +169,8 @@ function precomputed_inputs(
     else
         rotor_indices_on_duct = [
             findfirst(
-                x -> x < rotorstator_parameters.xrotor[i], body_doublet_panels.controlpoint[:, 1]
+                x -> x < rotorstator_parameters.xrotor[i],
+                body_doublet_panels.controlpoint[:, 1],
             ) - 1 for i in 1:length(rotorstator_parameters.xrotor)
         ]
         dwidraw = sort([0; rotor_indices_on_duct])
@@ -753,7 +756,8 @@ function initialize_states(inputs)
 
     # initialize velocities on rotor blade elements
     _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-        Gamr, gamw, sigr, mub, inputs
+        Gamr, gamw, sigr, similar(mub) .= 0.0, inputs
+        # Gamr, gamw, sigr, mub, inputs
     )
 
     # initialize circulation and source panel strengths

@@ -36,32 +36,32 @@
     ]
 
     # define required blade element stuff
-    blade_elements = [(; B=1, xrotor=0.0); (; B=1, xrotor=0.5)]
+    blade_elements = [(; B=1, xrotor=0.0, fliplift=false); (; B=1, xrotor=0.5, fliplift=false)]
 
     # define required wake geometry
     xwake = [0.0 0.0 0.0; 0.5 0.5 0.5; 1.0 1.0 1.0; 1.5 1.5 1.5]
     rwake = [0.5 1.0 1.5; 0.5 1.0 1.5; 0.5 1.0 1.5; 0.5 1.0 1.5]
     wake_vortex_panels = dt.generate_wake_panels(xwake, rwake)
 
-    # sanity plot for manual check
-    plot()
-    plot!(probe_poses[:, 1], probe_poses[:, 2]; seriestype=:scatter, label="")
-    plot!(
-        duct_coordinates[:, 1],
-        duct_coordinates[:, 2];
-        seriestype=:scatter,
-        label="",
-        color=:red,
-    )
-    # plot!(hub_coordinates[:,1], hub_coordinates[:,2], seriestype=:scatter, label="",color=:red)
-    plot!(xwake, rwake; seriestype=:scatter, label="", color=:gray)
-    plot!(
-        [0.0; 0.5; 0.0; 0.5],
-        [0.5; 0.5; 1.5; 1.5];
-        seriestype=:scatter,
-        label="",
-        color=:black,
-    )
+    # # sanity plot for manual check
+    # plot()
+    # plot!(probe_poses[:, 1], probe_poses[:, 2]; seriestype=:scatter, label="")
+    # plot!(
+    #     duct_coordinates[:, 1],
+    #     duct_coordinates[:, 2];
+    #     seriestype=:scatter,
+    #     label="",
+    #     color=:red,
+    # )
+    # # plot!(hub_coordinates[:,1], hub_coordinates[:,2], seriestype=:scatter, label="",color=:red)
+    # plot!(xwake, rwake; seriestype=:scatter, label="", color=:gray)
+    # plot!(
+    #     [0.0; 0.5; 0.0; 0.5],
+    #     [0.5; 0.5; 1.5; 1.5];
+    #     seriestype=:scatter,
+    #     label="",
+    #     color=:black,
+    # )
 
     # put geometry into inputs along with Vinf
     inputs = (;
