@@ -43,7 +43,7 @@ function discretize_wake(
         @assert length(npanels) == length(xrotors) + 1 "Length of vector `npanels` should be one more than the length of vector `xrotors` when the duct and hub trailing edges align."
     elseif xduct_te < xhub_te
         xd = vcat(xrotors, xduct_te, xhub_te, xhub_te + wake_length)
-        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges align."
+        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges do not align."
     else
         xd = vcat(xrotors, xhub_te, xduct_te, xduct_te + wake_length)
         @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges align."
@@ -66,7 +66,7 @@ function discretize_wake(
     indices = cumsum(vcat(1, npanels))
 
     # construct x-discretization
-    xwake = similar(xd, sum(npanels) + 1)
+    xwake = similar(xd, sum(npanels) + 1) .= 0.0
     for i in 1:(length(xd) - 1)
         xrange = range(xd[i], xd[i + 1]; length=npanels[i] + 1)
         xwake[indices[i]:indices[i + 1]] .= xrange
@@ -128,9 +128,7 @@ Generate paneling for each wake line emanating from the rotor blade elements.
 **Returns:**
 - `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
 """
-function generate_wake_panels(
-    xgrid, rgrid; method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
-)
+function generate_wake_panels(xgrid, rgrid)
     @assert size(xgrid) == size(rgrid)
 
     # extract grid size
@@ -140,16 +138,9 @@ function generate_wake_panels(
     wake_lines = [[xgrid[:, ir] rgrid[:, ir]] for ir in 1:nr]
 
     # generate paneling for each wake line
-    wake_panels = ff.generate_panels(method, wake_lines)
+    wake_panels = generate_panels(wake_lines)
 
     return wake_panels
-end
-
-# generates wake affect panels
-function generate_wake_affect_panels(
-    xwake, rwake, method=ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
-)
-    return ff.generate_panels(method, [xwake rwake])
 end
 
 """

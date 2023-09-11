@@ -2,8 +2,8 @@ module DuctTAPE
 
 ## -- DEPENDENCIES -- ##
 
-using FLOWFoil
-const ff = FLOWFoil #rename FLOWFoil for convenience
+# using FLOWFoil
+# const ff = FLOWFoil #rename FLOWFoil for convenience
 
 using FLOWMath
 const fm = FLOWMath #rename FLOWMath for convenience
@@ -16,6 +16,8 @@ using ImplicitAD
 
 using SpecialFunctions
 
+using LinearAlgebra: factorize, mul!, lu!, ldiv!
+
 ## -- INCLUDES -- ##
 
 include("types.jl")
@@ -23,8 +25,12 @@ include("types.jl")
 # Utility Functions
 include("utils.jl")
 
+# Cascade Functions
+include("cascade.jl")
+
 # Body Geometry Functions
 include("body_geometry.jl")
+include("panel.jl")
 
 # Rotor Geometry Functions
 include("rotor_geometry.jl")
@@ -33,10 +39,11 @@ include("rotor_geometry.jl")
 include("wake_geometry.jl")
 
 # Additional Meshing Functions
-include("mesh.jl")
+# include("mesh.jl")
 
 # Additional Influence Coefficient Functions
 include("coefficient_matrix.jl")
+include("velocities.jl")
 
 # Rotor Aerodynamic Functions
 include("rotor_aerodynamics.jl")
@@ -46,6 +53,9 @@ include("wake_aerodynamics.jl")
 
 # Body Aerodynamic Functions
 include("body_aerodynamics.jl")
+
+# Kutta Condition Residual
+include("pressure_residual.jl")
 
 # Pre-solve initializations
 include("initialize.jl")

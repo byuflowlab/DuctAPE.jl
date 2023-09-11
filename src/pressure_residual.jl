@@ -1,6 +1,6 @@
 """
 """
-function steady_cp(vs, vinf, vref)
+function steady_cps(vs, vinf, vref)
     return (vinf^2 .- vs .^ 2) / vref^2
 end
 
@@ -18,7 +18,7 @@ end
 
 """
 """
-function calculate_delta_cp_TE(Gamr, sigr, Vm_rotor, Omega, B, body_r, wake_r, Vref)
+function calculate_delta_cp_TE(Gamr, sigr, Vm_rotor, Omega, B, r, Vref)
 
     ## -- Calculate change in pressure coefficient -- ##
 
@@ -32,43 +32,45 @@ function calculate_delta_cp_TE(Gamr, sigr, Vm_rotor, Omega, B, body_r, wake_r, V
     Stilde = calculate_entropy_jumps(sigr, Vm_rotor[:, end])
 
     # - Get the tangential velocities on the bodies - #
-    Vtheta_body = calculate_v_theta(Gamma_tilde[end], body_r)
-    Vtheta_wake = calculate_v_theta(Gamma_tilde[end], wake_r)
+    Vtheta_body = calculate_v_theta(Gamma_tilde[end], r)
 
     # assemble change in cp due to enthalpy and entropy behind rotor(s)
-    dcp_body = calcualte_delta_cp(Htilde[end], Stilde[end], Vtheta_body[end], Vref)
-    dcp_wake = calcualte_delta_cp(Htilde[end], Stilde[end], Vtheta_wake[end], Vref)
+    dcp_body = calculate_delta_cp(Htilde[end], Stilde[end], Vtheta_body[end], Vref)
 
-    return dcp_body, dcp_wake
+    return dcp_body
 end
 
 """
 """
-function cp_residual(
-    gamb, gamw, Gamr, sigr, Vm_rotor, Vinf, Vref, B, Omega, body_r, wake_r, ndpan
-)
-    ## -- get "surface" velocity at duct TE wake panel -- ##
-    # - get total vx and vr on wake panel - #
-    # - get surface velocity based on panel angle - #
+function cp_residual(states, inputs)
+
+    # extract states
+    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+
+    # extract needed inputs
+    Vinf = inputs.freestream.Vinf
+    Vref = inputs.reference_parameters.Vref
+    B = inputs.blade_elements.B
+    Omega = inputs.blade_elements.Omega
+
+    # get Vm_rotor
+    _, _, _, _, _, Vm_rotor, _ = calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
+
+    # get number of panels in duct
+    ndpan = length(inputs.body_panels[1].panel_center[:, 1])
+    # get radial location of inner duct TE panel
+    body_r = inputs.body_panels[1].panel_center[1, 2]
 
     # - get steady pressure coefficient values - #
-    cpductouterTE = steady_cp(gamb[ndpan], Vinf, Vref)
-    cpductinnerTE = steady_cp(gamb[1], Vinf, Vref)
-    cpductwake = steady_cp(vs_wake, Vinf, Vref)
+    cpductouterTE = steady_cps(gamb[ndpan], Vinf, Vref)
+    cpductinnerTE = steady_cps(gamb[1], Vinf, Vref)
 
     # - Calculate the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
-    deltacpduct, deltacpwake = calculate_delta_cp_TE(
-        Gamr, sigr, Vm_rotor, Vinf, Omega, B, body_r, wake_r, Vref
-    )
+    deltacpduct = calculate_delta_cp_TE(Gamr, sigr, Vm_rotor, Omega, B, body_r, Vref)
 
     # - add raw and adjusted cp values together - #
     cpductinnerTE += deltacpduct
-    cpductwake += deltacpwake
 
-    #= TODO: how to apply kutta condition? need to  have the trailing edge pressures sum to zero? but why in DFDC are they all the same value?
-      idea 1: return sum of values
-      idea 2: add 2 equations: cpinner = cpouter and cpouter = cpwake
-      idea 3: repace 1st eqn in linear solve with gamb = gamw, then set cpinner = cpouter here
-    =#
-    return cpductinnerTE, cpductouterTE, cpductwake
+    # Note: Kutta Condition should just be that the pressure coefficients need to be equal at the trailing edge. the signs are lost in the v^2, but it shouldn't matter.
+    return cpductouterTE - cpductinnerTE
 end

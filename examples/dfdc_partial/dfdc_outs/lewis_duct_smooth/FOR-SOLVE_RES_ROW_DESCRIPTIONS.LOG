@@ -1,0 +1,710 @@
+ ROW           1 START WITH   0.00000000    
+ ROW           1 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   0.00000000    
+ ROW           1 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   0.00000000    
+ ROW           1 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   0.00000000    
+ ROW           2 START WITH  0.440675765    
+ ROW           2 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440675765    
+ ROW           2 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440675765    
+ ROW           2 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440675765    
+ ROW           3 START WITH  0.440674990    
+ ROW           3 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440674990    
+ ROW           3 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440674990    
+ ROW           3 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440674990    
+ ROW           4 START WITH  0.440685004    
+ ROW           4 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440685004    
+ ROW           4 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440685004    
+ ROW           4 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440685004    
+ ROW           5 START WITH  0.440672576    
+ ROW           5 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440672576    
+ ROW           5 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440672576    
+ ROW           5 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440672576    
+ ROW           6 START WITH  0.440679193    
+ ROW           6 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440679193    
+ ROW           6 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440679193    
+ ROW           6 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440679193    
+ ROW           7 START WITH  0.440679729    
+ ROW           7 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440679729    
+ ROW           7 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440679729    
+ ROW           7 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440679729    
+ ROW           8 START WITH  0.440676451    
+ ROW           8 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440676451    
+ ROW           8 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440676451    
+ ROW           8 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440676451    
+ ROW           9 START WITH  0.440676540    
+ ROW           9 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440676540    
+ ROW           9 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440676540    
+ ROW           9 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440676540    
+ ROW          10 START WITH  0.440678656    
+ ROW          10 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440678656    
+ ROW          10 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440678656    
+ ROW          10 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440678656    
+ ROW          11 START WITH  0.440679163    
+ ROW          11 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440679163    
+ ROW          11 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440679163    
+ ROW          11 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440679163    
+ ROW          12 START WITH  0.440676153    
+ ROW          12 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440676153    
+ ROW          12 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440676153    
+ ROW          12 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440676153    
+ ROW          13 START WITH  0.440670967    
+ ROW          13 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440670967    
+ ROW          13 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440670967    
+ ROW          13 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440670967    
+ ROW          14 START WITH  0.440682888    
+ ROW          14 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440682888    
+ ROW          14 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440682888    
+ ROW          14 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440682888    
+ ROW          15 START WITH  0.440709293    
+ ROW          15 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440709293    
+ ROW          15 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440709293    
+ ROW          15 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440709293    
+ ROW          16 START WITH  0.440673679    
+ ROW          16 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440673679    
+ ROW          16 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440673679    
+ ROW          16 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440673679    
+ ROW          17 START WITH  0.440579623    
+ ROW          17 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440579623    
+ ROW          17 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440579623    
+ ROW          17 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440579623    
+ ROW          18 START WITH  0.440617979    
+ ROW          18 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440617979    
+ ROW          18 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440617979    
+ ROW          18 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440617979    
+ ROW          19 START WITH  0.440928876    
+ ROW          19 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440928876    
+ ROW          19 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440928876    
+ ROW          19 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440928876    
+ ROW          20 START WITH  0.441079468    
+ ROW          20 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.441079468    
+ ROW          20 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.441079468    
+ ROW          20 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.441079468    
+ ROW          21 START WITH  0.440348357    
+ ROW          21 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440348357    
+ ROW          21 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440348357    
+ ROW          21 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440348357    
+ ROW          22 START WITH  0.439097017    
+ ROW          22 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.439097017    
+ ROW          22 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.439097017    
+ ROW          22 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.439097017    
+ ROW          23 START WITH  0.440074235    
+ ROW          23 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.440074235    
+ ROW          23 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.440074235    
+ ROW          23 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.440074235    
+ ROW          24 START WITH  0.444587648    
+ ROW          24 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.444587648    
+ ROW          24 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.444587648    
+ ROW          24 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.444587648    
+ ROW          25 START WITH  0.446576595    
+ ROW          25 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.446576595    
+ ROW          25 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.446576595    
+ ROW          25 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.446576595    
+ ROW          26 START WITH  0.437463939    
+ ROW          26 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.437463939    
+ ROW          26 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.437463939    
+ ROW          26 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.437463939    
+ ROW          27 START WITH  0.419376552    
+ ROW          27 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.419376552    
+ ROW          27 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.419376552    
+ ROW          27 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.419376552    
+ ROW          28 START WITH  0.424345791    
+ ROW          28 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.424345791    
+ ROW          28 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.424345791    
+ ROW          28 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.424345791    
+ ROW          29 START WITH  0.471619487    
+ ROW          29 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.471619487    
+ ROW          29 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.471619487    
+ ROW          29 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.471619487    
+ ROW          30 START WITH  0.532327175    
+ ROW          30 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.532327175    
+ ROW          30 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.532327175    
+ ROW          30 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.532327175    
+ ROW          31 START WITH  0.501639009    
+ ROW          31 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.501639009    
+ ROW          31 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.501639009    
+ ROW          31 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.501639009    
+ ROW          32 START WITH  0.352203727    
+ ROW          32 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.352203727    
+ ROW          32 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.352203727    
+ ROW          32 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.352203727    
+ ROW          33 START WITH  0.133847207    
+ ROW          33 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.133847207    
+ ROW          33 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.133847207    
+ ROW          33 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.133847207    
+ ROW          34 START WITH  -2.51744222E-02
+ ROW          34 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.51744222E-02
+ ROW          34 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.51744222E-02
+ ROW          34 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.51744222E-02
+ ROW          35 START WITH  -7.22169131E-02
+ ROW          35 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -7.22169131E-02
+ ROW          35 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -7.22169131E-02
+ ROW          35 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -7.22169131E-02
+ ROW          36 START WITH  -2.81758159E-02
+ ROW          36 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.81758159E-02
+ ROW          36 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.81758159E-02
+ ROW          36 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.81758159E-02
+ ROW          37 START WITH   1.20070102E-02
+ ROW          37 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.20070102E-02
+ ROW          37 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.20070102E-02
+ ROW          37 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.20070102E-02
+ ROW          38 START WITH   1.83630064E-02
+ ROW          38 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.83630064E-02
+ ROW          38 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.83630064E-02
+ ROW          38 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.83630064E-02
+ ROW          39 START WITH   4.53613745E-03
+ ROW          39 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.53613745E-03
+ ROW          39 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.53613745E-03
+ ROW          39 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.53613745E-03
+ ROW          40 START WITH  -4.41944599E-03
+ ROW          40 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.41944599E-03
+ ROW          40 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.41944599E-03
+ ROW          40 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.41944599E-03
+ ROW          41 START WITH  -4.13783733E-03
+ ROW          41 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.13783733E-03
+ ROW          41 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.13783733E-03
+ ROW          41 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.13783733E-03
+ ROW          42 START WITH  -3.18168604E-04
+ ROW          42 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.18168604E-04
+ ROW          42 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.18168604E-04
+ ROW          42 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.18168604E-04
+ ROW          43 START WITH   1.37941493E-03
+ ROW          43 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.37941493E-03
+ ROW          43 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.37941493E-03
+ ROW          43 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.37941493E-03
+ ROW          44 START WITH   7.84466101E-04
+ ROW          44 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   7.84466101E-04
+ ROW          44 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   7.84466101E-04
+ ROW          44 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   7.84466101E-04
+ ROW          45 START WITH  -1.37029318E-04
+ ROW          45 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.37029318E-04
+ ROW          45 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.37029318E-04
+ ROW          45 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.37029318E-04
+ ROW          46 START WITH  -3.62836116E-04
+ ROW          46 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.62836116E-04
+ ROW          46 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.62836116E-04
+ ROW          46 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.62836116E-04
+ ROW          47 START WITH  -1.02737598E-04
+ ROW          47 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.02737598E-04
+ ROW          47 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.02737598E-04
+ ROW          47 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.02737598E-04
+ ROW          48 START WITH   7.95907181E-05
+ ROW          48 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   7.95907181E-05
+ ROW          48 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   7.95907181E-05
+ ROW          48 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   7.95907181E-05
+ ROW          49 START WITH   7.49597966E-05
+ ROW          49 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   7.49597966E-05
+ ROW          49 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   7.49597966E-05
+ ROW          49 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   7.49597966E-05
+ ROW          50 START WITH  -1.85083741E-06
+ ROW          50 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.85083741E-06
+ ROW          50 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.85083741E-06
+ ROW          50 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.85083741E-06
+ ROW          51 START WITH  -2.31348149E-05
+ ROW          51 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.31348149E-05
+ ROW          51 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.31348149E-05
+ ROW          51 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.31348149E-05
+ ROW          52 START WITH  -3.70154839E-06
+ ROW          52 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.70154839E-06
+ ROW          52 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.70154839E-06
+ ROW          52 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.70154839E-06
+ ROW          53 START WITH   7.40310861E-06
+ ROW          53 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   7.40310861E-06
+ ROW          53 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   7.40310861E-06
+ ROW          53 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   7.40310861E-06
+ ROW          54 START WITH  -1.38806627E-05
+ ROW          54 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.38806627E-05
+ ROW          54 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.38806627E-05
+ ROW          54 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.38806627E-05
+ ROW          55 START WITH  -1.48063918E-05
+ ROW          55 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.48063918E-05
+ ROW          55 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.48063918E-05
+ ROW          55 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.48063918E-05
+ ROW          56 START WITH   4.34947433E-05
+ ROW          56 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.34947433E-05
+ ROW          56 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.34947433E-05
+ ROW          56 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.34947433E-05
+ ROW          57 START WITH   6.94090704E-05
+ ROW          57 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   6.94090704E-05
+ ROW          57 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   6.94090704E-05
+ ROW          57 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   6.94090704E-05
+ ROW          58 START WITH  -1.03663158E-04
+ ROW          58 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.03663158E-04
+ ROW          58 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.03663158E-04
+ ROW          58 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.03663158E-04
+ ROW          59 START WITH  -3.01778753E-04
+ ROW          59 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.01778753E-04
+ ROW          59 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.01778753E-04
+ ROW          59 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.01778753E-04
+ ROW          60 START WITH   4.14987589E-04
+ ROW          60 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.14987589E-04
+ ROW          60 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.14987589E-04
+ ROW          60 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.14987589E-04
+ ROW          61 START WITH   7.00765755E-04
+ ROW          61 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   7.00765755E-04
+ ROW          61 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   7.00765755E-04
+ ROW          61 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   7.00765755E-04
+ ROW          62 START WITH  -8.19677662E-04
+ ROW          62 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -8.19677662E-04
+ ROW          62 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -8.19677662E-04
+ ROW          62 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -8.19677662E-04
+ ROW          63 START WITH  -3.63501087E-02
+ ROW          63 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.63501087E-02
+ ROW          63 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.63501087E-02
+ ROW          63 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.63501087E-02
+ ROW          64 START WITH -0.175566852    
+ ROW          64 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.175566852    
+ ROW          64 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.175566852    
+ ROW          64 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.175566852    
+ ROW          65 START WITH -0.383927763    
+ ROW          65 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.383927763    
+ ROW          65 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.383927763    
+ ROW          65 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.383927763    
+ ROW          66 START WITH -0.592402875    
+ ROW          66 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.592402875    
+ ROW          66 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.592402875    
+ ROW          66 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.592402875    
+ ROW          67 START WITH -0.811182499    
+ ROW          67 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.811182499    
+ ROW          67 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.811182499    
+ ROW          67 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.811182499    
+ ROW          68 START WITH  -1.06206381    
+ ROW          68 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.06206381    
+ ROW          68 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.06206381    
+ ROW          68 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.06206381    
+ ROW          69 START WITH  -1.41608644    
+ ROW          69 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.41608644    
+ ROW          69 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.41608644    
+ ROW          69 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.41608644    
+ ROW          70 START WITH  -1.71953368    
+ ROW          70 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.71953368    
+ ROW          70 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.71953368    
+ ROW          70 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.71953368    
+ ROW          71 START WITH  -2.28839707    
+ ROW          71 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.28839707    
+ ROW          71 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.28839707    
+ ROW          71 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.28839707    
+ ROW          72 START WITH  -2.87457037    
+ ROW          72 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.87457037    
+ ROW          72 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.87457037    
+ ROW          72 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.87457037    
+ ROW          73 START WITH  -4.23510885    
+ ROW          73 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.23510885    
+ ROW          73 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.23510885    
+ ROW          73 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.23510885    
+ ROW          74 START WITH  -9.61360550    
+ ROW          74 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -9.61360550    
+ ROW          74 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -9.61360550    
+ ROW          74 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -9.61360550    
+ ROW          75 START WITH   0.00000000    
+ ROW          75 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   0.00000000    
+ ROW          75 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   0.00000000    
+ ROW          75 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   0.00000000    
+ ROW          76 START WITH   1.20507312    
+ ROW          76 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.20507312    
+ ROW          76 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.20507312    
+ ROW          76 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.20507312    
+ ROW          77 START WITH   2.22630954    
+ ROW          77 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   2.22630954    
+ ROW          77 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   2.22630954    
+ ROW          77 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   2.22630954    
+ ROW          78 START WITH   2.86399722    
+ ROW          78 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   2.86399722    
+ ROW          78 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   2.86399722    
+ ROW          78 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   2.86399722    
+ ROW          79 START WITH   3.34310102    
+ ROW          79 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.34310102    
+ ROW          79 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.34310102    
+ ROW          79 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.34310102    
+ ROW          80 START WITH   3.68893909    
+ ROW          80 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.68893909    
+ ROW          80 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.68893909    
+ ROW          80 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.68893909    
+ ROW          81 START WITH   3.93129969    
+ ROW          81 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.93129969    
+ ROW          81 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.93129969    
+ ROW          81 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.93129969    
+ ROW          82 START WITH   4.08098269    
+ ROW          82 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.08098269    
+ ROW          82 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.08098269    
+ ROW          82 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.08098269    
+ ROW          83 START WITH   4.16115713    
+ ROW          83 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.16115713    
+ ROW          83 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.16115713    
+ ROW          83 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.16115713    
+ ROW          84 START WITH   4.19011784    
+ ROW          84 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.19011784    
+ ROW          84 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.19011784    
+ ROW          84 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.19011784    
+ ROW          85 START WITH   4.14329815    
+ ROW          85 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.14329815    
+ ROW          85 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.14329815    
+ ROW          85 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.14329815    
+ ROW          86 START WITH   4.02280998    
+ ROW          86 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.02280998    
+ ROW          86 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.02280998    
+ ROW          86 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.02280998    
+ ROW          87 START WITH   3.84455419    
+ ROW          87 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.84455419    
+ ROW          87 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.84455419    
+ ROW          87 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.84455419    
+ ROW          88 START WITH   3.64994407    
+ ROW          88 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.64994407    
+ ROW          88 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.64994407    
+ ROW          88 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.64994407    
+ ROW          89 START WITH   3.45225096    
+ ROW          89 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.45225096    
+ ROW          89 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.45225096    
+ ROW          89 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.45225096    
+ ROW          90 START WITH   3.18719816    
+ ROW          90 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.18719816    
+ ROW          90 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.18719816    
+ ROW          90 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.18719816    
+ ROW          91 START WITH   2.83381820    
+ ROW          91 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   2.83381820    
+ ROW          91 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   2.83381820    
+ ROW          91 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   2.83381820    
+ ROW          92 START WITH   2.37220263    
+ ROW          92 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   2.37220263    
+ ROW          92 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   2.37220263    
+ ROW          92 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   2.37220263    
+ ROW          93 START WITH   1.88742459    
+ ROW          93 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.88742459    
+ ROW          93 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.88742459    
+ ROW          93 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.88742459    
+ ROW          94 START WITH   1.46036124    
+ ROW          94 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.46036124    
+ ROW          94 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.46036124    
+ ROW          94 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.46036124    
+ ROW          95 START WITH   1.11371326    
+ ROW          95 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.11371326    
+ ROW          95 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.11371326    
+ ROW          95 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.11371326    
+ ROW          96 START WITH  0.836564600    
+ ROW          96 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.836564600    
+ ROW          96 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.836564600    
+ ROW          96 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.836564600    
+ ROW          97 START WITH  0.586392641    
+ ROW          97 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.586392641    
+ ROW          97 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.586392641    
+ ROW          97 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.586392641    
+ ROW          98 START WITH  0.344697714    
+ ROW          98 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.344697714    
+ ROW          98 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.344697714    
+ ROW          98 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.344697714    
+ ROW          99 START WITH  0.120883547    
+ ROW          99 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.120883547    
+ ROW          99 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.120883547    
+ ROW          99 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.120883547    
+ ROW         100 START WITH  -9.94244888E-02
+ ROW         100 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -9.94244888E-02
+ ROW         100 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -9.94244888E-02
+ ROW         100 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -9.94244888E-02
+ ROW         101 START WITH -0.323623359    
+ ROW         101 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.323623359    
+ ROW         101 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.323623359    
+ ROW         101 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.323623359    
+ ROW         102 START WITH -0.534648836    
+ ROW         102 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.534648836    
+ ROW         102 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.534648836    
+ ROW         102 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.534648836    
+ ROW         103 START WITH -0.756843388    
+ ROW         103 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.756843388    
+ ROW         103 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.756843388    
+ ROW         103 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.756843388    
+ ROW         104 START WITH -0.971342027    
+ ROW         104 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.971342027    
+ ROW         104 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.971342027    
+ ROW         104 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.971342027    
+ ROW         105 START WITH  -1.18983960    
+ ROW         105 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.18983960    
+ ROW         105 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.18983960    
+ ROW         105 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.18983960    
+ ROW         106 START WITH  -1.41655934    
+ ROW         106 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.41655934    
+ ROW         106 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.41655934    
+ ROW         106 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.41655934    
+ ROW         107 START WITH  -1.65288162    
+ ROW         107 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.65288162    
+ ROW         107 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.65288162    
+ ROW         107 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.65288162    
+ ROW         108 START WITH  -1.90105665    
+ ROW         108 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.90105665    
+ ROW         108 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.90105665    
+ ROW         108 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.90105665    
+ ROW         109 START WITH  -2.15951705    
+ ROW         109 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.15951705    
+ ROW         109 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.15951705    
+ ROW         109 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.15951705    
+ ROW         110 START WITH  -2.43232536    
+ ROW         110 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.43232536    
+ ROW         110 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.43232536    
+ ROW         110 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.43232536    
+ ROW         111 START WITH  -2.72427082    
+ ROW         111 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.72427082    
+ ROW         111 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.72427082    
+ ROW         111 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.72427082    
+ ROW         112 START WITH  -3.05646205    
+ ROW         112 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.05646205    
+ ROW         112 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.05646205    
+ ROW         112 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.05646205    
+ ROW         113 START WITH  -3.43097472    
+ ROW         113 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.43097472    
+ ROW         113 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.43097472    
+ ROW         113 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.43097472    
+ ROW         114 START WITH  -3.82966566    
+ ROW         114 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.82966566    
+ ROW         114 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.82966566    
+ ROW         114 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.82966566    
+ ROW         115 START WITH  -4.25872087    
+ ROW         115 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.25872087    
+ ROW         115 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.25872087    
+ ROW         115 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.25872087    
+ ROW         116 START WITH  -4.75599384    
+ ROW         116 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.75599384    
+ ROW         116 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.75599384    
+ ROW         116 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.75599384    
+ ROW         117 START WITH  -5.37375212    
+ ROW         117 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -5.37375212    
+ ROW         117 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -5.37375212    
+ ROW         117 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -5.37375212    
+ ROW         118 START WITH  -6.10367727    
+ ROW         118 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -6.10367727    
+ ROW         118 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -6.10367727    
+ ROW         118 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -6.10367727    
+ ROW         119 START WITH  -6.82625818    
+ ROW         119 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -6.82625818    
+ ROW         119 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -6.82625818    
+ ROW         119 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -6.82625818    
+ ROW         120 START WITH  -7.66169977    
+ ROW         120 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -7.66169977    
+ ROW         120 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -7.66169977    
+ ROW         120 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -7.66169977    
+ ROW         121 START WITH  -9.37264347    
+ ROW         121 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -9.37264347    
+ ROW         121 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -9.37264347    
+ ROW         121 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -9.37264347    
+ ROW         122 START WITH  -12.4750271    
+ ROW         122 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -12.4750271    
+ ROW         122 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -12.4750271    
+ ROW         122 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -12.4750271    
+ ROW         123 START WITH  -16.4433460    
+ ROW         123 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -16.4433460    
+ ROW         123 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -16.4433460    
+ ROW         123 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -16.4433460    
+ ROW         124 START WITH  -19.5286217    
+ ROW         124 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -19.5286217    
+ ROW         124 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -19.5286217    
+ ROW         124 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -19.5286217    
+ ROW         125 START WITH  -19.5577831    
+ ROW         125 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -19.5577831    
+ ROW         125 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -19.5577831    
+ ROW         125 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -19.5577831    
+ ROW         126 START WITH  -16.6290073    
+ ROW         126 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -16.6290073    
+ ROW         126 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -16.6290073    
+ ROW         126 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -16.6290073    
+ ROW         127 START WITH  -12.7562008    
+ ROW         127 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -12.7562008    
+ ROW         127 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -12.7562008    
+ ROW         127 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -12.7562008    
+ ROW         128 START WITH  -9.60850430    
+ ROW         128 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -9.60850430    
+ ROW         128 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -9.60850430    
+ ROW         128 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -9.60850430    
+ ROW         129 START WITH  -7.79136467    
+ ROW         129 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -7.79136467    
+ ROW         129 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -7.79136467    
+ ROW         129 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -7.79136467    
+ ROW         130 START WITH  -6.90935421    
+ ROW         130 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -6.90935421    
+ ROW         130 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -6.90935421    
+ ROW         130 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -6.90935421    
+ ROW         131 START WITH  -6.20173883    
+ ROW         131 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -6.20173883    
+ ROW         131 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -6.20173883    
+ ROW         131 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -6.20173883    
+ ROW         132 START WITH  -5.51521301    
+ ROW         132 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -5.51521301    
+ ROW         132 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -5.51521301    
+ ROW         132 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -5.51521301    
+ ROW         133 START WITH  -4.94543934    
+ ROW         133 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.94543934    
+ ROW         133 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.94543934    
+ ROW         133 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.94543934    
+ ROW         134 START WITH  -4.47724056    
+ ROW         134 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.47724056    
+ ROW         134 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.47724056    
+ ROW         134 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.47724056    
+ ROW         135 START WITH  -4.08106375    
+ ROW         135 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -4.08106375    
+ ROW         135 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -4.08106375    
+ ROW         135 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -4.08106375    
+ ROW         136 START WITH  -3.72254252    
+ ROW         136 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.72254252    
+ ROW         136 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.72254252    
+ ROW         136 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.72254252    
+ ROW         137 START WITH  -3.38261700    
+ ROW         137 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.38261700    
+ ROW         137 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.38261700    
+ ROW         137 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.38261700    
+ ROW         138 START WITH  -3.06121778    
+ ROW         138 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -3.06121778    
+ ROW         138 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -3.06121778    
+ ROW         138 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -3.06121778    
+ ROW         139 START WITH  -2.77191210    
+ ROW         139 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.77191210    
+ ROW         139 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.77191210    
+ ROW         139 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.77191210    
+ ROW         140 START WITH  -2.51496983    
+ ROW         140 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.51496983    
+ ROW         140 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.51496983    
+ ROW         140 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.51496983    
+ ROW         141 START WITH  -2.27558422    
+ ROW         141 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.27558422    
+ ROW         141 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.27558422    
+ ROW         141 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.27558422    
+ ROW         142 START WITH  -2.04760838    
+ ROW         142 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -2.04760838    
+ ROW         142 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -2.04760838    
+ ROW         142 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -2.04760838    
+ ROW         143 START WITH  -1.82859635    
+ ROW         143 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.82859635    
+ ROW         143 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.82859635    
+ ROW         143 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.82859635    
+ ROW         144 START WITH  -1.61753762    
+ ROW         144 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.61753762    
+ ROW         144 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.61753762    
+ ROW         144 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.61753762    
+ ROW         145 START WITH  -1.41520250    
+ ROW         145 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.41520250    
+ ROW         145 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.41520250    
+ ROW         145 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.41520250    
+ ROW         146 START WITH  -1.21985507    
+ ROW         146 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.21985507    
+ ROW         146 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.21985507    
+ ROW         146 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.21985507    
+ ROW         147 START WITH  -1.03047347    
+ ROW         147 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -1.03047347    
+ ROW         147 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -1.03047347    
+ ROW         147 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -1.03047347    
+ ROW         148 START WITH -0.847288907    
+ ROW         148 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.847288907    
+ ROW         148 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.847288907    
+ ROW         148 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.847288907    
+ ROW         149 START WITH -0.657635331    
+ ROW         149 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.657635331    
+ ROW         149 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.657635331    
+ ROW         149 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.657635331    
+ ROW         150 START WITH -0.470780104    
+ ROW         150 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.470780104    
+ ROW         150 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.470780104    
+ ROW         150 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.470780104    
+ ROW         151 START WITH -0.288525492    
+ ROW         151 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING: -0.288525492    
+ ROW         151 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING: -0.288525492    
+ ROW         151 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING: -0.288525492    
+ ROW         152 START WITH  -9.48235095E-02
+ ROW         152 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  -9.48235095E-02
+ ROW         152 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  -9.48235095E-02
+ ROW         152 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  -9.48235095E-02
+ ROW         153 START WITH   9.42920223E-02
+ ROW         153 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   9.42920223E-02
+ ROW         153 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   9.42920223E-02
+ ROW         153 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   9.42920223E-02
+ ROW         154 START WITH  0.284106672    
+ ROW         154 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.284106672    
+ ROW         154 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.284106672    
+ ROW         154 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.284106672    
+ ROW         155 START WITH  0.487367392    
+ ROW         155 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.487367392    
+ ROW         155 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.487367392    
+ ROW         155 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.487367392    
+ ROW         156 START WITH  0.698945999    
+ ROW         156 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.698945999    
+ ROW         156 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.698945999    
+ ROW         156 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.698945999    
+ ROW         157 START WITH  0.917965055    
+ ROW         157 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:  0.917965055    
+ ROW         157 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:  0.917965055    
+ ROW         157 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:  0.917965055    
+ ROW         158 START WITH   1.16681647    
+ ROW         158 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.16681647    
+ ROW         158 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.16681647    
+ ROW         158 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.16681647    
+ ROW         159 START WITH   1.47076654    
+ ROW         159 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.47076654    
+ ROW         159 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.47076654    
+ ROW         159 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.47076654    
+ ROW         160 START WITH   1.83446336    
+ ROW         160 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   1.83446336    
+ ROW         160 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   1.83446336    
+ ROW         160 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   1.83446336    
+ ROW         161 START WITH   2.24674487    
+ ROW         161 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   2.24674487    
+ ROW         161 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   2.24674487    
+ ROW         161 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   2.24674487    
+ ROW         162 START WITH   2.66186619    
+ ROW         162 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   2.66186619    
+ ROW         162 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   2.66186619    
+ ROW         162 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   2.66186619    
+ ROW         163 START WITH   3.01222515    
+ ROW         163 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.01222515    
+ ROW         163 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.01222515    
+ ROW         163 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.01222515    
+ ROW         164 START WITH   3.28311181    
+ ROW         164 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.28311181    
+ ROW         164 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.28311181    
+ ROW         164 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.28311181    
+ ROW         165 START WITH   3.49287319    
+ ROW         165 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.49287319    
+ ROW         165 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.49287319    
+ ROW         165 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.49287319    
+ ROW         166 START WITH   3.65837073    
+ ROW         166 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.65837073    
+ ROW         166 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.65837073    
+ ROW         166 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.65837073    
+ ROW         167 START WITH   3.82624197    
+ ROW         167 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.82624197    
+ ROW         167 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.82624197    
+ ROW         167 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.82624197    
+ ROW         168 START WITH   3.98535752    
+ ROW         168 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.98535752    
+ ROW         168 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.98535752    
+ ROW         168 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.98535752    
+ ROW         169 START WITH   4.10663986    
+ ROW         169 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.10663986    
+ ROW         169 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.10663986    
+ ROW         169 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.10663986    
+ ROW         170 START WITH   4.17669868    
+ ROW         170 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.17669868    
+ ROW         170 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.17669868    
+ ROW         170 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.17669868    
+ ROW         171 START WITH   4.18832779    
+ ROW         171 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.18832779    
+ ROW         171 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.18832779    
+ ROW         171 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.18832779    
+ ROW         172 START WITH   4.14945841    
+ ROW         172 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.14945841    
+ ROW         172 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.14945841    
+ ROW         172 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.14945841    
+ ROW         173 START WITH   4.07461929    
+ ROW         173 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   4.07461929    
+ ROW         173 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   4.07461929    
+ ROW         173 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   4.07461929    
+ ROW         174 START WITH   3.94759655    
+ ROW         174 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.94759655    
+ ROW         174 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.94759655    
+ ROW         174 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.94759655    
+ ROW         175 START WITH   3.75126266    
+ ROW         175 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.75126266    
+ ROW         175 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.75126266    
+ ROW         175 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.75126266    
+ ROW         176 START WITH   3.48557186    
+ ROW         176 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.48557186    
+ ROW         176 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.48557186    
+ ROW         176 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.48557186    
+ ROW         177 START WITH   3.11834693    
+ ROW         177 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   3.11834693    
+ ROW         177 THEN ADD ALL AICGTH*GTH (wake vortex contributions). LEAVING:   3.11834693    
+ ROW         177 THEN ADD ALL AICSIG*SIGK (rotor source contributions), LEAVING:   3.11834693    
+ ROW         178 START WITH   2.67495108    
+ ROW         178 FIRST OvErWrItE WITH AICQFF*QINF, i.e. Vinf_x. LEAVING:   2.67495108    

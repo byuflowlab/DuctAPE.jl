@@ -1,5 +1,5 @@
 """
-    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vx_rb, vr_rb, gamb,
+    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vx_rb, vr_rb, mub,
         vx_rw, vr_rw, gamw)
 
 Calculate axial, radial, and tangential induced velocity on the rotors.
@@ -19,86 +19,97 @@ function calculate_induced_velocities_on_rotors(
     sigr,
     vx_rb=nothing,
     vr_rb=nothing,
-    gamb=nothing;
+    mub=nothing,
+    vx_rbte=nothing,
+    vr_rbte=nothing,
+    TEidxs=nothing;
     debug=false,
 )
 
     # problem dimensions
     _, nrotor = size(Gamr) # number of rotors
-    nwake, _ = size(gamw) # number of wake sheets
 
     # initialize outputs
-    vx = similar(Gamr) .= 0 # axial induced velocity
-    vr = similar(Gamr) .= 0 # radial induced velocity
-    vθ = similar(Gamr) .= 0 # tangential induced velocity
+    vx_rotor = similar(Gamr) .= 0 # axial induced velocity
+    vr_rotor = similar(Gamr) .= 0 # radial induced velocity
+    vtheta_rotor = similar(Gamr) .= 0 # tangential induced velocity
 
     if debug
 
         # initialize outputs
-        vxb = similar(Gamr) .= 0 # axial induced velocity
-        vrb = similar(Gamr) .= 0 # radial induced velocity
+        vxb_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vrb_rotor = similar(Gamr) .= 0 # radial induced velocity
 
-        vxw = similar(Gamr) .= 0 # axial induced velocity
-        vrw = similar(Gamr) .= 0 # radial induced velocity
+        vxw_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vrw_rotor = similar(Gamr) .= 0 # radial induced velocity
 
-        vxr = similar(Gamr) .= 0 # axial induced velocity
-        vrr = similar(Gamr) .= 0 # radial induced velocity
+        vxr_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vrr_rotor = similar(Gamr) .= 0 # radial induced velocity
     end
 
     # loop through each affected rotor
     for irotor in 1:nrotor
 
         # add body induced velocities
-        if gamb != nothing
-            @views vx[:, irotor] .+= vx_rb[irotor] * gamb
-            @views vr[:, irotor] .+= vr_rb[irotor] * gamb
+        if mub != nothing
+            @views vx_rotor[:, irotor] .+= vx_rb[irotor] * mub
+            @views vr_rotor[:, irotor] .+= vr_rb[irotor] * mub
 
             if debug
-                @views vxb[:, irotor] .+= vx_rb[irotor] * gamb
-                @views vrb[:, irotor] .+= vr_rb[irotor] * gamb
+                @views vxb_rotor[:, irotor] .+= vx_rb[irotor] * mub
+                @views vrb_rotor[:, irotor] .+= vr_rb[irotor] * mub
+            end
+
+            #note: v?_rbte[irotor] should have been defined as zeros for endpoints that are not coincident.
+            @views vx_rotor .+= vx_rbte[irotor] * mub[TEidxs]
+            @views vr_rotor .+= vr_rbte[irotor] * mub[TEidxs]
+
+            if debug
+                @views vxb_rotor .+= vx_rbte[irotor] * mub[TEidxs]
+                @views vrb_rotor .+= vr_rbte[irotor] * mub[TEidxs]
             end
         end
 
         # add wake induced velocities
-        for jwake in 1:nwake
-            @views vx[:, irotor] .+= vx_rw[irotor, jwake] * gamw[jwake, :]
-            @views vr[:, irotor] .+= vr_rw[irotor, jwake] * gamw[jwake, :]
+        @views vx_rotor[:, irotor] .+= vx_rw[irotor] * gamw
+        @views vr_rotor[:, irotor] .+= vr_rw[irotor] * gamw
 
-            if debug
-                @views vxw[:, irotor] .+= vx_rw[irotor, jwake] * gamw[jwake, :]
-                @views vrw[:, irotor] .+= vr_rw[irotor, jwake] * gamw[jwake, :]
-            end
+        if debug
+            @views vxw_rotor[:, irotor] .+= vx_rw[irotor] * gamw[:]
+            @views vrw_rotor[:, irotor] .+= vr_rw[irotor] * gamw[:]
         end
 
         # add rotor induced velocities
         for jrotor in 1:nrotor
-            @views vx[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
-            @views vr[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
+            @views vx_rotor[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
+            @views vr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
 
             if debug
-                @views vxr[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
-                @views vrr[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
+                @views vxr_rotor[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
+                @views vrr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
             end
         end
 
         # add self-induced tangential velocity
         B = blade_elements[irotor].B
         r = blade_elements[irotor].rbe
-        @views vθ[:, irotor] .+= B .* Gamr[:, irotor] ./ (4 * pi * r)
+        @views vtheta_rotor[:, irotor] .+= B .* Gamr[:, irotor] ./ (4 * pi * r)
 
         # add induced tangential velocity from upstream rotors
         for jrotor in 1:(irotor - 1)
             B = blade_elements[jrotor].B
             r = blade_elements[jrotor].rbe
-            @views vθ[:, irotor] .+= B .* Gamr[:, jrotor] ./ (2 * pi * r)
+            @views vtheta_rotor[:, irotor] .+= B .* Gamr[:, jrotor] ./ (2 * pi * r)
         end
     end
 
     # return raw induced velocities
     if debug
-        return vx, vr, vθ, vxb, vrb, vxw, vrw, vxr, vrr
+        return vx_rotor,
+        vr_rotor, vtheta_rotor, vxb_rotor, vrb_rotor, vxw_rotor, vrw_rotor, vxr_rotor,
+        vrr_rotor
     else
-        return vx, vr, vθ
+        return vx_rotor, vr_rotor, vtheta_rotor
     end
 end
 
@@ -112,7 +123,11 @@ function reframe_rotor_velocities(
     Wx_rotor = vx_rotor .+ Vinf
 
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wtheta_rotor = vtheta_rotor .- Omega .* rotor_panel_centers
+    Wtheta_rotor = similar(vtheta_rotor) .= vtheta_rotor
+
+    for i in 1:length(Omega)
+        Wtheta_rotor[:, i] .-= Omega[i] .* rotor_panel_centers[:, i]
+    end
 
     # meridional component
     Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
@@ -125,7 +140,9 @@ end
 
 """
 """
-function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
+function calculate_rotor_velocities(Gamr, gamw, sigr, mub, inputs)
+
+    # - Get induced velocities on rotor planes - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
@@ -137,15 +154,19 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         sigr,
         inputs.vx_rb,
         inputs.vr_rb,
-        gamb,
+        mub,
+        inputs.vx_rbte,
+        inputs.vr_rbte,
+        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
     )
 
+    # - Reframe rotor velocities into blade element frames
     Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
         vx_rotor,
         vr_rotor,
         vtheta_rotor,
         inputs.Vinf,
-        inputs.blade_elements[1].Omega,
+        inputs.blade_elements.Omega,
         inputs.rotor_panel_centers,
     )
 
@@ -153,7 +174,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
 end
 
 """
-    calculate_gamma_sigma(blade_elements, Vm, Vθ)
+    calculate_gamma_sigma(blade_elements, Vm, vtheta_rotor)
 
 Calculate rotor circulation and source strengths using blade element data and inflow velocities.
 
@@ -164,18 +185,26 @@ Calculate rotor circulation and source strengths using blade element data and in
 `Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
-function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false)
+function calculate_gamma_sigma(
+    blade_elements,
+    Wm_rotor,
+    Wtheta_rotor,
+    Wmag_rotor,
+    freestream;
+    debug=false,
+    verbose=false,
+)
 
     # get floating point type
     TF = promote_type(
         eltype(blade_elements[1].chords),
         eltype(blade_elements[1].twists),
-        eltype(Wm),
-        eltype(Wθ),
+        eltype(Wm_rotor),
+        eltype(Wtheta_rotor),
     )
 
     # get problem dimensions (number of radial stations x number of rotors)
-    nr, nrotor = size(Wm)
+    nr, nrotor = size(Wm_rotor)
 
     # initialize outputs
     Gamr = zeros(TF, nr, nrotor)
@@ -183,16 +212,24 @@ function calculate_gamma_sigma(blade_elements, Wm, Wθ, W, freestream; debug=fal
 
     # call in-place function
     return calculate_gamma_sigma!(
-        Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=debug, verbose=verbose
+        Gamr,
+        sigr,
+        blade_elements,
+        Wm_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        freestream;
+        debug=debug,
+        verbose=verbose,
     )
 end
 
 """
 """
-function gamma_sigma_from_coeffs!(Gamr, sigr, W, B, c, r, cl, cd)
+function gamma_sigma_from_coeffs!(Gamr, sigr, Wmag_rotor, B, c, r, cl, cd)
 
     # calculate vortex strength
-    Gamr[:] .= 1.0 / 2.0 * W * c * cl
+    Gamr[:] .= 1.0 / 2.0 * Wmag_rotor * c * cl
 
     # calculate source strength
     # TODO: need to figure out if there should be a division by r here or not.
@@ -201,30 +238,36 @@ function gamma_sigma_from_coeffs!(Gamr, sigr, W, B, c, r, cl, cd)
     =#
     # this one is in the theory doc
     # things converge twice as fast with this one...
-    # sigr[:] .= B / (4.0 * pi * r) * W * c * cd
+    # sigr[:] .= B / (4.0 * pi * r) * Wmag_rotor * c * cd
     # this one is in the DFDC source code
     # things converge slower, likely because the values are so small...
-    sigr[:] .= B / (4.0 * pi) * W * c * cd
+    sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
 
     # return Gamr, sigr
     return nothing
-
 end
 
 function calc_reynolds(chord, Wmag_rotor, rho, mu)
     return chord .* abs.(Wmag_rotor) * rho / mu
 end
 
-
 """
-    calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, Vθ)
+    calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, vtheta_rotor)
 
 In-place version of [`calculate_gamma_sigma`](@ref)
 
-Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and Vθ)
+Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and vtheta_rotor)
 """
 function calculate_gamma_sigma!(
-    Gamr, sigr, blade_elements, Wm, Wθ, W, freestream; debug=false, verbose=false
+    Gamr,
+    sigr,
+    blade_elements,
+    Wm_rotor,
+    Wtheta_rotor,
+    Wmag_rotor,
+    freestream;
+    debug=false,
+    verbose=false,
 )
 
     # problem dimensions
@@ -248,79 +291,45 @@ function calculate_gamma_sigma!(
             B = blade_elements[irotor].B # number of blades
             c = blade_elements[irotor].chords[ir] # chord length
             twist = blade_elements[irotor].twists[ir] # twist
-            #stagger is twist angle but from axis
-            # stagger = 0.5 * pi - twist
             stagger = blade_elements[irotor].stagger[ir]
             r = blade_elements[irotor].rbe[ir] # radius
             Ω = blade_elements[irotor].Omega # rotation rate
             solidity = blade_elements[irotor].solidity[ir]
+            fliplift = blade_elements[irotor].fliplift
 
             # calculate angle of attack
-            phi, alpha = calculate_inflow_angles(Wm[ir, irotor], Wθ[ir, irotor], twist)
-
-            # printval("Wm[$(ir),$(irotor)]: ", Wm[ir,irotor])
-            # printval("Wtheta[$(ir),$(irotor)]: ", Wθ[ir,irotor])
-            # printval("twist: ", twist*180.0/pi)
-            # printval("phi: ", phi*180.0/pi)
-            # printval("alpha: ", alpha*180.0/pi)
-            # printval("Wmag: ", W[ir, irotor])
-            # printval("Mach: ", W[ir,irotor] / freestream.asound)
-
-            # look up lift and drag data for the nearest two input sections
-            # TODO: this breaks rotor aero tests... need to update those.
-            if typeof(blade_elements[irotor].inner_airfoil[ir]) <: DFDCairfoil
-
-                # get local reynolds number
-                reynolds = c * abs(W[ir, irotor]) * freestream.rho / freestream.mu
-
-                # printval("Re: ", reynolds)
-
-                #get inner values
-                clin, cdin, _ = dfdc_clcdcm(
-                    W[ir, irotor],
-                    reynolds,
-                    solidity,
-                    stagger,
-                    alpha,
-                    blade_elements[irotor].inner_airfoil[ir],
-                    freestream.asound;
-                    verbose=verbose,
-                )
-                # get outer values
-                clout, cdout, _ = dfdc_clcdcm(
-                    W[ir, irotor],
-                    reynolds,
-                    solidity,
-                    stagger,
-                    alpha,
-                    blade_elements[irotor].outer_airfoil[ir],
-                    freestream.asound;
-                    verbose=verbose
-                )
-
-            else
-                clin, cdin = search_polars(blade_elements[irotor].inner_airfoil[ir], alpha)
-                clout, cdout = search_polars(
-                    blade_elements[irotor].outer_airfoil[ir], alpha
-                )
-                # linearly interpolate between those two values at your blade element location
-            end
-
-            # interpolate inner and outer values
-            cl = fm.linear(
-                [0.0; 1.0], [clin, clout], blade_elements[irotor].inner_fraction[ir]
-            )
-            cd = fm.linear(
-                [0.0; 1.0], [cdin, cdout], blade_elements[irotor].inner_fraction[ir]
+            phi, alpha = calculate_inflow_angles(
+                Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], twist
             )
 
-            # printval("cl in: ", clin)
-            # printval("cl interp: ", cl)
+            # get local Reynolds number
+            reynolds =
+                c * abs(Wmag_rotor[ir, irotor]) * freestream.rhoinf / freestream.muinf
 
+            # get local Mach number
+            mach = Wmag_rotor[ir, irotor] / freestream.asound
+
+            cl, cd = lookup_clcd(
+                blade_elements[irotor].inner_airfoil[ir],
+                blade_elements[irotor].outer_airfoil[ir],
+                blade_elements[irotor].inner_fraction[ir],
+                Wmag_rotor[ir, irotor],
+                solidity,
+                stagger,
+                alpha,
+                phi,
+                reynolds,
+                mach,
+                freestream.asound;
+                verbose=verbose,
+                fliplift=fliplift,
+            )
+
+            # - get circulation and source strengths - #
             gamma_sigma_from_coeffs!(
                 view(Gamr, ir, irotor),
                 view(sigr, ir, irotor),
-                W[ir, irotor],
+                Wmag_rotor[ir, irotor],
                 B,
                 c,
                 r,
@@ -344,11 +353,80 @@ function calculate_gamma_sigma!(
     end
 end
 
+function lookup_clcd(
+    inner_airfoil,
+    outer_airfoil,
+    inner_fraction,
+    Wmag,
+    solidity,
+    stagger,
+    alpha,
+    inflow,
+    reynolds,
+    mach,
+    asound;
+    verbose=false,
+    fliplift=false,
+)
+
+    # look up lift and drag data for the nearest two input sections
+    # TODO: this breaks rotor aero tests... need to update those.
+    if typeof(inner_airfoil) <: DFDCairfoil
+        # - DFDC Airfoil Parameter - #
+
+        # get inner values
+        clin, cdin, _ = dfdc_clcdcm(
+            Wmag,
+            reynolds,
+            solidity,
+            stagger,
+            alpha,
+            inner_airfoil,
+            asound;
+            verbose=verbose,
+            fliplift=fliplift,
+        )
+        # get outer values
+        clout, cdout, _ = dfdc_clcdcm(
+            Wmag,
+            reynolds,
+            solidity,
+            stagger,
+            alpha,
+            outer_airfoil,
+            asound;
+            verbose=verbose,
+            fliplift=fliplift,
+        )
+
+    elseif typeof(inner_airfoil) <: DTCascade
+        # - Cascade Lookups - #
+        # get inner values
+        clin, cdin = caseval(inner_airfoil, stagger, inflow, reynolds, mach, solidity)
+        # get outer values
+        clout, cdout = caseval(outer_airfoil, stagger, inflow, reynolds, mach, solidity)
+    elseif typeof(inner_airfoil) <: ccb.AFType
+        # - Airfoil Lookups - #
+        # get inner values
+        clin, cdin = search_polars(inner_airfoil, alpha)
+        # get outer values
+        clout, cdout = search_polars(outer_airfoil, alpha)
+    else
+        @error "No blade element datatype: $(typeof(inner_airfoil)) defined."
+    end
+
+    # interpolate inner and outer values
+    cl = fm.linear([0.0; 1.0], [clin, clout], inner_fraction)
+    cd = fm.linear([0.0; 1.0], [cdin, cdout], inner_fraction)
+
+    return cl, cd
+end
+
 """
 """
-function calculate_inflow_angles(Wm, Wθ, twist)
+function calculate_inflow_angles(Wm_rotor, Wtheta_rotor, twist)
     #inflow angle
-    phi = atan.(Wm, -Wθ)
+    phi = atan.(Wm_rotor, -Wtheta_rotor)
 
     #angle of attack
     alpha = twist .- phi
@@ -378,6 +456,7 @@ function dfdc_clcdcm(
     afparams,
     asound;
     verbose=false,
+    fliplift=false,
 )
 
     #all these come from user defined inputs.
@@ -544,7 +623,8 @@ function dfdc_clcdcm(
     cd_w = fac * cd_w + fac_w * cdrag + dcd_w + cdc_alf
     cd_rey = fac * cd_rey
 
-    return clift, cdrag, cmom
+    # if flip lift is true, return negative of clift (for stators)
+    return fliplift ? -clift : clift, cdrag, cmom
 end
 
 """

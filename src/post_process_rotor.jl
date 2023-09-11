@@ -13,8 +13,8 @@ function get_rotor_loads(W, phi, cl, cd, blade_element, fs)
     ct = cl .* sphi .+ cd .* cphi
 
     # get the normal and tangential loads per unit length N' and T'
-    Np = cn .* 0.5 .* fs.rho .* W .^ 2 .* blade_element.chords
-    Tp = ct .* 0.5 .* fs.rho .* W .^ 2 .* blade_element.chords
+    Np = cn .* 0.5 .* fs.rhoinf .* W .^ 2 .* blade_element.chords
+    Tp = ct .* 0.5 .* fs.rhoinf .* W .^ 2 .* blade_element.chords
 
     ## -- Integrate Loads to get Thurst and Torque
     # add hub/tip for complete integration.  loads go to zero at hub/tip.
@@ -36,48 +36,46 @@ function get_rotor_loads(W, phi, cl, cd, blade_element, fs)
     D = 2 * blade_element.Rtip
 
     # if T < 0
-        # eff = 0.0  # creating drag not thrust
+    # eff = 0.0  # creating drag not thrust
     # else
-        eff = T * fs.Vinf / P
+    eff = T * fs.Vinf / P
     # end
-    CT = T / (fs.rho * n^2 * D^4)
-    CQ = Q / (fs.rho * n^2 * D^5)
+    CT = T / (fs.rhoinf * n^2 * D^4)
+    CQ = Q / (fs.rhoinf * n^2 * D^5)
 
     return (; Np, Tp, T, Q, CT, CQ, eff, cn, ct)
 end
 
 """
 """
-function states_to_outputs_rotor_only(states, params)
-    Gamma, gamma_theta, sigma = extract_rotor_states(states, params)
+function states_to_outputs_rotor_only(states, inputs)
+    Gamr, gamw, sigr = extract_rotor_states(states, inputs)
 
-    wake_vortex_strengths = repeat(gamma_theta; inner=(1, params.nxwake))
-
-    TF = eltype(Gamma)
+    TF = eltype(Gamr)
 
     # - get the induced velocities at the rotor plane - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        params.blade_elements,
-        Gamma,
-        params.vx_rw,
-        params.vr_rw,
-        wake_vortex_strengths,
-        params.vx_rr,
-        params.vr_rr,
-        sigma,
+        inputs.blade_elements,
+        Gamr,
+        inputs.vx_rw,
+        inputs.vr_rw,
+        gamw,
+        inputs.vx_rr,
+        inputs.vr_rr,
+        sigr,
     )
 
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor .+ params.Vinf
+    Wx_rotor = vx_rotor .+ inputs.Vinf
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wθ = vtheta_rotor .- params.blade_elements[1].Omega .* params.blade_elements[1].rbe
+    Wθ = vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.blade_elements[1].rbe
 
     Wm = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
 
     # - Get the inflow magnitude at the rotor as the combination of all the components - #
     W = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wθ .^ 2)
 
-    nbe = length(params.blade_elements[1].rbe)
+    nbe = length(inputs.blade_elements[1].rbe)
     r = zeros(TF, nbe)
     chord = zeros(TF, nbe)
     twist = zeros(TF, nbe)
@@ -93,24 +91,24 @@ function states_to_outputs_rotor_only(states, params)
 
     for ir in 1:(nbe)
         # extract blade element properties
-        B = params.blade_elements[1].B # number of blades
-        chord[ir] = params.blade_elements[1].chords[ir] # chord length
-        twist[ir] = params.blade_elements[1].twists[ir] # twist
-        r[ir] = params.blade_elements[1].rbe[ir] # radius
+        B = inputs.blade_elements[1].B # number of blades
+        chord[ir] = inputs.blade_elements[1].chords[ir] # chord length
+        twist[ir] = inputs.blade_elements[1].twists[ir] # twist
+        r[ir] = inputs.blade_elements[1].rbe[ir] # radius
 
         # calculate angle of attack
         # phi[ir] = atan(Wm[ir], -Wθ[ir])
         phi[ir] = atan(Wm[ir], -Wθ[ir])
         alpha[ir] = twist[ir] - phi[ir]
 
-        affrac[ir] = params.blade_elements[1].inner_fraction[ir]
+        affrac[ir] = inputs.blade_elements[1].inner_fraction[ir]
 
         # look up lift and drag data for the nearest two input sections
         clin[ir], cdin[ir] = search_polars(
-            params.blade_elements[1].inner_airfoil[ir], alpha[ir]
+            inputs.blade_elements[1].inner_airfoil[ir], alpha[ir]
         )
         clout[ir], cdout[ir] = search_polars(
-            params.blade_elements[1].outer_airfoil[ir], alpha[ir]
+            inputs.blade_elements[1].outer_airfoil[ir], alpha[ir]
         )
         # linearly interpolate between those two values at your blade element location
         cl[ir] = fm.linear([0.0; 1.0], [clin[ir], clout[ir]], affrac[ir])

@@ -39,7 +39,7 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 - `xrotor::Float` : x-position of the the rotor (dimensional)
 - `rblade::Vector{Float}` : non-dimensional radial positions of each blade element (zero at hub, one at tip)
 - `chords::Vector{Float}` : values of the chord lengths of the blade elements
-- `twists::Vector{Float}` : values of the twist (in degrees) of the blade elements
+- `twists::Vector{Float}` : values of the twist from the plane of rotation (in radians) of the blade elements
 - `airfoils::Vector{Airfoil Function Type}` : Airfoil polar data objects associated with each blade element
 - `body_geometry::BodyGeometry` : BodyGeometry object for duct and hub
 - `nr::Int64` : desired number of radial stations on the blade
@@ -48,16 +48,20 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 Future Work: add tip-gap capabilities
 """
 function generate_blade_elements(
-    B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe
+    B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe; fliplift=false
 )
 
     # get floating point type
     TF = promote_type(
+        eltype(B),
+        eltype(Omega),
+        eltype(xrotor),
+        eltype(rnondim),
         eltype(chords),
         eltype(twists),
-        eltype(Omega),
-        eltype(rbe),
         eltype(Rtip),
+        eltype(Rhub),
+        eltype(rbe),
     )
 
     # dimensionalize the blade element radial positions
@@ -101,9 +105,6 @@ function generate_blade_elements(
         end
     end
 
-    # find index of the rotor's position in the wake grid
-    # _, wake_index = findmin(x -> abs(x - xrotor), xwake)
-
     # return blade elements
     return (;
         B,
@@ -119,7 +120,7 @@ function generate_blade_elements(
         inner_fraction,
         Rtip,
         Rhub,
-        # wake_index,
+        fliplift,
     )
 end
 
@@ -132,11 +133,9 @@ function get_stagger(twists)
 end
 
 # generates rotor panels
-function generate_rotor_panels(
-    xrotor, rwake, method=ff.AxisymmetricProblem(Source(Constant()), Dirichlet(), [true])
-)
+function generate_rotor_panels(xrotor, rwake)
     x = fill(xrotor, length(rwake))
     xr = [x rwake]
 
-    return ff.generate_panels(method, xr)
+    return generate_panels(xr)
 end

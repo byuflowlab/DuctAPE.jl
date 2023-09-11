@@ -1,0 +1,186 @@
+"""
+    XROTORAirfoilConfig(A0, DCLDA, CLMAX, CLMIN, DCL_STALL, DCLDA_STALL, CDMIN, CLDMIN, DCDCL2, REREF, REXP, MCRIT)
+
+`struct` that holds all the required parameters for XROTOR's approach to handling airfoil lift and drag polars.
+
+# Arguments
+- `A0`: zero lift angle of attack, radians.
+- `DCLDA`: lift curve slope, 1/radians.
+- `CLMAX`: stall Cl.
+- `CLMIN`: negative stall Cl.
+- `DCL_STALL`: CL increment from incipient to total stall.
+- `DCLDA_STALL`: stalled lift curve slope, 1/radian.
+- `CDMIN`: minimum Cd.
+- `CLDMIN`: Cl at minimum Cd.
+- `DCDCL2`: d(Cd)/d(Cl**2).
+- `REREF`: Reynolds Number at which Cd values apply.
+- `REXP`: Exponent for Re scaling of Cd:  Cd ~ Re**exponent
+- `MCRIT`: Critical Mach number.
+"""
+struct XROTORAirfoilConfig{TF}
+    A0::TF # = 0.           # zero lift angle of attack   radians
+    DCLDA::TF # =  6.28     # lift curve slope            /radian
+    CLMAX::TF # =   1.5     # stall Cl
+    CLMIN::TF # =  -0.5     # negative stall Cl
+    DCL_STALL::TF # =   0.1 # CL increment from incipient to total stall
+    DCLDA_STALL::TF # = 0.1 # stalled lift curve slope    /radian
+    CDMIN::TF # =  0.013    # minimum Cd
+    CLDMIN::TF # =  0.5     # Cl at minimum Cd
+    DCDCL2::TF # =  0.004   # d(Cd)/d(Cl**2)
+    REREF::TF # =  200000.  # Reynolds Number at which Cd values apply
+    REXP::TF # =  -0.4      # Exponent for Re scaling of Cd:  Cd ~ Re**exponent
+    MCRIT::TF # =  0.8      # Critical Mach number
+end
+
+function XROTORAirfoilConfig(;
+    A0,
+    DCLDA,
+    CLMAX,
+    CLMIN,
+    DCL_STALL,
+    DCLDA_STALL,
+    CDMIN,
+    CLDMIN,
+    DCDCL2,
+    REREF,
+    REXP,
+    MCRIT,
+)
+    return XROTORAirfoilConfig(
+        A0,
+        DCLDA,
+        CLMAX,
+        CLMIN,
+        DCL_STALL,
+        DCLDA_STALL,
+        CDMIN,
+        CLDMIN,
+        DCDCL2,
+        REREF,
+        REXP,
+        MCRIT,
+    )
+end
+
+"""
+    af_xrotor(alpha, Re, Mach, config::XROTORAirfoilConfig)
+
+Return a tuple of the lift and drag coefficients for a given angle of attach
+`alpha` (in radians), Reynolds number `Re`, and Mach number `Mach`.
+"""
+function af_xrotor(alpha, Re, Mach, config::XROTORAirfoilConfig)
+    # C------------------------------------------------------------
+    # C     CL(alpha) function
+    # C     Note that in addition to setting CLIFT and its derivatives
+    # C     CLMAX and CLMIN (+ and - stall CL's) are set in this routine
+    # C     In the compressible range the stall CL is reduced by a factor
+    # C     proportional to Mcrit-Mach.  Stall limiting for compressible
+    # C     cases begins when the compressible drag added CDC > CDMstall
+    # C------------------------------------------------------------
+    # C     CD(alpha) function - presently CD is assumed to be a sum
+    # C     of profile drag + stall drag + compressibility drag
+    # C     In the linear lift range drag is CD0 + quadratic function of CL-CLDMIN
+    # C     In + or - stall an additional drag is added that is proportional
+    # C     to the extent of lift reduction from the linear lift value.
+    # C     Compressible drag is based on adding drag proportional to
+    # C     (Mach-Mcrit_eff)^MEXP
+    # C------------------------------------------------------------
+
+    # C---- Factors for compressibility drag model, HHY 10/23/00
+    # C     Mcrit is set by user
+    # C     Effective Mcrit is Mcrit_eff = Mcrit - CLMFACTOR*(CL-CLDmin) - DMDD
+    # C     DMDD is the delta Mach to get CD=CDMDD (usually 0.0020)
+    # C     Compressible drag is CDC = CDMFACTOR*(Mach-Mcrit_eff)^MEXP
+    # C     CDMstall is the drag at which compressible stall begins
+
+    A0 = config.A0
+    DCLDA = config.DCLDA
+    CLMAX = config.CLMAX
+    CLMIN = config.CLMIN
+    DCL_STALL = config.DCL_STALL
+    DCLDA_STALL = config.DCLDA_STALL
+    CDMIN = config.CDMIN
+    CLDMIN = config.CLDMIN
+    DCDCL2 = config.DCDCL2
+    REREF = config.REREF
+    REXP = config.REXP
+    MCRIT = config.MCRIT
+
+    CDMFACTOR = 10.0
+    CLMFACTOR = 0.25
+    MEXP = 3.0
+    CDMDD = 0.0020
+    CDMSTALL = 0.1000
+
+    # C
+    # C---- Prandtl-Glauert compressibility factor
+    MSQ = Mach * Mach
+    if MSQ > 1.0
+        MSQ = 0.99
+        Mach = sqrt(MSQ)
+    end
+    PG = 1.0 / sqrt(1.0 - MSQ)
+
+    # C--- Generate CL from dCL/dAlpha and Prandtl-Glauert scaling
+    CLA = DCLDA * PG * (alpha - A0)
+
+    # C--- Effective CLmax is limited by Mach effects
+    # C    reduces CLmax to match the CL of onset of serious compressible drag
+    CLMX = CLMAX
+    CLMN = CLMIN
+    DMSTALL = (CDMSTALL / CDMFACTOR)^(1.0 / MEXP)
+    CLMAXM = max(0.0, (MCRIT + DMSTALL - Mach) / CLMFACTOR) + CLDMIN
+    CLMAX = min(CLMAX, CLMAXM)
+    CLMINM = min(0.0, -(MCRIT + DMSTALL - Mach) / CLMFACTOR) + CLDMIN
+    CLMIN = max(CLMIN, CLMINM)
+
+    # C--- CL limiter function (turns on after +-stall
+    ECMAX = exp(min(200.0, (CLA - CLMAX) / DCL_STALL))
+    ECMIN = exp(min(200.0, (CLMIN - CLA) / DCL_STALL))
+    CLLIM = DCL_STALL * log((1.0 + ECMAX) / (1.0 + ECMIN))
+    CLLIM_CLA = ECMAX / (1.0 + ECMAX) + ECMIN / (1.0 + ECMIN)
+
+    # C--- Subtract off a (nearly unity) fraction of the limited CL function
+    # C    This sets the dCL/dAlpha in the stalled regions to 1-FSTALL of that
+    # C    in the linear lift range
+    FSTALL = DCLDA_STALL / DCLDA
+    CLIFT = CLA - (1.0 - FSTALL) * CLLIM
+
+    # C--- CD from profile drag, stall drag and compressibility drag
+    # C---- Reynolds number scaling factor
+    if (Re < 0.0)
+        RCORR = 1.0
+    else
+        RCORR = (Re / REREF)^REXP
+    end
+
+    # C--- In the basic linear lift range drag is a function of lift
+    # C    CD = CD0 (constant) + quadratic with CL)
+    CDRAG = (CDMIN + DCDCL2 * (CLIFT - CLDMIN)^2) * RCORR
+
+    # C--- Post-stall drag added
+    FSTALL = DCLDA_STALL / DCLDA
+    DCDX = (1.0 - FSTALL) * CLLIM / (PG * DCLDA)
+    DCD = 2.0 * DCDX^2
+
+    # C--- Compressibility drag (accounts for drag rise above Mcrit with CL effects
+    # C    CDC is a function of a scaling factor*(M-Mcrit(CL))^MEXP
+    # C    DMDD is the Mach difference corresponding to CD rise of CDMDD at MCRIT
+    DMDD = (CDMDD / CDMFACTOR)^(1.0 / MEXP)
+    CRITMACH = MCRIT - CLMFACTOR * abs(CLIFT - CLDMIN) - DMDD
+
+    if (Mach < CRITMACH)
+        CDC = 0.0
+    else
+        CDC = CDMFACTOR * (Mach - CRITMACH)^MEXP
+    end
+
+    FAC = 1.0
+    # C--- Although test data does not show profile drag increases due to Mach #
+    # C    you could use something like this to add increase drag by Prandtl-Glauert
+    # C    (or any function you choose)
+    # C--- Total drag terms
+    CDRAG = FAC * CDRAG + DCD + CDC
+
+    return CLIFT, CDRAG
+end

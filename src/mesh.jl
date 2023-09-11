@@ -99,7 +99,6 @@ function generate_one_way_mesh(influence_panels, affect_panels)
                     rj = influence_panels[n].panel_center[mesh2panel_i[j], 2]
 
                     # Calculate normalized distance components for current set of panels
-                    # TODO: suspect this should be the same for both cases, Lewis seems to have a typo normalizing x by ri instead of rj.
                     x[i, j] = (xi - xj) / rj
                     r[i, j] = ri / rj
 
@@ -156,16 +155,15 @@ end
 #TODO: NEED TO TEST ALL OF THESE BELOW
 """
 
-calculate "mesh" geometry without creating a mesh object
-"""
-function calculate_xrm(influencing_point, affected_point)
-    xi = (affected_point[1] - influencing_point[1]) / influencing_point[2]
-    rho = affected_point[2] / influencing_point[2]
-    m = (4.0 * rho) / (xi^2 + (rho + 1)^2)
-    rj = influencing_point[2]
-
-    return xi, rho, m, rj
-end
+# calculate "mesh" geometry without creating a mesh object
+# """
+# function calculate_xrm(influencing_point, affected_point)
+#     xi = (affected_point[1] - influencing_point[1]) / influencing_point[2]
+#     rho = affected_point[2] / influencing_point[2]
+#     m = (4.0 * rho) / (xi^2 + (rho + 1)^2)
+#     rj = influencing_point[2]
+#     return xi, rho, m, rj
+# end
 
 function generate_field_mesh(panels, field_points)
     ### --- Convenience Variables --- ###
@@ -206,9 +204,8 @@ function generate_field_mesh(panels, field_points)
         for b in 1:nbodies
             ### --- Loop through panels --- ###
             for pid in panel_indices[b]
-
                 x[fp, pid], r[fp, pid], k2[fp, pid], rj[fp, pid] = calculate_xrm(
-                    field_points[fp,:], panels[b].panel_center[mesh2panel[pid], :]
+                    field_points[fp, :], panels[b].panel_center[mesh2panel[pid], :]
                 )
             end #for influenced panel
         end #for influencing body

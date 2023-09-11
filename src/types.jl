@@ -26,15 +26,15 @@ end
 - `alpha0::Float` : zero lift angle of attack
 - `clmax::Float` : maximum cl
 - `clmin::Float` : minimum cl
-- `dclda::Float` : lift curve slope
-- `dclda_stall::Float` :  lift curve slope post-stall
-- `dcl_stall::Float` : TODO: explain this
+- `dclda::Float` : lift curve slope (1/radians)
+- `dclda_stall::Float` :  lift curve slope post-stall (1/radians)
+- `dcl_stall::Float` : cl increment from initial to total stall.
 - `cdmin::Float` : minimum cd
-- `cldmin::Float` : cl and cdmin
-- `dcdcl2::Float` : quadratic curve factor for cd curve
+- `cldmin::Float` : cl at cdmin
+- `dcdcl2::Float` : quadratic curve factor for cd curve (d(cd)/d(cl^2))
 - `cmcon::Float` : pitching moment constant
-- `Re_ref::Float` : reference Reynolds number
-- `Re_exp::Float` : Reynolds number exponent
+- `Re_ref::Float` : reference Reynolds number at which cd values apply
+- `Re_exp::Float` : Reynolds number exponent scaling (cd = cd*(Re/Re_ref)^Re_exp)
 - `mcrit::Float` : critical Mach number
 """
 struct DFDCairfoil{TF}
@@ -56,15 +56,15 @@ end
 function DFDCairfoil(;
     alpha0=0.0,
     clmax=1.5,
-    clmin=-1.0,
+    clmin=-0.5,
     dclda=2.0 * pi,
-    dclda_stall=0.5,
-    dcl_stall=0.2,
-    cdmin=0.012,
-    clcdmin=0.1,
+    dclda_stall=0.1,
+    dcl_stall=0.1,
+    cdmin=0.01,
+    clcdmin=0.5,
     dcdcl2=0.005,
     cmcon=0.0,
-    Re_ref=2e5,
+    Re_ref=1e6,
     Re_exp=0.35,
     mcrit=0.7,
 )
@@ -84,3 +84,6 @@ function DFDCairfoil(;
         mcrit,
     )
 end
+
+# Cascade type
+abstract type DTCascade end
