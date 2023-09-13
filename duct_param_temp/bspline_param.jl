@@ -38,7 +38,7 @@ function centerbody_geom(
     tailcone_start=0.65,
     nose_tip_cpx=0.0,
     tail_tip_cpx=0.85,
-    tail_tip_radius=0.1,
+    cb_te_radius=0.1,
     hub_chord=1.25,
     N=60,
 )
@@ -53,19 +53,19 @@ function centerbody_geom(
 
     # Nose control points
     #nose cpx2 is based on nose tip angle
-    nose_cps = [
+    nosecone_cps = [
         [0.0, 0.0], [nose_tip_cpx * internal_length, flatr[1]], [flatx[1], flatr[1]]
     ]
 
     # spline
-    nose_spline = Splines.NURBS(2, knots, ones(length(nose_cps)), nose_cps)
+    nose_spline = Splines.NURBS(2, knots, ones(length(nosecone_cps)), nosecone_cps)
 
     # - tail cone quadratic spline - #
     # tail control points
     tail_cps = [
         [flatx[end], flatr[end]],
         [tail_tip_cpx * internal_length, flatr[end]],
-        [hub_chord * internal_length, tail_tip_radius * Rhub],
+        [hub_chord * internal_length, cb_te_radius * Rhub],
     ]
 
     # spline
@@ -93,25 +93,25 @@ function centerbody_geom(
     cbsp = fm.Akima(xs, rs)
     cbr = cbsp(cbx)
 
-    # return cbx, cbr, nose_cps, tail_cps
-    return cbx, cbr, cbsp, nose_cps, tail_cps
+    # return cbx, cbr, nosecone_cps, tail_cps
+    return cbx, cbr, cbsp, nosecone_cps, tail_cps
 end
 
 """
-nacell_var is ratio relative to Rtip
+nacellevar is ratio relative to Rtip
 """
 function duct_geom(
-    inlet_area,
-    exit_area,
+    duct_le_radius,
+    duct_te_radius,
     Rtip,
     chord,
     cbspline;
     nosecone_stop=0.35,
     tailcone_start=0.65,
-    nacell_var=1.0,
+    nacellevar=1.0,
     N=60,
 )
-    le_cpr = sqrt(inlet_area / pi)
+
     # - define flat portion first - #
     flatx = range(nosecone_stop * chord, tailcone_start * chord, 10)
     flatr = ones(10) * Rtip
@@ -121,7 +121,7 @@ function duct_geom(
     hubr = cbspline(chord)
     # solve for duct radial point based on annulus area
     # a = pi * (ductr^2 - hubr^2)
-    ductter = sqrt(exit_area / pi + hubr^2)
+    duct_te_radius = sqrt(exit_area / pi + hubr^2)
 
     # - Define outlet spline - #
     # knot vector
@@ -131,7 +131,7 @@ function duct_geom(
     outlet_cps = [
         [flatx[end], flatr[end]],
         [chord * (1.0 + tailcone_start) / 2.0, flatr[end]],
-        [chord, ductter],
+        [chord, duct_te_radius],
     ]
 
     # spline
@@ -139,7 +139,7 @@ function duct_geom(
 
     # - Define inlet spline - #
     # control points
-    inlet_cps = [[0.0, le_cpr], [0.0, flatr[end]], [flatx[1], flatr[1]]]
+    inlet_cps = [[0.0, duct_le_radius], [0.0, flatr[end]], [flatx[1], flatr[1]]]
 
     # spline
     inlet_spline = Splines.NURBS(2, knots2, ones(length(inlet_cps)), inlet_cps)
@@ -150,10 +150,10 @@ function duct_geom(
 
     # control points
     nacelle_cps = [
-        [0.0, le_cpr],
-        [0.0, le_cpr + nacell_var],
-        [chord / 2.0, le_cpr + nacell_var],
-        [chord, ductter],
+        [0.0, duct_le_radius],
+        [0.0, duct_le_radius + nacellevar],
+        [chord / 2.0, duct_le_radius + nacellevar],
+        [chord, duct_te_radius],
     ]
 
     # spline
@@ -213,16 +213,16 @@ nosecone_stop = 0.45
 tailcone_start = 0.65
 nose_tip_cpx = 0.1
 tail_tip_cpx = 1.0
-tail_tip_radius = 1.0
+cb_te_radius = 1.0
 
-cbx, cbr, cbspline, ncp, tcp = centerbody_geom(
+cbx, cbr, cbspline, nosecone_cps, tailcone_cps = centerbody_geom(
     Rhub,
     chord;
     nosecone_stop=nosecone_stop,
     tailcone_start=tailcone_start,
     nose_tip_cpx=nose_tip_cpx,
     tail_tip_cpx=tail_tip_cpx,
-    tail_tip_radius=tail_tip_radius,
+    cb_te_radius=cb_te_radius,
     hub_chord=1.25,
     N=20,
 )
@@ -263,19 +263,23 @@ facearea = pi * Rtip^2
 capturearea = debug.Vface * facearea / Vinf
 captureradius = sqrt(capturearea / pi)
 exit_area /= 0.0254^2 # convert from m^2 to in^2
+duct_te_radius = sqrt(exit_area / pi)
 
 # inlet_area = pi * 5.875^2
 inlet_area = pi * captureradius^2
+duct_le_radius = captureradius
+
+nacellevar = 0.75
 
 cx, cr, nx, nr, cpi, cpo, cpn = duct_geom(
-    inlet_area,
-    exit_area,
+    duct_le_radius,
+    duct_te_radius,
     Rtip,
     chord,
     cbspline;
     nosecone_stop=nosecone_stop,
     tailcone_start=tailcone_start,
-    nacell_var=0.75,
+    nacellevar=nacellevar,
 )
 
 ductx = [reverse(nx); cx[2:end]] ./ chord
@@ -291,8 +295,8 @@ close(f)
 plot(; xlabel="x (in)", ylabel="r (in)", aspectratio=1, label="Center Body Geometry")
 plot!(cbx, cbr; color=myblue[1], label="Center Body Geometry")
 plot!(
-    getindex.(ncp, 1),
-    getindex.(ncp, 2);
+    getindex.(nosecone_cps, 1),
+    getindex.(nosecone_cps, 2);
     seriestype=:scatter,
     markersize=3,
     markershape=:square,
@@ -300,8 +304,8 @@ plot!(
     label="Nose Cone Control Points",
 )
 plot!(
-    getindex.(tcp, 1),
-    getindex.(tcp, 2);
+    getindex.(tailcone_cps, 1),
+    getindex.(tailcone_cps, 2);
     seriestype=:scatter,
     markersize=3,
     markershape=:square,
@@ -346,6 +350,96 @@ plot!(
 )
 savefig("ducttest.pdf")
 
-
 # TODO: write parameters file
+
+function write_solidworks_equations(;
+    Rtip=5.0,
+    Rhub=1.25 / 2.0,
+    chord=10.0,
+    xrotor=5.0,
+    nosecone_stop=5.0,
+    nosecpx2=0.5,
+    tailcone_start=5.0,
+    tailcpx2=0.5,
+    cb_te_radius=1.25 / 2.0,
+    duct_le_radius=5.0,
+    duct_te_radius=5.125,
+    nacellevar=0.75,
+    units="in",
+    filename="duct_param_temp/equations.txt",
+)
+    f = open(filename, "w")
+
+    # Rotor Parameters
+    write(f, "\"Rtip\"=$(Rtip)$(units)'Rotor Tip Radius\n")
+    write(f, "\"Rhub\"=$(Rhub)$(units)'Rotor Hub Radius\n")
+    write(f, "\"xrotor\"=$(xrotor/chord) * \"chord\"'x-Position of Rotor Plane\n")
+
+    # Duct Paramters
+    write(f, "\"chord\"=$(chord/Rtip) * \"Rtip\"'Duct Chord\n")
+    write(f, "\"duct_le_radius\"=$(duct_le_radius)$(units)'Duct Inlet Radius\n")
+    write(f, "\"duct_te_radius\"=$(duct_te_radius)$(units)'Duct Outlet Radius\n")
+    write(
+        f, "\"nacellevar\"=$(nacellevar)$(units)'Variable controlling fatness of nacelle\n"
+    )
+    write(
+        f,
+        "\"ductcpr2\"=\"duct_le_radius\"+\"nacellevar\"'r-Coordinate of second control point for nacelle spline\n",
+    )
+    write(
+        f,
+        "\"ductcpx3\"=\"chord\" / 2.0'x-Coordinate of third control point for nacelle spline\n",
+    )
+    write(
+        f,
+        "\"ductcpr3\"=\"duct_le_radius\"+\"nacellevar\"'r-Coordinate of third control point for nacelle spline\n",
+    )
+    write(
+        f,
+        "\"outletcpx2\"=\"chord\" * (1.0 + \"tailcone_start\" / \"chord\" ) / 2'x-Coordinate of second control point for casing outlet spline\n",
+    )
+
+    # Center Body Parameters
+    write(
+        f,
+        "\"nosecone_stop\"=$(nosecone_stop) * \"chord\"'Where constant area portion near rotor starts\n",
+    )
+    write(
+        f,
+        "\"nosecpx2\"=$(nosecpx2/chord) * \"chord\"'x-Coordinate of the second controloint for the center body nose cone spline\n",
+    )
+    write(
+        f,
+        "\"tailcone_start\"=$(tailcone_start) * \"chord\"'Where constant area portion near rotor ends\n",
+    )
+    write(
+        f,
+        "\"tailcpx2\"=$(tailcpx2/chord) * \"chord\"'x-Coordinate of the second control point for the center body tail cone spline\n",
+    )
+    write(
+        f,
+        "\"cb_te_radius\"=$(cb_te_radius) * \"Rhub\"'Trailing Edge Radius of Center Body\n",
+    )
+
+    close(f)
+
+    return nothing
+end
+
+write_solidworks_equations(;
+    Rtip=Rtip,
+    Rhub=Rhub,
+    chord=chord,
+    xrotor=xrotor,
+    nosecone_stop=nosecone_stop,
+    nosecpx2=nosecone_cps[2][1],
+    tailcone_start=tailcone_start,
+    tailcpx2=tailcone_cps[2][1],
+    cb_te_radius=cb_te_radius,
+    duct_le_radius=duct_le_radius,
+    duct_te_radius=duct_te_radius,
+    nacellevar=nacellevar,
+    units="in",
+    filename="duct_param_temp/equations.txt",
+)
 

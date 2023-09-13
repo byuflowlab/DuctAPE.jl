@@ -1,0 +1,16 @@
+"Rtip"=5.0in'Rotor Tip Radius
+"Rhub"=0.625in'Rotor Hub Radius
+"xrotor"=0.5 * "chord"'x-Position of Rotor Plane
+"chord"=2.0 * "Rtip"'Duct Chord
+"duct_le_radius"=5.738166884102763in'Duct Inlet Radius
+"duct_te_radius"=5.095925915406688in'Duct Outlet Radius
+"nacellevar"=0.75in'Variable controlling fatness of nacelle
+"ductcpr2"="duct_le_radius"+"nacellevar"'r-Coordinate of second control point for nacelle spline
+"ductcpx3"="chord" / 2.0'x-Coordinate of third control point for nacelle spline
+"ductcpr3"="duct_le_radius"+"nacellevar"'r-Coordinate of third control point for nacelle spline
+"outletcpx2"="chord" * (1.0 + "tailcone_start" / "chord" ) / 2'x-Coordinate of second control point for casing outlet spline
+"nosecone_stop"=0.45 * "chord"'Where constant area portion near rotor starts
+"nosecpx2"=0.1 * "chord"'x-Coordinate of the second controloint for the center body nose cone spline
+"tailcone_start"=0.65 * "chord"'Where constant area portion near rotor ends
+"tailcpx2"=1.0 * "chord"'x-Coordinate of the second control point for the center body tail cone spline
+"cb_te_radius"=1.0 * "Rhub"'Trailing Edge Radius of Center Body
