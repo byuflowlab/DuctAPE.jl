@@ -19,6 +19,12 @@ function visualize_paneling(;
     cpmarkersize=2,
 )
 
+    ## -- fix user errors -- ##
+    # if file name isn't given as a vector, make it one
+    if typeof(filename) <: String
+        filename = [filename]
+    end
+
     ## -- Initialize Plot -- ##
     # plot generated body_panels
     if limits != nothing
