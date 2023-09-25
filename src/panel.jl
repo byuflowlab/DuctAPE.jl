@@ -15,7 +15,11 @@ generates NamedTuple of panel geometry items from a vector of matrices of coordi
 assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
 """
 function generate_panels(
-    coordinates::Vector{Matrix{TF}}; itpanelscale=0.05, axistol=1e-15, tetol=1e1 * eps()
+    coordinates::Vector{Matrix{TF}};
+    body=false,
+    itpanelscale=0.05,
+    axistol=1e-15,
+    tetol=1e1 * eps(),
 ) where {TF}
 
     ## -- SETUP -- ##
@@ -23,19 +27,20 @@ function generate_panels(
     npanel = [length(eachrow(c)) - 1 for c in coordinates]
     nbodies = length(npanel)
     totpanel = sum(npanel)
+    totnode = totpanel + nbodies
 
     # - Initialize Outputs - #
-    controlpoint = zeros(TF, totpanel, 2)
-    nodes = zeros(TF, totpanel, 2, 2) # panel, edge, x-r
+    controlpoint = zeros(TF, body ? totnode : totpanel, 2) # panel, x-r
+    node = zeros(TF, totnode, 2) # node, x-r
     endpoints = zeros(TF, length(coordinates), 2, 2) # TE, upper-lower, x-r
-    # endpointidxs = ones(Int, length(coordinates), 2, 2) # lower idx, upper idx, lower or upper
     endpointidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx, lower or upper
-    panel_length = zeros(TF, totpanel)
-    normal = zeros(TF, totpanel, 2)
-    tangent = zeros(TF, totpanel, 2)
+    influence_length = zeros(TF, totnode)
+    normal = zeros(TF, body ? totnode : totpanel, 2)
+    tangent = zeros(TF, body ? totnode : totpanel, 2)
 
     # initialize index for entire array
-    pidx = 1
+    pidx = 1 # panel index
+    nidx = 1 # node index (+1 extra after each body)
 
     # loop through bodies
     for (ib, c) in enumerate(coordinates)
@@ -49,128 +54,171 @@ function generate_panels(
 
         ## -- Loop Through Coordinates -- ##
         for ip in 1:npanel[ib]
+
+            # Get nodes (panel edges)
+            node[nidx, :] = [x[ip]; r[ip]]
+            node[nidx + 1, :] = [x[ip + 1]; r[ip + 1]]
+
+            # Calculate control point (panel center)
+            controlpoint[pidx, :] .= [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
+
+            # Calculate panel length
+            influence_length[nidx] += get_r(node[nidx, :], controlpoint[pidx, :])[2]
+            influence_length[nidx + 1] += get_r(node[nidx + 1, :], controlpoint[pidx, :])[2]
+
+            # Calculate panel unit normal
+            normal[pidx, :] = get_panel_normal(get_r(c[ip, :], c[ip + 1, :])...)
+
+            # Calculate panel unit tangent
+            tangent[pidx, :] = get_panel_tangent(get_r(c[ip, :], c[ip + 1, :])...)
+
+            # - Get endpoints and make any adjustments - #
             if ip == 1
                 #lower
                 endpoints[ib, 1, :] = [x[ip] r[ip]]
                 # endpointidxs[ib, 1, :] = [pidx; -1]
-                endpointidxs[ib, 1] = pidx
+                if body
+                    endpointidxs[ib, 1] = pidx - ib + 1
+                else
+                    endpointidxs[ib, 1] = pidx
+                end
             elseif ip == npanel[ib]
                 #upper
                 endpoints[ib, 2, :] = [x[ip + 1] r[ip + 1]]
-                endpointidxs[ib, 2] = pidx
+                if body
+                    endpointidxs[ib, 2] = pidx - ib + 1
+                else
+                    endpointidxs[ib, 2] = pidx
+                end
                 # endpointidxs[ib, 2, :] = [pidx; 1]
+
+                # Add extra control point at TE for bodies, and shift any nodes in halfway to control point.
+                if body
+                    if all(
+                        sign.(tangent[(pidx - npanel[ib] + 1):pidx, 1]) .==
+                        sign.(abs.(tangent[(pidx - npanel[ib] + 1):pidx, 1])),
+                    )
+                        # if we don't wrap around, just use last point
+                        controlpoint[pidx + 1, :] .= [x[ip + 1]; r[ip + 1]]
+                    else
+                        # if we wrap around, use average of first and last point
+                        controlpoint[pidx + 1, :] .= [
+                            0.5 * (x[ip + 1] + x[1])
+                            0.5 * (r[ip + 1] + r[1])
+                        ]
+
+                        # shift first node location.
+                        # Assumes duct coordinates are given first
+                        node[1, :] = 0.5 * (node[1, :] .+ controlpoint[1, :])
+                    end
+
+                    # - shift last node location.
+                    node[nidx + 1, :] = 0.5 * (node[nidx + 1, :] .+ controlpoint[pidx, :])
+
+                    # manually set tangent and normal for extra control point
+                    tangent[pidx + 1, :] .= [1.0; 0.0]
+                    normal[pidx + 1, :] .= [0.0; 1.0]
+                end
             end
-
-            # Get nodes (panel edges)
-            nodes[pidx, :, :] = [x[ip] r[ip]; x[ip + 1] r[ip + 1]]
-
-            # Calculate control point (panel center)
-            controlpoint[pidx, :] = [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
-
-            # Calculate panel length
-            panel_vector, panel_length[pidx] = get_r(nodes[pidx, 1, :], nodes[pidx, 2, :])
-
-            # Calculate panel unit normal
-            normal[pidx, :] = get_panel_normal(panel_vector, panel_length[pidx])
-
-            # Calculate panel unit tangent
-            tangent[pidx, :] = get_panel_tangent(panel_vector, panel_length[pidx])
 
             # iterate "global" panel index
             pidx += 1
+            nidx += 1
         end
-    end
-
-    # - Trailing Edge Nodes - #
-    TEnodes = []
-    for t in 1:length(endpoints[:, 1, 1])
-        if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=tetol)
-            push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=1)) # lower is negative
-            push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=-1)) #upper is positive
+        if body
+            pidx += 1
         end
+        nidx += 1
     end
 
-    # - Internal Panel Stuff - #
-    itcontrolpoint = zeros(TF, nbodies, 2)
-    itnormal = zeros(TF, nbodies, 2)
+    # # - Trailing Edge Nodes - #
+    # TEnodes = []
+    # for t in 1:length(endpoints[:, 1, 1])
+    #     if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=tetol)
+    #         push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=1)) # lower is negative
+    #         push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=-1)) #upper is positive
+    #     end
+    # end
 
-    for ib in 1:nbodies
+    ## - Internal Panel Stuff - #
+    #itcontrolpoint = zeros(TF, nbodies, 2)
+    #itnormal = zeros(TF, nbodies, 2)
 
-        #TODO: for more robust, consider splining the coordinates, then getting the midpoint of the bodies, the normals can probably just be arbitrary, [1,0] should work, then there's no axial flow on the panel.
+    #for ib in 1:nbodies
 
-        #rename for convenience
-        p1id = endpointidxs[ib, 1]
-        pnid = endpointidxs[ib, 2]
+    #    #TODO: for more robust, consider splining the coordinates, then getting the midpoint of the bodies, the normals can probably just be arbitrary, [1,0] should work, then there's no axial flow on the panel.
 
-        # get node coordinates
-        n11 = nodes[p1id, 1, :]
-        n12 = nodes[p1id, 2, :]
-        nn1 = nodes[pnid, 1, :]
-        nn2 = nodes[pnid, 2, :]
+    #    #rename for convenience
+    #    p1id = endpointidxs[ib, 1]
+    #    pnid = endpointidxs[ib, 2]
 
-        xtan = n11[1] - n12[1] + nn2[1] - nn1[1]
-        rtan = n11[2] - n12[2] + nn2[2] - nn1[2]
-        stan = sqrt(xtan^2 + rtan^2)
+    #    # get node coordinates
+    #    n11 = node[p1id, 1, :]
+    #    n12 = node[p1id, 2, :]
+    #    nn1 = node[pnid, 1, :]
+    #    nn2 = node[pnid, 2, :]
 
-        lenbar = 0.5 * (panel_length[p1id] + panel_length[pnid])
+    #    xtan = n11[1] - n12[1] + nn2[1] - nn1[1]
+    #    rtan = n11[2] - n12[2] + nn2[2] - nn1[2]
+    #    stan = sqrt(xtan^2 + rtan^2)
 
-        itcontrolpoint[ib, 1] =
-            0.5 * (n11[1] + nn2[1]) - itpanelscale * lenbar * xtan / stan
-        itcpr = 0.5 * (n11[2] + nn2[2]) - itpanelscale * lenbar * rtan / stan
-        #TODO: need to update this to be more robust for center bodies
-        itcontrolpoint[ib, 2] = itcpr < axistol ? 1e-3 : itcpr
+    #    lenbar = 0.5 * (influence_length[p1id] + influence_length[pnid])
 
-        itnormal[ib, 1] = xtan / stan
-        itnormal[ib, 2] = rtan / stan
-    end
+    #    itcontrolpoint[ib, 1] =
+    #        0.5 * (n11[1] + nn2[1]) - itpanelscale * lenbar * xtan / stan
+    #    itcpr = 0.5 * (n11[2] + nn2[2]) - itpanelscale * lenbar * rtan / stan
+    #    #TODO: need to update this to be more robust for center bodies
+    #    itcontrolpoint[ib, 2] = itcpr < axistol ? 1e-3 : itcpr
 
-    # - ∇μ prep stuff - #
-    # get min and max points to split up geometry
-    xmm = []
-    rmm = []
-    for ib in 1:nbodies
-        brange = endpointidxs[ib, 1]:endpointidxs[ib, 2]
-        append!(xmm, findlocalmax(controlpoint[brange, 1]))
-        append!(xmm, findlocalmin(controlpoint[brange, 1]))
-        append!(rmm, findlocalmax(controlpoint[brange, 2]))
-        append!(rmm, findlocalmin(controlpoint[brange, 2]))
-    end
-    sort!(xmm)
-    sort!(rmm)
+    #    itnormal[ib, 1] = xtan / stan
+    #    itnormal[ib, 2] = rtan / stan
+    #end
 
-    # put together ranges over which to take gradients
-    dxrange = [[xmm[i] xmm[i + 1] 0] for i in 1:(length(xmm) - 1)]
-    drrange = [[rmm[i] rmm[i + 1] 0] for i in 1:(length(rmm) - 1)]
+    # # - ∇μ prep stuff - #
+    # # get min and max points to split up geometry
+    # xmm = []
+    # rmm = []
+    # for ib in 1:nbodies
+    #     brange = endpointidxs[ib, 1]:endpointidxs[ib, 2]
+    #     append!(xmm, findlocalmax(controlpoint[brange, 1]))
+    #     append!(xmm, findlocalmin(controlpoint[brange, 1]))
+    #     append!(rmm, findlocalmax(controlpoint[brange, 2]))
+    #     append!(rmm, findlocalmin(controlpoint[brange, 2]))
+    # end
+    # sort!(xmm)
+    # sort!(rmm)
 
-    # identify which ranges will need to be reversed
-    for xr in dxrange
-        if controlpoint[xr[1], 1] > controlpoint[xr[2], 1]
-            xr[3] = 1
-        end
-    end
-    for rr in drrange
-        if controlpoint[rr[1], 2] > controlpoint[rr[2], 2]
-            rr[3] = 1
-        end
-    end
+    # # put together ranges over which to take gradients
+    # dxrange = [[xmm[i] xmm[i + 1] 0] for i in 1:(length(xmm) - 1)]
+    # drrange = [[rmm[i] rmm[i + 1] 0] for i in 1:(length(rmm) - 1)]
+
+    # # identify which ranges will need to be reversed
+    # for xr in dxrange
+    #     if controlpoint[xr[1], 1] > controlpoint[xr[2], 1]
+    #         xr[3] = 1
+    #     end
+    # end
+    # for rr in drrange
+    #     if controlpoint[rr[1], 2] > controlpoint[rr[2], 2]
+    #         rr[3] = 1
+    #     end
+    # end
 
     return (;
         controlpoint,
-        nodes,
-        len=panel_length,
+        node,
+        influence_length,
         normal,
         tangent,
-        # endpoints=reshape(endpoints, (nbodies*2, 2)),
         endpoints,
-        # endpointidxs=reshape(endpointidxs, (nbodies*2,2)),
         endpointidxs,
-        TEnodes,
+        # TEnodes,
         npanels=totpanel,
-        itcontrolpoint,
-        itnormal,
+        # itcontrolpoint,
+        # itnormal,
         nbodies,
-        dxrange,
-        drrange,
+        # dxrange,
+        # drrange,
     )
 end
 
