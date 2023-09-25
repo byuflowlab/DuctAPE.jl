@@ -10,18 +10,18 @@ using Splines
 using FLOWMath
 const fm = FLOWMath
 
-#=
-Redo TODOs:
-
-variables include Rhub, Rtip, and exit area, also maybe rotor axial position (in the form of inlet length as a percent of total enclosed length?)
-constant parameters will be overall lengths, inlet area, etc.
-=#
-
 """
 cosine spacing
 """
 function cosine_spacing(N)
     return [0.5 * (1 - cos(pi * (i - 1) / (N - 1))) for i in 1:N]
+end
+
+"""
+cosine spacing, but also scales and transforms
+"""
+function scaled_cosine_spacing(N, scale, transform; mypi=pi)
+    return transform .+ scale * [0.5 * (1 - cos(mypi * (i - 1) / (N - 1))) for i in 1:N]
 end
 
 """
@@ -33,10 +33,11 @@ nose_tip_cpx and tail_tip_cpx are also ratio of internal length
 """
 function centerbody_geom(
     Rhub,
-    internal_length;
+    duct_chord;
+    nosecone_start=0.125,
     nosecone_stop=0.35,
     tailcone_start=0.65,
-    nose_tip_cpx=0.0,
+    nose_tip_cpx=0.1,
     tail_tip_cpx=0.85,
     cb_te_radius=0.1,
     hub_chord=1.25,
@@ -44,7 +45,7 @@ function centerbody_geom(
 )
 
     # - define flat portion first - #
-    flatx = range(nosecone_stop * internal_length, tailcone_start * internal_length, 10)
+    flatx = range(nosecone_stop * duct_chord, tailcone_start * duct_chord, 10)
     flatr = ones(10) * Rhub
 
     # - Nose Cone quadratic spline - #
@@ -54,7 +55,9 @@ function centerbody_geom(
     # Nose control points
     #nose cpx2 is based on nose tip angle
     nosecone_cps = [
-        [0.0, 0.0], [nose_tip_cpx * internal_length, flatr[1]], [flatx[1], flatr[1]]
+        [nosecone_start * duct_chord, 0.0],
+        [(2.0*nosecone_start + nosecone_stop) * duct_chord / 3.0, flatr[1]],
+        [flatx[1], flatr[1]],
     ]
 
     # spline
@@ -64,8 +67,8 @@ function centerbody_geom(
     # tail control points
     tail_cps = [
         [flatx[end], flatr[end]],
-        [tail_tip_cpx * internal_length, flatr[end]],
-        [hub_chord * internal_length, cb_te_radius * Rhub],
+        [tail_tip_cpx * duct_chord, flatr[end]],
+        [hub_chord * duct_chord, cb_te_radius * Rhub],
     ]
 
     # spline
@@ -89,7 +92,8 @@ function centerbody_geom(
     rs = [getindex.(Cw_nose, 2); flatr[2:(end - 1)]; getindex.(Cw_tail, 2)]
 
     # re-spline with akima spline and cosine spacing
-    cbx = cosine_spacing(N) * internal_length * hub_chord
+    cbx = scaled_cosine_spacing(N, duct_chord * hub_chord, nosecone_start * duct_chord)
+    # cbx = cosine_spacing(N) * duct_chord * hub_chord
     cbsp = fm.Akima(xs, rs)
     cbr = cbsp(cbx)
 
@@ -209,6 +213,7 @@ Rtip = 5.0 # inches
 Rhub = 1.25 / 2.0 # inches
 chord = 2 * Rtip
 xrotor = Rtip
+nosecone_start = 0.25
 nosecone_stop = 0.45
 tailcone_start = 0.65
 nose_tip_cpx = 0.1
@@ -218,6 +223,7 @@ cb_te_radius = 1.0
 cbx, cbr, cbspline, nosecone_cps, tailcone_cps = centerbody_geom(
     Rhub,
     chord;
+    nosecone_start=nosecone_start,
     nosecone_stop=nosecone_stop,
     tailcone_start=tailcone_start,
     nose_tip_cpx=nose_tip_cpx,
@@ -357,8 +363,8 @@ function write_solidworks_equations(;
     Rhub=1.25 / 2.0,
     chord=10.0,
     xrotor=5.0,
+    nosecone_start=2.5,
     nosecone_stop=5.0,
-    nosecpx2=0.5,
     tailcone_start=5.0,
     tailcpx2=0.5,
     cb_te_radius=1.25 / 2.0,
@@ -402,11 +408,15 @@ function write_solidworks_equations(;
     # Center Body Parameters
     write(
         f,
+        "\"nosecone_start\"=$(nosecone_start) * \"chord\"'Leading edge x-location of center body\n",
+    )
+    write(
+        f,
         "\"nosecone_stop\"=$(nosecone_stop) * \"chord\"'Where constant area portion near rotor starts\n",
     )
     write(
         f,
-        "\"nosecpx2\"=$(nosecpx2/chord) * \"chord\"'x-Coordinate of the second controloint for the center body nose cone spline\n",
+        "\"nosecpx2\"= (2.0 * \"nosecone_start\"+\"nosecone_stop\")/3.0'x-Coordinate of the second controloint for the center body nose cone spline\n",
     )
     write(
         f,
@@ -431,8 +441,8 @@ write_solidworks_equations(;
     Rhub=Rhub,
     chord=chord,
     xrotor=xrotor,
+    nosecone_start=nosecone_start,
     nosecone_stop=nosecone_stop,
-    nosecpx2=nosecone_cps[2][1],
     tailcone_start=tailcone_start,
     tailcpx2=tailcone_cps[2][1],
     cb_te_radius=cb_te_radius,
@@ -440,6 +450,6 @@ write_solidworks_equations(;
     duct_te_radius=duct_te_radius,
     nacellevar=nacellevar,
     units="in",
-    filename="duct_param_temp/equations.txt",
+    filename="equations.txt",
 )
 
