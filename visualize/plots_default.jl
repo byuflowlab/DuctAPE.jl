@@ -4,7 +4,7 @@ Default Plots Settings for creating tikz native figures for dissertation
 
 using Plots;
 pgfplotsx();
-# pyplot()
+# pythonplot()
 using LaTeXStrings
 using Measures
 
