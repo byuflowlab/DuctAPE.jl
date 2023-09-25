@@ -16,7 +16,7 @@ using ImplicitAD
 
 using SpecialFunctions
 
-using LinearAlgebra: factorize, mul!, lu!, ldiv!
+using LinearAlgebra: factorize, mul!, lu!, ldiv!, issuccess, NoPivot
 
 ## -- INCLUDES -- ##
 
