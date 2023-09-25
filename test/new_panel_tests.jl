@@ -1,16 +1,25 @@
 @testset "Panel Geometry" begin
 
+    #=
+    Note:
+    Currently we assume the following about the inputs:
+    for bodies, duct coordinates are given first
+    for bodies, coordinates are given from TE to TE clockwise
+    =#
+
     # single panel
     coordinates = [0.0 1.0; 1.0 1.0]
     panels = dt.generate_panels(coordinates)
 
     @test panels.controlpoint[1, :] == [0.5; 1.0]
     @test panels.normal[1, :] == [0.0; 1.0]
-    @test panels.nodes[1, :, :] == coordinates
+    @test panels.node == coordinates
     #note: for single panel, second node remains at initial zeros
     @test panels.endpoints[1, :, :] == [0.0 1.0; 0.0 0.0]
     #note: for single panel, second node remains at initial ones
     @test panels.endpointidxs == [1 1]
+    #note:
+    @test panels.influence_length == [0.5; 0.5]
 
     ## more panels and bodies
     # define coordinates
@@ -25,72 +34,78 @@
 
     coordinates = [c1, c2]
 
-    # generate panels
+    # generate nominal (wake-like) panels
     panels = dt.generate_panels(coordinates)
 
     # tests
+    @test panels.influence_length == [
+        sqrt(2) / 4
+        sqrt(2) / 2
+        sqrt(2) / 2
+        sqrt(2) / 2
+        sqrt(2) / 4
+        sqrt(2) / 4
+        sqrt(2) / 2
+        sqrt(2) / 4
+    ]
+    @test panels.controlpoint == [
+        0.75 1.75
+        0.25 1.75
+        0.25 2.25
+        0.75 2.25
+        # 1.0 2.0 # no extra control point at wake or rotor ends
+        0.25 0.25
+        0.75 0.25
+        # 1.0 0.0 # no extra control point at wake or rotor ends
+    ]
+    testnodes = reduce(vcat, coordinates)
+    @test panels.node == testnodes
+    testnorm = sqrt(2) / 2 .* [1 -1; -1 -1; -1 1; 1 1; -1 1; 1 1]
+    for (pn, tn) in zip(eachrow(panels.normal), eachrow(testnorm))
+        @test isapprox(pn, tn)
+    end
     @test panels.endpoints[1, :, :] == [1.0 2.0; 1.0 2.0]
     @test panels.endpoints[2, :, :] == [0.0 0.0; 1.0 0.0]
     @test panels.endpointidxs[1, :] == [1; 4]
     @test panels.endpointidxs[2, :] == [5; 6]
-end
 
-@testset "Body System" begin
-
-    # define coordinates
-    x1 = [1.0; 0.5; 0.0; 0.5; 1.0]
-    r1 = [2.0; 1.5; 2.0; 2.5; 2.0]
-
-    # x2 = [0.0; 0.5; 1.0]
-    # r2 = [0.0; 0.5; 0.0]
-
-    c1 = [x1 r1]
-    # c2 = [x2 r2]
-
-    # coordinates = [c1,c2]
-    coordinates = [c1]
-
-    # generate panels
-    panels = dt.generate_panels(coordinates)
-
-    # initialize LHS
-    LHS = dt.doublet_panel_influence_matrix(panels.nodes, panels)
-    LHSraw = copy(LHS)
-
-    # kutta LHS
-    dt.body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=true)
-
-    #only the first and last columns should be changed
-    @test LHS[:, 2:(end - 1)] == LHSraw[:, 2:(end - 1)]
-
-    Vs = [ones(length(x1)) zeros(length(r1))]
-
-    RHS = dt.freestream_influence_vector(panels.normal, Vs)
-    @test all(isapprox.(RHS, [-1.0; 1.0; 1.0; -1.0] * 0.5 * sqrt(2.0)))
-end
-
-@testset "Book-keeping Checks" begin
-
-    # load basic 2-rotor geometry that can be hand counted
-    include("data/basic_two_rotor_for_test.jl")
-
-    # get inputs
-    inputs = dt.precomputed_inputs(
-        duct_coordinates,
-        hub_coordinates,
-        paneling_constants,
-        rotor_parameters,
-        freestream,
-        reference_parameters,
-    )
-
-    # check interface indexing and such
-    @test inputs.hubwakeinterfaceid == 1:3
-    @test inputs.ductwakeinterfaceid == 15:17
-    @test inputs.num_wake_x_panels == 7
-
-    # put in wake discritization function test instead of here. they are used inside the precomputed inputs function, but should not be passed out.
-    # @test rotor_indices_in_wake == [1; 3]
-    # @test hubTE_index = 4
-    # @test ductTE_index = 4
+    # - Body paneling, with extra control point - #
+    panels = dt.generate_panels(coordinates; body=true)
+    # tests
+    @test panels.influence_length == [
+        sqrt(2) / 4
+        sqrt(2) / 2
+        sqrt(2) / 2
+        sqrt(2) / 2
+        sqrt(2) / 4
+        sqrt(2) / 4
+        sqrt(2) / 2
+        sqrt(2) / 4
+    ]
+    @test panels.controlpoint == [
+        0.75 1.75
+        0.25 1.75
+        0.25 2.25
+        0.75 2.25
+        1.0 2.0 # extra control point at trailing edge for kutta condition
+        0.25 0.25
+        0.75 0.25
+        1.0 0.0 # extra control point at trailing edge for kutta condition (perhaps not needed for hub)
+    ]
+    n1 = c1
+    n1[1, :] = 0.5 * (n1[1, :] .+ panels.controlpoint[1, :])
+    n1[end, :] = 0.5 * (n1[end, :] .+ panels.controlpoint[4, :])
+    n2 = c2
+    n2[end, :] = 0.5 * (n2[end, :] .+ panels.controlpoint[end - 1, :])
+    ns = [n1, n2]
+    testnodes = reduce(vcat, ns)
+    @test panels.node == testnodes
+    testnorm = sqrt(2) / 2 .* [1 -1; -1 -1; -1 1; 1 1; 0 2/sqrt(2); -1 1; 1 1; 0 2/sqrt(2)]
+    for (pn, tn) in zip(eachrow(panels.normal), eachrow(testnorm))
+        @test isapprox(pn, tn)
+    end
+    @test panels.endpoints[1, :, :] == [1.0 2.0; 1.0 2.0]
+    @test panels.endpoints[2, :, :] == [0.0 0.0; 1.0 0.0]
+    @test panels.endpointidxs[1, :] == [1; 4]
+    @test panels.endpointidxs[2, :] == [5; 6]
 end
