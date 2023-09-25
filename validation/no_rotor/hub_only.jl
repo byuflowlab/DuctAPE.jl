@@ -25,7 +25,7 @@ include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
 # hub final r-coordinate needs to be set to zero so that it's not negative
 r_hub[end] = 0.0
 # put coordinates together
-coordinates = [x_hub r_hub]
+coordinates = [x_hub[1:end-1] r_hub[1:end-1]]
 
 #---------------------------------#
 #             Paneling            #
@@ -58,21 +58,22 @@ Vsmat = repeat(Vs, panels.npanels) # need velocity on each panel
 #---------------------------------#
 
 # - Initial System Matrices - #
-# TODO: write new LHS function that includes LU decomposition and returns LU decomposed object
-LHSLU = dt.vortex_panel_influence_matrix(panels.nodes, panels)
+LHS = dt.vortex_panel_influence_matrix(panels, panels)
 # put this in the vortex panel influence matrix stuff
-# LHSLU = lu!(LHS, NoPivot(); check=false) # we shouldn't need a pivot since we have self-induced velocities, and we don't want to throw an error if the factorization didn't work
-# lufail = !issuccess(LHSLU) # we can pass this as part of the optimization fail flag
+# LHSLU = dt.lu!(LHS, dt.NoPivot(); check=false) # we shouldn't need a pivot since we have self-induced velocities, and we don't want to throw an error if the factorization didn't work
+# lufail = !dt.issuccess(LHSLU) # we can pass this as part of the optimization fail flag
 
 # note that this is not the body strengths, but rather the system RHS which will be overwritten to be the body strengths upon solving in place.
-gamb = dt.freestream_influence_vector(panels.normal, Vsmat)
+# gamb = dt.freestream_influence_vector(panels.normal, Vsmat)
+RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
 
 #---------------------------------#
 #             Solving             #
 #---------------------------------#
 # - Use LinearAlgebra's ldiv! to solve linear system using factorized matrix
 # note that gamb is overwritten to be the RHS vector and then overwritten to be the body strengths
-la.ldiv!(LHSLU, gamb)
+# dt.ldiv!(LHSLU, gamb)
+gamb = LHS\RHS
 
 #---------------------------------#
 #         Post-Processing         #
@@ -80,13 +81,25 @@ la.ldiv!(LHSLU, gamb)
 
 ### --- Velocity Contributions --- ###
 # - Body-induced Surface Velocity - #
-# TODO: write new surface velocity calucation function.  may need to name this something else as it likely already exists. also probably want to make sure it does what you think it should
-Vb = dt.vfromvortexpanels(panels.controlpoint, panels.controlpoint, gamb)
+# TODO: write new surface velocity calculation function.  may need to name this something else as it likely already exists. also probably want to make sure it does what you think it should
+Vb = similar(Vsmat) .= 0.0
+dt.vfromvortexpanels!(
+    Vb, panels.controlpoint, panels.controlpoint, panels.len, gamb
+)
+Vb .+= Vsmat
+Vtan = [dt.dot(v,t) for (v,t) in zip(eachrow(Vb), eachrow(panels.tangent))]
+dt.norm.(eachrow(Vb))
 
+# get x-coordinates for plotting
+xs = panels.controlpoint[:, 1]
 #---------------------------------#
 #             PLOTTING            #
 #---------------------------------#
-pp = plot(; xlabel="x", ylabel=L"V_s/V_\infty")
+pg = plot(; xlabel="x", ylabel=L"\mathrm{Panel~strengths~}(\gamma^B)")
+plot!(pg,xs,gamb,label="")
+savefig(savepath * "hub-gammas.pdf")
+
+pp = plot(; xlabel="x", ylabel=L"\mathrm{Normalized~surface~velocity~}(V_s/V_\infty)")
 plot!(
     pp,
     Vs_over_Vinf_x,
@@ -96,7 +109,6 @@ plot!(
     markershape=:utriangle,
     label="experimental",
 )
-xs = panels.controlpoint[:, 1]
-plot!(pp, xs, dt.norm.(eachrow(Vtot)) ./ Vinf; label="DuctTAPE")
+plot!(pp, xs, Vtan ./ Vinf; label="DuctTAPE")
 
 savefig(savepath * "hub-vel-comp.pdf")
