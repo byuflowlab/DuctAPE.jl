@@ -6,8 +6,8 @@
 """
 avoid issues with single bodies being input not as vectors
 """
-function generate_panels(coordinates::Matrix{TF}) where {TF}
-    return generate_panels([coordinates])
+function generate_panels(coordinates::Matrix{TF}; kwargs...) where {TF}
+    return generate_panels([coordinates], kwargs...)
 end
 
 """
@@ -21,6 +21,8 @@ function generate_panels(
     axistol=1e-15,
     tetol=1e1 * eps(),
 ) where {TF}
+
+# TODO: consider splitting out into multiple dispatches rather than having all the ifs for the body case. they're different enough that it probably makes sense to split them out.
 
     ## -- SETUP -- ##
     # Get total number of panels (sum of nedges-1 for each body)
@@ -46,8 +48,8 @@ function generate_panels(
     for (ib, c) in enumerate(coordinates)
 
         # Separate coordinates
-        x = c[:, 1]
-        r = c[:, 2]
+        x = view(c,:, 1)
+        r = view(c,:, 2)
 
         # Check if any r coordinates are negative (not allowed in axisymmetric method)
         @assert all(r -> r >= 0.0, r)
