@@ -55,7 +55,6 @@ visualize_paneling(;
     coordinates=nothing,
     controlpoints=true,
     nodes=false,
-    TEnodes=false,
     normals=true,
     savepath=savepath,
     filename="duct-geometry.pdf",

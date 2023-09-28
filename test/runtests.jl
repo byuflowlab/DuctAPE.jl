@@ -19,7 +19,8 @@ println("Running Tests...")
 
 # # - Should be Working - #
 include("new_panel_tests.jl")
-include("basic_singularity.jl")
+include("induced_velocities.jl")
+include("body_geometry_tests.jl")
 
 # add back in after body is validated and need to get rotor/wake working again.
 # include("blade_element_aero_lookups.jl")
@@ -31,7 +32,6 @@ include("basic_singularity.jl")
 
 # - Need to update, add, fix, etc. - #
 # include("body_aero_tests.jl")
-# include("body_geometry_tests.jl")
 # # TODO: need to add source and body induced velocities to induced velocity on rotor test
 # include("rotor_aero_tests.jl")
 # # TODO: need to update most of this test after having added sources and bodies in.

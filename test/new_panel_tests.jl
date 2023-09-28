@@ -13,6 +13,7 @@
 
     @test panels.controlpoint[1, :] == [0.5; 1.0]
     @test panels.normal[1, :] == [0.0; 1.0]
+    @test panels.tangent[1, :] == [1.0; 0.0]
     @test panels.node == coordinates
     #note: for single panel, second node remains at initial zeros
     @test panels.endpoints[1, :, :] == [0.0 1.0; 0.0 0.0]
@@ -64,6 +65,10 @@
     for (pn, tn) in zip(eachrow(panels.normal), eachrow(testnorm))
         @test isapprox(pn, tn)
     end
+    testtan = sqrt(2) / 2 .* [-1 -1; -1 1; 1 1; 1 -1; 1 1; 1 -1]
+    for (pn, tt) in zip(eachrow(panels.tangent), eachrow(testtan))
+        @test isapprox(pn, tt)
+    end
     @test panels.endpoints[1, :, :] == [1.0 2.0; 1.0 2.0]
     @test panels.endpoints[2, :, :] == [0.0 0.0; 1.0 0.0]
     @test panels.endpointidxs[1, :] == [1; 4]
@@ -103,6 +108,10 @@
     testnorm = sqrt(2) / 2 .* [1 -1; -1 -1; -1 1; 1 1; 0 2/sqrt(2); -1 1; 1 1; 0 2/sqrt(2)]
     for (pn, tn) in zip(eachrow(panels.normal), eachrow(testnorm))
         @test isapprox(pn, tn)
+    end
+    testtan = sqrt(2) / 2 .* [-1 -1; -1 1; 1 1; 1 -1;2/sqrt(2) 0; 1 1; 1 -1; 2/sqrt(2) 0]
+    for (pn, tt) in zip(eachrow(panels.tangent), eachrow(testtan))
+        @test isapprox(pn, tt)
     end
     @test panels.endpoints[1, :, :] == [1.0 2.0; 1.0 2.0]
     @test panels.endpoints[2, :, :] == [0.0 0.0; 1.0 0.0]
