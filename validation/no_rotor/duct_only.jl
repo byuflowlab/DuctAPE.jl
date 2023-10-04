@@ -27,7 +27,7 @@ include(project_dir * "/test/data/naca_662-015.jl")
 include(project_dir * "/test/data/naca_662-015_smooth.jl")
 # put coordinates together
 coordinates = reverse(duct_coordinates; dims=1)
-npan = 5000
+npan = 300
 coordinates = dt.repanel_airfoil(coordinates; N=npan, normalize=false)
 
 #---------------------------------#
@@ -74,7 +74,8 @@ RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
 #---------------------------------#
 gamb = LHS \ RHS
 
-cut = max(15, round(Int, npan / 50))
+# cut = max(15, round(Int, npan / 50))
+cut = 10
 pg = plot(
     xn[(cut + 1):(end - cut)],
     gamb[(cut + 1):(end - cut)];
@@ -94,25 +95,15 @@ dt.vfromvortices!(Vb, panels.controlpoint, panels.node, panels.influence_length,
 Vb
 Vb .+= Vsmat
 
-# get vz at nodes
-# why does this not work when multiplying by influence lengths, but half works when you don't?
-vznode =
-    abs.([
-        dt.smoke_ring_vz(r, l) * g for
-        (r, l, g) in zip(panels.node[:, 2], panels.influence_length, gamb)
-    ])
-
 # average nodes to get values at cps
-vzcp = (vznode[2:end] .+ vznode[1:(end - 1)]) / 2
+vzcp = (gamb[2:end] .+ gamb[1:(end - 1)]) / 2
 # get vz at TE cp
-push!(vzcp, (vznode[1] + vznode[end]) / 2)
-vzcp = [vzcp zeros(length(vzcp))]
-
-# add half of vzcp at each cp
-# Vb .+= vzcp / 2
+push!(vzcp, (gamb[1] + gamb[end]) / 2)
+# push!(vzcp, 0.0)
 
 # get tangent
 Vtan = [dt.dot(v, t) for (v, t) in zip(eachrow(Vb), eachrow(panels.tangent))]
+Vtan .-= vzcp / 2
 
 ### --- Steady Surface Pressure --- ###
 cp = 1.0 .- (Vtan / Vinf) .^ 2
@@ -140,6 +131,6 @@ plot!(
     label="exp inner",
 )
 # cut = 15
-plot!(pp, xcp[(cut + 1):(end - cut)], cp[(cut + 1):(end - cut)]; label="DuctAPE")
+plot!(pp, xcp[(cut + 1):(end - cut)], cp[(cut + 1):(end - cut)]; label="DuctAPE", color=1)
 
 savefig(savepath * "duct-pressure-comp.pdf")
