@@ -12,6 +12,7 @@ end
 savepath = project_dir * "/validation/no_rotor/"
 
 # - load DuctTAPE - #
+using LinearAlgebra
 using DuctTAPE
 const dt = DuctTAPE
 
@@ -22,22 +23,22 @@ include(project_dir * "/visualize/plots_default_new.jl")
 # - load experimental data - #
 include(project_dir * "/test/data/naca_662-015.jl")
 coordinates = lewis_duct_coordinates
-coordinates = coordinates[3:end-2,:]
+# coordinates = coordinates[3:end-2,:]
 
-# # - load geometry - #
-# # read data file
-# include(project_dir * "/test/data/naca_662-015_smooth.jl")
-# # put coordinates together
-# coordinates = reverse(duct_coordinates; dims=1)
-# npan = 300
-# coordinates = dt.repanel_airfoil(coordinates; N=npan, normalize=false)
-# coordinates = coordinates[11:end-10,:]
+# - load geometry - #
+# read data file
+include(project_dir * "/test/data/naca_662-015_smooth.jl")
+# put coordinates together
+coordinates = reverse(duct_coordinates; dims=1)
+npan = 200
+coordinates = dt.repanel_airfoil(coordinates; N=npan, normalize=false)
+coordinates = coordinates[9:end-8,:]
 
 #---------------------------------#
 #             Paneling            #
 #---------------------------------#
 ##### ----- Generate Panels ----- #####
-# panels = dt.generate_panels([coordinates];body=true)
+# panels = generate_panels([coordinates];body=true)
 panels = dt.generate_panels([coordinates])
 
 ##### ----- Visualize to Check ----- #####
@@ -71,11 +72,19 @@ Vsmat = repeat(Vs, size(panels.controlpoint, 1)) # need velocity on each panel
 LHS = dt.vortex_influence_matrix(
     panels.controlpoint, panels.normal, panels.node, panels.influence_length
 )
+RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
+
+# standard kutta
 LHS = [LHS; zeros(size(LHS, 2))']
 LHS[end, 1] = 1.0
 LHS[end, end] = 1.0
-RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
+println("LHS Condition Number: ", cond(LHS))
 push!(RHS, 0.0)
+
+# # xfoil sharp
+# LHS[end, 1:3] .= [-1.0; -2.0; -1.0]
+# LHS[end, end-2:end] .= [1.0; 2.0; 1.0]
+# RHS[end] = 0.0
 
 #---------------------------------#
 #             Solving             #
