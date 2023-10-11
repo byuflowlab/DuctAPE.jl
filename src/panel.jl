@@ -7,7 +7,7 @@
 avoid issues with single bodies being input not as vectors
 """
 function generate_panels(coordinates::Matrix{TF}; kwargs...) where {TF}
-    return generate_panels([coordinates], kwargs...)
+    return generate_panels([coordinates]; kwargs...)
 end
 
 """
@@ -15,30 +15,23 @@ generates NamedTuple of panel geometry items from a vector of matrices of coordi
 assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
 """
 function generate_panels(
-    coordinates::Vector{Matrix{TF}};
-    body=false,
-    itpanelscale=0.05,
-    axistol=1e-15,
-    tetol=1e1 * eps(),
+    coordinates::Vector{Matrix{TF}}; itpanelscale=0.05, axistol=1e-15, tetol=1e1 * eps()
 ) where {TF}
 
-# TODO: consider splitting out into multiple dispatches rather than having all the ifs for the body case. they're different enough that it probably makes sense to split them out.
-
     ## -- SETUP -- ##
-    # Get total number of panels (sum of nedges-1 for each body)
     npanel = [length(eachrow(c)) - 1 for c in coordinates]
     nbodies = length(npanel)
     totpanel = sum(npanel)
     totnode = totpanel + nbodies
 
     # - Initialize Outputs - #
-    controlpoint = zeros(TF, body ? totnode : totpanel, 2) # panel, x-r
+    controlpoint = zeros(TF, totpanel, 2) # panel, x-r
     node = zeros(TF, totnode, 2) # node, x-r
     endpoints = zeros(TF, length(coordinates), 2, 2) # TE, upper-lower, x-r
     endpointidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx, lower or upper
     influence_length = zeros(TF, totnode)
-    normal = zeros(TF, body ? totnode : totpanel, 2)
-    tangent = zeros(TF, body ? totnode : totpanel, 2)
+    normal = zeros(TF, totpanel, 2)
+    tangent = zeros(TF, totpanel, 2)
 
     # initialize index for entire array
     pidx = 1 # panel index
@@ -48,8 +41,8 @@ function generate_panels(
     for (ib, c) in enumerate(coordinates)
 
         # Separate coordinates
-        x = view(c,:, 1)
-        r = view(c,:, 2)
+        x = view(c, :, 1)
+        r = view(c, :, 2)
 
         # Check if any r coordinates are negative (not allowed in axisymmetric method)
         @assert all(r -> r >= 0.0, r)
@@ -79,56 +72,16 @@ function generate_panels(
                 #lower
                 endpoints[ib, 1, :] = [x[ip] r[ip]]
                 # endpointidxs[ib, 1, :] = [pidx; -1]
-                if body
-                    endpointidxs[ib, 1] = pidx - ib + 1
-                else
-                    endpointidxs[ib, 1] = pidx
-                end
             elseif ip == npanel[ib]
                 #upper
                 endpoints[ib, 2, :] = [x[ip + 1] r[ip + 1]]
-                if body
-                    endpointidxs[ib, 2] = pidx - ib + 1
-                else
-                    endpointidxs[ib, 2] = pidx
-                end
                 # endpointidxs[ib, 2, :] = [pidx; 1]
 
-                # Add extra control point at TE for bodies, and shift any nodes in halfway to control point.
-                if body
-                    if all(
-                        sign.(tangent[(pidx - npanel[ib] + 1):pidx, 1]) .==
-                        sign.(abs.(tangent[(pidx - npanel[ib] + 1):pidx, 1])),
-                    )
-                        # if we don't wrap around, just use last point
-                        controlpoint[pidx + 1, :] .= [x[ip + 1]; r[ip + 1]]
-                    else
-                        # if we wrap around, use average of first and last point
-                        controlpoint[pidx + 1, :] .= [
-                            0.5 * (x[ip + 1] + x[1])
-                            0.5 * (r[ip + 1] + r[1])
-                        ]
-
-                        # shift first node location.
-                        # Assumes duct coordinates are given first
-                        node[1, :] = 0.5 * (node[1, :] .+ controlpoint[1, :])
-                    end
-
-                    # - shift last node location.
-                    node[nidx + 1, :] = 0.5 * (node[nidx + 1, :] .+ controlpoint[pidx, :])
-
-                    # manually set tangent and normal for extra control point
-                    tangent[pidx + 1, :] .= [1.0; 0.0]
-                    normal[pidx + 1, :] .= [0.0; 1.0]
-                end
             end
 
             # iterate "global" panel index
             pidx += 1
             nidx += 1
-        end
-        if body
-            pidx += 1
         end
         nidx += 1
     end
