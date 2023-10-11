@@ -73,7 +73,7 @@ default(;
     #     markeralpha,
     #     markercolor,
     #     markershape,
-    markersize=1.5,
+    markersize=3,
     markerstrokealpha=0,
     #     markerstrokecolor,
     #     markerstrokestyle,
