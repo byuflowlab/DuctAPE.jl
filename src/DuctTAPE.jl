@@ -47,6 +47,7 @@ include("wake_geometry.jl")
 include("coefficient_matrix.jl")
 include("velocities.jl")
 include("integrals.jl")
+include("influence_coefficient_matrices.jl")
 
 # Rotor Aerodynamic Functions
 include("rotor_aerodynamics.jl")

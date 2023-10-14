@@ -19,18 +19,32 @@ function generate_panels(
 ) where {TF}
 
     ## -- SETUP -- ##
+    # number of panels to generate for each body
     npanel = [length(eachrow(c)) - 1 for c in coordinates]
+    # number of bodies
     nbodies = length(npanel)
+    # total number of panels in system
     totpanel = sum(npanel)
+    # total number of nodes in system
     totnode = totpanel + nbodies
 
     # - Initialize Outputs - #
+    # control points
     controlpoint = zeros(TF, totpanel, 2) # panel, x-r
+    # nodes
     node = zeros(TF, totnode, 2) # node, x-r
+    # node map
+    nodemap = zeros(Int, totpanel, 2) # node, x-r
+    #TODO: is endpoint information still needed? may be able to clean up.
+    # endpoints of bodies, rotor, or wakes
     endpoints = zeros(TF, length(coordinates), 2, 2) # TE, upper-lower, x-r
+    # indices of endpoints
     endpointidxs = ones(Int, length(coordinates), 2) # lower idx, upper idx, lower or upper
-    influence_length = zeros(TF, totnode)
+    # panel lengths
+    influence_length = zeros(TF, totpanel)
+    # panel unit normals
     normal = zeros(TF, totpanel, 2)
+    # panel unit tangents
     tangent = zeros(TF, totpanel, 2)
 
     # initialize index for entire array
@@ -45,7 +59,7 @@ function generate_panels(
         r = view(c, :, 2)
 
         # Check if any r coordinates are negative (not allowed in axisymmetric method)
-        @assert all(r -> r >= 0.0, r)
+        @assert all(r -> r >= 0.0, r) "Some coordinates have negative radial components."
 
         ## -- Loop Through Coordinates -- ##
         for ip in 1:npanel[ib]
@@ -53,13 +67,13 @@ function generate_panels(
             # Get nodes (panel edges)
             node[nidx, :] = [x[ip]; r[ip]]
             node[nidx + 1, :] = [x[ip + 1]; r[ip + 1]]
+            nodemap[pidx,:] .= [nidx; nidx+1]
 
             # Calculate control point (panel center)
             controlpoint[pidx, :] .= [0.5 * (x[ip] + x[ip + 1]); 0.5 * (r[ip] + r[ip + 1])]
 
             # Calculate panel length
-            influence_length[nidx] += get_r(node[nidx, :], controlpoint[pidx, :])[2]
-            influence_length[nidx + 1] += get_r(node[nidx + 1, :], controlpoint[pidx, :])[2]
+            influence_length[pidx] += get_r(node[nidx, :], node[nidx + 1, :])[2]
 
             # Calculate panel unit normal
             normal[pidx, :] = get_panel_normal(get_r(c[ip, :], c[ip + 1, :])...)
@@ -67,35 +81,28 @@ function generate_panels(
             # Calculate panel unit tangent
             tangent[pidx, :] = get_panel_tangent(get_r(c[ip, :], c[ip + 1, :])...)
 
-            # - Get endpoints and make any adjustments - #
+            # - Get endpoints - # TODO: still necessary?
             if ip == 1
                 #lower
                 endpoints[ib, 1, :] = [x[ip] r[ip]]
-                # endpointidxs[ib, 1, :] = [pidx; -1]
+                endpointidxs[ib, 1] = nidx
             elseif ip == npanel[ib]
                 #upper
                 endpoints[ib, 2, :] = [x[ip + 1] r[ip + 1]]
-                # endpointidxs[ib, 2, :] = [pidx; 1]
-
+                endpointidxs[ib, 2] = nidx + 1
             end
 
             # iterate "global" panel index
             pidx += 1
             nidx += 1
         end
+
+        # iterate "global" node index, since there is +1 nodes than panels
         nidx += 1
     end
 
-    # # - Trailing Edge Nodes - #
-    # TEnodes = []
-    # for t in 1:length(endpoints[:, 1, 1])
-    #     if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=tetol)
-    #         push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=1)) # lower is negative
-    #         push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=-1)) #upper is positive
-    #     end
-    # end
-
     ## - Internal Panel Stuff - #
+    #TODO: DFDC uses this, it may or may not be necessary
     #itcontrolpoint = zeros(TF, nbodies, 2)
     #itnormal = zeros(TF, nbodies, 2)
 
@@ -129,51 +136,19 @@ function generate_panels(
     #    itnormal[ib, 2] = rtan / stan
     #end
 
-    # # - ∇μ prep stuff - #
-    # # get min and max points to split up geometry
-    # xmm = []
-    # rmm = []
-    # for ib in 1:nbodies
-    #     brange = endpointidxs[ib, 1]:endpointidxs[ib, 2]
-    #     append!(xmm, findlocalmax(controlpoint[brange, 1]))
-    #     append!(xmm, findlocalmin(controlpoint[brange, 1]))
-    #     append!(rmm, findlocalmax(controlpoint[brange, 2]))
-    #     append!(rmm, findlocalmin(controlpoint[brange, 2]))
-    # end
-    # sort!(xmm)
-    # sort!(rmm)
-
-    # # put together ranges over which to take gradients
-    # dxrange = [[xmm[i] xmm[i + 1] 0] for i in 1:(length(xmm) - 1)]
-    # drrange = [[rmm[i] rmm[i + 1] 0] for i in 1:(length(rmm) - 1)]
-
-    # # identify which ranges will need to be reversed
-    # for xr in dxrange
-    #     if controlpoint[xr[1], 1] > controlpoint[xr[2], 1]
-    #         xr[3] = 1
-    #     end
-    # end
-    # for rr in drrange
-    #     if controlpoint[rr[1], 2] > controlpoint[rr[2], 2]
-    #         rr[3] = 1
-    #     end
-    # end
-
     return (;
+        nbodies,
+        npanels=totpanel,
         controlpoint,
         node,
+        nodemap,
         influence_length,
         normal,
         tangent,
         endpoints,
         endpointidxs,
-        # TEnodes,
-        npanels=totpanel,
         # itcontrolpoint,
         # itnormal,
-        nbodies,
-        # dxrange,
-        # drrange,
     )
 end
 

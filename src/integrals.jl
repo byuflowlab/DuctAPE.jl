@@ -82,10 +82,9 @@ end
 """
 """
 function analytically_integrated_vortex_influence(r, influence_length)
-    #mine
-    # axial = (influence_length / (2.0 * pi * r)) * (1.0 + log(8.0 * r / influence_length))
-    #DFDC
-    axial = (1 / (2.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
+    #DFDC has a 16 in the log, but I'm mathing an 8.  Who is wrong?
+    # axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
+    axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(8.0 * r / influence_length))
     radial = 0.0
     return axial, radial
 end
@@ -105,26 +104,16 @@ function self_vortex_induced_velocity_sample(
 
     # get relative geometry
     xi, rho, m, _ = calculate_xrm(controlpoint, [z0; r0])
-    # println("xi: ", xi)
-    # println("rho: ", rho)
-    # println("m: ", m)
-    # println("r0: ", r0)
 
     # Get velocity components at sample points
     vz = vortex_ring_vz(xi, rho, m, r0, 1.0) #shouldn't need influence length
     vr = vortex_ring_vr(xi, rho, m, r0)
-    # println("vz: ", vz)
-    # println("vr: ", vr)
 
     # Get singular piece to subtract
     vzs, vrs = subtracted_singular_vortex_influence([z0; r0], controlpoint)
-    # println("vzs: ", vzs)
-    # println("vrs: ", vrs)
 
     # Get analytic piece to add back in
     vza, vra = analytically_integrated_vortex_influence(controlpoint[2], influence_length)
-    # println("vza: ", vza)
-    # println("vra: ", vra)
 
     #=
     assemble output components in the format:
@@ -149,12 +138,12 @@ function self_vortex_panel_integration(
         )
     end
 
-    V, err = quadgk(fsample, 0.0, 0.5, 1.0; atol=1e-6)
+    V, err = quadgk(fsample, 0.0, 0.5, 1.0)
 
     vza, vra = analytically_integrated_vortex_influence(controlpoint[2], influence_length)
 
     V .*= influence_length
-    V[:, 1] .+= vza / (2.0 * influence_length)
+    V[:, 1] .+= vza / 2.0
 
     if debug
         return V, err
