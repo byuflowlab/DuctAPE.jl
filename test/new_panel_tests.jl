@@ -15,6 +15,7 @@
     @test panels.normal[1, :] == [0.0; 1.0]
     @test panels.tangent[1, :] == [1.0; 0.0]
     @test panels.node == coordinates
+    @test panels.nodemap == [1 2]
     #note: for single panel, second node remains at initial zeros
     @test panels.endpoints[1, :, :] == [0.0 1.0; 0.0 0.0]
     #note: for single panel, second node remains at initial ones
@@ -56,6 +57,7 @@
     ]
     testnodes = reduce(vcat, coordinates)
     @test panels.node == testnodes
+    @test panels.nodemap == [1 2; 2 3; 3 4; 4 5; 6 7; 7 8]
     testnorm = sqrt(2) / 2 .* [1 -1; -1 -1; -1 1; 1 1; -1 1; 1 1]
     for (pn, tn) in zip(eachrow(panels.normal), eachrow(testnorm))
         @test isapprox(pn, tn)
