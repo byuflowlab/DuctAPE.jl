@@ -71,9 +71,9 @@ function subtracted_singular_vortex_influence(node, controlpoint)
     num1z = controlpoint[1] - node[1]
     num1r = node[2] - controlpoint[2]
     den1 = 2.0 * pi * rmag2
-    den2 = 64.0 * node[2]^2
+    den2 = 64.0 * controlpoint[2]^2
 
-    axial = num1r / den1 - log(rmag2 / den2) / (8.0 * pi * node[2])
+    axial = num1r / den1 - log(rmag2 / den2) / (8.0 * pi * controlpoint[2])
     radial = num1z / den1
 
     return axial, radial
@@ -83,8 +83,8 @@ end
 """
 function analytically_integrated_vortex_influence(r, influence_length)
     #DFDC has a 16 in the log, but I'm mathing an 8.  Who is wrong?
-    # axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
-    axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(8.0 * r / influence_length))
+    axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
+    # axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(8.0 * r / influence_length))
     radial = 0.0
     return axial, radial
 end
@@ -111,9 +111,6 @@ function self_vortex_induced_velocity_sample(
 
     # Get singular piece to subtract
     vzs, vrs = subtracted_singular_vortex_influence([z0; r0], controlpoint)
-
-    # Get analytic piece to add back in
-    vza, vra = analytically_integrated_vortex_influence(controlpoint[2], influence_length)
 
     #=
     assemble output components in the format:
