@@ -35,7 +35,8 @@ default(;
     #     plot_titlefontvalign,
     #     pos,
     #     show,
-    size=(400, 300), #it appears that 100 ≈ 1inch in LaTeX
+    # size=(400, 300), #it appears that 100 ≈ 1inch in LaTeX
+    size=(300, 225), #it appears that 100 ≈ 1inch in LaTeX
     # size=(600, 450), #it appears that 100 ≈ 1inch in LaTeX
     # size=(800, 600), #it appears that 100 ≈ 1inch in LaTeX
     #     tex_output_standalone,
@@ -227,7 +228,9 @@ default(;
 )
 
 byublue = RGB(0.0, 46.0 / 255, 93.0 / 255) #BYU Blue
+darkblue = RGB(0 / 255, 25 / 255, 50 / 255)
 byured = RGB(155.0 / 255, 0, 0) #"BYU" Red
+darkred = RGB(50 / 255, 0 / 255, 25 / 255)
 middlegray = RGB(128.0 / 255, 128.0 / 255, 128.0 / 255) #Middle Gray
 myblue = RGB(0.0 / 255, 92.0 / 255, 171.0 / 255) # royal blue
 myred = RGB(192.0 / 255, 83.0 / 255, 103.0 / 255) # royal red
