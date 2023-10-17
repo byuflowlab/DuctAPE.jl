@@ -83,7 +83,7 @@ axial velocity induced by axisymmetric vortex ring. uses equivalent smoke ring i
 function vortex_ring_vz(xi, rho, m, r_influence, influence_length)
 
     # check panel locations
-    if isapprox(r_influence, 0.0)
+    if abs(r_influence)<=eps()
         # if influence on the axis, the influence is set to zero
         return 0.0
     elseif (xi^2 + (rho - 1.0)^2 <= eps())
@@ -133,7 +133,7 @@ radial velocity induced by axisymmetric vortex ring. returns zero if vortex ring
 function vortex_ring_vr(xi, rho, m, r_influence)
 
     # return 0.0 for self-induced, influence on axis, or target on axis cases
-    if (xi^2 + (rho - 1.0)^2 <= eps()) || isapprox(r_influence, 0.0) || isapprox(rho, 0.0)
+    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence)<=eps() || isapprox(rho, 0.0)
         return 0.0
     else
         #get numerator and denominator of first fraction
