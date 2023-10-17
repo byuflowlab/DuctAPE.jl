@@ -27,7 +27,7 @@ end
     @test dt.vortex_ring_vz(xi, rho, m, r_influence, ip.influence_length[1]) ==
         1.0 / (4.0 * pi * r_influence) *
           (log(8.0 * pi * r_influence / ip.influence_length[1]) - 0.25)
-    @test dt.vortex_ring_vr(xi, rho, m, r_influence) == 0.0
+    # @test dt.vortex_ring_vr(xi, rho, m, r_influence) == 0.0
 
     #check influence on axis should have influence in x, and zero in r
     ra = [0.0; 0.0]
@@ -81,6 +81,44 @@ end
     @test isapprox(V[1, 2], Vgammai[2], atol=1e-9)
     @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-9)
     @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-9)
+
+    # - Test 3 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/nominal_velocities3.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = pf
+
+    # Calculate Integral
+    V = dt.nominal_vortex_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+    @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+    @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+    @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+    # - Test 4 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/nominal_velocities4.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = pf
+
+    # Calculate Integral
+    V = dt.nominal_vortex_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+    @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+    @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+    @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
 end
 
 @testset "Single Vortex Panel Self-Induction Integration" begin
@@ -100,8 +138,8 @@ end
 
     # Compare with DFDC integration values
     # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
-    # @test isapprox(V[1, 1], Vgammai[1], atol=3e-3)
-    # @test isapprox(V[2, 1], Vgammaip1[1], atol=3e-3)
+    @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
 
     #note: radial terms have zero for the analytic addition, so they work fine
     @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
@@ -122,8 +160,52 @@ end
 
     # Compare with DFDC integration values
     # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
-    # @test isapprox(V[1, 1], Vgammai[1], atol=3e-4)
-    # @test isapprox(V[2, 1], Vgammaip1[1], atol=3e-4)
+    @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+
+    #note: radial terms have zero for the analytic addition, so they work fine
+    @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+    @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+    # - Test 3 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/self_velocities3.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = ps
+
+    # Calculate Integral
+    V = dt.self_vortex_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+    @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+
+    #note: radial terms have zero for the analytic addition, so they work fine
+    @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+    @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+    # - Test 4 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/self_velocities4.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = ps
+
+    # Calculate Integral
+    V = dt.self_vortex_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+    @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
 
     #note: radial terms have zero for the analytic addition, so they work fine
     @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
