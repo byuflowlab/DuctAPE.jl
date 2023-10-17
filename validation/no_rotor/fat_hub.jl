@@ -23,30 +23,65 @@ include(project_dir * "/visualize/plots_default.jl")
 include(project_dir * "/test/data/naca_662-015.jl")
 # coordinates = lewis_duct_coordinates
 
-# - load geometry - #
+# - load duct geometry - #
 # read data file
 include(project_dir * "/test/data/naca_662-015_smooth.jl")
 # put coordinates together
-coordinates = reverse(duct_coordinates; dims=1)
+duct_coordinates = reverse(duct_coordinates; dims=1)
 
-npans = [21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 161, 201, 301, 401, 501, 601, 701, 801]#, 901, 1001, 2001, 3001, 4001, 5001]
-cpsums = zeros(length(npans))
-for (i, npan) in enumerate(npans)
-    println("N Panels = ", npan - 1)
-    repanel = dt.repanel_airfoil(coordinates; N=npan, normalize=false)
+# - load hub geometry - #
+# read data file
+include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
+# hub final r-coordinate needs to be set to zero so that it's not negative
+r_hub[end] = 0.0
+# put coordinates together
+cut = 2
+hub_coordinates = [x_hub[1:(end - cut)] r_hub[1:(end - cut)]]
 
-    f = open(savepath * "duct-coordinates-$(npan-1)-panels.dat", "w")
-    for (x, r) in zip(repanel[:, 1], repanel[:, 2])
+npanduct = 161
+npanhub = ceil.(Int, npanduct ./ 2)
+repanel_duct = dt.repanel_airfoil(duct_coordinates; N=npanduct, normalize=false)
+repanel_hub = dt.repanel_revolution(hub_coordinates; N=npanhub, normalize=false)
+
+hubscale = [2.0; 3.0; 4.0]
+
+rrange = range(myred.r, myred.r, length(hubscale) + 1)
+grange = range(myred.g, myred.g, length(hubscale) + 1)
+brange = range(myred.b, myred.b, length(hubscale) + 1)
+
+for (i, hs) in enumerate(hubscale)
+    pcp = plot(;
+        xlabel="x",
+        ylabel=L"c_p",
+        yflip=true,
+        extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
+    )
+    pvs = plot(;
+        xlabel="x",
+        ylabel=L"\frac{V_s}{V_\infty}",
+        extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
+    )
+
+    shrink_hub = copy(repanel_hub)
+    shrink_hub[:,2] .*= hs
+    shrink_hub[:,1] .*= 4.0
+    shrink_hub[:, 1] .-= 1.0
+    f = open(savepath * "shrinkhub-coordinates-scale-$(hs).dat", "w")
+    for (x, r) in zip(shrink_hub[:, 1], shrink_hub[:, 2])
         write(f, "$x $r\n")
     end
     close(f)
+
+    plot(repanel_duct[:, 1], repanel_duct[:, 2]; aspectratio=1)
+    plot!(shrink_hub[:, 1], shrink_hub[:, 2]; aspectratio=1)
+    savefig(savepath * "fathub_geom_scale_$(hs).pdf")
 
     #---------------------------------#
     #             Paneling            #
     #---------------------------------#
     ##### ----- Generate Panels ----- #####
     # panels = dt.generate_panels([repanel];body=true)
-    panels = dt.generate_panels([repanel])
+    panels = dt.generate_panels([repanel_duct, shrink_hub])
 
     # ##### ----- Visualize to Check ----- #####
     # visualize_paneling(;
@@ -87,14 +122,16 @@ for (i, npan) in enumerate(npans)
 
     kids = [
         size(AICn)[1]+1 1
-        size(AICn)[1]+1 size(AICn)[2]
+        size(AICn)[1]+1 npanduct
+        size(AICn)[1]+2 npanduct+1
     ]
 
-    LHS = zeros(size(AICn)[1] + 1, size(AICn)[2])
+    LHS = zeros(size(AICn)[1] + 2, size(AICn)[2])
 
     dt.add_kutta!(LHS, AICn, kids)
 
     RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
+    push!(RHS, 0.0)
     push!(RHS, 0.0)
 
     #---------------------------------#
@@ -102,8 +139,8 @@ for (i, npan) in enumerate(npans)
     #---------------------------------#
     gamb = LHS \ RHS
 
-    pg = plot(xn, gamb; xlabel="x", ylabel="node strengths", label="")
-    savefig(pg, savepath * "duct-gammas.pdf")
+    # pg = plot(xn, gamb; xlabel="x", ylabel="node strengths", label="")
+    # savefig(pg, savepath * "duct-gammas.pdf")
 
     #---------------------------------#
     #         Post-Processing         #
@@ -118,95 +155,33 @@ for (i, npan) in enumerate(npans)
     Vtan .+= AICt * gamb
 
     # add in jump term
-    jump = (gamb[1:(end - 1)] + gamb[2:end]) / 2
+    jumpduct = (gamb[1:(npanduct - 1)] + gamb[2:npanduct]) / 2
+    jumphub = (gamb[(npanduct + 1):(end - 1)] + gamb[(npanduct + 2):end]) / 2
+    jump = [jumpduct; jumphub]
     Vtan .-= jump / 2.0
 
     ### --- Steady Surface Pressure --- ###
     cp = 1.0 .- (Vtan / Vinf) .^ 2
 
-    f = open(savepath * "duct-xvcp-$(npan-1)-panels.jl", "w")
-    write(f, "ductxcp = [\n")
-    for (x, c) in zip(panels.controlpoint[:, 1], cp)
-        write(f, "$x $c\n")
-    end
-    write(f, "]")
-    close(f)
-
-    f = open(savepath * "duct-xvvs-$(npan-1)-panels.jl", "w")
-    write(f, "ductxvvs = [\n")
-    for (x, c) in zip(panels.controlpoint[:, 1], Vtan)
-        write(f, "$x $c\n")
-    end
-    write(f, "]")
-    close(f)
-
-
     #---------------------------------#
     #             PLOTTING            #
     #---------------------------------#
-    pp = plot(;
-        xlabel="x",
-        ylabel=L"c_p",
-        yflip=true,
-        extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
-    )
-    sp = pp[1]
     plot!(
-        pp,
-        pressurexupper,
-        pressureupper;
-        seriestype=:scatter,
-        color=byublue,
-        markershape=:utriangle,
-        label="exp outer",
+        pcp,
+        xcp[1:(npanduct - 1)],
+        cp[1:(npanduct - 1)];
+        label="",
+        color=RGB(rrange[i], grange[i], brange[i]),
     )
-    plot!(
-        pp,
-        pressurexlower,
-        pressurelower;
-        seriestype=:scatter,
-        color=byublue,
-        markershape=:dtriangle,
-        label="exp inner",
-    )
-    plot!(pp, xcp, cp; label="DuctAPE", color=1)
 
-    savefig(savepath * "duct-pressure-comp-$(npan-1)-panels.pdf")
-    savefig(savepath * "duct-pressure-comp-$(npan-1)-panels.tikz")
-    cpsums[i] = sum(cp .* panels.influence_length)
+    plot!(pvs, xcp[1:(npanduct - 1)], Vtan[1:(npanduct - 1)] ./ Vinf; color=myred, label="")
+
+    include(savepath * "duct-xvvs-$(npanduct-1)-panels.jl")
+    plot!(pvs, ductxvvs[:, 1], ductxvvs[:, 2]; color=myblue, label="")
+    savefig(pvs, savepath * "fathub_velocity_comp_scale_$(hs).pdf")
+
+    include(savepath * "duct-xvcp-$(npanduct-1)-panels.jl")
+    plot!(pcp, ductxcp[:, 1], ductxcp[:, 2]; label="", color=1)
+    savefig(pcp, savepath * "fathub_pressure_comp_scale_$(hs).pdf")
 end
-
-id150 = findfirst(x -> x == 151, npans)
-
-relerr = (cpsums[end] - cpsums[id150]) / cpsums[end] * 100
-
-print("relative err from 100 to 800 panels: ", relerr, "%")
-
-pconv = plot(;
-    xlabel="Number of Panels",
-    xscale=:log10,
-    ylabel=L"\sum_{i=1}^N \left[c_{p_i} \Delta s_i\right]",
-    extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
-)
-plot!(
-    npans .- 1,
-    cpsums;
-    linestyle=:dot,
-    linecolor=byublue,
-    markercolor=myblue,
-    markershape=:rect,
-    markersize=3,
-    label="",
-)
-plot!(
-    [npans[id150]] .- 1, [cpsums[id150]]; seriestype=:scatter, markershape=:rect, label=""
-)
-annotate!(
-    npans[id150] + 75,
-    cpsums[id150] + 0.001,
-    text("150 panels", 10, :left, :bottom; color=myred),
-)
-
-savefig(savepath * "duct-grid-refinement.pdf")
-savefig(savepath * "duct-grid-refinement.tikz")
 

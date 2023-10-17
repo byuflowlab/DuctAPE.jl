@@ -1,4 +1,3 @@
-#TODO: update for constant vortex case
 #---------------------------------#
 #              SETUP              #
 #---------------------------------#
@@ -10,7 +9,7 @@ if project_dir == ""
 end
 
 # create save path
-savepath = project_dir * "/examples/body_only_doublet/"
+savepath = project_dir * "/validation/no_rotor/figs/"
 
 # - load DuctTAPE - #
 using DuctTAPE
@@ -18,169 +17,264 @@ const dt = DuctTAPE
 
 # - load plotting defaults - #
 include(project_dir * "/visualize/visualize_geometry.jl")
-include(project_dir * "/visualize/plots_default_new.jl")
+include(project_dir * "/visualize/plots_default.jl")
 
-# - load geometry - #
-# read duct data file
+# - load experimental data - #
 include(project_dir * "/test/data/naca_662-015.jl")
-# put coordinates together
-duct_coordinates = [x_duct r_duct]
+# coordinates = lewis_duct_coordinates
 
-# read hub data file
+# - load duct geometry - #
+# read data file
+include(project_dir * "/test/data/naca_662-015_smooth.jl")
+# put coordinates together
+duct_coordinates = reverse(duct_coordinates; dims=1)
+
+# - load hub geometry - #
+# read data file
 include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
 # hub final r-coordinate needs to be set to zero so that it's not negative
 r_hub[end] = 0.0
 # put coordinates together
-hub_coordinates = [x_hub r_hub]
+cut = 2
+hub_coordinates = [x_hub[1:(end - cut)] r_hub[1:(end - cut)]]
 
-#---------------------------------#
-#             Paneling            #
-#---------------------------------#
-##### ----- Generate Panels ----- #####
-#= use new Neumann paneling functions in panel.jl
-generate_panels(coordinates::Vector{Matrix{TF}}) where {TF}
-note that input must be a vector of matrices, so even if only modeling one body, still
-needs to be a vector.
-Also note, multiple dispatch enabled to allow for single body, simply calls the function
-placing the coordinate matrix in a vector as an input.
-=#
-panels = dt.generate_panels([duct_coordinates, hub_coordinates])
+npansduct = [41, 51, 61, 71, 81, 91, 101, 161, 201, 301, 401, 501, 601, 701, 801]
+npanshub = ceil.(Int, npansduct ./ 2)
+cpsums = zeros(length(npansduct))
+for (i, (npanduct, npanhub)) in enumerate(zip(npansduct, npanshub))
+    println("N Duct Panels = ", npanduct - 1)
+    println("N Hub Panels = ", npanhub - 1)
 
-##### ----- Visualize to Check ----- #####
-visualize_paneling(;
-    body_panels=panels,
-    coordinates=duct_coordinates,
-    controlpoints=true,
-    nodes=true,
-    normals=true,
-    savepath=savepath,
-    filename="body-geometry.pdf",
+    repanel_duct = dt.repanel_airfoil(duct_coordinates; N=npanduct, normalize=false)
+    repanel_hub = dt.repanel_revolution(hub_coordinates; N=npanhub, normalize=false)
+
+    f = open(savepath * "duct-coordinates-$(npanduct-1)-panels.dat", "w")
+    for (x, r) in zip(repanel_duct[:, 1], repanel_duct[:, 2])
+        write(f, "$x $r\n")
+    end
+    close(f)
+
+    f = open(savepath * "hub-coordinates-$(npanhub-1)-panels.dat", "w")
+    for (x, r) in zip(repanel_hub[:, 1], repanel_hub[:, 2])
+        write(f, "$x $r\n")
+    end
+    close(f)
+
+    #---------------------------------#
+    #             Paneling            #
+    #---------------------------------#
+    ##### ----- Generate Panels ----- #####
+    # panels = dt.generate_panels([repanel];body=true)
+    panels = dt.generate_panels([repanel_duct, repanel_hub])
+
+    # ##### ----- Visualize to Check ----- #####
+    # visualize_paneling(;
+    #     body_panels=panels,
+    #     coordinates=[coordinates],
+    #     controlpoints=true,
+    #     nodes=true,
+    #     normals=true,
+    #     savepath=savepath,
+    #     filename=["duct-geometry.pdf"],
+    # )
+
+    xn = panels.node[:, 1]
+    xcp = panels.controlpoint[:, 1]
+
+    #---------------------------------#
+    #       Operating Conditions      #
+    #---------------------------------#
+
+    # Define freestream on panels
+    Vinf = 1.0 #magnitude doesn't matter yet.
+    Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
+    Vsmat = repeat(Vs, size(panels.controlpoint, 1)) # need velocity on each panel
+
+    #---------------------------------#
+    #        Induced Velocities       #
+    #---------------------------------#
+
+    # - Initial System Matrices - #
+    AICn, AICt = dt.vortex_panel_influence_matrices(
+        panels.controlpoint,
+        panels.normal,
+        panels.tangent,
+        panels.node,
+        panels.nodemap,
+        panels.influence_length,
+    )
+
+    kids = [
+        size(AICn)[1]+1 1
+        size(AICn)[1]+1 npanduct
+        size(AICn)[1]+2 npanduct+1
+    ]
+
+    LHS = zeros(size(AICn)[1] + 2, size(AICn)[2])
+
+    dt.add_kutta!(LHS, AICn, kids)
+
+    RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
+    push!(RHS, 0.0)
+    push!(RHS, 0.0)
+
+    #---------------------------------#
+    #             Solving             #
+    #---------------------------------#
+    gamb = LHS \ RHS
+
+    # pg = plot(xn, gamb; xlabel="x", ylabel="node strengths", label="")
+    # savefig(pg, savepath * "duct-gammas.pdf")
+
+    #---------------------------------#
+    #         Post-Processing         #
+    #---------------------------------#
+
+    ## --- Velocity Contributions --- ###
+
+    # get tangent
+    Vtan = [dt.dot(v, t) for (v, t) in zip(eachrow(Vsmat), eachrow(panels.tangent))]
+
+    # add in body induced tangent velocity
+    Vtan .+= AICt * gamb
+
+    # add in jump term
+    jumpduct = (gamb[1:(npanduct - 1)] + gamb[2:npanduct]) / 2
+    jumphub = (gamb[(npanduct + 1):(end - 1)] + gamb[(npanduct + 2):end]) / 2
+    jump = [jumpduct; jumphub]
+    Vtan .-= jump / 2.0
+
+    ### --- Steady Surface Pressure --- ###
+    cp = 1.0 .- (Vtan / Vinf) .^ 2
+
+    #---------------------------------#
+    #             PLOTTING            #
+    #---------------------------------#
+    pcp = plot(;
+        xlabel="x",
+        ylabel=L"c_p",
+        yflip=true,
+        extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
+    )
+    plot!(
+        pcp,
+        pressurexupper,
+        pressureupper;
+        seriestype=:scatter,
+        color=byublue,
+        markershape=:utriangle,
+        label="Experimental Nacelle",
+    )
+    plot!(
+        pcp,
+        pressurexlower,
+        pressurelower;
+        seriestype=:scatter,
+        color=byublue,
+        markershape=:dtriangle,
+        label="Experimental Casing",
+    )
+    include(savepath * "duct-xvcp-$(npanduct-1)-panels.jl")
+    plot!(pcp, ductxcp[:, 1], ductxcp[:, 2]; label="DuctAPE Isolated Duct", color=1)
+    plot!(
+        pcp,
+        xcp[1:(npanduct - 1)],
+        cp[1:(npanduct - 1)];
+        label="DuctAPE Duct with Center Body",
+        color=2,
+    )
+
+    savefig(
+        pcp,
+        savepath *
+        "system-pressure-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.pdf",
+    )
+    savefig(
+        pcp,
+        savepath *
+        "system-pressure-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
+    )
+
+    pvs = plot(;
+        xlabel="x",
+        ylabel=L"\frac{V_s}{V_\infty}",
+        extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
+    )
+    plot!(
+        pvs,
+        Vs_over_Vinf_x,
+        Vs_over_Vinf_vs;
+        seriestype=:scatter,
+        color=byublue,
+        markershape=:utriangle,
+        label="Experimental Center Body",
+    )
+    include(savepath * "hub-xvvs-$(npanhub-1)-panels.jl")
+    plot!(
+        pvs,
+        hubxvvs[:, 1],
+        hubxvvs[:, 2];
+        color=myblue,
+        label="DuctAPE Isolated Center Body",
+    )
+    plot!(
+        pvs,
+        xcp[(npanduct):end],
+        Vtan[(npanduct):end] ./ Vinf;
+        color=myred,
+        label="DuctAPE Center Body with Duct",
+    )
+
+    savefig(
+        pvs,
+        savepath *
+        "system-velocity-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.pdf",
+    )
+    savefig(
+        pvs,
+        savepath *
+        "system-velocity-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
+    )
+    cpsums[i] = sum(cp .* panels.influence_length)
+end
+
+id160 = findfirst(x -> x == 161, npansduct)
+
+relerr = (cpsums[end] - cpsums[id160]) / cpsums[end] * 100
+
+print("relative err: ", relerr, "%")
+
+pconv = plot(;
+    xlabel="Total Number of Panels",
+    xscale=:log10,
+    ylabel=L"\sum_{i=1}^N \left[c_{p_i} \Delta s_i\right]",
+    extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
 )
 
-#---------------------------------#
-#       Operating Conditions      #
-#---------------------------------#
-# Define freestream on panels
-Vinf = 30.0 #magnitude doesn't matter yet.
-Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-Vsmat = repeat(Vs, panels.npanels) # need velocity on each panel
-
-# prescribe a panel for the least squares solve:
-# choose the first panel to be prescirbed to zero (assumes first panel is not hub leading/traling edge).
-prescribedpanels = [(1, 0.0); (panels.npanels, 0.0)]
-# prescribedpanels = [(1, 0.0)]
-
-#---------------------------------#
-#        Induced Velocities       #
-#---------------------------------#
-
-# - Initial System Matrices - #
-LHS = dt.doublet_panel_influence_matrix(panels.nodes, panels)
-RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
-LHSnokutta = deepcopy(LHS)
-RHSnokutta = deepcopy(RHS)
-
-# - Adding Kutta Condition - #
-dt.body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=true)
-
-# - Prepping for Least Sqaures Solve - #
-# without kutta condition
-LHSlsq_nokutta, RHSlsq_nokutta = dt.prep_leastsquares(
-    LHSnokutta, RHSnokutta, prescribedpanels
-)
-# with kutta condition
-LHSlsq, RHSlsq = dt.prep_leastsquares(LHS, RHS, prescribedpanels)
-
-#---------------------------------#
-#             Solving             #
-#---------------------------------#
-
-mured = LHSlsq \ RHSlsq
-mured_nokutta = LHSlsq_nokutta \ RHSlsq_nokutta
-
-# - Solving Without Kutta - #
-# mu_nokutta = LHSlsq_nokutta\RHSlsq_nokutta
-mu_nokutta = dt.mured2mu(mured_nokutta, prescribedpanels)
-
-# - Solving With Kutta - #
-mu = dt.mured2mu(mured, prescribedpanels)
-
-#---------------------------------#
-#         Post-Processing         #
-#---------------------------------#
-
-### --- Velocity Contributions --- ###
-# - Body-induced Surface Velocity - #
-Vb_nokutta = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu_nokutta)
-Vb = dt.vfromdoubletpanels(panels.controlpoint, panels.nodes, mu)
-
-# - "Wake"-induced Surface Velocity - #
-Vb_nokutta_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, mu_nokutta)
-Vb_wake = dt.vfromTE(panels.controlpoint, panels.TEnodes, mu)
-
-# - ∇μ/2 surface velocity - #
-Vb_gradmu = dt.vfromgradmu(panels, mu)
-
-# - Total Velocity - #
-V_nokutta = Vb_nokutta .+ Vb_nokutta_wake
-V_nogradmu = Vb .+ Vb_wake
-Vtot = Vsmat .+ Vb .+ Vb_wake .+ Vb_gradmu
-
-# ### --- Velocity Tangent to Surface --- ###
-# Vtan_nokutta = [dt.dot(v,t) for (v,t) in zip(eachrow(V_nokutta), eachrow(panels.tangent))]
-# Vtan_nogradmu = [dt.dot(v,t) for (v,t) in zip(eachrow(V_nogradmu), eachrow(panels.tangent))]
-# Vtan = [dt.dot(v,t) for (v,t) in zip(eachrow(Vtot), eachrow(panels.tangent))]
-
-### --- Steady Surface Pressure --- ###
-cp_nokutta = 1.0 .- (dt.norm.(eachrow(V_nokutta)) / Vinf) .^ 2
-cp_nogradmu = 1.0 .- (dt.norm.(eachrow(V_nogradmu)) / Vinf) .^ 2
-cp = 1.0 .- (dt.norm.(eachrow(Vtot)) / Vinf) .^ 2
-
-#---------------------------------#
-#             PLOTTING            #
-#---------------------------------#
-pp = plot(; xlabel="x", ylabel=L"c_p", yflip=true)
 plot!(
-    pp,
-    pressurexupper,
-    pressureupper;
-    seriestype=:scatter,
-    color=myblue[1],
-    markershape=:utriangle,
-    label="exp outer",
+    npansduct .+ npanshub .- 2,
+    cpsums;
+    linestyle=:dot,
+    linecolor=byublue,
+    markercolor=myblue,
+    markershape=:rect,
+    markersize=3,
+    label="",
 )
+
 plot!(
-    pp,
-    pressurexlower,
-    pressurelower;
+    [npansduct[id160] + npanshub[id160]] .- 2,
+    [cpsums[id160]];
     seriestype=:scatter,
-    color=myblue[1],
-    markershape=:dtriangle,
-    label="exp inner",
+    markershape=:rect,
+    label="",
 )
-xs = panels.controlpoint[:, 1]
-# plot!(xs,cp_nokutta,label="no Kutta")
-# plot!(xs,cp_nogradmu,label=L"no~ \nabla\mu")
-ncut = 2
-plot!(pp, xs[ncut:(40 - ncut)], cp[ncut:(40 - ncut)]; label="DuctTAPE")
 
-savefig(savepath * "body-pressure-comp.pdf")
-
-pv = plot(; xlabel="x", ylabel=L"Vs/V_\infty")
-plot!(
-    pv,
-    Vs_over_Vinf_x,
-    Vs_over_Vinf_vs;
-    seriestype=:scatter,
-    color=myblue[1],
-    markershape=:utriangle,
-    label="experimental",
+annotate!(
+    npansduct[id160] + npanshub[id160] + 300,
+    cpsums[id160] - 0.0005,
+    text("240 total panels", 10, :left, :bottom; color=myred),
 )
-xs = panels.controlpoint[:, 1]
-plot!(pv, xs[41:end], dt.norm.(eachrow(Vtot[41:end, :])) ./ Vinf; label="DuctTAPE")
 
-savefig(pv, savepath * "body-vel-comp.pdf")
-
-ps = plot(; xlabel="x", ylabel="panel strength")
-plot!(ps, xs, mu; seriestype=:scatter)
-savefig(ps, savepath * "body-panel-strengths.pdf")
+savefig(savepath * "duct-and-hub-grid-refinement.pdf")
+savefig(savepath * "duct-and-hub-grid-refinement.tikz")

@@ -9,7 +9,7 @@ if project_dir == ""
 end
 
 # create save path
-savepath = project_dir * "/validation/no_rotor/"
+savepath = project_dir * "/validation/no_rotor/figs/"
 
 # - load DuctTAPE - #
 using DuctTAPE
@@ -28,11 +28,26 @@ r_hub[end] = 0.0
 cut = 2
 coordinates = [x_hub[1:(end - cut)] r_hub[1:(end - cut)]]
 
-npans = [21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 201, 301, 401, 501]# 601, 701, 801]#, 901, 1001, 2001, 3001, 4001, 5001]
+npansduct = [41, 51, 61, 71, 81, 91, 101, 161, 201, 301, 401, 501, 601, 701, 801, 901, 1001]
+npans = ceil.(Int, npansduct ./ 2)
 cpsums = zeros(length(npans))
 for (i, npan) in enumerate(npans)
     println("N Panels = ", npan - 1)
     repanel = dt.repanel_revolution(coordinates; N=npan, normalize=false)
+
+    f = open(savepath * "hub-coordinates-$(npan-1)-panels.dat", "w")
+    for (x, r) in zip(repanel[:, 1], repanel[:, 2])
+        write(f, "$x $r\n")
+    end
+    close(f)
+
+    plot(repanel[:, 1], repanel[:, 2]; xlabel="x", ylabel="r", label="", aspectratio=1)
+    plot(repanel[:, 1], repanel[:, 2]; xlabel="x", ylabel="r", label="", aspectratio=1)
+    savefig(savepath * "hub-geometry.pdf")
+    savefig(savepath * "hub-geometry.tikz")
+
+    savefig(savepath * "hub-geometry.pdf")
+    savefig(savepath * "hub-geometry.tikz")
 
     #---------------------------------#
     #             Paneling            #
@@ -110,6 +125,14 @@ for (i, npan) in enumerate(npans)
     jump = (gamb[1:(end - 1)] + gamb[2:end]) / 2
     Vtan .-= jump / 2.0
 
+    f = open(savepath * "hub-xvvs-$(npan-1)-panels.jl", "w")
+    write(f, "hubxvvs = [\n")
+    for (x, v) in zip(panels.controlpoint[:, 1], Vtan)
+        write(f, "$x $v\n")
+    end
+    write(f, "]")
+    close(f)
+
     ### --- Steady Surface Pressure --- ###
     cp = 1.0 .- (Vtan / Vinf) .^ 2
 
@@ -136,8 +159,8 @@ for (i, npan) in enumerate(npans)
     )
     plot!(pp, xcp, Vtan ./ Vinf; color=myblue, label="DuctAPE")
 
-    savefig(savepath * "hub-velocity-comp-$(npan)-panels.pdf")
-    savefig(savepath * "hub-velocity-comp-$(npan)-panels.tikz")
+    savefig(savepath * "hub-velocity-comp-$(npan-1)-panels.pdf")
+    savefig(savepath * "hub-velocity-comp-$(npan-1)-panels.tikz")
     cpsums[i] = sum(cp .* panels.influence_length)
 end
 
