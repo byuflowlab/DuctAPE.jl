@@ -10,6 +10,8 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+dispath =
+    project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
 # - load DuctTAPE - #
 using DuctTAPE
@@ -35,7 +37,11 @@ for (i, npan) in enumerate(npans)
     println("N Panels = ", npan - 1)
     repanel = dt.repanel_revolution(coordinates; N=npan, normalize=false)
 
-    f = open(savepath * "hub-coordinates-$(npan-1)-panels.dat", "w")
+    if npan == 81
+        f = open(dispath * "hub-coordinates-$(npan-1)-panels.dat", "w")
+    else
+        f = open(savepath * "hub-coordinates-$(npan-1)-panels.dat", "w")
+    end
     for (x, r) in zip(repanel[:, 1], repanel[:, 2])
         write(f, "$x $r\n")
     end
@@ -44,10 +50,6 @@ for (i, npan) in enumerate(npans)
     plot(repanel[:, 1], repanel[:, 2]; xlabel="x", ylabel="r", label="", aspectratio=1)
     plot(repanel[:, 1], repanel[:, 2]; xlabel="x", ylabel="r", label="", aspectratio=1)
     savefig(savepath * "hub-geometry.pdf")
-    savefig(savepath * "hub-geometry.tikz")
-
-    savefig(savepath * "hub-geometry.pdf")
-    savefig(savepath * "hub-geometry.tikz")
 
     #---------------------------------#
     #             Paneling            #
@@ -160,7 +162,9 @@ for (i, npan) in enumerate(npans)
     plot!(pp, xcp, Vtan ./ Vinf; color=myblue, label="DuctAPE")
 
     savefig(savepath * "hub-velocity-comp-$(npan-1)-panels.pdf")
-    savefig(savepath * "hub-velocity-comp-$(npan-1)-panels.tikz")
+    if npan == 81
+        savefig(dispath * "hub-velocity-comp-$(npan-1)-panels.tikz")
+    end
     cpsums[i] = sum(cp .* panels.influence_length)
 end
 
@@ -187,8 +191,10 @@ plot!(
     label="",
 )
 plot!([npans[id80]] .- 1, [cpsums[id80]]; seriestype=:scatter, markershape=:rect, label="")
-annotate!(npans[id80] + 40, cpsums[id80], text("80 panels", 10, :left, :top; color=myred))
+annotate!(
+    npans[id80] + 40, cpsums[id80], text("80 panels", 10, :left, :bottom; color=myred)
+)
 
 savefig(savepath * "hub-grid-refinement.pdf")
-savefig(savepath * "hub-grid-refinement.tikz")
+savefig(dispath * "hub-grid-refinement.tikz")
 

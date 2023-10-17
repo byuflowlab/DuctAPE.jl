@@ -28,8 +28,10 @@ ductx = dfdc_lewis_duct[:, 1]
 ductcp = dfdc_lewis_duct[:, 3]
 ductvs = dfdc_lewis_duct[:, end]
 
-hubcoords = reverse(dfdc_lewis_hub_nodes[2:end,:]; dims=1)
+hubcoords = reverse(dfdc_lewis_hub_nodes[2:end, :]; dims=1)
 ductcoords = reverse(dfdc_lewis_duct_nodes; dims=1)
+npanduct = size(ductcoords)[1]
+npanhub = size(hubcoords)[1]
 
 #---------------------------------#
 #             Paneling            #
@@ -128,7 +130,7 @@ pcp = plot(;
     extra_kwargs=Dict(:subplot => Dict("ylabel style" => "{rotate=-90}")),
 )
 plot!(pcp, xcp[1:(npanduct - 1)], cp[1:(npanduct - 1)]; label="DuctAPE", color=1)
-plot!(pcp, ductx, ductcp; color=2, label="DFDC")
+plot!(pcp, ductx, ductcp; linestyle=:dash, color=2, label="DFDC")
 
 savefig(
     pcp,
@@ -149,7 +151,7 @@ pvs = plot(;
 
 plot!(pvs, xcp[(npanduct):end], Vtan[(npanduct):end] ./ Vinf; color=1, label="DuctAPE")
 
-plot!(pvs, hubx, hubvs ./ Vinf; color=2, label="DFDC")
+plot!(pvs, hubx, hubvs ./ Vinf; linestyle=:dash, color=2, label="DFDC")
 
 savefig(
     pvs,

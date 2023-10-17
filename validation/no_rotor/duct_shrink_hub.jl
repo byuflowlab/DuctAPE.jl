@@ -10,6 +10,8 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+dispath =
+    project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
 # - load DuctTAPE - #
 using DuctTAPE
@@ -60,7 +62,7 @@ brange = range(myred.b, darkred.b, length(ductrs))
 for (i, hs) in enumerate(hubscale)
     shrink_hub = copy(repanel_hub)
     shrink_hub[:, 2] .*= hs
-    f = open(savepath * "shrinkhub-coordinates-scale-$(hs).dat", "w")
+    f = open(dispath * "shrinkhub-coordinates-scale-$(hs).dat", "w")
     for (x, r) in zip(shrink_hub[:, 1], shrink_hub[:, 2])
         write(f, "$x $r\n")
     end
@@ -173,6 +175,6 @@ savefig(
 )
 savefig(
     pcp,
-    savepath *
+    dispath *
     "shrinkhub-pressure-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
 )

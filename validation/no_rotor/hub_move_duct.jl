@@ -10,6 +10,8 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+dispath =
+    project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
 # - load DuctTAPE - #
 using DuctTAPE
@@ -63,7 +65,7 @@ pvs = plot(;
 #     label="Experimental Center Body",
 # )
 include(savepath * "hub-xvvs-$(npanhub-1)-panels.jl")
-g = open(savepath * "tikzmovecolor.col", "w")
+g = open(dispath * "tikzmovecolor.col", "w")
 
 for (i, r) in enumerate(ductrs)
 
@@ -188,6 +190,6 @@ savefig(
 )
 savefig(
     pvs,
-    savepath *
+    dispath *
     "ductmove-velocity-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
 )

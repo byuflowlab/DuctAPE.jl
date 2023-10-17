@@ -10,6 +10,8 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+dispath =
+    project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
 # - load DuctTAPE - #
 using DuctTAPE
@@ -29,13 +31,17 @@ include(project_dir * "/test/data/naca_662-015_smooth.jl")
 # put coordinates together
 coordinates = reverse(duct_coordinates; dims=1)
 
-npans = [21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 161, 201, 301, 401, 501, 601, 701, 801]#, 901, 1001, 2001, 3001, 4001, 5001]
+npans = [21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 161, 201, 301, 401, 501, 601, 701, 801]
 cpsums = zeros(length(npans))
 for (i, npan) in enumerate(npans)
     println("N Panels = ", npan - 1)
     repanel = dt.repanel_airfoil(coordinates; N=npan, normalize=false)
 
-    f = open(savepath * "duct-coordinates-$(npan-1)-panels.dat", "w")
+    if npan == 161
+        f = open(dispath * "duct-coordinates-$(npan-1)-panels.dat", "w")
+    else
+        f = open(savepath * "duct-coordinates-$(npan-1)-panels.dat", "w")
+    end
     for (x, r) in zip(repanel[:, 1], repanel[:, 2])
         write(f, "$x $r\n")
     end
@@ -140,7 +146,6 @@ for (i, npan) in enumerate(npans)
     write(f, "]")
     close(f)
 
-
     #---------------------------------#
     #             PLOTTING            #
     #---------------------------------#
@@ -172,13 +177,15 @@ for (i, npan) in enumerate(npans)
     plot!(pp, xcp, cp; label="DuctAPE", color=1)
 
     savefig(savepath * "duct-pressure-comp-$(npan-1)-panels.pdf")
-    savefig(savepath * "duct-pressure-comp-$(npan-1)-panels.tikz")
+    if npan == 161
+        savefig(dispath * "duct-pressure-comp-$(npan-1)-panels.tikz")
+    end
     cpsums[i] = sum(cp .* panels.influence_length)
 end
 
-id150 = findfirst(x -> x == 151, npans)
+id160 = findfirst(x -> x == 161, npans)
 
-relerr = (cpsums[end] - cpsums[id150]) / cpsums[end] * 100
+relerr = (cpsums[end] - cpsums[id160]) / cpsums[end] * 100
 
 print("relative err from 100 to 800 panels: ", relerr, "%")
 
@@ -199,14 +206,14 @@ plot!(
     label="",
 )
 plot!(
-    [npans[id150]] .- 1, [cpsums[id150]]; seriestype=:scatter, markershape=:rect, label=""
+    [npans[id160]] .- 1, [cpsums[id160]]; seriestype=:scatter, markershape=:rect, label=""
 )
 annotate!(
-    npans[id150] + 75,
-    cpsums[id150] + 0.001,
-    text("150 panels", 10, :left, :bottom; color=myred),
+    npans[id160] + 75,
+    cpsums[id160] + 0.001,
+    text("160 panels", 10, :left, :bottom; color=myred),
 )
 
 savefig(savepath * "duct-grid-refinement.pdf")
-savefig(savepath * "duct-grid-refinement.tikz")
+savefig(dispath * "duct-grid-refinement.tikz")
 

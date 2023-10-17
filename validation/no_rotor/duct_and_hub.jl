@@ -10,6 +10,8 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+dispath =
+    project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
 # - load DuctTAPE - #
 using DuctTAPE
@@ -48,17 +50,17 @@ for (i, (npanduct, npanhub)) in enumerate(zip(npansduct, npanshub))
     repanel_duct = dt.repanel_airfoil(duct_coordinates; N=npanduct, normalize=false)
     repanel_hub = dt.repanel_revolution(hub_coordinates; N=npanhub, normalize=false)
 
-    f = open(savepath * "duct-coordinates-$(npanduct-1)-panels.dat", "w")
-    for (x, r) in zip(repanel_duct[:, 1], repanel_duct[:, 2])
-        write(f, "$x $r\n")
-    end
-    close(f)
+    # f = open(savepath * "duct-coordinates-$(npanduct-1)-panels.dat", "w")
+    # for (x, r) in zip(repanel_duct[:, 1], repanel_duct[:, 2])
+    #     write(f, "$x $r\n")
+    # end
+    # close(f)
 
-    f = open(savepath * "hub-coordinates-$(npanhub-1)-panels.dat", "w")
-    for (x, r) in zip(repanel_hub[:, 1], repanel_hub[:, 2])
-        write(f, "$x $r\n")
-    end
-    close(f)
+    # f = open(savepath * "hub-coordinates-$(npanhub-1)-panels.dat", "w")
+    # for (x, r) in zip(repanel_hub[:, 1], repanel_hub[:, 2])
+    #     write(f, "$x $r\n")
+    # end
+    # close(f)
 
     #---------------------------------#
     #             Paneling            #
@@ -189,11 +191,13 @@ for (i, (npanduct, npanhub)) in enumerate(zip(npansduct, npanshub))
         savepath *
         "system-pressure-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.pdf",
     )
-    savefig(
-        pcp,
-        savepath *
-        "system-pressure-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
-    )
+    if npanduct == 161
+        savefig(
+            pcp,
+            dispath *
+            "system-pressure-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
+        )
+    end
 
     pvs = plot(;
         xlabel="x",
@@ -230,11 +234,13 @@ for (i, (npanduct, npanhub)) in enumerate(zip(npansduct, npanshub))
         savepath *
         "system-velocity-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.pdf",
     )
-    savefig(
-        pvs,
-        savepath *
-        "system-velocity-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
-    )
+    if npanduct == 161
+        savefig(
+            pvs,
+            dispath *
+            "system-velocity-comp-$(npanduct-1)-duct-panels-$(npanhub-1)-hub-panels.tikz",
+        )
+    end
     cpsums[i] = sum(cp .* panels.influence_length)
 end
 
@@ -277,4 +283,4 @@ annotate!(
 )
 
 savefig(savepath * "duct-and-hub-grid-refinement.pdf")
-savefig(savepath * "duct-and-hub-grid-refinement.tikz")
+savefig(dispath * "duct-and-hub-grid-refinement.tikz")

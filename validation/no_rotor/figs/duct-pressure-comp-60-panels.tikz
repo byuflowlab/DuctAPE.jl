@@ -21,8 +21,8 @@
 % }
 
 \begin{tikzpicture}[/tikz/background rectangle/.style={fill={rgb,1:red,1.0;green,1.0;blue,1.0}, fill opacity={1.0}, draw opacity={1.0}}, show background rectangle]
-\begin{axis}[point meta max={nan}, point meta min={nan}, legend cell align={left}, legend columns={1}, title={}, title style={at={{(0.5,1)}}, anchor={south}, font={{\fontsize{14 pt}{18.2 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, align={center}}, legend style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, line width={1}, solid, fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, text opacity={1.0}, font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, text={rgb,1:red,0.0;green,0.0;blue,0.0}, cells={anchor={center}}, at={(1.02, 1)}, anchor={north west}}, axis background/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={0.0}}, anchor={north west}, xshift={0.0mm}, yshift={-0.0mm}, width={71.2mm}, height={57.15mm}, scaled x ticks={false}, xlabel={x}, x tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, x tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, xlabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{11 pt}{14.3 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, xmajorgrids={false}, xmin={-0.028775006169285078}, xmax={1.0285549052987097}, xticklabels={{$0.00$,$0.25$,$0.50$,$0.75$,$1.00$}}, xtick={{0.0,0.25,0.5,0.75,1.0}}, xtick align={inside}, xticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, x grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis x line*={left}, x axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, scaled y ticks={false}, ylabel={$c_p$}, y tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, y tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, ylabel style={{rotate=-90}}, y dir={reverse}, ymajorgrids={false}, ymin={-0.7002904284395026}, ymax={0.9195397591582273}, yticklabels={{$-0.50$,$-0.25$,$0.00$,$0.25$,$0.50$,$0.75$}}, ytick={{-0.5,-0.25,0.0,0.25,0.5,0.75}}, ytick align={inside}, yticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, y grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis y line*={left}, y axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, colorbar={false}]
-    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={66139559-6fb6-4b60-b497-92ca83753c1b}, only marks, draw opacity={1.0}, line width={0}, solid, mark={triangle*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.1804;blue,0.3647}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}]
+\begin{axis}[point meta max={nan}, point meta min={nan}, legend cell align={left}, legend columns={1}, title={}, title style={at={{(0.5,1)}}, anchor={south}, font={{\fontsize{14 pt}{18.2 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, align={center}}, legend style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, line width={1}, solid, fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, text opacity={1.0}, font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, text={rgb,1:red,0.0;green,0.0;blue,0.0}, cells={anchor={center}}, at={(1.02, 1)}, anchor={north west}}, axis background/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={0.0}}, anchor={north west}, xshift={0.0mm}, yshift={-0.0mm}, width={71.2mm}, height={57.15mm}, scaled x ticks={false}, xlabel={x}, x tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, x tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, xlabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{11 pt}{14.3 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, xmajorgrids={false}, xmin={-0.028775006169285078}, xmax={1.0285549052987097}, xticklabels={{$0.00$,$0.25$,$0.50$,$0.75$,$1.00$}}, xtick={{0.0,0.25,0.5,0.75,1.0}}, xtick align={inside}, xticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, x grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis x line*={left}, x axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, scaled y ticks={false}, ylabel={$c_p$}, y tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, y tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, ylabel style={{rotate=-90}}, y dir={reverse}, ymajorgrids={false}, ymin={-0.7032695339813355}, ymax={0.9197470669887866}, yticklabels={{$-0.50$,$-0.25$,$0.00$,$0.25$,$0.50$,$0.75$}}, ytick={{-0.5,-0.25,0.0,0.25,0.5,0.75}}, ytick align={inside}, yticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, y grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis y line*={left}, y axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, colorbar={false}]
+    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={691e733f-bc45-4886-bc1e-af8e2f1f21e0}, only marks, draw opacity={1.0}, line width={0}, solid, mark={triangle*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.1804;blue,0.3647}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}]
         table[row sep={\\}]
         {
             \\
@@ -45,7 +45,7 @@
         }
         ;
     \addlegendentry {exp outer}
-    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={860f06e7-6c97-4e49-b159-c5b23ea959b3}, only marks, draw opacity={1.0}, line width={0}, solid, mark={triangle*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.1804;blue,0.3647}, fill opacity={1.0}, line width={0.75}, rotate={180}, solid}]
+    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={ccf6cebd-a8d1-490e-956f-405d0d3990a2}, only marks, draw opacity={1.0}, line width={0}, solid, mark={triangle*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.1804;blue,0.3647}, fill opacity={1.0}, line width={0.75}, rotate={180}, solid}]
         table[row sep={\\}]
         {
             \\
@@ -68,70 +68,70 @@
         }
         ;
     \addlegendentry {exp inner}
-    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={8b2f2fa7-8e9b-4a67-af22-731dfc432ac9}, draw opacity={1.0}, line width={1.0}, solid]
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={94ffda21-502d-413d-8421-3d6f7043f049}, draw opacity={1.0}, line width={1.0}, solid]
         table[row sep={\\}]
         {
             \\
-            0.9986304738420684  0.7888435974331546  \\
-            0.9931673740255198  0.3263577982126169  \\
-            0.9823010292572398  0.3065533237805591  \\
-            0.9661504934844387  0.26922125016330123  \\
-            0.9448927153567599  0.219802932780377  \\
-            0.9187605995398466  0.1571601133554188  \\
-            0.8880404549630854  0.08238054677341733  \\
-            0.853068857959063  -0.003781642421185616  \\
-            0.8142289646628327  -0.1038223401314573  \\
-            0.7719463130731181  -0.21824976469760382  \\
-            0.72668416076895  -0.34015281970943034  \\
-            0.6789384093626869  -0.4738071726600803  \\
-            0.6292321712981768  -0.5936258413708602  \\
-            0.5781100385213531  -0.6416301458554576  \\
-            0.5261321158169132  -0.6395447178511622  \\
-            0.47386788418308656  -0.6328031835989532  \\
-            0.4218899614786469  -0.6223680607695079  \\
-            0.37076782870182334  -0.606198498250692  \\
-            0.32106159063731304  -0.5843277422334883  \\
-            0.27331583923104985  -0.556852958340941  \\
-            0.2280536869268817  -0.5233716442328549  \\
-            0.18577103533716716  -0.4846635984873926  \\
-            0.14693114204093688  -0.438320237320718  \\
-            0.11195954503691458  -0.381343670979571  \\
-            0.08123940046015346  -0.31824585526851945  \\
-            0.055107284643240106  -0.241755824311648  \\
-            0.0338495065155614  -0.15149023530453554  \\
-            0.017698970742760195  -0.06608276610988706  \\
-            0.006832625974480255  0.2397143636528748  \\
-            0.0013695261579316775  0.8633348387619384  \\
-            0.0013695261579316775  0.8736955085658387  \\
-            0.006832625974480255  0.27886346644473814  \\
-            0.017698970742760195  -0.0021104821143473895  \\
-            0.0338495065155614  -0.06774220703461031  \\
-            0.055107284643240106  -0.13326741971462575  \\
-            0.08123940046015346  -0.18284638609227843  \\
-            0.11195954503691458  -0.21838082332964714  \\
-            0.14693114204093688  -0.24759673853490538  \\
-            0.18577103533716716  -0.26781100601056584  \\
-            0.2280536869268817  -0.28269412937029026  \\
-            0.27331583923104985  -0.2951635462373703  \\
-            0.32106159063731304  -0.3053906673741307  \\
-            0.37076782870182334  -0.3144392285004123  \\
-            0.4218899614786469  -0.3228740874751801  \\
-            0.47386788418308656  -0.33122828347111644  \\
-            0.5261321158169132  -0.3416755343076341  \\
-            0.5781100385213531  -0.35426671739761795  \\
-            0.6292321712981768  -0.33274893551698015  \\
-            0.6789384093626869  -0.256627272447268  \\
-            0.72668416076895  -0.16895444501204637  \\
-            0.7719463130731181  -0.08823876431499511  \\
-            0.8142289646628327  -0.009440031539621252  \\
-            0.853068857959063  0.06184550150243795  \\
-            0.8880404549630854  0.12580666842345178  \\
-            0.9187605995398466  0.18413827494019586  \\
-            0.9448927153567599  0.2353275752597347  \\
-            0.9661504934844387  0.27736872587602635  \\
-            0.9823010292572398  0.3104194509570798  \\
-            0.9931673740255198  0.32819427903098697  \\
-            0.9986304738420684  0.7918040059337667  \\
+            0.9986304738420684  0.7991348767567884  \\
+            0.9931673740255198  0.3259774664309131  \\
+            0.9823010292572398  0.30558195181157366  \\
+            0.9661504934844387  0.26763746294205837  \\
+            0.9448927153567599  0.21754874810730251  \\
+            0.9187605995398466  0.15409552840728236  \\
+            0.8880404549630854  0.0783277945188664  \\
+            0.853068857959063  -0.0090263543375102  \\
+            0.8142289646628327  -0.11051537187753468  \\
+            0.7719463130731181  -0.22667726196794336  \\
+            0.72668416076895  -0.35052641116706296  \\
+            0.6789384093626869  -0.48640004226084077  \\
+            0.6292321712981768  -0.6083105630621992  \\
+            0.5781100385213531  -0.6573351018784075  \\
+            0.5261321158169132  -0.6554074221293167  \\
+            0.47386788418308656  -0.6485912224740169  \\
+            0.4218899614786469  -0.637854130019756  \\
+            0.37076782870182334  -0.6211349055089936  \\
+            0.32106159063731304  -0.5984871657706403  \\
+            0.27331583923104985  -0.5700364242897742  \\
+            0.2280536869268817  -0.5354077743475036  \\
+            0.18577103533716716  -0.495429339981289  \\
+            0.14693114204093688  -0.44771023389323195  \\
+            0.11195954503691458  -0.38927530587974624  \\
+            0.08123940046015346  -0.3247353459680302  \\
+            0.055107284643240106  -0.24682710716126954  \\
+            0.0338495065155614  -0.1552322740291201  \\
+            0.017698970742760195  -0.06875290629465058  \\
+            0.006832625974480255  0.2383341726417364  \\
+            0.0013695261579316775  0.8631355666442295  \\
+            0.0013695261579316775  0.8738126348858586  \\
+            0.006832625974480255  0.27974419454479327  \\
+            0.017698970742760195  -0.00026870502298925736  \\
+            0.0338495065155614  -0.0650938405552981  \\
+            0.055107284643240106  -0.1296701742852595  \\
+            0.08123940046015346  -0.178303513356727  \\
+            0.11195954503691458  -0.21294474354783355  \\
+            0.14693114204093688  -0.2413174796582016  \\
+            0.18577103533716716  -0.2607913062877547  \\
+            0.2280536869268817  -0.2750307854653864  \\
+            0.27331583923104985  -0.28694317859985263  \\
+            0.32106159063731304  -0.2967087067164318  \\
+            0.37076782870182334  -0.30538716385110964  \\
+            0.4218899614786469  -0.31354223774182355  \\
+            0.47386788418308656  -0.3217042488037858  \\
+            0.5261321158169132  -0.33202238480886836  \\
+            0.5781100385213531  -0.34453599360648113  \\
+            0.6292321712981768  -0.32338386212085735  \\
+            0.6789384093626869  -0.24827530436428646  \\
+            0.72668416076895  -0.1617529749972919  \\
+            0.7719463130731181  -0.08210505739612262  \\
+            0.8142289646628327  -0.004344537319993957  \\
+            0.853068857959063  0.06599816772087785  \\
+            0.8880404549630854  0.12911486755541368  \\
+            0.9187605995398466  0.18668775363411738  \\
+            0.9448927153567599  0.23721293205151073  \\
+            0.9661504934844387  0.27868493151201246  \\
+            0.9823010292572398  0.3112580971868295  \\
+            0.9931673740255198  0.32849706647187105  \\
+            0.9986304738420684  0.7994891720455511  \\
         }
         ;
     \addlegendentry {DuctAPE}
