@@ -97,7 +97,7 @@ for (i, (npanduct, npanhub)) in enumerate(zip(npansduct, npanshub))
     #---------------------------------#
 
     # - Initial System Matrices - #
-    AICn, AICt = dt.vortex_panel_influence_matrices(
+    AICn, AICt = dt.AIC_boundary_on_boundary(
         panels.controlpoint,
         panels.normal,
         panels.tangent,

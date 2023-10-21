@@ -61,7 +61,7 @@ savefig(savepath * "vinf-artificial.pdf")
 #---------------------------------#
 
 # - Initial System Matrices - #
-AICn, AICt = dt.vortex_panel_influence_matrices(
+AICn, AICt = dt.vortex_aic_boundary_on_boundary(
     panels.controlpoint,
     panels.normal,
     panels.tangent,
