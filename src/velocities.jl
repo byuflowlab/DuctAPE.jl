@@ -83,7 +83,7 @@ axial velocity induced by axisymmetric vortex ring. uses equivalent smoke ring i
 function vortex_ring_vz(xi, rho, m, r_influence, influence_length)
 
     # check panel locations
-    if abs(r_influence)<=eps()
+    if abs(r_influence) <= eps()
         # if influence on the axis, the influence is set to zero
         return 0.0
     elseif (xi^2 + (rho - 1.0)^2 <= eps())
@@ -114,9 +114,9 @@ equivalent "smoke" ring self-induced velocity
 function smoke_ring_vz(r_influence, influence_length)
     # return -1.0 / (4.0 * pi * r_influence) * (log(8.0 * pi * r_influence / influence_length) - 0.25)
     # Lamb has negative out front due to vortex in opposite direction to you
-    return 1.0 / (4.0 * pi * r_influence) * (log(8.0 * pi * r_influence / influence_length) - 0.25)
+    return 1.0 / (4.0 * pi * r_influence) *
+           (log(8.0 * pi * r_influence / influence_length) - 0.25)
 end
-
 
 """
 radial velocity induced by axisymmetric vortex ring. returns zero if vortex ring is on axis of rotation (zero radius), the point of influence is on the axis, or if self-inducing velocity.
@@ -133,7 +133,7 @@ radial velocity induced by axisymmetric vortex ring. returns zero if vortex ring
 function vortex_ring_vr(xi, rho, m, r_influence)
 
     # return 0.0 for self-induced, influence on axis, or target on axis cases
-    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence)<=eps() || isapprox(rho, 0.0)
+    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence) <= eps() || isapprox(rho, 0.0)
         return 0.0
     else
         #get numerator and denominator of first fraction
@@ -171,7 +171,7 @@ axial velocity induced by axisymmetric source ring. returns zero if source ring 
 function source_ring_vz(xi, rho, m, r_influence)
 
     # return zero for the self-induced off body case
-    if (xi^2 + (rho - 1.0)^2 <= eps()) || isapprox(r_influence, 0.0) || isapprox(rho, 0.0)
+    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence) < eps() || abs(rho) < eps()
         return 0.0
     else
 
@@ -240,13 +240,13 @@ in place calculation of axial and radial components of induced velocity due to a
 - `gamma::Vecto{Float}` : panel node strengths, default = [1.0;1.0] (unit strength)
 """
 function vortex_induced_velocity!(
-        vel, controlpoint, node1, node2, influence_length, gamma=[1.0; 1.0]
+    vel, controlpoint, node1, node2, influence_length, gamma=[1.0; 1.0]
 )
 
     #TODO: replace with integration stuff
-vel .= nominal_vortex_panel_integration(
-    node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0], debug=false
-)
+    vel .= nominal_vortex_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0], debug=false
+    )
     #TODO: how to determine self-induced panel? check if controlpoint is on node line?
     # get full induced velocities of vortex ring
     vel[1] +=
@@ -282,9 +282,7 @@ function vortex_induced_velocity(
     vel = zeros(T, 2)
 
     # get velocities
-    vortex_induced_velocity!(
-        vel, controlpoint, node, influence_length, gamma
-    )
+    vortex_induced_velocity!(vel, controlpoint, node, influence_length, gamma)
 
     return vel
 end
@@ -310,13 +308,11 @@ function influencefromvortices(
     strengths::AbstractVector{T4},
 ) where {T1,T2,T3,T4}
 
-# Initialize
+    # Initialize
     T = promote_type(T1, T2, T3, T4)
     AIC = zeros(T, size(controlpoints, 1), size(nodes, 1), 2)
 
-    influencefromvortices!(
-        AIC, controlpoints, nodes, influence_lengths, strengths
-    )
+    influencefromvortices!(AIC, controlpoints, nodes, influence_lengths, strengths)
 
     return AIC
 end
@@ -333,11 +329,9 @@ Used for constructing the influence matrices from the body to the rotor/wake in 
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 - `gamma::Vector{Float}` : vortex constant circulation values
 """
-function influencefromvortices!(
-    AIC, controlpoints, nodes, influence_lengths, strengths
-)
+function influencefromvortices!(AIC, controlpoints, nodes, influence_lengths, strengths)
 
-# loop through control points
+    # loop through control points
     for (i, cpi) in enumerate(eachrow(controlpoints))
         # loop through panels doing the influencing
         for (j, (gamma, nj, lj)) in
@@ -373,7 +367,7 @@ function vfromvortices(
     strengths::AbstractArray{T4},
 ) where {T1,T2,T3,T4}
 
-# Initialize
+    # Initialize
     T = promote_type(T1, T2, T3, T4)
     V = zeros(T, size(controlpoints, 1), 2)
 
@@ -395,15 +389,9 @@ Note: there is probably a more efficient way to achieve this functionality.
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 - `gamma::Vector{Float}` : vortex constant circulation values
 """
-function vfromvortices!(
-        V,
-    controlpoints,
-    nodes,
-    influence_lengths,
-    strengths,
-)
+function vfromvortices!(V, controlpoints, nodes, influence_lengths, strengths)
 
-# Loop through control points
+    # Loop through control points
     for (i, (cpi, vel)) in enumerate(zip(eachrow(controlpoints), eachrow(V)))
         # loop through panels doing the influencing
         for (j, (gamma, nj, lj)) in
@@ -428,9 +416,7 @@ in place calculation of axial and radial components of induced velocity due to a
 - `influence_length::Float` : length over which source ring influence is applied on the surface.
 - `sigma::Float` : source constant circulation value, default = 1.0 (unit source)
 """
-function source_induced_velocity!(
-    vel, controlpoint, node, influence_length, sigma=1.0
-)
+function source_induced_velocity!(vel, controlpoint, node, influence_length, sigma=1.0)
 
     # get relative geometry
     xi, rho, m, rj = calculate_xrm(controlpoint, node)
@@ -466,9 +452,7 @@ function source_induced_velocity(
     vel = zeros(T, 2)
 
     # get velocities
-    source_induced_velocity!(
-        vel, controlpoint, node, influence_length, sigma
-    )
+    source_induced_velocity!(vel, controlpoint, node, influence_length, sigma)
 
     return vel
 end
@@ -494,13 +478,11 @@ function influencefromsources(
     strengths::AbstractArray{T4},
 ) where {T1,T2,T3,T4}
 
-# Initialize
+    # Initialize
     T = promote_type(T1, T2, T3, T4)
     AIC = zeros(T, size(controlpoints, 1), size(nodes, 1), 2)
 
-    influencefromsources!(
-        AIC, controlpoints, nodes, influence_lengths, strengths
-    )
+    influencefromsources!(AIC, controlpoints, nodes, influence_lengths, strengths)
 
     return AIC
 end
@@ -517,9 +499,7 @@ Used for constructing the influence matrices from the rotor to the body/wake in 
 - `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
 - `gamma::Vector{Float}` : source constant circulation values
 """
-function influencefromsources!(
-    AIC, controlpoints, nodes, influence_length, strengths
-)
+function influencefromsources!(AIC, controlpoints, nodes, influence_length, strengths)
     for (i, cpi) in enumerate(eachrow(controlpoints))
         # loop through panels doing the influencing
         for (j, (sigma, nj, lj)) in
@@ -555,7 +535,7 @@ function vfromsources(
     strengths::AbstractArray{T4},
 ) where {T1,T2,T3,T4}
 
-# Initialize
+    # Initialize
     T = promote_type(T1, T2, T3, T4)
     V = zeros(T, size(controlpoints, 1), 2)
 
@@ -577,9 +557,7 @@ Note: there is probably a more efficient way to achieve this functionality.
 - `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
 - `sigma::Vector{Float}` : source constant circulation values
 """
-function vfromsources!(
-    V, controlpoints, nodes, influence_length, strengths
-)
+function vfromsources!(V, controlpoints, nodes, influence_length, strengths)
     for (i, (cpi, vel)) in enumerate(zip(eachrow(controlpoints), eachrow(V)))
         # loop through panels doing the influencing
         for (j, (sigma, nj, lj)) in

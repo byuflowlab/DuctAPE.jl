@@ -1,5 +1,5 @@
 #---------------------------------#
-# Influence Coefficient Matrices  #
+#     Influence Coefficients      #
 #---------------------------------#
 
 ##### ----- Vortex ----- #####
@@ -19,7 +19,7 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
-function vortex_panel_influence_matrices(
+function vortex_aic_boundary_on_boundary(
     controlpoint, normal, tangent, node, nodemap, influence_length
 )
     T = promote_type(eltype(node), eltype(controlpoint))
@@ -29,7 +29,7 @@ function vortex_panel_influence_matrices(
     AICn = zeros(T, M, N)
     AICt = zeros(T, M, N)
 
-    vortex_panel_influence_matrices!(
+    vortex_aic_boundary_on_boundary!(
         AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
     )
 
@@ -48,7 +48,7 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `node::Matrix{Float}` : [z r] coordinates of vortex rings
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
-function vortex_panel_influence_matrices!(
+function vortex_aic_boundary_on_boundary!(
     AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
 
@@ -69,6 +69,78 @@ function vortex_panel_influence_matrices!(
                     node[nmap[1], :], node[nmap[2], :], lj, cpi
                 )
             end
+
+            for k in 1:2
+                # fill the Matrix
+                AICn[i, nmap[k]] += dot(vel[k, :], nhat)
+                AICt[i, nmap[k]] += dot(vel[k, :], that)
+            end #for k
+        end #for j
+    end #for i
+
+    return nothing
+end
+
+"""
+out of place calculation of panel method influence coefficients (V dot nhat) for a set of control points (NOT on panels) due to a set of axisymmetric vortex rings (on body surface)
+
+Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
+
+**Arguments:**
+- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
+- `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
+- `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
+- `nodemap::Matrix{Int}` : [1 2] node indices for each panel
+- `influence_length::Vector{Float}` : lengths of influencing panels
+
+**Returns:**
+- `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
+- `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
+"""
+function vortex_aic_boundary_on_field(
+    controlpoint, normal, tangent, node, nodemap, influence_length
+)
+    T = promote_type(eltype(node), eltype(controlpoint))
+    M = size(controlpoint, 1)
+    N = size(node, 1)
+
+    AICn = zeros(T, M, N)
+    AICt = zeros(T, M, N)
+
+    vortex_aic_boundary_on_field!(
+        AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+    )
+
+    return AICn, AICt
+end
+
+"""
+in place calculation of panel method influence coefficients (V dot nhat) for a set of control points (NOT on panels) due to a set of axisymmetric vortex rings (on body surface)
+
+Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
+
+**Arguments:**
+- `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
+- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
+- `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
+- `node::Matrix{Float}` : [z r] coordinates of vortex rings
+- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+"""
+function vortex_aic_boundary_on_field!(
+    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+)
+
+    # Loop through control points being influenced
+    for (i, (cpi, nhat, that)) in
+        enumerate(zip(eachrow(controlpoint), eachrow(normal), eachrow(tangent)))
+        # loop through panels doing the influencing
+        for (j, (nmap, lj)) in enumerate(zip(eachrow(nodemap), influence_length))
+
+            # get unit induced velocity from the panel onto the control point
+            # TODO: this allocates the vel's put a single 2x2 vel object in eventual cache and update the integration functions to be in place.
+            vel = nominal_vortex_panel_integration(
+                node[nmap[1], :], node[nmap[2], :], lj, cpi
+            )
 
             for k in 1:2
                 # fill the Matrix
@@ -205,6 +277,102 @@ function freestream_influence_vector!(RHS, normals, Vinfmat)
     return nothing
 end
 
+#---------------------------------#
+#      LHS Matrix Assembly        #
+#---------------------------------#
+"""
+"""
+function assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
+
+    # get type
+    TF = promote_type(eltype(AICn), eltype(AICpcp))
+
+    # initialize LHS matrix
+    LHS = zeros(TF, panels.totnode + 2, panels.totnode + 2)
+
+    assemble_lhs_matrix!(LHS, AICn, AICpcp, panels; dummyval=dummyval)
+
+    return LHS
+end
+
+"""
+"""
+function assemble_lhs_matrix!(LHS, AICn, AICpcp, panels; dummyval=1.0)#TODO: should dummy vales be + or -?
+
+    # extract stuff from panels
+    (; npanel, nnode, totpanel, totnode, prescribednodeidxs) = panels
+
+    # - Place standard influence coefficients - #
+    # 1:totpanel, 1:totnode are standard AIC values
+    LHS[1:totpanel, 1:totnode] .= AICn
+
+    # - Place Dummy influences on right-most columns - #
+    # Duct Dummy's
+    LHS[1:npanel[1], end - 1] .= dummyval
+    # Hub Dummy's
+    LHS[(npanel[1] + 1):totpanel, end] .= dummyval
+
+    # - Place internal duct pseudo control point row - #
+    LHS[totpanel + 1, 1:totnode] .= AICpcp[1, :]
+
+    # - Place Kutta condition Row - #
+    LHS[(totpanel + 2), 1] = LHS[totpanel + 2, nnode[1]] = 1.0
+
+    # - Place hub LE prescribed panel row - #
+    LHS[totpanel + 3, prescribednodeidxs[1]] = 1.0
+
+    # - Place hub TE prescribed panel row OR hub internal pseudo control point row - #
+    if length(prescribednodeidxs) > 1
+        # prescribed TE node
+        LHS[totpanel + 4, prescribednodeidxs[2]] = 1.0
+    else
+        # internal pseudo control point
+        LHS[totpanel + 4, 1:totnode] .= AICpcp[2, :]
+    end
+
+    return LHS
+end
+
+#---------------------------------#
+#      RHS Matrix Assembly        #
+#---------------------------------#
+"""
+"""
+function assemble_rhs_matrix(vdnb, vdnpcp, panels)
+
+    # get type
+    TF = promote_type(eltype(vdnb), eltype(vdnpcp))
+
+    # initialize RHS matrix
+    RHS = zeros(TF, panels.totnode + 2)
+
+    assemble_rhs_matrix!(RHS, vdnb, vdnpcp, panels)
+
+    return RHS
+end
+
+"""
+"""
+function assemble_rhs_matrix!(RHS, vdnb, vdnpcp, panels)
+
+    # extract stuff from panels
+    (; npanel, nnode, totpanel, totnode, prescribednodeidxs) = panels
+
+    # - Place standard influence coefficients - #
+    # 1:totpanel, 1:totnode are standard AIC values
+    RHS[1:totpanel] .= vdnb
+
+    # - Place Duct pseudo control point freestream influence - #
+    RHS[totnode-1] = vdnpcp[1]
+
+    # - Place hub pseudo control point freestream influence - #
+    if length(prescribednodeidxs) == 1
+        RHS[totnode + 2] = vdnpcp[2]
+    end
+
+    return RHS
+end
+
 ######################################################################
 #                                                                    #
 #               Augment with influence on Internal Panels            #
@@ -226,7 +394,7 @@ end
 #end
 
 #function vortex_influence_on_internal_panels!(augRHS, itpanels, influencepanels)
-#    M = itpanels.npanels
+#    M = itpanels.totpanel
 
 #    for (j, (cp, lj)) in
 #        enumerate(zip(eachrow(influencepanels.node), influencepanels.influence_length))
@@ -259,7 +427,7 @@ end
 #end
 
 #function source_influence_on_internal_panels!(augRHS, itpanels, influencepanels)
-#    M = itpanels.npanels
+#    M = itpanels.totpanel
 
 #    for (j, (cp, lj)) in
 #        enumerate(zip(eachrow(influencepanels.node), influencepanels.influence_length))
@@ -307,7 +475,7 @@ end
 
 #    # rename for convenience
 #    nodes = influencepanels.nodes
-#    M = itpanels.npanels
+#    M = itpanels.totpanel
 
 #    for (i, (cpi, nhat)) in
 #        enumerate(zip(eachrow(itpanels.itcontrolpoint), eachrow(itpanels.itnormal)))
@@ -340,7 +508,7 @@ end
 #end
 
 #function freestream_influence_on_internal_panels!(augRHS, panels, Vinfvec)
-#    M = panels.npanels
+#    M = panels.totpanel
 
 #    for (i, nhat) in enumerate(eachrow(panels.itnormal))
 #        augRHS[M + i] -= dot(Vinfvec, nhat)

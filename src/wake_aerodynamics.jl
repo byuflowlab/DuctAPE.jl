@@ -160,10 +160,10 @@ end
 
 function get_wake_k(wake_vortex_panels)
     # initialize output
-    K = zeros(eltype(wake_vortex_panels.controlpoint), wake_vortex_panels.npanels)
+    K = zeros(eltype(wake_vortex_panels.controlpoint), wake_vortex_panels.totpanel)
 
     # Loop through panels
-    for iw in 1:(wake_vortex_panels.npanels)
+    for iw in 1:(wake_vortex_panels.totpanel)
         # check if panel has zero radius
         if isapprox(wake_vortex_panels.controlpoint[iw, 2], 0.0)
             K[iw] = 0.0

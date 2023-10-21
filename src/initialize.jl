@@ -78,7 +78,7 @@ function precomputed_inputs(
         hub_coordinates,
         rotorstator_parameters.xrotor,
         paneling_constants.wake_length,
-        paneling_constants.npanels,
+        paneling_constants.totpanel,
     )
 
     # Save number of wake panels in x-direction
@@ -157,7 +157,7 @@ function precomputed_inputs(
                 body_doublet_panels.controlpoint[:, 1],
             ) for i in 1:length(rotorstator_parameters.xrotor)
         ]
-        hwidraw = sort([body_doublet_panels.npanels; rotor_indices_on_hub])
+        hwidraw = sort([body_doublet_panels.totpanel; rotor_indices_on_hub])
         hubidsaftofrotors = reduce(
             vcat, [[(hwidraw[i] + 1):hwidraw[i + 1]] for i in 1:nrotor]
         )
@@ -215,7 +215,7 @@ function precomputed_inputs(
     wakeK = get_wake_k(wake_vortex_panels)
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
-    rotorwakeid = ones(Int, wake_vortex_panels.npanels, 2)
+    rotorwakeid = ones(Int, wake_vortex_panels.totpanel, 2)
     for i in 1:(paneling_constants.nwake_sheets)
         rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
     end
@@ -281,7 +281,7 @@ function precomputed_inputs(
     body_lhs_kutta!(LHS, body_doublet_panels)
 
     # right hand side from freestream
-    Vinfmat = repeat([freestream.Vinf 0.0], body_doublet_panels.npanels)
+    Vinfmat = repeat([freestream.Vinf 0.0], body_doublet_panels.totpanel)
     b_bf = freestream_influence_vector(body_doublet_panels.normal, Vinfmat)
     RHS = b_bf
 
@@ -307,7 +307,7 @@ function precomputed_inputs(
     # - Pre-compute fixed terms of the least-squares problem: Gred, Gls=Gred'*Gred, Glu=LU(Gls), and -bp - #
 
     # Set Vinf = 0 so then RHS becomes simply -bp
-    Vinfmat0 = repeat([0.0 0.0], body_doublet_panels.npanels)
+    Vinfmat0 = repeat([0.0 0.0], body_doublet_panels.totpanel)
     b_bf0 = freestream_influence_vector(body_doublet_panels.normal, Vinfmat0)
     RHS0 = b_bf0
 
@@ -350,7 +350,7 @@ function precomputed_inputs(
             rotor_source_panels[i].controlpoint,
             rotor_source_panels[j].controlpoint,
             rotor_source_panels[j].len,
-            ones(TF, rotor_source_panels[j].npanels),
+            ones(TF, rotor_source_panels[j].totpanel),
         ) for i in 1:length(rotor_source_panels), j in 1:length(rotor_source_panels)
     ]
 
@@ -372,7 +372,7 @@ function precomputed_inputs(
         influencefromdoubletpanels(
             rotor_source_panels[i].controlpoint,
             body_doublet_panels.nodes,
-            ones(TF, body_doublet_panels.npanels),
+            ones(TF, body_doublet_panels.totpanel),
         ) for i in 1:length(rotor_source_panels)
     ]
 
@@ -387,7 +387,7 @@ function precomputed_inputs(
         influencefromTE(
             rotor_source_panels[i].controlpoint,
             body_doublet_panels.TEnodes,
-            ones(TF, body_doublet_panels.npanels),
+            ones(TF, body_doublet_panels.totpanel),
         ) for i in 1:length(rotor_source_panels)
     ]
 
@@ -403,7 +403,7 @@ function precomputed_inputs(
             rotor_source_panels[i].controlpoint,
             wake_vortex_panels.controlpoint,
             wake_vortex_panels.len,
-            ones(TF, wake_vortex_panels.npanels),
+            ones(TF, wake_vortex_panels.totpanel),
         ) for i in 1:length(rotor_source_panels)
     ]
 
@@ -419,7 +419,7 @@ function precomputed_inputs(
     v_wb = influencefromdoubletpanels(
         wake_vortex_panels.controlpoint,
         body_doublet_panels.nodes,
-        ones(TF, body_doublet_panels.npanels),
+        ones(TF, body_doublet_panels.totpanel),
     )
 
     # axial components
@@ -432,7 +432,7 @@ function precomputed_inputs(
     v_wbte = influencefromTE(
         wake_vortex_panels.controlpoint,
         body_doublet_panels.TEnodes,
-        ones(TF, body_doublet_panels.npanels),
+        ones(TF, body_doublet_panels.totpanel),
     )
 
     # axial components
@@ -447,7 +447,7 @@ function precomputed_inputs(
             wake_vortex_panels.controlpoint,
             rotor_source_panels[j].controlpoint,
             rotor_source_panels[j].len,
-            ones(TF, rotor_source_panels[j].npanels),
+            ones(TF, rotor_source_panels[j].totpanel),
         ) for j in 1:length(rotor_source_panels)
     ]
 
@@ -462,7 +462,7 @@ function precomputed_inputs(
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.len,
-        ones(TF, wake_vortex_panels.npanels),
+        ones(TF, wake_vortex_panels.totpanel),
     )
 
     # axial components
@@ -477,7 +477,7 @@ function precomputed_inputs(
         v_dwb = influencefromdoubletpanels(
             duct_wake_panels.controlpoint,
             body_doublet_panels.nodes,
-            ones(TF, body_doublet_panels.npanels),
+            ones(TF, body_doublet_panels.totpanel),
         )
 
     # axial components
@@ -487,7 +487,7 @@ function precomputed_inputs(
     v_dwbte = influencefromTE(
         duct_wake_panels.controlpoint,
         body_doublet_panels.TEnodes,
-        ones(TF, body_doublet_panels.npanels),
+        ones(TF, body_doublet_panels.totpanel),
     )
 
     # axial components
@@ -505,7 +505,7 @@ function precomputed_inputs(
             duct_wake_panels.controlpoint,
             rotor_source_panels[j].controlpoint,
             rotor_source_panels[j].len,
-            ones(TF, rotor_source_panels[j].npanels),
+            ones(TF, rotor_source_panels[j].totpanel),
         ) for j in 1:length(rotor_source_panels)
     ]
 
@@ -520,7 +520,7 @@ function precomputed_inputs(
         duct_wake_panels.controlpoint,
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.len,
-        ones(TF, wake_vortex_panels.npanels),
+        ones(TF, wake_vortex_panels.totpanel),
     )
 
     # axial components
@@ -534,7 +534,7 @@ function precomputed_inputs(
     v_hwb = influencefromdoubletpanels(
         hub_wake_panels.controlpoint,
         body_doublet_panels.nodes,
-        ones(TF, body_doublet_panels.npanels),
+        ones(TF, body_doublet_panels.totpanel),
     )
 
     # axial components
@@ -547,7 +547,7 @@ function precomputed_inputs(
     v_hwbte = influencefromTE(
         hub_wake_panels.controlpoint,
         body_doublet_panels.TEnodes,
-        ones(TF, body_doublet_panels.npanels),
+        ones(TF, body_doublet_panels.totpanel),
     )
 
     # axial components
@@ -562,7 +562,7 @@ function precomputed_inputs(
             hub_wake_panels.controlpoint,
             rotor_source_panels[j].controlpoint,
             rotor_source_panels[j].len,
-            ones(TF, rotor_source_panels[j].npanels),
+            ones(TF, rotor_source_panels[j].totpanel),
         ) for j in 1:length(rotor_source_panels)
     ]
 
@@ -577,7 +577,7 @@ function precomputed_inputs(
         hub_wake_panels.controlpoint,
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.len,
-        ones(TF, wake_vortex_panels.npanels),
+        ones(TF, wake_vortex_panels.totpanel),
     )
 
     # axial components
@@ -597,7 +597,7 @@ function precomputed_inputs(
     rotor_panel_centers = reduce(hcat, rotor_panel_centers)
 
     # get the total number of vortex panels on the bodies
-    num_body_panels = body_doublet_panels.npanels
+    num_body_panels = body_doublet_panels.totpanel
 
     return (;
         converged=[false],
@@ -721,9 +721,9 @@ function initialize_states(inputs)
     RHS = update_RHS(
         inputs.b_bf,
         inputs.A_bw,
-        zeros(TF, inputs.wake_vortex_panels.npanels),
+        zeros(TF, inputs.wake_vortex_panels.totpanel),
         inputs.A_br,
-        zeros(TF, inputs.rotor_source_panels[1].npanels, 2),
+        zeros(TF, inputs.rotor_source_panels[1].totpanel, 2),
     )
 
     #rename for convenience later
@@ -747,7 +747,7 @@ function initialize_states(inputs)
     # get problem dimensions (number of radial stations x number of rotors)
     nr = length(inputs.blade_elements[1].rbe)
     nrotor = length(inputs.blade_elements)
-    nwake = inputs.wake_vortex_panels.npanels
+    nwake = inputs.wake_vortex_panels.totpanel
 
     # initialize outputs
     Gamr = zeros(TF, nr, nrotor)

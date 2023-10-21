@@ -93,6 +93,8 @@ end
 dot(A, B) = sum(a * b for (a, b) in zip(A, B))
 # norm of vector
 norm(A) = sqrt(mapreduce(x -> x^2, +, A))
+# 2D "cross product" magnitude
+cross2mag(A,B) = A[1]*B[2] - A[2]*B[1]
 
 """
     repanel_airfoil(x,y;N)

@@ -19,7 +19,7 @@ function generate_panels(
     body=false,
     itpanelscale=0.05,
     axistol=1e-15,
-    tetol=1e1 * eps(),
+    tegaptol=1e1 * eps(),
 ) where {TF}
 
     # TODO: consider splitting out into multiple dispatches rather than having all the ifs for the body case. they're different enough that it probably makes sense to split them out.
@@ -140,7 +140,7 @@ function generate_panels(
     # # - Trailing Edge Nodes - #
     # TEnodes = []
     # for t in 1:length(endpoints[:, 1, 1])
-    #     if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=tetol)
+    #     if isapprox(endpoints[t, 1, :], endpoints[t, 2, :]; atol=tegaptol)
     #         push!(TEnodes, (; pos=endpoints[t, 1, :], idx=endpointidxs[t, 1], sign=1)) # lower is negative
     #         push!(TEnodes, (; pos=endpoints[t, 2, :], idx=endpointidxs[t, 2], sign=-1)) #upper is positive
     #     end

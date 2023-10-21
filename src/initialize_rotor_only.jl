@@ -98,7 +98,7 @@ function precompute_inputs_rotor_only(
     wakeK = get_wake_k(wake_vortex_panels)
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
-    rotorwakeid = ones(Int, wake_vortex_panels.npanels, 2)
+    rotorwakeid = ones(Int, wake_vortex_panels.totpanel, 2)
     for i in 1:(rotor_parameters[1].nwake_sheets)
         rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
     end
@@ -122,7 +122,7 @@ function precompute_inputs_rotor_only(
             rotor_source_panels[i].controlpoint,
             wake_vortex_panels.controlpoint,
             wake_vortex_panels.len,
-            ones(TF, wake_vortex_panels.npanels),
+            ones(TF, wake_vortex_panels.totpanel),
         ) for i in 1:length(rotor_source_panels)
     ]
 
@@ -139,7 +139,7 @@ function precompute_inputs_rotor_only(
             rotor_source_panels[i].controlpoint,
             rotor_source_panels[j].controlpoint,
             rotor_source_panels[j].len,
-            ones(TF, rotor_source_panels[j].npanels),
+            ones(TF, rotor_source_panels[j].totpanel),
         ) for i in 1:length(rotor_source_panels), j in 1:length(rotor_source_panels)
     ]
 
@@ -161,7 +161,7 @@ function precompute_inputs_rotor_only(
             wake_vortex_panels.controlpoint,
             rotor_source_panels[j].controlpoint,
             rotor_source_panels[j].len,
-            ones(TF, rotor_source_panels[j].npanels),
+            ones(TF, rotor_source_panels[j].totpanel),
         ) for j in 1:length(rotor_source_panels)
     ]
 
@@ -176,7 +176,7 @@ function precompute_inputs_rotor_only(
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.len,
-        ones(TF, wake_vortex_panels.npanels),
+        ones(TF, wake_vortex_panels.totpanel),
     )
 
     # axial components
@@ -210,8 +210,8 @@ function precompute_inputs_rotor_only(
         xrange,
         x_grid_points,
         r_grid_points,
-        nrotor_panels=sum(rotor_source_panels.npanels),
-        nwake_panels=wake_vortex_panels.npanels,
+        nrotor_panels=sum(rotor_source_panels.totpanel),
+        nwake_panels=wake_vortex_panels.totpanel,
         ductwakeinterfaceid=nothing,
         hubwakeinterfaceid=nothing,
     )
@@ -231,7 +231,7 @@ function initilize_states_rotor_only(inputs)
     # initialize circulation and source panel strengths
     Gamr, sigr = calculate_gamma_sigma(inputs.blade_elements, Wm, Wθ, W, inputs.freestream)
 
-    nwake = inputs.wake_vortex_panels.npanels
+    nwake = inputs.wake_vortex_panels.totpanel
     gamw = zeros(nwake)
     calculate_wake_vortex_strengths!(
         gamw, Gamr, inputs.Vinf * ones(length(gamw)), inputs; debug=false

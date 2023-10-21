@@ -397,7 +397,7 @@ function get_body_vs(mub, gamw, sigr, inputs)
 
     # - Influence from Freestream - #
     Vinf = inputs.Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    vsfromvinf = repeat(Vinf, body_doublet_panels.npanels) # need velocity on each panel
+    vsfromvinf = repeat(Vinf, body_doublet_panels.totpanel) # need velocity on each panel
 
     ## -- Velocity Contributions from body -- ##
 
@@ -1150,7 +1150,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
 
     # reshape the wake panel control points into the wake sheets
     nsheets = size(Gamr, 1) + 1
-    nwakex = Int(wake_vortex_panels.npanels / nsheets)
+    nwakex = Int(wake_vortex_panels.totpanel / nsheets)
     wakecpx = reshape(wake_vortex_panels.controlpoint[:, 1], (nwakex, nsheets))'
     wakecpr = reshape(wake_vortex_panels.controlpoint[:, 2], (nwakex, nsheets))'
     xrotor = inputs.blade_elements.xrotor
