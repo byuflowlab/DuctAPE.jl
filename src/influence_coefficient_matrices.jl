@@ -178,6 +178,57 @@ function add_kutta!(LHS, AICn, kids)
     return LHS
 end
 
+##### ----- Trailing Edge Gap Panels ----- #####
+"""
+"""
+function add_te_gap_aic!(
+    AICn,
+    AICt,
+    controlpoint,
+    normal,
+    tangent,
+    tenode,
+    teinfluence_length,
+    tendotn,
+    tencrossn,
+    teadjnodeidxs,
+)
+
+    # Loop through control points being influenced
+    for (i, (cpi, nhat, that)) in
+        enumerate(zip(eachrow(controlpoint), eachrow(normal), eachrow(tangent)))
+        # loop through bodies
+        for (j, (lj, ndn, ncn, nmap)) in enumerate(
+            zip(
+                teinfluence_length,
+                eachrow(tendotn),
+                eachrow(tencrossn),
+                eachrow(teadjnodeidxs),
+            ),
+        )
+
+            # get unit induced velocity from the panel onto the control point
+            # TODO: this allocates the vel's put a single 2x2 vel object in eventual cache and update the integration functions to be in place.
+            vvel = nominal_vortex_panel_integration(
+                tenode[j, 1, :], tenode[j, 2, :], lj, cpi
+            )
+            svel = nominal_source_panel_integration(
+                tenode[j, 1, :], tenode[j, 2, :], lj, cpi
+            )
+
+            for k in 1:2
+                # fill the Matrix
+                AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] - ncn[k] * svel[k, :], nhat)
+                # AICn[i, nmap[k]] += dot(-ncn[k] * svel[k, :], nhat)
+                AICt[i, nmap[k]] += dot(ndn[k] * vvel[k, :] - ncn[k] * svel[k, :], that)
+                # AICt[i, nmap[k]] += dot(-ncn[k] * svel[k, :], that)
+            end #for k
+        end #for j
+    end #for i
+
+    return AICn
+end
+
 #TODO: need to update these maybe, if moving to linear sources.
 ##### ----- Source ----- #####
 """
@@ -296,8 +347,11 @@ function assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
 end
 
 """
+AICn is nominal v dot n
+AICpcp is v dot n where n is for psuedo control point
+AICg is v dot n where v is from trailing edge gap panels
 """
-function assemble_lhs_matrix!(LHS, AICn, AICpcp, panels; dummyval=1.0)#TODO: should dummy vales be + or -?
+function assemble_lhs_matrix!(LHS, AICn, AICpcp, panels; dummyval=1.0)
 
     # extract stuff from panels
     (; npanel, nnode, totpanel, totnode, prescribednodeidxs) = panels
@@ -308,12 +362,12 @@ function assemble_lhs_matrix!(LHS, AICn, AICpcp, panels; dummyval=1.0)#TODO: sho
 
     # - Place Dummy influences on right-most columns - #
     # Duct Dummy's
-    LHS[1:npanel[1], end - 1] .= dummyval
+    LHS[1:npanel[1], end - 1] .+= dummyval
     # Hub Dummy's
-    LHS[(npanel[1] + 1):totpanel, end] .= dummyval
+    LHS[(npanel[1] + 1):totpanel, end] .+= dummyval
 
     # - Place internal duct pseudo control point row - #
-    LHS[totpanel + 1, 1:totnode] .= AICpcp[1, :]
+    LHS[totpanel + 1, 1:totnode] .+= AICpcp[1, :]
 
     # - Place Kutta condition Row - #
     LHS[(totpanel + 2), 1] = LHS[totpanel + 2, nnode[1]] = 1.0
@@ -363,7 +417,7 @@ function assemble_rhs_matrix!(RHS, vdnb, vdnpcp, panels)
     RHS[1:totpanel] .= vdnb
 
     # - Place Duct pseudo control point freestream influence - #
-    RHS[totnode-1] = vdnpcp[1]
+    RHS[totnode - 1] = vdnpcp[1]
 
     # - Place hub pseudo control point freestream influence - #
     if length(prescribednodeidxs) == 1

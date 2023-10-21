@@ -32,6 +32,19 @@ ductvs = dfdc_example_duct[:, end]
 hubcoords = reverse(dfdc_example_hub_nodes; dims=1)
 ductcoords = reverse(dfdc_example_duct_nodes; dims=1)
 
+f = open(dispath*"isolated_dfdc_duct_coordinates.dat","w")
+for xr in eachrow(ductcoords)
+    write(f, "$(xr[1]) $(xr[2])\n")
+end
+close(f)
+
+f = open(dispath*"isolated_dfdc_hub_coordinates.dat","w")
+for xr in eachrow(hubcoords)
+    write(f, "$(xr[1]) $(xr[2])\n")
+end
+close(f)
+
+
 #---------------------------------#
 #             Paneling            #
 #---------------------------------#
@@ -94,13 +107,40 @@ AICn, AICt = dt.vortex_aic_boundary_on_boundary(
 )
 
 # - Boundary on internal psuedo control point influence coefficients - #
-AICpcp, _ = dt.vortex_aic_boundary_on_field(
+AICpcp, unused = dt.vortex_aic_boundary_on_field(
     panels.itcontrolpoint,
     panels.itnormal,
     panels.ittangent,
     panels.node,
     panels.nodemap,
     panels.influence_length,
+)
+
+# - Add Trailing Edge Gap Panel Influences - #
+dt.add_te_gap_aic!(
+    AICn,
+    AICt,
+    panels.controlpoint,
+    panels.normal,
+    panels.tangent,
+    panels.tenode,
+    panels.teinfluence_length,
+    panels.tendotn,
+    panels.tencrossn,
+    panels.teadjnodeidxs,
+)
+
+dt.add_te_gap_aic!(
+    AICpcp,
+    unused,
+    panels.itcontrolpoint,
+    panels.itnormal,
+    panels.ittangent,
+    panels.tenode,
+    panels.teinfluence_length,
+    panels.tendotn,
+    panels.tencrossn,
+    panels.teadjnodeidxs,
 )
 
 # - Freetream influence for RHS vector - #

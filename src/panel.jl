@@ -155,6 +155,7 @@ function generate_panels(
     # TODO: also consider moving this into it's own function
     tenode = zeros(TF, nbodies, 2, 2) # body, node1-2, x-r
     tenormal = zeros(TF, nbodies, 2) #body, x-r
+    teinfluence_length = zeros(TF, nbodies)
     teadjnodeidxs = similar(endnodeidxs) .= 1 #can't be the same as endpoints, because we may have repeated values for non-duct bodies
     tendotn = zeros(TF, nbodies, 2) #bodies, node1,2
     tencrossn = zeros(TF, nbodies, 2) #bodies, node1,2
@@ -191,9 +192,10 @@ function generate_panels(
             # set both dots and crosses to the same thing based on the single adjacent node.
             tendotn[ib, 1] = dot(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
             tencrossn[ib, 1] = 0.0 # unnecessary, but just in case initialization changes
-            tencrossn[ib, 1] = cross2mag(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
-            tencrossn[ib, 2] = -1.0
+            tencrossn[ib, :] .= cross2mag(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
+            # tencrossn[ib, 2] = -1.0
         end
+        teinfluence_length[ib] = get_r(tenode[ib, 1, :], tenode[ib, 2, :])[2]
     end
 
     # - Prescribed Nodes - #
@@ -221,6 +223,7 @@ function generate_panels(
         prescribednodeidxs,
         tenode,
         tenormal,
+        teinfluence_length,
         teadjnodeidxs,
         tendotn,
         tencrossn,
