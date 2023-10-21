@@ -193,7 +193,6 @@ function generate_panels(
             tendotn[ib, 1] = dot(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
             tencrossn[ib, 1] = 0.0 # unnecessary, but just in case initialization changes
             tencrossn[ib, :] .= cross2mag(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
-            # tencrossn[ib, 2] = -1.0
         end
         teinfluence_length[ib] = get_r(tenode[ib, 1, :], tenode[ib, 2, :])[2]
     end
