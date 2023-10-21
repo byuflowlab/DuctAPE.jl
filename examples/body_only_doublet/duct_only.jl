@@ -55,7 +55,7 @@ xs = panels.controlpoint[:, 1]
 # Define freestream on panels
 Vinf = 1.0 #magnitude doesn't matter yet.
 Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-Vsmat = repeat(Vs, panels.npanels) # need velocity on each panel
+Vsmat = repeat(Vs, panels.totpanel) # need velocity on each panel
 
 #---------------------------------#
 #        Induced Velocities       #

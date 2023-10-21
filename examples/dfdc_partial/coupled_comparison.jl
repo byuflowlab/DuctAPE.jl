@@ -189,7 +189,7 @@ for (ip, pref) in enumerate(refine)
         reference_parameters;
     )
 
-    ptot = inputs.body_doublet_panels.npanels
+    ptot = inputs.body_doublet_panels.totpanel
     bpan[ip] = ptot
     println("\nTotal body panels = ", ptot, "\n\n")
 

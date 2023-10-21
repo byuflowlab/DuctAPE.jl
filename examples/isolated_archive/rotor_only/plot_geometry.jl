@@ -1,7 +1,7 @@
 function plot_rotor_geometry(inputs, savepath; num=false, offset=0.0075)
-    nwp = inputs.wake_vortex_panels.npanels
+    nwp = inputs.wake_vortex_panels.totpanel
     wcp = inputs.wake_vortex_panels.controlpoint
-    nrp = inputs.rotor_source_panels[1].npanels
+    nrp = inputs.rotor_source_panels[1].totpanel
     rcp = inputs.rotor_source_panels[1].controlpoint
 
     xt = unique(wcp[:, 1])

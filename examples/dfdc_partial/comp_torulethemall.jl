@@ -237,7 +237,7 @@ LHS = A_bb
 # right hand side from freestream
 Vinf = 30.0
 Vinfvec = [Vinf 0.0]
-Vinfmat = repeat(Vinfvec, panels.npanels)
+Vinfmat = repeat(Vinfvec, panels.totpanel)
 b_bf = dt.freestream_influence_vector(panels.normal, Vinfmat)
 RHS = b_bf
 

@@ -5,7 +5,7 @@ function run_body_only(panels, Vinf, prescribedpanels)
     # Define freestream on panels
     # Vinf = 1.0 #magnitude doesn't matter yet.
     Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    Vsmat = repeat(Vs, panels.npanels) # need velocity on each panel
+    Vsmat = repeat(Vs, panels.totpanel) # need velocity on each panel
 
     # prescribe a panel for the least squares solve:
     # choose the first panel to be prescirbed to zero (assumes first panel is not hub leading/traling edge).

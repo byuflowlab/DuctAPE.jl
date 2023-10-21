@@ -106,10 +106,10 @@ visualize_paneling(;
 # Define freestream on panels
 Vinf = 20.0 #magnitude doesn't matter yet.
 Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-Vsmat = repeat(Vs, panels.npanels) # need velocity on each panel
+Vsmat = repeat(Vs, panels.totpanel) # need velocity on each panel
 
 _, leid = findmin(duct_coordinates[:, 1])
-# prescribedpanels = [(1, 0.0); (panels.npanels, 0.0)]
+# prescribedpanels = [(1, 0.0); (panels.totpanel, 0.0)]
 prescribedpanels = [(1, 0.0)]
 # prescribedpanels = [(leid, 0.0)]
 # prescribedpanels = []

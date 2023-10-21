@@ -316,7 +316,7 @@ function run_isolated_geometry(
         legendloc=:right,
     )
 
-    println("\tNumber of Body Panels: ", panels.npanels)
+    println("\tNumber of Body Panels: ", panels.totpanel)
 
     println("Solving System")
     ## -- Initialize and solve strenths a la init function -- ##
@@ -329,7 +329,7 @@ function run_isolated_geometry(
 
     # right hand side from freestream
     Vinfvec = [Vinf 0.0]
-    Vinfmat = repeat(Vinfvec, panels.npanels)
+    Vinfmat = repeat(Vinfvec, panels.totpanel)
     b_bf = dt.freestream_influence_vector(panels.normal, Vinfmat)
     RHS = b_bf
 
