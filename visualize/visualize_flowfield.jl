@@ -69,7 +69,7 @@ function visualize_flowfield(
         println("\t"^(1) * "Grid size:\t\t$(NDIVS)")
     end
     if verbose
-        println("\t"^(1) * "Number of nodes :\t$(fieldgrid.nnodes)")
+        println("\t"^(1) * "Number of nodes :\t$(fieldgrid.totnode)")
     end
 
     # Targets where to probe the velocity
@@ -132,7 +132,7 @@ function visualize_flowfield(
 
         # reshape the wake panel control points into the wake sheets
         nsheets = size(Gamr, 1) + 1
-        nwakex = Int(wake_panels.npanels / nsheets)
+        nwakex = Int(wake_panels.totpanel / nsheets)
         wakecpx = reshape(wake_panels.controlpoint[:, 1], (nwakex, nsheets))'
         wakecpr = reshape(wake_panels.controlpoint[:, 2], (nwakex, nsheets))'
 
