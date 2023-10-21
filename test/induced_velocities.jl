@@ -239,25 +239,169 @@ end
     @test dt.source_ring_vz(xi, rho, m, r_influence) == 0.0
     @test dt.source_ring_vr(xi, rho, m, r_influence) == 0.0
 end
-#TODO: need to figure out source singularity integrals first before updating these
-# @testset "Source Induced Velocities" begin
-#     # setup
-#     node = [1.0; 1.0]
-#     controlpoint = [0.0; 2.0]
-#     influence_length = 1.0
-#     xi, rho, m, r_influence = dt.calculate_xrm(controlpoint, node)
 
-#     # individual components
-#     vz = dt.source_ring_vz(xi, rho, m, r_influence)
-#     vr = dt.source_ring_vr(xi, rho, m, r_influence)
+@testset "Nominal Single Source Panel Integration" begin
 
-#     # components together
-#     vel1 = dt.source_induced_velocity(controlpoint, node, influence_length)
-#     @test vel1 == [vz; vr]
+    # - Test 1 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/nominal_velocities1.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = pf
 
-#     # components in place
-#     vel2 = similar(vel1) .= 0.0
-#     dt.source_induced_velocity!(vel2, controlpoint, node, influence_length)
+    # Calculate Integral
+    V = dt.nominal_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
 
-#     @test vel1 == vel2
-# end
+    # Compare with DFDC integration values
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-6)
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-6)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-6)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-6)
+
+    # - Test 2 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/nominal_velocities2.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = pf
+
+    # Calculate Integral
+    V = dt.nominal_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-9)
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-9)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-9)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-9)
+
+    # - Test 3 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/nominal_velocities3.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = pf
+
+    # Calculate Integral
+    V = dt.nominal_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+    # - Test 4 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/nominal_velocities4.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = pf
+
+    # Calculate Integral
+    V = dt.nominal_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+end
+
+@testset "Single Source Panel Self-Induction Integration" begin
+
+    # - Test 1 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/self_velocities1.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = ps
+
+    # Calculate Integral
+    V = dt.self_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    #note: axial terms have zero for the analytic addition, so they work fine
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+    # - Test 2 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/self_velocities2.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = ps
+
+    # Calculate Integral
+    V = dt.self_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    #note: axial terms have zero for the analytic addition, so they work fine
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+    # - Test 3 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/self_velocities3.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = ps
+
+    # Calculate Integral
+    V = dt.self_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    #note: axial terms have zero for the analytic addition, so they work fine
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+    # - Test 4 - #
+    # Load in comparision values from DFDC extraction
+    include("./data/single_linear_panel_integration/self_velocities4.jl")
+    node1 = p1
+    node2 = p2
+    influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
+    controlpoint = ps
+
+    # Calculate Integral
+    V = dt.self_source_panel_integration(
+        node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    )
+
+    # Compare with DFDC integration values
+    #note: axial terms have zero for the analytic addition, so they work fine
+    @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+    @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+
+    @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+    @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+end

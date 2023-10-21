@@ -17,8 +17,9 @@ println("Running Tests...")
 # - Active Development - #
 # include("derivative_checks.jl")
 include("influence_coefficients.jl")
+include("linear_system_assembly.jl")
 
-include("induced_velocities.jl")
+include("induced_velocities.jl") #TODO: need to add linear source stuff
 # # - Should be Working - #
 include("new_panel_tests.jl")
 # include("body_geometry_tests.jl")

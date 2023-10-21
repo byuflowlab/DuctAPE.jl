@@ -167,8 +167,8 @@
         0.75 (rgrid[rotor_indices[2], 2] + rgrid[rotor_indices[2], 3])/2
     ]
     #test that other rotor panel values are correct
-    @test rotor_source_panels[1].npanels == 2
-    @test rotor_source_panels[2].npanels == 2
+    @test rotor_source_panels[1].totpanel == 2
+    @test rotor_source_panels[2].totpanel == 2
     @test all(rotor_source_panels[1].panel_angle .== pi / 2)
     @test all(rotor_source_panels[2].panel_angle .== pi / 2)
     @test all(rotor_source_panels[1].panel_curvature .== 0.0)

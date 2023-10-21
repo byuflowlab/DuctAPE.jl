@@ -66,7 +66,7 @@
     # put geometry into inputs along with Vinf
     inputs = (;
         body_doublet_panels,
-        num_body_panels=body_doublet_panels.npanels,
+        num_body_panels=body_doublet_panels.totpanel,
         rotor_source_panels,
         rotor_panel_centers=reduce(
             hcat, [rotor_source_panels[i].controlpoint[:, 2] for i in 1:nrotor]

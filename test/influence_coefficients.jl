@@ -4,9 +4,6 @@
 @testset "Body System Influence Matrices" begin
 
     #TODO: what kind of test would be useful here?
-    AICn, AICt = dt.vortex_panel_influence_matrices(
-        controlpoint, normal, node, nodemap, influence_length
-    )
 end
 
 #---------------------------------#
