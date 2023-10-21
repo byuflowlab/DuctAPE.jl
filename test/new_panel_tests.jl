@@ -30,7 +30,7 @@
     @test panels.tenormal == [1.0 0.0]
     @test panels.teadjnodeidxs == [1 1] #for single panel, second node remains at inital ones
     @test panels.tendotn == [0.0 0.0]
-    @test panels.tencrossn == [1.0 -1.0]
+    @test panels.tencrossn == [1.0 1.0]
 
     ## more panels and bodies
     # define coordinates
@@ -95,7 +95,8 @@
     @test panels.tendotn[1, :] == [0.0, 0.0] # again, this and the cross product don't make sense for a sharp trailing edge, but need to check it's not behaving unstably
     @test all(isapprox.(panels.tendotn[2, :], [sqrt(2) / 2, 0.0]))
     @test panels.tencrossn[1, :] == [0.0, 0.0]
-    @test all(isapprox.(panels.tencrossn[2, :], [sqrt(2) / 2, -1.0]))
+    @test all(isapprox.(panels.tencrossn[2, :], [sqrt(2) / 2, sqrt(2) / 2]))
+    @test all(isapprox.(panels.teinfluence_length, [0.0, 0.0]))
 
     # - TE panel specific tests - #
     x1 = [1.0; 0.5; 0.0; 0.5; 1.0]
@@ -130,5 +131,7 @@
         dt.cross2mag(panels.tenormal[1, :], panels.normal[panels.endpanelidxs[1, 1], :])
     @test panels.tencrossn[2, 1] ==
         dt.cross2mag(panels.tenormal[2, :], panels.normal[panels.endpanelidxs[2, 2], :])
-    @test panels.tencrossn[2, 2] == -1.0
+    @test panels.tencrossn[2, 2] ==
+        dt.cross2mag(panels.tenormal[2, :], panels.normal[panels.endpanelidxs[2, 2], :])
+    @test all(isapprox.(panels.teinfluence_length, [0.2, 0.1]))
 end

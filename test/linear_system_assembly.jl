@@ -27,13 +27,39 @@
         panels.influence_length,
     )
 
-    AICpcp, _ = dt.vortex_aic_boundary_on_field(
+    dt.add_te_gap_aic!(
+        AICn,
+        AICt,
+        panels.controlpoint,
+        panels.normal,
+        panels.tangent,
+        panels.tenode,
+        panels.teinfluence_length,
+        panels.tendotn,
+        panels.tencrossn,
+        panels.teadjnodeidxs,
+    )
+
+    AICpcp, unused = dt.vortex_aic_boundary_on_field(
         panels.itcontrolpoint,
         panels.itnormal,
         panels.ittangent,
         panels.node,
         panels.nodemap,
         panels.influence_length,
+    )
+
+    dt.add_te_gap_aic!(
+        AICpcp,
+        unused,
+        panels.itcontrolpoint,
+        panels.itnormal,
+        panels.ittangent,
+        panels.tenode,
+        panels.teinfluence_length,
+        panels.tendotn,
+        panels.tencrossn,
+        panels.teadjnodeidxs,
     )
 
     Vinf = 1.0 #magnitude doesn't matter yet.
