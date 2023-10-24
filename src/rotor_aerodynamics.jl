@@ -623,7 +623,7 @@ function dfdc_clcdcm(
     cd_w = fac * cd_w + fac_w * cdrag + dcd_w + cdc_alf
     cd_rey = fac * cd_rey
 
-    # if flip lift is true, return negative of clift (for stators)
+    #jm: if flip lift is true, return negative of clift (for stators)
     return fliplift ? -clift : clift, cdrag, cmom
 end
 
