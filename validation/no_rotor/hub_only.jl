@@ -1,3 +1,8 @@
+#=
+Isolated Hub Validation using data from Lewis bodies of revolution section.
+Geometry is based on that provided by lewis, but manually generated based on the lead edge circle radius, overall lengths, etc.
+In addition, geometry was interpolated using a cosine spaced scheme
+=#
 #---------------------------------#
 #              SETUP              #
 #---------------------------------#
@@ -10,6 +15,7 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+# convenience path for saving directly to dissertation directory #TODO: remove before public release
 dispath =
     project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
@@ -27,16 +33,35 @@ include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
 # hub final r-coordinate needs to be set to zero so that it's not negative
 r_hub[end] = 0.0
 # put coordinates together
-cut = 2
-coordinates = [x_hub[1:(end - cut)] r_hub[1:(end - cut)]]
+coordinates = [x_hub r_hub]
 
-npansduct = [41, 51, 61, 71, 81, 91, 101, 161, 201, 301, 401, 501, 601, 701, 801, 901, 1001]
+#TODO: check to see if all these cases still work
+# use the same number of panels as the isolated duct case
+npansduct = [41, 51, 61, 71, 81, 91, 101, 161, 201, 301, 401, 501, 601, 701]
+# except divide by 2 since it's just a half
 npans = ceil.(Int, npansduct ./ 2)
+# initialize refinement metric
 cpsums = zeros(length(npans))
+
+# loop through refinement levels
 for (i, npan) in enumerate(npans)
+    # print number of panels
     println("N Panels = ", npan - 1)
+
+    # interpolate geometry
     repanel = dt.repanel_revolution(coordinates; N=npan, normalize=false)
 
+    #---------------------------------#
+    #             Paneling            #
+    #---------------------------------#
+    ##### ----- Generate Panels ----- #####
+    panels = dt.generate_panels([repanel])
+
+    # rename axial coordinates for convenience in later plotting
+    xn = panels.node[:, 1]
+    xcp = panels.controlpoint[:, 1]
+
+    # save specific example refinements
     if npan == 81
         f = open(dispath * "hub-coordinates-$(npan-1)-panels.dat", "w")
     else
@@ -52,27 +77,6 @@ for (i, npan) in enumerate(npans)
     savefig(savepath * "hub-geometry.pdf")
 
     #---------------------------------#
-    #             Paneling            #
-    #---------------------------------#
-    ##### ----- Generate Panels ----- #####
-    # panels = dt.generate_panels([repanel];body=true)
-    panels = dt.generate_panels([repanel])
-
-    # ##### ----- Visualize to Check ----- #####
-    # visualize_paneling(;
-    #     body_panels=panels,
-    #     coordinates=[coordinates],
-    #     controlpoints=true,
-    #     nodes=true,
-    #     normals=true,
-    #     savepath=savepath,
-    #     filename=["hub-geometry.pdf"],
-    # )
-
-    xn = panels.node[:, 1]
-    xcp = panels.controlpoint[:, 1]
-
-    #---------------------------------#
     #       Operating Conditions      #
     #---------------------------------#
 
@@ -85,31 +89,43 @@ for (i, npan) in enumerate(npans)
     #        Induced Velocities       #
     #---------------------------------#
 
-    # - Initial System Matrices - #
-    AICn, AICt = dt.vortex_panel_influence_matrices(
-        panels.controlpoint,
-        panels.normal,
-        panels.tangent,
-        panels.node,
-        panels.nodemap,
-        panels.influence_length,
-    )
+    @time "AIC Matrix" begin
+        # - Boundary on boundary influence coefficients - #
+        AICn, AICt = dt.vortex_aic_boundary_on_boundary(
+            panels.controlpoint,
+            panels.normal,
+            panels.tangent,
+            panels.node,
+            panels.nodemap,
+            panels.influence_length,
+        )
+    end
 
-    kids = [
-        size(AICn)[1]+1 1
-    ]
+    ## -- Manually Assemble Linear System -- ##
+    # need to manually assemble since we don't have a way of automating the isolated case right now
+    # initialize LHS matrix
+    LHS = zeros(size(AICn, 2) + 1, size(AICn, 2) + 1)
+    # fill in nominal AIC elements
+    LHS[1:size(AICn, 1), 1:size(AICn, 2)] .= AICn
+    # first node is on axis and is prescribed
+    LHS[size(AICn, 1) + 1, 1] = 1.0
+    # last node is on axis and is prescribed
+    LHS[size(AICn, 1) + 2, size(AICn, 2)] = 1.0
+    # need to add dummy variable due to second prescribed node
+    LHS[1:size(AICn, 1), end] .= 1.0
 
-    LHS = zeros(size(AICn)[1] + 1, size(AICn)[2])
-
-    dt.add_kutta!(LHS, AICn, kids)
-
-    RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
+    # - Freetream influence for RHS vector - #
+    RHS = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel))
+    push!(RHS, 0.0)
     push!(RHS, 0.0)
 
     #---------------------------------#
     #             Solving             #
     #---------------------------------#
+    # standard linear solve
     gamb = LHS \ RHS
+    # don't include dummy variable associated with internal panel
+    gamb = gamb[1:(end - 1)]
 
     #---------------------------------#
     #         Post-Processing         #
@@ -127,6 +143,7 @@ for (i, npan) in enumerate(npans)
     jump = (gamb[1:(end - 1)] + gamb[2:end]) / 2
     Vtan .-= jump / 2.0
 
+    # save outputs for comparision
     f = open(savepath * "hub-xvvs-$(npan-1)-panels.jl", "w")
     write(f, "hubxvvs = [\n")
     for (x, v) in zip(panels.controlpoint[:, 1], Vtan)
@@ -165,9 +182,12 @@ for (i, npan) in enumerate(npans)
     if npan == 81
         savefig(dispath * "hub-velocity-comp-$(npan-1)-panels.tikz")
     end
+
+    # save refinement metric
     cpsums[i] = sum(cp .* panels.influence_length)
 end
 
+# look at relative error for example case and most refined case
 id80 = findfirst(x -> x == 81, npans)
 
 relerr = (cpsums[end] - cpsums[id80]) / cpsums[end] * 100

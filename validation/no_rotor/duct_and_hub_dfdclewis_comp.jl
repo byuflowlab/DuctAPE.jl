@@ -1,3 +1,8 @@
+#=
+Verification against DFDC for the isolated Lewis geometries put together in a multi-body system.
+cosine spaced interpolated geometry was input to DFDC, and we are using the DFDC re-interpolation geometry for comparision here.
+=#
+
 #---------------------------------#
 #              SETUP              #
 #---------------------------------#
@@ -10,6 +15,7 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+# convenience path for saving directly to dissertation directory #TODO: remove before public release
 dispath =
     project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
@@ -29,6 +35,7 @@ ductx = dfdc_lewis_duct[:, 1]
 ductcp = dfdc_lewis_duct[:, 3]
 ductvs = dfdc_lewis_duct[:, end]
 
+# Node geometry from DFDC
 hubcoords = reverse(dfdc_lewis_hub_nodes; dims=1)
 ductcoords = reverse(dfdc_lewis_duct_nodes; dims=1)
 
@@ -36,7 +43,6 @@ ductcoords = reverse(dfdc_lewis_duct_nodes; dims=1)
 #             Paneling            #
 #---------------------------------#
 ##### ----- Generate Panels ----- #####
-# panels = dt.generate_panels([repanel];body=true)
 panels = dt.generate_panels([ductcoords, hubcoords])
 
 xn = panels.node[:, 1]
@@ -82,15 +88,14 @@ vdnpcp = dt.freestream_influence_vector(
     panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 1))
 )
 
+# - Assemble Linear System using DuctAPE functions - #
+# note these only work for a duct+hub system right now
 LHS = dt.assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
 RHS = dt.assemble_rhs_matrix(vdnb, vdnpcp, panels)
 #---------------------------------#
 #             Solving             #
 #---------------------------------#
 gamb = LHS \ RHS
-
-# pg = plot(xn, gamb; xlabel="x", ylabel="node strengths", label="")
-# savefig(pg, savepath * "duct-gammas.pdf")
 
 #---------------------------------#
 #         Post-Processing         #
@@ -106,7 +111,11 @@ Vtan .+= AICt * gamb[1:size(AICt, 2)]
 
 # add in jump term
 jumpduct = (gamb[1:(panels.npanel[1])] + gamb[2:panels.nnode[1]]) / 2
-jumphub = (gamb[(panels.nnode[1] + 1):(panels.totpanel+1)]+gamb[(panels.nnode[1]+2):(panels.totnode)]) / 2
+jumphub =
+    (
+        gamb[(panels.nnode[1] + 1):(panels.totpanel + 1)] +
+        gamb[(panels.nnode[1] + 2):(panels.totnode)]
+    ) / 2
 jump = [jumpduct; jumphub]
 Vtan .-= jump / 2.0
 

@@ -1,3 +1,7 @@
+#=
+Verification against DFDC for geometry providied in one of the DFDC example files
+=#
+
 #---------------------------------#
 #              SETUP              #
 #---------------------------------#
@@ -29,21 +33,22 @@ ductx = dfdc_example_duct[:, 1]
 ductcp = dfdc_example_duct[:, 3]
 ductvs = dfdc_example_duct[:, end]
 
+# Node geometry from DFDC
 hubcoords = reverse(dfdc_example_hub_nodes; dims=1)
 ductcoords = reverse(dfdc_example_duct_nodes; dims=1)
 
-f = open(dispath*"isolated_dfdc_duct_coordinates.dat","w")
+# Save geometry for plotting later
+f = open(dispath * "isolated_dfdc_duct_coordinates.dat", "w")
 for xr in eachrow(ductcoords)
     write(f, "$(xr[1]) $(xr[2])\n")
 end
 close(f)
 
-f = open(dispath*"isolated_dfdc_hub_coordinates.dat","w")
+f = open(dispath * "isolated_dfdc_hub_coordinates.dat", "w")
 for xr in eachrow(hubcoords)
     write(f, "$(xr[1]) $(xr[2])\n")
 end
 close(f)
-
 
 #---------------------------------#
 #             Paneling            #
@@ -79,6 +84,7 @@ plot!(
     color=myred,
 )
 
+# rename for convenience in plotting later
 xn = panels.node[:, 1]
 xcp = panels.controlpoint[:, 1]
 
@@ -149,6 +155,8 @@ vdnpcp = dt.freestream_influence_vector(
     panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 1))
 )
 
+# - use DuctAPE functions to assemble linear system - #
+# note these only work for a duct+hub system right now
 LHS = dt.assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
 RHS = dt.assemble_rhs_matrix(vdnb, vdnpcp, panels)
 #---------------------------------#
@@ -156,6 +164,7 @@ RHS = dt.assemble_rhs_matrix(vdnb, vdnpcp, panels)
 #---------------------------------#
 gamb = LHS \ RHS
 
+# compare DFDC and DuctAPE strength distributions
 ductgam = gamb[1:panels.nnode[1]]
 hubgam = gamb[(panels.nnode[1] + 1):(panels.totnode)]
 plot!(pgd, ductcoords[:, 1], ductgam; label="DuctAPE", color=myblue)

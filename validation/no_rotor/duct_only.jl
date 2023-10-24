@@ -1,3 +1,9 @@
+#=
+Isolated Duct Validation using data from Lewis annular airofils section.
+Geometry is a NACA 66-015, with coordinates generated from OpenVSP, with the repeated LE point manually removed.
+In addition, geometry was interpolated using a cosine spaced scheme
+=#
+
 #---------------------------------#
 #              SETUP              #
 #---------------------------------#
@@ -10,6 +16,7 @@ end
 
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
+# convenience path for saving directly to dissertation directory #TODO: remove before public release
 dispath =
     project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
@@ -23,7 +30,6 @@ include(project_dir * "/visualize/plots_default.jl")
 
 # - load experimental data - #
 include(project_dir * "/test/data/naca_662-015.jl")
-# coordinates = lewis_duct_coordinates
 
 # - load geometry - #
 # read data file
@@ -31,12 +37,21 @@ include(project_dir * "/test/data/naca_662-015_smooth.jl")
 # put coordinates together
 coordinates = reverse(duct_coordinates; dims=1)
 
-npans = [21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 161, 201, 301, 401, 501, 601, 701, 801]
+# Run a grid refinement loop
+# Note that numerical integration has difficulty above 700 panels when using cosine spacing on this geometry
+npans = [21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 161, 201, 301, 401, 501, 601, 701]
+# initialize refinement metric
 cpsums = zeros(length(npans))
+
+# loop through refinement levels
 for (i, npan) in enumerate(npans)
+    # print number of panels
     println("N Panels = ", npan - 1)
+
+    # interpolate geometry with cosine spacing and given number of panels
     repanel = dt.repanel_airfoil(coordinates; N=npan, normalize=false)
 
+    # save specific example refinements
     if npan == 161
         f = open(dispath * "duct-coordinates-$(npan-1)-panels.dat", "w")
     else
@@ -51,20 +66,9 @@ for (i, npan) in enumerate(npans)
     #             Paneling            #
     #---------------------------------#
     ##### ----- Generate Panels ----- #####
-    # panels = dt.generate_panels([repanel];body=true)
     panels = dt.generate_panels([repanel])
 
-    # ##### ----- Visualize to Check ----- #####
-    # visualize_paneling(;
-    #     body_panels=panels,
-    #     coordinates=[coordinates],
-    #     controlpoints=true,
-    #     nodes=true,
-    #     normals=true,
-    #     savepath=savepath,
-    #     filename=["duct-geometry.pdf"],
-    # )
-
+    # rename axial coordinates for convenience in later plotting
     xn = panels.node[:, 1]
     xcp = panels.controlpoint[:, 1]
 
@@ -91,23 +95,44 @@ for (i, npan) in enumerate(npans)
         panels.influence_length,
     )
 
-    kids = [
-        size(AICn)[1]+1 1
-        size(AICn)[1]+1 size(AICn)[2]
-    ]
 
-    LHS = zeros(size(AICn)[1] + 1, size(AICn)[2])
+    # - Boundary on internal psuedo control point influence coefficients - #
+    AICpcp, _ = dt.vortex_aic_boundary_on_field(
+        panels.itcontrolpoint,
+        panels.itnormal,
+        panels.ittangent,
+        panels.node,
+        panels.nodemap,
+        panels.influence_length,
+    )
 
-    dt.add_kutta!(LHS, AICn, kids)
+    ## -- Manually Assemble Linear System -- ##
+    # need to manually assemble since we don't have a way of automating the isolated case right now
+    # initialize LHS Matrix
+    LHS = zeros(size(AICn)[2] + 1, size(AICn)[2] + 1)
+    # fill LHS matrix with standard AIC terms
+    LHS[1:size(AICn, 1), 1:size(AICn, 2)] .= AICn
+    # add on pseudo control point influence terms
+    LHS[size(AICn, 2), 1:size(AICn, 2)] .= AICpcp'
+    # add in dummy variable influence terms
+    LHS[1:size(AICn, 1), size(AICn, 2)+1] .= 1.0
+    # add kutta condition
+    LHS[size(AICn, 2) + 1, 1] = LHS[size(AICn, 2) + 1, size(AICn, 2)] = 1.0
 
+    # - assemble RHS - #
     RHS = dt.freestream_influence_vector(panels.normal, Vsmat)
+    push!(RHS, -1.0)
     push!(RHS, 0.0)
 
     #---------------------------------#
     #             Solving             #
     #---------------------------------#
+    # standard linear solve
     gamb = LHS \ RHS
+    # don't include dummy variable associated with internal panel
+    gamb = gamb[1:(end - 1)]
 
+    # plot raw strengths
     pg = plot(xn, gamb; xlabel="x", ylabel="node strengths", label="")
     savefig(pg, savepath * "duct-gammas.pdf")
 
@@ -130,6 +155,7 @@ for (i, npan) in enumerate(npans)
     ### --- Steady Surface Pressure --- ###
     cp = 1.0 .- (Vtan / Vinf) .^ 2
 
+    # save outputs for comparision
     f = open(savepath * "duct-xvcp-$(npan-1)-panels.jl", "w")
     write(f, "ductxcp = [\n")
     for (x, c) in zip(panels.controlpoint[:, 1], cp)
@@ -138,6 +164,7 @@ for (i, npan) in enumerate(npans)
     write(f, "]")
     close(f)
 
+    # save outputs for comparision
     f = open(savepath * "duct-xvvs-$(npan-1)-panels.jl", "w")
     write(f, "ductxvvs = [\n")
     for (x, c) in zip(panels.controlpoint[:, 1], Vtan)
@@ -149,6 +176,7 @@ for (i, npan) in enumerate(npans)
     #---------------------------------#
     #             PLOTTING            #
     #---------------------------------#
+    #plot outputs
     pp = plot(;
         xlabel="x",
         ylabel=L"c_p",
@@ -180,15 +208,19 @@ for (i, npan) in enumerate(npans)
     if npan == 161
         savefig(dispath * "duct-pressure-comp-$(npan-1)-panels.tikz")
     end
+
+    # save refinement metric
     cpsums[i] = sum(cp .* panels.influence_length)
 end
 
+# look at relative error for example case and most refined case
 id160 = findfirst(x -> x == 161, npans)
 
 relerr = (cpsums[end] - cpsums[id160]) / cpsums[end] * 100
 
 print("relative err from 100 to 800 panels: ", relerr, "%")
 
+# - plot convergence - #
 pconv = plot(;
     xlabel="Number of Panels",
     xscale=:log10,
@@ -216,4 +248,3 @@ annotate!(
 
 savefig(savepath * "duct-grid-refinement.pdf")
 savefig(dispath * "duct-grid-refinement.tikz")
-
