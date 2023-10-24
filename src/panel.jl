@@ -109,14 +109,12 @@ function generate_panels(
     # - Internal Panel Stuff - #
     itcontrolpoint = zeros(TF, nbodies, 2)
     itnormal = zeros(TF, nbodies, 2)
-    #TODO: unnecessary?
+    #note: unused, but required input later
     ittangent = zeros(TF, nbodies, 2)
 
     if size(node, 1) > 2
         #TODO: maybe move this into it's own in-place function
         for ib in 1:nbodies
-
-            #TODO: for more robust, consider splining the coordinates, then getting the midpoint of the bodies, the normals can probably just be arbitrary, [1,0] should work, then there's no axial flow on the panel.
 
             #rename for convenience
             p1id = endnodeidxs[ib, 1]
@@ -128,12 +126,9 @@ function generate_panels(
             nn = node[pnid - 1, :] #first node on panel N (of body ib)
             nnp1 = node[pnid, :] #second node on pane N (of body ib)
 
-            #TODO: is there a sign error or something here?
             #rmagN - rmag1
             xtan = nnp1[1] - nn[1] - (n2[1] - n1[1])
-            # xtan = n2[1] - n1[1] + nn[1] - nnp1[1]
             rtan = nnp1[2] - nn[2] - (n2[2] - n1[2])
-            # rtan = n2[2] - n1[2] + nn[2] - nnp1[2]
             stan = sqrt(xtan^2 + rtan^2)
 
             lenbar = 0.5 * (influence_length[p1id] + influence_length[pnid - ib])
@@ -141,13 +136,13 @@ function generate_panels(
             itcontrolpoint[ib, 1] =
                 0.5 * (n1[1] + nnp1[1]) - itcpshift * lenbar * xtan / stan
             itcpr = 0.5 * (n1[2] + nnp1[2]) - itcpshift * lenbar * rtan / stan
-            #TODO: need to update this to be more robust for center bodies
+            #note: the internal control point for the hub is unused if the TE node is on the axis, but we do want to avoid NaNs if we can.
             itcontrolpoint[ib, 2] = itcpr < axistol ? 1e-3 : itcpr
 
             itnormal[ib, 1] = xtan / stan
             itnormal[ib, 2] = rtan / stan
-            ittangent[ib, 1] = -rtan / stan
-            ittangent[ib, 2] = xtan / stan
+            ittangent[ib, 1] = rtan / stan
+            ittangent[ib, 2] = -xtan / stan
         end
     end
 
@@ -176,8 +171,8 @@ function generate_panels(
             # set dots and crosses for each adjacent panel
             tendotn[ib, 1] = dot(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
             tendotn[ib, 2] = dot(tenormal[ib, :], normal[endpanelidxs[ib, 1], :])
-            tencrossn[ib, 1] = cross2mag(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
-            tencrossn[ib, 2] = cross2mag(tenormal[ib, :], normal[endpanelidxs[ib, 1], :])
+            tencrossn[ib, 1] = cross2mag(normal[endpanelidxs[ib, 2], :], tenormal[ib, :])
+            tencrossn[ib, 2] = cross2mag(normal[endpanelidxs[ib, 1], :], tenormal[ib, :])
 
         else
             # if so: it's anything else (assuming the hub nose doesn't curve inward...
@@ -188,11 +183,14 @@ function generate_panels(
             # set normal to parallel to axis
             tenormal[ib, :] = [1.0, 0.0]
             # set both adjacent node id's to the last endnode id
+            # teadjnodeidxs[ib, :] .= endnodeidxs[ib, 2]
             teadjnodeidxs[ib, :] .= endnodeidxs[ib, 2]
+            # teadjnodeidxs[ib, 2] = -1
             # set both dots and crosses to the same thing based on the single adjacent node.
             tendotn[ib, 1] = dot(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
-            tencrossn[ib, 1] = 0.0 # unnecessary, but just in case initialization changes
-            tencrossn[ib, :] .= cross2mag(tenormal[ib, :], normal[endpanelidxs[ib, 2], :])
+            tendotn[ib, 2] = 0.0 # unnecessary, but just in case initialization changes
+            tencrossn[ib, 1] = cross2mag(normal[endpanelidxs[ib, 2], :], tenormal[ib, :])
+            tencrossn[ib, 2] = cross2mag(normal[endpanelidxs[ib, 2], :], tenormal[ib, :])
         end
         teinfluence_length[ib] = get_r(tenode[ib, 1, :], tenode[ib, 2, :])[2]
     end

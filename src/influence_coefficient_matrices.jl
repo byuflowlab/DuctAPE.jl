@@ -60,14 +60,19 @@ function vortex_aic_boundary_on_boundary!(
 
             # get unit induced velocity from the panel onto the control point
             # TODO: this allocates the vel's put 2x2 vel object in eventual cache and update the integration functions to be in place.
+            # println("i:", i, " j:", j)
             if i != j
+                # @time "nominal" begin
                 vel = nominal_vortex_panel_integration(
                     node[nmap[1], :], node[nmap[2], :], lj, cpi
                 )
+                # end
             else
+                # @time "self" begin
                 vel = self_vortex_panel_integration(
                     node[nmap[1], :], node[nmap[2], :], lj, cpi
                 )
+                # end
             end
 
             for k in 1:2
@@ -218,9 +223,9 @@ function add_te_gap_aic!(
 
             for k in 1:2
                 # fill the Matrix
-                AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] - ncn[k] * svel[k, :], nhat)
+                AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
                 # AICn[i, nmap[k]] += dot(-ncn[k] * svel[k, :], nhat)
-                AICt[i, nmap[k]] += dot(ndn[k] * vvel[k, :] - ncn[k] * svel[k, :], that)
+                AICt[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], that)
                 # AICt[i, nmap[k]] += dot(-ncn[k] * svel[k, :], that)
             end #for k
         end #for j
