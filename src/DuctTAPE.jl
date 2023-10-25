@@ -51,6 +51,7 @@ include("influence_coefficient_matrices.jl")
 
 # Rotor Aerodynamic Functions
 include("rotor_aerodynamics.jl")
+include("airfoil_corrections.jl")
 
 # Wake Aerodynamic Functions
 include("wake_aerodynamics.jl")
