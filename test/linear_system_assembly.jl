@@ -18,7 +18,7 @@
     panels = dt.generate_panels(coordinates)
 
     # Generate LHS matrix and RHS vector
-    AICn, _ = dt.vortex_aic_boundary_on_boundary(
+    AICn, AICt = dt.vortex_aic_boundary_on_boundary(
         panels.controlpoint,
         panels.normal,
         panels.tangent,

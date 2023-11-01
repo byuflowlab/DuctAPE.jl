@@ -66,7 +66,9 @@ plot!(
 
 N = 100
 solids = 1.0 ./ [0.5; 0.6; 0.7; 0.8; 0.9; 1.0; 1.1; 1.2; 1.3; 1.4; 1.5]
-stags = range(20, 70, N) * pi / 180.0
+stags = range(0.0, 100.0, N) * pi / 180.0
+# solids = range(0.0,5.0,N)
+# stags = range(0.0, 180.0, N) * pi / 180.0
 dfdcvals = zeros(length(stags), length(solids))
 smoothvals = zeros(length(stags), length(solids))
 for (is, solidity) in enumerate(solids)

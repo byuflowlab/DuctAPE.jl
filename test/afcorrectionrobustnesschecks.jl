@@ -59,80 +59,6 @@ aoa = aoaext
 clo = clext
 cdo = cdext
 
-######################################################################
-#                                                                    #
-#                          LIFT CORRECTIONS                          #
-#                                                                    #
-######################################################################
-
-#---------------------------------#
-#  Stagger & Solidity Correction  #
-#---------------------------------#
-
-##### ----- Vs AOA Smoothnes ----- #####
-# - plot nominal curve - #
-# pss = plot(aoa, clo; label="", color=1)
-
-# # - calcualte solidity/stagger correction
-# for solidity in range(0.0, 3.0, 10)
-#     for stagger in range(-20.0, 100.0, 13)
-#         clout, _ = dt.solidityandstagger(clo, solidity, stagger * pi / 180)
-# - plot corrected curve - #
-# plot!(pss, aoa, clout; label="", color=2)
-# end
-# end
-# plot!(pss, aoa, clo; label="", color=1, xlim=(-20 * pi / 180, 20 * pi / 180))
-# # - save figure - #
-# savefig(pss, savepath * "soliditystaggercheck.pdf")
-
-##### ----- Vs Solidity Smoothness ----- #####
-
-N = 100
-clss = zeros(N, 2)
-clssr = zeros(N, 2)
-for (is, solidity) in enumerate(range(0.0, 3.0, N))
-    for (i, stagger) in enumerate([0.0, pi / 4])
-        clss[is, i] = dt.solidityandstaggerfactorsmooth(solidity, stagger)
-        clssr[is, i] = dt.solidityandstaggerfactor(solidity, stagger)
-    end
-end
-pss = plot(
-    range(0.0, 3.0, N),
-    clss[:, 1];
-    label="stagger inactive",
-    xlabel="solidity",
-    ylabel=L"c_\ell",
-)
-plot!(pss, range(0.0, 3.0, N), clss[:, 2]; label="stagger active")
-plot!(pss, range(0.0, 3.0, N), clssr[:, 1]; label="unsmoothed", linestyle=:dash, color=1)
-plot!(pss, range(0.0, 3.0, N), clssr[:, 2]; label="unsmoothed", linestyle=:dash, color=2)
-# - save figure - #
-savefig(pss, savepath * "soliditysmoothnesscheck.pdf")
-
-##### ----- Vs Stagger Smoothness ----- #####
-
-N = 100
-clss = zeros(N, 4)
-clssr = zeros(N, 4)
-pss = plot(; xlabel="stagger angle", ylabel=L"c_\ell")
-for (i, solidity) in enumerate([0.01, 1.0, 2.0, 3.0])
-    for (is, stagger) in enumerate(range(1, 100, N) * pi / 180)
-        clss[is, i] = dt.solidityandstaggerfactorsmooth(solidity, stagger)
-        clssr[is, i] = dt.solidityandstaggerfactor(solidity, stagger)
-    end
-    plot!(
-        pss,
-        range(1, 100, N),
-        clssr[:, i];
-        linestyle=:dash,
-        color=i,
-        label="before smoothing",
-    )
-    plot!(pss, range(1, 100, N), clss[:, i]; color=i, label="solidity=$(solidity)")
-end
-# - save figure - #
-savefig(pss, savepath * "staggersmoothnesscheck1.pdf")
-
 #---------------------------------#
 #    Prandtl-Glauert Correction   #
 #---------------------------------#
@@ -168,12 +94,12 @@ plot!(pgs, range(0.0, 1.5, N), clss; linestyle=:dash, linewidth=2, label="smooth
 savefig(pgs, savepath * "pgsmoothnesscheck.pdf")
 
 #---------------------------------#
-#     transonic limiter correction    #
+#  transonic limiter correction   #
 #---------------------------------#
 # - initialize plot - #
 # have to create axes manually to make them thinner
 
-# - calcualte transonic limiter correction
+# - calculate transonic limiter correction
 mcrit = 0.5
 clcdmin = clo[findmin(cdo)[2]]
 clmax, maxid = findmax(clo)
@@ -183,7 +109,7 @@ dclda = (clmax - clmin) / (aoa[maxid] * pi / 180 - aoa[minid] * pi / 180)
 N = 500
 clnom = zeros(N)
 clsmooth = zeros(N)
-for (i, mach) in enumerate(range(0.0, 1.0, N))
+for (i, mach) in enumerate(range(0.0, 2.0, N))
     clnom[i] = dt.transonicliftlimiter(
         1.0, mach, clcdmin, clmax, clmin, dclda; mcrit=mcrit, verbose=true
     )
@@ -209,7 +135,7 @@ savefig(pclsm, savepath * "cltranssmoothness.pdf")
 
 cdnom = zeros(N)
 cdsmooth = zeros(N)
-for (i, mach) in enumerate(range(0.0, 1.0, N))
+for (i, mach) in enumerate(range(0.0, 2.0, N))
     cl = dt.transonicliftlimitersmooth(
         1.0, mach, clcdmin, clmax, clmin, dclda; mcrit=mcrit, verbose=true
     )
