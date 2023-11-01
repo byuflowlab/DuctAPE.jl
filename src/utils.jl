@@ -68,17 +68,17 @@ function split_bodies(vec, body_panels; duct=true, hub=true)
         _, leidx = findmin(body_panels.controlpoint[1:ndpan, 1])
         if !hub
             #duct only
-            return vec[1:leidx,:],
-            vec[(leidx + 1):ndpan,:],
+            return vec[1:leidx, :],
+            vec[(leidx + 1):ndpan, :],
             TF[],
             body_panels.controlpoint[1:leidx, 1],
             body_panels.controlpoint[(leidx + 1):ndpan, 1],
             TF[]
         else
             #duct and hub
-            return vec[1:leidx,:],
-            vec[(leidx + 1):ndpan,:],
-            vec[(ndpan + 1):end,:],
+            return vec[1:leidx, :],
+            vec[(leidx + 1):ndpan, :],
+            vec[(ndpan + 1):end, :],
             body_panels.controlpoint[1:leidx, 1],
             body_panels.controlpoint[(leidx + 1):ndpan, 1],
             body_panels.controlpoint[(ndpan + 1):end, 1]
@@ -94,7 +94,7 @@ dot(A, B) = sum(a * b for (a, b) in zip(A, B))
 # norm of vector
 norm(A) = sqrt(mapreduce(x -> x^2, +, A))
 # 2D "cross product" magnitude
-cross2mag(A,B) = A[1]*B[2] - A[2]*B[1]
+cross2mag(A, B) = A[1] * B[2] - A[2] * B[1]
 
 """
     repanel_airfoil(x,y;N)

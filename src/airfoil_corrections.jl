@@ -502,13 +502,27 @@ end
 ######################################################################
 """
     corrected_clcd(af::ccb.AlphaReAF, alpha, Re, Mach, solidity, stagger; kwargs...)
+
+Evaluates and applies on-the-fly corrections for airfoil lift and drag.
+On-the-fly airfoil polar corrections include solidity/stagger corrections, Prandtl-Glauert compressibility corrections, and transonic lift limits and drag additions.
+
     corrected_clcd!(cl, cd, af::ccb.AlphaReAF, Re, alpha, Mach, solidity, stagger; kwargs...)
+
+Evaluates and applies on-the-fly corrections for airfoil lift and drag in place.
+
     corrected_clcd!(cl, cd, Mach, solidity, stagger; kwargs...)
+
+Applies on-the-fly corrections for airfoil lift and drag in place.
+
     corrected_clcd!(cl, cd, af::ccb.AlphaAF, alpha, Re, Mach, solidity, stagger; kwargs...)
+
+Evaluates and applies on-the-fly corrections, including Reynolds corrections, for airfoil lift and drag in place
+
+
     corrected_clcd(cas::InReStSoMaCAS, inflow, Re, Mach, solidity, stagger)
 
-On-the-fly airfoil polar corrections including solidity/stagger corrections, Prandtl-Glauert compressibility corrections, and transonic lift limits and drag additions.
-Or simply evaluation of cascade data.
+Evaluates cascade lift and drag.
+
 
 ## Arguments:
 **Coefficients**
@@ -520,7 +534,7 @@ Or simply evaluation of cascade data.
 or
 - `af::ccb.AlphaAF` : airfoil object of CCBlade type dependent on angle of attack only
 or
-- 'cas::InReStSoMaCAS' : cascade object depentent on inflow angle, Reynolds number, stagger, solidity, and Mach number.
+- `cas::InReStSoMaCAS` : cascade object depentent on inflow angle, Reynolds number, stagger, solidity, and Mach number.
 
 **Flow Angle**
 - `alpha::Float` : angle of attack, radians.  Used with airfoil types
@@ -535,27 +549,27 @@ or
 - `solidity::Float` : Local solidity
 - `stagger::Float` : Stagger angle, radians
 
-##Keyword Arguments:
-- `mcrit::Float'=0.7 : Critical Mach number
+## Keyword Arguments:
+- `mcrit::Float`=0.7 : Critical Mach number
 
 **XROTOR airfoil type parameters for post-stall behavior**
-- `dcl_stall::Float'=0.1 : change in cl from incipient to total stall, used in transonic lift limiter correction
-- `dclda_stall::Float'=0.1 : Post-stall lift curve slope
+- `dcl_stall::Float`=0.1 : change in cl from incipient to total stall, used in transonic lift limiter correction
+- `dclda_stall::Float`=0.1 : Post-stall lift curve slope
 
 **Correction factors that were hard coded in XROTOR and DFDC**
-- `cdmfactor::Float'=10.0 :
-- `clmfactor::Float'=0.25 :
-- `mexp::Float'=3.0 :
-- `cdmstall::Float'=0.1 :
-- `cdmdd::Float'=0.0020 :
+- `cdmfactor::Float`=10.0 :
+- `clmfactor::Float`=0.25 :
+- `mexp::Float`=3.0 :
+- `cdmstall::Float`=0.1 :
+- `cdmdd::Float`=0.0020 :
 
 **Smoothing Paramters**
-- `ssblend_hardness::Float'=100.0 : sigmoid blending hardness for solidity/stagger corrections
-- `transblendhardness::Float'=75.0 : sigmoid blending hardness for transonic corrections
-- `absdx::Float'=0.0625 : smooth absolute value Δα (radians) for transonic drag addition
+- `ssblend_hardness::Float`=100.0 : sigmoid blending hardness for solidity/stagger corrections
+- `transblendhardness::Float`=75.0 : sigmoid blending hardness for transonic corrections
+- `absdx::Float`=0.0625 : smooth absolute value Δα (radians) for transonic drag addition
 
 **Miscellaneous**
-- `verbose::Bool'=false : Boolean of whether to print warnings, etc.
+- `verbose::Bool`=false : Boolean of whether to print warnings, etc.
 """
 function corrected_clcd(
     af::ccb.AlphaReAF,
@@ -731,7 +745,7 @@ end
 function corrected_clcd!(
     cl,
     cd,
-    (af::ccb):AlphaAF,
+    af::ccb.AlphaAF,
     alpha,
     Re,
     Mach,
