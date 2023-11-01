@@ -51,7 +51,7 @@ end
 Cascade version of `writecascadefile` function from CCBlade. Writes solidity after Mach number
 """
 function writecascadefile(
-    filename, info, stagger, inflow, Re, Mach, solidity, cl, cd, radians
+    filename, info, inflow, Re, stagger, solidity, Mach, cl, cd, radians
 )
     open(filename, "w") do f
         @printf(f, "%s\n", info)
@@ -79,475 +79,474 @@ end
 #                                                                    #
 ######################################################################
 
-#---------------------------------#
-#        Stagger + Inflow         #
-#---------------------------------#
+##---------------------------------#
+##        Stagger + Inflow         #
+##---------------------------------#
 
-"""
-    StaggerInflowCAS(stagger, inflow, cl, cd, info, Mach)
-    StaggerInflowCAS(stagger, inflow, cl, cd, info)
-    StaggerInflowCAS(stagger, inflow, cl, cd)
-    read_StaggerInflowCAS(filenames::Vector{String}; radians=true)
+#"""
+#    StaggerInflowCAS(stagger, inflow, cl, cd, info, Mach)
+#    StaggerInflowCAS(stagger, inflow, cl, cd, info)
+#    StaggerInflowCAS(stagger, inflow, cl, cd)
+#    read_StaggerInflowCAS(filenames::Vector{String}; radians=true)
 
-Data is fit with a recursive Akima spline.
+#Data is fit with a recursive Akima spline.
 
-**Arguments**
-- `inflow::Vector{Float64}`: inflow angles
-- `stagger::Vector{Float64}`: stagger angle
-- `cl::Matrix{Float64}`: lift coefficients where cl[i, j] corresponds to inflow[i], stagger[j]
-- `cd::Matrix{Float64}`: drag coefficients where cd[i, j] corresponds to inflow[i], stagger[j]
-- `info::String`: a description of this airfoil data (just informational)
-- `Re::Float64`: Reynolds number data was taken at (just informational)
-- `Mach::Float64`: Mach number data was taken at (just informational)
-- `solidity::Float64`: solidity data was taken at (just informational)
+#**Arguments**
+#- `inflow::Vector{Float64}`: inflow angles
+#- `stagger::Vector{Float64}`: stagger angle
+#- `cl::Matrix{Float64}`: lift coefficients where cl[i, j] corresponds to inflow[i], stagger[j]
+#- `cd::Matrix{Float64}`: drag coefficients where cd[i, j] corresponds to inflow[i], stagger[j]
+#- `info::String`: a description of this airfoil data (just informational)
+#- `Re::Float64`: Reynolds number data was taken at (just informational)
+#- `Mach::Float64`: Mach number data was taken at (just informational)
+#- `solidity::Float64`: solidity data was taken at (just informational)
 
+#or
 
-or
+#filenames with one file per Reynolds number.
 
-filenames with one file per Reynolds number.
+#**Arguments**
+#- `filenames::Vector{String}`: name/path of files to read in, each at a different stagger angle in ascending order
+#- `radians::Bool`: true if angle of attack in file is given in radians
+#"""
+#struct StaggerInflowCAS{TF,TS} <: DTCascade
+#    stagger::Vector{TF}
+#    inflow::Vector{TF}
+#    cl::Matrix{TF}
+#    cd::Matrix{TF}
+#    info::TS # not used except for info in file
+#    Re::TF # not used except for info in file
+#    Mach::TF # not used except for info in file
+#    solidity::TF # not used except for info in file
+#end
 
-**Arguments**
-- `filenames::Vector{String}`: name/path of files to read in, each at a different stagger angle in ascending order
-- `radians::Bool`: true if angle of attack in file is given in radians
-"""
-struct StaggerInflowCAS{TF,TS} <: DTCascade
-    stagger::Vector{TF}
-    inflow::Vector{TF}
-    cl::Matrix{TF}
-    cd::Matrix{TF}
-    info::TS # not used except for info in file
-    Re::TF # not used except for info in file
-    Mach::TF # not used except for info in file
-    solidity::TF # not used except for info in file
-end
+#function StaggerInflowCAS(stagger, inflow, cl, cd)
+#    return StaggerInflowCAS(
+#        stagger, inflow, cl, cd, "DuctTAPE written cascade", 0.0, 0.0, 0.0
+#    )
+#end
 
-function StaggerInflowCAS(stagger, inflow, cl, cd)
-    return StaggerInflowCAS(
-        stagger, inflow, cl, cd, "DuctTAPE written cascade", 0.0, 0.0, 0.0
-    )
-end
+#function StaggerInflowCAS(filenames::Vector{String}; radians=true)
 
-function StaggerInflowCAS(filenames::Vector{String}; radians=true)
+#    # read in first file
+#    info, stagger1, Re_info, Mach_info, solidity_info, inflow, cl1, cd1 = parsecascadefile(
+#        filenames[1], radians
+#    )  # assumes common inflow across files, also common info etc.
+#    ninflow = length(inflow)
+#    nstagger = length(filenames)
 
-    # read in first file
-    info, stagger1, Re_info, Mach_info, solidity_info, inflow, cl1, cd1 = parsecascadefile(
-        filenames[1], radians
-    )  # assumes common inflow across files, also common info etc.
-    ninflow = length(inflow)
-    nstagger = length(filenames)
+#    cl = Array{Float64}(undef, ninflow, nstagger)
+#    cd = Array{Float64}(undef, ninflow, nstagger)
+#    stagger = Array{Float64}(undef, nstagger)
 
-    cl = Array{Float64}(undef, ninflow, nstagger)
-    cd = Array{Float64}(undef, ninflow, nstagger)
-    stagger = Array{Float64}(undef, nstagger)
+#    # iterate over files
+#    for i in 1:nstagger
+#        info, staggeri, _, _, _, _, cli, cdi = parsecascadefile(filenames[i], radians)
+#        cl[:, i] = cli
+#        cd[:, i] = cdi
+#        stagger[i] = staggeri
+#    end
 
-    # iterate over files
-    for i in 1:nstagger
-        info, staggeri, _, _, _, _, cli, cdi = parsecascadefile(filenames[i], radians)
-        cl[:, i] = cli
-        cd[:, i] = cdi
-        stagger[i] = staggeri
-    end
+#    return StaggerInflowCAS(
+#        stagger, inflow, cl, cd, info, Re_info, Mach_info, solidity_info
+#    )
+#end
 
-    return StaggerInflowCAS(
-        stagger, inflow, cl, cd, info, Re_info, Mach_info, solidity_info
-    )
-end
+#function caseval(
+#    cas::StaggerInflowCAS, stagger, inflow, Re=nothing, Mach=nothing, solidity=nothing
+#)
+#    cl = FLOWMath.interp2d(
+#        FLOWMath.akima, cas.inflow, cas.stagger, cas.cl, [inflow], [stagger]
+#    )[1]
+#    cd = FLOWMath.interp2d(
+#        FLOWMath.akima, cas.inflow, cas.stagger, cas.cd, [inflow], [stagger]
+#    )[1]
 
-function caseval(
-    cas::StaggerInflowCAS, stagger, inflow, Re=nothing, Mach=nothing, solidity=nothing
-)
-    cl = FLOWMath.interp2d(
-        FLOWMath.akima, cas.inflow, cas.stagger, cas.cl, [inflow], [stagger]
-    )[1]
-    cd = FLOWMath.interp2d(
-        FLOWMath.akima, cas.inflow, cas.stagger, cas.cd, [inflow], [stagger]
-    )[1]
+#    return cl, cd
+#end
 
-    return cl, cd
-end
+#function writecascadefile(filenames, cas::StaggerInflowCAS; radians=true)
+#    for i in 1:length(cas.stagger)
+#        writecascadefile(
+#            filenames[i],
+#            cas.info,
+#            cas.stagger[i],
+#            cas.inflow,
+#            cas.Re,
+#            cas.Mach,
+#            cas.solidity,
+#            cas.cl[:, i],
+#            cas.cd[:, i],
+#            radians,
+#        )
+#    end
+#    return nothing
+#end
 
-function writecascadefile(filenames, cas::StaggerInflowCAS; radians=true)
-    for i in 1:length(cas.stagger)
-        writecascadefile(
-            filenames[i],
-            cas.info,
-            cas.stagger[i],
-            cas.inflow,
-            cas.Re,
-            cas.Mach,
-            cas.solidity,
-            cas.cl[:, i],
-            cas.cd[:, i],
-            radians,
-        )
-    end
-    return nothing
-end
+##---------------------------------#
+##      Stagger + Inflow + Re      #
+##---------------------------------#
 
-#---------------------------------#
-#      Stagger + Inflow + Re      #
-#---------------------------------#
+#"""
+#    StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info)
+#    StaggerInflowReCAS(stagger, inflow, Re, cl, cd)
+#    StaggerInflowReCAS(filenames::Matrix{String}; radians=true)
 
-"""
-    StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info)
-    StaggerInflowReCAS(stagger, inflow, Re, cl, cd)
-    StaggerInflowReCAS(filenames::Matrix{String}; radians=true)
+#Data is fit with a recursive Akima spline.
 
-Data is fit with a recursive Akima spline.
+#**Arguments**
+#- `stagger::Vector{Float64}`: stagger angles
+#- `alpha::Vector{Float64}`: inflow angles
+#- `Re::Vector{Float64}`: Reynolds numbers
+#- `cl::Array{Float64}`: lift coefficients where cl[i, j, k] corresponds to inflow[i], stagger[j], Re[k]
+#- `cd::Array{Float64}`: drag coefficients where cd[i, j, k] corresponds to inflow[i], stagger[j], Re[k]
+#- `info::String`: a description of this airfoil data (just informational)
 
-**Arguments**
-- `stagger::Vector{Float64}`: stagger angles
-- `alpha::Vector{Float64}`: inflow angles
-- `Re::Vector{Float64}`: Reynolds numbers
-- `cl::Array{Float64}`: lift coefficients where cl[i, j, k] corresponds to inflow[i], stagger[j], Re[k]
-- `cd::Array{Float64}`: drag coefficients where cd[i, j, k] corresponds to inflow[i], stagger[j], Re[k]
-- `info::String`: a description of this airfoil data (just informational)
+#or files with one per Re/stagger combination
 
-or files with one per Re/stagger combination
+#**Arguments**
+#- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to stagger[i], Re[j] with stagger angle and Reynolds number in ascending order.
+#- `radians::Bool`: true if angle of attack in file is given in radians
+#"""
+#struct StaggerInflowReCAS{TF,TS} <: DTCascade
+#    stagger::Vector{TF}
+#    inflow::Vector{TF}
+#    Re::Vector{TF}
+#    cl::Array{TF}
+#    cd::Array{TF}
+#    info::TS
+#    Mach::TF
+#    solidity::TF
+#end
 
-**Arguments**
-- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to stagger[i], Re[j] with stagger angle and Reynolds number in ascending order.
-- `radians::Bool`: true if angle of attack in file is given in radians
-"""
-struct StaggerInflowReCAS{TF,TS} <: DTCascade
-    stagger::Vector{TF}
-    inflow::Vector{TF}
-    Re::Vector{TF}
-    cl::Array{TF}
-    cd::Array{TF}
-    info::TS
-    Mach::TF
-    solidity::TF
-end
+#function StaggerInflowReCAS(stagger, inflow, Re, cl, cd)
+#    return StaggerInflowReCAS(
+#        stagger, inflow, Re, cl, cd, "DuctTAPE written cascade", 0.0, 0.0
+#    )
+#end
 
-function StaggerInflowReCAS(stagger, inflow, Re, cl, cd)
-    return StaggerInflowReCAS(
-        stagger, inflow, Re, cl, cd, "DuctTAPE written cascade", 0.0, 0.0
-    )
-end
+#function StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info)
+#    return StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info, 0.0, 0.0)
+#end
 
-function StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info)
-    return StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info, 0.0, 0.0)
-end
+#function StaggerInflowReCAS(filenames::Matrix{String}; radians=true)
 
-function StaggerInflowReCAS(filenames::Matrix{String}; radians=true)
+#    # - Get Dimensions - #
+#    info, stagger1, Re1, Mach_info, solidity_info, inflow, cl1, cd1 = parsecascadefile(
+#        filenames[1], radians
+#    )  # assumes common inflow across files, also common info etc.
 
-    # - Get Dimensions - #
-    info, stagger1, Re1, Mach_info, solidity_info, inflow, cl1, cd1 = parsecascadefile(
-        filenames[1], radians
-    )  # assumes common inflow across files, also common info etc.
+#    ninflow = length(inflow)
+#    nstagger, nRe = size(filenames)
 
-    ninflow = length(inflow)
-    nstagger, nRe = size(filenames)
+#    cl = Array{Float64}(undef, ninflow, nRe, nstagger)
+#    cd = Array{Float64}(undef, ninflow, nRe, nstagger)
+#    stagger = Array{Float64}(undef, nstagger)
+#    Re = Array{Float64}(undef, nRe)
 
-    cl = Array{Float64}(undef, ninflow, nRe, nstagger)
-    cd = Array{Float64}(undef, ninflow, nRe, nstagger)
-    stagger = Array{Float64}(undef, nstagger)
-    Re = Array{Float64}(undef, nRe)
+#    # iterate over files
+#    for j in 1:nRe
+#        for i in 1:nstagger
+#            _, Rej, _, staggeri, _, clij, cdij = parsefile(filenames[i, j], radians)
+#            cl[:, i, j] = clij
+#            cd[:, i, j] = cdij
+#            Re[j] = Rej
+#            stagger[i] = staggeri  # NOTE: probably should add check to prevent user error here.
+#        end
+#    end
 
-    # iterate over files
-    for j in 1:nRe
-        for i in 1:nstagger
-            _, Rej, _, staggeri, _, clij, cdij = parsefile(filenames[i, j], radians)
-            cl[:, i, j] = clij
-            cd[:, i, j] = cdij
-            Re[j] = Rej
-            stagger[i] = staggeri  # NOTE: probably should add check to prevent user error here.
-        end
-    end
+#    return StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info)
+#end
 
-    return StaggerInflowReCAS(stagger, inflow, Re, cl, cd, info)
-end
+#function caseval(
+#    cas::StaggerInflowReCAS, stagger, inflow, Re, Mach=nothing, solidity=nothing
+#)
+#    cl = FLOWMath.interp3d(
+#        FLOWMath.akima, cas.stagger, cas.inflow, cas.Re, cas.cl, [stagger], [inflow], [Re]
+#    )[1]
+#    cd = FLOWMath.interp3d(
+#        FLOWMath.akima, cas.stagger, cas.inflow, cas.Re, cas.cd, [stagger], [inflow], [Re]
+#    )[1]
 
-function caseval(
-    cas::StaggerInflowReCAS, stagger, inflow, Re, Mach=nothing, solidity=nothing
-)
-    cl = FLOWMath.interp3d(
-        FLOWMath.akima, cas.stagger, cas.inflow, cas.Re, cas.cl, [stagger], [inflow], [Re]
-    )[1]
-    cd = FLOWMath.interp3d(
-        FLOWMath.akima, cas.stagger, cas.inflow, cas.Re, cas.cd, [stagger], [inflow], [Re]
-    )[1]
+#    return cl, cd
+#end
 
-    return cl, cd
-end
+#function writecascadefile(filenames, cas::StaggerInflowReCAS; radians=true)
+#    nre = length(cas.Re)
+#    ns = length(cas.stagger)
 
-function writecascadefile(filenames, cas::StaggerInflowReCAS; radians=true)
-    nre = length(cas.Re)
-    ns = length(cas.stagger)
+#    for j in 1:nre
+#        for i in 1:ns
+#            writecascadefile(
+#                filenames[i, j],
+#                cas.info,
+#                cas.stagger[i],
+#                cas.inflow,
+#                cas.Re[j],
+#                cas.cl[:, i, j],
+#                cas.cd[:, i, j],
+#                cas.Mach,
+#                cas.solidity,
+#                radians,
+#            )
+#        end
+#    end
 
-    for j in 1:nre
-        for i in 1:ns
-            writecascadefile(
-                filenames[i, j],
-                cas.info,
-                cas.stagger[i],
-                cas.inflow,
-                cas.Re[j],
-                cas.cl[:, i, j],
-                cas.cd[:, i, j],
-                cas.Mach,
-                cas.solidity,
-                radians,
-            )
-        end
-    end
+#    return nothing
+#end
 
-    return nothing
-end
+##---------------------------------#
+##   Stagger + Inflow + Re + Mach  #
+##---------------------------------#
+##TODO: need tests for these
 
-#---------------------------------#
-#   Stagger + Inflow + Re + Mach  #
-#---------------------------------#
+#"""
+#    StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd, info, solidity)
+#    StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd)
+#    StaggerInflowReMachCAS(filenames::Matrix{String}; radians=true)
+
+#Data is fit with a recursive Akima spline.
+
+#**Arguments**
+#- `stagger::Vector{Float64}`: stagger angles
+#- `inflow::Vector{Float64}`: inflow angles
+#- `Re::Vector{Float64}`: Reynolds numbers
+#- `Mach::Vector{Float64}`: Mach numbers
+#- `cl::Array{Float64}`: lift coefficients where cl[i, j, k] corresponds to stagger[i], Re[j], Mach[k]
+#- `cd::Array{Float64}`: drag coefficients where cd[i, j, k] corresponds to stagger[i], Re[j], Mach[k]
+#- `info::String`: a description of this airfoil data (just informational)
+
+#or files with one per Re/Mach combination
+
+#**Arguments**
+#- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k] corresponds to stagger[i] Re[j] Mach[k] with each in ascending order.
+#- `radians::Bool`: true if angle of attack in file is given in radians
+#"""
+#struct StaggerInflowReMachCAS{TF,TS} <: DTCascade
+#    stagger::Vector{TF}
+#    inflow::Vector{TF}
+#    Re::Vector{TF}
+#    Mach::Vector{TF}
+#    cl::Array{TF}
+#    cd::Array{TF}
+#    info::TS
+#    solidity::TF
+#end
+
+#function StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd)
+#    return StaggerInflowReMachCAS(
+#        stagger, inflow, Re, Mach, cl, cd, "DuctTAPE written cascade", 0.0
+#    )
+#end
+
+#function StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd, info)
+#    return StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd, info, 0.0)
+#end
+
+#function StaggerInflowReMachCAS(filenames::AbstractArray{String}; radians=true)
+#    info, _, _, _, solidity, inflow, _, _ = parsecascadefile(filenames[1, 1, 1], radians)  # assumes common inflow and info across files
+#    ninflow = length(inflow)
+#    nstagger, nRe, nMach = size(filenames)
+
+#    cl = Array{Float64}(undef, ninflow, nstagger, nRe, nMach)
+#    cdrag = Array{Float64}(undef, ninflow, nstagger, nRe, nMach)
+#    Re = Array{Float64}(undef, nRe)
+#    Mach = Array{Float64}(undef, nMach)
+#    stagger = Array{Float64}(undef, nstagger)
+
+#    for k in 1:nMach
+#        for j in 1:nRe
+#            for i in 1:nstagger
+#                _, staggeri, Rej, Machk, _, _, clijk, cdijk = parsecascadefile(
+#                    filenames[i, j, k], radians
+#                )
+#                cl[:, i, j, k] = clijk
+#                cdrag[:, i, j, k] = cdijk
+#                stagger[i] = staggeri
+#                Re[j] = Rej
+#                Mach[k] = Machk
+#            end
+#        end
+#    end
+
+#    return StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cdrag, info, solidity)
+#end
+
+#function caseval(cas::StaggerInflowReMachCAS, stagger, inflow, Re, Mach, solidity=nothing)
+#    cl = FLOWMath.interp4d(
+#        FLOWMath.akima,
+#        cas.stagger,
+#        cas.inflow,
+#        cas.Re,
+#        cas.Mach,
+#        cas.cl,
+#        [stagger],
+#        [inflow],
+#        [Re],
+#        [Mach],
+#    )[1]
+#    cd = FLOWMath.interp4d(
+#        FLOWMath.akima,
+#        cas.stagger,
+#        cas.inflow,
+#        cas.Re,
+#        cas.Mach,
+#        cas.cd,
+#        [stagger],
+#        [inflow],
+#        [Re],
+#        [Mach],
+#    )[1]
+
+#    return cl, cd
+#end
+
+#function writecascadefile(filenames, cas::StaggerInflowReMachCAS; radians=true)
+#    for (k, Ma) in enumerate(cas.Mach)
+#        for (j, Re) in enumerate(cas.Re)
+#            for (i, stag) in enumerate(cas.stagger)
+#                writecascadefile(
+#                    filenames[i, j, k, ell],
+#                    cas.info,
+#                    stag,
+#                    Re,
+#                    Ma,
+#                    cas.inflow,
+#                    cas.cl[:, i, j, k],
+#                    cas.cd[:, i, j, k],
+#                    radians,
+#                )
+#            end
+#        end
+#    end
+
+#    return nothing
+#end
+
+#-----------------------------------------#
+# Inflow + Re + Stagger + Solidity + Mach #
+#-----------------------------------------#
 #TODO: need tests for these
 
 """
-    StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd, info, solidity)
-    StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd)
-    StaggerInflowReMachCAS(filenames::Matrix{String}; radians=true)
+    InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd, info)
+    InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd)
+    InReStSoMaCAS(filenames::Matrix{String}; radians=true)
 
-Data is fit with a recursive Akima spline.
+Data is fit recursively with Akima splines.
 
 **Arguments**
-- `stagger::Vector{Float64}`: stagger angles
 - `inflow::Vector{Float64}`: inflow angles
 - `Re::Vector{Float64}`: Reynolds numbers
-- `Mach::Vector{Float64}`: Mach numbers
-- `cl::Array{Float64}`: lift coefficients where cl[i, j, k] corresponds to stagger[i], Re[j], Mach[k]
-- `cd::Array{Float64}`: drag coefficients where cd[i, j, k] corresponds to stagger[i], Re[j], Mach[k]
-- `info::String`: a description of this airfoil data (just informational)
-
-or files with one per Re/Mach combination
-
-**Arguments**
-- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k] corresponds to stagger[i] Re[j] Mach[k] with each in ascending order.
-- `radians::Bool`: true if angle of attack in file is given in radians
-"""
-struct StaggerInflowReMachCAS{TF,TS} <: DTCascade
-    stagger::Vector{TF}
-    inflow::Vector{TF}
-    Re::Vector{TF}
-    Mach::Vector{TF}
-    cl::Array{TF}
-    cd::Array{TF}
-    info::TS
-    solidity::TF
-end
-
-function StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd)
-    return StaggerInflowReMachCAS(
-        stagger, inflow, Re, Mach, cl, cd, "DuctTAPE written cascade", 0.0
-    )
-end
-
-function StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd, info)
-    return StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd, info, 0.0)
-end
-
-function StaggerInflowReMachCAS(filenames::AbstractArray{String}; radians=true)
-    info, _, _, _, solidity, inflow, _, _ = parsecascadefile(filenames[1, 1, 1], radians)  # assumes common inflow and info across files
-    ninflow = length(inflow)
-    nstagger, nRe, nMach = size(filenames)
-
-    cl = Array{Float64}(undef, ninflow, nstagger, nRe, nMach)
-    cdrag = Array{Float64}(undef, ninflow, nstagger, nRe, nMach)
-    Re = Array{Float64}(undef, nRe)
-    Mach = Array{Float64}(undef, nMach)
-    stagger = Array{Float64}(undef, nstagger)
-
-    for k in 1:nMach
-        for j in 1:nRe
-            for i in 1:nstagger
-                _, staggeri, Rej, Machk, _, _, clijk, cdijk = parsecascadefile(
-                    filenames[i, j, k], radians
-                )
-                cl[:, i, j, k] = clijk
-                cdrag[:, i, j, k] = cdijk
-                stagger[i] = staggeri
-                Re[j] = Rej
-                Mach[k] = Machk
-            end
-        end
-    end
-
-    return StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cdrag, info, solidity)
-end
-
-function caseval(cas::StaggerInflowReMachCAS, stagger, inflow, Re, Mach, solidity=nothing)
-    cl = FLOWMath.interp4d(
-        FLOWMath.akima,
-        cas.stagger,
-        cas.inflow,
-        cas.Re,
-        cas.Mach,
-        cas.cl,
-        [stagger],
-        [inflow],
-        [Re],
-        [Mach],
-    )[1]
-    cd = FLOWMath.interp4d(
-        FLOWMath.akima,
-        cas.stagger,
-        cas.inflow,
-        cas.Re,
-        cas.Mach,
-        cas.cd,
-        [stagger],
-        [inflow],
-        [Re],
-        [Mach],
-    )[1]
-
-    return cl, cd
-end
-
-function writecascadefile(filenames, cas::StaggerInflowReMachCAS; radians=true)
-    for (k, Ma) in enumerate(cas.Mach)
-        for (j, Re) in enumerate(cas.Re)
-            for (i, stag) in enumerate(cas.stagger)
-                writecascadefile(
-                    filenames[i, j, k, ell],
-                    cas.info,
-                    stag,
-                    Re,
-                    Ma,
-                    cas.inflow,
-                    cas.cl[:, i, j, k],
-                    cas.cd[:, i, j, k],
-                    radians,
-                )
-            end
-        end
-    end
-
-    return nothing
-end
-
-#----------------------------------------#
-# Stagger + Inflow + Re + Mach + solidty #
-#----------------------------------------#
-#TODO: need tests for these
-
-"""
-    StaggerInflowReMachSolidityCAS(stagger, inflow, Re, Mach, solidity, cl, cd, info)
-    StaggerInflowReMachSolidityCAS(stagger, inflow, Re, Mach, solidity, cl, cd)
-    StaggerInflowReMachSolidityCAS(filenames::Matrix{String}; radians=true)
-
-Data is fit with a recursive Akima spline.
-
-**Arguments**
 - `stagger::Vector{Float64}`: stagger angles
-- `inflow::Vector{Float64}`: inflow angles
-- `Re::Vector{Float64}`: Reynolds numbers
-- `Mach::Vector{Float64}`: Mach numbers
 - `solidity::Vector{Float64}`: local solidity
+- `Mach::Vector{Float64}`: Mach numbers
 - `cl::Array{Float64}`: lift coefficients where cl[i, j, k, ell] corresponds to stagger[i], Re[j], Mach[k], solidity[ell]
 - `cd::Array{Float64}`: drag coefficients where cd[i, j, k, ell] corresponds to stagger[i], Re[j], Mach[k], solidity[ell]
 - `info::String`: a description of this airfoil data (just informational)
 
-or files with one per Re/Mach combination
+or files with one per Re/Stagger/Solidty/Mach combination
 
 **Arguments**
-- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k, ell] corresponds to stagger[i] Re[j] Mach[k] and solidity[k] with each in ascending order.
+- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k, ell] corresponds to Re[i] Stagger[j] Stagger[k] and Solidity[k] with each in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct StaggerInflowReMachSolidityCAS{TF,TS} <: DTCascade
-    stagger::Vector{TF}
+struct InReStSoMaCAS{TF,TS} <: DTCascade
     inflow::Vector{TF}
     Re::Vector{TF}
-    Mach::Vector{TF}
+    stagger::Vector{TF}
     solidity::Vector{TF}
+    Mach::Vector{TF}
     cl::Array{TF}
     cd::Array{TF}
     info::TS
 end
 
-function StaggerInflowReMachSolidityCAS(stagger, inflow, Re, Mach, solidity, cl, cd)
-    return StaggerInflowReMachSolidityCAS(
-        stagger, inflow, Re, Mach, solidity, cl, cd, "DuctTAPE written cascade"
+function InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd)
+    return InReStSoMaCAS(
+        inflow, Re, stagger, solidity, Mach, cl, cd, "DuctTAPE written cascade"
     )
 end
 
-function StaggerInflowReMachSolidityCAS(filenames::AbstractArray{String}; radians=true)
+function InReStSoMaCAS(filenames::AbstractArray{String}; radians=true)
     info, _, _, _, _, inflow, _, _ = parsecascadefile(filenames[1, 1, 1, 1], radians)  # assumes common inflow and info across files
     ninflow = length(inflow)
-    nstagger, nRe, nMach, nsolidity = size(filenames)
+    nRe, nstagger, nsolidity, nMach = size(filenames)
 
-    cl = Array{Float64}(undef, ninflow, nstagger, nRe, nMach, nsolidity)
-    cd = Array{Float64}(undef, ninflow, nstagger, nRe, nMach, nsolidity)
+    cl = Array{Float64}(undef, ninflow, nRe, nstagger, nsolidity, nMach)
+    cd = Array{Float64}(undef, ninflow, nRe, nstagger, nsolidity, nMach)
     Re = Array{Float64}(undef, nRe)
-    Mach = Array{Float64}(undef, nMach)
     stagger = Array{Float64}(undef, nstagger)
     solidity = Array{Float64}(undef, nsolidity)
+    Mach = Array{Float64}(undef, nMach)
 
-    for ell in 1:nsolidity
-        for k in 1:nMach
-            for j in 1:nRe
-                for i in 1:nstagger
-                    _, staggeri, Rej, Machk, solidityell, _, clijkl, cdijkl = parsecascadefile(
+    for ell in 1:nMach
+        for k in 1:nsolidity
+            for j in 1:nstagger
+                for i in 1:nRe
+                    _, Rei, staggerj, solidityk, Machell, _, clijkl, cdijkl = parsecascadefile(
                         filenames[i, j, k, ell], radians
                     )
                     cl[:, i, j, k, ell] = clijkl
                     cd[:, i, j, k, ell] = cdijkl
-                    stagger[i] = staggeri
-                    Re[j] = Rej
-                    Mach[k] = Machk
-                    solidity[ell] = solidityell
+                    Re[i] = Rei
+                    stagger[j] = staggerj
+                    solidity[k] = solidityk
+                    Mach[ell] = Machell
                 end
             end
         end
     end
 
-    return StaggerInflowReMachSolidityCAS(stagger, inflow, Re, Mach, solidity, cl, cd, info)
+    return InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd, info)
 end
 
-function caseval(cas::StaggerInflowReMachSolidityCAS, stagger, inflow, Re, Mach, solidity)
+function caseval(cas::InReStSoMaCAS, inflow, Re, stagger, solidity, Mach)
     cl = interp5d(
         FLOWMath.akima,
-        cas.stagger,
         cas.inflow,
         cas.Re,
-        cas.Mach,
+        cas.stagger,
         cas.solidity,
+        cas.Mach,
         cas.cl,
-        [stagger],
         [inflow],
         [Re],
-        [Mach],
+        [stagger],
         [solidity],
+        [Mach],
     )[1]
 
     cd = interp5d(
         FLOWMath.akima,
-        cas.stagger,
         cas.inflow,
         cas.Re,
-        cas.Mach,
+        cas.stagger,
         cas.solidity,
+        cas.Mach,
         cas.cd,
-        [stagger],
         [inflow],
         [Re],
-        [Mach],
+        [stagger],
         [solidity],
+        [Mach],
     )[1]
 
     return cl, cd
 end
 
-function writecascadefile(filenames, cas::StaggerInflowReMachSolidityCAS; radians=true)
-    for (ell, sol) in enumerate(cas.solidity)
-        for (k, Ma) in enumerate(cas.Ma)
-            for (j, Re) in enumerate(cas.Re)
-                for (i, stag) in enumerate(cas.stagger)
+function writecascadefile(filenames, cas::InReStSoMaCAS; radians=true)
+    for (ell, Ma) in enumerate(cas.Ma)
+        for (k, sol) in enumerate(cas.solidity)
+            for (j, stag) in enumerate(cas.stagger)
+                for (i, Re) in enumerate(cas.Re)
                     writecascadefile(
                         filenames[i, j, k, ell],
                         cas.info,
-                        stag,
                         Re,
-                        Ma,
+                        stag,
                         sol,
+                        Ma,
                         cas.inflow,
                         cas.cl[:, i, j, k, ell],
                         cas.cd[:, i, j, k, ell],

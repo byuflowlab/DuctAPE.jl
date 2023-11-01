@@ -680,11 +680,6 @@ function getclfactor(solidity, stagger)
 
     sigi = 1.0 / solidity
 
-    # spline the data
-    # aa0 = fm.akima(x, a0, sigi)
-    # aa1 = fm.akima(x, a1, sigi)
-    # aa2 = fm.akima(x, a2, sigi)
-
     aa0 = quadspline(x, a0, sigi)
     aa1 = quadspline(x, a1, sigi)
     aa2 = quadspline(x, a2, sigi)
@@ -709,34 +704,34 @@ function getclfactor(solidity, stagger)
     return clfactor
 end
 
-"""
-"""
-function quadspline(xdata, ydata, xpoint)
-    n = length(xdata)
+# """
+# """
+# function quadspline(xdata, ydata, xpoint)
+#     n = length(xdata)
 
-    if n == 1
-        return xdata[1]
-    end
+#     if n == 1
+#         return xdata[1]
+#     end
 
-    ilow = 1
-    i = n
+#     ilow = 1
+#     i = n
 
-    while (i - ilow > 1)
-        imid = round(Int, (i + ilow) / 2)
-        if (xpoint < xdata[imid])
-            i = imid
-        else
-            ilow = imid
-        end
-    end
+#     while (i - ilow > 1)
+#         imid = round(Int, (i + ilow) / 2)
+#         if (xpoint < xdata[imid])
+#             i = imid
+#         else
+#             ilow = imid
+#         end
+#     end
 
-    ds = xdata[i] - xdata[i - 1]
-    t = (xpoint - xdata[i - 1]) / ds
-    ypoint = t * ydata[i] + (1.0 - t) * ydata[i - 1]
-    # xxs =  (ydata(i) - ydata(i-1))/ds
+#     ds = xdata[i] - xdata[i - 1]
+#     t = (xpoint - xdata[i - 1]) / ds
+#     ypoint = t * ydata[i] + (1.0 - t) * ydata[i - 1]
+#     # xxs =  (ydata(i) - ydata(i-1))/ds
 
-    return ypoint
-end
+#     return ypoint
+# end
 
 ######################################################################
 #                                                                    #
