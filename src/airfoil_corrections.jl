@@ -1,3 +1,64 @@
+
+######################################################################
+#                                                                    #
+#                       Robustness Adjustments                       #
+#                                                                    #
+######################################################################
+
+"""
+cuts off coefficient vs alpha curve at min and max coefficient and places rest of curve from -pi to min coeff and max coeff to pi according to user defined cutoff_slope (default 0.1)
+"""
+function stalllimiters(aoa, cl, cd; cutoff_slope=0.1, N=20, blend_hardness=50)
+
+    # find cl min, associated index, and angle of attack
+    clmin, clminid = findmin(cl)
+    aoamin = aoa[clminid]
+    cdmin = cd[clminid]
+
+    # find cl max, associated index, and angle of attack
+    clmax, clmaxid = findmax(cl)
+    aoamax = aoa[clmaxid]
+    cdmax = cd[clmaxid]
+
+    # get full span of aoa's
+    aoaext = [
+        range(-pi, aoamin, N)
+        aoa[(clminid + 1):(clmaxid - 1)]
+        range(aoamax, pi, N)
+    ]
+
+    #get function for positive stall region.
+    cl_ps = @. cutoff_slope * (aoaext - aoamax) + clmax
+    cd_ps = @. cutoff_slope * (aoaext - aoamax) + cdmax
+
+    #get function for negative stall region flip slope sign if applied to drag curve
+    cl_ns = @. cutoff_slope * (aoaext - aoamin) + clmin
+    cd_ns = @. -1.0 * cutoff_slope * (aoaext - aoamin) + cdmin
+
+    # fill nominal cls
+    fillcl = [
+        cl_ns[1:(N - 1)]
+        cl[clminid:clmaxid]
+        cl_ps[(end - N + 2):end]
+    ]
+    # fill nominal cds
+    fillcd = [
+        cd_ns[1:(N - 1)]
+        cd[clminid:clmaxid]
+        cd_ps[(end - N + 2):end]
+    ]
+
+    clblend1 = FLOWMath.sigmoid_blend.(cl_ns, fillcl, aoaext, aoamin, blend_hardness)
+    clblend2 = FLOWMath.sigmoid_blend.(clblend1, cl_ps, aoaext, aoamax, blend_hardness)
+
+    cdblend1 = FLOWMath.sigmoid_blend.(cd_ns, fillcd, aoaext, aoamin, blend_hardness)
+    cdblend2 = FLOWMath.sigmoid_blend.(cdblend1, cd_ps, aoaext, aoamax, blend_hardness)
+
+    return collect(range(-pi, pi, 361)),
+    FLOWMath.akima(aoaext, clblend2, range(-pi, pi, 361)),
+    FLOWMath.akima(aoaext, cdblend2, range(-pi, pi, 361))
+end
+
 ######################################################################
 #                                                                    #
 #                 Solidity and Stagger Corrections                   #
@@ -241,6 +302,9 @@ end
 #        Reynolds Effects         #
 #---------------------------------#
 """
+    redrag(cd, re, reref; reexp=0.5)
+    redrag!(cd, re, reref; reexp=0.5)
+
 reexp should be 0.2 for laminar and 0.5 for turbulent
 """
 function redrag(cd, re, reref; reexp=0.5)
@@ -259,6 +323,7 @@ end
 #        Transonic Effects        #
 #---------------------------------#
 """
+    transonicliftlimitersmooth(cl, mach, clcdmin, clmax, clmin, dclda)
 """
 function transonicliftlimitersmooth(
     cl,
@@ -301,18 +366,18 @@ function transonicliftlimitersmooth(
         )
 
     # calculate exponents for convenience
-    cmax = (cl - clmaxsmooth) / dcl_stall
-    cmaxsmooth =
-        cmax - FLOWMath.sigmoid_blend(0.0, cmax - 200.0, cmax, 200.0, blend_hardness)
-    ecmaxsmooth = exp(cmaxsmooth)
+    cmax = (cl .- clmaxsmooth) / dcl_stall
+    cmaxsmooth = @. cmax -
+        FLOWMath.sigmoid_blend(0.0, cmax - 200.0, cmax, 200.0, blend_hardness)
+    ecmaxsmooth = exp.(cmaxsmooth)
 
-    cmin = (clminsmooth - cl) / dcl_stall
-    cminsmooth =
-        cmin - FLOWMath.sigmoid_blend(0.0, cmin - 200.0, cmin, 200.0, blend_hardness)
-    ecminsmooth = exp(cminsmooth)
+    cmin = (clminsmooth .- cl) / dcl_stall
+    cminsmooth = @. cmin -
+        FLOWMath.sigmoid_blend(0.0, cmin - 200.0, cmin, 200.0, blend_hardness)
+    ecminsmooth = exp.(cminsmooth)
 
     # get limiter factor
-    cllim = dcl_stall * log((1.0 + ecmaxsmooth) / (1.0 + ecminsmooth))
+    cllim = @. dcl_stall * log((1.0 + ecmaxsmooth) / (1.0 + ecminsmooth))
 
     # subtract off a (nearly unity) fraction of the limited cl function
     # this sets the dcl/dalpha in the stalled regions to 1-fstall of that
@@ -321,7 +386,7 @@ function transonicliftlimitersmooth(
 
     # Final Lift
     # clift = cl - (1.0 - fstall) * cllim
-    cl .-= (1.0 - fstall) * cllim
+    @. cl -= (1.0 - fstall) * cllim
 
     return cl
 end
@@ -433,66 +498,6 @@ function transonicdragaddition(
 
         return cd .+ cdc
     end
-end
-
-######################################################################
-#                                                                    #
-#                       Robustness Adjustments                       #
-#                                                                    #
-######################################################################
-
-"""
-cuts off coefficient vs alpha curve at min and max coefficient and places rest of curve from -pi to min coeff and max coeff to pi according to user defined cutoff_slope (default 0.1)
-"""
-function stalllimiters(aoa, cl, cd; cutoff_slope=0.1, N=20, blend_hardness=50)
-
-    # find cl min, associated index, and angle of attack
-    clmin, clminid = findmin(cl)
-    aoamin = aoa[clminid]
-    cdmin = cd[clminid]
-
-    # find cl max, associated index, and angle of attack
-    clmax, clmaxid = findmax(cl)
-    aoamax = aoa[clmaxid]
-    cdmax = cd[clmaxid]
-
-    # get full span of aoa's
-    aoaext = [
-        range(-pi, aoamin, N)
-        aoa[(clminid + 1):(clmaxid - 1)]
-        range(aoamax, pi, N)
-    ]
-
-    #get function for positive stall region.
-    cl_ps = @. cutoff_slope * (aoaext - aoamax) + clmax
-    cd_ps = @. cutoff_slope * (aoaext - aoamax) + cdmax
-
-    #get function for negative stall region flip slope sign if applied to drag curve
-    cl_ns = @. cutoff_slope * (aoaext - aoamin) + clmin
-    cd_ns = @. -1.0 * cutoff_slope * (aoaext - aoamin) + cdmin
-
-    # fill nominal cls
-    fillcl = [
-        cl_ns[1:(N - 1)]
-        cl[clminid:clmaxid]
-        cl_ps[(end - N + 2):end]
-    ]
-    # fill nominal cds
-    fillcd = [
-        cd_ns[1:(N - 1)]
-        cd[clminid:clmaxid]
-        cd_ps[(end - N + 2):end]
-    ]
-
-    clblend1 = FLOWMath.sigmoid_blend.(cl_ns, fillcl, aoaext, aoamin, blend_hardness)
-    clblend2 = FLOWMath.sigmoid_blend.(clblend1, cl_ps, aoaext, aoamax, blend_hardness)
-
-    cdblend1 = FLOWMath.sigmoid_blend.(cd_ns, fillcd, aoaext, aoamin, blend_hardness)
-    cdblend2 = FLOWMath.sigmoid_blend.(cdblend1, cd_ps, aoaext, aoamax, blend_hardness)
-
-    return collect(range(-pi, pi, 361)),
-    FLOWMath.akima(aoaext, clblend2, range(-pi, pi, 361)),
-    FLOWMath.akima(aoaext, cdblend2, range(-pi, pi, 361))
 end
 
 ######################################################################
