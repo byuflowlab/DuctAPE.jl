@@ -9,10 +9,9 @@ using FiniteDiff
 const fnd = FiniteDiff
 using FLOWMath
 const fm = FLOWMath
-# using ImplicitAD
+include("test_utils.jl")
 
 println("Running Tests...")
-# include("compare_objects.jl") #for comparing structs and tuples
 
 # - Active Development - #
 # include("derivative_checks.jl")
