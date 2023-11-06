@@ -8,15 +8,25 @@
 """
 cuts off coefficient vs alpha curve at min and max coefficient and places rest of curve from -pi to min coeff and max coeff to pi according to user defined cutoff_slope (default 0.1)
 """
-function stalllimiters(aoa, cl, cd; cutoff_slope=0.1, N=20, blend_hardness=50)
+function stalllimiters(
+    aoa, cl, cd; clminid=nothing, clmaxid=nothing, cutoff_slope=0.1, N=20, blend_hardness=50
+)
 
     # find cl min, associated index, and angle of attack
-    clmin, clminid = findmin(cl)
+    if isnothing(clminid)
+        clmin, clminid = findmin(cl)
+    else
+        clmin = cl[clminid]
+    end
     aoamin = aoa[clminid]
     cdmin = cd[clminid]
 
     # find cl max, associated index, and angle of attack
-    clmax, clmaxid = findmax(cl)
+    if isnothing(clmaxid)
+        clmax, clmaxid = findmax(cl)
+    else
+        clmax = cl[clmaxid]
+    end
     aoamax = aoa[clmaxid]
     cdmax = cd[clmaxid]
 
@@ -325,7 +335,7 @@ end
 """
     transonicliftlimitersmooth(cl, mach, clcdmin, clmax, clmin, dclda)
 """
-function transonicliftlimitersmooth(
+function transonicliftlimitersmooth!(
     cl,
     mach,
     clcdmin,
@@ -342,9 +352,13 @@ function transonicliftlimitersmooth(
     mexp=3.0,
     cdmstall=0.1000,
     # misc
-    blend_hardness=75,
+    blend_hardness=50,
     verbose=false,
 )
+    if dclda <= 0.0
+        @error "lift curve slope MUST be positive"
+    end
+
     dmstall = (cdmstall / cdmfactor)^(1.0 / mexp)
 
     # get new cl_max
@@ -359,21 +373,24 @@ function transonicliftlimitersmooth(
     # get new cl_min
     clminm = -(mcrit + dmstall - mach) / clmfactor
     clminmsmooth =
-        clminm - FLOWMath.sigmoid_blend(0.0, clminm, clminm, 0.0, blend_hardness) + clcdmin
+        clminm - FLOWMath.sigmoid_blend(0.0, clminm, clminm, -0.05, blend_hardness) +
+        clcdmin
     clminsmooth =
         clminmsmooth - FLOWMath.sigmoid_blend(
             0.0, clminmsmooth - clmin, clmin, clminmsmooth, blend_hardness
         )
+    # println("clminsmooth: ", clminsmooth)
+    #     return clminsmooth
 
     # calculate exponents for convenience
     cmax = (cl .- clmaxsmooth) / dcl_stall
     cmaxsmooth = @. cmax -
-        FLOWMath.sigmoid_blend(0.0, cmax - 200.0, cmax, 200.0, blend_hardness)
+        FLOWMath.sigmoid_blend(0.0, cmax - 100.0, cmax, 100.0, blend_hardness)
     ecmaxsmooth = exp.(cmaxsmooth)
 
     cmin = (clminsmooth .- cl) / dcl_stall
     cminsmooth = @. cmin -
-        FLOWMath.sigmoid_blend(0.0, cmin - 200.0, cmin, 200.0, blend_hardness)
+        FLOWMath.sigmoid_blend(0.0, cmin - 100.0, cmin, 100.0, blend_hardness)
     ecminsmooth = exp.(cminsmooth)
 
     # get limiter factor
@@ -382,7 +399,11 @@ function transonicliftlimitersmooth(
     # subtract off a (nearly unity) fraction of the limited cl function
     # this sets the dcl/dalpha in the stalled regions to 1-fstall of that
     # in the linear lift range
-    fstall = dclda_stall / dclda
+    if dclda == 0.0
+        fstall = 0.0
+    else
+        fstall = dclda_stall / dclda
+    end
 
     # Final Lift
     # clift = cl - (1.0 - fstall) * cllim
@@ -465,7 +486,7 @@ function transonicdragadditionsmooth!(
     critmach = @. mcrit - clmfactor * FLOWMath.abs_smooth((cl - clcdmin), absdx) - dmdd
     cdc = @. cdmfactor * (mach - critmach)^mexp
 
-    cdcsmooth = FLOWMath.sigmoid_blend(0.0, cdc, mach, mcrit, blend_hardness)
+    cdcsmooth = @. FLOWMath.sigmoid_blend(0.0, cdc, mach, mcrit, blend_hardness)
     cd .+= cdcsmooth
 
     return cd
@@ -582,7 +603,11 @@ function corrected_clcd(
     Re,
     Mach,
     solidity,
-    stagger;
+    stagger,
+    clcdmin,
+    clmax,
+    clmin,
+    dclda;
     mcrit=0.7,
     # xrotor airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
@@ -597,7 +622,7 @@ function corrected_clcd(
     absdx=0.0625,
     # smoothing hardness for sigmoid blends
     ssblend_hardness=100,
-    transblendhardness=75,
+    transblendhardness=50,
     # misc
     verbose=false,
 )
@@ -611,7 +636,11 @@ function corrected_clcd(
         Re,
         Mach,
         solidity,
-        stagger;
+        stagger,
+        clcdmin,
+        clmax,
+        clmin,
+        dclda;
         mcrit=0.7,
         # xrotor airfoil type parameters for post-stall behavior
         dcl_stall=0.1,
@@ -626,7 +655,7 @@ function corrected_clcd(
         absdx=0.0625,
         # smoothing hardness for sigmoid blends
         ssblend_hardness=100,
-        transblendhardness=75,
+        transblendhardness=50,
         # misc
         verbose=false,
     )
@@ -642,7 +671,11 @@ function corrected_clcd!(
     Re,
     Mach,
     solidity,
-    stagger;
+    stagger,
+    clcdmin,
+    clmax,
+    clmin,
+    dclda;
     mcrit=0.7,
     # xrotor airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
@@ -657,7 +690,7 @@ function corrected_clcd!(
     absdx=0.0625,
     # smoothing hardness for sigmoid blends
     ssblend_hardness=100,
-    transblendhardness=75,
+    transblendhardness=50,
     # misc
     verbose=false,
 )
@@ -675,7 +708,11 @@ function corrected_clcd!(
     cd,
     Mach,
     solidity,
-    stagger;
+    stagger,
+    clcdmin,
+    clmax,
+    clmin,
+    dclda;
     mcrit=0.7,
     # xrotor airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
@@ -690,7 +727,7 @@ function corrected_clcd!(
     absdx=0.0625,
     # smoothing hardness for sigmoid blends
     ssblend_hardness=100,
-    transblendhardness=75,
+    transblendhardness=50,
     # misc
     verbose=false,
 )
@@ -705,7 +742,7 @@ function corrected_clcd!(
     # To Lift
     transonicliftlimitersmooth!(
         cl,
-        mach,
+        Mach,
         clcdmin,
         clmax,
         clmin,
@@ -755,7 +792,11 @@ function corrected_clcd!(
     Re,
     Mach,
     solidity,
-    stagger;
+    stagger,
+    clcdmin,
+    clmax,
+    clmin,
+    dclda;
     mcrit=0.7,
     # Reynolds correction numbers
     reref=2e6,
@@ -773,7 +814,7 @@ function corrected_clcd!(
     absdx=0.0625,
     # smoothing hardness for sigmoid blends
     ssblend_hardness=100,
-    transblendhardness=75,
+    transblendhardness=50,
     # misc
     verbose=false,
 )

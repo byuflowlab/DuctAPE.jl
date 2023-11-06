@@ -18,7 +18,7 @@ default(;
     #     dpi,
     #     extra_kwargs,
     #     extra_plot_kwargs,
-    fontfamily="Computer Modern",
+    fontfamily="Monaco",
     #     foreground_color,
     #     html_output_format,
     #     inset_subplots,
@@ -104,7 +104,7 @@ default(;
     #      :Subplot
     #######################
     #     annotationcolor,
-    annotationfontfamily="Computer Modern",
+    annotationfontfamily="Monaco",
     annotationfontsize=10,
     annotationhalign=:left,
     #     annotationrotation,

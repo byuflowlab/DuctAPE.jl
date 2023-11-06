@@ -27,6 +27,9 @@ include("types.jl")
 # Utility Functions
 include("utils.jl")
 
+# Airfoil Parameterizations
+include("airfoil_parameters/naca_65series.jl")
+
 # Cascade Functions
 include("cascade.jl")
 
