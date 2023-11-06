@@ -17,6 +17,7 @@ examples/dfdc_partial/outputs/*.vtk
 examples/*.png
 test/manual_tests/*/*.pdf
 test/manual_tests/*/*.png
+test/figures/*.gif
 /*.png
 
 # julia
