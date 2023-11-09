@@ -52,27 +52,28 @@ function vortex_aic_boundary_on_boundary!(
     AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
 
-    # Loop through control points being influenced
-    for (i, (cpi, nhat, that)) in
-        enumerate(zip(eachrow(controlpoint), eachrow(normal), eachrow(tangent)))
-        # loop through panels doing the influencing
-        for (j, (nmap, lj)) in enumerate(zip(eachrow(nodemap), influence_length))
+    #TODO's for speed ups:
+    # !!!use a profiler to actually see where things are taking a long time.
+    # dimensions of node need to be swapped at initilaiztion and accessed as node[:,#], also vel output dimension in integration functions can be swapped. this is for accessing memory in the order it's stored (across columns first)
+    # look into static arrays for initial definition of cps, normals, tangents, etc. (though only if they're small enough?)
+
+    vel = zeros(eltype(AICn), 2, 2)
+
+    # loop through panels doing the influencing
+    for (j, (nmap, lj)) in enumerate(zip(eachrow(nodemap), influence_length))
+        # Loop through control points being influenced
+        for (i, (cpi, nhat, that)) in
+            enumerate(zip(eachrow(controlpoint), eachrow(normal), eachrow(tangent)))
 
             # get unit induced velocity from the panel onto the control point
-            # TODO: this allocates the vel's put 2x2 vel object in eventual cache and update the integration functions to be in place.
-            # println("i:", i, " j:", j)
             if i != j
-                # @time "nominal" begin
-                vel = nominal_vortex_panel_integration(
+                vel .= nominal_vortex_panel_integration(
                     node[nmap[1], :], node[nmap[2], :], lj, cpi
                 )
-                # end
             else
-                # @time "self" begin
-                vel = self_vortex_panel_integration(
+                vel .= self_vortex_panel_integration(
                     node[nmap[1], :], node[nmap[2], :], lj, cpi
                 )
-                # end
             end
 
             for k in 1:2
@@ -80,8 +81,8 @@ function vortex_aic_boundary_on_boundary!(
                 AICn[i, nmap[k]] += dot(vel[k, :], nhat)
                 AICt[i, nmap[k]] += dot(vel[k, :], that)
             end #for k
-        end #for j
-    end #for i
+        end #for i
+    end #for j
 
     return nothing
 end

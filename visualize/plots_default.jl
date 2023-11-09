@@ -235,7 +235,7 @@ middlegray = RGB(128.0 / 255, 128.0 / 255, 128.0 / 255) #Middle Gray
 myblue = RGB(0.0 / 255, 92.0 / 255, 171.0 / 255) # royal blue
 myred = RGB(192.0 / 255, 83.0 / 255, 103.0 / 255) # royal red
 mygreen = RGB(143.0 / 255, 166.0 / 255, 81.0 / 255) # royal green
-mygrey = RGB(130.0 / 255, 130.0 / 255, 130.0 / 255) # royal gray
+mygray = RGB(130.0 / 255, 130.0 / 255, 130.0 / 255) # royal gray
 
 """
 """

@@ -218,7 +218,7 @@ id160 = findfirst(x -> x == 161, npans)
 
 relerr = (cpsums[end] - cpsums[id160]) / cpsums[end] * 100
 
-print("relative err from 100 to 800 panels: ", relerr, "%")
+print("relative err from 160 to 800 panels: ", relerr, "%")
 
 # - plot convergence - #
 pconv = plot(;

@@ -4,7 +4,7 @@ Attempt to make a Bspline parameterization for duct cross section
 
 =#
 
-include("../visualize/plots_default_new.jl")
+include("../visualize/plots_default.jl")
 include("../src/preliminary_design/1DModel_B.jl")
 using Splines
 using FLOWMath
@@ -20,8 +20,8 @@ end
 """
 cosine spacing, but also scales and transforms
 """
-function scaled_cosine_spacing(N, scale, transform; mypi=pi)
-    return transform .+ scale * [0.5 * (1 - cos(mypi * (i - 1) / (N - 1))) for i in 1:N]
+function scaled_cosine_spacing(N, scale, translate; mypi=pi)
+    return translate .+ scale * [0.5 * (1 - cos(mypi * (i - 1) / (N - 1))) for i in 1:N]
 end
 
 """
@@ -56,7 +56,7 @@ function centerbody_geom(
     #nose cpx2 is based on nose tip angle
     nosecone_cps = [
         [nosecone_start * duct_chord, 0.0],
-        [(2.0*nosecone_start + nosecone_stop) * duct_chord / 3.0, flatr[1]],
+        [(2.0 * nosecone_start + nosecone_stop) * duct_chord / 3.0, flatr[1]],
         [flatx[1], flatr[1]],
     ]
 
@@ -92,8 +92,9 @@ function centerbody_geom(
     rs = [getindex.(Cw_nose, 2); flatr[2:(end - 1)]; getindex.(Cw_tail, 2)]
 
     # re-spline with akima spline and cosine spacing
-    cbx = scaled_cosine_spacing(N, duct_chord * hub_chord, nosecone_start * duct_chord)
-    # cbx = cosine_spacing(N) * duct_chord * hub_chord
+    scale = tail_cps[end][1] - nosecone_cps[1][1]
+    translate = nosecone_start * duct_chord
+    cbx = scaled_cosine_spacing(N, scale, translate)
     cbsp = fm.Akima(xs, rs)
     cbr = cbsp(cbx)
 
@@ -209,8 +210,10 @@ function duct_geom(
     # return dx, dr, dsp, cps
 end
 
-Rtip = 5.0 # inches
-Rhub = 1.25 / 2.0 # inches
+Rtip = 2.0 # inches
+Rhub = 0.25 * Rtip # inches
+# Rtip = 5.0 # inches
+# Rhub = 0.25 * Rtip / 2.0 # inches
 chord = 2 * Rtip
 xrotor = Rtip
 nosecone_start = 0.25
@@ -218,7 +221,8 @@ nosecone_stop = 0.45
 tailcone_start = 0.65
 nose_tip_cpx = 0.1
 tail_tip_cpx = 1.0
-cb_te_radius = 1.0
+cb_te_radius = 0.0
+# cb_te_radius = 1.0
 
 cbx, cbr, cbspline, nosecone_cps, tailcone_cps = centerbody_geom(
     Rhub,
@@ -232,6 +236,12 @@ cbx, cbr, cbspline, nosecone_cps, tailcone_cps = centerbody_geom(
     hub_chord=1.25,
     N=20,
 )
+
+f = open("hdim.dat", "w")
+for (x, r) in zip(eachrow(cbx), eachrow(cbr))
+    write(f, "$(x[1]) $(r[1])\n")
+end
+close(f)
 
 # - APC 10x7 DATA at 4011 RPM - #
 # J       CT       CP       eta
@@ -298,15 +308,21 @@ for (x, r) in zip(eachrow(ductx), eachrow(ductr))
 end
 close(f)
 
+f = open("ddim.dat", "w")
+for (x, r) in zip(eachrow([reverse(nx); cx[2:end]]), eachrow([reverse(nr); cr[2:end]]))
+    write(f, "$(x[1]) $(r[1])\n")
+end
+close(f)
+
 plot(; xlabel="x (in)", ylabel="r (in)", aspectratio=1, label="Center Body Geometry")
-plot!(cbx, cbr; color=myblue[1], label="Center Body Geometry")
+plot!(cbx, cbr; color=myblue, label="Center Body Geometry")
 plot!(
     getindex.(nosecone_cps, 1),
     getindex.(nosecone_cps, 2);
     seriestype=:scatter,
     markersize=3,
     markershape=:square,
-    color=myred[2],
+    color=myred,
     label="Nose Cone Control Points",
 )
 plot!(
@@ -315,19 +331,19 @@ plot!(
     seriestype=:scatter,
     markersize=3,
     markershape=:square,
-    color=myred[3],
+    color=myred,
     label="Tail Cone Control Points",
 )
 savefig("hubtest.pdf")
 
-plot!(cx, cr; color=myblue[2], label="Duct Casing")
+plot!(cx, cr; color=myblue, label="Duct Casing")
 plot!(
     getindex.(cpi, 1),
     getindex.(cpi, 2);
     seriestype=:scatter,
     markersize=3,
     markershape=:square,
-    color=mygreen[2],
+    color=mygreen,
     label="Inlet Control Points",
 )
 plot!(
@@ -336,27 +352,28 @@ plot!(
     seriestype=:scatter,
     markersize=3,
     markershape=:square,
-    color=mygreen[3],
+    color=mygreen,
     label="Outlet Control Points",
 )
 
-plot!(nx, nr; color=myblue[3], label="Duct Nacelle")
+plot!(nx, nr; color=myblue, label="Duct Nacelle")
 plot!(
     getindex.(cpn, 1),
     getindex.(cpn, 2);
     seriestype=:scatter,
     markersize=3,
     markershape=:diamond,
-    color=mygray[1],
+    color=mygray,
     label="Nacelle Control Points",
 )
 
 plot!(
     xrotor * ones(2), [maximum(nr), 0.0]; linestyle=:dash, color=:black, label="Rotor Plane"
 )
+plot!([0.0, 15.0], zeros(2); linestyle=:dot, color=:black, label="")
 savefig("ducttest.pdf")
 
-# TODO: write parameters file
+# write parameters file
 
 function write_solidworks_equations(;
     Rtip=5.0,

@@ -64,7 +64,7 @@ Vsmat = repeat(Vs, size(panels.controlpoint, 1)) # need velocity on each panel
 # NOTE: these two functions allocate more than they need to.
 
 # - Initial System Matrices - #
-AICn, AICt = dt.vortex_aic_boundary_on_boundary(
+@time AICn, AICt = dt.vortex_aic_boundary_on_boundary(
     panels.controlpoint,
     panels.normal,
     panels.tangent,
