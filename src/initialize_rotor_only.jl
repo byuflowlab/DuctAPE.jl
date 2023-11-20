@@ -222,14 +222,14 @@ end
 function initilize_states_rotor_only(inputs)
 
     # - Initialize with freestream only - #
-    Wθ = -inputs.rotor_panel_centers .* inputs.blade_elements.Omega'
+    Wtheta = -inputs.rotor_panel_centers .* inputs.blade_elements.Omega'
     # use freestream magnitude as meridional velocity at each blade section
-    Wm = similar(Wθ) .= inputs.Vinf
+    Wm = similar(Wtheta) .= inputs.Vinf
     # magnitude is simply freestream and rotation
-    W = sqrt.(Wθ .^ 2 .+ Wm .^ 2)
+    W = sqrt.(Wtheta .^ 2 .+ Wm .^ 2)
 
     # initialize circulation and source panel strengths
-    Gamr, sigr = calculate_gamma_sigma(inputs.blade_elements, Wm, Wθ, W, inputs.freestream)
+    Gamr, sigr = calculate_gamma_sigma(inputs.blade_elements, Wm, Wtheta, W, inputs.freestream)
 
     nwake = inputs.wake_vortex_panels.totpanel
     gamw = zeros(nwake)
