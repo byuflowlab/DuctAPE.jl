@@ -1,3 +1,8 @@
+#=
+Body Linear System vectors and matrices
+Influence matrices are given in terms of normal or tangential velocities at control points.
+=#
+
 #---------------------------------#
 #     Influence Coefficients      #
 #---------------------------------#
@@ -46,13 +51,14 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of vortex rings
+- `nodemap::Matrix{Int}` : [id1 id2] id numbers for node on panel used for bookkeeping due to integration across panels.
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function vortex_aic_boundary_on_boundary!(
     AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
 
-    #TODO's for speed ups:
+    #TODO's for speed ups: do also for some of the functions in velocities.jl
     # !!!use a profiler to actually see where things are taking a long time.
     # dimensions of node need to be swapped at initilaiztion and accessed as node[:,#], also vel output dimension in integration functions can be swapped. this is for accessing memory in the order it's stored (across columns first)
     # look into static arrays for initial definition of cps, normals, tangents, etc. (though only if they're small enough?)
