@@ -64,6 +64,7 @@ cl245, cd245, _, _, conv245 = Xfoil.alpha_sweep(
     z,
     anglesofattack,
     245000;# reinit=true, percussive_maintenance=true
+    ncrit=5,
 )
 gid245 = findall(c -> c == 1, conv245)
 a245g = anglesofattack[gid245]
@@ -101,6 +102,7 @@ cl200, cd200, _, _, conv200 = Xfoil.alpha_sweep(
     z,
     anglesofattack,
     200000; #reinit=true, percussive_maintenance=true
+    ncrit=7,
 )
 gid200 = findall(c -> c == 1, conv200)
 a200g = anglesofattack[gid200]
@@ -492,7 +494,9 @@ plot!(
 mach = 95.0 / 1125.33 #mach based on flow speed in feet per second
 
 # - Estimate Polar Features for Re = 245,000 - #
-clmin245, clminid245 = findmin(cl245sm)
+clmin245, clminid245 = findmin(cl245sm[findfirst(a->a>-10,a245sm):end])
+clminid245add = findfirst(a->a>-10,a245sm)
+clminid245 += clminid245add
 clmax245, clmaxid245 = findmax(cl245sm[1:findfirst(a -> a > 12, a245sm)])
 clcdmin245 = cl245sm[findmin(cd245sm)[2]]
 dclda245 = (clmax245 - clmin245) / ((a245sm[clmaxid245] - a245sm[clminid245]) * pi / 180.0)
