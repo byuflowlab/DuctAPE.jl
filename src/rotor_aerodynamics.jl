@@ -245,17 +245,22 @@ function gamma_sigma_from_coeffs!(Gamr, sigr, Wmag_rotor, B, c, r, cl, cd, rho)
     # sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
 
     # for (is, s) in enumerate(sigr)
+    #TODO; this setup doesn't work.  need to be able to average things, but only single stations are passed in here.
     for is in 1:length(sigr)
         if is == 1
             # sigr[is] = B * rho * Wmag_rotor[is]^2 * c[is] * cd[is] / (4 * pi * r[is])
-            sigr[is] = B * Wmag_rotor[is] * c[is] * cd[is] / (4 * pi * r[is])
+            # sigr[is] = B * Wmag_rotor[is] * c[is] * cd[is] / (4 * pi * r[is])
+            sigr[is] = B * Wmag_rotor[is] * c[is] * cd[is] / (4 * pi)
         elseif is == length(sigr)
             sigr[is] =
                 # B * rho * Wmag_rotor[is - 1]^2 * c[is - 1] * cd[is - 1] /
                 # (4 * pi * r[is - 1])
+                # B * Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] /
+                # (4 * pi * r[is - 1])
                 B * Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] /
-                (4 * pi * r[is - 1])
+                (4 * pi )
         else
+            println("sigr in calc from coeffs is more than 1")
             sigr[is] =
                 # B / (4 * pi) *
                 # rho *
@@ -264,11 +269,17 @@ function gamma_sigma_from_coeffs!(Gamr, sigr, Wmag_rotor, B, c, r, cl, cd, rho)
                 #     Wmag_rotor[is]^2 * c[is] * cd[is] / r[is] +
                 #     Wmag_rotor[is - 1]^2 * c[is - 1] * cd[is - 1] / r[is - 1]
                 # )
+                # B / (4 * pi) *
+                # 0.5 *
+                # (
+                #     Wmag_rotor[is] * c[is] * cd[is] / r[is] +
+                #     Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] / r[is - 1]
+                # )
                 B / (4 * pi) *
                 0.5 *
                 (
-                    Wmag_rotor[is] * c[is] * cd[is] / r[is] +
-                    Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] / r[is - 1]
+                    Wmag_rotor[is] * c[is] * cd[is] +
+                    Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1]
                 )
         end
     end

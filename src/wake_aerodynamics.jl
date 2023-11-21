@@ -200,16 +200,9 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
         # Get average meridional velocity at node
         if iw in inputs.wake_vortex_panels.endnodeidxs[:, 1]
             Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 1], iw)]
-            println(searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 1], iw), " : ")
         elseif iw in inputs.wake_vortex_panels.endnodeidxs[:, 2]
             Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw)]
-            println(" : ", searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw))
         else
-            println(
-                searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 1], iw),
-                " : ",
-                searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw),
-            )
             Wm_avg =
                 0.5 * (
                     Wm_wake[searchsortedfirst(
@@ -226,7 +219,9 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
         else
 
             # wake strength density taken from rotor to next rotor constant along streamlines
-            gw[1] = (K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) / Wm_avg
+            gw[1] =
+                (K * deltaGamma2[sheetid, rotorid] + 2.0 * deltaH[sheetid, rotorid]) /
+                Wm_avg
         end
     end
 

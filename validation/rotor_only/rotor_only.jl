@@ -374,7 +374,7 @@ CQccb = zeros(nJ)
 
 # Loop through advance ratios
 # for i in 1:nJ
-for i in 12:12
+for i in 1:1
     println()
     println("Running for J = $(J[i])")
     println()
