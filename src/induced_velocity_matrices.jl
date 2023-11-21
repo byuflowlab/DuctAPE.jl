@@ -32,7 +32,7 @@ function induced_velocities_from_vortex_panels_on_points(
 )
 
     # Initialize
-    T = promote_type(eltype(controlpoint), eltype(nodes), eltype(strengths))
+    T = promote_type(eltype(controlpoints), eltype(nodes), eltype(strengths))
     VEL = zeros(T, size(controlpoints, 1), size(nodes, 1), 2)
 
     induced_velocities_from_vortex_panels_on_points!(
@@ -70,7 +70,7 @@ function induced_velocities_from_vortex_panels_on_points!(
             n2 = view(node, nmap[2], :)
 
             # check of self-induced:
-            if isapprox(controlpoint, 0.5 * (n1 .+ n2))
+            if isapprox(cpi, 0.5 * (n1 .+ n2))
                 # if so:
                 vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
             else
@@ -111,7 +111,7 @@ function induced_velocities_from_source_panels_on_points(
 )
 
     # Initialize
-    T = promote_type(eltype(controlpoint), eltype(nodes), eltype(strengths))
+    T = promote_type(eltype(controlpoints), eltype(nodes), eltype(strengths))
     VEL = zeros(T, size(controlpoints, 1), size(nodes, 1), 2)
 
     induced_velocities_from_source_panels_on_points!(
@@ -149,7 +149,7 @@ function induced_velocities_from_source_panels_on_points!(
             n2 = view(node, nmap[2], :)
 
             # check of self-induced:
-            if isapprox(controlpoint, 0.5 * (n1 .+ n2))
+            if isapprox(cpi, 0.5 * (n1 .+ n2))
                 # if so:
                 vel .= self_source_panel_integration(n1, n2, lj, cpi)
             else

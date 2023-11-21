@@ -1,5 +1,5 @@
 """
-    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vx_rb, vr_rb, mub,
+    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vx_rb, vr_rb, gamb,
         vx_rw, vr_rw, gamw)
 
 Calculate axial, radial, and tangential induced velocity on the rotors.
@@ -19,7 +19,7 @@ function calculate_induced_velocities_on_rotors(
     sigr,
     vx_rb=nothing,
     vr_rb=nothing,
-    mub=nothing,
+    gamb=nothing,
     vx_rbte=nothing,
     vr_rbte=nothing,
     TEidxs=nothing;
@@ -51,22 +51,22 @@ function calculate_induced_velocities_on_rotors(
     for irotor in 1:nrotor
 
         # add body induced velocities
-        if mub != nothing
-            @views vx_rotor[:, irotor] .+= vx_rb[irotor] * mub
-            @views vr_rotor[:, irotor] .+= vr_rb[irotor] * mub
+        if gamb != nothing
+            @views vx_rotor[:, irotor] .+= vx_rb[irotor] * gamb
+            @views vr_rotor[:, irotor] .+= vr_rb[irotor] * gamb
 
             if debug
-                @views vxb_rotor[:, irotor] .+= vx_rb[irotor] * mub
-                @views vrb_rotor[:, irotor] .+= vr_rb[irotor] * mub
+                @views vxb_rotor[:, irotor] .+= vx_rb[irotor] * gamb
+                @views vrb_rotor[:, irotor] .+= vr_rb[irotor] * gamb
             end
 
             #note: v?_rbte[irotor] should have been defined as zeros for endpoints that are not coincident.
-            @views vx_rotor .+= vx_rbte[irotor] * mub[TEidxs]
-            @views vr_rotor .+= vr_rbte[irotor] * mub[TEidxs]
+            @views vx_rotor .+= vx_rbte[irotor] * gamb[TEidxs]
+            @views vr_rotor .+= vr_rbte[irotor] * gamb[TEidxs]
 
             if debug
-                @views vxb_rotor .+= vx_rbte[irotor] * mub[TEidxs]
-                @views vrb_rotor .+= vr_rbte[irotor] * mub[TEidxs]
+                @views vxb_rotor .+= vx_rbte[irotor] * gamb[TEidxs]
+                @views vrb_rotor .+= vr_rbte[irotor] * gamb[TEidxs]
             end
         end
 
@@ -140,7 +140,7 @@ end
 
 """
 """
-function calculate_rotor_velocities(Gamr, gamw, sigr, mub, inputs)
+function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
 
     # - Get induced velocities on rotor planes - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
@@ -154,7 +154,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, mub, inputs)
         sigr,
         inputs.vx_rb,
         inputs.vr_rb,
-        mub,
+        gamb,
         inputs.vx_rbte,
         inputs.vr_rbte,
         (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
@@ -208,7 +208,7 @@ function calculate_gamma_sigma(
 
     # initialize outputs
     Gamr = zeros(TF, nr, nrotor)
-    sigr = zeros(TF, nr, nrotor)
+    sigr = zeros(TF, nr + 1, nrotor)
 
     # call in-place function
     return calculate_gamma_sigma!(
@@ -226,13 +226,14 @@ end
 
 """
 """
-function gamma_sigma_from_coeffs!(Gamr, sigr, Wmag_rotor, B, c, r, cl, cd)
+function gamma_sigma_from_coeffs!(Gamr, sigr, Wmag_rotor, B, c, r, cl, cd, rho)
 
     # calculate vortex strength
     Gamr[:] .= 1.0 / 2.0 * Wmag_rotor * c * cl
 
     # calculate source strength
     # TODO: need to figure out if there should be a division by r here or not.
+    #NOTE: theory sigr doesn't make any sense. consider using actual drag equation until you have good reason not to
     #= it doesn't look like DFDC has the division, even though it's in the theory doc
     #it's possible (but I haven't been able to find it, that they divide by r later for some reason
     =#
@@ -241,10 +242,39 @@ function gamma_sigma_from_coeffs!(Gamr, sigr, Wmag_rotor, B, c, r, cl, cd)
     # sigr[:] .= B / (4.0 * pi * r) * Wmag_rotor * c * cd
     # this one is in the DFDC source code
     # things converge slower, likely because the values are so small...
-    sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
+    # sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
 
-    # return Gamr, sigr
-    return nothing
+    # for (is, s) in enumerate(sigr)
+    for is in 1:length(sigr)
+        if is == 1
+            # sigr[is] = B * rho * Wmag_rotor[is]^2 * c[is] * cd[is] / (4 * pi * r[is])
+            sigr[is] = B * Wmag_rotor[is] * c[is] * cd[is] / (4 * pi * r[is])
+        elseif is == length(sigr)
+            sigr[is] =
+                # B * rho * Wmag_rotor[is - 1]^2 * c[is - 1] * cd[is - 1] /
+                # (4 * pi * r[is - 1])
+                B * Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] /
+                (4 * pi * r[is - 1])
+        else
+            sigr[is] =
+                # B / (4 * pi) *
+                # rho *
+                # 0.5 *
+                # (
+                #     Wmag_rotor[is]^2 * c[is] * cd[is] / r[is] +
+                #     Wmag_rotor[is - 1]^2 * c[is - 1] * cd[is - 1] / r[is - 1]
+                # )
+                B / (4 * pi) *
+                0.5 *
+                (
+                    Wmag_rotor[is] * c[is] * cd[is] / r[is] +
+                    Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] / r[is - 1]
+                )
+        end
+    end
+
+    return Gamr, sigr
+    # return nothing
 end
 
 function calc_reynolds(chord, Wmag_rotor, rho, mu)
@@ -293,18 +323,18 @@ function calculate_gamma_sigma!(
             twist = blade_elements[irotor].twists[ir] # twist
             stagger = blade_elements[irotor].stagger[ir]
             r = blade_elements[irotor].rbe[ir] # radius
-            Ω = blade_elements[irotor].Omega # rotation rate
+            omega = blade_elements[irotor].Omega # rotation rate
             solidity = blade_elements[irotor].solidity[ir]
             fliplift = blade_elements[irotor].fliplift
 
             # calculate angle of attack
             phi, alpha = calculate_inflow_angles(
-                Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], twist
+                Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
             )
 
             # get local Reynolds number
-            reynolds =
-                c * abs(Wmag_rotor[ir, irotor]) * freestream.rhoinf / freestream.muinf
+            reynolds = calc_reynolds(c, Wmag_rotor[ir,irotor], freestream.rhoinf, freestream.muinf)
+                # c * abs(Wmag_rotor[ir, irotor]) * freestream.rhoinf / freestream.muinf
 
             # get local Mach number
             mach = Wmag_rotor[ir, irotor] / freestream.asound
@@ -335,6 +365,7 @@ function calculate_gamma_sigma!(
                 r,
                 cl,
                 cd,
+                freestream.rhoinf,
             )
 
             if debug
@@ -424,12 +455,14 @@ end
 
 """
 """
-function calculate_inflow_angles(Wm_rotor, Wtheta_rotor, twist)
+function calculate_inflow_angles(Wm_rotor, Wtheta_rotor, stagger)
     #inflow angle
-    phi = atan.(Wm_rotor, -Wtheta_rotor)
+    # phi = atan.(Wm_rotor, -Wtheta_rotor)
+    phi = atan.(-Wtheta_rotor,Wm_rotor)
 
     #angle of attack
-    alpha = twist .- phi
+    alpha = phi - stagger
+    # alpha = twist .- phi
 
     return phi, alpha
 end
@@ -762,11 +795,11 @@ function calculate_enthalpy_jumps(Gamr, Omega, num_blades)
     H_tilde = similar(Gamr) .= 0
     for ir in 1:nr
         for irotor in 1:nrotor
-            Ω = Omega[irotor]
+            omega = Omega[irotor]
             B = num_blades[irotor]
 
-            Γ = Gamr[ir, irotor]
-            H_tilde[ir, irotor] += Ω * B * Γ / (2.0 * pi)
+            G = Gamr[ir, irotor]
+            H_tilde[ir, irotor] += omega * B * G / (2.0 * pi)
 
             # add the upstream contributions
             for jrotor in 1:(irotor - 1)
@@ -789,20 +822,20 @@ function calculate_net_circulation(Gamr, num_blades)
     nr, nrotor = size(Gamr)
 
     # calculate net circulations
-    Γ_tilde = similar(Gamr) .= 0
+    Gam_tilde = similar(Gamr) .= 0
     for ir in 1:nr
         for irotor in 1:nrotor
             B = num_blades[irotor]
 
-            Γ = Gamr[ir, irotor]
-            Γ_tilde[ir, irotor] += B * Γ
+            G = Gamr[ir, irotor]
+            Gam_tilde[ir, irotor] += B * G
 
             # add the upstream contributions
             for jrotor in 1:(irotor - 1)
-                Γ_tilde[ir, irotor] += Γ_tilde[ir, jrotor]
+                Gam_tilde[ir, irotor] += Gam_tilde[ir, jrotor]
             end
         end
     end
 
-    return Γ_tilde
+    return Gam_tilde
 end

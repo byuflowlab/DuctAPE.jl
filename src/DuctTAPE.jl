@@ -47,10 +47,11 @@ include("wake_geometry.jl")
 # include("mesh.jl")
 
 # Additional Influence Coefficient Functions
-include("coefficient_matrix.jl")
-include("velocities.jl")
+# include("coefficient_matrix.jl") #TODO: delete or move this?
 include("integrals.jl")
+include("velocities.jl")
 include("influence_coefficient_matrices.jl")
+include("induced_velocity_matrices.jl")
 
 # Rotor Aerodynamic Functions
 include("rotor_aerodynamics.jl")

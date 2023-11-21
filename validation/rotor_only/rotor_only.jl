@@ -2,7 +2,7 @@
 Verification and Validation of rotor/wake without duct and center body
 =#
 
-project_dir = dirname(dirname(dirname(dirname(@__FILE__))))
+project_dir = dirname(dirname(dirname(@__FILE__)))
 if project_dir == ""
     project_dir = "."
 end
@@ -120,12 +120,11 @@ freestream = (; rhoinf=rho, muinf=mu, asound, Vinf)
 #---------------------------------#
 
 nrotor = length(rotor_parameters)
-nbe = rotor_parameters[1].nwake_sheets - 1
 
 ##### ----- Panels ----- #####
 # - Rotor Panel Edges - #
 rotor_panel_edges = [
-    range(rotor_parameters[i].Rhub, rotor_parameters[i].Rtip, nbe + 1) for i in 1:nrotor
+    range(rotor_parameters[i].Rhub, rotor_parameters[i].Rtip, nwake_sheets) for i in 1:nrotor
 ]
 rotor_panel_edges = reduce(hcat, rotor_panel_edges)
 
@@ -178,7 +177,7 @@ xrange = range(
     rotor_parameters[1].xrotor, rotor_parameters[1].xrotor + wake_length * D; step=dr
 )
 
-num_wake_x_panels = length(xrange) - 1
+num_wake_x_nodes = length(xrange)
 
 # - Put together the initial grid point matrices - #
 #=
@@ -204,12 +203,12 @@ wake_vortex_panels = dt.generate_wake_panels(x_grid_points, r_grid_points)
 wakeK = dt.get_wake_k(wake_vortex_panels)
 
 # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
-rotorwakeid = ones(Int, wake_vortex_panels.totpanel, 2)
+rotorwakeid = ones(Int, wake_vortex_panels.totnode, 2)
 for i in 1:(rotor_parameters[1].nwake_sheets)
-    rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
+    rotorwakeid[(1 + (i - 1) * num_wake_x_nodes):(i * num_wake_x_nodes), 1] .= i
 end
-for (i, cp) in enumerate(eachrow(wake_vortex_panels.controlpoint))
-    rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.xrotor)
+for (i, wn) in enumerate(eachrow(wake_vortex_panels.node))
+    rotorwakeid[i, 2] = findlast(x -> x <= wn[1], rotor_parameters.xrotor)
 end
 
 #---------------------------------#
@@ -223,7 +222,7 @@ end
 
 # unit induced velocity on rotor from wake sheets
 v_rw = [
-    dt.induced_velocities_from_vortex_panels_on_points(
+    -dt.induced_velocities_from_vortex_panels_on_points(
         rotor_source_panels[i].controlpoint,
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
@@ -241,11 +240,12 @@ vr_rw = [v_rw[i][:, :, 2] for i in 1:length(rotor_source_panels)]
 ##### ----- Rotor to Rotor ----- #####
 # - rotor to rotor - #
 v_rr = [
-    influencefromsourcepanels(
+    dt.induced_velocities_from_source_panels_on_points(
         rotor_source_panels[i].controlpoint,
-        rotor_source_panels[j].controlpoint,
-        rotor_source_panels[j].len,
-        ones(TF, rotor_source_panels[j].totpanel),
+        rotor_source_panels[j].node,
+        rotor_source_panels[j].nodemap,
+        rotor_source_panels[j].influence_length,
+        ones(rotor_source_panels[j].totpanel, 2),
     ) for i in 1:length(rotor_source_panels), j in 1:length(rotor_source_panels)
 ]
 
@@ -263,11 +263,12 @@ vr_rr = [
 
 # - rotor to wake - #
 v_wr = [
-    influencefromsourcepanels(
+    dt.induced_velocities_from_source_panels_on_points(
         wake_vortex_panels.controlpoint,
-        rotor_source_panels[j].controlpoint,
-        rotor_source_panels[j].len,
-        ones(TF, rotor_source_panels[j].totpanel),
+        rotor_source_panels[j].node,
+        rotor_source_panels[j].nodemap,
+        rotor_source_panels[j].influence_length,
+        ones(rotor_source_panels[j].totpanel, 2),
     ) for j in 1:length(rotor_source_panels)
 ]
 
@@ -278,11 +279,12 @@ vx_wr = [v_wr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 vr_wr = [v_wr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
 
 # - wake to wake - #
-v_ww = influencefromvortexpanels(
+v_ww = -dt.induced_velocities_from_vortex_panels_on_points(
     wake_vortex_panels.controlpoint,
-    wake_vortex_panels.controlpoint,
-    wake_vortex_panels.len,
-    ones(TF, wake_vortex_panels.totpanel),
+    wake_vortex_panels.node,
+    wake_vortex_panels.nodemap,
+    wake_vortex_panels.influence_length,
+    ones(wake_vortex_panels.totpanel, 2),
 )
 
 # axial components
@@ -299,7 +301,7 @@ inputs = (;
     Vinf=freestream.Vinf,
     freestream,
     # nxwake=length(xrange) - 1,
-    num_wake_x_panels,
+    num_wake_x_nodes,
     wakeK,
     rotorwakeid,
     vx_rw=vx_rw,
@@ -319,8 +321,8 @@ inputs = (;
     xrange,
     x_grid_points,
     r_grid_points,
-    nrotor_panels=sum(rotor_source_panels.totpanel),
-    nwake_panels=wake_vortex_panels.totpanel,
+    nrotor_nodes=sum(rotor_source_panels.totnode),
+    nwake_nodes=wake_vortex_panels.totnode,
     ductwakeinterfaceid=nothing,
     hubwakeinterfaceid=nothing,
 )
@@ -336,6 +338,7 @@ for example, wake strengths at nodes are based on mean velocity of control point
 similarly, rotor source strengths are based on cd values at blade elements (panel control points)
 states will have an additional source and wake value for each rotor and wake sheet, respectively.
 =#
+
 # - Initialize with freestream only - #
 Wtheta = -inputs.rotor_panel_centers .* inputs.blade_elements.Omega'
 # use freestream magnitude as meridional velocity at each blade section
@@ -344,11 +347,11 @@ Wm = similar(Wtheta) .= inputs.Vinf
 W = sqrt.(Wtheta .^ 2 .+ Wm .^ 2)
 
 # initialize circulation and source panel strengths
-Gamr, sigr = calculate_gamma_sigma(inputs.blade_elements, Wm, Wtheta, W, inputs.freestream)
+Gamr, sigr = dt.calculate_gamma_sigma(inputs.blade_elements, Wm, Wtheta, W, inputs.freestream)
 
-nwake = inputs.wake_vortex_panels.totpanel
-gamw = zeros(nwake)
-calculate_wake_vortex_strengths!(
+nwakenode = inputs.wake_vortex_panels.totnode
+gamw = zeros(nwakenode)
+dt.calculate_wake_vortex_strengths!(
     gamw, Gamr, inputs.Vinf * ones(length(gamw)), inputs; debug=false
 )
 
@@ -370,7 +373,8 @@ CTccb = zeros(nJ)
 CQccb = zeros(nJ)
 
 # Loop through advance ratios
-for i in 1:nJ
+# for i in 1:nJ
+for i in 12:12
     println()
     println("Running for J = $(J[i])")
     println()
@@ -378,24 +382,24 @@ for i in 1:nJ
     # calculate freestream velocity for given advance ratio
     Vinf_sweep = J[i] * D * n
 
-    # @time begin
-    #     # run solver
-    #     # remember to update freestream velocity in parameters
-    #     states = dt.solve_rotor_only(init_states, (; inputs..., Vinf=Vinf_sweep))
-    #     Gamrconv, gamwconv, sigrconv = dt.extract_rotor_states(states, inputs)
+    @time begin
+        # run solver
+        # remember to update freestream velocity in parameters
+        states = dt.solve_rotor_only([Gamr; gamw; sigr], (; inputs..., Vinf=Vinf_sweep))
+        Gamrconv, gamwconv, sigrconv = dt.extract_rotor_states(states, inputs)
 
-    #     # - Post Process - #
-    #     dtout = dt.states_to_outputs_rotor_only(states, (; inputs..., Vinf=Vinf_sweep))
+        # - Post Process - #
+        dtout = dt.states_to_outputs_rotor_only(states, (; inputs..., Vinf=Vinf_sweep))
 
-    #     aero = dt.get_rotor_loads(
-    #         dtout.W,
-    #         dtout.phi,
-    #         dtout.cl,
-    #         dtout.cd,
-    #         inputs.blade_elements[1],
-    #         (; freestream..., Vinf=Vinf_sweep),
-    #     )
-    # end
+        aero = dt.get_rotor_loads(
+            dtout.W,
+            dtout.phi,
+            dtout.cl,
+            dtout.cd,
+            inputs.blade_elements[1],
+            (; freestream..., Vinf=Vinf_sweep),
+        )
+    end
 
     # pG = plot(
     #     Gamr, inputs.rotor_panel_centers; xlabel=L"\Gamma", ylabel="r", label="initial"
@@ -403,9 +407,9 @@ for i in 1:nJ
     # plot!(pG, Gamrconv, inputs.rotor_panel_centers; label="converged")
     # # savefig(pG, savepath*"Circulation_J$(J[i]).pdf")
 
-    # CT[i] = aero.CT
-    # CQ[i] = aero.CQ
-    # eff[i] = aero.eff
+    CT[i] = aero.CT
+    CQ[i] = aero.CQ
+    eff[i] = aero.eff
 
     # Run CCBlade:
     ccbouts = run_ccblade(Vinf_sweep; airfoil="test/data/naca4412.dat")
@@ -419,176 +423,177 @@ for i in 1:nJ
     #println("Plotting...")
     #println()
 
-    #plot!(pG, ccbouts.circ, ccbouts.r; label="BEMT")
+    # plot!(pG, ccbouts.circ, ccbouts.r; label="BEMT")
     #savefig(savepath*"circulation_J$(J[i]).pdf")
-
-    ## # double check geometry
-    ## plot(
-    ##     dtout.r,
-    ##     dtout.chord;
-    ##     xlabel="r",
-    ##     ylabel="chords",
-    ##     label="DuctAPE",
-    ##     title="J = $(J[i])",
-    ## )
-    ## plot!(r * Rtip, chords; label="BEMT")
-    ## savefig(savepath*"chord_J$(J[i]).pdf")
-
-    ## plot(
-    ##     dtout.r,
-    ##     dtout.twist * 180 / pi;
-    ##     ylabel="twists (deg)",
-    ##     xlabel="r",
-    ##     label="DuctAPE",
-    ##     title="J = $(J[i])",
-    ## )
-    ## plot!(r * Rtip, twists * 180 / pi; label="BEMT")
-    ## savefig(savepath*"twist_J$(J[i]).pdf")
-
-    ## axial induced velocity
-    #plot(
-    #    dtout.vx_rotor,
-    #    rbe / Rtip;
-    #    xlabel=L"v_x",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.u, r; label="BEMT")
-    #savefig(savepath*"vx_J$(J[i]).pdf")
-
-    ## tangential induced velocity
-    #plot(
-    #    dtout.vtheta_rotor,
-    #    rbe / Rtip;
-    #    xlabel=L"v_\theta",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.v, r; label="BEMT")
-    #savefig(savepath*"vtheta_J$(J[i]).pdf")
-
-    ## tangential total velocity
-    #plot(
-    #    dtout.Wθ,
-    #    rbe / Rtip;
-    #    xlabel=L"W_\theta",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.v .- Omega * r * Rtip, r; label="BEMT")
-    #savefig(savepath*"Wtheta_J$(J[i]).pdf")
-
-    ## meridional total velocity
-    #plot(
-    #    dtout.Wm,
-    #    rbe / Rtip;
-    #    xlabel=L"W_m",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.u .+ Vinf_sweep, r; label="BEMT")
-    #savefig(savepath*"Wm_J$(J[i]).pdf")
-
-    ## inflow angle
-    #plot(
-    #    dtout.phi * 180 / pi,
-    #    rbe / Rtip;
-    #    xlabel=L"\phi~(deg)",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.phi * 180 / pi, r; label="BEMT")
-    #savefig(savepath*"phi_J$(J[i]).pdf")
-
-    ## angle of attack
-    #plot(
-    #    dtout.alpha * 180 / pi,
-    #    rbe / Rtip;
-    #    xlabel=L"\alpha~(deg)",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.alpha * 180 / pi, r; label="BEMT")
-    #savefig(savepath*"alpha_J$(J[i]).pdf")
-
-    ## inflow magnitude
-    #plot(
-    #    dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctAPE", title="J = $(J[i])"
-    #)
-    #plot!(out.W, r; label="BEMT")
-    #savefig(savepath*"W_J$(J[i]).pdf")
-
-    ## Lift
-    #plot(
-    #    dtout.cl,
-    #    rbe / Rtip;
-    #    xlabel=L"c_\ell",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=1)
-    #plot!(dtout.clout, rbe / Rtip; label="outer", linestyle=:dot, color=1)
-    #plot!(out.cl, r; label="BEMT")
-    #savefig(savepath*"cl_J$(J[i]).pdf")
-
-    ## Drag
-    #plot(
-    #    dtout.cd,
-    #    rbe / Rtip;
-    #    xlabel=L"c_d",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(dtout.cdin, rbe / Rtip; label="inner", linestyle=:dash, color=1)
-    #plot!(dtout.cdout, rbe / Rtip; label="outer", linestyle=:dot, color=1)
-    #plot!(out.cd, r; label="BEMT")
-    #savefig(savepath*"cd_J$(J[i]).pdf")
-
-    ## normal coeff
-    #plot(
-    #    aero.cn,
-    #    rbe / Rtip;
-    #    xlabel=L"c_n",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.cn, r; label="BEMT")
-    #savefig(savepath*"cn_J$(J[i]).pdf")
-
-    ## tangential coeff
-    #plot(
-    #    aero.ct,
-    #    rbe / Rtip;
-    #    xlabel=L"c_t",
-    #    ylabel="r",
-    #    label="DuctAPE",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(out.ct, r; label="BEMT")
-    #savefig(savepath*"ct_J$(J[i]).pdf")
-
-    ## Distributed Loads
-    #plot(
-    #    rbe / Rtip,
-    #    aero.Np;
-    #    xlabel="r/Rtip",
-    #    label="Normal load per unit length",
-    #    title="J = $(J[i])",
-    #)
-    #plot!(r, out.Np; label="BEMT Np")
-    #plot!(rbe / Rtip, aero.Tp; label="Tangential load per unit length")
-    #plot!(r, out.Tp; label="BEMT Tp")
-    #savefig(savepath*"distributed_loads_J$(J[i]).pdf")
 end
+
+    # # double check geometry
+    # plot(
+    #     dtout.r,
+    #     dtout.chord;
+    #     xlabel="r",
+    #     ylabel="chords",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(r * Rtip, chords; label="BEMT")
+    # # savefig(savepath*"chord_J$(J[i]).pdf")
+
+    # plot(
+    #     dtout.r,
+    #     dtout.twist * 180 / pi;
+    #     ylabel="twists (deg)",
+    #     xlabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(r * Rtip, twists * 180 / pi; label="BEMT")
+    # savefig(savepath*"twist_J$(J[i]).pdf")
+
+    # # axial induced velocity
+    # plot(
+    #     dtout.vx_rotor,
+    #     rbe / Rtip;
+    #     xlabel=L"v_x",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.u, r; label="BEMT")
+    # savefig(savepath*"vx_J$(J[i]).pdf")
+
+    # # tangential induced velocity
+    # plot(
+    #     dtout.vtheta_rotor,
+    #     rbe / Rtip;
+    #     xlabel=L"v_\theta",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.v, r; label="BEMT")
+    # savefig(savepath*"vtheta_J$(J[i]).pdf")
+
+    # # tangential total velocity
+    # plot(
+    #     dtout.Wθ,
+    #     rbe / Rtip;
+    #     xlabel=L"W_\theta",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.v .- Omega * r * Rtip, r; label="BEMT")
+    # savefig(savepath*"Wtheta_J$(J[i]).pdf")
+
+    # # meridional total velocity
+    # plot(
+    #     dtout.Wm,
+    #     rbe / Rtip;
+    #     xlabel=L"W_m",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.u .+ Vinf_sweep, r; label="BEMT")
+    # savefig(savepath*"Wm_J$(J[i]).pdf")
+
+    # # inflow angle
+    # plot(
+    #     dtout.phi * 180 / pi,
+    #     rbe / Rtip;
+    #     xlabel=L"\phi~(deg)",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.phi * 180 / pi, r; label="BEMT")
+    # savefig(savepath*"phi_J$(J[i]).pdf")
+
+    # # angle of attack
+    # plot(
+    #     dtout.alpha * 180 / pi,
+    #     rbe / Rtip;
+    #     xlabel=L"\alpha~(deg)",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.alpha * 180 / pi, r; label="BEMT")
+    # savefig(savepath*"alpha_J$(J[i]).pdf")
+
+    # # inflow magnitude
+    # plot(
+    #     dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctAPE", title="J = $(J[i])"
+    # )
+    # plot!(out.W, r; label="BEMT")
+    # savefig(savepath*"W_J$(J[i]).pdf")
+
+    # # Lift
+    # plot(
+    #     dtout.cl,
+    #     rbe / Rtip;
+    #     xlabel=L"c_\ell",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=1)
+    # plot!(dtout.clout, rbe / Rtip; label="outer", linestyle=:dot, color=1)
+    # plot!(out.cl, r; label="BEMT")
+    # savefig(savepath*"cl_J$(J[i]).pdf")
+
+    # Drag
+    # plot(
+    #     dtout.cd,
+    #     rbe / Rtip;
+    #     xlabel=L"c_d",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(dtout.cdin, rbe / Rtip; label="inner", linestyle=:dash, color=1)
+    # plot!(dtout.cdout, rbe / Rtip; label="outer", linestyle=:dot, color=1)
+    # plot!(out.cd, r; label="BEMT")
+    # savefig(savepath*"cd_J$(J[i]).pdf")
+
+    # # normal coeff
+    # plot(
+    #     aero.cn,
+    #     rbe / Rtip;
+    #     xlabel=L"c_n",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.cn, r; label="BEMT")
+    # savefig(savepath*"cn_J$(J[i]).pdf")
+
+    # # tangential coeff
+    # plot(
+    #     aero.ct,
+    #     rbe / Rtip;
+    #     xlabel=L"c_t",
+    #     ylabel="r",
+    #     label="DuctAPE",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(out.ct, r; label="BEMT")
+    # savefig(savepath*"ct_J$(J[i]).pdf")
+
+    # # Distributed Loads
+    # plot(
+    #     rbe / Rtip,
+    #     aero.Np;
+    #     xlabel="r/Rtip",
+    #     label="Normal load per unit length",
+    #     title="J = $(J[i])",
+    # )
+    # plot!(r, out.Np; label="BEMT Np")
+    # plot!(rbe / Rtip, aero.Tp; label="Tangential load per unit length")
+    # plot!(r, out.Tp; label="BEMT Tp")
+    # savefig(savepath*"distributed_loads_J$(J[i]).pdf")
+# end
 
 #---------------------------------#
 #        Experimental Data        #

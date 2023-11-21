@@ -20,7 +20,7 @@ function calculate_induced_velocities_on_wakes(
     sigr,
     vx_wb=nothing,
     vr_wb=nothing,
-    mub=nothing,
+    gamb=nothing,
     vx_wbte=nothing,
     vr_wbte=nothing,
     TEidxs=nothing;
@@ -31,8 +31,8 @@ function calculate_induced_velocities_on_wakes(
     nrotor = size(sigr, 2)
 
     # initialize outputs
-    vx_wake = similar(gamw) .= 0 # axial induced velocity
-    vr_wake = similar(gamw) .= 0 # radial induced velocity
+    vx_wake = similar(gamw, size(vx_ww, 1), 1) .= 0 # axial induced velocity
+    vr_wake = similar(gamw, size(vr_ww, 1), 1) .= 0 # axial induced velocity
 
     if debug
         # initialize outputs
@@ -45,19 +45,19 @@ function calculate_induced_velocities_on_wakes(
     end
 
     # add body induced velocities
-    if mub != nothing
-        @views vx_wake .+= vx_wb * mub
-        @views vr_wake .+= vr_wb * mub
+    if gamb != nothing
+        @views vx_wake .+= vx_wb * gamb
+        @views vr_wake .+= vr_wb * gamb
         if debug
-            @views vxb_wake .+= vx_wb * mub
-            @views vrb_wake .+= vr_wb * mub
+            @views vxb_wake .+= vx_wb * gamb
+            @views vrb_wake .+= vr_wb * gamb
         end
 
-        @views vx_wake .+= vx_wbte * mub[TEidxs]
-        @views vr_wake .+= vr_wbte * mub[TEidxs]
+        @views vx_wake .+= vx_wbte * gamb[TEidxs]
+        @views vr_wake .+= vr_wbte * gamb[TEidxs]
         if debug
-            @views vxb_wake .+= vx_wbte * mub[TEidxs]
-            @views vrb_wake .+= vr_wbte * mub[TEidxs]
+            @views vxb_wake .+= vx_wbte * gamb[TEidxs]
+            @views vrb_wake .+= vr_wbte * gamb[TEidxs]
         end
     end
 
@@ -89,15 +89,15 @@ end
 
 function reframe_wake_velocities(vx_wake, vr_wake, Vinf)
     #add freestream to induced axial velocity
-    Vx_wake = vx_wake .+ Vinf
+    Wx_wake = vx_wake .+ Vinf
 
     # return meridional velocities
-    return sqrt.(Vx_wake .^ 2 .+ vr_wake .^ 2)
+    return sqrt.(Wx_wake .^ 2 .+ vr_wake .^ 2)
 end
 
 """
 """
-function calculate_wake_velocities(gamw, sigr, mub, inputs)
+function calculate_wake_velocities(gamw, sigr, gamb, inputs)
 
     # - Get induced velocities on wake - #
     vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
@@ -109,7 +109,7 @@ function calculate_wake_velocities(gamw, sigr, mub, inputs)
         sigr,
         inputs.vx_wb,
         inputs.vr_wb,
-        mub,
+        gamb,
         inputs.vx_wbte,
         inputs.vr_wbte,
         (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
@@ -122,7 +122,7 @@ end
 function get_sheet_jumps(Gamma_tilde, H_tilde)
     # get problem size
     nr, nrotor = size(Gamma_tilde)
-    # number of wakes is one more than number or blade elements
+    # number of wakes is one more than number of blade elements
     nw = nr + 1
 
     # get floating point type
@@ -160,15 +160,15 @@ end
 
 function get_wake_k(wake_vortex_panels)
     # initialize output
-    K = zeros(eltype(wake_vortex_panels.controlpoint), wake_vortex_panels.totpanel)
+    K = zeros(eltype(wake_vortex_panels.node), wake_vortex_panels.totnode)
 
     # Loop through panels
-    for iw in 1:(wake_vortex_panels.totpanel)
+    for (iw, wnr) in enumerate(wake_vortex_panels.node[:, 2])
         # check if panel has zero radius
-        if isapprox(wake_vortex_panels.controlpoint[iw, 2], 0.0)
+        if isapprox(wnr, 0.0)
             K[iw] = 0.0
         else
-            K[iw] = -1.0 ./ (8.0 .* pi^2 .* wake_vortex_panels.controlpoint[iw, 2] .^ 2)
+            K[iw] = -1.0 ./ (8.0 .* pi^2 .* wnr .^ 2)
         end
     end
 
@@ -182,9 +182,6 @@ Calculate wake vortex strengths
 """
 function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=false)
 
-    # - get problem sizes - #
-    nw = length(gamw)
-
     # get net circulation of upstream rotors
     Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
 
@@ -196,21 +193,40 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
     # get the circulation squared and enthalpy jumps across the wake sheets
     deltaGamma2, deltaH = get_sheet_jumps(Gamma_tilde, H_tilde)
 
-    for iw in 1:nw
+    for (iw, (gw, K, sheetid, rotorid)) in enumerate(
+        zip(eachrow(gamw), inputs.wakeK, inputs.rotorwakeid[:, 1], inputs.rotorwakeid[:, 2])
+    )
+
+        # Get average meridional velocity at node
+        if iw in inputs.wake_vortex_panels.endnodeidxs[:, 1]
+            Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 1], iw)]
+            println(searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 1], iw), " : ")
+        elseif iw in inputs.wake_vortex_panels.endnodeidxs[:, 2]
+            Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw)]
+            println(" : ", searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw))
+        else
+            println(
+                searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 1], iw),
+                " : ",
+                searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw),
+            )
+            Wm_avg =
+                0.5 * (
+                    Wm_wake[searchsortedfirst(
+                        inputs.wake_vortex_panels.nodemap[:, 1], iw
+                    )] +
+                    Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw)]
+                )
+        end
 
         # calculate the wake vortex strength
-        if Wm_wake[iw] <= 0.0
+        if Wm_avg <= 0.0
             # avoid division by zero
-            gamw[iw] = 0.0
+            gw[1] = 0.0
         else
 
             # wake strength density taken from rotor to next rotor constant along streamlines
-            gamw[iw] =
-                (
-                    inputs.wakeK[iw] *
-                    deltaGamma2[inputs.rotorwakeid[iw, 1], inputs.rotorwakeid[iw, 2]] +
-                    deltaH[inputs.rotorwakeid[iw, 1], inputs.rotorwakeid[iw, 2]]
-                ) / Wm_wake[iw]
+            gw[1] = (K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) / Wm_avg
         end
     end
 
