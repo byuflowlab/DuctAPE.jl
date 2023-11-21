@@ -173,6 +173,72 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
     return vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
 
+
+"""
+"""
+function gamma_from_coeffs!(Gamr, Wmag_rotor, blade_elements, cl)
+
+    for (irotor, be) in enumerate(blade_elements)
+    # calculate vortex strength
+    Gamr[:,irotor] = @. 1.0 / 2.0 * Wmag_rotor[:,irotor] * be.chords * cl[:,irotor]
+end
+
+    return Gamr
+end
+
+# function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements, rho)
+function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements,cd, rho)
+
+    # calculate source strength
+    # TODO: need to figure out if there should be a division by r here or not.
+    #NOTE: theory sigr doesn't make any sense. consider using actual drag equation until you have good reason not to
+    #= it doesn't look like DFDC has the division, even though it's in the theory doc
+    #it's possible (but I haven't been able to find it, that they divide by r later for some reason
+    =#
+    # this one is in the theory doc
+    # things converge twice as fast with this one...
+    # sigr[:] .= B / (4.0 * pi * r) * Wmag_rotor * c * cd
+    # this one is in the DFDC source code
+    # things converge slower, likely because the values are so small...
+    # sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
+
+    for (irotor,be) in enumerate(blade_elements)
+
+        B = be.B
+
+        for inode in 1:size(sigr,1)
+            if inode ==1
+                W=Wmag_rotor[inode, irotor]
+                c = be.chords[inode]
+                # cd = be.cd[inode]
+                d = cd[inode]
+
+            elseif inode==size(sigr,1)
+                W=Wmag_rotor[inode-1, irotor]
+                c = be.chords[inode-1]
+                # cd = be.cd[inode-1]
+                d = cd[inode-1]
+
+            else
+                W = Wmag_rotor[inode-1:inode, irotor]
+                c = be.chords[inode-1:inode]
+                # cd = be.cd[inode-1:inode]
+                d = cd[inode-1:inode]
+            end
+
+            sigr[inode,irotor] = B / (4 * pi) * sum(W .* c .* d) / length(d)
+            # sigr[:] .= B / (4 * pi) * sum(W .* c .* cd ./ r) / length(cd)
+            # sigr[:] .= B / (4 * pi) * rho * sum(W^2 .* c .* cd ./ r) / length(cd)
+        end
+    end
+
+    return sigr
+end
+
+function calc_reynolds(chord, Wmag_rotor, rho, mu)
+    return chord .* abs.(Wmag_rotor) * rho / mu
+end
+
 """
     calculate_gamma_sigma(blade_elements, Vm, vtheta_rotor)
 
@@ -225,74 +291,6 @@ function calculate_gamma_sigma(
 end
 
 """
-"""
-function gamma_sigma_from_coeffs!(Gamr, sigr, Wmag_rotor, B, c, r, cl, cd, rho)
-
-    # calculate vortex strength
-    Gamr[:] .= 1.0 / 2.0 * Wmag_rotor * c * cl
-
-    # calculate source strength
-    # TODO: need to figure out if there should be a division by r here or not.
-    #NOTE: theory sigr doesn't make any sense. consider using actual drag equation until you have good reason not to
-    #= it doesn't look like DFDC has the division, even though it's in the theory doc
-    #it's possible (but I haven't been able to find it, that they divide by r later for some reason
-    =#
-    # this one is in the theory doc
-    # things converge twice as fast with this one...
-    # sigr[:] .= B / (4.0 * pi * r) * Wmag_rotor * c * cd
-    # this one is in the DFDC source code
-    # things converge slower, likely because the values are so small...
-    # sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
-
-    # for (is, s) in enumerate(sigr)
-    #TODO; this setup doesn't work.  need to be able to average things, but only single stations are passed in here.
-    for is in 1:length(sigr)
-        if is == 1
-            # sigr[is] = B * rho * Wmag_rotor[is]^2 * c[is] * cd[is] / (4 * pi * r[is])
-            # sigr[is] = B * Wmag_rotor[is] * c[is] * cd[is] / (4 * pi * r[is])
-            sigr[is] = B * Wmag_rotor[is] * c[is] * cd[is] / (4 * pi)
-        elseif is == length(sigr)
-            sigr[is] =
-                # B * rho * Wmag_rotor[is - 1]^2 * c[is - 1] * cd[is - 1] /
-                # (4 * pi * r[is - 1])
-                # B * Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] /
-                # (4 * pi * r[is - 1])
-                B * Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] /
-                (4 * pi )
-        else
-            println("sigr in calc from coeffs is more than 1")
-            sigr[is] =
-                # B / (4 * pi) *
-                # rho *
-                # 0.5 *
-                # (
-                #     Wmag_rotor[is]^2 * c[is] * cd[is] / r[is] +
-                #     Wmag_rotor[is - 1]^2 * c[is - 1] * cd[is - 1] / r[is - 1]
-                # )
-                # B / (4 * pi) *
-                # 0.5 *
-                # (
-                #     Wmag_rotor[is] * c[is] * cd[is] / r[is] +
-                #     Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1] / r[is - 1]
-                # )
-                B / (4 * pi) *
-                0.5 *
-                (
-                    Wmag_rotor[is] * c[is] * cd[is] +
-                    Wmag_rotor[is - 1] * c[is - 1] * cd[is - 1]
-                )
-        end
-    end
-
-    return Gamr, sigr
-    # return nothing
-end
-
-function calc_reynolds(chord, Wmag_rotor, rho, mu)
-    return chord .* abs.(Wmag_rotor) * rho / mu
-end
-
-"""
     calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, vtheta_rotor)
 
 In-place version of [`calculate_gamma_sigma`](@ref)
@@ -308,35 +306,93 @@ function calculate_gamma_sigma!(
     Wmag_rotor,
     freestream;
     debug=false,
+    verbose=false
+    )
+
+        #update coeffs
+        if debug
+        cl, cd, phidb, alphadb, cldb, cddb=update_coeffs!(
+        blade_elements,
+        Wm_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        freestream;
+        debug=debug,
+        verbose=verbose
+    )
+else
+    cl, cd  = update_coeffs!(
+        blade_elements,
+        Wm_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        freestream;
+        debug=debug,
+        verbose=verbose
+    )
+end
+
+    # - get circulation strength - #
+    gamma_from_coeffs!(
+        Gamr,
+        Wmag_rotor,
+        blade_elements,
+        cl
+    )
+
+    # - get source strength - #
+    sigma_from_coeffs!(
+        sigr,
+        Wmag_rotor,
+        blade_elements,
+        cd,
+        freestream.rhoinf,
+    )
+
+    return Gamr, sigr
+end
+
+
+function update_coeffs!(
+    blade_elements,
+    Wm_rotor,
+    Wtheta_rotor,
+    Wmag_rotor,
+    freestream;
+    debug=false,
     verbose=false,
 )
 
     # problem dimensions
-    nr, nrotor = size(Gamr) #num radial stations, num rotors
+    nr, nrotor = size(Wmag_rotor) #num radial stations, num rotors
+
+    cl = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
+    cd = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
 
     if debug
         # initialize extra outputs
-        phidb = zeros(eltype(Gamr), size(Gamr))
-        alphadb = zeros(eltype(Gamr), size(Gamr))
-        cldb = zeros(eltype(Gamr), size(Gamr))
-        cddb = zeros(eltype(Gamr), size(Gamr))
+        phidb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
+        alphadb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
+        cldb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
+        cddb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
     end
 
     # loop through rotors
-    for irotor in 1:nrotor
+    for (irotor, be) in enumerate(blade_elements)
 
         # loop through radial stations
         for ir in 1:nr
 
             # extract blade element properties
-            B = blade_elements[irotor].B # number of blades
-            c = blade_elements[irotor].chords[ir] # chord length
-            twist = blade_elements[irotor].twists[ir] # twist
-            stagger = blade_elements[irotor].stagger[ir]
-            r = blade_elements[irotor].rbe[ir] # radius
-            omega = blade_elements[irotor].Omega # rotation rate
-            solidity = blade_elements[irotor].solidity[ir]
-            fliplift = blade_elements[irotor].fliplift
+            B = be.B # number of blades
+            omega = be.Omega # rotation rate
+            fliplift = be.fliplift
+
+            c = be.chords[ir] # chord length
+            twist = be.twists[ir] # twist
+            stagger = be.stagger[ir]
+            r = be.rbe[ir] # radius
+            solidity = be.solidity[ir]
 
             # calculate angle of attack
             phi, alpha = calculate_inflow_angles(
@@ -344,13 +400,17 @@ function calculate_gamma_sigma!(
             )
 
             # get local Reynolds number
-            reynolds = calc_reynolds(c, Wmag_rotor[ir,irotor], freestream.rhoinf, freestream.muinf)
-                # c * abs(Wmag_rotor[ir, irotor]) * freestream.rhoinf / freestream.muinf
+            reynolds = calc_reynolds(
+                c, Wmag_rotor[ir, irotor], freestream.rhoinf, freestream.muinf
+            )
+            # c * abs(Wmag_rotor[ir, irotor]) * freestream.rhoinf / freestream.muinf
 
             # get local Mach number
             mach = Wmag_rotor[ir, irotor] / freestream.asound
 
-            cl, cd = lookup_clcd(
+            # - Update cl and cd values - #
+            # be.cl[ir], be.cd[ir] = lookup_clcd(
+            cl[ir,irotor], cd[ir,irotor] = lookup_clcd(
                 blade_elements[irotor].inner_airfoil[ir],
                 blade_elements[irotor].outer_airfoil[ir],
                 blade_elements[irotor].inner_fraction[ir],
@@ -366,18 +426,6 @@ function calculate_gamma_sigma!(
                 fliplift=fliplift,
             )
 
-            # - get circulation and source strengths - #
-            gamma_sigma_from_coeffs!(
-                view(Gamr, ir, irotor),
-                view(sigr, ir, irotor),
-                Wmag_rotor[ir, irotor],
-                B,
-                c,
-                r,
-                cl,
-                cd,
-                freestream.rhoinf,
-            )
 
             if debug
                 phidb[ir, irotor] = phi
@@ -389,9 +437,11 @@ function calculate_gamma_sigma!(
     end
 
     if debug
-        return Gamr, sigr, phidb, alphadb, cldb, cddb
+        return cl, cd, phidb, alphadb, cldb, cddb
+        # return phidb, alphadb, cldb, cddb
     else
-        return Gamr, sigr
+        # return nothing
+        return cl, cd
     end
 end
 
@@ -469,7 +519,7 @@ end
 function calculate_inflow_angles(Wm_rotor, Wtheta_rotor, stagger)
     #inflow angle
     # phi = atan.(Wm_rotor, -Wtheta_rotor)
-    phi = atan.(-Wtheta_rotor,Wm_rotor)
+    phi = atan.(-Wtheta_rotor, Wm_rotor)
 
     #angle of attack
     alpha = phi - stagger

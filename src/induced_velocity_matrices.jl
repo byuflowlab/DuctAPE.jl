@@ -59,7 +59,7 @@ function induced_velocities_from_vortex_panels_on_points!(
 )
     vel = zeros(eltype(VEL), 2, 2)
 
-    #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow
+    #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow if that's right, check the julia performance tips again to make sure that's correct.
 
     # loop through panels doing the influencing
     for (j, (nmap, lj, gammaj)) in
@@ -141,7 +141,7 @@ function induced_velocities_from_source_panels_on_points!(
     #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow
 
     # loop through panels doing the influencing
-    for (j, (nmap, lj, gammaj)) in
+    for (j, (nmap, lj, sigmaj)) in
         enumerate(zip(eachrow(nodemap), influence_length, eachrow(strength)))
         # Loop through control points being influenced
         for (i, cpi) in enumerate(eachrow(controlpoint))
@@ -159,7 +159,7 @@ function induced_velocities_from_source_panels_on_points!(
 
             for k in 1:2
                 # fill the Matrix
-                VEL[i, nmap[k], :] += gammaj[k] * vel[k, :]
+                VEL[i, nmap[k], :] += sigmaj[k] * vel[k, :]
             end #for k
         end #for i
     end #for j

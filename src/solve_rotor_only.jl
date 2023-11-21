@@ -34,7 +34,7 @@ function solve_rotor_only(states, inputs)
         states;
         autodiff=:forward,
         method=:newton,
-        iterations=5, #keep iterations low for initial testing/plotting
+        iterations=25, #keep iterations low for initial testing/plotting
         # iterations=100, #keep iterations low for initial testing/plotting
         show_trace=true,
         # linesearch=BackTracking(; maxstep=1e6),
@@ -56,18 +56,6 @@ function update_rotor_states!(states, inputs)
     rpc = inputs.rotor_panel_centers
 
     TF = eltype(Gamr)
-
-        # vx_rotor, vr_rotor, vtheta_rotor, vxb_rotor, vrb_rotor, vxw_rotor, vrw_rotor, vxr_rotor, vrr_rotor = dt.calculate_induced_velocities_on_rotors(
-        # inputs.blade_elements,
-        # Gamr,
-        # inputs.vx_rw,
-        # inputs.vr_rw,
-        # gamw,
-        # inputs.vx_rr,
-        # inputs.vr_rr,
-        # sigr,
-        # debug=true
-    # )
 
     # - get the induced velocities at the rotor plane - #
     vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
@@ -92,8 +80,6 @@ function update_rotor_states!(states, inputs)
     Wm_wake = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)
 
     # - Update Gamr - #
-    # println("Gamr before: ", Gamr[10].value)
-    # println("sigr before: ", sigr[10].value)
     calculate_gamma_sigma!(
         Gamr,
         sigr,
@@ -103,8 +89,6 @@ function update_rotor_states!(states, inputs)
         Wmag_rotor,
         inputs.freestream,
     )
-    # println("Gamr after: ", Gamr[10].value)
-    # println("sigr after: ", sigr[10].value)
 
     Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements[1].B)
     H_tilde = calculate_enthalpy_jumps(
@@ -112,10 +96,7 @@ function update_rotor_states!(states, inputs)
     )
 
     # - update wake strengths - #
-    # println("gamw before: ", gamw[10].value)
     calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
-    # println("gamw after: ", gamw[10].value)
-
 
     return nothing
 end
@@ -133,7 +114,7 @@ function extract_rotor_states(states, inputs)
     isigr = (igamw[end] + 1):(igamw[end] + nr * nrotor) # rotor source strenght indices
 
     # Extract State variables
-    Gamr = reshape(view(states, iGamr), (nr-1, nrotor)) # rotor circulation strengths
+    Gamr = reshape(view(states, iGamr), (nr - 1, nrotor)) # rotor circulation strengths
     gamw = view(states, igamw) # wake vortex strengths
     sigr = reshape(view(states, isigr), (nr, nrotor)) # rotor source strengths
 

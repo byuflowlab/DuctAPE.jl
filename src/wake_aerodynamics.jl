@@ -36,12 +36,12 @@ function calculate_induced_velocities_on_wakes(
 
     if debug
         # initialize outputs
-        vxb_wake = similar(gamw) .= 0 # axial induced velocity
-        vrb_wake = similar(gamw) .= 0 # radial induced velocity
-        vxr_wake = similar(gamw) .= 0 # axial induced velocity
-        vrr_wake = similar(gamw) .= 0 # radial induced velocity
-        vxw_wake = similar(gamw) .= 0 # axial induced velocity
-        vrw_wake = similar(gamw) .= 0 # radial induced velocity
+        vxb_wake = similar(vx_wake) .= 0 # axial induced velocity
+        vrb_wake = similar(vx_wake) .= 0 # radial induced velocity
+        vxr_wake = similar(vx_wake) .= 0 # axial induced velocity
+        vrr_wake = similar(vx_wake) .= 0 # radial induced velocity
+        vxw_wake = similar(vx_wake) .= 0 # axial induced velocity
+        vrw_wake = similar(vx_wake) .= 0 # radial induced velocity
     end
 
     # add body induced velocities
@@ -220,7 +220,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
 
             # wake strength density taken from rotor to next rotor constant along streamlines
             gw[1] =
-                (K * deltaGamma2[sheetid, rotorid] + 2.0 * deltaH[sheetid, rotorid]) /
+                (K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) /
                 Wm_avg
         end
     end

@@ -121,6 +121,8 @@ function generate_blade_elements(
         Rtip,
         Rhub,
         fliplift,
+        # cl=zeros(TF, length(chords)),
+        # cd=zeros(TF, length(chords)),
     )
 end
 

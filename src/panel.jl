@@ -131,7 +131,7 @@ function generate_panels(
             rtan = nnp1[2] - nn[2] - (n2[2] - n1[2])
             stan = sqrt(xtan^2 + rtan^2)
 
-            lenbar = 0.5 * (influence_length[p1id] + influence_length[pnid - ib])
+            lenbar = 0.5 * (influence_length[p1id-ib+1] + influence_length[pnid - ib])
 
             itcontrolpoint[ib, 1] =
                 0.5 * (n1[1] + nnp1[1]) - itcpshift * lenbar * xtan / stan
