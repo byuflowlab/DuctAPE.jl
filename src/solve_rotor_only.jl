@@ -29,7 +29,7 @@ function solve_rotor_only(states, inputs)
     The zero field contains the "solution" to the non-linear solve.
     The converged() function tells us if the solver converged.
     =#
-res = NLsolve.nlsolve(
+    res = NLsolve.nlsolve(
         rwrap,
         states;
         autodiff=:forward,
@@ -69,15 +69,57 @@ function update_rotor_states!(states, inputs)
         sigr,
     )
 
+    # vx_rotor, vr_rotor, vtheta_rotor, vxb_rotor, vrb_rotor, vxw_rotor, vrw_rotor, vxr_rotor, vrr_rotor = dt.calculate_induced_velocities_on_rotors(
+    #     inputs.blade_elements,
+    #     Gamr,
+    #     inputs.vx_rw,
+    #     inputs.vr_rw,
+    #     gamw,
+    #     inputs.vx_rr,
+    #     inputs.vr_rr,
+    #     sigr;
+    #     debug=true,
+    # )
+
+    # writestuff(vx_rotor, "vx_rotor", "vx_rotor.jl", "")
+    # writestuff(vr_rotor, "vr_rotor", "vr_rotor.jl", "")
+    # writestuff(vtheta_rotor, "vtheta_rotor", "vtheta_rotor.jl", "")
+    # writestuff(vxb_rotor, "vxb_rotor", "vxb_rotor.jl", "")
+    # writestuff(vrb_rotor, "vrb_rotor", "vrb_rotor.jl", "")
+    # writestuff(vxw_rotor, "vxw_rotor", "vxw_rotor.jl", "")
+    # writestuff(vrw_rotor, "vrw_rotor", "vrw_rotor.jl", "")
+    # writestuff(vxr_rotor, "vxr_rotor", "vxr_rotor.jl", "")
+    # writestuff(vrr_rotor, "vrr_rotor", "vrr_rotor.jl", "")
+
     Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
         vx_rotor, vr_rotor, vtheta_rotor, inputs.Vinf, inputs.blade_elements.Omega, rpc
     )
+
+    # writestuff(Wx_rotor, "Wx_rotor", "Wx_rotor.jl", "")
+    # writestuff(Wm_rotor, "Wm_rotor", "Wm_rotor.jl", "")
+    # writestuff(Wmag_rotor, "Wmag_rotor", "Wmag_rotor.jl", "")
+    # writestuff(Wtheta_rotor, "Wtheta_rotor", "Wtheta_rotor.jl", "")
 
     vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
         inputs.vx_ww, inputs.vr_ww, gamw, inputs.vx_wr, inputs.vr_wr, sigr
     )
 
+    # vx_wake, vr_wake, vxb_wake, vrb_wake, vxr_wake, vrr_wake, vxw_wake, vrw_wake = dt.calculate_induced_velocities_on_wakes(
+    #     inputs.vx_ww, inputs.vr_ww, gamw, inputs.vx_wr, inputs.vr_wr, sigr, debug=true
+    # )
+
+    # writestuff(vx_wake, "vx_wake", "vx_wake.jl", "")
+    # writestuff(vr_wake, "vr_wake", "vr_wake.jl", "")
+    # writestuff(vxb_wake, "vxb_wake", "vxb_wake.jl", "")
+    # writestuff(vrb_wake, "vrb_wake", "vrb_wake.jl", "")
+    # writestuff(vxr_wake, "vxr_wake", "vxr_wake.jl", "")
+    # writestuff(vrr_wake, "vrr_wake", "vrr_wake.jl", "")
+    # writestuff(vxw_wake, "vxw_wake", "vxw_wake.jl", "")
+    # writestuff(vrw_wake, "vrw_wake", "vrw_wake.jl", "")
+
     Wm_wake = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)
+
+    # writestuff(Wm_wake, "Wm_wake", "Wm_wake.jl", "")
 
     # - Update Gamr - #
     calculate_gamma_sigma!(
@@ -90,14 +132,22 @@ function update_rotor_states!(states, inputs)
         inputs.freestream,
     )
 
+    # writestuff(Gamr, "Gamr", "Gamr.jl", "")
+    # writestuff(sigr, "sigr", "sigr.jl", "")
+
     Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements[1].B)
     H_tilde = calculate_enthalpy_jumps(
         Gamr, inputs.blade_elements.Omega, inputs.blade_elements.B
     )
 
+    # writestuff(Gamma_tilde, "Gamma_tilde", "Gamma_tilde.jl", "")
+    # writestuff(H_tilde, "H_tilde", "H_tilde.jl", "")
+
     # - update wake strengths - #
     # TODO: update inputs to have wakeK's
     calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
+
+    # writestuff(gamw, "gamw", "gamw.jl", "")
 
     return nothing
 end
