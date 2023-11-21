@@ -1,3 +1,4 @@
+println("\nPANEL INITIALIZATION TESTS")
 @testset "Panel Geometry" begin
 
     #=

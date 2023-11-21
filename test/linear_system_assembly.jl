@@ -1,3 +1,4 @@
+println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 @testset "Linear System Assembly" begin
 
     # define coordinates

@@ -15,14 +15,13 @@ println("Running Tests...")
 
 # - Active Development - #
 # include("derivative_checks.jl")
-include("afcorrections.jl")
 
 # - Should be Working - #
+include("afcorrections.jl")
 include("influence_coefficients.jl")
 include("linear_system_assembly.jl")
 include("new_panel_tests.jl")
-include("induced_velocities.jl") #TODO: need to add linear source stuff
-
+include("induced_velocities.jl")
 
 # - add back in after body is validated and need to get rotor/wake working again.
 # include("body_geometry_tests.jl")

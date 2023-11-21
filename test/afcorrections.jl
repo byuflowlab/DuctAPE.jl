@@ -1,10 +1,11 @@
+println("\nAIRFOIL CORRECTION TESTS")
 @testset "Stall Cutoffs" begin
     # - test that lift is monotonically increasing - #
     # load nominal data
     include("data/naca_4412_raw.jl")
 
     # apply stall cutoffs
-    clext, cdext = stalllimiters(alpha, cl, cd; cutoff_slope=0.1, N=20, blend_hardness=50)
+    clext, cdext = dt.stalllimiters(alpha, cl, cd; cutoff_slope=0.1, N=20, blend_hardness=50)
 
     @test ismonotonic(clext, 1)
 end
@@ -76,7 +77,7 @@ end
 
     # - Check that lift is being limited after critical mach - #
     @test all(
-        dt.transonicliftlimitersmooth([-1.0, 1.0], 0.9, 0.1, 1.0, -1.0, 2 * pi) .< [1.0]
+        dt.transonicliftlimitersmooth!([-1.0, 1.0], 0.9, 0.1, 1.0, -1.0, 2 * pi) .< [1.0]
     )
-    @test all(dt.transonicliftlimitersmooth([-1.0], 0.9, 0.1, 1.0, -1.0, 2 * pi) .> [-1.0])
+    @test all(dt.transonicliftlimitersmooth!([-1.0], 0.9, 0.1, 1.0, -1.0, 2 * pi) .> [-1.0])
 end
