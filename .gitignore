@@ -7,14 +7,14 @@
 *.key
 *.idraw
 /*.pdf
-examples/*.pdf
-examples/rotor_only/*.pdf
-examples/dfdc_comp/*.pdf
-examples/debug_coupling/*.pdf
-examples/dfdc_partial/outputs/*.pdf
-examples/dfdc_partial/outputs/*.png
-examples/dfdc_partial/outputs/*.vtk
-examples/*.png
+dev_debug_archive/*.pdf
+dev_debug_archive/rotor_only/*.pdf
+dev_debug_archive/dfdc_comp/*.pdf
+dev_debug_archive/debug_coupling/*.pdf
+dev_debug_archive/dfdc_partial/outputs/*.pdf
+dev_debug_archive/dfdc_partial/outputs/*.png
+dev_debug_archive/dfdc_partial/outputs/*.vtk
+dev_debug_archive/*.png
 test/manual_tests/*/*.pdf
 test/manual_tests/*/*.png
 test/figures/*.gif
@@ -32,5 +32,5 @@ _*
 Manifest.toml
 
 # dfdc
-/examples/*/fort*
+/dev_debug_archive/*/fort*
 

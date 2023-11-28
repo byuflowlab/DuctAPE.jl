@@ -264,7 +264,7 @@ function test_gen_dfdc_case()
         rotor_data,
         hub_coordinates,
         duct_coordinates;
-        savepath="examples/dfdc_testing/",
+        savepath="dev_debug_archive/dfdc_testing/",
     )
 
     return nothing
