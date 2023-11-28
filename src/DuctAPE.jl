@@ -23,14 +23,14 @@ using ImplicitAD
 #---------------------------------#
 
 ##### ----- UTILITIES ----- #####
-include("utilites/types.jl")
+include("utilities/types.jl")
 
 # general utility functions
-include("utilites/utils.jl")
+include("utilities/utils.jl")
 
 # Cascade Functions
-include("utilites/cascade.jl")
-include("utilites/airfoil_corrections.jl")
+include("utilities/cascade.jl")
+include("utilities/airfoil_corrections.jl")
 
 ##### ----- PRECOMPUTATION ----- #####
 # Pre-solve initializations
