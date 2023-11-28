@@ -1,85 +1,95 @@
 module DuctAPE
 
-## -- DEPENDENCIES -- ##
+#---------------------------------#
+#          DEPENDENCIES           #
+#---------------------------------#
 
-# using FLOWFoil
-# const ff = FLOWFoil #rename FLOWFoil for convenience
-
-using FLOWMath
+using FLOWMath # used for various items, mostly interpolation
 const fm = FLOWMath #rename FLOWMath for convenience
 
-using CCBlade
+using CCBlade # used for airfoil types
 const ccb = CCBlade #rename ccblade for convenience
+
+using SpecialFunctions # required for elliptic integrals
+using QuadGK # required for integration of linear panels
+
+using LinearAlgebra: factorize, mul!, lu!, ldiv!, issuccess, NoPivot # used in linear system assembly and solve
 
 using NLsolve
 using ImplicitAD
 
-using SpecialFunctions
+#---------------------------------#
+#            INCLUDES             #
+#---------------------------------#
 
-using LinearAlgebra: factorize, mul!, lu!, ldiv!, issuccess, NoPivot
+##### ----- UTILITIES ----- #####
+include("utilites/types.jl")
 
-using QuadGK
+# general utility functions
+include("utilites/utils.jl")
 
-## -- INCLUDES -- ##
+# Cascade Functions
+include("utilites/cascade.jl")
+include("utilites/airfoil_corrections.jl")
 
-include("types.jl")
+##### ----- PRECOMPUTATION ----- #####
+# Pre-solve initializations
+include("precomputation/initialize.jl")
 
-# Utility Functions
-include("utils.jl")
+# Body Geometry Functions
+include("precomputation/body_geometry.jl")
+include("precomputation/panel.jl")
+
+# Rotor Geometry Functions
+include("precomputation/rotor_geometry.jl")
+
+# Wake Geometry Functions
+include("precomputation/wake_geometry.jl")
+
+# Aero Influence Matrices
+include("precomputation/integrals.jl")
+include("precomputation/velocities.jl")
+include("precomputation/body_aic.jl")
+include("precomputation/induced_velocity_matrices.jl")
+
+##### ----- SOLVER ----- #####
+
+include("solve/solve.jl")
+
+# Rotor Aerodynamic Functions
+include("solve/rotor_aerodynamics.jl")
+
+# Wake Aerodynamic Functions
+include("solve/wake_aerodynamics.jl")
+
+# Body Aerodynamic Functions
+include("solve/body_aerodynamics.jl")
+
+##### ----- POST-PROCESSING ----- #####
+
+include("postprocess/post_process.jl")
+
+##### ----- SPECIALTY ----- #####
 
 # Airfoil Parameterizations
 include("airfoil_parameters/naca_65series.jl")
 
-# Cascade Functions
-include("cascade.jl")
+# 1D Models
+include("preliminary_design/1DModel_A.jl")
+include("preliminary_design/1DModel_B.jl")
 
-# Body Geometry Functions
-include("body_geometry.jl")
-include("panel.jl")
-
-# Rotor Geometry Functions
-include("rotor_geometry.jl")
-
-# Wake Geometry Functions
-include("wake_geometry.jl")
-
-# Additional Meshing Functions
-# include("mesh.jl")
-
+### TODO Decide what below should be removed and when
 # Additional Influence Coefficient Functions
 # include("coefficient_matrix.jl") #TODO: delete or move this?
-include("integrals.jl")
-include("velocities.jl")
-include("influence_coefficient_matrices.jl")
-include("induced_velocity_matrices.jl")
-
-# Rotor Aerodynamic Functions
-include("rotor_aerodynamics.jl")
-include("airfoil_corrections.jl")
-
-# Wake Aerodynamic Functions
-include("wake_aerodynamics.jl")
-
-# Body Aerodynamic Functions
-include("body_aerodynamics.jl")
-
 # Kutta Condition Residual
-include("pressure_residual.jl")
+# include("pressure_residual.jl")
 
-# Pre-solve initializations
-include("initialize.jl")
+# # -- ROTOR ONLY -- ##
+# include("solve_rotor_only.jl")
+# include("initialize_rotor_only.jl")
+# include("post_process_rotor.jl")
 
-# Solver
-include("solve.jl")
+# # -- Debugging -- ##
+# include("initialize_manual.jl")
 
-# Post Process
-include("post_process.jl")
-
-# -- ROTOR ONLY -- ##
-include("solve_rotor_only.jl")
-include("initialize_rotor_only.jl")
-include("post_process_rotor.jl")
-
-# -- Debugging -- ##
-include("initialize_manual.jl")
 end
