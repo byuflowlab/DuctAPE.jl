@@ -30,7 +30,7 @@ x, r = parse2d(file)
 # plot
 plot!(p2, x .* i2m, r .* i2m; aspectratio=1, label="casing")
 
-# - DuctTAPE needs these reversed - #
+# - DuctAPE needs these reversed - #
 ductin = reverse([x r]; dims=1) .* i2m
 
 # put the duct coordinates together

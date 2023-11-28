@@ -6,8 +6,8 @@ Note that currently (as of April 2023) this is best done with FLOWFoil.jl, which
 Authors: Judd Mehr,
 
 =#
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 include("../plots_default.jl")
 

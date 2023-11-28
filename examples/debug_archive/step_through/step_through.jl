@@ -9,8 +9,8 @@ end
 
 include(project_dir * "/plots_default.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 include(project_dir * "/examples/duct_only/run_duct.jl")
 
 # CCBlade used for it's airfoils function objects here.

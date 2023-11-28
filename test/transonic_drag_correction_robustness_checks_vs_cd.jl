@@ -8,9 +8,9 @@ if project_dir == ""
     project_dir = "."
 end
 
-# - load DuctTAPE - #
-using DuctTAPE
-const dt = DuctTAPE
+# - load DuctAPE - #
+using DuctAPE
+const dt = DuctAPE
 using Printf
 
 # - load plotting defaults - #

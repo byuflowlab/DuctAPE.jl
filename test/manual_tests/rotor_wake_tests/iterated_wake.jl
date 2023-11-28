@@ -5,8 +5,8 @@ Look at rotor-wake model in an iterated scheme rather than a prescribed circulat
 =#
 include("../../../plots_default.jl")
 using CCBlade
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWFoil
 const ff = FLOWFoil
 
@@ -71,7 +71,7 @@ ccbGamma = get_gamma(out, chord)
 
 ######################################################################
 #                                                                    #
-#                        DuctTAPE Version                            #
+#                        DuctAPE Version                            #
 #                                                                    #
 ######################################################################
 
@@ -390,11 +390,11 @@ savefig(pvmwake, "test/manual_tests/rotor_wake_tests/vm_wake_on_rotor_iteration.
 
 ## -- Plots -- ##
 plot(ccbGamma, r; xlabel=L"\Gamma", ylabel="r", label="CCBlade")
-plot!(Gamma, r; label="DuctTAPE")
+plot!(Gamma, r; label="DuctAPE")
 savefig("test/manual_tests/rotor_wake_tests/iterwake_circulation.pdf")
 
 plot(out.u, r; xlabel="induced axial velocity", ylabel="r", label="CCBlade")
-plot!((Vm .- Vinf), r; label="DuctTAPE")
+plot!((Vm .- Vinf), r; label="DuctAPE")
 savefig("test/manual_tests/rotor_wake_tests/iterwake_Vx.pdf")
 
 # # f = open("test/manual_tests/rotor_wake_tests/save_gamma_ccb_init.jl", "w+")

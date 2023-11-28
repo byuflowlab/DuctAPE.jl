@@ -10,9 +10,9 @@ pyplot()
 # - use CCBlade for comparison - #
 using CCBlade
 
-# - Rename DuctTAPE for convenience - #
-using DuctTAPE
-const dt = DuctTAPE
+# - Rename DuctAPE for convenience - #
+using DuctAPE
+const dt = DuctAPE
 
 # - Rename FLOWFoil for convenience - #
 using FLOWFoil

@@ -7,8 +7,8 @@ datapath = project_dir * "/examples/dfdc_testing/"
 
 include(project_dir * "/plots_default.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 using FLOWMath
 const fm = FLOWMath

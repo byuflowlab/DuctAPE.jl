@@ -18,8 +18,8 @@ savepath = project_dir * "/validation/NACA_cascade/figures/"
 dispath =
     project_dir * "/../../Writing/dissertation/src/ductsolvercontents/ductsolverfigures/"
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWMath
 using Xfoil
 

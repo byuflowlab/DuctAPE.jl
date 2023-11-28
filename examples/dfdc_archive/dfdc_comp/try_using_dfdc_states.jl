@@ -10,8 +10,8 @@ savepath = project_dir * "/examples/dfdc_comp/"
 include(savepath * "gather_dfdc_data.jl")
 include(savepath * "run_dfdc_geom.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 dfdc = get_dfdc()
 

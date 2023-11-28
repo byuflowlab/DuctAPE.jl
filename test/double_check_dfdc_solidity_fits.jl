@@ -5,9 +5,9 @@ if project_dir == ""
     project_dir = "."
 end
 
-# - load DuctTAPE - #
-using DuctTAPE
-const dt = DuctTAPE
+# - load DuctAPE - #
+using DuctAPE
+const dt = DuctAPE
 
 # - load plotting defaults - #
 include(project_dir * "/visualize/plots_default.jl")

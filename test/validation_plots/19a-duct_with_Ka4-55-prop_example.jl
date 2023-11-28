@@ -2,12 +2,12 @@
 
 Validation using MARIN experimental data with a 19a Duct and a Ka 4-55 Propeller based on plots from Lewis and Ryan & Glover.
 
-This script also serves as an example of how to run the DuctTAPE code for ducted propeller analysis.
+This script also serves as an example of how to run the DuctAPE code for ducted propeller analysis.
 
 =#
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 include("../../plots_default.jl")
 

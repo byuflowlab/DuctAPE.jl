@@ -1,13 +1,13 @@
 #=
 
-Example of running duct/hub alone (without rotor) in DuctTAPE.
+Example of running duct/hub alone (without rotor) in DuctAPE.
 Note that currently (as of April 2023) this is best done with FLOWFoil.jl, which specializes in 2D panel methods.
 
 Authors: Judd Mehr,
 
 =#
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWFoil
 const ff = FLOWFoil
 
@@ -15,7 +15,7 @@ include("../plots_default.jl")
 
 ######################################################################
 #                                                                    #
-#                        DuctTAPE Analysis                           #
+#                        DuctAPE Analysis                           #
 #                                                                    #
 ######################################################################
 #---------------------------------#
@@ -95,7 +95,7 @@ vs_duct, cp_duct = dt.states_to_outputs_body_only(
 
 # - Plot Surface Pressure Coefficients - #
 plot(; xlabel="x/c", ylabel=L"c_p", yflip=true)
-plot!(body_panels[1].panel_center[:, 1], cp_duct; label="DuctTAPE")
+plot!(body_panels[1].panel_center[:, 1], cp_duct; label="DuctAPE")
 # plot!(pressurexupper, pressureupper; seriestype=:scatter, label="Experimental Outer")
 # plot!(pressurexlower, pressurelower; seriestype=:scatter, label="Experimental Inner")
 

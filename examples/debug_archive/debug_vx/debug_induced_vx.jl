@@ -7,8 +7,8 @@ if project_dir == ""
     project_dir = "."
 end
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # CCBlade used for it's airfoils function objects here.
 using CCBlade

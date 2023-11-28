@@ -11,8 +11,8 @@ include(project_dir * "/visualize/plots_default_new.jl")
 
 include(datapath * "run_body_only.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 using FLOWMath
 const fm = FLOWMath

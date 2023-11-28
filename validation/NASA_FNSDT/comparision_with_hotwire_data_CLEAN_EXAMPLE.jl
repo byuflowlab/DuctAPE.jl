@@ -1,17 +1,17 @@
 ######################################################################
 #                                                                    #
-#                        How to run DuctTAPE                         #
+#                        How to run DuctAPE                         #
 #                                                                    #
 ######################################################################
 # - Load Package - #
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # - Read in Parameters - #
 # most of the setup happens here.
 include("ducttape_parameters.jl")
 
-# - Run DuctTAPE - #
+# - Run DuctAPE - #
 out, converged_strengths, inputs, initial_strengths, convergeflag = @time dt.analyze_propulsor(
     duct_coordinates, # [x,r] duct coordinates, clockwise starting at TE
     hub_coordinates, # [x,r] center body coordinates, clockwise starting at LE
@@ -146,7 +146,7 @@ plot!(
     label="Experimental",
 )
 
-# DuctTAPE axial velocity
+# DuctAPE axial velocity
 plot!(
     px,
     dt_vx ./ inputs.reference_parameters.Vref,
@@ -154,7 +154,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE",
+    label="DuctAPE",
 )
 
 # - Radial Velocity Comparison - #
@@ -174,7 +174,7 @@ plot!(
     label="Experimental",
 )
 
-# DuctTAPE radial velocity
+# DuctAPE radial velocity
 plot!(
     pr,
     dt_vr .* inputs.reference_parameters.Vref,
@@ -182,7 +182,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE",
+    label="DuctAPE",
 )
 
 # - Tangential Velocity Comparison - #
@@ -202,7 +202,7 @@ plot!(
     label="Experimental",
 )
 
-# DuctTAPE tangential velocity
+# DuctAPE tangential velocity
 plot!(
     pt,
     dt_vtheta .* inputs.reference_parameters.Vref,
@@ -210,7 +210,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE",
+    label="DuctAPE",
 )
 
 savefig(px, "figures/axial_velocity_comparison.pdf")

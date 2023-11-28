@@ -8,8 +8,8 @@ datapath = project_dir * "/examples/isolated_archive/rotor_only/"
 #---------------------------------#
 #             Includes            #
 #---------------------------------#
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
@@ -259,7 +259,7 @@ for i in 1:nJ
         dtout.chord;
         xlabel="r",
         ylabel="chords",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(r * Rtip, chords; label="CCBlade")
@@ -270,7 +270,7 @@ for i in 1:nJ
         dtout.twist * 180 / pi;
         ylabel="twists (deg)",
         xlabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(r * Rtip, twists * 180 / pi; label="CCBlade")
@@ -282,7 +282,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"v_x",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.u, r; label="CCBlade")
@@ -294,7 +294,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"v_\theta",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.v, r; label="CCBlade")
@@ -306,7 +306,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"W_\theta",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.v .- Omega * r * Rtip, r; label="CCBlade")
@@ -318,7 +318,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"W_m",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.u .+ Vinf_sweep, r; label="CCBlade")
@@ -330,7 +330,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"\phi~(deg)",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.phi * 180 / pi, r; label="CCBlade")
@@ -342,7 +342,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"\alpha~(deg)",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.alpha * 180 / pi, r; label="CCBlade")
@@ -350,7 +350,7 @@ for i in 1:nJ
 
     # inflow magnitude
     plot(
-        dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctTAPE", title="J = $(J[i])"
+        dtout.W, rbe / Rtip; xlabel=L"W", ylabel="r", label="DuctAPE", title="J = $(J[i])"
     )
     plot!(out.W, r; label="CCBlade")
     savefig("examples/isolated_archive/rotor_only/W_J$(J[i]).pdf")
@@ -361,7 +361,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"c_\ell",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(dtout.clin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
@@ -375,7 +375,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"c_d",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(dtout.cdin, rbe / Rtip; label="inner", linestyle=:dash, color=mycolors[1])
@@ -389,7 +389,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"c_n",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.cn, r; label="CCBlade")
@@ -401,7 +401,7 @@ for i in 1:nJ
         rbe / Rtip;
         xlabel=L"c_t",
         ylabel="r",
-        label="DuctTAPE",
+        label="DuctAPE",
         title="J = $(J[i])",
     )
     plot!(out.ct, r; label="CCBlade")
@@ -425,8 +425,8 @@ end
 #              Plots              #
 #---------------------------------#
 
-plot(J, CT; xlabel=L"J", label=L"C_T~DuctTAPE", color=mycolors[1])
-plot!(J, CQ * 2 * pi; label=L"C_P~DuctTAPE", color=mycolors[2])
+plot(J, CT; xlabel=L"J", label=L"C_T~DuctAPE", color=mycolors[1])
+plot!(J, CQ * 2 * pi; label=L"C_P~DuctAPE", color=mycolors[2])
 plot!(J, CTccb; label=L"C_T~CCBlade", color=mycolors[1], linestyle=:dash)
 plot!(J, CQccb * 2 * pi; label=L"C_P~CCBlade", color=mycolors[2], linestyle=:dash)
 plot!(Jexp, CTexp; seriestype=:scatter, label="C_T~experimental", color=mycolors[1])
@@ -434,7 +434,7 @@ plot!(Jexp, CPexp; seriestype=:scatter, label="C_P~experimental", color=mycolors
 savefig("examples/isolated_archive/rotor_only/rotor-only-thrust-and-power-validation.pdf")
 # savefig("examples/isolated_archive/rotor_only/rotor-only-thrust-and-power-validation.png")
 
-plot(J, eff; xlabel=L"J", ylabel=L"\eta", label="DuctTAPE")
+plot(J, eff; xlabel=L"J", ylabel=L"\eta", label="DuctAPE")
 plot!(J, effccb; label="CCBlade")
 plot!(Jexp, etaexp; seriestype=:scatter, label="experimental")
 savefig("examples/isolated_archive/rotor_only/rotor-only-efficiency-validation.pdf")

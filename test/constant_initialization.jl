@@ -45,7 +45,7 @@
 
     paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
 
-    constants = DuctTAPE.precomputed_inputs(
+    constants = DuctAPE.precomputed_inputs(
         duct_coordinates,
         hub_coordinates,
         paneling_constants,

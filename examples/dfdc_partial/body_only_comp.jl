@@ -3,8 +3,8 @@ if project_dir == ""
     project_dir = "."
 end
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 datapath = project_dir * "/examples/dfdc_partial/"
 savepath = datapath
@@ -61,7 +61,7 @@ dfdc_hub_coordinates = reverse([hubx hubr]; dims=1)
 dfdc_panels = dt.generate_panels([dfdc_duct_coordinates, dfdc_hub_coordinates])
 
 #---------------------------------#
-#             DuctTAPE            #
+#             DuctAPE            #
 #---------------------------------#
 # include(datapath * "lewis_refined_duct.jl")
 # include(datapath * "lewis_refined_hub.jl")
@@ -156,8 +156,8 @@ bodycp = 1.0 .- (Vs / Vinf) .^ 2
 # - Plotting - #
 xs = panels.controlpoint[:, 1]
 ncut = 2
-plot!(pv, xs, Vs; label="DuctTAPE")
-plot!(pc, xs, bodycp; label="DuctTAPE")
+plot!(pv, xs, Vs; label="DuctAPE")
+plot!(pc, xs, bodycp; label="DuctAPE")
 
 #---------------------------------#
 #             Exp data            #

@@ -9,8 +9,8 @@ end
 
 include(project_dir * "/plots_default.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
@@ -204,9 +204,9 @@ savefig(project_dir * "/examples/rotor_only/wakeshapegeom.pdf")
 pc = plot(; xlabel="Circulation", ylabel="r/Rtip")
 # plot ccblade solution
 plot!(pc, ccbouts.circ, r; label="ccblade")
-# plot ducttape solution
-plot!(pc, Gamr, inputs.rotor_panel_centers ./ Rtip; label="ducttape")
-plot!(pc, nominal_Gamr, default_inputs.rotor_panel_centers ./ Rtip; label="ducttape straight wake")
+# plot DuctAPE solution
+plot!(pc, Gamr, inputs.rotor_panel_centers ./ Rtip; label="DuctAPE")
+plot!(pc, nominal_Gamr, default_inputs.rotor_panel_centers ./ Rtip; label="DuctAPE straight wake")
 
 savefig(project_dir * "/examples/rotor_only/wakeshapecirc.pdf")
 

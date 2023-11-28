@@ -1,7 +1,7 @@
 using FLOWFoil
 const ff = FLOWFoil
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 xcoords = [1.0; 0.0; -1.0; 0.0; 1.0]
 rcoords = [1.5; 0.5; 1.5; 2.5; 1.5]

@@ -28,7 +28,7 @@
     npanels = [2; 2; 2]
 
     # discretize the wake
-    xwake, rotor_indices = DuctTAPE.discretize_wake(
+    xwake, rotor_indices = DuctAPE.discretize_wake(
         duct_coordinates, hub_coordinates, xrotors, wake_length, nwake, npanels
     )
 
@@ -49,7 +49,7 @@
     nduct_outer = 2
 
     # update the body paneling to match the wake discretization
-    new_duct_xr, new_hub_xr = DuctTAPE.update_body_geometry(
+    new_duct_xr, new_hub_xr = DuctAPE.update_body_geometry(
         duct_coordinates,
         hub_coordinates,
         xwake,
@@ -67,7 +67,7 @@
     @test all(new_hub_xr[:, 2] .== [0.0; 0.5; 0.375; 0.25; 0.125; 0.0])
 
     # Move duct geometry into position and get rotor radii
-    trans_duct_xr, Rtips, Rhubs = DuctTAPE.place_duct(
+    trans_duct_xr, Rtips, Rhubs = DuctAPE.place_duct(
         new_duct_xr, new_hub_xr, Rtip, xrotors
     )
 
@@ -96,7 +96,7 @@
     rwake = range(Rhubs[1], Rtips[1], nwake_sheets)
 
     # initialized wake grid
-    xgrid, rgrid = DuctTAPE.initialize_wake_grid(trans_duct_xr, new_hub_xr, xwake, rwake)
+    xgrid, rgrid = DuctAPE.initialize_wake_grid(trans_duct_xr, new_hub_xr, xwake, rwake)
 
     #work out conservation of mass stuff by hand
     # full areas
@@ -125,7 +125,7 @@
     xgridtrivial = repeat(xs; inner=(1, 3))
     rs = [0.0; 0.5; 1.0]
     rgridtrivial = repeat(rs'; inner=(3, 1))
-    DuctTAPE.relax_grid!(
+    DuctAPE.relax_grid!(
         xgridtrivial, rgridtrivial; max_iterations=100, tol=1e-9, verbose=false
     )
 
@@ -156,7 +156,7 @@
 
     # generate rotor source panel objects
     rotor_source_panels = [
-        DuctTAPE.generate_rotor_panels(xrotors[i], rgrid[rotor_indices[i], :]) for
+        DuctAPE.generate_rotor_panels(xrotors[i], rgrid[rotor_indices[i], :]) for
         i in 1:length(xrotors)
     ]
 
@@ -185,7 +185,7 @@
 
     # blade elements for rotors
     blade_elements = [
-        DuctTAPE.generate_blade_elements(
+        DuctAPE.generate_blade_elements(
             rotor_parameters[i].B,
             rotor_parameters[i].Omega,
             rotor_parameters[i].xrotor,

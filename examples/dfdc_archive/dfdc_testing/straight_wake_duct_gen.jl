@@ -59,7 +59,7 @@ function gen_straightwake_case(;savepath="examples/dfdc_testing/")
         savepath=savepath,
     )
 
-    # - Generate Matching DuctTAPE Parameters - #
+    # - Generate Matching DuctAPE Parameters - #
     write_ducttape_params(
         filename * ".jl",
         op_data,

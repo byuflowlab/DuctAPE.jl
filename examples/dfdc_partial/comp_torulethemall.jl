@@ -6,8 +6,8 @@ if project_dir == ""
     project_dir = "."
 end
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWMath
 using Statistics
 
@@ -333,8 +333,8 @@ cp = dt.steady_cp(vs, Vinf, Vinf)
 
 ## -- Plot -- ##
 xs = panels.controlpoint[:, 1]
-plot!(pv, xs, vs; label="DuctTAPE")
-plot!(pc, xs, cp; label="DuctTAPE")
+plot!(pv, xs, vs; label="DuctAPE")
+plot!(pc, xs, cp; label="DuctAPE")
 
 savefig(pv, savepath * gc * "velocity-comp.pdf")
 savefig(pc, savepath * gc * "pressure-comp.pdf")

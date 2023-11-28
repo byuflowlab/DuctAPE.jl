@@ -11,9 +11,9 @@ end
 # create save path
 savepath = project_dir * "/examples/body_only_doublet/"
 
-# - load DuctTAPE - #
-using DuctTAPE
-const dt = DuctTAPE
+# - load DuctAPE - #
+using DuctAPE
+const dt = DuctAPE
 
 # - load plotting defaults - #
 include(project_dir * "/visualize/visualize_geometry.jl")
@@ -161,7 +161,7 @@ xs = panels.controlpoint[:, 1]
 # plot!(xs,cp_nokutta,label="no Kutta")
 # plot!(xs,cp_nogradmu,label=L"no~ \nabla\mu")
 ncut = 2
-plot!(pp, xs[ncut:(40 - ncut)], cp[ncut:(40 - ncut)]; label="DuctTAPE")
+plot!(pp, xs[ncut:(40 - ncut)], cp[ncut:(40 - ncut)]; label="DuctAPE")
 
 savefig(savepath * "body-pressure-comp.pdf")
 
@@ -176,7 +176,7 @@ plot!(
     label="experimental",
 )
 xs = panels.controlpoint[:, 1]
-plot!(pv, xs[41:end], dt.norm.(eachrow(Vtot[41:end, :])) ./ Vinf; label="DuctTAPE")
+plot!(pv, xs[41:end], dt.norm.(eachrow(Vtot[41:end, :])) ./ Vinf; label="DuctAPE")
 
 savefig(pv, savepath * "body-vel-comp.pdf")
 

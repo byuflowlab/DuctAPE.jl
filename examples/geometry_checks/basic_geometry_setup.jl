@@ -1,5 +1,5 @@
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWMath
 const fm = FLOWMath
 include("../plots_default.jl")

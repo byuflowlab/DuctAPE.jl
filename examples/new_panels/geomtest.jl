@@ -5,8 +5,8 @@ end
 
 savedir = project_dir*"/examples/new_panels/"
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 include(project_dir*"/visualize/plots_default_new.jl")
 
 # define coordinates

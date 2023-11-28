@@ -3,8 +3,8 @@ if project_dir == ""
     project_dir = "."
 end
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 datapath = project_dir * "/examples/dfdc_partial/"
 savepath = datapath * "outputs/"

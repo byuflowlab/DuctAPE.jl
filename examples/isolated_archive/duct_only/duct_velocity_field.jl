@@ -6,8 +6,8 @@ end
 
 include(project_dir * "/plots_default.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 using Statistics
 

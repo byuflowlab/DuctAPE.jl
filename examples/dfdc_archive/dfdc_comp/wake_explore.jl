@@ -8,8 +8,8 @@ savepath = project_dir * "/examples/dfdc_comp/"
 
 include(project_dir * "/plots_default.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 include(project_dir * "/examples/dfdc_comp/DFDC_WAKE_STRENGTHS.jl")
 # column 1: control point index (where QC is)

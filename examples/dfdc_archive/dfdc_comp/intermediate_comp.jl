@@ -14,8 +14,8 @@ savepath = project_dir * "/examples/dfdc_comp/"
 
 include(project_dir * "/plots_default.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
@@ -40,8 +40,8 @@ Wm = sqrt.(dfdcvx .^ 2 .+ dfdcvr .^ 2)
 phi, alpha = dt.calculate_inflow_angles(Wm, Wtheta, dfdcbeta * pi / 180.0)
 
 plot(; xlabel="Angles", ylabel="r")
-plot!(phi * 180.0 / pi, dfdcr; label="inflow: DuctTAPE functions")
-plot!(alpha * 180.0 / pi, dfdcr; label="aoa: DuctTAPE functions")
+plot!(phi * 180.0 / pi, dfdcr; label="inflow: DuctAPE functions")
+plot!(alpha * 180.0 / pi, dfdcr; label="aoa: DuctAPE functions")
 plot!(dfdcphi, dfdcr; linewidth=2, linestyle=:dash, label="inflow: DFDC")
 plot!(dfdcalpha, dfdcr; linewidth=2, linestyle=:dash, label="aoa: DFDC")
 savefig(project_dir * "/examples/dfdc_comp/inflow-io-comp.pdf")
@@ -97,17 +97,17 @@ local_solidity = dt.get_local_solidity(B, clcdcheck[:, 1], clcdcheck[:, 2])
 local_stagger = dt.get_stagger(dfdcbeta * pi / 180.0)
 
 plot(; xlabel="Reynolds", ylabel="r")
-plot!(local_reynolds, clcdcheck[:, 2]; label="DuctTAPE Functions")
+plot!(local_reynolds, clcdcheck[:, 2]; label="DuctAPE Functions")
 plot!(clcdcheck[:, 5], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "re-io-comp.pdf")
 
 plot(; xlabel="Local Solidity", ylabel="r")
-plot!(local_solidity, clcdcheck[:, 2]; label="DuctTAPE Functions")
+plot!(local_solidity, clcdcheck[:, 2]; label="DuctAPE Functions")
 plot!(clcdcheck[:, 6], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "solidity-io-comp.pdf")
 
 plot(; xlabel="Local Stagger", ylabel="r")
-plot!(local_stagger, clcdcheck[:, 2]; label="DuctTAPE Functions")
+plot!(local_stagger, clcdcheck[:, 2]; label="DuctAPE Functions")
 plot!(clcdcheck[:, 7], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "stagger-io-comp.pdf")
 
@@ -132,12 +132,12 @@ for i in 1:length(dfdcr)
 end
 
 plot(; xlabel=L"c_\ell", ylabel="r")
-plot!(cl, dfdcr; label="DuctTAPE functions")
+plot!(cl, dfdcr; label="DuctAPE functions")
 plot!(clcdcheck[:, 8], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "cl-io-comp.pdf")
 
 plot(; xlabel=L"c_d", ylabel="r")
-plot!(cd, clcdcheck[:, 2]; label="DuctTAPE functions")
+plot!(cd, clcdcheck[:, 2]; label="DuctAPE functions")
 plot!(clcdcheck[:, 9], clcdcheck[:, 2]; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "cd-io-comp.pdf")
 
@@ -192,15 +192,15 @@ end
 dcsigr = dblchk[:, 4]
 
 plot(; xlabel="rotor circulation", ylabel="r")
-plot!(Gamr, dfdcr; label="DuctTAPE functions")
+plot!(Gamr, dfdcr; label="DuctAPE functions")
 plot!(dfdcGamr, dfdcr; label="DFDC")
 savefig(savepath * "rotorcirc-io-comp.pdf")
 
 plot(; xlabel="rotor source strengths", ylabel="r")
-plot!(sigr, dfdcr; label="DuctTAPE functions")
+plot!(sigr, dfdcr; label="DuctAPE functions")
 # plot!(dfdcsigma, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
 plot!(dcsigr, dfdcr; label="DFDC from prints")
-plot!(dcsigrcalc, dfdcr; label="ducttape double check from prints")
+plot!(dcsigrcalc, dfdcr; label="DuctAPE double check from prints")
 savefig(savepath * "rotorsigma-io-comp.pdf")
 
 #---------------------------------#
@@ -216,12 +216,12 @@ dS = dt.calculate_entropy_jumps(dfdcsigma, Wm)
 dH = dt.calculate_enthalpy_jumps(dfdccirc, Omega, B)
 
 plot(; xlabel="entropy jump across disk", ylabel="r")
-plot!(dS, dfdcr; label="DuctTAPE functions")
+plot!(dS, dfdcr; label="DuctAPE functions")
 plot!(deltaS, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "entropyjump-io-comp.pdf")
 
 plot(; xlabel="enthalpy jump across disk", ylabel="r")
-plot!(dH, dfdcr; label="DuctTAPE functions")
+plot!(dH, dfdcr; label="DuctAPE functions")
 plot!(deltaH, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
 savefig(savepath * "enthalpyjump-io-comp.pdf")
 

@@ -1,4 +1,4 @@
-module DuctTAPE
+module DuctAPE
 
 ## -- DEPENDENCIES -- ##
 

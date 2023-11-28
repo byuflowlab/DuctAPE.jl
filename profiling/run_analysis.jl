@@ -7,8 +7,8 @@ end
 datapath = project_dir * "/profiling/"
 savepath = project_dir * "/profiling/outputs/"
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # - Include Inputs file - #
 include(datapath * "inputs_file.jl")

@@ -1,5 +1,5 @@
 #=
-This is a file containing all the parameters that get input into DuctTAPE.
+This is a file containing all the parameters that get input into DuctAPE.
 It doesn't need to be its own file, but sometimes the parameters can get quite lengthy, especially if you include the duct and hub coordinates.
 =#
 
@@ -8,7 +8,7 @@ It doesn't need to be its own file, but sometimes the parameters can get quite l
 #---------------------------------#
 #= I'll first include the duct and hub coordinates, which in this case I have stashed down a few levels where they were saved from parsing the NASA geometry.
 TODO: need to figure out the hub trailing edge, may need to modify (the readme indicates that this shouldn't be a problem) and keep a different file closer to this one.
-Note that the geometry for DuctTAPE is required to be clockwise, such that the duct geometry starts at the trailing edge, proceeds along the inner surface, then around the leading edge, along the outer surface, and ends back at the trailing edge.
+Note that the geometry for DuctAPE is required to be clockwise, such that the duct geometry starts at the trailing edge, proceeds along the inner surface, then around the leading edge, along the outer surface, and ends back at the trailing edge.
 Similarly, the centerbody geometry starts at the leading edge and proceeds to the trailing edge
 =#
 include(
@@ -33,7 +33,7 @@ Rhub_stator = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], xstat
 #    Rotor + Stator Parameters    #
 #---------------------------------#
 #=
-The rotor parameters are contained in a vector of named tuples, such that each named tuple (the name matters! DuctTAPE expects the naming conventions presented here) has the information for a single rotor.  These should be included in the order they appear axially, e.g. rotor then stator
+The rotor parameters are contained in a vector of named tuples, such that each named tuple (the name matters! DuctAPE expects the naming conventions presented here) has the information for a single rotor.  These should be included in the order they appear axially, e.g. rotor then stator
 Note that the rotor parameters take in twist, not stagger, stagger is calculated from twist internally.  In our case, stagger is the angle from the axial direction, and twist is the angle from the plane of rotation, so they are just off by (90-theta) degrees
 =#
 
@@ -182,9 +182,9 @@ rotorstator_parameters = [rotor_parameters, stator_parameters]
 #         Paneling Constants      #
 #---------------------------------#
 #=
-DuctTAPE repanels the duct and center body geometries in such a way to allow nice alignment of the body and wake panels.  In addition, a set number of panels between discrete locations needs to be maintained for gradient-based optimization purposes.
-For that reason, we need to tell DuctTAPE how many panels to put between inlet and rotor, rotor and stator, stator and trailing edge, and trailing edge and wake.  If the duct and center body trailing edges don't line up, then we also need to prescribe how many panels go between trailing edges.
-We also need to tell DuctTAPE how long to make the wake aft of the trailing edge.  Typically, 1 chord length is used, but perhaps 1 rotor radius might be better if that length is longer than the duct.
+DuctAPE repanels the duct and center body geometries in such a way to allow nice alignment of the body and wake panels.  In addition, a set number of panels between discrete locations needs to be maintained for gradient-based optimization purposes.
+For that reason, we need to tell DuctAPE how many panels to put between inlet and rotor, rotor and stator, stator and trailing edge, and trailing edge and wake.  If the duct and center body trailing edges don't line up, then we also need to prescribe how many panels go between trailing edges.
+We also need to tell DuctAPE how long to make the wake aft of the trailing edge.  Typically, 1 chord length is used, but perhaps 1 rotor radius might be better if that length is longer than the duct.
 In addition, the same x-spacing used on the inner duct wall panels is used for the outer duct wall panels.
 =#
 

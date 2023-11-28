@@ -11,8 +11,8 @@ savepath = project_dir * "/examples/dfdc_comp/"
 include(savepath * "gather_dfdc_data.jl")
 include(savepath * "run_dfdc_example.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # CCBlade used for it's airfoils function objects here.
 using CCBlade

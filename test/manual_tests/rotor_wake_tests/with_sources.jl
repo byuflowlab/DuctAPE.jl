@@ -16,9 +16,9 @@ include("../../../plots_default.jl")
 # - use CCBlade for comparison - #
 using CCBlade
 
-# - Rename DuctTAPE for convenience - #
-using DuctTAPE
-const dt = DuctTAPE
+# - Rename DuctAPE for convenience - #
+using DuctAPE
+const dt = DuctAPE
 
 # - Rename FLOWFoil for convenience - #
 using FLOWFoil
@@ -487,7 +487,7 @@ ccbGamma, ccbSigma = get_gamma_sigma(out, chord, r)
 
 ######################################################################
 #                                                                    #
-#                        DuctTAPE FUNCTIONS                          #
+#                        DuctAPE FUNCTIONS                          #
 #                                                                    #
 ######################################################################
 
@@ -799,7 +799,7 @@ wake_vortex_strengths = repeat(gamma_theta_init; inner=(1, length(xrange) - 1))
 
 ## -- Set up some plots for iteration -- ##
 #note that r is used for ccblade number,
-#rpc are the rotor panel centers where the ducttape data is taken, in most cases this is the same as the ccblade r value
+#rpc are the rotor panel centers where the DuctAPE data is taken, in most cases this is the same as the ccblade r value
 #rotor_panel_edges are the edges of the panels used for wake locations
 rpc = rotor_panels.panel_center[:, 2]
 
@@ -1054,5 +1054,5 @@ savefig(
 
 #comparison in Gamma between start and finish
 plot(ccbGamma, r; xlabel=L"\Gamma", ylabel="r", label="CCBlade")
-plot!(Gamma, rpc; label="DuctTAPE")
+plot!(Gamma, rpc; label="DuctAPE")
 savefig("test/manual_tests/rotor_wake_tests/final_circulation.pdf")

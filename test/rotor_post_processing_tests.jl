@@ -47,7 +47,7 @@ using CCBlade
     T, Q = thrusttorque(rotor, sections, out)
     eff, CT, CQ = nondim(T, Q, Vinf, Omega, rho, rotor, "propeller")
 
-    # run ducttape post processing
+    # run DuctAPE post processing
     blade_elements = (
         Omega=Omega, B=B, chords=chord, twists=theta, rbe=r, Rtip=Rtip, Rhub=Rhub
     )
@@ -58,7 +58,7 @@ using CCBlade
     Npdt = aero.Np
     Tpdt = aero.Tp
 
-    # compare ccblade and ducttape values (should be very similar if not identical)
+    # compare ccblade and DuctAPE values (should be very similar if not identical)
     @test CT == CTdt
     @test CQ == CQdt
     @test eff == effdt

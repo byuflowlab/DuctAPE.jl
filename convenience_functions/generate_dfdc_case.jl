@@ -33,7 +33,7 @@ function gen_dfdc_case(
         f,
         "    $(op_data.rhoinf)     $(op_data.Vso)     $(op_data.muinf)     $(op_data.Alt)\n",
     )
-    #NOTE: Nwake is the number of wake x-stations aft of the duct trailing edge, it is used in calculating the wake expansion spacing in DFDC, the DuctTAPE equivalent is the last entry in the npanels vector
+    #NOTE: Nwake is the number of wake x-stations aft of the duct trailing edge, it is used in calculating the wake expansion spacing in DFDC, the DuctAPE equivalent is the last entry in the npanels vector
     write(f, "!       XDwake        Nwake\n")
     write(f, "    $(wake_data.xwake)     $(wake_data.nwake)\n")
     write(f, "!       Lwkrlx\n")
@@ -271,7 +271,7 @@ function test_gen_dfdc_case()
 end
 
 """
-function for generating DuctTAPE input parameters
+function for generating DuctAPE input parameters
 """
 function write_ducttape_params(
     filename,

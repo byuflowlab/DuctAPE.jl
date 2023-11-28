@@ -6,8 +6,8 @@ if project_dir == ""
     project_dir = "."
 end
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWMath
 const fm = FLOWMath
 using Statistics
@@ -32,7 +32,7 @@ function load_smooth_duct(npanref, rtransform)
 
     # load smooth data
     include(datapath * "nacasmoothgeom.jl")
-    # get it in the right order for DuctTAPE
+    # get it in the right order for DuctAPE
     revductcoords = reverse(smoothnormduct; dims=1)
     # move the coordinates into postiion
     revductcoords[:, 2] .+= rtransform
@@ -240,8 +240,8 @@ function run_isolated_geometry(
         end
     end
 
-    println("Setting up DuctTAPE Stuff")
-    ## -- SET UP DUCTTAPE DATA -- ##
+    println("Setting up DuctAPE Stuff")
+    ## -- SET UP DuctAPE DATA -- ##
 
     if comptype == "d"
         # - set up duct data according to options
@@ -252,7 +252,7 @@ function run_isolated_geometry(
         end
         hub_coordinates = hub_coordinates_input
 
-        #if using ducttape repanling
+        #if using DuctAPE repanling
         if dtpane != nothing
             duct_coordinates, hub_coordinates = dtrepanel(
                 duct_coordinates, hub_coordinates, dtpane, 0.5
@@ -280,7 +280,7 @@ function run_isolated_geometry(
             hub_coordinates_input; N=ceil(Int, npanref / 2), normalize=false
         )
 
-        #if using ducttape repanling
+        #if using DuctAPE repanling
         if dtpane != nothing
             duct_coordinates, hub_coordinates = dtrepanel(
                 duct_coordinates, hub_coordinates_input, dtpane, 0.5
@@ -299,7 +299,7 @@ function run_isolated_geometry(
         prescribedpanels = [(leid, 0.0); (size(duct_coordinates, 1), 0.0)]
     end
 
-    # - Panel Geometry for DuctTAPE - #
+    # - Panel Geometry for DuctAPE - #
     panels = dt.generate_panels(coordinates)
 
     println("Visualizing Paneling")
@@ -369,8 +369,8 @@ function run_isolated_geometry(
     println("Plotting and Saving Outputs")
     ## -- Plot -- ##
     xs = panels.controlpoint[:, 1]
-    plot!(pv, xs, vs; color=plotcount, label="DuctTAPE " * prefix)
-    plot!(pc, xs, cp; color=plotcount, label="DuctTAPE " * prefix)
+    plot!(pv, xs, vs; color=plotcount, label="DuctAPE " * prefix)
+    plot!(pc, xs, cp; color=plotcount, label="DuctAPE " * prefix)
 
     savefig(pv, savepath * prefix * gcg * "-velocity-comp.pdf")
     savefig(pv, savepath * prefix * gcg * "-velocity-comp.png")
@@ -393,7 +393,7 @@ end
 #     Vinf=20, geomtype="l", comptype="b", geomsource="s", dtpane=nothing, npanref=400
 # )
 
-# # Body: use ducttape repaneling
+# # Body: use DuctAPE repaneling
 # options = (;
 #     Vinf=20,
 #     geomtype="l",
@@ -437,7 +437,7 @@ pv, pc, plotcount = run_isolated_geometry(
     prefix="Better_Paneling",
 )
 
-# Duct: dont use ducttape repanling, keep smooth geometry
+# Duct: dont use DuctAPE repanling, keep smooth geometry
 options = (;
     Vinf=20, geomtype="l", comptype="d", geomsource="s", dtpane=nothing, npanref=200
 )

@@ -7,8 +7,8 @@ datapath = project_dir * "/examples/tworotor/"
 
 include(project_dir * "/visualize/plots_default.jl")
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 using FLOWMath
 const fm = FLOWMath
@@ -195,7 +195,7 @@ function plotstates(Gamr, sigr, gamw, inputs, convergeflag)
     #TODO: need sigr and gamw from dfdc
 
     if convergeflag
-        convlabel = "DuctTAPE Converged"
+        convlabel = "DuctAPE Converged"
     else
         convlabel = "NOT converged"
     end
@@ -273,7 +273,7 @@ function plotbodyaero(out, convergeflag, Vref)
         [out.duct_inner_x; out.duct_outer_x],
         abs.([out.duct_inner_vs; out.duct_outer_vs]);
         color=mycolors[1],
-        label="DuctTAPE Duct surface",
+        label="DuctAPE Duct surface",
     )
 
     # # dfdc duct surface
@@ -282,13 +282,13 @@ function plotbodyaero(out, convergeflag, Vref)
     # )
 
     # hub surface
-    plot!(pvs, out.hub_x, abs.(out.hub_vs); color=mycolors[2], label="DuctTAPE Hub")
+    plot!(pvs, out.hub_x, abs.(out.hub_vs); color=mycolors[2], label="DuctAPE Hub")
 
     # # dfdc hub surface
     # plot!(pvs, dfdc_hubx, dfdc_hub_vs; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
     # # duct wake
-    # plot!(pvs, out.ductwake_x, abs.(out.ductwake_vs); color=mycolors[3], label="DuctTAPE Duct Wake")
+    # plot!(pvs, out.ductwake_x, abs.(out.ductwake_vs); color=mycolors[3], label="DuctAPE Duct Wake")
 
     # # dfdc duct wake
     # plot!(
@@ -306,7 +306,7 @@ function plotbodyaero(out, convergeflag, Vref)
         out.hubwake_x,
         abs.(out.hubwake_vs);
         color=mycolors[4],
-        label="DuctTAPE Hub Wake",
+        label="DuctAPE Hub Wake",
     )
 
     # # dfdc hub wake
@@ -332,7 +332,7 @@ function plotbodyaero(out, convergeflag, Vref)
         [out.duct_inner_x; out.duct_outer_x],
         [out.duct_inner_cp; out.duct_outer_cp];
         color=mycolors[1],
-        label="DuctTAPE Duct surface",
+        label="DuctAPE Duct surface",
     )
 
     ##dfdc duct surface
@@ -341,14 +341,14 @@ function plotbodyaero(out, convergeflag, Vref)
     #)
 
     #hub surface
-    plot!(pcp, out.hub_x, out.hub_cp; color=mycolors[2], label="DuctTAPE Hub")
+    plot!(pcp, out.hub_x, out.hub_cp; color=mycolors[2], label="DuctAPE Hub")
 
     ##dfdc hub surface
     #plot!(pcp, dfdc_hubx, dfdc_hub_cp; color=mycolors[2], linestyle=:dash, label="DFDC Hub")
 
     #duct wake
     plot!(
-        pcp, out.ductwake_x, out.ductwake_cp; color=mycolors[3], label="DuctTAPE Duct Wake"
+        pcp, out.ductwake_x, out.ductwake_cp; color=mycolors[3], label="DuctAPE Duct Wake"
     )
 
     # # dfdc duct wake
@@ -362,7 +362,7 @@ function plotbodyaero(out, convergeflag, Vref)
     # )
 
     #hub wake
-    plot!(pcp, out.hubwake_x, out.hubwake_cp; color=mycolors[4], label="DuctTAPE Hub Wake")
+    plot!(pcp, out.hubwake_x, out.hubwake_cp; color=mycolors[4], label="DuctAPE Hub Wake")
 
     ##dfdc hub wake
     #plot!(

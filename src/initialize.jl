@@ -111,7 +111,7 @@ function precomputed_inputs(
     # can't have non-zero tip gaps for aft rotors
     for ir in 2:nrotor
         if rotorstator_parameters[ir].tip_gap != 0.0
-            @warn "DuctTAPE does not currently have capabilities for adding tip gap to any but the foremost rotor. Overriding to 0.0."
+            @warn "DuctAPE does not currently have capabilities for adding tip gap to any but the foremost rotor. Overriding to 0.0."
         else
             tip_gaps[ir] = rotorstator_parameters[ir].tip_gap
         end

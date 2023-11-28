@@ -5,8 +5,8 @@ end
 
 savepath = project_dir*"/test/visual_tests/"
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 include(project_dir * "/visualize/plots_default_new.jl")
 include(project_dir * "/visualize/visualize_geometry.jl")

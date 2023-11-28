@@ -13,8 +13,8 @@ using DelimitedFiles
 using Statistics
 using FLOWMath
 const fm = FLOWMath
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using LineSearches
 using ForwardDiff
 using NLsolve
@@ -142,7 +142,7 @@ end
 #savefig(ps, savepath * "stator_initial_angles$RPM_rotor.pdf")
 #savefig(ps, savepath * "stator_initial_angles$RPM_rotor.png")
 ## plot re-paneled geometry
-#include("../../DuctTAPE.jl/visualize/visualize_geometry.jl")
+#include("../../DuctAPE.jl/visualize/visualize_geometry.jl")
 #visualize_paneling(;
 #    body_panels=inputs.body_doublet_panels,
 #    rotor_panels=inputs.rotor_source_panels,
@@ -165,7 +165,7 @@ end
 #)
 
 # # - Generate DFDC Case File - #
-# include("../../DuctTAPE.jl/convenience_functions/generate_dfdc_case.jl")
+# include("../../DuctAPE.jl/convenience_functions/generate_dfdc_case.jl")
 # gen_dfdc_case(
 #     filename,
 #     op_data,
@@ -267,7 +267,7 @@ plot!(
     label="Experimental",
 )
 
-# DuctTAPE axial velocity
+# DuctAPE axial velocity
 # initial
 plot!(
     px,
@@ -276,7 +276,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE Initial States",
+    label="DuctAPE Initial States",
 )
 
 # converged
@@ -287,7 +287,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE Converged States",
+    label="DuctAPE Converged States",
 )
 
 # - Radial Velocity Comparison - #
@@ -307,7 +307,7 @@ plot!(
     label="Experimental",
 )
 
-# DuctTAPE radial velocity
+# DuctAPE radial velocity
 # initial
 plot!(
     pr,
@@ -316,7 +316,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE Initial States",
+    label="DuctAPE Initial States",
 )
 
 # converged
@@ -327,7 +327,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE",
+    label="DuctAPE",
 )
 
 # - Tangential Velocity Comparison - #
@@ -347,7 +347,7 @@ plot!(
     label="Experimental",
 )
 
-# DuctTAPE tangential velocity
+# DuctAPE tangential velocity
 # initial
 plot!(
     pt,
@@ -356,7 +356,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE Initial States",
+    label="DuctAPE Initial States",
 )
 
 # converged
@@ -367,7 +367,7 @@ plot!(
     seriestype=:scatter,
     markershape=:utriangle,
     markersize=5,
-    label="DuctTAPE",
+    label="DuctAPE",
 )
 
 savefig(px, "figures/axial_velocity_comparison.pdf")

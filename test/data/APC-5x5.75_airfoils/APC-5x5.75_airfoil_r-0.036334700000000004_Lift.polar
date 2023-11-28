@@ -1,4 +1,4 @@
-/Users/jmehr/Box Sync/Code_Development/DuctTAPE/test/data/APC-5x5.75_airfoils/APC-5x5.75_airfoil_r-0.036334700000000004 Inviscid
+/Users/jmehr/Box Sync/Code_Development/DuctAPE/test/data/APC-5x5.75_airfoils/APC-5x5.75_airfoil_r-0.036334700000000004 Inviscid
 -15.0 -1.3161654473624245
 -14.5 -1.2575718805533966
 -14.0 -1.1988833691796352

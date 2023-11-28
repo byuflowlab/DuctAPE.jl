@@ -1,7 +1,7 @@
 # using FLOWFoil
 # const ff = FLOWFoil
-# using DuctTAPE
-# const dt = DuctTAPE
+# using DuctAPE
+# const dt = DuctAPE
 # include("../../plots_default.jl")
 
 # Vinf = 1.0
@@ -34,8 +34,8 @@ N = length(dist)
 
 using FLOWFoil
 const ff = FLOWFoil
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 include("../../plots_default.jl")
 
 Vinf = 1.0

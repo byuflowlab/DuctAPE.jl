@@ -1,13 +1,13 @@
 #=
 
-Example of running duct/hub alone (without rotor) in DuctTAPE.
+Example of running duct/hub alone (without rotor) in DuctAPE.
 Note that currently (as of April 2023) this is best done with FLOWFoil.jl, which specializes in 2D panel methods.
 
 Authors: Judd Mehr,
 
 =#
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 include("../plots_default.jl")
 

@@ -75,7 +75,7 @@
         @test cas.inflow == st3.inflow
         @test cas.cl == st3.cl
         @test cas.cd == st3.cd
-        @test st3.info == "DuctTAPE written cascade"
+        @test st3.info == "DuctAPE written cascade"
         @test st3.Re == 0.0
         @test st3.Mach == 0.0
         @test st3.solidity == 0.0
@@ -167,7 +167,7 @@ end
         @test cas.inflow == st3.inflow
         @test cas.cl == st3.cl
         @test cas.cd == st3.cd
-        @test st3.info == "DuctTAPE written cascade"
+        @test st3.info == "DuctAPE written cascade"
         @test st3.Re == Re
         @test st3.Mach == Mach
         @test st3.solidity == 0.0
@@ -254,7 +254,7 @@ end
         @test cas.inflow == st3.inflow
         @test cas.cl == st3.cl
         @test cas.cd == st3.cd
-        @test st3.info == "DuctTAPE written cascade"
+        @test st3.info == "DuctAPE written cascade"
         @test st3.Re == Re
         @test st3.Mach == Mach
         @test st3.solidity == solidity

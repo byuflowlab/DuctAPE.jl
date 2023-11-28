@@ -17,9 +17,9 @@ end
 # create save path
 savepath = project_dir * "/validation/no_rotor/figs/"
 
-# - load DuctTAPE - #
-using DuctTAPE
-const dt = DuctTAPE
+# - load DuctAPE - #
+using DuctAPE
+const dt = DuctAPE
 
 include(project_dir * "/visualize/plots_default.jl")
 

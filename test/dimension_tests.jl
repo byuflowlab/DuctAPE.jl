@@ -27,7 +27,7 @@
     # array with rotor and stator parameters
     rotor_parameters = [rotor1_parameters, rotor2_parameters]
 
-    constants = DuctTAPE.initialize_constants(
+    constants = DuctAPE.initialize_constants(
         duct_coordinates,
         hub_coordinates,
         rotor_parameters, #vector of named tuples

@@ -4,8 +4,8 @@ Look at the wake influence at arbitrary locations within the wake, outside the w
 
 =#
 include("../../../plots_default.jl")
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWFoil
 const ff = FLOWFoil
 
@@ -36,7 +36,7 @@ plot(
 savefig("./test/manual_tests/rotor_wake_tests/basic_wake_grid.pdf")
 
 ## -- Create Wake Panel Objects -- ##
-#use the fuctions you already have in ducttape
+#use the fuctions you already have in DuctAPE
 #requires x points and r points separately, since that's how they are generated normally
 #also, x is the first dimension and r the second
 x_grid_points = repeat(xrange; outer=(1, length(radial_stations)))

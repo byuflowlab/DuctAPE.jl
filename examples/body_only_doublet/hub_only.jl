@@ -11,9 +11,9 @@ end
 # create save path
 savepath = project_dir * "/examples/body_only_doublet/"
 
-# - load DuctTAPE - #
-using DuctTAPE
-const dt = DuctTAPE
+# - load DuctAPE - #
+using DuctAPE
+const dt = DuctAPE
 
 # - load plotting defaults - #
 include(project_dir * "/visualize/visualize_geometry.jl")
@@ -117,7 +117,7 @@ plot!(
     label="experimental",
 )
 xs = panels.controlpoint[:, 1]
-plot!(pp, xs, dt.norm.(eachrow(Vtot)) ./ Vinf; label="DuctTAPE")
+plot!(pp, xs, dt.norm.(eachrow(Vtot)) ./ Vinf; label="DuctAPE")
 
 savefig(savepath * "hub-vel-comp.pdf")
 # TODO: need to coordinate with Eduardo on who is adding what where for this stuff

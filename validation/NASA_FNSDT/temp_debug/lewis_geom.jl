@@ -1,5 +1,5 @@
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 project_dir = dirname(dirname(dirname(dirname(@__FILE__))))
 if project_dir == ""

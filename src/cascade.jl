@@ -122,7 +122,7 @@ end
 
 #function StaggerInflowCAS(stagger, inflow, cl, cd)
 #    return StaggerInflowCAS(
-#        stagger, inflow, cl, cd, "DuctTAPE written cascade", 0.0, 0.0, 0.0
+#        stagger, inflow, cl, cd, "DuctAPE written cascade", 0.0, 0.0, 0.0
 #    )
 #end
 
@@ -221,7 +221,7 @@ end
 
 #function StaggerInflowReCAS(stagger, inflow, Re, cl, cd)
 #    return StaggerInflowReCAS(
-#        stagger, inflow, Re, cl, cd, "DuctTAPE written cascade", 0.0, 0.0
+#        stagger, inflow, Re, cl, cd, "DuctAPE written cascade", 0.0, 0.0
 #    )
 #end
 
@@ -335,7 +335,7 @@ end
 
 #function StaggerInflowReMachCAS(stagger, inflow, Re, Mach, cl, cd)
 #    return StaggerInflowReMachCAS(
-#        stagger, inflow, Re, Mach, cl, cd, "DuctTAPE written cascade", 0.0
+#        stagger, inflow, Re, Mach, cl, cd, "DuctAPE written cascade", 0.0
 #    )
 #end
 
@@ -464,7 +464,7 @@ end
 
 function InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd)
     return InReStSoMaCAS(
-        inflow, Re, stagger, solidity, Mach, cl, cd, "DuctTAPE written cascade"
+        inflow, Re, stagger, solidity, Mach, cl, cd, "DuctAPE written cascade"
     )
 end
 

@@ -13,8 +13,8 @@ using DelimitedFiles
 using Statistics
 using FLOWMath
 const fm = FLOWMath
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # plotting defaults
 include("../plots_default_new.jl")

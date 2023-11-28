@@ -3,8 +3,8 @@ if project_dir == ""
     project_dir = "."
 end
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using PrettyTables
 const pt = PrettyTables
 
@@ -121,7 +121,7 @@ include(project_dir * "/test/data/bodyofrevolutioncoords.jl")
 # savefig(pcd, savepath * "lewis-with-rotor-pressure-dfdc.pdf")
 
 #---------------------------------#
-#             DuctTAPE            #
+#             DuctAPE            #
 #---------------------------------#
 # include(datapath * "lewis_refined_duct.jl")
 # include(datapath * "lewis_refined_hub.jl")
@@ -258,7 +258,7 @@ for (ip, pref) in enumerate(refine)
     # print the table
     pt.pretty_table(
         [outcomps; reduce(vcat, outscomprot)];
-        header=["Value", "DFDC", "DuctTAPE", "% Error"],
+        header=["Value", "DFDC", "DuctAPE", "% Error"],
         backend=Val(:latex),
     )
 
@@ -356,25 +356,25 @@ for (ip, pref) in enumerate(refine)
         out.duct_inner_x,
         out.duct_inner_vs;
         color=myblue[2],
-        label="DuctTAPE Duct inner",
+        label="DuctAPE Duct inner",
     )
     plot!(
         pv,
         out.duct_outer_x,
         out.duct_outer_vs;
         color=myblue[3],
-        label="DuctTAPE Duct outer",
+        label="DuctAPE Duct outer",
     )
-    plot!(pv, out.hub_x, out.hub_vs; color=myred[2], label="DuctTAPE Hub")
+    plot!(pv, out.hub_x, out.hub_vs; color=myred[2], label="DuctAPE Hub")
     plot!(
         pcd,
         out.duct_inner_x,
         out.duct_inner_cp;
         color=ip,
-        label="DuctTAPE $(ptot) Body Panels",
+        label="DuctAPE $(ptot) Body Panels",
     )
     plot!(pcd, out.duct_outer_x, out.duct_outer_cp; color=ip, label="")
-    plot!(pch, out.hub_x, out.hub_cp; color=ip, label="DuctTAPE $(ptot) Body Panels")
+    plot!(pch, out.hub_x, out.hub_cp; color=ip, label="DuctAPE $(ptot) Body Panels")
 
     #- plot rotor circulation - #
     for ir in inputs.num_rotors
@@ -393,7 +393,7 @@ for (ip, pref) in enumerate(refine)
             out.Gamr[:, ir],
             inputs.blade_elements[ir].rbe;
             color=ip,
-            label="DuctTAPE $(ptot) Body Panels",
+            label="DuctAPE $(ptot) Body Panels",
         )
     end
 

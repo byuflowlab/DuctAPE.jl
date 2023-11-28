@@ -5,7 +5,7 @@ println("\nAIRFOIL CORRECTION TESTS")
     include("data/naca_4412_raw.jl")
 
     # apply stall cutoffs
-    clext, cdext = dt.stalllimiters(alpha, cl, cd; cutoff_slope=0.1, N=20, blend_hardness=50)
+    clext, cdext = dt.stalllimiters(alpha, cl, cdrag; cutoff_slope=0.1, N=20, blend_hardness=50)
 
     @test ismonotonic(clext, 1)
 end

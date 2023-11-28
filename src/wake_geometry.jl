@@ -149,10 +149,10 @@ end
 Intialize the wake grid
 
 **Arguments:**
-- `body_geometry::DuctTAPE.body_geometry` : Duct Geometry Object.
+- `body_geometry::DuctAPE.body_geometry` : Duct Geometry Object.
 - `xrotor::Vector{Float}` : Vector of x-positions for the rotors
 - `rwake::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
-- `grid_options::DuctTAPE.GridOptions` : GridOptions object
+- `grid_options::DuctAPE.GridOptions` : GridOptions object
 
 **Returns:**
 - `xgrid::Matrix{Float64,2}` : 2D Array of x grid points

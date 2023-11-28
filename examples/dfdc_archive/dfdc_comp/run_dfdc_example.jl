@@ -8,8 +8,8 @@ include(project_dir * "/plots_default.jl")
 
 savepath = project_dir*"/examples/dfdc_comp/"
 
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 # CCBlade used for it's airfoils function objects here.
 using CCBlade
@@ -575,7 +575,7 @@ function plotstates(Gamr, sigr, gamw, inputs, convergeflag)
     #TODO: need sigr and gamw from dfdc
 
     if convergeflag
-        convlabel = "DuctTAPE Converged"
+        convlabel = "DuctAPE Converged"
     else
         convlabel = "NOT converged"
     end
@@ -652,7 +652,7 @@ function plotbodyaero(cstates, inputs, out,convergeflag)
         dp,
         abs.(gamb[1:length(dp)]) ./ inputs.reference_parameters.Vref;
         color=mycolors[1],
-        label=convlabel * " DuctTAPE Duct",
+        label=convlabel * " DuctAPE Duct",
     )
     plot!(
         pb,
@@ -668,7 +668,7 @@ function plotbodyaero(cstates, inputs, out,convergeflag)
         hp,
         abs.(gamb[(length(dp) + 1):end]) ./ inputs.reference_parameters.Vref;
         color=mycolors[2],
-        label=convlabel * " DuctTAPE Hub",
+        label=convlabel * " DuctAPE Hub",
     )
     plot!(
         pb,
@@ -745,7 +745,7 @@ end
 
 function plotbladevelocities(cdump, inputs)
 
-    # - extract ducttape radial positions - #
+    # - extract DuctAPE radial positions - #
     rpc = inputs.rotor_panel_centers
     omega = inputs.blade_elements[1].Omega
 
@@ -781,7 +781,7 @@ function plotbladevelocities(cdump, inputs)
     plot!(pw, dfdcWmag, dfdcr; label="DFDC W")
     savefig(pw, project_dir * "/examples/dfdc_comp/Wmagcomp.pdf")
 
-    plot!(por, omega * rpc, rpc; label="DuctTAPE")
+    plot!(por, omega * rpc, rpc; label="DuctAPE")
     plot!(por, omega * dfdcr, dfdcr; linewidth=2, linestyle=:dash, label="DFDC")
     savefig(por, project_dir * "/examples/dfdc_comp/Omegarcomp.pdf")
 
@@ -793,23 +793,23 @@ function plotangles(cdump, inputs)
     dfdctwist = dfdc_printout[:, 3]
     dfdcalpha = dfdc_printout[:, 4]
 
-    # - extract ducttape radial positions - #
+    # - extract DuctAPE radial positions - #
     rpc = inputs.rotor_panel_centers
     twist = inputs.blade_elements[1].twists
 
     # - Plot Angles - #
     pa = plot(; xlabel="Angles (deg)", ylabel="radial positions")
 
-    plot!(pa, twist * 180.0 / pi, rpc; color=mycolors[1], label="DuctTAPE blade twist")
+    plot!(pa, twist * 180.0 / pi, rpc; color=mycolors[1], label="DuctAPE blade twist")
     plot!(
         pa, dfdctwist, dfdcr; color=mycolors[1], linestyle=:dash, label="DFDC blade twist"
     )
 
-    plot!(pa, cdump.phi * 180.0 / pi, rpc; color=mycolors[2], label="DuctTAPE inflow angle")
+    plot!(pa, cdump.phi * 180.0 / pi, rpc; color=mycolors[2], label="DuctAPE inflow angle")
     plot!(pa, dfdcphi, dfdcr; color=mycolors[2], linestyle=:dash, label="DFDC inflow angle")
 
     plot!(
-        pa, cdump.alpha * 180.0 / pi, rpc; color=mycolors[3], label="DuctTAPE attack angle"
+        pa, cdump.alpha * 180.0 / pi, rpc; color=mycolors[3], label="DuctAPE attack angle"
     )
     plot!(
         pa, dfdcalpha, dfdcr; color=mycolors[3], linestyle=:dash, label="DFDC attack angle"
@@ -822,7 +822,7 @@ end
 
 function plotclcd(cdump, inputs)
 
-    # - extract ducttape radial positions - #
+    # - extract DuctAPE radial positions - #
     rpc = inputs.rotor_panel_centers
     cl = cdump.cl
     cd = cdump.cd
@@ -830,12 +830,12 @@ function plotclcd(cdump, inputs)
     # - Plot Coefficients - #
     pcl = plot(; xlabel=L"c_\ell", ylabel="radial positions")
 
-    plot!(pcl, cl, rpc; color=mycolors[1], label="DuctTAPE")
+    plot!(pcl, cl, rpc; color=mycolors[1], label="DuctAPE")
     plot!(pcl, dfdccl, dfdcr; color=mycolors[1], linestyle=:dash, label="DFDC")
 
     pcd = plot(; xlabel=L"c_d", ylabel="radial positions")
 
-    plot!(pcd, cd, rpc; color=mycolors[1], label="DuctTAPE")
+    plot!(pcd, cd, rpc; color=mycolors[1], label="DuctAPE")
     plot!(pcd, dfdccd, dfdcr; color=mycolors[1], linestyle=:dash, label="DFDC")
 
     savefig(pcl, project_dir * "/examples/dfdc_comp/clcomp.pdf")
@@ -846,7 +846,7 @@ end
 
 function ploths(cdump, inputs)
 
-    # - extract ducttape radial positions - #
+    # - extract DuctAPE radial positions - #
     rpc = inputs.rotor_panel_centers
 
     # - Calculate enthalpy disk jump - #
@@ -860,10 +860,10 @@ function ploths(cdump, inputs)
     ph = plot(; xlabel=L"\widetilde{H}", ylabel="radial positions")
     ps = plot(; xlabel=L"\widetilde{S}", ylabel="radial positions")
 
-    plot!(ph, Htilde, rpc; label="DuctTAPE")
+    plot!(ph, Htilde, rpc; label="DuctAPE")
     plot!(ph, deltaH, dfdcr; label="DFDC")
 
-    plot!(ps, Stilde, rpc; label="DuctTAPE")
+    plot!(ps, Stilde, rpc; label="DuctAPE")
     plot!(ps, deltaS, dfdcr; label="DFDC")
 
     savefig(ph, project_dir * "/examples/dfdc_comp/Htildecomp.pdf")

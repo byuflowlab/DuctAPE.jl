@@ -139,7 +139,7 @@ savefig("test/manual_tests/rotor_wake_tests/ccblade_circulation.pdf")
 
 # axial far-field induced velocity
 plot(out.u * 2.0, r; xlabel="far-field induced axial velocity", ylabel="r", label="CCBlade")
-plot!((Vms .- Vinf), r; label="DuctTAPE")
+plot!((Vms .- Vinf), r; label="DuctAPE")
 savefig("test/manual_tests/rotor_wake_tests/ccblade_Vx.pdf")
 
 # tangential far-field induced velocity
@@ -150,7 +150,7 @@ plot(
     ylabel="r",
     label="CCBlade",
 )
-plot!(Gamma * B ./ (2.0 * pi * r), r; label="DuctTAPE")
+plot!(Gamma * B ./ (2.0 * pi * r), r; label="DuctAPE")
 savefig("test/manual_tests/rotor_wake_tests/ccblade_Vtheta.pdf")
 
 # plot(gamma_thetas, r; xlabel=L"\gamma_\theta", ylabel="r")
@@ -185,7 +185,7 @@ Vms = vm_from_vinf(Vinf, Gamma_tilde, H_tilde, r)
 gamma_thetas = gamma_theta_open_rotor(Vinf, Vms)
 
 plot(out.u * 2.0, r; xlabel="far-field induced axial velocity", ylabel="r", label="CCBlade")
-plot!((Vms .- Vx), r; label="DuctTAPE")
+plot!((Vms .- Vx), r; label="DuctAPE")
 savefig("test/manual_tests/rotor_wake_tests/ccblade_Vxvar.pdf")
 
 plot(
@@ -195,5 +195,5 @@ plot(
     ylabel="r",
     label="CCBlade",
 )
-plot!(Gamma * B ./ (2.0 * pi * r), r; label="DuctTAPE")
+plot!(Gamma * B ./ (2.0 * pi * r), r; label="DuctAPE")
 savefig("test/manual_tests/rotor_wake_tests/ccblade_Vthetavar.pdf")
