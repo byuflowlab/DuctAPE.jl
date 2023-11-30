@@ -56,6 +56,7 @@ function generate_panels(
     pidx = 1 # panel index
     nidx = 1 # node index (+1 extra after each body)
 
+    # - General Panel Geometry - #
     # loop through bodies
     for (ib, c) in enumerate(coordinates)
 
@@ -115,41 +116,20 @@ function generate_panels(
     ittangent = zeros(TF, 2, nbodies)
 
     if size(node, 2) > 2
-        #TODO: maybe move this into it's own in-place function
-        for ib in 1:nbodies
-
-            #rename for convenience
-            p1id = endnodeidxs[1, ib]
-            pnid = endnodeidxs[2, ib]
-
-            # get node coordinates
-            n1 = node[:, p1id] #first node on panel 1 (of body ib)
-            n2 = node[:, p1id + 1] #second node on panel 1 (of body ib)
-            nn = node[:, pnid - 1] #first node on panel N (of body ib)
-            nnp1 = node[:, pnid] #second node on pane N (of body ib)
-
-            #rmagN - rmag1
-            xtan = nnp1[1] - nn[1] - (n2[1] - n1[1])
-            rtan = nnp1[2] - nn[2] - (n2[2] - n1[2])
-            stan = sqrt(xtan^2 + rtan^2)
-
-            lenbar = 0.5 * (influence_length[p1id - ib + 1] + influence_length[pnid - ib])
-
-            itcontrolpoint[1, ib] =
-                0.5 * (n1[1] + nnp1[1]) - itcpshift * lenbar * xtan / stan
-            itcpr = 0.5 * (n1[2] + nnp1[2]) - itcpshift * lenbar * rtan / stan
-            #note: the internal control point for the hub is unused if the TE node is on the axis, but we do want to avoid NaNs if we can.
-            itcontrolpoint[2, ib] = itcpr < axistol ? 1e-3 : itcpr
-
-            itnormal[1, ib] = xtan / stan
-            itnormal[2, ib] = rtan / stan
-            ittangent[1, ib] = rtan / stan
-            ittangent[2, ib] = -xtan / stan
-        end
+        def_it_panel!(
+            itcontrolpoint,
+            itnormal,
+            ittangent,
+            nbodies,
+            node,
+            endnodeidxs,
+            influence_length,
+            itcpshift,
+            axistol,
+        )
     end
 
     # - Trailing Edge Panel Stuff - #
-    # TODO: also consider moving this into it's own function
     tenode = zeros(TF, nbodies, 2, 2) # body, node1-2, x-r
     tenormal = zeros(TF, 2, nbodies) #body, x-r
     teinfluence_length = zeros(TF, nbodies)
@@ -157,6 +137,111 @@ function generate_panels(
     tendotn = zeros(TF, 2, nbodies) #bodies, node1,2
     tencrossn = zeros(TF, 2, nbodies) #bodies, node1,2
 
+    def_te_panel!(
+        tenode,
+        tenormal,
+        teinfluence_length,
+        teadjnodeidxs,
+        tendotn,
+        tencrossn,
+        nbodies,
+        normal,
+        tangent,
+        endpanelidxs,
+        endnodes,
+        endnodeidxs,
+    )
+
+    # - Prescribed Nodes - #
+    # Save the node index for nodes that are on the axis and need to be prescribed.
+    prescribednodeidxs = findall(x -> abs(x) <= eps(), node[2, :])
+
+    return (;
+        nbodies,
+        npanel,
+        nnode,
+        totpanel,
+        totnode,
+        controlpoint,
+        node,
+        nodemap,
+        influence_length,
+        normal,
+        tangent,
+        endnodes,
+        endnodeidxs,
+        endpanelidxs,
+        itcontrolpoint,
+        itnormal,
+        ittangent,
+        prescribednodeidxs,
+        tenode,
+        tenormal,
+        teinfluence_length,
+        teadjnodeidxs,
+        tendotn,
+        tencrossn,
+    )
+end
+
+function def_it_panel!(
+    itcontrolpoint,
+    itnormal,
+    ittangent,
+    nbodies,
+    node,
+    endnodeidxs,
+    influence_length,
+    itcpshift,
+    axistol,
+)
+
+    #TODO: maybe move this into it's own in-place function
+    for ib in 1:nbodies
+
+        #rename for convenience
+        p1id = endnodeidxs[1, ib]
+        pnid = endnodeidxs[2, ib]
+
+        # get node coordinates
+        n1 = node[:, p1id] #first node on panel 1 (of body ib)
+        n2 = node[:, p1id + 1] #second node on panel 1 (of body ib)
+        nn = node[:, pnid - 1] #first node on panel N (of body ib)
+        nnp1 = node[:, pnid] #second node on pane N (of body ib)
+
+        #rmagN - rmag1
+        xtan = nnp1[1] - nn[1] - (n2[1] - n1[1])
+        rtan = nnp1[2] - nn[2] - (n2[2] - n1[2])
+        stan = sqrt(xtan^2 + rtan^2)
+
+        lenbar = 0.5 * (influence_length[p1id - ib + 1] + influence_length[pnid - ib])
+
+        itcontrolpoint[1, ib] = 0.5 * (n1[1] + nnp1[1]) - itcpshift * lenbar * xtan / stan
+        itcpr = 0.5 * (n1[2] + nnp1[2]) - itcpshift * lenbar * rtan / stan
+        #note: the internal control point for the hub is unused if the TE node is on the axis, but we do want to avoid NaNs if we can.
+        itcontrolpoint[2, ib] = itcpr < axistol ? 1e-3 : itcpr
+
+        itnormal[1, ib] = xtan / stan
+        itnormal[2, ib] = rtan / stan
+        ittangent[1, ib] = rtan / stan
+        ittangent[2, ib] = -xtan / stan
+    end
+end
+
+function def_te_panel!(
+    tenode,
+    tenormal,
+    teinfluence_length,
+    teadjnodeidxs,
+    tendotn,
+    tencrossn,
+    nbodies,
+    normal,
+    tangent,
+    endpanelidxs,
+    endnodes,
+    endnodeidxs,
+)
     for ib in 1:nbodies
         # check if signs of x-tangents are the same
         if sign(tangent[1, endpanelidxs[1, ib]]) != sign(tangent[1, endpanelidxs[2, ib]])
@@ -196,37 +281,6 @@ function generate_panels(
         end
         teinfluence_length[ib] = get_r(tenode[ib, 1, :], tenode[ib, 2, :])[2]
     end
-
-    # - Prescribed Nodes - #
-    # Save the node index for nodes that are on the axis and need to be prescribed.
-    prescribednodeidxs = findall(x -> abs(x) <= eps(), node[2, :])
-
-    return (;
-        nbodies,
-        npanel,
-        nnode,
-        totpanel,
-        totnode,
-        controlpoint,
-        node,
-        nodemap,
-        influence_length,
-        normal,
-        tangent,
-        endnodes,
-        endnodeidxs,
-        endpanelidxs,
-        itcontrolpoint,
-        itnormal,
-        ittangent,
-        prescribednodeidxs,
-        tenode,
-        tenormal,
-        teinfluence_length,
-        teadjnodeidxs,
-        tendotn,
-        tencrossn,
-    )
 end
 
 #########################################
