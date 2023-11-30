@@ -70,16 +70,14 @@ function vortex_aic_boundary_on_boundary!(
         # Loop through control points being influenced
         for (i, (cpi, nhat, that)) in
             enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
+            n1 = view(node, :, nmap[1])
+            n2 = view(node, :, nmap[2])
 
             # get unit induced velocity from the panel onto the control point
             if i != j
-                vel .= nominal_vortex_panel_integration(
-                    node[:, nmap[1]], node[:, nmap[2]], lj, cpi
-                )
+                vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
             else
-                vel .= self_vortex_panel_integration(
-                    node[:, nmap[1]], node[:, nmap[2]], lj, cpi
-                )
+                vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
             end
 
             for k in 1:2
@@ -141,18 +139,18 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 function vortex_aic_boundary_on_field!(
     AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
+    vel = zeros(eltype(AICn), 2, 2)
 
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
         enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
         # loop through panels doing the influencing
         for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
+            n1 = view(node, :, nmap[1])
+            n2 = view(node, :, nmap[2])
 
             # get unit induced velocity from the panel onto the control point
-            # TODO: this allocates the vel's put a single 2x2 vel object in eventual cache and update the integration functions to be in place.
-            vel = nominal_vortex_panel_integration(
-                node[:, nmap[1]], node[:, nmap[2]], lj, cpi
-            )
+            vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
 
             for k in 1:2
                 # fill the Matrix
@@ -206,6 +204,9 @@ function add_te_gap_aic!(
     teadjnodeidxs,
 )
 
+    vvel = zeros(eltype(AICn), 2, 2)
+    svel = zeros(eltype(AICn), 2, 2)
+
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
         enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
@@ -220,11 +221,10 @@ function add_te_gap_aic!(
         )
 
             # get unit induced velocity from the panel onto the control point
-            # TODO: this allocates the vel's put a single 2x2 vel object in eventual cache and update the integration functions to be in place.
-            vvel = nominal_vortex_panel_integration(
+            vvel .= nominal_vortex_panel_integration(
                 tenode[j, 1, :], tenode[j, 2, :], lj, cpi
             )
-            svel = nominal_source_panel_integration(
+            svel .= nominal_source_panel_integration(
                 tenode[j, 1, :], tenode[j, 2, :], lj, cpi
             )
 
@@ -241,7 +241,7 @@ function add_te_gap_aic!(
     return AICn
 end
 
-#TODO: need to update these maybe, if moving to linear sources.
+#TODO: need to update these
 ##### ----- Source ----- #####
 """
 out of place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric source rings
@@ -283,14 +283,15 @@ Used for constructing the RHS influence Matrix for the panel method system (roto
 """
 function source_influence_matrix!(AIC, controlpoint, normal, node, influence_length)
 
+    vel = zeros(eltype(AICn), 2, 2)
+
     # Loop through control points being influenced
     for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
         # loop through panels doing the influencing
         for (j, (nj, lj)) in enumerate(zip(eachcol(node), influence_length))
 
             # get unit induced velocity from the panel onto the control point
-            # TODO: this allocates
-            vel = source_induced_velocity(nj, lj, cpi) #note input strength is default unity
+            vel .= source_induced_velocity(nj, lj, cpi) #note input strength is default unity
 
             # fill the Matrix
             AIC[i, j] += dot(vel, nhat)
