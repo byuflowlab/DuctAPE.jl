@@ -28,8 +28,8 @@ function vortex_aic_boundary_on_boundary(
     controlpoint, normal, tangent, node, nodemap, influence_length
 )
     T = promote_type(eltype(node), eltype(controlpoint))
-    M = size(controlpoint, 1)
-    N = size(node, 1)
+    M = size(controlpoint, 2)
+    N = size(node, 2)
 
     AICn = zeros(T, M, N)
     AICt = zeros(T, M, N)
@@ -66,19 +66,19 @@ function vortex_aic_boundary_on_boundary!(
     vel = zeros(eltype(AICn), 2, 2)
 
     # loop through panels doing the influencing
-    for (j, (nmap, lj)) in enumerate(zip(eachrow(nodemap), influence_length))
+    for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
         # Loop through control points being influenced
         for (i, (cpi, nhat, that)) in
-            enumerate(zip(eachrow(controlpoint), eachrow(normal), eachrow(tangent)))
+            enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
 
             # get unit induced velocity from the panel onto the control point
             if i != j
                 vel .= nominal_vortex_panel_integration(
-                    node[nmap[1], :], node[nmap[2], :], lj, cpi
+                    node[:, nmap[1]], node[:, nmap[2]], lj, cpi
                 )
             else
                 vel .= self_vortex_panel_integration(
-                    node[nmap[1], :], node[nmap[2], :], lj, cpi
+                    node[:, nmap[1]], node[:, nmap[2]], lj, cpi
                 )
             end
 
@@ -113,8 +113,8 @@ function vortex_aic_boundary_on_field(
     controlpoint, normal, tangent, node, nodemap, influence_length
 )
     T = promote_type(eltype(node), eltype(controlpoint))
-    M = size(controlpoint, 1)
-    N = size(node, 1)
+    M = size(controlpoint, 2)
+    N = size(node, 2)
 
     AICn = zeros(T, M, N)
     AICt = zeros(T, M, N)
@@ -144,14 +144,14 @@ function vortex_aic_boundary_on_field!(
 
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
-        enumerate(zip(eachrow(controlpoint), eachrow(normal), eachrow(tangent)))
+        enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
         # loop through panels doing the influencing
-        for (j, (nmap, lj)) in enumerate(zip(eachrow(nodemap), influence_length))
+        for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
 
             # get unit induced velocity from the panel onto the control point
             # TODO: this allocates the vel's put a single 2x2 vel object in eventual cache and update the integration functions to be in place.
             vel = nominal_vortex_panel_integration(
-                node[nmap[1], :], node[nmap[2], :], lj, cpi
+                node[:, nmap[1]], node[:, nmap[2]], lj, cpi
             )
 
             for k in 1:2
@@ -183,7 +183,7 @@ function add_kutta!(LHS, AICn, kids)
     LHS[1:ni, 1:nj] = AICn
 
     # add kutta condition
-    for kid in eachrow(kids)
+    for kid in eachcol(kids)
         LHS[kid[1], kid[2]] = 1.0
     end
 
@@ -208,14 +208,14 @@ function add_te_gap_aic!(
 
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
-        enumerate(zip(eachrow(controlpoint), eachrow(normal), eachrow(tangent)))
+        enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
         # loop through bodies
         for (j, (lj, ndn, ncn, nmap)) in enumerate(
             zip(
                 teinfluence_length,
-                eachrow(tendotn),
-                eachrow(tencrossn),
-                eachrow(teadjnodeidxs),
+                eachcol(tendotn),
+                eachcol(tencrossn),
+                eachcol(teadjnodeidxs),
             ),
         )
 
@@ -259,8 +259,8 @@ Used for constructing the RHS influence Matrix for the panel method system (roto
 """
 function source_influence_matrix(controlpoint, normal, node, influence_length)
     T = promote_type(eltype(node), eltype(controlpoint))
-    M = size(controlpoint, 1)
-    N = size(node, 1)
+    M = size(controlpoint, 2)
+    N = size(node, 2)
 
     AIC = zeros(T, M, N)
 
@@ -284,9 +284,9 @@ Used for constructing the RHS influence Matrix for the panel method system (roto
 function source_influence_matrix!(AIC, controlpoint, normal, node, influence_length)
 
     # Loop through control points being influenced
-    for (i, (cpi, nhat)) in enumerate(zip(eachrow(controlpoint), eachrow(normal)))
+    for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
         # loop through panels doing the influencing
-        for (j, (nj, lj)) in enumerate(zip(eachrow(node), influence_length))
+        for (j, (nj, lj)) in enumerate(zip(eachcol(node), influence_length))
 
             # get unit induced velocity from the panel onto the control point
             # TODO: this allocates
@@ -314,7 +314,7 @@ Note that the freestream is assumed to have zero radial component in the underly
 """
 function freestream_influence_vector(normals, Vinfmat)
     T = promote_type(eltype(normals), eltype(Vinfmat))
-    N = size(normals, 1)
+    N = size(normals, 2)
 
     RHS = zeros(T, N)
 
@@ -333,7 +333,7 @@ Note that the freestream is assumed to have zero radial component in the underly
 - `Vinfmat::Matrix{Float}` : [z r] components of freestream velocity (r's should be zero)
 """
 function freestream_influence_vector!(RHS, normals, Vinfmat)
-    for (i, (n, v)) in enumerate(zip(eachrow(normals), eachrow(Vinfmat)))
+    for (i, (n, v)) in enumerate(zip(eachcol(normals), eachcol(Vinfmat)))
         RHS[i] -= dot(v, n)
     end
 
@@ -463,9 +463,9 @@ end
 #    M = itpanels.totpanel
 
 #    for (j, (cp, lj)) in
-#        enumerate(zip(eachrow(influencepanels.node), influencepanels.influence_length))
+#        enumerate(zip(eachcol(influencepanels.node), influencepanels.influence_length))
 #        for (i, (cpi, nhat)) in
-#            enumerate(zip(eachrow(itpanels.node), eachrow(itpanels.itnormal)))
+#            enumerate(zip(eachcol(itpanels.node), eachcol(itpanels.itnormal)))
 
 #            # get unit induced velocity from the panel onto the control point
 #            vel = vortex_induced_velocity(cp, lj, cpi)
@@ -496,9 +496,9 @@ end
 #    M = itpanels.totpanel
 
 #    for (j, (cp, lj)) in
-#        enumerate(zip(eachrow(influencepanels.node), influencepanels.influence_length))
+#        enumerate(zip(eachcol(influencepanels.node), influencepanels.influence_length))
 #        for (i, (cpi, nhat)) in
-#            enumerate(zip(eachrow(itpanels.node), eachrow(itpanels.itnormal)))
+#            enumerate(zip(eachcol(itpanels.node), eachcol(itpanels.itnormal)))
 
 #            # get unit induced velocity from the panel onto the control point
 #            vel = source_induced_velocity(cp, lj, cpi)
@@ -525,7 +525,7 @@ end
 #    augLHS = zeros(eltype(LHS), M + nit, N + nit)
 #    augLHS[1:M, 1:N] .= LHS
 
-#    for (i, eid) in enumerate(eachrow(itpanels.endpointidxs))
+#    for (i, eid) in enumerate(eachcol(itpanels.endpointidxs))
 #        augLHS[eid[1]:eid[2], N + i] .= -1.0
 #        # for ip in pid
 #        #     augLHS[ip, N + i] = 0.0
@@ -544,9 +544,9 @@ end
 #    M = itpanels.totpanel
 
 #    for (i, (cpi, nhat)) in
-#        enumerate(zip(eachrow(itpanels.itcontrolpoint), eachrow(itpanels.itnormal)))
+#        enumerate(zip(eachcol(itpanels.itcontrolpoint), eachcol(itpanels.itnormal)))
 #        for (j, (p1, p2)) in
-#            enumerate(zip(eachrow(nodes[:, 1, :]), eachrow(nodes[:, 2, :])))
+#            enumerate(zip(eachcol(nodes[:, 1, :]), eachcol(nodes[:, 2, :])))
 
 #            # get unit induced velocity from the panel onto the control point
 #            vel = constant_doublet_band_induced_velocity(p1, p2, cpi)
@@ -576,7 +576,7 @@ end
 #function freestream_influence_on_internal_panels!(augRHS, panels, Vinfvec)
 #    M = panels.totpanel
 
-#    for (i, nhat) in enumerate(eachrow(panels.itnormal))
+#    for (i, nhat) in enumerate(eachcol(panels.itnormal))
 #        augRHS[M + i] -= dot(Vinfvec, nhat)
 #    end
 

@@ -167,7 +167,7 @@ function repanel_airfoil(coordinates; N=160, normalize=true)
 
     xpane, ypane = repanel_airfoil(x, y; N=N, normalize=normalize)
 
-    return [xpane ypane]
+    return [xpane'; ypane']
 end
 
 function repanel_revolution(coordinates; N=160, normalize=true)

@@ -25,7 +25,7 @@ println("\nINDUCED VELOCITY TESTS")
         # influencing panel
         x = [1.0; 2.0]
         r = [9.0; 10.0]
-        ip = dt.generate_panels([x r])
+        ip = dt.generate_panels([x'; r'])
 
         #check self influence
         xi, rho, m, r_influence = dt.calculate_xrm(ip.node, ip.node)
@@ -36,13 +36,13 @@ println("\nINDUCED VELOCITY TESTS")
 
         #check influence on axis should have influence in x, and zero in r
         ra = [0.0; 0.0]
-        ap = dt.generate_panels([x ra])
-        xi, rho, m, r_influence = dt.calculate_xrm(ap.controlpoint[1, :], ip.node[1, :])
+        ap = dt.generate_panels([x'; ra'])
+        xi, rho, m, r_influence = dt.calculate_xrm(ap.controlpoint[:, 1], ip.node[:, 1])
         @test dt.vortex_ring_vz(xi, rho, m, r_influence, ip.influence_length[1]) != 0.0
         @test dt.vortex_ring_vr(xi, rho, m, r_influence) == 0.0
 
         #check influence FROM axis (zeros all around)
-        xi, rho, m, r_influence = dt.calculate_xrm(ip.controlpoint[1, :], ap.node[1, :])
+        xi, rho, m, r_influence = dt.calculate_xrm(ip.controlpoint[:, 1], ap.node[:, 1])
         @test dt.vortex_ring_vz(xi, rho, m, r_influence, ap.influence_length[1]) == 0.0
         @test dt.vortex_ring_vr(xi, rho, m, r_influence) == 0.0
     end
@@ -52,7 +52,7 @@ println("\nINDUCED VELOCITY TESTS")
         # influencing panel
         x = [1.0; 2.0]
         r = [9.0; 10.0]
-        ip = dt.generate_panels([x r])
+        ip = dt.generate_panels([x'; r'])
 
         #check self influence
         xi, rho, m, r_influence = dt.calculate_xrm(ip.node, ip.node)
@@ -61,13 +61,13 @@ println("\nINDUCED VELOCITY TESTS")
 
         #check influence ON axis should have influence in x, and zero in r
         ra = [0.0; 0.0]
-        ap = dt.generate_panels([x ra])
-        xi, rho, m, r_influence = dt.calculate_xrm(ap.controlpoint[1, :], ip.node[1, :])
+        ap = dt.generate_panels([x'; ra'])
+        xi, rho, m, r_influence = dt.calculate_xrm(ap.controlpoint[:, 1], ip.node[:, 1])
         @test dt.source_ring_vz(xi, rho, m, r_influence) == 0.0
         @test dt.source_ring_vr(xi, rho, m, r_influence) == 0.0
 
         #check influence FROM axis (zeros all around)
-        xi, rho, m, r_influence = dt.calculate_xrm(ip.controlpoint[1, :], ap.node[1, :])
+        xi, rho, m, r_influence = dt.calculate_xrm(ip.controlpoint[:, 1], ap.node[:, 1])
         @test dt.source_ring_vz(xi, rho, m, r_influence) == 0.0
         @test dt.source_ring_vr(xi, rho, m, r_influence) == 0.0
     end
@@ -433,13 +433,13 @@ end
     @testset "Multiple Vortex Panel Induced Velocities on Multiple Points" begin
 
         # define control points
-        controlpoints = [0.0 1.0; 1.0 1.0]
+        controlpoints = [0.0 1.0; 1.0 1.0]'
 
         # define nodes
-        nodes = [-0.5 1.0; 0.5 1.0; 1.0 2.0]
+        nodes = [-0.5 1.0; 0.5 1.0; 1.0 2.0]'
 
         # define node map
-        nodemap = [1 2; 2 3]
+        nodemap = [1 2; 2 3]'
 
         # define influence lengths
         influence_lengths = [1.0; 1.0]
@@ -454,19 +454,19 @@ end
 
         # [vz1 vr1; vz2 vr2]
         vn12cp1 = dt.self_vortex_panel_integration(
-            nodes[1, :], nodes[2, :], influence_lengths[1], controlpoints[1, :]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1]
         )
 
         vn12cp2 = dt.nominal_vortex_panel_integration(
-            nodes[1, :], nodes[2, :], influence_lengths[1], controlpoints[2, :]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2]
         )
 
         vn23cp1 = dt.nominal_vortex_panel_integration(
-            nodes[2, :], nodes[3, :], influence_lengths[1], controlpoints[1, :]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1]
         )
 
         vn23cp2 = dt.nominal_vortex_panel_integration(
-            nodes[2, :], nodes[3, :], influence_lengths[1], controlpoints[2, :]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2]
         )
 
         @test all(VEL[1, 1, :] .== vn12cp1[1, :])
@@ -481,13 +481,13 @@ end
     @testset "Multiple Source Panel Induced Velocities on Multiple Points" begin
 
         # define control points
-        controlpoints = [0.0 1.0; 1.0 1.0]
+        controlpoints = [0.0 1.0; 1.0 1.0]'
 
         # define nodes
-        nodes = [-0.5 1.0; 0.5 1.0; 1.0 2.0]
+        nodes = [-0.5 1.0; 0.5 1.0; 1.0 2.0]'
 
         # define node map
-        nodemap = [1 2; 2 3]
+        nodemap = [1 2; 2 3]'
 
         # define influence lengths
         influence_lengths = [1.0; 1.0]
@@ -502,19 +502,19 @@ end
 
         # [vz1 vr1; vz2 vr2]
         vn12cp1 = dt.self_source_panel_integration(
-            nodes[1, :], nodes[2, :], influence_lengths[1], controlpoints[1, :]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1]
         )
 
         vn12cp2 = dt.nominal_source_panel_integration(
-            nodes[1, :], nodes[2, :], influence_lengths[1], controlpoints[2, :]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2]
         )
 
         vn23cp1 = dt.nominal_source_panel_integration(
-            nodes[2, :], nodes[3, :], influence_lengths[1], controlpoints[1, :]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1]
         )
 
         vn23cp2 = dt.nominal_source_panel_integration(
-            nodes[2, :], nodes[3, :], influence_lengths[1], controlpoints[2, :]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2]
         )
 
         @test all(VEL[1, 1, :] .== vn12cp1[1, :])

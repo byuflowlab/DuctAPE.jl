@@ -10,8 +10,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
     x2 = [0.0; 0.5; 1.0]
     r2 = [0.0; 0.5; 0.0]
 
-    c1 = [x1 r1]
-    c2 = [x2 r2]
+    c1 = [x1'; r1']
+    c2 = [x2'; r2']
 
     coordinates = [c1, c2]
 
@@ -65,9 +65,9 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 
     Vinf = 1.0 #magnitude doesn't matter yet.
     Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel))
+    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel)')
     vdnpcp = dt.freestream_influence_vector(
-        panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 1))
+        panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 2))
     )
 
     LHS = dt.assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
@@ -103,8 +103,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
     x2 = [0.0; 0.5; 1.0]
     r2 = [0.0; 0.5; 0.25]
 
-    c1 = [x1 r1]
-    c2 = [x2 r2]
+    c1 = [x1'; r1']
+    c2 = [x2'; r2']
 
     coordinates = [c1, c2]
 
@@ -132,7 +132,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 
     Vinf = 1.0 #magnitude doesn't matter yet.
     Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel))
+    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel)')
     vdnpcp = dt.freestream_influence_vector(
         panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 1))
     )

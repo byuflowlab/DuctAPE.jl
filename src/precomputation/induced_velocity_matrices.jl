@@ -33,7 +33,7 @@ function induced_velocities_from_vortex_panels_on_points(
 
     # Initialize
     T = promote_type(eltype(controlpoints), eltype(nodes), eltype(strengths))
-    VEL = zeros(T, size(controlpoints, 1), size(nodes, 1), 2)
+    VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_vortex_panels_on_points!(
         VEL, controlpoints, nodes, nodemap, influence_lengths, strengths
@@ -63,11 +63,11 @@ function induced_velocities_from_vortex_panels_on_points!(
 
     # loop through panels doing the influencing
     for (j, (nmap, lj, gammaj)) in
-        enumerate(zip(eachrow(nodemap), influence_length, eachrow(strength)))
+        enumerate(zip(eachcol(nodemap), influence_length, eachcol(strength)))
         # Loop through control points being influenced
-        for (i, cpi) in enumerate(eachrow(controlpoint))
-            n1 = view(node, nmap[1], :)
-            n2 = view(node, nmap[2], :)
+        for (i, cpi) in enumerate(eachcol(controlpoint))
+            n1 = view(node, :, nmap[1])
+            n2 = view(node, :, nmap[2])
 
             # check of self-induced:
             if isapprox(cpi, 0.5 * (n1 .+ n2))
@@ -112,7 +112,7 @@ function induced_velocities_from_source_panels_on_points(
 
     # Initialize
     T = promote_type(eltype(controlpoints), eltype(nodes), eltype(strengths))
-    VEL = zeros(T, size(controlpoints, 1), size(nodes, 1), 2)
+    VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_source_panels_on_points!(
         VEL, controlpoints, nodes, nodemap, influence_lengths, strengths
@@ -142,11 +142,11 @@ function induced_velocities_from_source_panels_on_points!(
 
     # loop through panels doing the influencing
     for (j, (nmap, lj, sigmaj)) in
-        enumerate(zip(eachrow(nodemap), influence_length, eachrow(strength)))
+        enumerate(zip(eachcol(nodemap), influence_length, eachcol(strength)))
         # Loop through control points being influenced
-        for (i, cpi) in enumerate(eachrow(controlpoint))
-            n1 = view(node, nmap[1], :)
-            n2 = view(node, nmap[2], :)
+        for (i, cpi) in enumerate(eachcol(controlpoint))
+            n1 = view(node, :, nmap[1])
+            n2 = view(node, :, nmap[2])
 
             # check of self-induced:
             if isapprox(cpi, 0.5 * (n1 .+ n2))
@@ -230,10 +230,10 @@ end
 #)
 
 #    # Loop through control points
-#    for (i, (cpi, vel)) in enumerate(zip(eachrow(controlpoints), eachrow(V)))
+#    for (i, (cpi, vel)) in enumerate(zip(eachcol(controlpoints), eachcol(V)))
 #        # loop through panels doing the influencing
 #        for (j, (gamma, nj, lj)) in
-#            enumerate(zip(strengths, eachrow(nodes), influence_lengths))
+#            enumerate(zip(strengths, eachcol(nodes), influence_lengths))
 
 #            # get unit induced velocity from the panel onto the control point
 #            vortex_induced_velocity!(vel, cpi, nj, lj, gamma)
@@ -296,10 +296,10 @@ end
 #function total_velocities_induced_by_source_panels!(
 #    V, controlpoints, nodes, influence_length, strengths
 #)
-#    for (i, (cpi, vel)) in enumerate(zip(eachrow(controlpoints), eachrow(V)))
+#    for (i, (cpi, vel)) in enumerate(zip(eachcol(controlpoints), eachcol(V)))
 #        # loop through panels doing the influencing
 #        for (j, (sigma, nj, lj)) in
-#            enumerate(zip(strengths, eachrow(nodes), influence_length))
+#            enumerate(zip(strengths, eachcol(nodes), influence_length))
 
 #            # get unit induced velocity from the panel onto the control point
 #            source_induced_velocity!(vel, cpi, nj, lj, sigma)
