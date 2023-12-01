@@ -12,6 +12,7 @@ const ccb = CCBlade #rename ccblade for convenience
 
 using SpecialFunctions # required for elliptic integrals
 using QuadGK # required for integration of linear panels
+using StaticArrays
 
 using LinearAlgebra: factorize, mul!, lu!, ldiv!, issuccess, NoPivot # used in linear system assembly and solve
 

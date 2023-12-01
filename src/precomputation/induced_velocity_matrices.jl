@@ -57,7 +57,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 function induced_velocities_from_vortex_panels_on_points!(
     VEL, controlpoint, node, nodemap, influence_length, strength
 )
-    vel = zeros(eltype(VEL), 2, 2)
+    # vel = zeros(eltype(VEL), 2, 2)
 
     #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow if that's right, check the julia performance tips again to make sure that's correct.
 
@@ -72,10 +72,16 @@ function induced_velocities_from_vortex_panels_on_points!(
             # check of self-induced:
             if isapprox(cpi, 0.5 * (n1 .+ n2))
                 # if so:
-                vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
+                # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
+                vel = StaticArrays.SMatrix{2,2}(
+                    self_vortex_panel_integration(n1, n2, lj, cpi)
+                )
             else
                 # if not:
-                vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                vel = StaticArrays.SMatrix{2,2}(
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                )
             end
 
             for k in 1:2
@@ -136,7 +142,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 function induced_velocities_from_source_panels_on_points!(
     VEL, controlpoint, node, nodemap, influence_length, strength
 )
-    vel = zeros(eltype(VEL), 2, 2)
+    # vel = zeros(eltype(VEL), 2, 2)
 
     #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow
 
@@ -151,10 +157,16 @@ function induced_velocities_from_source_panels_on_points!(
             # check of self-induced:
             if isapprox(cpi, 0.5 * (n1 .+ n2))
                 # if so:
-                vel .= self_source_panel_integration(n1, n2, lj, cpi)
+                # vel .= self_source_panel_integration(n1, n2, lj, cpi)
+                vel = StaticArrays.SMatrix{2,2}(
+                    self_source_panel_integration(n1, n2, lj, cpi)
+                )
             else
                 # if not:
-                vel .= nominal_source_panel_integration(n1, n2, lj, cpi)
+                # vel .= nominal_source_panel_integration(n1, n2, lj, cpi)
+                vel = StaticArrays.SMatrix{2,2}(
+                    nominal_source_panel_integration(n1, n2, lj, cpi)
+                )
             end
 
             for k in 1:2

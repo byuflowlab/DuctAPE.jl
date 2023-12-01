@@ -34,7 +34,10 @@ function nominal_vortex_induced_velocity_sample(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    return [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
+    return StaticArrays.SMatrix{2,2}(
+        [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
+    )
+    #  return [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
 end
 
 """
@@ -135,7 +138,7 @@ function self_vortex_panel_integration(
 
     V, err = quadgk(fsample, 0.0, 0.5, 1.0)
 
-    vza, vra = analytically_integrated_vortex_influence(controlpoint[2], influence_length)
+    vza, _ = analytically_integrated_vortex_influence(controlpoint[2], influence_length)
 
     V .*= influence_length
     V[:, 1] .+= vza / 2.0
