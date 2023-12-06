@@ -155,11 +155,26 @@ function vortex_aic_boundary_on_field!(
             n1 = view(node, :, nmap[1])
             n2 = view(node, :, nmap[2])
 
-            # get unit induced velocity from the panel onto the control point
-            # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
-            vel = StaticArrays.SMatrix{2,2}(
-                nominal_vortex_panel_integration(n1, n2, lj, cpi)
-            )
+            # check of self-induced:
+            if isapprox(cpi, 0.5 * (n1 .+ n2))
+                # if so:
+                # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
+                vel = StaticArrays.SMatrix{2,2}(
+                    self_vortex_panel_integration(n1, n2, lj, cpi)
+                )
+            else
+                # if not:
+                # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                vel = StaticArrays.SMatrix{2,2}(
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                )
+            end
+
+            # # get unit induced velocity from the panel onto the control point
+            # # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
+            # vel = StaticArrays.SMatrix{2,2}(
+            #     nominal_vortex_panel_integration(n1, n2, lj, cpi)
+            # )
 
             for k in 1:2
                 # fill the Matrix
@@ -258,65 +273,82 @@ function add_te_gap_aic!(
     return AICn
 end
 
-#TODO: need to update these
+# TODO: need to test these
 ##### ----- Source ----- #####
 """
-out of place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric source rings
+out of place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric source rings not on body surface.
 
-Used for constructing the RHS influence Matrix for the panel method system (rotor source induced velocity on boundaries)
+Used for constructing the RHS boundary conditions due to rotor source panels.
 
 **Arguments:**
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
-- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+- `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
+- `nodemap::Matrix{Int}` : [1 2] node indices for each panel
+- `influence_length::Vector{Float}` : lengths of influencing panels
 
 **Returns:**
-- `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
+- `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
+- `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
-function source_influence_matrix(controlpoint, normal, node, influence_length)
+function source_aic(
+    controlpoint, normal, tangent, node, nodemap, influence_length
+)
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
     N = size(node, 2)
 
-    AIC = zeros(T, M, N)
+    AICn = zeros(T, M, N)
+    AICt = zeros(T, M, N)
 
-    source_influence_matrix!(AIC, controlpoint, normal, node, influence_length)
+    source_aic!(
+        AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+    )
 
-    return AIC
+    return AICn, AICt
 end
 
 """
-in place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric source rings
-
-Used for constructing the RHS influence Matrix for the panel method system (rotor source induced velocity on boundaries)
+    source_aic!(
+    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+)
 
 **Arguments:**
 - `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of vortex rings
+- `nodemap::Matrix{Int}` : [id1 id2] id numbers for node on panel used for bookkeeping due to integration across panels.
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
-function source_influence_matrix!(AIC, controlpoint, normal, node, influence_length)
-
+function source_aic!(
+    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+)
     # vel = zeros(eltype(AICn), 2, 2)
 
     # Loop through control points being influenced
-    for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
+    for (i, (cpi, nhat, that)) in
+        enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
         # loop through panels doing the influencing
-        for (j, (nj, lj)) in enumerate(zip(eachcol(node), influence_length))
+        for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
+            n1 = view(node, :, nmap[1])
+            n2 = view(node, :, nmap[2])
 
             # get unit induced velocity from the panel onto the control point
-            # vel .= source_induced_velocity(nj, lj, cpi) #note input strength is default unity
-            vel = StaticArrays.SMatrix{2,2}(source_induced_velocity(nj, lj, cpi)) #note input strength is default unity
+            # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
+            vel = StaticArrays.SMatrix{2,2}(
+                nominal_source_panel_integration(n1, n2, lj, cpi)
+            )
 
-            # fill the Matrix
-            AIC[i, j] += dot(vel, nhat)
-        end
-    end
+            for k in 1:2
+                # fill the Matrix
+                AICn[i, nmap[k]] += dot(vel[k, :], nhat)
+                AICt[i, nmap[k]] += dot(vel[k, :], that)
+            end #for k
+        end #for j
+    end #for i
 
-    return nothing
+    return AICn, AICt
 end
 
 ##### ----- Freestream ----- #####

@@ -158,23 +158,6 @@ function get_sheet_jumps(Gamma_tilde, H_tilde)
     return deltaGamma2, deltaH
 end
 
-function get_wake_k(wake_vortex_panels)
-    # initialize output
-    K = zeros(eltype(wake_vortex_panels.node), wake_vortex_panels.totnode)
-
-    # Loop through panels
-    for (iw, wnr) in enumerate(wake_vortex_panels.node[:, 2])
-        # check if panel has zero radius
-        if isapprox(wnr, 0.0)
-            K[iw] = 0.0
-        else
-            K[iw] = -1.0 ./ (8.0 .* pi^2 .* wnr .^ 2)
-        end
-    end
-
-    return K
-end
-
 """
 
 Calculate wake vortex strengths
@@ -219,9 +202,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
         else
 
             # wake strength density taken from rotor to next rotor constant along streamlines
-            gw[1] =
-                (K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) /
-                Wm_avg
+            gw[1] = (K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) / Wm_avg
         end
     end
 

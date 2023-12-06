@@ -27,6 +27,30 @@
 # end
 
 """
+"""
+function get_blade_ends_from_body_geometry(
+    duct_coordinates, hub_coordinates, tip_gaps, rotorzloc
+)
+
+    # - Get hub and tip wall indices - #
+    ihub = zeros(Int, length(rotorzloc))
+    iduct = zeros(Int, length(rotorzloc))
+    for i in 1:length(rotorzloc)
+        #indices
+        _, ihub[i] = findmin(x -> abs(x - rotorzloc[i]), view(hub_coordinates, 1, :))
+        _, iduct[i] = findmin(x -> abs(x - rotorzloc[i]), view(duct_coordinates, 1, :))
+    end
+
+    # - Get hub and tip radial positions - #
+    Rhubs = hub_coordinates[2, ihub]
+    #need to shift the tips down by the distance of the tip gaps to get the actual tip radii
+    #note that for stators, the tip gap should be zero anyway.
+    Rtips = duct_coordinates[2, iduct] .- tip_gaps
+
+    return Rtips, Rhubs
+end
+
+"""
     generate_blade_elements(B, Omega, xrotor, rblade, chords, twists, solidity, airfoils,
         duct_coordinates, hub_coordinates, r)
 
@@ -137,7 +161,7 @@ end
 # generates rotor panels
 function generate_rotor_panels(xrotor, rwake)
     x = fill(xrotor, length(rwake))
-    xr = [x rwake]
+    xr = [x'; rwake']
 
     return generate_panels(xr)
 end

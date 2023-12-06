@@ -7,119 +7,76 @@ npanels is a vector of number of panels between each discrete point.  so somethi
 function discretize_wake(
     duct_coordinates,
     hub_coordinates,
-    xrotors, # rotor x locations
+    rotorzloc, # rotor x locations
     wake_length,
     npanels;
 )
 
     # extract duct leading and trailing edge locations
-    xduct_le = minimum(duct_coordinates[:, 1])
-    xduct_te = maximum(duct_coordinates[:, 1])
+    duct_lez = minimum(duct_coordinates[:, 1])
+    duct_tez = maximum(duct_coordinates[:, 1])
 
     # extract hub leading and trailing edge location
-    xhub_le = minimum(hub_coordinates[:, 1])
-    xhub_te = maximum(hub_coordinates[:, 1])
+    cb_lez = minimum(hub_coordinates[:, 1])
+    cb_tez = maximum(hub_coordinates[:, 1])
 
     # calculate duct chord
-    duct_chord = max(xduct_te, xhub_te) - min(xduct_le, xhub_le)
+    duct_chord = max(duct_tez, cb_tez) - min(duct_lez, cb_lez)
 
     # dimensionalize wake_length
     wake_length *= duct_chord
 
     # ensure rotors are ordered properly
-    @assert issorted(xrotors)
+    @assert issorted(rotorzloc)
 
     # make sure that all rotors are inside the duct
-    for xrotor in xrotors
-        @assert xrotor > xduct_le "Rotor is in front of duct leading edge."
-        @assert xrotor < xduct_te "Rotor is behind duct trailing edge."
-        @assert xrotor > xhub_le "Rotor is in front of hub leading edge."
-        @assert xrotor < xhub_te "Rotor is behind hub trailing edge."
+    for rzl in rotorzloc
+        @assert rzl > duct_lez "Rotor is in front of duct leading edge."
+        @assert rzl < duct_tez "Rotor is behind duct trailing edge."
+        @assert rzl > cb_lez "Rotor is in front of hub leading edge."
+        @assert rzl < cb_tez "Rotor is behind hub trailing edge."
     end
 
     # combine all discrete locations into one ordered array
-    if isapprox(xhub_te, xduct_te)
-        xd = vcat(xrotors, xhub_te, xhub_te + wake_length)
-        @assert length(npanels) == length(xrotors) + 1 "Length of vector `npanels` should be one more than the length of vector `xrotors` when the duct and hub trailing edges align."
-    elseif xduct_te < xhub_te
-        xd = vcat(xrotors, xduct_te, xhub_te, xhub_te + wake_length)
-        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges do not align."
+    if isapprox(cb_tez, duct_tez)
+        zd = vcat(rotorzloc, cb_tez, cb_tez + wake_length)
+        @assert length(npanels) == length(rotorzloc) + 1 "Length of vector `npanels` should be one more than the length of vector `rotorzloc` when the duct and hub trailing edges align."
+    elseif duct_tez < cb_tez
+        zd = vcat(rotorzloc, duct_tez, cb_tez, cb_tez + wake_length)
+        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and hub trailing edges do not align."
     else
-        xd = vcat(xrotors, xhub_te, xduct_te, xduct_te + wake_length)
-        @assert length(npanels) == length(xrotors) + 2 "Length of vector `npanels` should be two more than the length of vector `xrotors` when the duct and hub trailing edges align."
+        zd = vcat(rotorzloc, cb_tez, duct_tez, duct_tez + wake_length)
+        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and hub trailing edges align."
     end
-
-    # # find (approximate) hub and tip locations
-    # _, leidx = findmin(view(duct_coordinates, :, 1))
-    # _, ihub = findmin(x -> abs(x - xrotors[1]), view(hub_coordinates, :, 1))
-    # _, iduct = findmin(x -> abs(x - xrotors[1]), view(duct_coordinates, 1:leidx, 1))
-    # Rhub = hub_coordinates[ihub, 2]
-    # Rtip = duct_coordinates[iduct, 2]
-
-    # calculate number of panels per unit length
-    # panel_density = wake_refinement * nwake_sheets / (Rtip - Rhub)
-
-    # calculate number of panels for each discrete section
-    # npanels = [ceil(Int, (xd[i + 1] - xd[i]) * panel_density) for i in 1:(length(xd) - 1)]
 
     # calculate indices for the start of each discrete section
     indices = cumsum(vcat(1, npanels))
 
     # construct x-discretization
-    xwake = similar(xd, sum(npanels) + 1) .= 0.0
-    for i in 1:(length(xd) - 1)
-        xrange = range(xd[i], xd[i + 1]; length=npanels[i] + 1)
-        xwake[indices[i]:indices[i + 1]] .= xrange
+    zwake = similar(zd, sum(npanels) + 1) .= 0.0
+    for i in 1:(length(zd) - 1)
+        zrange = range(zd[i], zd[i + 1]; length=npanels[i] + 1)
+        zwake[indices[i]:indices[i + 1]] .= zrange
     end
 
     # get rotor location indices
-    ridx = findall(x -> x in xrotors, xwake)
+    ridx = findall(x -> x in rotorzloc, zwake)
 
     # get indices of body trailing edges on wake
-    # ductTE_index = findall(x -> x == xduct_te, xwake)
-    # hubTE_index = findall(x -> x == xhub_te, xwake)
-    ductTE_index = searchsortedfirst(xwake, xduct_te)
-    hubTE_index = searchsortedfirst(xwake, xhub_te)
+    ductTE_index = searchsortedfirst(zwake, duct_tez)
+    hubTE_index = searchsortedfirst(zwake, cb_tez)
 
     # return dimensionalized wake x-coordinates
-    return xwake, ridx, ductTE_index, hubTE_index
+    return zwake, ridx, ductTE_index, hubTE_index
 end
 
 """
-
-    generate_wake_grid(body_geometry, xrotor, rblade, wake_length=1.0; kwargs...)
-
-Generate the wake grid.
-
-# Arguments:
-- `body_geometry::BodyGeometry`: Duct and hub geometry
-- `xrotor::Vector{Float}`: x-position of each rotor
-- `rblade::Vector{Float}` : r-position of each blade element (for the first rotor)
-- `wake_length::Float` : non-dimensional length (based on maximum duct chord) that the wake
-    extends past the furthest trailing edge.
-
-# Keyword Arguments:
-- `method = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])`
-
-"""
-function generate_wake_grid(xwake, rwake, wake_length=1.0)
-
-    # initialize the wake grid
-    xgrid, rgrid = initialize_wake_grid(body_geometry, xrotor, rblade, wake_length)
-
-    # align the wake grid with streamlines
-    update_grid!(xgrid, rgrid)
-
-    return xgrid, rgrid, rotor_indices
-end
-
-"""
-    generate_wake_panels(xgrid, rgrid; kwargs...)
+    generate_wake_panels(zgrid, rgrid; kwargs...)
 
 Generate paneling for each wake line emanating from the rotor blade elements.
 
 # Arguments:
-- `xgrid::Matrix{Float}` : x-location of each grid point
+- `zgrid::Matrix{Float}` : x-location of each grid point
 - `rgrid::Matrix{Float}` : r-location of each grid point
 
 **Keyword Arguments:**
@@ -128,14 +85,14 @@ Generate paneling for each wake line emanating from the rotor blade elements.
 **Returns:**
 - `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
 """
-function generate_wake_panels(xgrid, rgrid)
-    @assert size(xgrid) == size(rgrid)
+function generate_wake_panels(zgrid, rgrid)
+    @assert size(zgrid) == size(rgrid)
 
     # extract grid size
-    nx, nr = size(xgrid)
+    nz, nr = size(zgrid)
 
     # define wake lines
-    wake_lines = [[xgrid[:, ir] rgrid[:, ir]] for ir in 1:nr]
+    wake_lines = [[zgrid[:, ir]'; rgrid[:, ir]'] for ir in 1:nr]
 
     # generate paneling for each wake line
     wake_panels = generate_panels(wake_lines)
@@ -144,76 +101,75 @@ function generate_wake_panels(xgrid, rgrid)
 end
 
 """
-    initialize_wake_grid(body_geometry, xrotor, rblade)
+    initialize_wake_grid(body_geometry, rzl, rblade)
 
 Intialize the wake grid
 
 **Arguments:**
 - `body_geometry::DuctAPE.body_geometry` : Duct Geometry Object.
-- `xrotor::Vector{Float}` : Vector of x-positions for the rotors
+- `rzl::Vector{Float}` : Vector of x-positions for the rotors
 - `rwake::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
 - `grid_options::DuctAPE.GridOptions` : GridOptions object
 
 **Returns:**
-- `xgrid::Matrix{Float64,2}` : 2D Array of x grid points
+- `zgrid::Matrix{Float64,2}` : 2D Array of x grid points
 - `rgrid::Matrix{Float64,2}` : 2D Array of r grid points
 """
-function initialize_wake_grid(duct_coordinates, hub_coordinates, xwake, rwake)
+function initialize_wake_grid(duct_coordinates, hub_coordinates, zwake, rwake)
 
     # number of streamwise grid locations
-    nx = length(xwake)
+    nx = length(zwake)
 
     # number or radial grid locations
     nr = length(rwake)
 
     # initialize outputs
-    xgrid = similar(duct_coordinates, nx, nr)
-    rgrid = similar(duct_coordinates, nx, nr)
+    grid = similar(duct_coordinates, 2, nx, nr) .= 0.0
 
     # set x-locations
-    xgrid .= xwake
+    grid[1, :, :] .= zwake
 
     # set first rotor radial locations
-    rgrid[1, :] .= rwake
+    grid[2, 1, :] .= rwake
 
     # initial x-position of wake
-    xrotor = xwake[1]
+    rzl = zwake[1]
 
     # hub trailing edge
-    xhub_te = hub_coordinates[end, 1]
+    cb_tez = hub_coordinates[1, end]
 
     # duct trailing edge
-    xduct_te = duct_coordinates[1, 1]
+    duct_tez = duct_coordinates[1, 1]
 
     # set inner radial locations
-    _, ihub_rotor = findmin(x -> abs(x - xrotor), view(hub_coordinates, :, 1))
-    _, ihub_te = findmin(x -> abs(x - xhub_te), xwake)
+    _, ihub_rotor = findmin(x -> abs(x - rzl), view(hub_coordinates, 1, :))
+    _, ihub_te = findmin(x -> abs(x - cb_tez), zwake)
 
-    rgrid[1:ihub_te, 1] .= hub_coordinates[ihub_rotor:end, 2]
-    rgrid[(ihub_te + 1):end, 1] .= hub_coordinates[end, 2]
+    grid[2, 1:ihub_te, 1] .= hub_coordinates[2, ihub_rotor:end]
+    grid[2, (ihub_te + 1):end, 1] .= hub_coordinates[2, end]
 
     # set outer radial locations
-    _, leidx = findmin(view(duct_coordinates, :, 1))
-    _, iduct_rotor = findmin(x -> abs(x - xrotor), view(duct_coordinates, 1:leidx, 1))
-    _, iduct_te = findmin(x -> abs(x - xduct_te), xwake)
-    rgrid[1:iduct_te, end] .= duct_coordinates[iduct_rotor:-1:1, 2]
-    rgrid[(iduct_te + 1):end, end] .= duct_coordinates[1, 2]
+    _, leidx = findmin(view(duct_coordinates, 1, :))
+    _, iduct_rotor = findmin(x -> abs(x - rzl), view(duct_coordinates, 1, 1:leidx))
+    _, iduct_te = findmin(x -> abs(x - duct_tez), zwake)
+    grid[2, 1:iduct_te, end] .= duct_coordinates[2, iduct_rotor:-1:1]
+    grid[2, (iduct_te + 1):end, end] .= duct_coordinates[2, 1]
 
     # --- Define Inner Grid Points --- #
 
     # get the area of the annulus at the first rotor
-    area = pi * (rgrid[1, end]^2 - rgrid[1, 1]^2)
+    area = pi * (grid[2, 1, end]^2 - grid[2, 1, 1]^2)
 
     # get the area of each blade element on the first rotor
-    section_area = pi * (rgrid[1, 2:end] .^ 2 .- rgrid[1, 1:(end - 1)] .^ 2)
+    section_area = pi * (grid[2, 1, 2:end] .^ 2 .- grid[2, 1, 1:(end - 1)] .^ 2)
 
     # apply conservation of mass at each grid point
     for ix in 2:nx
-        xhub = xgrid[ix, 1]
-        rhub = rgrid[ix, 1]
+        xhub = grid[1, ix, 1]
+        rhub = grid[2, ix, 1]
 
-        xduct = xgrid[ix, end]
-        rduct = rgrid[ix, end]
+        xduct = grid[1, ix, end]
+        rduct = grid[2, ix, end]
 
         # calculate the area of the annulus at the current streamwise location
         local_area = pi * (rduct .^ 2 .- rhub .^ 2)
@@ -222,15 +178,15 @@ function initialize_wake_grid(duct_coordinates, hub_coordinates, xwake, rwake)
 
             # define radial grid point based on conservation of mass
             local_section_area = local_area * section_area[ir - 1] / area
-            rgrid[ix, ir] = sqrt(local_section_area / pi + rgrid[ix, ir - 1]^2)
+            grid[2, ix, ir] = sqrt(local_section_area / pi + grid[2, ix, ir - 1]^2)
 
             # linearly interpolate hub and duct x-positions
-            frac = (rgrid[ix, ir] - rhub) / (rduct - rhub)
-            xgrid[ix, ir] = xhub + frac * (xduct - xhub)
+            frac = (grid[2, ix, ir] - rhub) / (rduct - rhub)
+            grid[1, ix, ir] = xhub + frac * (xduct - xhub)
         end
     end
 
-    return xgrid, rgrid
+    return grid
 end
 
 """
@@ -252,9 +208,12 @@ Relax grid using elliptic grid solver.
  - `x_relax_points::Matrix{Float64}` : Relaxed x grid points
  - `r_relax_points::Matrix{Float64}` : Relaxed r grid points
 """
-function relax_grid!(xr, rr; max_iterations=100, tol=1e-9, verbose=false)
-    TF = eltype(rr)
-    nxi, neta = size(xr)
+function relax_grid!(grid; max_iterations=100, tol=1e-9, verbose=false)
+    xr = view(grid, 1, :, :)
+    rr = view(grid, 2, :, :)
+
+    TF = eltype(grid)
+    _, nxi, neta = size(grid)
 
     # initialize output and computation arrays
     # xr = [xg[i, j] for i in 1:nxi, j in 1:neta]
@@ -515,7 +474,7 @@ function relax_grid!(xr, rr; max_iterations=100, tol=1e-9, verbose=false)
             if verbose
                 println("iterations = ", iterate)
             end
-            return nothing
+            return grid
         end
 
         relaxfactor = relaxfactor1
@@ -532,12 +491,31 @@ function relax_grid!(xr, rr; max_iterations=100, tol=1e-9, verbose=false)
             if verbose
                 println("iterations = ", iterate)
             end
-            return nothing
+            return grid
         end
     end
 
     if verbose
         println("iterations = ", iterate)
     end
-    return nothing
+    return grid
+end
+
+"""
+"""
+function get_wake_k(wake_vortex_panels)
+    # initialize output
+    K = zeros(eltype(wake_vortex_panels.node), wake_vortex_panels.totnode)
+
+    # Loop through panels
+    for (iw, wnr) in enumerate(wake_vortex_panels.node[2, :])
+        # check if panel has zero radius
+        if isapprox(wnr, 0.0)
+            K[iw] = 0.0
+        else
+            K[iw] = -1.0 ./ (8.0 .* pi^2 .* wnr .^ 2)
+        end
+    end
+
+    return K
 end

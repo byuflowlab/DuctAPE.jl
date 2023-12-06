@@ -14,7 +14,7 @@ using SpecialFunctions # required for elliptic integrals
 using QuadGK # required for integration of linear panels
 using StaticArrays
 
-using LinearAlgebra: factorize, mul!, lu!, ldiv!, issuccess, NoPivot # used in linear system assembly and solve
+using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
 
 using NLsolve
 using ImplicitAD
@@ -46,6 +46,7 @@ include("precomputation/rotor_geometry.jl")
 
 # Wake Geometry Functions
 include("precomputation/wake_geometry.jl")
+# include("precomputation/wake_geometry_residual.jl")
 
 # Aero Influence Matrices
 include("precomputation/integrals.jl")

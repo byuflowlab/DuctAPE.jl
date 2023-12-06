@@ -34,8 +34,11 @@ function nominal_vortex_induced_velocity_sample(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    return StaticArrays.SMatrix{2,2}(
-        [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
+    # return StaticArrays.SMatrix{2,2}(
+    #     [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
+    # )
+    return StaticArrays.SVector{4}(
+        [vz * (1.0 - t); vz * t; vr * (1.0 - t); vr * t] * influence_length
     )
     #  return [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
 end
@@ -57,9 +60,11 @@ function nominal_vortex_panel_integration(
     V, err = quadgk(fsample, 0.0, 1.0)
 
     if debug
-        return V, err
+        return reshape(V, (2, 2)), err
+        # return V, err
     else
-        return V
+        return reshape(V, (2, 2))
+        # return V
     end
 end
 
@@ -119,7 +124,12 @@ function self_vortex_induced_velocity_sample(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    return [(vz * [1.0 - t; t] .- vzs / 2.0) (vr * [1.0 - t; t] .- vrs / 2.0)]
+    return [
+        vz * (1.0 - t) - vzs / 2.0
+        vz * t .- vzs / 2.0
+        vr * (1.0 - t) .- vrs / 2.0
+        vr * t .- vrs / 2.0
+    ]
 end
 
 """
@@ -141,12 +151,12 @@ function self_vortex_panel_integration(
     vza, _ = analytically_integrated_vortex_influence(controlpoint[2], influence_length)
 
     V .*= influence_length
-    V[:, 1] .+= vza / 2.0
+    V[1:2] .+= vza / 2.0
 
     if debug
-        return V, err
+        return reshape(V, (2, 2)), err
     else
-        return V
+        return reshape(V, (2, 2))
     end
 end
 
@@ -186,7 +196,10 @@ function nominal_source_induced_velocity_sample(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    return [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
+    # return StaticArrays.SMatrix{2,2}([vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length)
+    return StaticArrays.SVector{4}(
+        [vz * (1.0 - t); vz * t; vr * (1.0 - t); vr * t] * influence_length
+    )
 end
 
 """
@@ -206,9 +219,11 @@ function nominal_source_panel_integration(
     V, err = quadgk(fsample, 0.0, 1.0)
 
     if debug
-        return V, err
+        return reshape(V, (2, 2)), err
+        # return V, err
     else
-        return V
+        return reshape(V, (2, 2))
+        # return V
     end
 end
 
@@ -270,7 +285,12 @@ function self_source_induced_velocity_sample(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    return [(vz * [1.0 - t; t] .- vzs / 2.0) (vr * [1.0 - t; t] .- vrs / 2.0)]
+    return [
+        vz * (1.0 - t) .- vzs / 2.0
+        vz * t .- vzs / 2.0
+        vr * (1.0 - t) .- vrs / 2.0
+        vr * t .- vrs / 2.0
+    ]
 end
 
 """
@@ -292,11 +312,11 @@ function self_source_panel_integration(
     vza, vra = analytically_integrated_source_influence(controlpoint[2], influence_length)
 
     V .*= influence_length
-    V[:, 2] .+= vra / 2.0
+    V[1:2] .+= vra / 2.0
 
     if debug
-        return V, err
+        return reshape(V, (2, 2)), err
     else
-        return V
+        return reshape(V, (2, 2))
     end
 end

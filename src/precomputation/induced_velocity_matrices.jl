@@ -179,6 +179,61 @@ function induced_velocities_from_source_panels_on_points!(
     return VEL
 end
 
+#---------------------------------#
+#     Trailing Edge Gap Panel     #
+#---------------------------------#
+"""
+"""
+function induced_velocities_from_trailing_edge_gap_panel!(
+    VEL, controlpoint, tenode, teinfluence_length, tendotn, tencrossn, teadjnodeidxs
+)
+
+    # vvel = zeros(eltype(AICn), 2, 2)
+    # svel = zeros(eltype(AICn), 2, 2)
+
+    # Loop through control points being influenced
+    for (i, cpi) in enumerate(eachcol(controlpoint))
+        # loop through bodies
+        for (j, (lj, ndn, ncn, nmap)) in enumerate(
+            zip(
+                teinfluence_length,
+                eachcol(tendotn),
+                eachcol(tencrossn),
+                eachcol(teadjnodeidxs),
+            ),
+        )
+            n1 = view(tenode, j, 1, :)
+            n2 = view(tenode, j, 2, :)
+
+            # get unit induced velocity from the panel onto the control point
+            if isapprox(cpi, 0.5 * (n1 .+ n2))
+                # if so:
+                vvel = StaticArrays.SMatrix{2,2}(
+                    self_vortex_panel_integration(n1, n2, lj, cpi)
+                )
+                svel = StaticArrays.SMatrix{2,2}(
+                    self_source_panel_integration(n1, n2, lj, cpi)
+                )
+            else
+                # if not:
+                vvel = StaticArrays.SMatrix{2,2}(
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                )
+                svel = StaticArrays.SMatrix{2,2}(
+                    nominal_source_panel_integration(n1, n2, lj, cpi)
+                )
+            end
+
+            for k in 1:2
+                # fill the Matrix
+                VEL[i, nmap[k], :] += ndn[k] * vvel[k, :] + ncn[k] * svel[k, :]
+            end #for k
+        end #for j
+    end #for i
+
+    return VEL
+end
+
 ######################################################################
 #                                                                    #
 #    Vector of total (sum of) velocity induced by panels on points   #
