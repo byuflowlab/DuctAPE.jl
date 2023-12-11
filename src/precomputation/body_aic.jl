@@ -270,7 +270,7 @@ function add_te_gap_aic!(
         end #for j
     end #for i
 
-    return AICn
+    return AICn, AICt
 end
 
 # TODO: need to test these

@@ -176,7 +176,7 @@ function repanel_revolution(coordinates; N=160, normalize=true)
 
     xpane, ypane = repanel_revolution(x, y; N=N, normalize=normalize)
 
-    return [xpane ypane]
+    return [xpane'; ypane']
 end
 
 function repanel_revolution(x, y; N=160, normalize=true)

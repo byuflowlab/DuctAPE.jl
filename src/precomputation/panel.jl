@@ -275,9 +275,8 @@ function def_te_panel!(
             # teadjnodeidxs[2, ib] = -1
             # set both dots and crosses to the same thing based on the single adjacent node.
             tendotn[1, ib] = dot(tenormal[:, ib], normal[:, endpanelidxs[2, ib]])
-            tendotn[2, ib] = 0.0 # unnecessary, but just in case initialization changes
-            tencrossn[1, ib] = cross2mag(normal[:, endpanelidxs[2, ib]], tenormal[:, ib])
-            tencrossn[2, ib] = cross2mag(normal[:, endpanelidxs[2, ib]], tenormal[:, ib])
+            tendotn[2, ib] = 0.0 # unnecessary since this value isn't used because the gamma value is prescribed to zero anyway, but just in case initialization changes
+            tencrossn[:, ib] .= cross2mag(normal[:, endpanelidxs[2, ib]], tenormal[:, ib])
         end
         teinfluence_length[ib] = get_r(tenode[ib, 1, :], tenode[ib, 2, :])[2]
     end

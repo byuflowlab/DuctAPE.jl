@@ -59,8 +59,6 @@ function induced_velocities_from_vortex_panels_on_points!(
 )
     # vel = zeros(eltype(VEL), 2, 2)
 
-    #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow if that's right, check the julia performance tips again to make sure that's correct.
-
     # loop through panels doing the influencing
     for (j, (nmap, lj, gammaj)) in
         enumerate(zip(eachcol(nodemap), influence_length, eachcol(strength)))

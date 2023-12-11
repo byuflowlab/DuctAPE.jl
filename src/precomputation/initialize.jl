@@ -477,7 +477,7 @@ function precomputed_inputs(
 
     # - rotor to wake - #
     v_wr = [
-        induced_velocities_from_vortex_panels_on_points(
+        induced_velocities_from_source_panels_on_points(
             wake_vortex_panels.controlpoint,
             rotor_source_panels[j].node,
             rotor_source_panels[j].nodemap,
