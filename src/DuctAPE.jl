@@ -87,9 +87,9 @@ include("preliminary_design/1DModel_B.jl")
 # include("pressure_residual.jl")
 
 # # -- ROTOR ONLY -- ##
-# include("solve_rotor_only.jl")
-# include("initialize_rotor_only.jl")
-# include("post_process_rotor.jl")
+include("precomputation/initialize_rotor_only.jl")
+include("solve/solve_rotor_only.jl")
+include("postprocess/post_process_rotor.jl")
 
 # # -- Debugging -- ##
 # include("initialize_manual.jl")

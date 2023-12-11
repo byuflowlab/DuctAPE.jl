@@ -157,7 +157,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         gamb,
         inputs.vx_rbte,
         inputs.vr_rbte,
-        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
+        (p -> p.idx).(inputs.body_vortex_panels.TEnodes),
     )
 
     # - Reframe rotor velocities into blade element frames

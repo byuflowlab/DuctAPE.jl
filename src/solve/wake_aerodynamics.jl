@@ -112,7 +112,7 @@ function calculate_wake_velocities(gamw, sigr, gamb, inputs)
         gamb,
         inputs.vx_wbte,
         inputs.vr_wbte,
-        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
+        (p -> p.idx).(inputs.body_vortex_panels.TEnodes),
     )
 
     # - Reframe rotor velocities into blade element frames
@@ -181,17 +181,17 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
     )
 
         # Get average meridional velocity at node
-        if iw in inputs.wake_vortex_panels.endnodeidxs[:, 1]
-            Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 1], iw)]
-        elseif iw in inputs.wake_vortex_panels.endnodeidxs[:, 2]
-            Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw)]
+        if iw in inputs.wake_vortex_panels.endnodeidxs[1, :]
+            Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[1, :], iw)]
+        elseif iw in inputs.wake_vortex_panels.endnodeidxs[2, :]
+            Wm_avg = Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[2, :], iw)]
         else
             Wm_avg =
                 0.5 * (
                     Wm_wake[searchsortedfirst(
-                        inputs.wake_vortex_panels.nodemap[:, 1], iw
+                        inputs.wake_vortex_panels.nodemap[1, :], iw
                     )] +
-                    Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[:, 2], iw)]
+                    Wm_wake[searchsortedfirst(inputs.wake_vortex_panels.nodemap[2, :], iw)]
                 )
         end
 
