@@ -81,8 +81,17 @@ function subtracted_singular_vortex_influence(node, controlpoint)
     den1 = 2.0 * pi * rmag2
     den2 = 64.0 * controlpoint[2]^2
 
-    axial = num1r / den1 - log(rmag2 / den2) / (8.0 * pi * controlpoint[2])
-    radial = num1z / den1
+    if isapprox(rmag2, 0.0) || isapprox(controlpoint[2], 0.0)
+        axial = 0.0
+    else
+        axial = num1r / den1 - log(rmag2 / den2) / (8.0 * pi * controlpoint[2])
+    end
+
+    if isapprox(controlpoint[2], 0.0)
+        radial = 0.0
+    else
+        radial = num1z / den1
+    end
 
     return axial, radial
 end
