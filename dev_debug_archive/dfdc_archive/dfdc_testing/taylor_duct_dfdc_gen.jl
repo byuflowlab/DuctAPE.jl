@@ -40,9 +40,9 @@ function gen_taylor_case()
         0.15018 0.38243E-01 29.596
     ]
 
-    #TODO; get xrotor from MDO stuff
+    #TODO; get rotorzloc from MDO stuff
     rotor_data = [(;
-        naf=1, xrotor=0.12, B=5, r=rct[:, 1], chord=rct[:, 2], twist=rct[:, 3]
+        naf=1, rotorzloc=0.12, B=5, r=rct[:, 1], chord=rct[:, 2], twist=rct[:, 3]
     )]
 
     # TODO: figure out how to generate your own coordinates to get a straight duct case as well

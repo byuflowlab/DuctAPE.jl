@@ -15,7 +15,7 @@ function visualize_flowfield(
     gamw=nothing,
     Gamr=nothing,
     num_blades=[1],
-    xrotor=[0.0],
+    rotorzloc=[0.0],
     Pmax=nothing,
     Pmin=nothing,
     verbose=false,
@@ -157,7 +157,7 @@ function visualize_flowfield(
             Gamma_tilde_be[end]
         ]
         for ix in 1:size(tgridx, 2)
-            gtid = findlast(x -> x <= tgridx[1, ix], xrotor)
+            gtid = findlast(x -> x <= tgridx[1, ix], rotorzloc)
             vthetagrid[:, ix] = dt.calculate_vtheta(Gamma_tilde_ws[:, gtid], tgridr[:, ix])
         end
 

@@ -26,12 +26,12 @@ include(project_dir * "/dev_debug_archive/debug_together/debug_outputs.jl")
 function step_through(;
     iterations=1,
     tip_gap=0.0,
-    xrotor=0.25,
+    rotorzloc=0.25,
     npanels_inlet=10,
     wake_length=1.0,
     discscale=1,
     duct_file=project_dir * "/test/data/naca_662-015.jl",
-    airfoil_file=project_dir * "/test/data/xrotor_af_test.dat",
+    airfoil_file=project_dir * "/test/data/rotorzloc_af_test.dat",
     debug=true,
 )
 
@@ -50,7 +50,7 @@ function step_through(;
     B = 2
 
     # x position of rotor
-    # xrotor = 0.25
+    # rotorzloc = 0.25
 
     # Blade section non-dimensional radial positions, chords lengths, and local twists angles in degrees
     propgeom = [
@@ -133,7 +133,7 @@ function step_through(;
     ductle = minimum(duct_coordinates[:, 1])
     ductte = maximum(duct_coordinates[:, 1])
     ductchord = maximum(duct_coordinates[:, 1]) - minimum(duct_coordinates[:, 1])
-    outletinletratio = (ductte - xrotor) / (xrotor - ductle)
+    outletinletratio = (ductte - rotorzloc) / (rotorzloc - ductle)
 
     nhub_inlet = round(Int, npanels_inlet * discscale)
 
@@ -154,7 +154,7 @@ function step_through(;
 
     # Rotor Parameters
     rotor_parameters = [(;
-        xrotor=xrotor,
+        rotorzloc=rotorzloc,
         nwake_sheets,
         r=rnondim,
         chords,
@@ -233,7 +233,7 @@ function step_through(;
     #plot rotor location for reference
     plot!(
         pgb,
-        xrotor * ones(2),
+        rotorzloc * ones(2),
         [minimum(gamb_init); maximum(gamb_init)];
         linestyle=:dot,
         color=mycolors[3],
@@ -558,5 +558,5 @@ function step_through(;
 end
 
 step_through(;
-    xrotor=0.25, tip_gap=0.0, discscale=1, npanels_inlet=10, wake_length=1.0, iterations=7
+    rotorzloc=0.25, tip_gap=0.0, discscale=1, npanels_inlet=10, wake_length=1.0, iterations=7
 )

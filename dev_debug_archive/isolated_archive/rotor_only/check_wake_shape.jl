@@ -62,11 +62,11 @@ chords = propgeom[:, 2] * Rtip
 # convert twists to radians
 twists = propgeom[:, 3] * pi / 180
 
-airfoils = fill(ccb.AlphaAF("test/data/xrotor_af_test.dat"), length(r))
+airfoils = fill(ccb.AlphaAF("test/data/rotorzloc_af_test.dat"), length(r))
 
 nwake_sheets = 15
 
-xrotor = 0.25
+rotorzloc = 0.25
 
 wake_length = 2.0
 wake_sections = [0.5; 1.0; 1.5]
@@ -90,7 +90,7 @@ asound = 341.0 #m/s
 
 # Rotor Parameters
 rotor_parameters = [(;
-    xrotor, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega
+    rotorzloc, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega
 )]
 
 # Freestream Parameters
@@ -120,7 +120,7 @@ x_grid_points = default_inputs.x_grid_points
 # update radial points
 rscales = [0.5; 1.5; 1.0; 1.0]
 xids = [
-        findfirst(x -> x >= xrotor + wake_sections[i] * 2.0 * Rtip, x_grid_points[:,1]) for
+        findfirst(x -> x >= rotorzloc + wake_sections[i] * 2.0 * Rtip, x_grid_points[:,1]) for
     i in 1:length(wake_sections)
 ]
 xidx = [1; xids; length(x_grid_points[:,1])]
@@ -179,7 +179,7 @@ strengths = dt.solve_rotor_only(initial_states, inputs)
 Gamr, gamw, sigr = dt.extract_rotor_states(strengths, inputs)
 
 ## -- run ccblade -- ##
-ccbouts = run_ccblade(Vinf; airfoil="test/data/xrotor_af_test.dat")
+ccbouts = run_ccblade(Vinf; airfoil="test/data/rotorzloc_af_test.dat")
 
 #---------------------------------#
 #             PLOTS               #
@@ -190,7 +190,7 @@ pgeom = plot(; aspectratio=1, xlabel="x", ylabel="r")
 # Plot rotor position
 plot!(
     pgeom,
-    xrotor * ones(length(inputs.rotor_panel_edges)),
+    rotorzloc * ones(length(inputs.rotor_panel_edges)),
     inputs.rotor_panel_edges;
     label="",
 )

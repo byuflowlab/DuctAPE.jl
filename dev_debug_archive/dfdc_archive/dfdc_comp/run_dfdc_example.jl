@@ -103,7 +103,7 @@ function init()
     ENDROTOR
     =#
 
-    xrotor = 0.12
+    rotorzloc = 0.12
     B = 5
 
     #dimensional radius
@@ -193,8 +193,8 @@ function init()
     ductrin = reverse(duct_coords[1:duct_leidx, 2])
 
     # load in duct and hub geometry, spline, and find out what the duct and hub radii are at the rotor positions to figure out what Rtip and Rhub are.
-    Rhub = FLOWMath.akima(hub_coords[:, 1], hub_coords[:, 2], xrotor)
-    Rtip = FLOWMath.akima(ductxin, ductrin, xrotor)
+    Rhub = FLOWMath.akima(hub_coords[:, 1], hub_coords[:, 2], rotorzloc)
+    Rtip = FLOWMath.akima(ductxin, ductrin, rotorzloc)
 
     #---------------------------------#
     #      Operating Conditions       #
@@ -234,7 +234,7 @@ function init()
     ductle = minimum(duct_coords[:, 1])
     ductte = maximum(duct_coords[:, 1])
     ductchord = maximum(duct_coords[:, 1]) - minimum(duct_coords[:, 1])
-    outletinletratio = (ductte - xrotor) / (xrotor - ductle)
+    outletinletratio = (ductte - rotorzloc) / (rotorzloc - ductle)
 
     nhub_inlet = round(Int, npanels_inlet * discscale)
 
@@ -252,7 +252,7 @@ function init()
 
     # Rotor Parameters
     rotor_parameters = [(;
-        xrotor=xrotor,
+        rotorzloc=rotorzloc,
         nwake_sheets,
         r=r ./ Rtip, #non-dimensionalize
         chords,
@@ -482,7 +482,7 @@ function plotgeom(inputs, paneling_constants)
     pgeom = plot(; aspectratio=1, xlabel="x", ylabel="r")
     plot!(
         pgeom,
-        inputs.blade_elements[1].xrotor * ones(length(inputs.rotor_panel_edges)),
+        inputs.blade_elements[1].rotorzloc * ones(length(inputs.rotor_panel_edges)),
         inputs.rotor_panel_edges;
         color=mycolors[2],
         linewidth=0.25,
@@ -682,7 +682,7 @@ function plotbodyaero(cstates, inputs, out,convergeflag)
     #plot rotor location
     plot!(
         pb,
-        inputs.blade_elements[1].xrotor * ones(2),
+        inputs.blade_elements[1].rotorzloc * ones(2),
         abs.([0.0; maximum(duct_cpv[:, 4] ./ inputs.reference_parameters.Vref)]);
         # linewidth=0.25,
         linestyle=:dot,

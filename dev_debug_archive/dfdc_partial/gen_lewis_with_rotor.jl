@@ -54,7 +54,7 @@ r = range(
     length=length(rct[:, 1]),
 )
 
-rotor_data = [(; naf=1, xrotor=0.5/scale, B=5, r, chord=rct[:, 2], twist=rct[:, 3])]
+rotor_data = [(; naf=1, rotorzloc=0.5/scale, B=5, r, chord=rct[:, 2], twist=rct[:, 3])]
 
 # filename = "lwr"
 # gen_dfdc_case(

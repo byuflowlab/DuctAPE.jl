@@ -84,11 +84,11 @@ function plotgeom(inputs, paneling_constants)
     ##### ----- Plot GEOMETRY ----- #####
     #initialize plot
     pgeom = plot(; aspectratio=1, xlabel="x", ylabel="r")
-    nrotor = length(inputs.blade_elements.xrotor)
+    nrotor = length(inputs.blade_elements.rotorzloc)
     for ir in 1:nrotor
         plot!(
             pgeom,
-            inputs.blade_elements[ir].xrotor *
+            inputs.blade_elements[ir].rotorzloc *
             ones(length(inputs.rotor_panel_edges[:, ir])),
             inputs.rotor_panel_edges[:, ir];
             color=mycolors[2],

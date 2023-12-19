@@ -1,4 +1,4 @@
-Xrotor-like Airfoil, clmax=1.5, clmin=-1.0, alpha0=0.0, dcdla=6.283185307179586, dclda_stall=-0.5, blend_hardness=5, cdo=0.012, clo=0.1, b=0.005, Re_ref=200000.0, f=0.35
+XROTOR-like Airfoil, clmax=1.5, clmin=-1.0, alpha0=0.0, dcdla=6.283185307179586, dclda_stall=-0.5, blend_hardness=5, cdo=0.012, clo=0.1, b=0.005, Re_ref=200000.0, f=0.35
 500000.0
 0
 -3.141592653589793 0.6537606268541063 0.01865010327817263

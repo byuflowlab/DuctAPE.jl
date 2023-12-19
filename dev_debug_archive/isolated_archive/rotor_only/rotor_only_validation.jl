@@ -83,7 +83,7 @@ nwake_sheets = 18
 # nwake_sheets = 5
 
 # x position of rotor
-xrotor = 0.0
+rotorzloc = 0.0
 
 #---------------------------------#
 #       Operating Conditions      #
@@ -103,7 +103,7 @@ asound = 341.0 #m/s
 
 # Rotor Parameters
 rotor_parameters = [(;
-    xrotor, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega
+    rotorzloc, nwake_sheets, r, chords, twists, airfoils, Rtip, Rhub, B, Omega
 )]
 
 # Freestream Parameters

@@ -16,7 +16,7 @@ wake_length = 1.0
 npanels = [20, 20, 80].*npan_ref
 
 # ROTOR
-xrotor = 0.127
+rotorzloc = 0.127
 B = 5
 r = [0.0254, 0.03668832268354582, 0.047977664536709166, 0.059267006389872506, 0.07055634824303583, 0.08184059424811163, 0.09313299361012747, 0.10442539297214334, 0.11571779233415924, 0.127]
 chords = [0.089142, 0.079785, 0.0713, 0.063979, 0.057777, 0.052541, 0.048103, 0.044316, 0.041061, 0.038243]
@@ -41,7 +41,7 @@ Rtip=0.127
 Rhub=0.0254
 
 rotor1 = (;
-   xrotor,
+   rotorzloc,
    nwake_sheets,
    r=r ./ Rtip, #non-dimensionalize
    chords,
@@ -55,7 +55,7 @@ rotor1 = (;
    )
 
 rotor2 = (;
-   xrotor=0.127*1.5,
+   rotorzloc=0.127*1.5,
    nwake_sheets=nothing, #nwake sheets won't be used for second rotor
    r=r ./ Rtip, #non-dimensionalize
    chords=0.05*ones(10),

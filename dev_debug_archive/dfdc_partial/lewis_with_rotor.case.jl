@@ -1,4 +1,4 @@
-xrotor = 0.5
+rotorzloc = 0.5
 B = 5
 r = 0.16:0.06669722222222223:0.760275
 chords = [
@@ -43,7 +43,7 @@ nwake_sheets = 11
 wake_length = 1.0
 npanels = [20, 40]
 rotor_parameters = [(;
-    xrotor,
+    rotorzloc,
     # nwake_sheets,
     r=r ./ Rtip, #non-dimensionalize
     chords,

@@ -34,7 +34,7 @@ Rhub = 0.10 * Rtip
 B = 2
 
 # rotor x position
-xrotor = 0.25
+rotorzloc = 0.25
 
 # duct distance from tip
 tip_gap = 0.0
@@ -70,7 +70,7 @@ chords = propgeom[:, 2] * Rtip
 twists = propgeom[:, 3] * pi / 180
 
 # use a basic airfoil model data
-airfoil_file = project_dir * "/test/data/xrotor_af_test.dat"
+airfoil_file = project_dir * "/test/data/rotorzloc_af_test.dat"
 airfoils = fill(ccb.AlphaAF(airfoil_file), length(rnondim))
 
 #---------------------------------#
@@ -102,7 +102,7 @@ wake_length = 1.0
 ductle = minimum(duct_coordinates[:, 1])
 ductte = maximum(duct_coordinates[:, 1])
 ductchord = maximum(duct_coordinates[:, 1]) - minimum(duct_coordinates[:, 1])
-outletinletratio = (ductte - xrotor) / (xrotor - ductle)
+outletinletratio = (ductte - rotorzloc) / (rotorzloc - ductle)
 
 nhub_inlet = round(Int, npanels_inlet * discscale)
 
@@ -128,7 +128,7 @@ Omega = 5400 * pi / 30  # convert from RPM to rad/s
 #---------------------------------#
 # Rotor Parameters
 rotor_parameters = [(;
-    xrotor, nwake_sheets, r=rnondim, chords, twists, airfoils, Rtip, Rhub, tip_gap, B, Omega
+    rotorzloc, nwake_sheets, r=rnondim, chords, twists, airfoils, Rtip, Rhub, tip_gap, B, Omega
 )]
 
 # Paneling Parameters

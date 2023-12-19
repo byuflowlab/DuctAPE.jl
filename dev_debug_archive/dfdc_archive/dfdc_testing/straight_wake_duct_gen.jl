@@ -37,15 +37,15 @@ function gen_straightwake_case(;savepath="dev_debug_archive/dfdc_testing/")
 
     r, c, t = rotor_geom()
 
-    xrotor = 0.127
+    rotorzloc = 0.127
 
-    rotor_data = [(; naf=1, xrotor, B=5, r, chord=c, twist=t)]
+    rotor_data = [(; naf=1, rotorzloc, B=5, r, chord=c, twist=t)]
 
     hub_coordinates = simple_hub_coordinates()
 
     duct_coordinates = smooth_duct_coordinates()
 
-    plot_geom(duct_coordinates, hub_coordinates, xrotor, r, c, t)
+    plot_geom(duct_coordinates, hub_coordinates, rotorzloc, r, c, t)
 
     gen_dfdc_case(
         filename,
@@ -168,12 +168,12 @@ function rotor_geom(; Rtip=0.254 / 2.0, Rhub=0.0254)
     return r, rct[:, 2], rct[:, 3]
 end
 
-function plot_geom(duct_coordinates, hub_coordinates, xrotor, r, c, t)
+function plot_geom(duct_coordinates, hub_coordinates, rotorzloc, r, c, t)
     plot(; xlabel="x (m)", ylabel="r (m)", aspectratio=1)
 
     plot!(duct_coordinates[:, 1], duct_coordinates[:, 2]; label="Duct")
     plot!(hub_coordinates[:, 1], hub_coordinates[:, 2]; label="Hub")
-    plot!(xrotor * ones(length(r)), r; label="Rotor")
+    plot!(rotorzloc * ones(length(r)), r; label="Rotor")
 
     savefig("dev_debug_archive/dfdc_testing/straightwake-geom.pdf")
 

@@ -50,13 +50,13 @@ function load_smooth_duct(npanref, rtransform)
     return duct_coordinates
 end
 
-function dtrepanel(duct_coordinates, hub_coordinates, dtpane, xrotor, wake_length=1.0)
+function dtrepanel(duct_coordinates, hub_coordinates, dtpane, rotorzloc, wake_length=1.0)
 
     # use coupled repanling for duct
     xwake, _, _, _ = dt.discretize_wake(
         duct_coordinates,
         hub_coordinates,
-        xrotor, #xrotor
+        rotorzloc, #rotorzloc
         wake_length, #wake length
         dtpane[2:end],
         # [20, 20, 40], #npanels

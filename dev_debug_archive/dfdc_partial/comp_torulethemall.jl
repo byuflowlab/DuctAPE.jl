@@ -165,7 +165,7 @@ if comptype == "d"
         xwake, _, _, _ = dt.discretize_wake(
             duct_coordinates,
             hub_coordinates,
-            0.5, #xrotor
+            0.5, #rotorzloc
             1.0, #wake length
             [20, 20, 40], #npanels
         )

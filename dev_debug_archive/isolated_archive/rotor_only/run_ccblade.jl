@@ -31,7 +31,7 @@ function run_ccblade(Vinf; airfoil="test/data/naca4412.dat")
     chord = propgeom[:, 2] * Rtip
     theta = propgeom[:, 3] * pi / 180
     # af = AlphaAF("test/data/naca4412.dat")
-    # af = AlphaAF("test/data/xrotor_af_test.dat")
+    # af = AlphaAF("test/data/rotorzloc_af_test.dat")
     af = AlphaAF(airfoil)
     sections = Section.(r, chord, theta, Ref(af))
 

@@ -20,7 +20,7 @@ hub_r = [0.0; 0.25; 0.0]
 hub_coordinates = [hub_x hub_r]
 
 # Required rotor information for duct and wake generation
-xrotors = [0.5; 0.75]
+rotorzlocs = [0.5; 0.75]
 Rtip = 1.0 # leading rotor tip radius
 
 # non-dimensional wake length
@@ -35,7 +35,7 @@ npanels = [5; 5; 4; 20]
 
 # discretize the wake x-coordinates
 xwake, rotor_indices = dt.discretize_wake(
-    duct_coordinates, hub_coordinates, xrotors, wake_length, nwake_sheets, npanels
+    duct_coordinates, hub_coordinates, rotorzlocs, wake_length, nwake_sheets, npanels
 )
 
 # number of panels between hub leading edge and first rotor
@@ -49,8 +49,8 @@ new_duct_xr, new_hub_xr = dt.update_body_geometry(
     duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=fm.linear
 )
 
-# shift the duct geometry according to the leading rotor tip radius, and return the rotor hub and tip dimensions for all rplace_duct(duct_coordinates, hub_coordinates, Rtip, xrotors)otors
-trans_duct_xr, Rtips, Rhubs = dt.place_duct(new_duct_xr, new_hub_xr, Rtip, xrotors)
+# shift the duct geometry according to the leading rotor tip radius, and return the rotor hub and tip dimensions for all rplace_duct(duct_coordinates, hub_coordinates, Rtip, rotorzlocs)otors
+trans_duct_xr, Rtips, Rhubs = dt.place_duct(new_duct_xr, new_hub_xr, Rtip, rotorzlocs)
 
 # generate the body panels
 body_panels = dt.generate_body_panels(trans_duct_xr, new_hub_xr)
@@ -142,7 +142,7 @@ rotor1_parameters = (;
     Rtip=1.5,
     B=2,
     Omega=50,
-    xrotor=xrotors[1],
+    rotorzloc=rotorzlocs[1],
     r=[0.0, 1.0],
     chords=[0.5, 0.25],
     twists=[50.0, 10.0],
@@ -150,20 +150,20 @@ rotor1_parameters = (;
 )
 
 # stator parameters
-rotor2_parameters = (; rotor1_parameters..., xrotor=xrotors[2])
+rotor2_parameters = (; rotor1_parameters..., rotorzloc=rotorzlocs[2])
 
 # array with rotor and stator parameters
 rotor_parameters = [rotor1_parameters, rotor2_parameters]
 
 # generate rotor source panel objects
 rotor_source_panels = [
-    dt.generate_rotor_panels(xrotors[i], rgrid[rotor_indices[i], :]) for
-    i in 1:length(xrotors)
+    dt.generate_rotor_panels(rotorzlocs[i], rgrid[rotor_indices[i], :]) for
+    i in 1:length(rotorzlocs)
 ]
 
 ## -- PLOT -- ##
-plot!(xrotors[1] * ones(2), [Rhubs[1]; Rtips[1]]; color=:black, label="rotor locations")
-plot!(xrotors[2] * ones(2), [Rhubs[2]; Rtips[2]]; color=:black, label="")
+plot!(rotorzlocs[1] * ones(2), [Rhubs[1]; Rtips[1]]; color=:black, label="rotor locations")
+plot!(rotorzlocs[2] * ones(2), [Rhubs[2]; Rtips[2]]; color=:black, label="")
 plot!(
     rotor_source_panels[1].panel_center[:, 1],
     rotor_source_panels[1].panel_center[:, 2];
@@ -188,7 +188,7 @@ blade_elements = [
     dt.generate_blade_elements(
         rotor_parameters[i].B,
         rotor_parameters[i].Omega,
-        rotor_parameters[i].xrotor,
+        rotor_parameters[i].rotorzloc,
         rotor_parameters[i].rblade,
         rotor_parameters[i].chords,
         rotor_parameters[i].twists,
@@ -196,7 +196,7 @@ blade_elements = [
         Rtips[i],
         Rhubs[i],
         rotor_source_panels[i].panel_center[:, 2],
-    ) for i in 1:length(xrotors)
+    ) for i in 1:length(rotorzlocs)
 ]
 
 # savefig("dev_debug_archive/basic-geometry-setup.pdf")

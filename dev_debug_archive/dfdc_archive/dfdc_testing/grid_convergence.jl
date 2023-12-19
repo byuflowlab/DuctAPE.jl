@@ -123,7 +123,7 @@ function plotgeom(inputs, paneling_constants; filename="precomputed_geometry.pdf
     pgeom = plot(; aspectratio=1, xlabel="x", ylabel="r")
     plot!(
         pgeom,
-        inputs.blade_elements[1].xrotor * ones(length(inputs.rotor_panel_edges)),
+        inputs.blade_elements[1].rotorzloc * ones(length(inputs.rotor_panel_edges)),
         inputs.rotor_panel_edges;
         color=mycolors[2],
         linewidth=0.25,

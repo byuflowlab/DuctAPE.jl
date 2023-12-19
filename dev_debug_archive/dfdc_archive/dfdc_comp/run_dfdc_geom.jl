@@ -47,7 +47,7 @@ function init(dfdc)
     ENDROTOR
     =#
 
-    xrotor = 0.12
+    rotorzloc = 0.12
     B = 5
 
     # rotor panel nodes
@@ -113,8 +113,8 @@ function init(dfdc)
     ductrin = reverse(duct_coordinates[1:duct_leidx, 2])
 
     # load in duct and hub geometry, spline, and find out what the duct and hub radii are at the rotor positions to figure out what Rtip and Rhub are.
-    Rhub = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], xrotor)
-    Rtip = FLOWMath.akima(ductxin, ductrin, xrotor)
+    Rhub = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], rotorzloc)
+    Rtip = FLOWMath.akima(ductxin, ductrin, rotorzloc)
 
     #---------------------------------#
     #        Wake Coordinates         #
@@ -170,7 +170,7 @@ function init(dfdc)
 
     # Rotor Parameters
     rotor_parameters = [(;
-        xrotor,
+        rotorzloc,
         rotor_panel_edges,
         chords,
         twists,
@@ -246,7 +246,7 @@ function plot_geom(inputs)
     # - Plot Rotor - #
     plot!(
         pg,
-        inputs.blade_elements[1].xrotor * ones(length(inputs.rotor_panel_edges)),
+        inputs.blade_elements[1].rotorzloc * ones(length(inputs.rotor_panel_edges)),
         inputs.rotor_panel_edges;
         linewidth=0.5,
         markershape=:rect,
@@ -257,7 +257,7 @@ function plot_geom(inputs)
 
     plot!(
         pg,
-        inputs.blade_elements[1].xrotor * ones(length(inputs.rotor_panel_centers)),
+        inputs.blade_elements[1].rotorzloc * ones(length(inputs.rotor_panel_centers)),
         inputs.rotor_panel_centers;
         seriestype=:scatter,
         markersize=1.5,

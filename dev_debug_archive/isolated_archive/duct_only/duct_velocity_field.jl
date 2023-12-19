@@ -84,16 +84,16 @@ body_strengths = dt.solve_body_system(A_bb, b_bf, kutta_idxs) # get circulation 
 #     check at "rotor" plane      #
 #---------------------------------#
 # simply generte a "rotor" set of panels at the point you want to do a mass conservation ballpark check...
-xrotor = range(0.1, 0.9; length=5) .* scale
-ridxd = [findfirst(x -> x < xrotor[i], x_duct) for i in 1:length(xrotor)]
-ridxh = [findfirst(x -> x > xrotor[i], x_hub) for i in 1:length(xrotor)]
-rs = [range(r_hub[ridxh[i]], r_duct[ridxd[i]]; length=100) for i in 1:length(xrotor)]
+rotorzloc = range(0.1, 0.9; length=5) .* scale
+ridxd = [findfirst(x -> x < rotorzloc[i], x_duct) for i in 1:length(rotorzloc)]
+ridxh = [findfirst(x -> x > rotorzloc[i], x_hub) for i in 1:length(rotorzloc)]
+rs = [range(r_hub[ridxh[i]], r_duct[ridxd[i]]; length=100) for i in 1:length(rotorzloc)]
 
 # rotor source panel objects
-rotor_source_panels = [dt.generate_rotor_panels(xrotor[i], rs[i]) for i in 1:length(xrotor)]
+rotor_source_panels = [dt.generate_rotor_panels(rotorzloc[i], rs[i]) for i in 1:length(rotorzloc)]
 
 #rotor panel centers
-rpc = [rotor_source_panels[i].panel_center[:, 2] for i in 1:length(xrotor)]
+rpc = [rotor_source_panels[i].panel_center[:, 2] for i in 1:length(rotorzloc)]
 
 # - body to rotor unit induced velocities- #
 mesh_rb = [
@@ -120,7 +120,7 @@ vr_rb = [A_rb[i, j][2] for i in 1:length(rotor_source_panels), j in 1:1]
 _, leidx = findmin(x_duct)
 Ai = pi * r_duct[leidx]^2
 #area of interest
-As = pi .* [(r_duct[ridxd[i]] - r_hub[ridxh[i]])^2 for i in 1:length(xrotor)]
+As = pi .* [(r_duct[ridxd[i]] - r_hub[ridxh[i]])^2 for i in 1:length(rotorzloc)]
 
 Vs = Vinf .* Ai ./ As
 
@@ -159,10 +159,10 @@ plot!(
 
 pv = plot(; xlabel="induced x velocity + Vinf", ylabel="r")
 
-for i in 1:length(xrotor)
+for i in 1:length(rotorzloc)
     plot!(
         pgeom,
-        xrotor[i] * ones(length(rpc[i])),
+        rotorzloc[i] * ones(length(rpc[i])),
         rpc[i];
         # linestyle=:dash,
         color=mycolors[i],
@@ -171,7 +171,7 @@ for i in 1:length(xrotor)
 
     body_induced_x = vx_rb[i] * body_strengths .+ Vinf
 
-    plot!(pv, body_induced_x, rpc[i]; color=mycolors[i], label="x location = $(xrotor[i])")
+    plot!(pv, body_induced_x, rpc[i]; color=mycolors[i], label="x location = $(rotorzloc[i])")
 
     plot!(
         pv,
@@ -179,7 +179,7 @@ for i in 1:length(xrotor)
         rpc[i];
         linestyle=:dash,
         color=mycolors[i],
-        label="Mean $(xrotor[i])",
+        label="Mean $(rotorzloc[i])",
     )
 
     plot!(
@@ -188,7 +188,7 @@ for i in 1:length(xrotor)
         rpc[i];
         linestyle=:dot,
         color=mycolors[i],
-        label="Cons Mass $(xrotor[i])",
+        label="Cons Mass $(rotorzloc[i])",
     )
 end
 

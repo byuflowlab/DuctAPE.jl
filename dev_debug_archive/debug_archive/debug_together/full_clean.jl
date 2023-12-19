@@ -25,12 +25,12 @@ include(project_dir * "/dev_debug_archive/debug_together/debug_outputs.jl")
 
 function full_clean(;
     tip_gaps=[0.1],
-    xrotor=[0.25],
+    rotorzloc=[0.25],
     npanels_inlet=10,
     wake_length=1.0,
     discscale=1,
     duct_file=project_dir * "/test/data/naca_662-015.jl",
-    airfoil_file=project_dir * "/test/data/xrotor_af_test.dat",
+    airfoil_file=project_dir * "/test/data/rotorzloc_af_test.dat",
     debug=true,
 )
     #---------------------------------#
@@ -128,7 +128,7 @@ function full_clean(;
     outletinletratio = 0.5
     =#
 
-    for xr in xrotor
+    for xr in rotorzloc
         ductle = minimum(duct_coordinates[:, 1])
         ductte = maximum(duct_coordinates[:, 1])
         ductchord = maximum(duct_coordinates[:, 1]) - minimum(duct_coordinates[:, 1])
@@ -156,7 +156,7 @@ function full_clean(;
 
             # Rotor Parameters
             rotor_parameters = [(;
-                xrotor=xr,
+                rotorzloc=xr,
                 nwake_sheets,
                 r=rnondim,
                 chords,
@@ -196,7 +196,7 @@ function full_clean(;
             end
 
             if debug
-                debug_outputs(strengths, inputs; suffix="xrotor$(xr)_tipgap$(tip_gaps[i])%Rtip")
+                debug_outputs(strengths, inputs; suffix="rotorzloc$(xr)_tipgap$(tip_gaps[i])%Rtip")
             end
 
             #extract solution
@@ -259,7 +259,7 @@ function full_clean(;
             savefig(
                 pG,
                 project_dir *
-                "/dev_debug_archive/debug_together/rotorcirculation-check_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+                "/dev_debug_archive/debug_together/rotorcirculation-check_rotorzloc$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             ##### ----- Plot duct surface velocity ----- #####
@@ -338,7 +338,7 @@ function full_clean(;
             savefig(
                 pb,
                 project_dir *
-                "/dev_debug_archive/debug_together/body-velocity_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+                "/dev_debug_archive/debug_together/body-velocity_rotorzloc$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             ##### ----- Plot Wake Strengths ----- #####
@@ -364,7 +364,7 @@ function full_clean(;
             savefig(
                 pg,
                 project_dir *
-                "/dev_debug_archive/debug_together/wake-strength_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+                "/dev_debug_archive/debug_together/wake-strength_rotorzloc$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             ##### ----- Plot Source Strengths ----- #####
@@ -390,7 +390,7 @@ function full_clean(;
             savefig(
                 ps,
                 project_dir *
-                "/dev_debug_archive/debug_together/source-strength-check_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+                "/dev_debug_archive/debug_together/source-strength-check_rotorzloc$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             ##### ----- Plot GEOMETRY ----- #####
@@ -447,7 +447,7 @@ function full_clean(;
 
             savefig(
                 project_dir *
-                "/dev_debug_archive/debug_together/precomputed-rotor-wake-geometry_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+                "/dev_debug_archive/debug_together/precomputed-rotor-wake-geometry_rotorzloc$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
 
             # plot body panels
@@ -479,10 +479,10 @@ function full_clean(;
             savefig(
                 pgeom,
                 project_dir *
-                "/dev_debug_archive/debug_together/precomputed-full-geometry_xrotor$(xr)_tipgap$(tip_gaps[i]).pdf",
+                "/dev_debug_archive/debug_together/precomputed-full-geometry_rotorzloc$(xr)_tipgap$(tip_gaps[i]).pdf",
             )
         end #for tip gap
-    end #for xrotor
+    end #for rotorzloc
 
     println("DONE.")
 
@@ -490,7 +490,7 @@ function full_clean(;
 end
 
 full_clean(;
-    xrotor=[0.25],
+    rotorzloc=[0.25],
     # tip_gaps=[100; 75; 50; 25; 20; 17.5; 15, 12.5 10; 7.5; 5; 2.5; 1; 0],
     tip_gaps=[0.0],
     discscale=1,

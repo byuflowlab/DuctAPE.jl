@@ -9,9 +9,9 @@ B = 22
 _, leid = findmin(duct_coordinates[:, 1])
 inner_duct = reverse(duct_coordinates[1:leid, :]; dims=1)
 
-xrotor = 0.0 # axial position of rotor stacking axis (dimensional)
-Rtip = FLOWMath.akima(inner_duct[:, 1], inner_duct[:, 2], xrotor)
-Rhub = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], xrotor)
+rotorzloc = 0.0 # axial position of rotor stacking axis (dimensional)
+Rtip = FLOWMath.akima(inner_duct[:, 1], inner_duct[:, 2], rotorzloc)
+Rhub = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], rotorzloc)
 
 include("../../../NASA_validation/validation_scripts/rotor_geometry.jl")
 r = rotor_rct[:, 1] ./ Rtip
@@ -21,7 +21,7 @@ twists = rotor_rct[:, 3]
 airfoils = []
 for sidx in 1:25
     include(
-        "../../../NASA_validation/validation_scripts/xrotor_airfoil_parameter_approximations/rotor_section$(sidx)_dfdc_params.jl",
+        "../../../NASA_validation/validation_scripts/rotorzloc_airfoil_parameter_approximations/rotor_section$(sidx)_dfdc_params.jl",
     )
     push!(
         airfoils,
@@ -64,7 +64,7 @@ nwake_sheets = 11
 wake_length = 1.0
 
 rotor_parameters = [(;
-    xrotor,
+    rotorzloc,
     r,
     chords,
     twists,

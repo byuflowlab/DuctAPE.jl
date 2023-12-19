@@ -18,7 +18,7 @@ ROTOR
 ENDROTOR
 =#
 
-xrotor = 0.12
+rotorzloc = 0.12
 B = 5
 
 #dimensional radius

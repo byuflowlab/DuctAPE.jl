@@ -31,7 +31,7 @@ hub_r = [0.0; 0.25; 0.0]
 hub_coordinates = [hub_x hub_r]
 
 # Required rotor information for duct and wake generation
-xrotors = [0.5; 0.75]
+rotorzlocs = [0.5; 0.75]
 Rtip = 1.0 # leading rotor tip radius
 
 # non-dimensional wake length
@@ -116,7 +116,7 @@ asound = 341.0 #m/s
 
 # Rotor Parameters
 rotor_parameters1 = (;
-    xrotor=xrotors[1],
+    rotorzloc=rotorzlocs[1],
     nwake_sheets,
     r=rnondim,
     chords,
@@ -128,7 +128,7 @@ rotor_parameters1 = (;
     B,
     Omega,
 )
-rotor_parameters2 = (; rotor_parameters1..., xrotor=xrotors[2])
+rotor_parameters2 = (; rotor_parameters1..., rotorzloc=rotorzlocs[2])
 
 rotor_parameters = [rotor_parameters1; rotor_parameters2]
 
@@ -168,7 +168,7 @@ for ib in 1:1
     )
 end
 
-for ir in 1:length(xrotors)
+for ir in 1:length(rotorzlocs)
     plot!(
         inputs.rotor_source_panels[ir].panel_center[:, 1],
         inputs.rotor_source_panels[ir].panel_center[:, 2];

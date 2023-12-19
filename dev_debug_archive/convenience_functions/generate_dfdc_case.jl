@@ -61,7 +61,7 @@ function gen_dfdc_case(
         write(f, "!       Xdisk        Nblds       NRPdef\n")
         write(
             f,
-            "    $(rotor_data[irotor].xrotor)     $(rotor_data[irotor].B)     $(wake_data.nwake_sheets)\n",
+            "    $(rotor_data[irotor].rotorzloc)     $(rotor_data[irotor].B)     $(wake_data.nwake_sheets)\n",
         )
         write(f, "!  #stations\n")
         write(f, "    $(length(rotor_data[irotor].r))\n")
@@ -155,7 +155,7 @@ function test_gen_dfdc_case()
     ]
 
     rotor_data = [(;
-        naf=1, xrotor=0.12, B=5, r=rct[:, 1], chord=rct[:, 2], twist=rct[:, 3]
+        naf=1, rotorzloc=0.12, B=5, r=rct[:, 1], chord=rct[:, 2], twist=rct[:, 3]
     )]
 
     hub_coordinates = [
@@ -286,8 +286,8 @@ function write_ducttape_params(
 )
     f = open(savepath * filename, "w")
 
-    xrotor = rotor_data[1].xrotor
-    write(f, "xrotor = $xrotor\n")
+    rotorzloc = rotor_data[1].rotorzloc
+    write(f, "rotorzloc = $rotorzloc\n")
     B = rotor_data[1].B
     write(f, "B = $B\n")
 
@@ -333,8 +333,8 @@ function write_ducttape_params(
     ductrin = reverse(duct_coordinates[1:duct_leidx, 2])
 
     # load in duct and hub geometry, spline, and find out what the duct and hub radii are at the rotor positions to figure out what Rtip and Rhub are.
-    Rhub = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], xrotor)
-    Rtip = FLOWMath.akima(ductxin, ductrin, xrotor)
+    Rhub = FLOWMath.akima(hub_coordinates[:, 1], hub_coordinates[:, 2], rotorzloc)
+    Rtip = FLOWMath.akima(ductxin, ductrin, rotorzloc)
 
     write(f, "Rtip=$Rtip\n")
     write(f, "Rhub=$Rhub\n")
@@ -364,7 +364,7 @@ function write_ducttape_params(
     ductle = minimum(duct_coordinates[:, 1])
     ductte = maximum(duct_coordinates[:, 1])
     ductchord = maximum(duct_coordinates[:, 1]) - minimum(duct_coordinates[:, 1])
-    outletinletratio = (ductte - xrotor) / (xrotor - ductle)
+    outletinletratio = (ductte - rotorzloc) / (rotorzloc - ductle)
 
     nhub_inlet = round(Int, npanels_inlet * discscale)
 
@@ -388,7 +388,7 @@ function write_ducttape_params(
     write(
         f,
         "rotor_parameters = [(;
-   xrotor,
+   rotorzloc,
    nwake_sheets,
    r=r ./ Rtip, #non-dimensionalize
    chords,

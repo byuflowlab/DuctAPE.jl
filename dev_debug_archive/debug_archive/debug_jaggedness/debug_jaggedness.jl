@@ -276,7 +276,7 @@ plot(rnondim, twists * 180 / pi; xlabel="r/R", ylabel="Twist (deg)")
 savefig("dev_debug_archive/debug_jaggedness/"*prefix*"twist_dist_raw.pdf")
 
 # use a NACA 4412 airfoils
-airfoil_file = project_dir * "/test/data/xrotor_af_test.dat"
+airfoil_file = project_dir * "/test/data/rotorzloc_af_test.dat"
 airfoils = fill(ccb.AlphaAF(airfoil_file), length(rnondim))
 
 #Vinf
@@ -292,7 +292,7 @@ nwake_sheets = 10
 #---------------------------------#
 # Rotor Parameters
 rotor_parameters = [(;
-    xrotor=0.0,
+    rotorzloc=0.0,
     nwake_sheets,
     r=rnondim,
     chords,
