@@ -18,17 +18,15 @@ println("Running Tests...")
 
 # - Should be Working - #
 include("afcorrections.jl")
-include("new_panel_tests.jl")
+include("panel_generation_tests.jl")
 include("induced_velocities.jl")
 include("influence_coefficients.jl")
 include("linear_system_assembly.jl")
 include("pre_processing_tests.jl")
 
 # - add back in after body is validated and need to get rotor/wake working again.
-# include("body_geometry_tests.jl")
 # include("blade_element_aero_lookups.jl")
 # include("post_processing_tests.jl")
-# include("velocity_probe_tests.jl")
 
 # - Not necessary for now - #
 # include("test_cascade_functions.jl")
@@ -44,6 +42,5 @@ include("pre_processing_tests.jl")
 # include("constant_initialization.jl")
 # include("wake_aero_tests.jl")
 # # include("aero_coefficient_tests.jl")
-# # include("basic_geometry.jl") # actually coupled geometry
-# # include("geometry_tests.jl") # should be combined with basic geometry and renamed.
+# # include("coupled_geometry.jl")
 # # include("rotor_post_processing_tests.jl")

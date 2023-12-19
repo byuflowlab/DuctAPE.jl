@@ -1,4 +1,4 @@
-@testset "Basic Geometry" begin
+@testset "Coupled Geometry" begin
 
     #---------------------------------#
     #             BODIES              #
