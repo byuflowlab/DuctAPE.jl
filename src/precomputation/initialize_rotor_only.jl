@@ -27,7 +27,7 @@ function precompute_inputs_rotor_only(
     # - Generate Panels - #
     # note there will be nbe panels, but we require nbe+1 panel edges.
     rotor_source_panels = [
-        generate_rotor_panels(rotor_parameters[i].xrotor, rotor_panel_edges[:, i]) for
+        generate_rotor_panels(rotor_parameters[i].rotorzloc, rotor_panel_edges[:, i]) for
         i in 1:nrotor
     ]
 
@@ -40,7 +40,7 @@ function precompute_inputs_rotor_only(
         generate_blade_elements(
             rotor_parameters[i].B,
             rotor_parameters[i].Omega,
-            rotor_parameters[i].xrotor,
+            rotor_parameters[i].rotorzloc,
             rotor_parameters[i].r,
             rotor_parameters[i].chords,
             rotor_parameters[i].twists,
@@ -69,7 +69,7 @@ function precompute_inputs_rotor_only(
     # - Define x grid spacing - #
     #note that by using step rather than length, we aren't guarenteed to have the wake as long as we want, but it will be close.
     xrange = range(
-        rotor_parameters[1].xrotor, rotor_parameters[1].xrotor + wake_length * D; step=dr
+        rotor_parameters[1].rotorzloc, rotor_parameters[1].rotorzloc + wake_length * D; step=dr
     )
 
     num_wake_x_panels = length(xrange) - 1
@@ -103,7 +103,7 @@ function precompute_inputs_rotor_only(
         rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
     end
     for (i, cp) in enumerate(eachrow(wake_vortex_panels.controlpoint))
-        rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.xrotor)
+        rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.rotorzloc)
     end
 
     ######################################################################

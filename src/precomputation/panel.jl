@@ -15,7 +15,11 @@ generates NamedTuple of panel geometry items from a vector of matrices of coordi
 assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
 """
 function generate_panels(
-    coordinates::Vector{Matrix{TF}}; itcpshift=0.05, axistol=1e-15, tegaptol=1e1 * eps()
+    coordinates::Vector{Matrix{TF}};
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
+    isbody=true,
 ) where {TF}
 
     ## -- SETUP -- ##
@@ -115,7 +119,7 @@ function generate_panels(
     #note: unused, but required input later
     ittangent = zeros(TF, 2, nbodies)
 
-    if size(node, 2) > 2
+    if size(node, 2) > 2 && isbody
         def_it_panel!(
             itcontrolpoint,
             itnormal,
@@ -137,20 +141,22 @@ function generate_panels(
     tendotn = zeros(TF, 2, nbodies) #bodies, node1,2
     tencrossn = zeros(TF, 2, nbodies) #bodies, node1,2
 
-    def_te_panel!(
-        tenode,
-        tenormal,
-        teinfluence_length,
-        teadjnodeidxs,
-        tendotn,
-        tencrossn,
-        nbodies,
-        normal,
-        tangent,
-        endpanelidxs,
-        endnodes,
-        endnodeidxs,
-    )
+    if isbody
+        def_te_panel!(
+            tenode,
+            tenormal,
+            teinfluence_length,
+            teadjnodeidxs,
+            tendotn,
+            tencrossn,
+            nbodies,
+            normal,
+            tangent,
+            endpanelidxs,
+            endnodes,
+            endnodeidxs,
+        )
+    end
 
     # - Prescribed Nodes - #
     # Save the node index for nodes that are on the axis and need to be prescribed.

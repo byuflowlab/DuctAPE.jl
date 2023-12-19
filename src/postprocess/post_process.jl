@@ -1153,7 +1153,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
     nwakex = Int(wake_vortex_panels.totpanel / nsheets)
     wakecpx = reshape(wake_vortex_panels.controlpoint[:, 1], (nwakex, nsheets))'
     wakecpr = reshape(wake_vortex_panels.controlpoint[:, 2], (nwakex, nsheets))'
-    xrotor = inputs.blade_elements.xrotor
+    rotorzloc = inputs.blade_elements.rotorzloc
 
     # get B*Circulation on each rotor at each wake shedding location
     if size(Gamr, 1) > 1
@@ -1180,7 +1180,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
     # Get Gamma_tilde at each wake control point
     Gamma_tilde = cumsum(BGambar; dims=2)
     Gamma_tilde_grid = similar(wakecpx) .= 0.0
-    xids = [searchsortedfirst(wakecpx[1, :], xrotor[i]) for i in 1:nrotor]
+    xids = [searchsortedfirst(wakecpx[1, :], rotorzloc[i]) for i in 1:nrotor]
     for i in 1:nrotor
         if i == nrotor
             Gamma_tilde_grid[:, xids[i]:end] .= Gamma_tilde[:, i]
@@ -1197,7 +1197,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
 
         # check if outside the wake or on the edge
         if isnothing(wxid1)
-            if probe[1] < xrotor[1]
+            if probe[1] < rotorzloc[1]
                 #outside of wake
                 vtheta[ip] = 0.0
                 continue
@@ -1216,7 +1216,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
         end
 
         # - Find the rotor just in front - #
-        xrid = findlast(x -> x <= probe[1], xrotor)
+        xrid = findlast(x -> x <= probe[1], rotorzloc)
 
         # - Find the wake station just below and just above - #
         wrid1 = findlast(x -> x <= probe[2], wakecpr[:, wxid1])
@@ -1243,7 +1243,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
         end
 
         # check if on rotor or aligned with wake control points
-        if isapprox(probe[1], xrotor[xrid])
+        if isapprox(probe[1], rotorzloc[xrid])
             # On the a rotor need to use self-induced rotor tangential velocity and interpolate in r only
 
             #on edges, just use the edge value
@@ -1286,7 +1286,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
         else
 
             # use rotor self induced value if it's closer than the nearest wake control point
-            if probe[1] < xrotor[xrid]
+            if probe[1] < rotorzloc[xrid]
                 vtx2r1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1])
                 vtx2x2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2])
             else
@@ -1294,7 +1294,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
                 vtx2x2 = Gamma_tilde_grid[wrid2, wxid2]# ./ (2 * pi * wakecpr[wrid2])
             end
 
-            if probe[1] > xrotor[xrid]
+            if probe[1] > rotorzloc[xrid]
                 vtx1r1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1])
                 vtx1r2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2])
             else

@@ -46,14 +46,14 @@ function manual_precomputed_inputs(
 
     # rotor source panel objects
     rotor_source_panels = [
-        generate_rotor_panels(rotor_parameters[1].xrotor, rpe) for i in 1:1
+        generate_rotor_panels(rotor_parameters[1].rotorzloc, rpe) for i in 1:1
     ]
 
     # rotor blade element objects
     blade_elements = [(;
         B=rotor_parameters[1].B,
         Omega=rotor_parameters[1].Omega,
-        xrotor=rotor_parameters[1].xrotor,
+        rotorzloc=rotor_parameters[1].rotorzloc,
         rbe=rotor_source_panels[1].panel_center[:, 2],
         chords=rotor_parameters[1].chords,
         twists=rotor_parameters[1].twists,
@@ -296,13 +296,13 @@ function manual_precomputed_inputs(
     )
     # index of duct panel where rotor lies
     rotor_indices_on_duct =
-        findfirst(x -> x < rotor_parameters[1].xrotor, body_panels[1].panel_center[:, 1]) -
+        findfirst(x -> x < rotor_parameters[1].rotorzloc, body_panels[1].panel_center[:, 1]) -
         1
     # indices on duct after rotor (where deltacp is applied)
     ductwakeidx = [1:rotor_indices_on_duct[end]]
     # index of hub panel where rotor lies
     rotor_indices_on_hub = findfirst(
-        x -> x > rotor_parameters[1].xrotor, body_panels[2].panel_center[:, 1]
+        x -> x > rotor_parameters[1].rotorzloc, body_panels[2].panel_center[:, 1]
     )
     # indices on hub aft of rotor
     hubwakeidx = [rotor_indices_on_hub[1]:length(body_panels[2].panel_center[:, 1])]

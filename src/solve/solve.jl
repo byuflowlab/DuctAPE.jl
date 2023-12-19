@@ -1,35 +1,105 @@
 """
+rotor only solve, calls nominal solve function but sets gamb to nothing
 """
-function solve!(Gamma, Gamma_est; maxiter=1e2, p)
+function solve!(
+    inputs, Gamr, Gamr_est, gamw, gamw_est; nosource=true, maxiter=1e2, verbose=false
+)
+    return solve!(
+        inputs,
+        Gamr,
+        Gamr_est,
+        gamw,
+        gamw_est,
+        nothing;
+        nosource=nosource,
+        maxiter=maxiter,
+        verbose=verbose,
+    )
+end
 
-    # unpack parameters
-    (nrf, bt1, bt2, pf1, pf2, Vref) = p
-    maxBGamma = MVector{1,TF}(0.0)
-    maxdeltaBGamma = MVector{1,TF}(0.0)
+"""
+
+"""
+function solve!(
+    inputs, Gamr, Gamr_est, gamw, gamw_est, gamb; nosource=true, maxiter=1e2, verbose=false
+)
+
+    # unpack relaxation and convergence parameters for convenience
+    (nrf, bt1, bt2, btw, pf1, pf2, pfw, f_circ, f_dgamw, freestream) = inputs
+
+    # initialize convergence criteria
+    maxBGamr = MVector{1,TF}(0.0)
+    maxdeltaBGamr = MVector{1,TF}(0.0)
     maxdeltagamw = MVector{1,TF}(0.0)
     conv = MVector{1,Bool}(false)
     iter = MVector{1,Int}(0)
+
+    # initialize differences
+    deltaG_prev = Gamr_est .- Gamr
+    deltaG = similar(deltaG_prev) .= 0.0
+    deltag_prev = gamw_est .- gamw
+    deltag = similar(deltag_prev) .= 0.0
+
+    #initialize sigr here for now if not including it:
+    sigr = similar(Gamr, size(gamw, 1), size(Gamr, 2)) .= 0.0
 
     # loop until converged or max iterations are reached
     while !conv[] && iter <= maxiter
         # update iteration number
         iter[] += 1
 
-        # stuff before
+        # Solve linear system if including
+        if !isnothing(gamb)
+            # in place solve for gamb
+            # TODO: update this function to match new methods
+            calculate_body_vortex_strengths!(
+                gamb,
+                inputs.A_bb,
+                inputs.b_bf,
+                inputs.kidx,
+                inputs.A_bw,
+                gamw,
+                inputs.A_br,
+                sigr,
+                inputs.ductwakeidx,
+            )
+        end
 
-        # in-place solve for Gamma, updating Gamma_est
+        # Update rotor blade element velocities
+        _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+            Gamr, gamw, sigr, gamb, inputs
+        )
 
-        # get difference between estimated Gamma and old Gamma
-        deltaG = Gamma_est .- Gamma
+        # in-place solve for Gamr, updating Gamr_est
+        calculate_Gamma_sigma!(
+            Gamr_est,
+            sigr,
+            inputs.blade_elements,
+            Wm_rotor,
+            Wtheta_rotor,
+            Wmag_rotor,
+            freestream;
+            debug=false,
+            verbose=false,
+        )
 
-        # relax Gamma
-        relax_Gamma!(
-            Gamma,
-            deltaG_old,
+        # if excluding sigr in solver
+        # TODO: if including, need to relax it as well and make it an input probably.
+        if nosource
+            sigr .= 0.0
+        end
+
+        # get difference between estimated Gamr and old Gamr
+        @. deltaG = Gamr_est - Gamr
+
+        # relax Gamr values
+        relax_Gamr!(
+            Gamr,
+            deltaG_prev,
             deltaG,
-            maxBGamma,
-            maxdeltaBGamma,
-            B;
+            maxBGamr,
+            maxdeltaBGamr,
+            inputs.blade_elements.B;
             nrf=nrf,
             bt1=bt1,
             bt2=bt2,
@@ -37,26 +107,38 @@ function solve!(Gamma, Gamma_est; maxiter=1e2, p)
             pf2=pf2,
         )
 
-        # Update rotor blade element velocities using new Gamma (and sigma?) values
+        # Update Vm_avg in wake using new Gamr and sigma
+        Wm_wake = calculate_wake_velocities(gamw, sigr, gamb, inputs)
 
-        # in-place solve for gamw, updated gamw_est
+        # in-place solve for gamw, update gamw_est
+        calculate_wake_vortex_strengths!(gamw_est, Gamr, Wm_wake, inputs)
 
         # get difference beetween estimated gamw and old gamw
-        deltag = gamw_est .- gamw
+        @. deltag = gamw_est - gamw
 
-        # relax wake gamma values
-        relax_gamw!(gamw, deltag_old, deltag, maxdeltagamw;)
+        # relax gamw values
+        relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=nrf, btw=btw, pfw=pfw)
 
         # converged?
-        check_convergence!(conv, maxBGamma, maxdeltaBGamma, maxdeltagamw, Vref)
+        check_convergence!(
+            conv,
+            maxBGamr,
+            maxdeltaBGamr,
+            maxdeltagamw,
+            inputs.reference_parameters.Vref;
+            f_circ=f_circ,
+            f_dgamw=f_dgamw,
+        )
+
+        # print iteration information if verbose is true
     end
 
     return nothing
 end
 
 """
-- `Gamma::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
-- `delta_old_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
+- `Gamr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
+- `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
 - `B::Vector{Float}` : number of blades on each rotor
 - `nrf::Float=0.5` : nominal relaxation factor
@@ -65,12 +147,12 @@ end
 - `pf1::Float=0.4` : press forward factor 1
 - `pf2::Float=0.5` : press forward factor 2
 """
-function relax_Gamma!(
-    Gamma,
-    delta_old_mat,
+function relax_Gamr!(
+    Gamr,
+    delta_prev_mat,
     delta_mat,
-    maxBGamma,
-    maxdeltaBGamma,
+    maxBGamr,
+    maxdeltaBGamr,
     B;
     nrf=0.5,
     bt1=0.2,
@@ -80,32 +162,32 @@ function relax_Gamma!(
 )
 
     # initilize
-    TF = eltype(Gamma)
-    omega = nrf .* ones(TF, size(Gamma, 1))
+    TF = eltype(Gamr)
+    omega = nrf .* ones(TF, size(Gamr, 1))
     bladeomega = MVector{1,TF}(0.5)
 
-    for (G, b, delta_old, delta) in
-        zip(eachcol(Gamma), B, eachcol(delta_old_mat), eachcol(delta_mat))
-        # - Set the normalization value based on the maximum magnitude value of B*Gamma
+    for (G, b, delta_prev, delta) in
+        zip(eachcol(Gamr), B, eachcol(delta_prev_mat), eachcol(delta_mat))
+        # - Set the normalization value based on the maximum magnitude value of B*Gamr
 
         # find max magnitude
-        maxBGamma[], mi = findmax(abs.(G))
+        maxBGamr[], mi = findmax(abs.(G))
 
         # maintain sign of original value
-        maxBGamma[] *= sign(G[mi])
+        maxBGamr[] *= sign(G[mi])
 
         # make sure we don't have any weird jumps
         meang = sum(G) / length(G)
-        if meang > 0.0 # if mean is positive, make sure maxBGamma[] is at least 0.1
-            maxBGamma[] = max(maxBGamma[] * b, 0.1)
-        elseif meang < 0.0 # if mean is negative, make sure maxBGamma[] is at most -0.1
-            maxBGamma[] = min(maxBGamma[] * b, -0.1)
-        else # if the average is zero, then set maxBGamma[] to zero
-            maxBGamma[] = 0.0
+        if meang > 0.0 # if mean is positive, make sure maxBGamr[] is at least 0.1
+            maxBGamr[] = max(maxBGamr[] * b, 0.1)
+        elseif meang < 0.0 # if mean is negative, make sure maxBGamr[] is at most -0.1
+            maxBGamr[] = min(maxBGamr[] * b, -0.1)
+        else # if the average is zero, then set maxBGamr[] to zero
+            maxBGamr[] = 0.0
         end
 
-        # note: delta = Gamma_new .- Gamma
-        deltahat = maxBGamma[] ./ delta
+        # note: delta = Gamr_new .- Gamr
+        deltahat = maxBGamr[] ./ delta
 
         # get initial relaxation factor
         bladeomega[], oi = findmin(abs.(deltahat))
@@ -114,7 +196,7 @@ function relax_Gamma!(
         bladeomega[] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
 
         # scale blade element relaxation factor
-        for (o, d, od) in zip(eachrow(omega), delta, eachrow(delta_old))
+        for (o, d, od) in zip(eachrow(omega), delta, eachrow(delta_prev))
             # if differences changed sign, use backtrack factor, if sign is same, use press forward factor
             o[1] = bladeomega[] * (sign(d) != sign(od[1]) ? bt2 : pf2)
 
@@ -123,18 +205,18 @@ function relax_Gamma!(
         end
 
         # save max relaxation factor for convergence criteria
-        maxdeltaBGamma[] = max(maxdeltaBGamma[], omega...)
+        maxdeltaBGamr[] = max(maxdeltaBGamr[], omega...)
 
-        # relax Gamma for this blade
+        # relax Gamr for this blade
         G .+= omega .* delta
     end
 
-    return Gamma
+    return Gamr
 end
 
 """
 - `gamw::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
-- `delta_old_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
+- `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
 - `B::Vector{Float}` : number of blades on each rotor
 - `nrf::Float=0.5` : nominal relaxation factor
@@ -143,30 +225,30 @@ end
 - `pf1::Float=0.4` : press forward factor 1
 - `pf2::Float=0.5` : press forward factor 2
 """
-function relax_gamw!(gamw, delta_old, delta, maxdeltagamw; nrf=0.5, bt=0.6, pf=1.2)
+function relax_gamw!(gamw, delta_prev, delta, maxdeltagamw; nrf=0.5, btw=0.6, pfw=1.2)
 
     # initilize
     TF = eltype(gamw)
     omega = MVector{1,TF}(0.5)
 
-    # update delta gamma max for convergence criteria
+    # update delta Gamr max for convergence criteria
     maxdeltagamw[], mi = findmax(delta)
     maxdeltagamw[] *= sign(delta[mi])
 
-    # use delta_old as a place holder for relaxation factor criteria
-    delta_old .*= delta
+    # use delta_prev as a place holder for relaxation factor criteria
+    delta_prev .*= delta
 
     for ig in eachindex(gamw)
 
         # choose relaxation factor based on whether old and new changes are in different or same direction
-        # note that delta_old at this point = delta_old .* delta
-        omega[] = sign(delta_old[ig]) < 0.0 ? bt * nrf : pf * nrf
+        # note that delta_prev at this point = delta_prev .* delta
+        omega[] = sign(delta_prev[ig]) < 0.0 ? btw * nrf : pfw * nrf
 
-        # save delta_old for next iteration
-        delta_old[ig] = delta[ig] * omega[]
+        # save delta_prev for next iteration
+        delta_prev[ig] = delta[ig] * omega[]
 
         # update gamw value
-        gamw[ig] += delta_old[ig]
+        gamw[ig] += delta_prev[ig]
     end
 
     return gamw
@@ -175,10 +257,10 @@ end
 """
 """
 function check_convergence!(
-    conv, maxBGamma, maxdeltaBGamma, maxdeltagamw, Vref; f_circ=1e-3, f_dgamw=2e-4
+    conv, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vref; f_circ=1e-3, f_dgamw=2e-4
 )
     conv[] =
-        abs(maxdeltaBGamma[]) < f_circ * abs(maxBGamma[]) && maxdeltagamw[] < f_dgamw * Vref
+        abs(maxdeltaBGamr[]) < f_circ * abs(maxBGamr[]) && maxdeltagamw[] < f_dgamw * Vref
     return conv
 end
 
@@ -423,7 +505,7 @@ function update_strengths!(states, inputs, p)
     calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
 
     # - Update rotor circulation and source panel strengths - #
-    calculate_gamma_sigma!(
+    calculate_Gamr_sigma!(
         Gamr,
         sigr,
         inputs.blade_elements,

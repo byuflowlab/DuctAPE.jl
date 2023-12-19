@@ -1,26 +1,26 @@
 """
-    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vx_rb, vr_rb, gamb,
-        vx_rw, vr_rw, gamw)
+    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vz_rb, vr_rb, gamb,
+        vz_rw, vr_rw, gamw)
 
 Calculate axial, radial, and tangential induced velocity on the rotors.
 
 `Gamr::Matrix{Float}` : rotor circulation values (must be a matrix, even if only 1 rotor is being used). Size is number of blade elements by number of rotors.
-`vx_rw::Matrix{Matrix{Float}}` : unit axial induced velocities of wakes on rotors. Must be a matrix of size number of rotors by number of wakes made up of matrices of size number of blade elements by number of wake "panels."
+`vz_rw::Matrix{Matrix{Float}}` : unit axial induced velocities of wakes on rotors. Must be a matrix of size number of rotors by number of wakes made up of matrices of size number of blade elements by number of wake "panels."
 `gamw::Matrix{Float}` : wake circulation values (must be a matrix). Size is number of wake sheets by number of "panels" per sheet.
 """
 function calculate_induced_velocities_on_rotors(
     blade_elements,
     Gamr,
-    vx_rw,
+    vz_rw,
     vr_rw,
     gamw,
-    vx_rr,
+    vz_rr,
     vr_rr,
     sigr,
-    vx_rb=nothing,
+    vz_rb=nothing,
     vr_rb=nothing,
     gamb=nothing,
-    vx_rbte=nothing,
+    vz_rbte=nothing,
     vr_rbte=nothing,
     TEidxs=nothing;
     debug=false,
@@ -30,20 +30,20 @@ function calculate_induced_velocities_on_rotors(
     _, nrotor = size(Gamr) # number of rotors
 
     # initialize outputs
-    vx_rotor = similar(Gamr) .= 0 # axial induced velocity
+    vz_rotor = similar(Gamr) .= 0 # axial induced velocity
     vr_rotor = similar(Gamr) .= 0 # radial induced velocity
     vtheta_rotor = similar(Gamr) .= 0 # tangential induced velocity
 
     if debug
 
         # initialize outputs
-        vxb_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vzb_rotor = similar(Gamr) .= 0 # axial induced velocity
         vrb_rotor = similar(Gamr) .= 0 # radial induced velocity
 
-        vxw_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vzw_rotor = similar(Gamr) .= 0 # axial induced velocity
         vrw_rotor = similar(Gamr) .= 0 # radial induced velocity
 
-        vxr_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vzr_rotor = similar(Gamr) .= 0 # axial induced velocity
         vrr_rotor = similar(Gamr) .= 0 # radial induced velocity
     end
 
@@ -52,40 +52,40 @@ function calculate_induced_velocities_on_rotors(
 
         # add body induced velocities
         if gamb != nothing
-            @views vx_rotor[:, irotor] .+= vx_rb[irotor] * gamb
+            @views vz_rotor[:, irotor] .+= vz_rb[irotor] * gamb
             @views vr_rotor[:, irotor] .+= vr_rb[irotor] * gamb
 
             if debug
-                @views vxb_rotor[:, irotor] .+= vx_rb[irotor] * gamb
+                @views vzb_rotor[:, irotor] .+= vz_rb[irotor] * gamb
                 @views vrb_rotor[:, irotor] .+= vr_rb[irotor] * gamb
             end
 
             #note: v?_rbte[irotor] should have been defined as zeros for endpoints that are not coincident.
-            @views vx_rotor .+= vx_rbte[irotor] * gamb[TEidxs]
+            @views vz_rotor .+= vz_rbte[irotor] * gamb[TEidxs]
             @views vr_rotor .+= vr_rbte[irotor] * gamb[TEidxs]
 
             if debug
-                @views vxb_rotor .+= vx_rbte[irotor] * gamb[TEidxs]
+                @views vzb_rotor .+= vz_rbte[irotor] * gamb[TEidxs]
                 @views vrb_rotor .+= vr_rbte[irotor] * gamb[TEidxs]
             end
         end
 
         # add wake induced velocities
-        @views vx_rotor[:, irotor] .+= vx_rw[irotor] * gamw
+        @views vz_rotor[:, irotor] .+= vz_rw[irotor] * gamw
         @views vr_rotor[:, irotor] .+= vr_rw[irotor] * gamw
 
         if debug
-            @views vxw_rotor[:, irotor] .+= vx_rw[irotor] * gamw[:]
+            @views vzw_rotor[:, irotor] .+= vz_rw[irotor] * gamw[:]
             @views vrw_rotor[:, irotor] .+= vr_rw[irotor] * gamw[:]
         end
 
         # add rotor induced velocities
         for jrotor in 1:nrotor
-            @views vx_rotor[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
+            @views vz_rotor[:, irotor] .+= vz_rr[irotor, jrotor] * sigr[:, jrotor]
             @views vr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
 
             if debug
-                @views vxr_rotor[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
+                @views vzr_rotor[:, irotor] .+= vz_rr[irotor, jrotor] * sigr[:, jrotor]
                 @views vrr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
             end
         end
@@ -105,22 +105,22 @@ function calculate_induced_velocities_on_rotors(
 
     # return raw induced velocities
     if debug
-        return vx_rotor,
-        vr_rotor, vtheta_rotor, vxb_rotor, vrb_rotor, vxw_rotor, vrw_rotor, vxr_rotor,
+        return vz_rotor,
+        vr_rotor, vtheta_rotor, vzb_rotor, vrb_rotor, vzw_rotor, vrw_rotor, vzr_rotor,
         vrr_rotor
     else
-        return vx_rotor, vr_rotor, vtheta_rotor
+        return vz_rotor, vr_rotor, vtheta_rotor
     end
 end
 
 """
 """
 function reframe_rotor_velocities(
-    vx_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rotor_panel_centers
+    vz_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rotor_panel_centers
 )
 
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor .+ Vinf
+    Wz_rotor = vz_rotor .+ Vinf
 
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
     Wtheta_rotor = similar(vtheta_rotor) .= vtheta_rotor
@@ -130,12 +130,12 @@ function reframe_rotor_velocities(
     end
 
     # meridional component
-    Wm_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2)
+    Wm_rotor = sqrt.(Wz_rotor .^ 2 .+ vr_rotor .^ 2)
 
     # Get the inflow magnitude at the rotor as the combination of all the components
-    Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+    Wmag_rotor = sqrt.(Wz_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
 
-    return Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
+    return Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
 
 """
@@ -143,26 +143,26 @@ end
 function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
 
     # - Get induced velocities on rotor planes - #
-    vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+    vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
-        inputs.vx_rw,
+        inputs.vz_rw,
         inputs.vr_rw,
         gamw,
-        inputs.vx_rr,
+        inputs.vz_rr,
         inputs.vr_rr,
         sigr,
-        inputs.vx_rb,
+        inputs.vz_rb,
         inputs.vr_rb,
         gamb,
-        inputs.vx_rbte,
+        inputs.vz_rbte,
         inputs.vr_rbte,
         (p -> p.idx).(inputs.body_vortex_panels.TEnodes),
     )
 
     # - Reframe rotor velocities into blade element frames
-    Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
-        vx_rotor,
+    Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
+        vz_rotor,
         vr_rotor,
         vtheta_rotor,
         inputs.Vinf,
@@ -170,7 +170,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         inputs.rotor_panel_centers,
     )
 
-    return vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
+    return vz_rotor, vr_rotor, vtheta_rotor, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
 
 

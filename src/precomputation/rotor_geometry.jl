@@ -4,7 +4,7 @@
 # # Fields:
 # - `B::Int`: number of blades on the rotor
 # - `Omega::TF` : rotor rotation rate (rad/s)
-# - `xrotor::TF`: x-position of the rotor (dimensionalized)
+# - `rotorzloc::TF`: x-position of the rotor (dimensionalized)
 # - `r::Vector{TF}`: radial coordinate of each blade element (dimensionalized)
 # - `chords::Vector{TF}` : chord length of each blade element
 # - `twists::Vector{TF}` : twist of each blade element (in radians)
@@ -16,7 +16,7 @@
 # struct BladeElements{TF,TAF}
 #     B::Int
 #     Omega::TF
-#     xrotor::TF
+#     rotorzloc::TF
 #     r::Vector{TF}
 #     chords::Vector{TF}
 #     twists::Vector{TF}
@@ -51,7 +51,7 @@ function get_blade_ends_from_body_geometry(
 end
 
 """
-    generate_blade_elements(B, Omega, xrotor, rblade, chords, twists, solidity, airfoils,
+    generate_blade_elements(B, Omega, rotorzloc, rblade, chords, twists, solidity, airfoils,
         duct_coordinates, hub_coordinates, r)
 
 Use the duct and hub geometry to dimensionalize the non-dimensional radial positions in
@@ -60,7 +60,7 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 # Arguments:
 - `B::Int64` : number of blades on the rotor
 - `Omega::Float` : rotor rotation rate (rad/s)
-- `xrotor::Float` : x-position of the the rotor (dimensional)
+- `rotorzloc::Float` : x-position of the the rotor (dimensional)
 - `rblade::Vector{Float}` : non-dimensional radial positions of each blade element (zero at hub, one at tip)
 - `chords::Vector{Float}` : values of the chord lengths of the blade elements
 - `twists::Vector{Float}` : values of the twist from the plane of rotation (in radians) of the blade elements
@@ -72,14 +72,14 @@ Use the duct and hub geometry to dimensionalize the non-dimensional radial posit
 Future Work: add tip-gap capabilities
 """
 function generate_blade_elements(
-    B, Omega, xrotor, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe; fliplift=false
+    B, Omega, rotorzloc, rnondim, chords, twists, airfoils, Rtip, Rhub, rbe; fliplift=false
 )
 
     # get floating point type
     TF = promote_type(
         eltype(B),
         eltype(Omega),
-        eltype(xrotor),
+        eltype(rotorzloc),
         eltype(rnondim),
         eltype(chords),
         eltype(twists),
@@ -133,7 +133,7 @@ function generate_blade_elements(
     return (;
         B,
         Omega,
-        xrotor,
+        rotorzloc,
         rbe,
         chords,
         twists,
@@ -159,9 +159,9 @@ function get_stagger(twists)
 end
 
 # generates rotor panels
-function generate_rotor_panels(xrotor, rwake)
-    x = fill(xrotor, length(rwake))
+function generate_rotor_panels(rotorzloc, rwake)
+    x = fill(rotorzloc, length(rwake))
     xr = [x'; rwake']
 
-    return generate_panels(xr)
+    return generate_panels(xr; isbody=false)
 end

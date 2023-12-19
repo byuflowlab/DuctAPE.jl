@@ -104,17 +104,17 @@ end
 """
 transforms duct radial coordinates such that the leading rotor radius touches the duct wall.
 Also finds the various rotor hub and tip radii based on the hub and duct geometry
-Note that this function is called AFTER the repanling function is called, such that the xrotor locations should line up directly with the duct and hub coordinates.
+Note that this function is called AFTER the repanling function is called, such that the rotorzloc locations should line up directly with the duct and hub coordinates.
 """
 function place_duct!(duct_coordinates, Rtip, rotorzloc, tip_gap)
 
     # get current radial position of duct wall at leading rotor location
     _, iduct = findmin(x -> abs(x - rotorzloc), view(duct_coordinates, 1, :))
-    rduct = duct_coordinates[2, iduct[1]]
+    rduct = duct_coordinates[2, iduct]
 
     # - transform duct r-coordinates up by Rtip+tip gap of first rotor - #
     # need to account for current radial position of duct at leading rotor location as well.
-    duct_coordinates[2, :] .+= Rtip .+ tip_gap .- rduct[1]
+    duct_coordinates[2, :] .+= Rtip .+ tip_gap .- rduct
 
     return duct_coordinates
 end

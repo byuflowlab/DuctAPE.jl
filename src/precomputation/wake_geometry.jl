@@ -95,7 +95,7 @@ function generate_wake_panels(zgrid, rgrid)
     wake_lines = [[zgrid[:, ir]'; rgrid[:, ir]'] for ir in 1:nr]
 
     # generate paneling for each wake line
-    wake_panels = generate_panels(wake_lines)
+    wake_panels = generate_panels(wake_lines; isbody=false)
 
     return wake_panels
 end

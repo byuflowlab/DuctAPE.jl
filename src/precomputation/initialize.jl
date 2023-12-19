@@ -258,7 +258,7 @@ function precomputed_inputs(
             rotorstator_parameters[i].airfoils,
             Rtips[i],
             Rhubs[i],
-            rotor_source_panels[i].controlpoint[:, 2];
+            rotor_source_panels[i].controlpoint[2, :];
             fliplift=rotorstator_parameters[i].fliplift,
         ) for i in 1:num_rotors
     ]
@@ -374,6 +374,8 @@ function precomputed_inputs(
         wake_vortex_panels.influence_length,
     )
 
+    # TODO: for the vz_xx's from here down, look into trying the @views macro to see if you can speed things up
+
     ##### ----- Induced Velcocities on Rotors ----- #####
     # - rotor to rotor - #
 
@@ -388,7 +390,7 @@ function precomputed_inputs(
     ]
 
     # axial components
-    vx_rr = [
+    vz_rr = [
         v_rr[i, j][:, :, 1] for j in 1:length(rotor_source_panels),
         i in 1:length(rotor_source_panels)
     ]
@@ -425,7 +427,7 @@ function precomputed_inputs(
     end
 
     # axial components
-    vx_rb = [v_rb[i][:, :, 1] for i in 1:length(rotor_source_panels)]
+    vz_rb = [v_rb[i][:, :, 1] for i in 1:length(rotor_source_panels)]
 
     # radial components
     vr_rb = [v_rb[i][:, :, 2] for i in 1:length(rotor_source_panels)]
@@ -442,7 +444,7 @@ function precomputed_inputs(
     ]
 
     # axial components
-    vx_rw = [v_rw[i][:, :, 1] for i in 1:length(rotor_source_panels)]
+    vz_rw = [v_rw[i][:, :, 1] for i in 1:length(rotor_source_panels)]
 
     # radial components
     vr_rw = [v_rw[i][:, :, 2] for i in 1:length(rotor_source_panels)]
@@ -470,7 +472,7 @@ function precomputed_inputs(
     )
 
     # axial components
-    vx_wb = v_wb[:, :, 1]
+    vz_wb = v_wb[:, :, 1]
 
     # radial components
     vr_wb = v_wb[:, :, 2]
@@ -487,7 +489,7 @@ function precomputed_inputs(
     ]
 
     # axial components
-    vx_wr = [v_wr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
+    vz_wr = [v_wr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 
     # radial components
     vr_wr = [v_wr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
@@ -502,7 +504,7 @@ function precomputed_inputs(
     )
 
     # axial components
-    vx_ww = v_ww[:, :, 1]
+    vz_ww = v_ww[:, :, 1]
 
     # radial components
     vr_ww = v_ww[:, :, 2]
@@ -518,7 +520,7 @@ function precomputed_inputs(
     # )
 
     # # axial components
-    # vx_dwb = v_dwb[:, :, 1]
+    # vz_dwb = v_dwb[:, :, 1]
 
     # # - body TE to ductwake - #
     # v_dwbte = influencefromTE(
@@ -528,7 +530,7 @@ function precomputed_inputs(
     # )
 
     # # axial components
-    # vx_dwbte = v_dwbte[:, :, 1]
+    # vz_dwbte = v_dwbte[:, :, 1]
 
     # # radial components
     # vr_dwbte = v_dwbte[:, :, 2]
@@ -547,7 +549,7 @@ function precomputed_inputs(
     # ]
 
     # # axial components
-    # vx_dwr = [v_dwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
+    # vz_dwr = [v_dwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 
     # # radial components
     # vr_dwr = [v_dwr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
@@ -561,7 +563,7 @@ function precomputed_inputs(
     # )
 
     # # axial components
-    # vx_dww = v_dww[:, :, 1]
+    # vz_dww = v_dww[:, :, 1]
 
     # # radial components
     # vr_dww = v_dww[:, :, 2]
@@ -575,7 +577,7 @@ function precomputed_inputs(
     # )
 
     # # axial components
-    # vx_hwb = v_hwb[:, :, 1]
+    # vz_hwb = v_hwb[:, :, 1]
 
     # # radial components
     # vr_hwb = v_hwb[:, :, 2]
@@ -588,7 +590,7 @@ function precomputed_inputs(
     # )
 
     # # axial components
-    # vx_hwbte = v_hwbte[:, :, 1]
+    # vz_hwbte = v_hwbte[:, :, 1]
 
     # # radial components
     # vr_hwbte = v_hwbte[:, :, 2]
@@ -604,7 +606,7 @@ function precomputed_inputs(
     # ]
 
     # # axial components
-    # vx_hwr = [v_hwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
+    # vz_hwr = [v_hwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 
     # # radial components
     # vr_hwr = [v_hwr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
@@ -618,7 +620,7 @@ function precomputed_inputs(
     # )
 
     # # axial components
-    # vx_hww = v_hww[:, :, 1]
+    # vz_hww = v_hww[:, :, 1]
 
     # # radial components
     # vr_hww = v_hww[:, :, 2]
@@ -638,7 +640,6 @@ function precomputed_inputs(
     # get the total number of vortex panels on the bodies
     num_body_panels = body_vortex_panels.totpanel
 
-    #TODO: update final return with new variable names as needed
     return (;
         converged=[false],
         lu_decomp_flag,
@@ -689,29 +690,29 @@ function precomputed_inputs(
         # v_hwr, # rotor to hub wake
         # v_hww, # wake to hub wake
         # TODO: are both the separated out and full versions needed?  why not just one or the other?
-        vx_rb, # body to rotor (x-direction)
+        vz_rb, # body to rotor (x-direction)
         vr_rb, # body to rotor (r-direction)
-        vx_rr, # rotor to rotor (x-direction)
+        vz_rr, # rotor to rotor (x-direction)
         vr_rr, # rotor to rotor ( r-direction)
-        vx_rw, # wake to rotor (x-direction)
+        vz_rw, # wake to rotor (x-direction)
         vr_rw, # wake to rotor ( r-direction)
-        vx_wb, # body to wake (x-direction)
+        vz_wb, # body to wake (x-direction)
         vr_wb, # body to wake ( r-direction)
-        vx_wr, # rotor to wake (x-direction)
+        vz_wr, # rotor to wake (x-direction)
         vr_wr, # rotor to wake ( r-direction)
-        vx_ww, # wake to wake (x-direction)
+        vz_ww, # wake to wake (x-direction)
         vr_ww, # wake to wake ( r-direction)
-        # vx_dwb, # body to duct wake (x-direction)
+        # vz_dwb, # body to duct wake (x-direction)
         # vr_dwb, # body to duct wake ( r-direction)
-        # vx_dwr, # rotor to duct wake (x-direction)
+        # vz_dwr, # rotor to duct wake (x-direction)
         # vr_dwr, # rotor to duct wake ( r-direction)
-        # vx_dww, # wake to duct wake (x-direction)
+        # vz_dww, # wake to duct wake (x-direction)
         # vr_dww, # wake to duct wake ( r-direction)
-        # vx_hwb, # body to hub wake (x-direction)
+        # vz_hwb, # body to hub wake (x-direction)
         # vr_hwb, # body to hub wake ( r-direction)
-        # vx_hwr, # rotor to hub wake (x-direction)
+        # vz_hwr, # rotor to hub wake (x-direction)
         # vr_hwr, # rotor to hub wake ( r-direction)
-        # vx_hww, # wake to hub wake (x-direction)
+        # vz_hww, # wake to hub wake (x-direction)
         # vr_hww, # wake to hub wake ( r-direction)
         # operating conditions
         Vinf=freestream.Vinf, # freestream parameters
@@ -720,11 +721,13 @@ function precomputed_inputs(
         hub_coordinates=(nohub ? nothing : rp_hub_coordinates),
         isduct=!noduct,
         ishub=!nohub,
-        grid=grid[1, :, 1:length(rpe)],
+        grid=grid[1, :, 1:length(rpe)], #TODO: what is this used for, and why is it not the whole grid?
     )
 end
 
-# TODO: need to update the state intialization function calls and internals.  Look at what DFDC does and write it up first though.
+# TODO: need to update the state intialization using CCBlade for rotor aero
+# NOTE: body strengths are not states
+# NOTE: states is a misnomer here, consider a different term
 """
     initialize_states(inputs)
 
