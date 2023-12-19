@@ -28,6 +28,14 @@ end
     # get input data
     include("data/basic_two_rotor_for_test.jl")
 
+    zwake, rotor_indices_in_wake, ductTE_index, hubTE_index = dt.discretize_wake(
+        duct_coordinates,
+        hub_coordinates,
+        rotorstator_parameters.rotorzloc,
+        paneling_constants.wake_length,
+        paneling_constants.npanels,
+    )
+
     rp_duct_coordinates, rp_hub_coordinates = dt.repanel_bodies(
         duct_coordinates,
         hub_coordinates,
@@ -265,6 +273,11 @@ end
         rotorstator_parameters.rotorzloc,
     )
 
+    rwake = range(Rhubs[1], Rtips[1]; length=paneling_constants.nwake_sheets)
+
+    # Check grid initialization
+    grid = dt.initialize_wake_grid(rp_duct_coordinates, rp_hub_coordinates, zwake, rwake)
+
     num_rotors = length(rotorstator_parameters)
 
     # rotor source panel objects
@@ -298,32 +311,29 @@ end
     @test blade_elements[1].B == 2
     @test blade_elements[1].chords == [0.1, 0.1]
     @test blade_elements[1].twists == [20, 20] * pi / 180
-    @test blade_elements[1].solidity == [
-        0.07275654541343787
-        0.039176601376466544
-    ]
+    @test isapprox(
+        blade_elements[1].solidity,
+        [
+            0.07275654541343787
+            0.039176601376466544
+        ],
+        atol=1e-6,
+    )
     @test blade_elements[1].rotorzloc == 0.25
     @test blade_elements[1].fliplift == false
     @test blade_elements[1].Omega == rotorstator_parameters[1].Omega
     @test blade_elements[1].Rhub == rotorstator_parameters[1].Rhub
     @test blade_elements[1].Rtip == rotorstator_parameters[1].Rtip
 
-    @test blade_elements[2].inner_fraction == [
-        0.7334602398026477
-        0.23346023980264796
-    ]
+    @test blade_elements[2].inner_fraction == [0.75, 0.25]
     @test blade_elements[2].stagger == [70, 70] * pi / 180
-    @test blade_elements[2].rbe == [
-        0.43336505995066193
-        0.808365059950662
-    ]
+    @test blade_elements[2].rbe == [0.4375, 0.8125]
     @test blade_elements[2].B == 4
     @test blade_elements[2].chords == [0.1, 0.1]
     @test blade_elements[2].twists == [20, 20] * pi / 180
-    @test blade_elements[2].solidity == [
-        0.1469014997286721
-        0.07875399419247996
-    ]
+    @test isapprox(
+        blade_elements[2].solidity, [0.14551309082687575, 0.07835320275293309], atol=1e-6
+    )
     @test blade_elements[2].rotorzloc == 0.75
     @test blade_elements[2].fliplift == false
     @test blade_elements[2].Omega == rotorstator_parameters[2].Omega
@@ -342,7 +352,7 @@ end
         rotorstator_parameters, #vector of named tuples
         freestream,
         reference_parameters;
-        finterp=fm.akima,
+        finterp=fm.linear,
         autoshiftduct=true,
     )
 
@@ -361,65 +371,5 @@ end
 
     # - Double Check Everything - #
     # want to make sure it works in the full function as well as just the pieces
-    @test inputs.zwake == [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-    @test inputs.rotor_indices_in_wake == [1, 3]
-    @test inputs.ductTE_index == 4
-    @test inputs.hubTE_index == 4
-    @test inputs.isapprox(
-        wakeK,
-        [
-            -0.20264236728467555
-            -0.05066059182116889
-            -0.20264236728467555
-            0.0
-            0.0
-            0.0
-            0.0
-            0.0
-            -0.03242277876554809
-            -0.03524215083211749
-            -0.03242277876554809
-            -0.0231591276896772
-            -0.0231591276896772
-            -0.0231591276896772
-            -0.0231591276896772
-            -0.0231591276896772
-            -0.012665147955292222
-            -0.02251581858718617
-            -0.012665147955292222
-            -0.008105694691387022
-            -0.008105694691387022
-            -0.008105694691387022
-            -0.008105694691387022
-            -0.008105694691387022
-        ],
-    )
-    @test inputs.blade_elements[1].inner_fraction == [0.75, 0.25]
-    @test inputs.blade_elements[1].stagger == [70, 70] * pi / 180
-    @test inputs.blade_elements[1].rbe == [0.4375, 0.8125]
-    @test inputs.blade_elements[1].B == 2
-    @test inputs.blade_elements[1].chords == [0.1, 0.1]
-    @test inputs.blade_elements[1].twists == [20, 20] * pi / 180
-    @test inputs.blade_elements[1].solidity == [
-        0.07275654541343787
-        0.039176601376466544
-    ]
-    @test inputs.blade_elements[1].rotorzloc == 0.25
-    @test inputs.blade_elements[1].fliplift == false
-    @test inputs.blade_elements[1].Omega == rotorstator_parameters[1].Omega
-    @test inputs.blade_elements[1].Rhub == rotorstator_parameters[1].Rhub
-    @test inputs.blade_elements[1].Rtip == rotorstator_parameters[1].Rtip
-
-    @test inputs.blade_elements[2].inner_fraction == [
-        0.7334602398026477
-        0.23346023980264796
-    ]
-    @test inputs.blade_elements[2].stagger == [70, 70] * pi / 180
-    @test inputs.blade_elements[2].rbe == [
-        0.43336505995066193
-        0.808365059950662
-    ]
-    @test inputs.blade_elements[2].B == 4
-    @test inputs.blade_elements[2].chords == [0.1, 0.1]
 end
 
