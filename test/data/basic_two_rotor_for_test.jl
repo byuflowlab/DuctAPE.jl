@@ -1,4 +1,4 @@
-xrotor = [0.25, 0.75]
+rotorzloc = [0.25, 0.75]
 B = [2, 4]
 r = [0.25; 0.5; 0.75; 1.0]
 r = [r r]
@@ -10,7 +10,7 @@ afparams1 = dt.DFDCairfoil(
 airfoils1 = fill(afparams1, length(r[:, 1]))
 airfoils2 = fill(afparams1, length(r[:, 1]))
 airfoils = [airfoils1 airfoils2]
-Rtip = 1.25
+Rtip = 1.0
 Rhub = 0.25
 rhoinf = 1.226
 muinf = 1.78e-5
@@ -23,9 +23,9 @@ nduct_inlet = 1
 nwake_sheets = 3
 wake_length = 1.0
 npanels = [2, 1, 4]
-rotor_parameters = [
+rotorstator_parameters = [
     (;
-        xrotor=xrotor[i],
+        rotorzloc=rotorzloc[i],
         nwake_sheets,
         r=r[:, i] ./ Rtip, #non-dimensionalize
         chords=chords[:, i],
@@ -44,14 +44,3 @@ freestream = (; rhoinf, muinf, asound, Vinf)
 reference_parameters = (; Vref, Rref=Rtip)
 duct_coordinates = [1.0 2.0; 0.5 1.5; 0.0 2.0; 0.5 2.5; 1.0 2.0]
 hub_coordinates = [0.0 0.0; 0.5 0.5; 1.0 0.0]
-
-# initialize the inputs
-inputs = dt.precomputed_inputs(
-    duct_coordinates,
-    hub_coordinates,
-    paneling_constants,
-    rotor_parameters, #vector of named tuples
-    freestream,
-    reference_parameters;
-)
-

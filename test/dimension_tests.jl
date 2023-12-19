@@ -7,14 +7,14 @@
     af = ccb.AlphaAF("data/naca4412.dat")
     airfoils = fill(af, 3)
     # Required rotor information for duct and wake generation
-    xrotors = [0.5; 0.75]
+    rotorzlocs = [0.5; 0.75]
 
     # rotor parameters
     rotor1_parameters = (;
         Rtip=1.5,
         B=2,
         Omega=50,
-        xrotor=xrotors[1],
+        rotorzloc=rotorzlocs[1],
         r=[0.0, 1.0],
         chords=[0.5, 0.25],
         twists=[50.0, 10.0],
@@ -22,7 +22,7 @@
     )
 
     # stator parameters
-    rotor2_parameters = (; rotor1_parameters..., xrotor=xrotors[2])
+    rotor2_parameters = (; rotor1_parameters..., rotorzloc=rotorzlocs[2])
 
     # array with rotor and stator parameters
     rotor_parameters = [rotor1_parameters, rotor2_parameters]

@@ -29,14 +29,14 @@
 
     # define required rotor geometry
     nrotor = 2
-    rotor_parameters = [(; xrotor=0.0); (; xrotor=0.5)]
+    rotor_parameters = [(; rotorzloc=0.0); (; rotorzloc=0.5)]
     rrotor = [0.5; 1.0; 1.5]
     rotor_source_panels = [
-        dt.generate_rotor_panels(rotor_parameters[i].xrotor, rrotor) for i in 1:nrotor
+        dt.generate_rotor_panels(rotor_parameters[i].rotorzloc, rrotor) for i in 1:nrotor
     ]
 
     # define required blade element stuff
-    blade_elements = [(; B=1, xrotor=0.0, fliplift=false); (; B=1, xrotor=0.5, fliplift=false)]
+    blade_elements = [(; B=1, rotorzloc=0.0, fliplift=false); (; B=1, rotorzloc=0.5, fliplift=false)]
 
     # define required wake geometry
     xwake = [0.0 0.0 0.0; 0.5 0.5 0.5; 1.0 1.0 1.0; 1.5 1.5 1.5]

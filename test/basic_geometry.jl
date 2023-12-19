@@ -14,7 +14,7 @@
     hub_coordinates = [hub_x hub_r]
 
     # required rotor information
-    xrotors = [0.5; 0.75]
+    rotorzlocs = [0.5; 0.75]
     Rtip = 1.5 # leading rotor tip radius
 
     # non-dimensional wake length
@@ -29,7 +29,7 @@
 
     # discretize the wake
     xwake, rotor_indices = DuctAPE.discretize_wake(
-        duct_coordinates, hub_coordinates, xrotors, wake_length, nwake, npanels
+        duct_coordinates, hub_coordinates, rotorzlocs, wake_length, nwake, npanels
     )
 
     # test that the correct number of x-stations are defined in the wake
@@ -68,7 +68,7 @@
 
     # Move duct geometry into position and get rotor radii
     trans_duct_xr, Rtips, Rhubs = DuctAPE.place_duct(
-        new_duct_xr, new_hub_xr, Rtip, xrotors
+        new_duct_xr, new_hub_xr, Rtip, rotorzlocs
     )
 
     # check the duct geometry
@@ -141,7 +141,7 @@
     rotor1_parameters = (;
         B=2,
         Omega=50,
-        xrotor=xrotors[1],
+        rotorzloc=rotorzlocs[1],
         rblade=[0.0, 1.0],
         chords=[0.25, 0.25],
         twists=[0.0, 0.0],
@@ -149,15 +149,15 @@
     )
 
     # stator parameters
-    rotor2_parameters = (; rotor1_parameters..., xrotor=xrotors[2])
+    rotor2_parameters = (; rotor1_parameters..., rotorzloc=rotorzlocs[2])
 
     # array with rotor and stator parameters
     rotor_parameters = [rotor1_parameters, rotor2_parameters]
 
     # generate rotor source panel objects
     rotor_source_panels = [
-        DuctAPE.generate_rotor_panels(xrotors[i], rgrid[rotor_indices[i], :]) for
-        i in 1:length(xrotors)
+        DuctAPE.generate_rotor_panels(rotorzlocs[i], rgrid[rotor_indices[i], :]) for
+        i in 1:length(rotorzlocs)
     ]
 
     #test that panel centers are where they should be
@@ -188,7 +188,7 @@
         DuctAPE.generate_blade_elements(
             rotor_parameters[i].B,
             rotor_parameters[i].Omega,
-            rotor_parameters[i].xrotor,
+            rotor_parameters[i].rotorzloc,
             rotor_parameters[i].rblade,
             rotor_parameters[i].chords,
             rotor_parameters[i].twists,
@@ -196,7 +196,7 @@
             Rtips[i],
             Rhubs[i],
             rotor_source_panels[i].panel_center[:, 2],
-        ) for i in 1:length(xrotors)
+        ) for i in 1:length(rotorzlocs)
     ]
 
     #test that things got put together correctly
