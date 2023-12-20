@@ -527,12 +527,12 @@ end
 #                                                                    #
 ######################################################################
 """
-    corrected_clcd(af::ccb.AlphaReAF, alpha, Re, Mach, solidity, stagger; kwargs...)
+    corrected_clcd(af::AlphaReAF, alpha, Re, Mach, solidity, stagger; kwargs...)
 
 Evaluates and applies on-the-fly corrections for airfoil lift and drag.
 On-the-fly airfoil polar corrections include solidity/stagger corrections, Prandtl-Glauert compressibility corrections, and transonic lift limits and drag additions.
 
-    corrected_clcd!(cl, cd, af::ccb.AlphaReAF, Re, alpha, Mach, solidity, stagger; kwargs...)
+    corrected_clcd!(cl, cd, af::AlphaReAF, Re, alpha, Mach, solidity, stagger; kwargs...)
 
 Evaluates and applies on-the-fly corrections for airfoil lift and drag in place.
 
@@ -540,7 +540,7 @@ Evaluates and applies on-the-fly corrections for airfoil lift and drag in place.
 
 Applies on-the-fly corrections for airfoil lift and drag in place.
 
-    corrected_clcd!(cl, cd, af::ccb.AlphaAF, alpha, Re, Mach, solidity, stagger; kwargs...)
+    corrected_clcd!(cl, cd, af::AlphaAF, alpha, Re, Mach, solidity, stagger; kwargs...)
 
 Evaluates and applies on-the-fly corrections, including Reynolds corrections, for airfoil lift and drag in place
 
@@ -556,9 +556,9 @@ Evaluates cascade lift and drag.
 - `cd::Float` : local drag coefficient
 
 **Airfoil Object**
-- `af::ccb.AlphaReAF` : airfoil object of CCBlade type dependent on angle of attack and Reynolds number
+- `af::AlphaReAF` : airfoil object of CCBlade type dependent on angle of attack and Reynolds number
 or
-- `af::ccb.AlphaAF` : airfoil object of CCBlade type dependent on angle of attack only
+- `af::AlphaAF` : airfoil object of CCBlade type dependent on angle of attack only
 or
 - `cas::InReStSoMaCAS` : cascade object depentent on inflow angle, Reynolds number, stagger, solidity, and Mach number.
 
@@ -598,7 +598,7 @@ or
 - `verbose::Bool`=false : Boolean of whether to print warnings, etc.
 """
 function corrected_clcd(
-    af::ccb.AlphaReAF,
+    af::AlphaReAF,
     alpha,
     Re,
     Mach,
@@ -627,7 +627,7 @@ function corrected_clcd(
     verbose=false,
 )
     # - Get cl, cd - #
-    cl, cd = ccb.afeval(af, alpha, Re, Mach) #note: Mach is not actually used since the type is AlphaReAF and not AlphaReMachAF
+    cl, cd = afeval(af, alpha, Re, Mach) #note: Mach is not actually used since the type is AlphaReAF and not AlphaReMachAF
 
     # - Apply Corrections - #
     corrected_clcd!(
@@ -666,7 +666,7 @@ end
 function corrected_clcd!(
     cl,
     cd,
-    af::ccb.AlphaReAF,
+    af::AlphaReAF,
     alpha,
     Re,
     Mach,
@@ -695,7 +695,7 @@ function corrected_clcd!(
     verbose=false,
 )
     # - Get cl, cd - #
-    cl, cd .= ccb.afeval(af, alpha, Re, Mach) #note: Mach is not actually used since the type is AlphaReAF and not AlphaReMachAF
+    cl, cd .= afeval(af, alpha, Re, Mach) #note: Mach is not actually used since the type is AlphaReAF and not AlphaReMachAF
 
     # - Apply Corrections - #
     corrected_clcd!(cl, cd, Mach, solidity, stagger)
@@ -787,7 +787,7 @@ end
 function corrected_clcd!(
     cl,
     cd,
-    af::ccb.AlphaAF,
+    af::AlphaAF,
     alpha,
     Re,
     Mach,
@@ -820,7 +820,7 @@ function corrected_clcd!(
 )
 
     # - Get cl, cd - #
-    cl, cd .= ccb.afeval(af, alpha, Re, Mach)
+    cl, cd .= afeval(af, alpha, Re, Mach)
 
     # - Apply Solidity Correction to Lift - #
     solidityandstagger!(cl, solidity, stagger; blend_hardness=ssblend_hardness)

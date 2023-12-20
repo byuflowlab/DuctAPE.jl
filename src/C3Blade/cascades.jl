@@ -79,6 +79,9 @@ end
 #                                                                    #
 ######################################################################
 
+# Cascade type
+abstract type DTCascade end
+
 ##---------------------------------#
 ##        Stagger + Inflow         #
 ##---------------------------------#
@@ -580,7 +583,7 @@ end
 
 #    # if solidity undefined, use CCBlade functions
 #    if stagger == nothing
-#        return ccb.afeval(af, inflow, reynolds, mach)
+#        return afeval(af, inflow, reynolds, mach)
 #    else
 #        #if solidity is defined, need to use custom functions
 #        return caseval(af, stagger, inflow, reynolds, mach, solidity)
