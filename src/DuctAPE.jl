@@ -7,8 +7,10 @@ module DuctAPE
 using FLOWMath # used for various items, mostly interpolation
 const fm = FLOWMath #rename FLOWMath for convenience
 
-using CCBlade # used for airfoil types
-const ccb = CCBlade #rename ccblade for convenience
+include("C3Blade/C3Blade.jl")
+const c3b = C3Blade
+# using CCBlade # used for airfoil types
+# const ccb = CCBlade #rename ccblade for convenience
 
 using SpecialFunctions # required for elliptic integrals
 using QuadGK # required for integration of linear panels

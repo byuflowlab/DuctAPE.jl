@@ -132,10 +132,7 @@ function precomputed_inputs(
 
     # - Get dimensional rotor blade hub and tip radii based on duct and center body geometry and rotor z locations - #
     Rtips, Rhubs = get_blade_ends_from_body_geometry(
-        rp_duct_coordinates,
-        rp_hub_coordinates,
-        tip_gaps,
-        rotorstator_parameters.rotorzloc,
+        rp_duct_coordinates, rp_hub_coordinates, tip_gaps, rotorstator_parameters.rotorzloc
     )
 
     # generate body paneling

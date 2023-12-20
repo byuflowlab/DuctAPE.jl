@@ -937,7 +937,7 @@ function get_blade_aero(
             )
 
             #get inner values
-            clin, cdin, _ = dfdc_clcdcm(
+            clin, cdin, _ = c3b.dfdceval(
                 Wmag_rotor[ir, irotor],
                 reynolds,
                 solidity[ir, irotor],
@@ -947,7 +947,7 @@ function get_blade_aero(
                 asound,
             )
             # get outer values
-            clout, cdout, _ = dfdc_clcdcm(
+            clout, cdout, _ = c3b.dfdceval(
                 Wmag_rotor[ir, irotor],
                 reynolds,
                 solidity[ir, irotor],
