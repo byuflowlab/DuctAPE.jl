@@ -398,7 +398,7 @@ for irotor in 1:nrotor
             # printval("Re: ", reynolds)
 
             #get inner values
-            clin, cdin, _ = dt.dfdc_clcdcm(
+            clin, cdin, _ = dt.dfdceval(
                 Wmag_rotor[ir, irotor],
                 reynolds,
                 solidity,
@@ -409,7 +409,7 @@ for irotor in 1:nrotor
                 verbose=false,
             )
             # get outer values
-            clout, cdout, _ = dt.dfdc_clcdcm(
+            clout, cdout, _ = dt.dfdceval(
                 Wmag_rotor[ir, irotor],
                 reynolds,
                 solidity,

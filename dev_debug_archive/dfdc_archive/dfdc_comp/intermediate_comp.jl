@@ -120,7 +120,7 @@ cd = zeros(length(dfdcr))
 cm = zeros(length(dfdcr))
 
 for i in 1:length(dfdcr)
-    cl[i], cd[i], cm[i] = dt.dfdc_clcdcm(
+    cl[i], cd[i], cm[i] = dt.dfdceval(
         clcdcheck[i, 4],
         clcdcheck[i, 5],
         clcdcheck[i, 6],
