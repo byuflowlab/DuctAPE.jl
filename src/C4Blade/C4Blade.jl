@@ -6,7 +6,7 @@ An adaptation of CCBlade that allows additional airfoil types suitable for casca
 
 =#
 
-module C3Blade
+module C4Blade
 
 using FLOWMath: FLOWMath
 using ImplicitAD
@@ -16,6 +16,9 @@ using ImplicitAD
 # export solve, thrusttorque, nondim
 
 include("airfoils.jl")  # all the code related to airfoil data
+include("cascades.jl")  # all the code related to cascade data
+include("dfdc_polars.jl")  # all the code related to dfdc (XROTOR) style data
+include("airfoil_corrections.jl") # various airfoil to cascade corrections
 
 # --------- structs -------------
 
@@ -211,7 +214,7 @@ function residual_and_outputs(phi, x, p)  #rotor, section, op)
     af, B, turbine, re_corr, mach_corr, rotation_corr, tip_corr = p  # parameters
 
     # rename for convenience
-    taf = eltype(af)
+    taf = typeof(af)
 
     # constants
     sigma_p = B * chord / (2.0 * pi * r) #solidity

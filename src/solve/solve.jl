@@ -164,30 +164,37 @@ function relax_Gamr!(
     # initilize
     TF = eltype(Gamr)
     omega = nrf .* ones(TF, size(Gamr, 1))
+    deltahat = zeros(TF, size(Gamr, 1))
     bladeomega = MVector{1,TF}(0.5)
 
-    for (G, b, delta_prev, delta) in
-        zip(eachcol(Gamr), B, eachcol(delta_prev_mat), eachcol(delta_mat))
+    for (i, (G, b, delta_prev, delta)) in
+        enumerate(zip(eachcol(Gamr), B, eachcol(delta_prev_mat), eachcol(delta_mat)))
         # - Set the normalization value based on the maximum magnitude value of B*Gamr
 
         # find max magnitude
-        maxBGamr[], mi = findmax(abs.(G))
+        maxBGamr[i], mi = findmax(abs.(G))
 
         # maintain sign of original value
-        maxBGamr[] *= sign(G[mi])
+        maxBGamr[i] *= sign(G[mi])
 
         # make sure we don't have any weird jumps
         meang = sum(G) / length(G)
-        if meang > 0.0 # if mean is positive, make sure maxBGamr[] is at least 0.1
-            maxBGamr[] = max(maxBGamr[] * b, 0.1)
-        elseif meang < 0.0 # if mean is negative, make sure maxBGamr[] is at most -0.1
-            maxBGamr[] = min(maxBGamr[] * b, -0.1)
-        else # if the average is zero, then set maxBGamr[] to zero
-            maxBGamr[] = 0.0
+        if meang > 0.0 # if mean is positive, make sure maxBGamr[i] is at least 0.1
+            maxBGamr[i] = max(maxBGamr[i] * b, 0.1)
+        elseif meang < 0.0 # if mean is negative, make sure maxBGamr[i] is at most -0.1
+            maxBGamr[i] = min(maxBGamr[i] * b, -0.1)
+        else # if the average is zero, then set maxBGamr[i] to zero
+            maxBGamr[i] = 0.0
         end
 
         # note: delta = Gamr_new .- Gamr
-        deltahat = maxBGamr[] ./ delta
+        for (j, d) in enumerate(eachrow(deltahat))
+            if delta[j] < eps()
+                d[1] = 0.0
+            else
+                d[1] = maxBGamr[i] ./ delta[j]
+            end
+        end
 
         # get initial relaxation factor
         bladeomega[], oi = findmin(abs.(deltahat))
@@ -205,7 +212,7 @@ function relax_Gamr!(
         end
 
         # save max relaxation factor for convergence criteria
-        maxdeltaBGamr[] = max(maxdeltaBGamr[], omega...)
+        maxdeltaBGamr[i] = maximum(omega)
 
         # relax Gamr for this blade
         G .+= omega .* delta
@@ -259,8 +266,15 @@ end
 function check_convergence!(
     conv, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vref; f_circ=1e-3, f_dgamw=2e-4
 )
+
+    # find max ratio among blades and use that for convergence
+    _, id = findmax(maxdeltaBGamr ./ maxBGamr)
+
+    # set convergence flag
     conv[] =
-        abs(maxdeltaBGamr[]) < f_circ * abs(maxBGamr[]) && maxdeltagamw[] < f_dgamw * Vref
+        abs(maxdeltaBGamr[id]) < f_circ * abs(maxBGamr[id]) &&
+        maxdeltagamw[] < f_dgamw * Vref
+
     return conv
 end
 

@@ -7,8 +7,8 @@ module DuctAPE
 using FLOWMath # used for various items, mostly interpolation
 const fm = FLOWMath #rename FLOWMath for convenience
 
-include("C3Blade/C3Blade.jl")
-const c3b = C3Blade
+include("C4Blade/C4Blade.jl")
+const c4b = C4Blade
 # using CCBlade # used for airfoil types
 # const ccb = CCBlade #rename ccblade for convenience
 
@@ -26,14 +26,8 @@ using ImplicitAD
 #---------------------------------#
 
 ##### ----- UTILITIES ----- #####
-include("utilities/types.jl")
-
 # general utility functions
 include("utilities/utils.jl")
-
-# Cascade Functions
-include("utilities/cascade.jl")
-include("utilities/airfoil_corrections.jl")
 
 ##### ----- PRECOMPUTATION ----- #####
 # Pre-solve initializations

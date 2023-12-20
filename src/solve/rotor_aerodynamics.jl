@@ -467,7 +467,7 @@ function lookup_clcd(
         # - DFDC Airfoil Parameter - #
 
         # get inner values
-        clin, cdin, _ = c3b.dfdceval(
+        clin, cdin, _ = c4b.dfdceval(
             Wmag,
             reynolds,
             solidity,
@@ -479,7 +479,7 @@ function lookup_clcd(
             fliplift=fliplift,
         )
         # get outer values
-        clout, cdout, _ = c3b.dfdceval(
+        clout, cdout, _ = c4b.dfdceval(
             Wmag,
             reynolds,
             solidity,
@@ -494,10 +494,10 @@ function lookup_clcd(
     elseif typeof(inner_airfoil) <: DTCascade
         # - Cascade Lookups - #
         # get inner values
-        clin, cdin = c3b.caseval(inner_airfoil, stagger, inflow, reynolds, mach, solidity)
+        clin, cdin = c4b.caseval(inner_airfoil, stagger, inflow, reynolds, mach, solidity)
         # get outer values
-        clout, cdout = c3b.caseval(outer_airfoil, stagger, inflow, reynolds, mach, solidity)
-    elseif typeof(inner_airfoil) <: c3b.AFType
+        clout, cdout = c4b.caseval(outer_airfoil, stagger, inflow, reynolds, mach, solidity)
+    elseif typeof(inner_airfoil) <: c4b.AFType
         # - Airfoil Lookups - #
         # get inner values
         clin, cdin = search_polars(inner_airfoil, alpha)
@@ -534,7 +534,7 @@ end
 Look up lift and drag data for an airfoil using CCBlade
 TODO: add in cascade database search at some point.
 """
-search_polars(airfoil, alpha, re=0.0, ma=0.0) = c3b.afeval(airfoil, alpha, re, ma)
+search_polars(airfoil, alpha, re=0.0, ma=0.0) = c4b.afeval(airfoil, alpha, re, ma)
 
 ######################################################################
 #                                                                    #

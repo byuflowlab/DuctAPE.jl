@@ -510,7 +510,7 @@ function get_wake_k(wake_vortex_panels)
     # Loop through panels
     for (iw, wnr) in enumerate(wake_vortex_panels.node[2, :])
         # check if panel has zero radius
-        if isapprox(wnr, 0.0)
+        if wnr < eps()
             K[iw] = 0.0
         else
             K[iw] = -1.0 ./ (8.0 .* pi^2 .* wnr .^ 2)

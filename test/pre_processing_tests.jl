@@ -341,7 +341,7 @@ end
     @test blade_elements[2].Rtip == rotorstator_parameters[2].Rtip
 end
 
-@testset "Dimension, Index, and Double Checks" begin
+@testset "Dimension and Indexing Checks" begin
     # get input data
     include("data/basic_two_rotor_for_test.jl")
 
@@ -358,18 +358,234 @@ end
 
     # - Dimension Checks - #
     # check all the induced velocity matrix dimensions to make sure they're oriented correctly for later access.
+    sysN = inputs.body_vortex_panels.totnode + 2
+    npan = inputs.body_vortex_panels.totpanel
+    nnode = inputs.body_vortex_panels.totnode
+    nrnode = inputs.rotor_source_panels.totnode
+    nrpan = inputs.rotor_source_panels.totpanel
+    nrotor = length(nrnode)
+    nwpan = inputs.wake_vortex_panels.totpanel
+    nwnode = inputs.wake_vortex_panels.totnode
+    @test size(inputs.converged) == (1,)
+    @test size(inputs.b_bf) == (sysN,)
+    @test size(inputs.blade_elements) == (2,)
+    @test size(inputs.rotor_source_panels) == (2,)
+    @test size(inputs.A_bb) == (sysN, sysN)
+    @test size(inputs.vz_rb) == (2,)
+    @test size(inputs.vz_rb[1]) == (2, nnode)
+    @test size(inputs.vr_rb) == (2,)
+    @test size(inputs.vr_rb[1]) == (2, nnode)
+    @test size(inputs.A_br) == (nrotor, npan, nrnode[1])
+    @test size(inputs.vz_rr) == (2, 2)
+    @test size(inputs.vz_rr[1]) == (2, nrnode[1])
+    @test size(inputs.vr_rr) == (2, 2)
+    @test size(inputs.vr_rr[1]) == (2, nrnode[1])
+    @test size(inputs.A_bw) == (npan, nwnode)
+    @test size(inputs.vz_rw) == (2,)
+    @test size(inputs.vz_rw[1]) == (2, nwnode)
+    @test size(inputs.vr_rw) == (2,)
+    @test size(inputs.vr_rw[1]) == (2, nwnode)
 
     # - Index (Bookkeeping) Checks - #
     # check rotor indices on hub and duct
     # check rotorwakeid
+    @test size(inputs.rotorwakeid, 2) == 2
+    @test size(inputs.rotorwakeid, 1) == inputs.wake_vortex_panels.totnode
     # check hubwakeinterfaceid
     @test inputs.hubwakeinterfaceid == 1:3
     # check ductwakeinterfaceid
     @test inputs.ductwakeinterfaceid == 15:17
 
     @test inputs.num_wake_x_panels == 7
-
-    # - Double Check Everything - #
-    # want to make sure it works in the full function as well as just the pieces
+    @test all(
+        inputs.rotorwakeid .== [
+            1 1
+            1 1
+            1 2
+            1 2
+            1 2
+            1 2
+            1 2
+            1 2
+            2 1
+            2 1
+            2 2
+            2 2
+            2 2
+            2 2
+            2 2
+            2 2
+            3 1
+            3 1
+            3 2
+            3 2
+            3 2
+            3 2
+            3 2
+            3 2
+        ],
+    )
 end
 
+@testset "Rotor/Wake Aero Initialization" begin
+
+    # - Set up Rotor raw geometry - #
+    # set up ccblade example
+    Rtip = 10 / 2.0 * 0.0254  # inches to meters
+    Rhub = 0.10 * Rtip
+    B = [2; 4]  # number of blades
+
+    propgeom = [
+        0.15 0.130 32.76
+        0.20 0.149 37.19
+        0.25 0.173 33.54
+        0.30 0.189 29.25
+        0.35 0.197 25.64
+        0.40 0.201 22.54
+        0.45 0.200 20.27
+        0.50 0.194 18.46
+        0.55 0.186 17.05
+        0.60 0.174 15.97
+        0.65 0.160 14.87
+        0.70 0.145 14.09
+        0.75 0.128 13.39
+        0.80 0.112 12.84
+        0.85 0.096 12.25
+        0.90 0.081 11.37
+        0.95 0.061 10.19
+        1.00 0.041 8.99
+    ]
+
+    r = propgeom[:, 1] * Rtip
+    chords = propgeom[:, 2] * Rtip
+    twists = propgeom[:, 3] * pi / 180
+    af = dt.c4b.AlphaAF("data/naca4412.dat")
+
+    Vinf = 5.0
+    Omega = [5400 * pi / 30; 0.0]  # convert to rad/s
+    rhoinf = 1.225
+    muinf = 1.81e-5
+    asound = 343.0
+
+    rotorzloc = [0.0, 0.5]
+    nwake_sheets = length(r)
+    num_rotors = length(Omega)
+    fliplift = [false, false]
+
+    # - put things in terms of blade elements and such - #
+    rotorstator_parameters = [
+        (;
+            rotorzloc=rotorzloc[i],
+            nwake_sheets,
+            r=r ./ Rtip, #non-dimensionalize
+            chords=chords,
+            twists=twists,
+            airfoils=fill(af, length(r)),
+            Rtip,
+            Rhub,
+            tip_gap=0.0,
+            B=B[i],
+            Omega=Omega[i],
+            fliplift=fliplift[i],
+        ) for i in 1:length(Omega)
+    ]
+    paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
+    freestream = (; rhoinf, muinf, asound, Vinf)
+
+    # define rotor panels and blade elements
+    rotor_source_panels = [
+        dt.generate_rotor_panels(
+            rotorstator_parameters[i].rotorzloc, rotorstator_parameters[i].r * Rtip
+        ) for i in 1:num_rotors
+    ]
+
+    rotor_panel_centers = reduce(hcat, [r.controlpoint[2, :] for r in rotor_source_panels])
+
+    # rotor blade element objects
+    blade_elements = [
+        dt.generate_blade_elements(
+            rotorstator_parameters[i].B,
+            rotorstator_parameters[i].Omega,
+            rotorstator_parameters[i].rotorzloc,
+            rotorstator_parameters[i].r,
+            rotorstator_parameters[i].chords,
+            rotorstator_parameters[i].twists,
+            rotorstator_parameters[i].airfoils,
+            Rtip,
+            Rhub,
+            rotor_source_panels[i].controlpoint[2, :];
+            fliplift=rotorstator_parameters[i].fliplift,
+        ) for i in 1:num_rotors
+    ]
+
+    # wake grid
+    zwake = [
+        range(rotorzloc[1], rotorzloc[2]; step=0.125)[1:(end - 1)]
+        range(rotorzloc[2], 1.5; step=0.125)
+    ]
+    rwake = rotor_source_panels[1].node[2, :]
+    grid = zeros(2, length(zwake), length(rwake))
+    grid[1, :, :] .= zwake
+    grid[2, :, :] .= rwake'
+
+    # generate wake sheet paneling
+    wake_vortex_panels = dt.generate_wake_panels(grid[1, :, :], grid[2, :, :])
+
+    # calculate radius dependent "constant" for wake strength calcualtion
+    wakeK = dt.get_wake_k(wake_vortex_panels)
+
+    # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
+    rotorwakepanelid = ones(Int, wake_vortex_panels.totpanel, 2)
+    num_wake_x_panels = length(zwake) - 1
+    for i in 1:(length(rwake))
+        rotorwakepanelid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
+    end
+    for (i, wn) in enumerate(eachcol(wake_vortex_panels.controlpoint))
+        rotorwakepanelid[i, 2] = findlast(x -> x <= wn[1], rotorzloc)
+    end
+
+    # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
+    rotorwakeid = ones(Int, wake_vortex_panels.totnode, 2)
+    num_wake_x_nodes = length(zwake)
+    for i in 1:(length(rwake))
+        rotorwakeid[(1 + (i - 1) * num_wake_x_nodes):(i * num_wake_x_nodes), 1] .= i
+    end
+    for (i, wn) in enumerate(eachcol(wake_vortex_panels.node))
+        rotorwakeid[i, 2] = findlast(x -> x <= wn[1], rotorzloc)
+    end
+
+    inputs = (;
+        wakeK,
+        rotorwakeid,
+        rotorwakepanelid,
+        freestream,
+        blade_elements,
+        rotor_panel_centers,
+        wake_vortex_panels,
+        ductwakeinterfaceid=nothing,
+        hubwakeinterfaceid=nothing,
+        num_wake_x_nodes,
+        num_wake_x_panels,
+    )
+
+    # - initialize outputs - #
+    sigr = zeros(size(reduce(hcat, rotorstator_parameters.r)))
+    Gamr = similar(sigr, size(sigr, 1) - 1, size(sigr, 2)) .= 0.0
+    gamw = zeros(wake_vortex_panels.totnode)
+
+    # - run init function - #
+    dt.initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
+
+    # - test - #
+    @test all(Gamr[:, 1] .> 0.0)
+    @test all(Gamr[:, 2] .< 0.0)
+    @test all(sigr .!= 0.0)
+    gamwcheck = reshape(gamw, num_wake_x_nodes, length(rwake))
+    for i in 1:3
+        @test all(gamwcheck[i, :] .== gamwcheck[i + 1, :])
+    end
+    for i in 6:(length(zwake) - 1)
+        @test all(gamwcheck[i, :] .== gamwcheck[i + 1, :])
+    end
+    @test all(gamw .!= 0.0)
+end

@@ -3,7 +3,7 @@
         alpha = [-pi; 0.0; pi]
         cl = 2.0 * ones(length(alpha))
         cd = ones(length(alpha))
-        af = dt.c3b.AlphaAF(alpha, cl, cd, "TEST")
+        af = dt.c4b.AlphaAF(alpha, cl, cd, "TEST")
         @test dt.search_polars(af, pi / 2.0) == (2.0, 1.0)
     end
 
@@ -11,7 +11,7 @@
         alpha = [-pi; 0.0; pi]
         cl = 2.0 * ones(length(alpha))
         cd = ones(length(alpha))
-        af = dt.c3b.AlphaAF(alpha, cl, cd, "TEST")
+        af = dt.c4b.AlphaAF(alpha, cl, cd, "TEST")
 
         Vinf = 1.0
         vm = ones(2, 2)

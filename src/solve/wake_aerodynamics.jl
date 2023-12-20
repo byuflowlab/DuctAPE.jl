@@ -196,7 +196,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
         end
 
         # calculate the wake vortex strength
-        if Wm_avg <= 0.0
+        if Wm_avg < eps()
             # avoid division by zero
             gw[1] = 0.0
         else
