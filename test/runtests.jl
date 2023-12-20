@@ -3,12 +3,15 @@ using Test
 println("Compiling Package")
 using DuctAPE
 const dt = DuctAPE
+# using CCBlade
+# const ccb = CCBlade
+using FLOWMath
+const fm = FLOWMath
 using ForwardDiff
 const frd = ForwardDiff
 using FiniteDiff
 const fnd = FiniteDiff
-using FLOWMath
-const fm = FLOWMath
+
 include("test_utils.jl")
 
 println("Running Tests...")
