@@ -108,7 +108,7 @@ A_rb = [
 ]
 
 # axial components
-vx_rb = [A_rb[i, j][1] for i in 1:length(rotor_source_panels), j in 1:1]
+vz_rb = [A_rb[i, j][1] for i in 1:length(rotor_source_panels), j in 1:1]
 
 # radial components
 vr_rb = [A_rb[i, j][2] for i in 1:length(rotor_source_panels), j in 1:1]
@@ -169,7 +169,7 @@ for i in 1:length(rotorzloc)
         label="rotor location",
     )
 
-    body_induced_x = vx_rb[i] * body_strengths .+ Vinf
+    body_induced_x = vz_rb[i] * body_strengths .+ Vinf
 
     plot!(pv, body_induced_x, rpc[i]; color=mycolors[i], label="x location = $(rotorzloc[i])")
 

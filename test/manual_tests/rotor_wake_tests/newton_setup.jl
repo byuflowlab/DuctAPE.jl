@@ -548,7 +548,7 @@ function setup_stuff()
         Gammaidx=1:length(ccbGamma),
         gamma_theta_idx=(length(ccbGamma) + 1):(length(gamma_wake_init) + length(ccbGamma)),
         nxwake=length(xrange) - 1,
-        vx_rw=vxd_wake_to_rotor,
+        vz_rw=vxd_wake_to_rotor,
         vr_rw=vrd_wake_to_rotor,
         blade_elements=[(
             Omega=Omega,

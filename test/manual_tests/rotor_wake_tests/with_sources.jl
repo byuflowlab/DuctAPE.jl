@@ -516,28 +516,28 @@ function get_induced_velocities_on_wake(
 
     # - Initialize output with r rows and x columns starting with freestream influence - #
     # there is one more row (r stations) than there are for the wake vortex strengths, but the same number of columns (x stations)
-    vx_wake =
+    vz_wake =
     zeros(length(wake_vortex_strengths[:, 1])+1, length(wake_vortex_strengths[1, :]))
-    vr_wake =zeros(size(vx_wake))
+    vr_wake =zeros(size(vz_wake))
 
     # - add wake on wake contributions to Vmavg on wake panels
     add_wake_on_wake_inducement!(
-        vx_wake, vr_wake, wake_vortex_strengths, vxd_wake_to_wake, vrd_wake_to_wake
+        vz_wake, vr_wake, wake_vortex_strengths, vxd_wake_to_wake, vrd_wake_to_wake
     )
 
     # - add rotor on wake contributions to Vmavg on wake panels
     add_rotor_on_wake_inducement!(
-        vx_wake, vr_wake, rotor_source_strengths, vxd_rotor_to_wake, vrd_rotor_to_wake
+        vz_wake, vr_wake, rotor_source_strengths, vxd_rotor_to_wake, vrd_rotor_to_wake
     )
 
-    return vx_wake,  vr_wake
+    return vz_wake,  vr_wake
 end
 
 
 """
 """
 function add_wake_on_wake_inducement!(
-    vx_wake,  vr_wake, wake_vortex_strengths, vxd_wake_to_wake, vrd_wake_to_wake
+    vz_wake,  vr_wake, wake_vortex_strengths, vxd_wake_to_wake, vrd_wake_to_wake
 )
 
     ##### ----- Wake on Wake Influence ----- #####
@@ -548,7 +548,7 @@ function add_wake_on_wake_inducement!(
             # - compute the affect of the entire wake row on the entire wake row - #
 
             # axial direction
-            vx_wake[i,:]  .+= vxd_wake_to_wake[j, i] * wake_vortex_strengths[j, :]
+            vz_wake[i,:]  .+= vxd_wake_to_wake[j, i] * wake_vortex_strengths[j, :]
 
             # radial direction
              vr_wake[i,:] .+= vrd_wake_to_wake[j, i] * wake_vortex_strengths[j, :]
@@ -562,7 +562,7 @@ end
 """
 """
 function add_rotor_on_wake_inducement!(
-    vx_wake,  vr_wake, rotor_source_strengths, vxd_rotor_to_wake, vrd_rotor_to_wake
+    vz_wake,  vr_wake, rotor_source_strengths, vxd_rotor_to_wake, vrd_rotor_to_wake
 )
 
     ##### ----- Rotor on Wake Influence ----- #####
@@ -571,7 +571,7 @@ function add_rotor_on_wake_inducement!(
         # - compute the affect of all the rotor panels on the entire wake row - #
 
         # axial direction
-        vx_wake[i,:] .+= vxd_rotor_to_wake[i] * rotor_source_strengths
+        vz_wake[i,:] .+= vxd_rotor_to_wake[i] * rotor_source_strengths
 
         # radial direction
          vr_wake[i,:] .+= vrd_rotor_to_wake[i] * rotor_source_strengths
@@ -608,38 +608,38 @@ function get_induced_velocities_at_rotor(
 )
 
     # - Initialize Outputs - #
-    vx_rotor = zeros(length(radial_positions))
+    vz_rotor = zeros(length(radial_positions))
     vr_rotor = zeros(length(radial_positions))
     vtheta_rotor = zeros(length(radial_positions))
 
     # - add the wake induced velocities at the rotor plane to Vm - #
     add_wake_on_rotor_vm_inducement!(
-        vx_rotor, vr_rotor, wake_vortex_strengths, vxd_wake_to_rotor, vrd_wake_to_rotor
+        vz_rotor, vr_rotor, wake_vortex_strengths, vxd_wake_to_rotor, vrd_wake_to_rotor
     )
 
     # - and the rotor source panel induced velocities at the rotor plane to Vm - #
     add_rotor_on_rotor_vm_inducement!(
-        vx_rotor, vr_rotor, rotor_source_strengths, vxd_rotor_to_rotor, vrd_rotor_to_rotor
+        vz_rotor, vr_rotor, rotor_source_strengths, vxd_rotor_to_rotor, vrd_rotor_to_rotor
     )
 
     # - add the rotor rotational self-induction directly - #
     add_rotor_self_induced_vtheta!(vtheta_rotor, radial_positions, BGamma)
 
 
-    return vx_rotor, vr_rotor, vtheta_rotor
+    return vz_rotor, vr_rotor, vtheta_rotor
 end
 
 """
 TODO: will need to think about how to change things for multiple rotors
 """
 function add_rotor_on_rotor_vm_inducement!(
-    vx_rotor, vr_rotor, rotor_source_strengths, vxd_rotor_to_rotor, vrd_rotor_to_rotor
+    vz_rotor, vr_rotor, rotor_source_strengths, vxd_rotor_to_rotor, vrd_rotor_to_rotor
 )
 
     ##### ----- Rotor on Rotor Influence ----- #####
 
     # axial direction
-    vx_rotor .+= vxd_rotor_to_rotor * rotor_source_strengths
+    vz_rotor .+= vxd_rotor_to_rotor * rotor_source_strengths
 
     # radial direction
     vr_rotor .+= vrd_rotor_to_rotor * rotor_source_strengths
@@ -648,7 +648,7 @@ function add_rotor_on_rotor_vm_inducement!(
 end
 
 function add_wake_on_rotor_vm_inducement!(
-    vx_rotor, vr_rotor, wake_vortex_strengths, vxd_wake_to_rotor, vrd_wake_to_rotor
+    vz_rotor, vr_rotor, wake_vortex_strengths, vxd_wake_to_rotor, vrd_wake_to_rotor
 )
 
     ##### ----- Wake on Rotor Influence ----- #####
@@ -656,16 +656,16 @@ function add_wake_on_rotor_vm_inducement!(
     for i in 1:length(vxd_wake_to_rotor)
 
         # axial direction
-        # vx_wake_i_on_rotor = vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
-        vx_rotor .+= vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
+        # vz_wake_i_on_rotor = vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
+        vz_rotor .+= vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
 
         # radial direction
         # vr_wake_i_on_rotor = vrd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
         vr_rotor .+= vrd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
 
         # - Put the axial and radial components together to get the meridional velocity contribution from the jth wake on the ith wake- #
-        # Vm .+= sqrt.(vx_wake_i_on_rotor .^ 2 .+ vr_wake_i_on_rotor .^ 2)
-        # Vm .+= vx_wake_i_on_rotor .+  abs.(vr_wake_i_on_rotor)
+        # Vm .+= sqrt.(vz_wake_i_on_rotor .^ 2 .+ vr_wake_i_on_rotor .^ 2)
+        # Vm .+= vz_wake_i_on_rotor .+  abs.(vr_wake_i_on_rotor)
     end
 
     return nothing
@@ -920,7 +920,7 @@ for i in 1:63
 
     # - Get the values for the axial, radial, and tangential induced velocities on the rotor plane by the wake and the rotor - #
     # The wake adds to the axial and radial, the rotor source panels also add to the axial and radial, and the tangential comes directly from the rotor circulation and rotation rate
-    vx_rotor, vr_rotor, vtheta_rotor = get_induced_velocities_at_rotor(
+    vz_rotor, vr_rotor, vtheta_rotor = get_induced_velocities_at_rotor(
         rpc,
         B * Gamma,
         wake_vortex_strengths,
@@ -934,7 +934,7 @@ for i in 1:63
 
     # - Get the blade element reference frame total velocity components - #
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor.+ Vinf
+    Wx_rotor = vz_rotor.+ Vinf
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
     Wtheta_rotor = vtheta_rotor.- Omega.*rpc
 
@@ -974,7 +974,7 @@ for i in 1:63
 
     # - Calculate induced velocities in wake - #
     # Note: these are the induced velocities on the dummy panels, we still need to average them to get the Vx and Vr average values from which we can then get the Vm average values
-    vx_wake,  vr_wake = get_induced_velocities_on_wake(
+    vz_wake,  vr_wake = get_induced_velocities_on_wake(
         wake_vortex_strengths,
         vxd_wake_to_wake,
         vrd_wake_to_wake,
@@ -986,7 +986,7 @@ for i in 1:63
     # - Get Average Wake Velocities - #
 
     # first add Vinf to x velocities
-    Vx_wake = vx_wake.+Vinf
+    Vx_wake = vz_wake.+Vinf
 
     # Get averages of axial components
     Vx_avg_wake = (Vx_wake[2:end, :] .+ Vx_wake[1:end-1, :])/2.0
@@ -1023,7 +1023,7 @@ for i in 1:63
         plot!(pcirc, Gamma, rpc; label="iter #$(iter[1])")
         plot!(psigma, rotor_source_strengths, rpc; label="iter #$(iter[1])")
         plot!(palpha, alpha * 180.0 / pi, rpc; label="iter #$(iter[1])")
-        plot!(pvx, vx_rotor, rpc; label="iter #$(iter[1])")
+        plot!(pvx, vz_rotor, rpc; label="iter #$(iter[1])")
         plot!(pvt, vtheta_rotor, rpc; label="iter #$(iter[1])")
         plot!(pw, Wmag_rotor, rpc; label="iter #$(iter[1])")
         plot!(pcl, cl, rpc; label="iter #$(iter[1])")
@@ -1043,7 +1043,7 @@ savefig(
     psigma, "test/manual_tests/rotor_wake_tests/rotor_source_strengths_with_sources.pdf"
 )
 savefig(palpha, "test/manual_tests/rotor_wake_tests/alpha_with_sources.pdf")
-savefig(pvx, "test/manual_tests/rotor_wake_tests/vx_with_sources.pdf")
+savefig(pvx, "test/manual_tests/rotor_wake_tests/vz_with_sources.pdf")
 savefig(pvt, "test/manual_tests/rotor_wake_tests/vtheta_with_sources.pdf")
 savefig(pw, "test/manual_tests/rotor_wake_tests/Wmag_with_sources.pdf")
 savefig(pcl, "test/manual_tests/rotor_wake_tests/cl_with_sources.pdf")

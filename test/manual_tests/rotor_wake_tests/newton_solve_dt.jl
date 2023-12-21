@@ -64,12 +64,12 @@ function update_gamma_sigma!(states, params)
     TF = eltype(Gamma)
 
     # - get the induced velocities at the rotor plane - #
-    vx_rotor, vr_rotor, vtheta_rotor = dt.calculate_induced_velocities_on_rotors(
-        params.blade_elements, Gamma, params.vx_rw, params.vr_rw, wake_vortex_strengths
+    vz_rotor, vr_rotor, vtheta_rotor = dt.calculate_induced_velocities_on_rotors(
+        params.blade_elements, Gamma, params.vz_rw, params.vr_rw, wake_vortex_strengths
     )
 
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor .+ params.Vinf
+    Wx_rotor = vz_rotor .+ params.Vinf
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
     Wtheta_rotor = vtheta_rotor .- params.Omega .* rpc
 

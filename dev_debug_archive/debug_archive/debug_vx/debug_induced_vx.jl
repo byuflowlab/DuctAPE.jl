@@ -178,7 +178,7 @@ vx = similar(roGamr) .= 0 # axial induced velocity
 vr = similar(roGamr) .= 0 # radial induced velocity
 # add wake induced velocities
 for jwake in 1:nwake_sheets
-    vx .+= inputs.vx_rw[1, jwake] * rowakegamma[jwake, :]
+    vx .+= inputs.vz_rw[1, jwake] * rowakegamma[jwake, :]
     vr .+= inputs.vr_rw[1, jwake] * rowakegamma[jwake, :]
 end
 
@@ -333,7 +333,7 @@ savefig(pcont, project_dir * "/dev_debug_archive/debug_vx/body-on-body-influence
 # look at body-induced velocity on rotor plane #
 #----------------------------------------------#
 
-vx = inputs.vx_rb[1] * body_gammas
+vx = inputs.vz_rb[1] * body_gammas
 vr = inputs.vr_rb[1] * body_gammas
 
 plot(; xlabel="body-induced velocity", ylabel="r")
@@ -345,11 +345,11 @@ savefig(
 
 
 #attempt a countour plot of A_rb
-nrp, nbp = size(inputs.vx_rb[1])
+nrp, nbp = size(inputs.vz_rb[1])
 pcont = contourf(
     [1:nbp],
     [1:nrp],
-    inputs.vx_rb[1];
+    inputs.vz_rb[1];
     color=:coolwarm,
     # clims=(minimum(inputs.A_bw[jwake]), maximum(inputs.A_bw[jwake])),
     xlabel="influencing body panels from inner TE clockwise",

@@ -80,7 +80,7 @@ function precomputed_inputs(
     )
 
     # Save number of wake panels in x-direction
-    num_wake_x_panels = length(zwake) - 1
+    num_wake_z_panels = length(zwake) - 1
 
     # - Repanel Bodies - #
     rp_duct_coordinates, rp_hub_coordinates = repanel_bodies(
@@ -211,9 +211,9 @@ function precomputed_inputs(
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
     rotorwakepanelid = ones(Int, wake_vortex_panels.totpanel, 2)
-    num_wake_x_panels = length(zwake)-1
+    num_wake_z_panels = length(zwake)-1
     for i in 1:(length(rwake))
-        rotorwakepanelid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
+        rotorwakepanelid[(1 + (i - 1) * num_wake_z_panels):(i * num_wake_z_panels), 1] .= i
     end
     for (i, wn) in enumerate(eachcol(wake_vortex_panels.controlpoint))
         rotorwakepanelid[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
@@ -221,9 +221,9 @@ function precomputed_inputs(
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
     rotorwakeid = ones(Int, wake_vortex_panels.totnode, 2)
-    num_wake_x_nodes = length(zwake)
+    num_wake_z_nodes = length(zwake)
     for i in 1:(rotorstator_parameters[1].nwake_sheets)
-        rotorwakeid[(1 + (i - 1) * num_wake_x_nodes):(i * num_wake_x_nodes), 1] .= i
+        rotorwakeid[(1 + (i - 1) * num_wake_z_nodes):(i * num_wake_z_nodes), 1] .= i
     end
     for (i, wn) in enumerate(eachcol(wake_vortex_panels.node))
         rotorwakeid[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
@@ -232,7 +232,7 @@ function precomputed_inputs(
     # Go through the wake panels and determine the indices that have interfaces with the hub and wake
     hubwakeinterfaceid = 1:(hubTE_index - 1) #first rotor-wake-body interface is at index 1, this is also on the first wake sheet, so the hub trailing edge index in the zwake vector should be (or one away from, need to check) the last interface point
     ductwakeinterfaceid =
-        num_wake_x_panels * (paneling_constants.nwake_sheets - 1) .+ (1:(ductTE_index - 1))
+        num_wake_z_panels * (paneling_constants.nwake_sheets - 1) .+ (1:(ductTE_index - 1))
 
     # generate body wake panels for convenience (used in getting surface pressure of body wakes in post processing)
     duct_wake_panels = generate_panels(
@@ -677,8 +677,8 @@ function precomputed_inputs(
         hubwakeinterfaceid, # wake panel indices that lie on top of hub wall
         rotorwakeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel
         rotorwakepanelid, # [rotor panel index, and closest forward rotor id] for each wake panel
-        num_wake_x_nodes, # number of nodes in axial direction of wake sheet
-        num_wake_x_panels, # number of panels in each wake sheet
+        num_wake_z_nodes, # number of nodes in axial direction of wake sheet
+        num_wake_z_panels, # number of panels in each wake sheet
         # - Linear System - #
         # body_system_matrices, # includes the various LHS and RHS matrics and vectors for solving the linear system for the body
         # - Influence Matrices - #

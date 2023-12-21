@@ -17,7 +17,7 @@ include(project_dir*"/plots_default.jl")
 
 """
 """
-function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0, prefix="")
+function initwake(inputs, blade_elements; vz_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0, prefix="")
 
     # get dimensions
     nr = length(inputs.blade_elements[1].rbe)
@@ -29,7 +29,7 @@ function initwake(inputs, blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rot
     gamw = zeros(nr + 1, nrotor)
 
     # Velocities
-    Wx_rotor = vx_rotor .+ inputs.Vinf .* ones(nr)
+    Wx_rotor = vz_rotor .+ inputs.Vinf .* ones(nr)
 
     Wtheta_rotor =
         vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.rotor_panel_centers
@@ -311,7 +311,7 @@ freestream = (; Vinf)
 _, inputs = dt.initialize_rotor_states(rotor_parameters, freestream; wake_length=1.0)
 
 # look at initial case without body
-initwake(inputs, inputs.blade_elements; vx_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0, prefix="")
+initwake(inputs, inputs.blade_elements; vz_rotor=0.0, vtheta_rotor=0.0, vr_rotor=0.0, prefix="")
 
 # look at converged case without body
 

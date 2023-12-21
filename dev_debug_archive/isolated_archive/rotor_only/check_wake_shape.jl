@@ -157,7 +157,7 @@ A_wake_to_rotor = [
 ]
 
 # - Axial - #
-vx_rw = [
+vz_rw = [
     A_wake_to_rotor[i, j][1] for i in 1:length(default_inputs.rotor_source_panels),
     j in 1:length(wake_vortex_panels)
 ]
@@ -170,7 +170,7 @@ vr_rw = [
 
 #actually overwrite the velocity and panel fields in the inputs.
 inputs = (;
-    default_inputs..., wake_vortex_panels=wake_vortex_panels, vx_rw=vx_rw, vr_rw=vr_rw
+    default_inputs..., wake_vortex_panels=wake_vortex_panels, vz_rw=vz_rw, vr_rw=vr_rw
 )
 
 # SOLVE

@@ -1,5 +1,5 @@
 """
-    calculate_body_strengths_residual(gamb, A_bb, b_bf, vx_bw, vr_bw, gamw)
+    calculate_body_strengths_residual(gamb, A_bb, b_bf, vz_bw, vr_bw, gamw)
 
 Calculate body vortex strengths
 kid is kutta indices, where kid[1] is the row/column to keep and kid[2] is the row/column to subtract from kid[1] and then delete (1 is the first duct panel, and 2 is the Nth duct panel)

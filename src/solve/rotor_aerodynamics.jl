@@ -202,31 +202,30 @@ function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements,cd, rho)
     # things converge slower, likely because the values are so small...
     # sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
 
-    for (irotor,be) in enumerate(blade_elements)
-
+    for (irotor, be) in enumerate(blade_elements)
         B = be.B
 
-        for inode in 1:size(sigr,1)
-            if inode ==1
-                W=Wmag_rotor[inode, irotor]
+        for inode in 1:size(sigr, 1)
+            if inode == 1
+                W = Wmag_rotor[inode, irotor]
                 c = be.chords[inode]
                 # cd = be.cd[inode]
                 d = cd[inode]
 
-            elseif inode==size(sigr,1)
-                W=Wmag_rotor[inode-1, irotor]
-                c = be.chords[inode-1]
+            elseif inode == size(sigr, 1)
+                W = Wmag_rotor[inode - 1, irotor]
+                c = be.chords[inode - 1]
                 # cd = be.cd[inode-1]
-                d = cd[inode-1]
+                d = cd[inode - 1]
 
             else
-                W = Wmag_rotor[inode-1:inode, irotor]
-                c = be.chords[inode-1:inode]
+                W = Wmag_rotor[(inode - 1):inode, irotor]
+                c = be.chords[(inode - 1):inode]
                 # cd = be.cd[inode-1:inode]
-                d = cd[inode-1:inode]
+                d = cd[(inode - 1):inode]
             end
 
-            sigr[inode,irotor] = B / (4 * pi) * sum(W .* c .* d) / length(d)
+            sigr[inode, irotor] = B / (4 * pi) * sum(W .* c .* d) / length(d)
             # sigr[:] .= B / (4 * pi) * sum(W .* c .* cd ./ r) / length(cd)
             # sigr[:] .= B / (4 * pi) * rho * sum(W^2 .* c .* cd ./ r) / length(cd)
         end
@@ -306,52 +305,40 @@ function calculate_gamma_sigma!(
     Wmag_rotor,
     freestream;
     debug=false,
-    verbose=false
-    )
+    verbose=false,
+)
 
-        #update coeffs
-        if debug
-        cl, cd, phidb, alphadb, cldb, cddb=update_coeffs!(
-        blade_elements,
-        Wm_rotor,
-        Wtheta_rotor,
-        Wmag_rotor,
-        freestream;
-        debug=debug,
-        verbose=verbose
-    )
-else
-    cl, cd  = update_coeffs!(
-        blade_elements,
-        Wm_rotor,
-        Wtheta_rotor,
-        Wmag_rotor,
-        freestream;
-        debug=debug,
-        verbose=verbose
-    )
-end
+    #update coeffs
+    if debug
+        cl, cd, phidb, alphadb, cldb, cddb = update_coeffs!(
+            blade_elements,
+            Wm_rotor,
+            Wtheta_rotor,
+            Wmag_rotor,
+            freestream;
+            debug=debug,
+            verbose=verbose,
+        )
+    else
+        cl, cd = update_coeffs!(
+            blade_elements,
+            Wm_rotor,
+            Wtheta_rotor,
+            Wmag_rotor,
+            freestream;
+            debug=debug,
+            verbose=verbose,
+        )
+    end
 
     # - get circulation strength - #
-    gamma_from_coeffs!(
-        Gamr,
-        Wmag_rotor,
-        blade_elements,
-        cl
-    )
+    gamma_from_coeffs!(Gamr, Wmag_rotor, blade_elements, cl)
 
     # - get source strength - #
-    sigma_from_coeffs!(
-        sigr,
-        Wmag_rotor,
-        blade_elements,
-        cd,
-        freestream.rhoinf,
-    )
+    sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements, cd, freestream.rhoinf)
 
     return Gamr, sigr
 end
-
 
 function update_coeffs!(
     blade_elements,
@@ -410,7 +397,7 @@ function update_coeffs!(
 
             # - Update cl and cd values - #
             # be.cl[ir], be.cd[ir] = lookup_clcd(
-            cl[ir,irotor], cd[ir,irotor] = lookup_clcd(
+            cl[ir, irotor], cd[ir, irotor] = lookup_clcd(
                 blade_elements[irotor].inner_airfoil[ir],
                 blade_elements[irotor].outer_airfoil[ir],
                 blade_elements[irotor].inner_fraction[ir],
@@ -425,7 +412,6 @@ function update_coeffs!(
                 verbose=verbose,
                 fliplift=fliplift,
             )
-
 
             if debug
                 phidb[ir, irotor] = phi
@@ -463,7 +449,7 @@ function lookup_clcd(
 
     # look up lift and drag data for the nearest two input sections
     # TODO: this breaks rotor aero tests... need to update those.
-    if typeof(inner_airfoil) <: DFDCairfoil
+    if typeof(inner_airfoil) <: c4b.DFDCairfoil
         # - DFDC Airfoil Parameter - #
 
         # get inner values
@@ -491,7 +477,7 @@ function lookup_clcd(
             fliplift=fliplift,
         )
 
-    elseif typeof(inner_airfoil) <: DTCascade
+    elseif typeof(inner_airfoil) <: c4b.DTCascade
         # - Cascade Lookups - #
         # get inner values
         clin, cdin = c4b.caseval(inner_airfoil, stagger, inflow, reynolds, mach, solidity)

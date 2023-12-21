@@ -73,37 +73,37 @@ inputs = dt.precomputed_inputs(
     v_hwb, # body to hub wake
     v_hwr, # rotor to hub wake
     v_hww, # wake to hub wake
-    vx_rb, # body to rotor (x-direction)
+    vz_rb, # body to rotor (x-direction)
     vr_rb, # body to rotor (r-direction)
-    vx_rbte, # bodyTE to rotor (x-direction)
+    vz_rbte, # bodyTE to rotor (x-direction)
     vr_rbte, # bodyTE to rotor (r-direction)
-    vx_rr, # rotor to rotor (x-direction)
+    vz_rr, # rotor to rotor (x-direction)
     vr_rr, # rotor to rotor ( r-direction)
-    vx_rw, # wake to rotor (x-direction)
+    vz_rw, # wake to rotor (x-direction)
     vr_rw, # wake to rotor ( r-direction)
-    vx_wb, # body to wake (x-direction)
+    vz_wb, # body to wake (x-direction)
     vr_wb, # body to wake ( r-direction)
-    vx_wbte, # bodyTE to wake (x-direction)
+    vz_wbte, # bodyTE to wake (x-direction)
     vr_wbte, # bodyTE to wake ( r-direction)
-    vx_wr, # rotor to wake (x-direction)
+    vz_wr, # rotor to wake (x-direction)
     vr_wr, # rotor to wake ( r-direction)
-    vx_ww, # wake to wake (x-direction)
+    vz_ww, # wake to wake (x-direction)
     vr_ww, # wake to wake ( r-direction)
-    vx_dwb, # body to duct wake (x-direction)
+    vz_dwb, # body to duct wake (x-direction)
     vr_dwb, # body to duct wake ( r-direction)
-    vx_dwbte, # bodyTE to duct wake (x-direction)
+    vz_dwbte, # bodyTE to duct wake (x-direction)
     vr_dwbte, # bodyTE to duct wake ( r-direction)
-    vx_dwr, # rotor to duct wake (x-direction)
+    vz_dwr, # rotor to duct wake (x-direction)
     vr_dwr, # rotor to duct wake ( r-direction)
-    vx_dww, # wake to duct wake (x-direction)
+    vz_dww, # wake to duct wake (x-direction)
     vr_dww, # wake to duct wake ( r-direction)
-    vx_hwb, # body to hub wake (x-direction)
+    vz_hwb, # body to hub wake (x-direction)
     vr_hwb, # body to hub wake ( r-direction)
-    vx_hwbte, # bodyTE to hub wake (x-direction)
+    vz_hwbte, # bodyTE to hub wake (x-direction)
     vr_hwbte, # bodyTE to hub wake ( r-direction)
-    vx_hwr, # rotor to hub wake (x-direction)
+    vz_hwr, # rotor to hub wake (x-direction)
     vr_hwr, # rotor to hub wake ( r-direction)
-    vx_hww, # wake to hub wake (x-direction)
+    vz_hww, # wake to hub wake (x-direction)
     vr_hww, # wake to hub wake ( r-direction)
     # operating conditions
     Vinf, # freestream parameters
@@ -127,7 +127,7 @@ debug = true
 nrotor = num_rotors
 TEidxs = (p -> p.idx).(body_doublet_panels.TEnodes)
 ### --- Get Velocities Before Updating States --- ###
-vx_rotor = similar(Gamr) .= 0 # axial induced velocity
+vz_rotor = similar(Gamr) .= 0 # axial induced velocity
 vr_rotor = similar(Gamr) .= 0 # radial induced velocity
 vtheta_rotor = similar(Gamr) .= 0 # tangential induced velocity
 
@@ -149,40 +149,40 @@ for irotor in 1:nrotor
 
     # add body induced velocities
     if mub != nothing
-        @views vx_rotor[:, irotor] .+= vx_rb[irotor] * mub
+        @views vz_rotor[:, irotor] .+= vz_rb[irotor] * mub
         @views vr_rotor[:, irotor] .+= vr_rb[irotor] * mub
 
         if debug
-            @views vxb_rotor[:, irotor] .+= vx_rb[irotor] * mub
+            @views vxb_rotor[:, irotor] .+= vz_rb[irotor] * mub
             @views vrb_rotor[:, irotor] .+= vr_rb[irotor] * mub
         end
 
         #note: v?_rbte[irotor] should have been defined as zeros for endpoints that are not coincident.
-        @views vx_rotor .+= vx_rbte[irotor] * mub[TEidxs]
+        @views vz_rotor .+= vz_rbte[irotor] * mub[TEidxs]
         @views vr_rotor .+= vr_rbte[irotor] * mub[TEidxs]
 
         if debug
-            @views vxb_rotor .+= vx_rbte[irotor] * mub[TEidxs]
+            @views vxb_rotor .+= vz_rbte[irotor] * mub[TEidxs]
             @views vrb_rotor .+= vr_rbte[irotor] * mub[TEidxs]
         end
     end
 
     # add wake induced velocities
-    @views vx_rotor[:, irotor] .+= vx_rw[irotor] * gamw
+    @views vz_rotor[:, irotor] .+= vz_rw[irotor] * gamw
     @views vr_rotor[:, irotor] .+= vr_rw[irotor] * gamw
 
     if debug
-        @views vxw_rotor[:, irotor] .+= vx_rw[irotor] * gamw[:]
+        @views vxw_rotor[:, irotor] .+= vz_rw[irotor] * gamw[:]
         @views vrw_rotor[:, irotor] .+= vr_rw[irotor] * gamw[:]
     end
 
     # add rotor induced velocities
     for jrotor in 1:nrotor
-        @views vx_rotor[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
+        @views vz_rotor[:, irotor] .+= vz_rr[irotor, jrotor] * sigr[:, jrotor]
         @views vr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
 
         if debug
-            @views vxr_rotor[:, irotor] .+= vx_rr[irotor, jrotor] * sigr[:, jrotor]
+            @views vxr_rotor[:, irotor] .+= vz_rr[irotor, jrotor] * sigr[:, jrotor]
             @views vrr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
         end
     end
@@ -201,7 +201,7 @@ for irotor in 1:nrotor
 end
 
 # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-Wx_rotor = vx_rotor .+ Vinf
+Wx_rotor = vz_rotor .+ Vinf
 
 # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
 Wtheta_rotor = similar(vtheta_rotor) .= vtheta_rotor
@@ -218,7 +218,7 @@ Wmag_rotor = sqrt.(Wx_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
 
 #######################################################################################
 # initialize outputs
-vx_wake = similar(gamw) .= 0 # axial induced velocity
+vz_wake = similar(gamw) .= 0 # axial induced velocity
 vr_wake = similar(gamw) .= 0 # radial induced velocity
 
 if debug
@@ -233,40 +233,40 @@ end
 
 # add body induced velocities
 if mub != nothing
-    @views vx_wake .+= vx_wb * mub
+    @views vz_wake .+= vz_wb * mub
     @views vr_wake .+= vr_wb * mub
     if debug
-        @views vxb_wake .+= vx_wb * mub
+        @views vxb_wake .+= vz_wb * mub
         @views vrb_wake .+= vr_wb * mub
     end
 
-    @views vx_wake .+= vx_wbte * mub[TEidxs]
+    @views vz_wake .+= vz_wbte * mub[TEidxs]
     @views vr_wake .+= vr_wbte * mub[TEidxs]
     if debug
-        @views vxb_wake .+= vx_wbte * mub[TEidxs]
+        @views vxb_wake .+= vz_wbte * mub[TEidxs]
         @views vrb_wake .+= vr_wbte * mub[TEidxs]
     end
 end
 
 # add rotor induced velocities
 for jrotor in 1:nrotor
-    @views vx_wake .+= vx_wr[jrotor] * sigr[:, jrotor]
+    @views vz_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
     @views vr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
     if debug
-        @views vxr_wake .+= vx_wr[jrotor] * sigr[:, jrotor]
+        @views vxr_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
         @views vrr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
     end
 end
 
 # add wake induced velocities
-@views vx_wake .+= vx_ww * gamw
+@views vz_wake .+= vz_ww * gamw
 @views vr_wake .+= vr_ww * gamw
 if debug
-    @views vxw_wake .+= vx_ww * gamw
+    @views vxw_wake .+= vz_ww * gamw
     @views vrw_wake .+= vr_ww * gamw
 end
 
-Vx_wake = vx_wake .+ Vinf
+Vx_wake = vz_wake .+ Vinf
 
 Wm_wake = sqrt.(Vx_wake .^ 2 .+ vr_wake .^ 2)
 

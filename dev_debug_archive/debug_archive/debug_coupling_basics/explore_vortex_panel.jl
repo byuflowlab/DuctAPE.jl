@@ -35,7 +35,7 @@ vx = zeros(npan, npan)
 vr = zeros(npan, npan)
 for i in 1:npan #affected panels
     for j in 1:npan #influencing panels
-        vx[i, j] = dt.get_vx_ring_vortex_off_body(
+        vx[i, j] = dt.get_vz_ring_vortex_off_body(
             mesh.x[i, j],
             mesh.r[i, j],
             panels.panel_center[j, 2],

@@ -58,26 +58,26 @@ function update_rotor_states!(states, inputs)
     TF = eltype(Gamr)
 
     # - get the induced velocities at the rotor plane - #
-    vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+    vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
-        inputs.vx_rw,
+        inputs.vz_rw,
         inputs.vr_rw,
         gamw,
-        inputs.vx_rr,
+        inputs.vz_rr,
         inputs.vr_rr,
         sigr,
     )
 
     Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
-        vx_rotor, vr_rotor, vtheta_rotor, inputs.Vinf, inputs.blade_elements.Omega, rpc
+        vz_rotor, vr_rotor, vtheta_rotor, inputs.freestream.Vinf, inputs.blade_elements.Omega, rpc
     )
 
-    vx_wake, vr_wake = calculate_induced_velocities_on_wakes(
-        inputs.vx_ww, inputs.vr_ww, gamw, inputs.vx_wr, inputs.vr_wr, sigr
+    vz_wake, vr_wake = calculate_induced_velocities_on_wakes(
+        inputs.vz_ww, inputs.vr_ww, gamw, inputs.vz_wr, inputs.vr_wr, sigr
     )
 
-    Wm_wake = reframe_wake_velocities(vx_wake, vr_wake, inputs.Vinf)
+    Wm_wake = reframe_wake_velocities(vz_wake, vr_wake, inputs.freestream.Vinf)
 
     # - Update Gamr - #
     calculate_gamma_sigma!(

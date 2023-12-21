@@ -30,22 +30,22 @@ function debug_outputs(states, inputs; suffix="")
     )
 
     # get induced velocities
-    vx_total, vr_total, vtheta_total, vx_frombody, vr_frombody, vx_fromwake, vr_fromwake, vx_fromrotor, vr_fromrotor = dt.calculate_induced_velocities_on_rotors(
+    vz_total, vr_total, vtheta_total, vz_frombody, vr_frombody, vz_fromwake, vr_fromwake, vz_fromrotor, vr_fromrotor = dt.calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
-        inputs.vx_rw,
+        inputs.vz_rw,
         inputs.vr_rw,
         wake_vortex_strengths,
-        inputs.vx_rr,
+        inputs.vz_rr,
         inputs.vr_rr,
         sigr,
-        inputs.vx_rb,
+        inputs.vz_rb,
         inputs.vr_rb,
         gamb;
         debug=true,
     )
 
-    Wx_rotor = vx_total .+ inputs.Vinf
+    Wx_rotor = vz_total .+ inputs.Vinf
 
     Wtheta_rotor =
         vtheta_total .- inputs.blade_elements[1].Omega .* inputs.rotor_panel_centers
@@ -59,10 +59,10 @@ function debug_outputs(states, inputs; suffix="")
     pvx = plot(; xlabel=L"v_x", ylabel="r")
 
     # plot solution
-    plot!(pvx, vx_total, inputs.rotor_panel_centers; label="Total")
-    plot!(pvx, vx_frombody, inputs.rotor_panel_centers; label="Due to Body")
-    plot!(pvx, vx_fromwake, inputs.rotor_panel_centers; label="Due to Wake")
-    plot!(pvx, vx_fromrotor, inputs.rotor_panel_centers; label="Due to Rotor (sources)")
+    plot!(pvx, vz_total, inputs.rotor_panel_centers; label="Total")
+    plot!(pvx, vz_frombody, inputs.rotor_panel_centers; label="Due to Body")
+    plot!(pvx, vz_fromwake, inputs.rotor_panel_centers; label="Due to Wake")
+    plot!(pvx, vz_fromrotor, inputs.rotor_panel_centers; label="Due to Rotor (sources)")
 
     #save
     savefig(pvx, "dev_debug_archive/debug_together/vxdist" * suffix * ".pdf")

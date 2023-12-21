@@ -278,7 +278,7 @@ for i in 1:nJ
 
     # axial induced velocity
     plot(
-        dtout.vx_rotor,
+        dtout.vz_rotor,
         rbe / Rtip;
         xlabel=L"v_x",
         ylabel="r",
@@ -286,7 +286,7 @@ for i in 1:nJ
         title="J = $(J[i])",
     )
     plot!(out.u, r; label="CCBlade")
-    savefig("dev_debug_archive/isolated_archive/rotor_only/vx_J$(J[i]).pdf")
+    savefig("dev_debug_archive/isolated_archive/rotor_only/vz_J$(J[i]).pdf")
 
     # tangential induced velocity
     plot(

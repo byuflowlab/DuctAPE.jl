@@ -141,7 +141,7 @@ contour(
     aspectratio=:equal,
     fill=true,
 )
-savefig("./test/manual_tests/rotor_wake_tests/vx_contour.pdf")
+savefig("./test/manual_tests/rotor_wake_tests/vz_contour.pdf")
 
 contour(
     sample_panels[1].panel_center[:, 1],

@@ -334,23 +334,23 @@ function step_through(;
 
         println("\tCalculating and Plotting Velocities")
         # - Get the induced velocities at the rotor plane - #
-        vx_rotor, vr_rotor, vtheta_rotor, vxb, vrb, vxw, vrw, vxr, vrr = dt.calculate_induced_velocities_on_rotors(
+        vz_rotor, vr_rotor, vtheta_rotor, vxb, vrb, vxw, vrw, vxr, vrr = dt.calculate_induced_velocities_on_rotors(
             blade_elements,
             Gamr,
-            inputs.vx_rw,
+            inputs.vz_rw,
             inputs.vr_rw,
             wake_vortex_strengths,
-            inputs.vx_rr,
+            inputs.vz_rr,
             inputs.vr_rr,
             sigr,
-            inputs.vx_rb,
+            inputs.vz_rb,
             inputs.vr_rb,
             gamb;
             debug=true,
         )
 
         # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-        Wx_rotor = vx_rotor .+ inputs.Vinf
+        Wx_rotor = vz_rotor .+ inputs.Vinf
 
         # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
         Wtheta_rotor = vtheta_rotor .- inputs.blade_elements[1].Omega .* rpc
@@ -368,7 +368,7 @@ function step_through(;
         #plot axial induced velocity
         plot!(
             pvx,
-            vx_rotor,
+            vz_rotor,
             inputs.rotor_panel_centers;
             color=mycolors[i],
             label="total iter $i",

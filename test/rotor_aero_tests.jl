@@ -58,14 +58,14 @@
             rbe=ones(2),
             Omega=ones(2),
         )]
-        vx_rw = [[1 0; 0 1] for i in 1:1, j in 1:2]
+        vz_rw = [[1 0; 0 1] for i in 1:1, j in 1:2]
         vr_rw = [[1 0; 0 1] for i in 1:1, j in 1:2]
         gamma_wake = ones(2, 2)
         # A_rotor_to_rotor =[1 0; 0 1]
         # Sigma =ones(2)
 
         vx, vr, vt = dt.calculate_induced_velocities_on_rotors(
-            blade_elements, gamma_rotor, vx_rw, vr_rw, gamma_wake
+            blade_elements, gamma_rotor, vz_rw, vr_rw, gamma_wake
         )
 
         @test all(vt .== 1.0 / (4.0 * pi) * gamma_rotor)
@@ -85,11 +85,11 @@
             ) for i in 1:2
         ]
         gamma_wake = ones(2, 2)
-        vx_rw = [[1 0; 0 1] for i in 1:2, j in 1:2]
+        vz_rw = [[1 0; 0 1] for i in 1:2, j in 1:2]
         vr_rw = [[1 0; 0 1] for i in 1:2, j in 1:2]
 
         vx, vr, vt = dt.calculate_induced_velocities_on_rotors(
-            blade_elements, gamma_rotor, vx_rw, vr_rw, gamma_wake
+            blade_elements, gamma_rotor, vz_rw, vr_rw, gamma_wake
         )
 
         @test all(vt[:, 1] .== 1.0 / (4.0 * pi) * gamma_rotor)

@@ -127,7 +127,7 @@ function precompute_inputs_rotor_only(
     ]
 
     # axial components
-    vx_rw = [v_rw[i][:, :, 1] for i in 1:length(rotor_source_panels)]
+    vz_rw = [v_rw[i][:, :, 1] for i in 1:length(rotor_source_panels)]
 
     # radial components
     vr_rw = [v_rw[i][:, :, 2] for i in 1:length(rotor_source_panels)]
@@ -144,7 +144,7 @@ function precompute_inputs_rotor_only(
     ]
 
     # axial components
-    vx_rr = [
+    vz_rr = [
         v_rr[i, j][:, :, 1] for i in 1:length(rotor_source_panels),
         j in 1:length(rotor_source_panels)
     ]
@@ -166,7 +166,7 @@ function precompute_inputs_rotor_only(
     ]
 
     # axial components
-    vx_wr = [v_wr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
+    vz_wr = [v_wr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 
     # radial components
     vr_wr = [v_wr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
@@ -180,7 +180,7 @@ function precompute_inputs_rotor_only(
     )
 
     # axial components
-    vx_ww = v_ww[:, :, 1]
+    vz_ww = v_ww[:, :, 1]
 
     # radial components
     vr_ww = v_ww[:, :, 2]
@@ -193,13 +193,13 @@ function precompute_inputs_rotor_only(
         num_wake_x_panels,
         wakeK,
         rotorwakeid,
-        vx_rw=vx_rw,
+        vz_rw=vz_rw,
         vr_rw=vr_rw,
-        vx_rr=vx_rr,
+        vz_rr=vz_rr,
         vr_rr=vr_rr,
-        vx_wr=vx_wr,
+        vz_wr=vz_wr,
         vr_wr=vr_wr,
-        vx_ww=vx_ww,
+        vz_ww=vz_ww,
         vr_ww=vr_ww,
         blade_elements,
         num_rotors=1,

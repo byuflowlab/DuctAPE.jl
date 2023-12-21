@@ -185,7 +185,7 @@ function manual_precomputed_inputs(
     ]
 
     # axial components
-    vx_rr = [A_rr[i, j][1] for i in 1:1, j in 1:1]
+    vz_rr = [A_rr[i, j][1] for i in 1:1, j in 1:1]
 
     # radial components
     vr_rr = [A_rr[i, j][2] for i in 1:1, j in 1:1]
@@ -197,7 +197,7 @@ function manual_precomputed_inputs(
     ]
 
     # axial components
-    vx_rb = [A_rb[i, j][1] for i in 1:1, j in 1:1]
+    vz_rb = [A_rb[i, j][1] for i in 1:1, j in 1:1]
 
     # radial components
     vr_rb = [A_rb[i, j][2] for i in 1:1, j in 1:1]
@@ -210,7 +210,7 @@ function manual_precomputed_inputs(
     ]
 
     # axial components
-    vx_rw = [A_rw[i, j][1] for i in 1:1, j in 1:length(wake_vortex_panels)]
+    vz_rw = [A_rw[i, j][1] for i in 1:1, j in 1:length(wake_vortex_panels)]
 
     # radial components
     vr_rw = [A_rw[i, j][2] for i in 1:1, j in 1:length(wake_vortex_panels)]
@@ -232,9 +232,9 @@ function manual_precomputed_inputs(
 
     # axial components
 
-    vx_wba = [A_wba[i, j][1] for i in 1:length(wake_affect_panels), j in 1:1]
+    vz_wba = [A_wba[i, j][1] for i in 1:length(wake_affect_panels), j in 1:1]
 
-    vx_wb = [A_wb[i, j][1] for i in 1:length(wake_vortex_panels), j in 1:1]
+    vz_wb = [A_wb[i, j][1] for i in 1:length(wake_vortex_panels), j in 1:1]
 
     # radial components
 
@@ -250,7 +250,7 @@ function manual_precomputed_inputs(
     ]
 
     # axial components
-    vx_wr = [A_wr[i, j][1] for i in 1:length(wake_vortex_panels), j in 1:1]
+    vz_wr = [A_wr[i, j][1] for i in 1:length(wake_vortex_panels), j in 1:1]
 
     # radial components
     vr_wr = [A_wr[i, j][2] for i in 1:length(wake_vortex_panels), j in 1:1]
@@ -263,7 +263,7 @@ function manual_precomputed_inputs(
     ]
 
     # axial components
-    vx_ww = [
+    vz_ww = [
         A_ww[i, j][1] for i in 1:length(wake_affect_panels),
         j in 1:length(wake_vortex_panels)
     ]
@@ -339,19 +339,19 @@ function manual_precomputed_inputs(
         A_wba, # body to "wake"
         A_wr, # rotor to wake
         A_ww, # rotor to wake
-        vx_rb, # body to rotor (x-direction)
+        vz_rb, # body to rotor (x-direction)
         vr_rb, # body to rotor (r-direction)
-        vx_rr, # rotor to rotor (x-direction)
+        vz_rr, # rotor to rotor (x-direction)
         vr_rr, # rotor to rotor ( r-direction)
-        vx_rw, # wake to rotor (x-direction)
+        vz_rw, # wake to rotor (x-direction)
         vr_rw, # wake to rotor ( r-direction)
-        vx_wb, # body to wake (x-direction)
+        vz_wb, # body to wake (x-direction)
         vr_wb, # body to wake ( r-direction)
-        vx_wba, # body to "wake" (x-direction)
+        vz_wba, # body to "wake" (x-direction)
         vr_wba, # body to "wake" ( r-direction)
-        vx_wr, # rotor to wake (x-direction)
+        vz_wr, # rotor to wake (x-direction)
         vr_wr, # rotor to wake ( r-direction)
-        vx_ww, # wake to wake (x-direction)
+        vz_ww, # wake to wake (x-direction)
         vr_ww, # wake to wake ( r-direction)
         # kutta condition indices
         kutta_idxs=get_kutta_indices([false; true], mesh_bb),

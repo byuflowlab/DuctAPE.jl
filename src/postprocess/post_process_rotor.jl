@@ -54,19 +54,19 @@ function states_to_outputs_rotor_only(states, inputs)
     TF = eltype(Gamr)
 
     # - get the induced velocities at the rotor plane - #
-    vx_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+    vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
         inputs.blade_elements,
         Gamr,
-        inputs.vx_rw,
+        inputs.vz_rw,
         inputs.vr_rw,
         gamw,
-        inputs.vx_rr,
+        inputs.vz_rr,
         inputs.vr_rr,
         sigr,
     )
 
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wx_rotor = vx_rotor .+ inputs.Vinf
+    Wx_rotor = vz_rotor .+ inputs.freestream.Vinf
     # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
     Wθ = vtheta_rotor .- inputs.blade_elements[1].Omega .* inputs.blade_elements[1].rbe
 
@@ -119,7 +119,7 @@ function states_to_outputs_rotor_only(states, inputs)
         r,
         chord,
         twist,
-        vx_rotor,
+        vz_rotor,
         vr_rotor,
         vtheta_rotor,
         # Wm=Wx_rotor,

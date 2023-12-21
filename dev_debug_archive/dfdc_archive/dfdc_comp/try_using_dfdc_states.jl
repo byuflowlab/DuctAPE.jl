@@ -41,12 +41,12 @@ for i in 1:(length(gamw1) - 1)
     gamw_aprx[:, i] = 0.5 * (gamw_dfdc[:, i] .+ gamw_dfdc[:, i + 1])
 end
 
-# calculate wake-on-wake velocities using vx_ww's
+# calculate wake-on-wake velocities using vz_ww's
 
 vxa_wake = zeros(nr - 1, nx - 1)
 for iplane in 1:(nx - 1)
     for jwake in 1:nr
-        @views vxa_wake[:, iplane] .+= inputs.vx_ww[iplane, jwake] * gamw_aprx[jwake, :]
+        @views vxa_wake[:, iplane] .+= inputs.vz_ww[iplane, jwake] * gamw_aprx[jwake, :]
     end
 end
 
@@ -57,9 +57,9 @@ end
 
 # put together all the wake velocities
 #TODO:one too long
-vxww1 = [reverse(dfdc.vx_hiw); dfdc.vx_hww]
-vxwwend = [dfdc.vx_diw; dfdc.vx_dww]
-vxww_dfdc = [vxww1'; dfdc.vx_ww; vxwwend']
+vxww1 = [reverse(dfdc.vz_hiw); dfdc.vz_hww]
+vxwwend = [dfdc.vz_diw; dfdc.vz_dww]
+vxww_dfdc = [vxww1'; dfdc.vz_ww; vxwwend']
 # put together all the wake locations
 #TODO:one too long
 cp1 = [reverse(dfdc.hubinterface_ctrlpt_x); dfdc.hubwake_ctrlpt_x]
@@ -69,9 +69,9 @@ wake_cp = [cp1'; dfdc.wake_ctrlpt_x; cpend']
 
 # - plot wakes on wakes - #
 vxww = plot(; xlabel="wake-induced axial velocity", ylabel="r")
-plot!(vxww, dfdc.vx_rw, dfdc.rotor_ctrlpt_r; color=:black, label="DFDC on rotor")
+plot!(vxww, dfdc.vz_rw, dfdc.rotor_ctrlpt_r; color=:black, label="DFDC on rotor")
 
-for i in 1:8:length(dfdc.vx_ww[1, :])
+for i in 1:8:length(dfdc.vz_ww[1, :])
     plot!(
         vxww,
         # vxbar[:, i],
@@ -82,11 +82,11 @@ for i in 1:8:length(dfdc.vx_ww[1, :])
     )
     plot!(
         vxww,
-        dfdc.vx_ww[:, i],
+        dfdc.vz_ww[:, i],
         dfdc.wake_ctrlpt_r[:, i];
         linestyle=:dash,
         label="DFDC: $i stations behind rotor",
     )
 end
 
-savefig(vxww, datapath * "wake-on-wake-vx_dfdcgamw_ducttapevxww.pdf")
+savefig(vxww, datapath * "wake-on-wake-vz_dfdcgamw_ducttapevxww.pdf")

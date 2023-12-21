@@ -7,7 +7,7 @@ states = solve!(states, params)
 
 # - finalize Plots - #
 function add_wake_on_rotor_vm_inducement!(
-    vx_rotor, vr_rotor, wake_vortex_strengths, vxd_wake_to_rotor, vrd_wake_to_rotor
+    vz_rotor, vr_rotor, wake_vortex_strengths, vxd_wake_to_rotor, vrd_wake_to_rotor
 )
 
     ##### ----- Wake on Rotor Influence ----- #####
@@ -15,8 +15,8 @@ function add_wake_on_rotor_vm_inducement!(
     for i in 1:length(vxd_wake_to_rotor)
 
         # axial direction
-        # vx_wake_i_on_rotor = vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
-        vx_rotor .+= vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
+        # vz_wake_i_on_rotor = vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
+        vz_rotor .+= vxd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
 
         # radial direction
         # vr_wake_i_on_rotor = vrd_wake_to_rotor[i] * wake_vortex_strengths[i, :]
@@ -53,16 +53,16 @@ TF = eltype(Gamma)
 #     println(Gamma)
 # end
 
-vx_rotor = zeros(TF, length(Gamma))
+vz_rotor = zeros(TF, length(Gamma))
 vr_rotor = zeros(TF, length(Gamma))
 vtheta_rotor = zeros(TF, length(Gamma))
 
 # - add the wake induced velocities at the rotor plane to Vm - #
 add_wake_on_rotor_vm_inducement!(
-    vx_rotor,
+    vz_rotor,
     vr_rotor,
     wake_vortex_strengths,
-    params.vx_rw,
+    params.vz_rw,
     params.vr_rw,
 )
 
@@ -71,7 +71,7 @@ add_rotor_self_induced_vtheta!(vtheta_rotor, rpc, params.num_blades * Gamma)
 
 # - Get the blade element reference frame total velocity components - #
 # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-Wx_rotor = vx_rotor .+ params.Vinf
+Wx_rotor = vz_rotor .+ params.Vinf
 # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
 Wtheta_rotor = vtheta_rotor .- params.Omega .* rpc
 
@@ -120,7 +120,7 @@ plot!(params.pcl, cl, rpc; label="converged")
 plot!(params.pa, alpha, rpc; label="converged")
 plot!(params.pW, Wmag_rotor, rpc; label="converged")
 plot!(params.pv, vtheta_rotor, rpc; label="converged")
-plot!(params.pu, vx_rotor, rpc; label="converged")
+plot!(params.pu, vz_rotor, rpc; label="converged")
 
 savefig(params.pu, "test/manual_tests/rotor_wake_tests/newton_vx.png")
 savefig(params.pv, "test/manual_tests/rotor_wake_tests/newton_vt.png")

@@ -192,78 +192,78 @@ function get_dfdc()
     include(datapath * "DFDC_VELOCITY_BREAKDOWN.jl")
 
     # body on body
-    vx_bb_duct = dfdc_velocities[duct_cp_range, 2]
+    vz_bb_duct = dfdc_velocities[duct_cp_range, 2]
     vr_bb_duct = dfdc_velocities[duct_cp_range, 3]
-    vx_bb_hub = dfdc_velocities[hub_cp_range, 2]
+    vz_bb_hub = dfdc_velocities[hub_cp_range, 2]
     vr_bb_hub = dfdc_velocities[hub_cp_range, 3]
     # rotor on body
-    vx_br_duct = dfdc_velocities[duct_cp_range, 4]
+    vz_br_duct = dfdc_velocities[duct_cp_range, 4]
     vr_br_duct = dfdc_velocities[duct_cp_range, 5]
-    vx_br_hub = dfdc_velocities[hub_cp_range, 4]
+    vz_br_hub = dfdc_velocities[hub_cp_range, 4]
     vr_br_hub = dfdc_velocities[hub_cp_range, 5]
     # wake on body
-    vx_bw_duct = dfdc_velocities[duct_cp_range, 6]
+    vz_bw_duct = dfdc_velocities[duct_cp_range, 6]
     vr_bw_duct = dfdc_velocities[duct_cp_range, 7]
-    vx_bw_hub = dfdc_velocities[hub_cp_range, 6]
+    vz_bw_hub = dfdc_velocities[hub_cp_range, 6]
     vr_bw_hub = dfdc_velocities[hub_cp_range, 7]
     # total on body
-    vx_duct = dfdc_velocities[duct_cp_range, 8]
+    vz_duct = dfdc_velocities[duct_cp_range, 8]
     vr_duct = dfdc_velocities[duct_cp_range, 9]
-    vx_hub = dfdc_velocities[hub_cp_range, 8]
+    vz_hub = dfdc_velocities[hub_cp_range, 8]
     vr_hub = dfdc_velocities[hub_cp_range, 9]
 
     # body on rotor
-    vx_rb = dfdc_velocities[rotor_cp_range, 2]
+    vz_rb = dfdc_velocities[rotor_cp_range, 2]
     vr_rb = dfdc_velocities[rotor_cp_range, 3]
     # rotor on rotor
-    vx_rr = dfdc_velocities[rotor_cp_range, 4]
+    vz_rr = dfdc_velocities[rotor_cp_range, 4]
     vr_rr = dfdc_velocities[rotor_cp_range, 5]
     # wake on rotor
-    vx_rw = dfdc_velocities[rotor_cp_range, 6]
+    vz_rw = dfdc_velocities[rotor_cp_range, 6]
     vr_rw = dfdc_velocities[rotor_cp_range, 7]
     # total on rotor
-    vx_rotor = dfdc_velocities[rotor_cp_range, 8]
+    vz_rotor = dfdc_velocities[rotor_cp_range, 8]
     vr_rotor = dfdc_velocities[rotor_cp_range, 9]
 
     #TODO: get interface and body wake values
     # wake on hub interface
-    vx_hiw = dfdc_velocities[hubwake_interface_cp_range, 6]
+    vz_hiw = dfdc_velocities[hubwake_interface_cp_range, 6]
     vr_hiw = dfdc_velocities[hubwake_interface_cp_range, 7]
     # wake on duct interface
-    vx_diw = dfdc_velocities[ductwake_interface_cp_range, 6]
+    vz_diw = dfdc_velocities[ductwake_interface_cp_range, 6]
     vr_diw = dfdc_velocities[ductwake_interface_cp_range, 7]
     # wake on hub wake
-    vx_hww = dfdc_velocities[hubwake_cp_range, 6]
+    vz_hww = dfdc_velocities[hubwake_cp_range, 6]
     vr_hww = dfdc_velocities[hubwake_cp_range, 7]
     # wake on duct wake
-    vx_dww = dfdc_velocities[ductwake_cp_range, 6]
+    vz_dww = dfdc_velocities[ductwake_cp_range, 6]
     vr_dww = dfdc_velocities[ductwake_cp_range, 7]
 
     # body on wake
-    vx_wb = zeros(length(wake_cp_range), wake_cp_range[1][end] - wake_cp_range[1][1] + 1)
-    vr_wb = similar(vx_wb) .= 0.0
+    vz_wb = zeros(length(wake_cp_range), wake_cp_range[1][end] - wake_cp_range[1][1] + 1)
+    vr_wb = similar(vz_wb) .= 0.0
     # rotor on wake
-    vx_wr = similar(vx_wb) .= 0.0
-    vr_wr = similar(vx_wb) .= 0.0
+    vz_wr = similar(vz_wb) .= 0.0
+    vr_wr = similar(vz_wb) .= 0.0
     # wake on wake
-    vx_ww = similar(vx_wb) .= 0.0
-    vr_ww = similar(vx_wb) .= 0.0
+    vz_ww = similar(vz_wb) .= 0.0
+    vr_ww = similar(vz_wb) .= 0.0
     # total on wake
-    vx_wake = similar(vx_wb) .= 0.0
-    vr_wake = similar(vx_wb) .= 0.0
+    vz_wake = similar(vz_wb) .= 0.0
+    vr_wake = similar(vz_wb) .= 0.0
 
     for i in 1:length(wake_node_range)
         # body on wake
-        vx_wb[i, :] = dfdc_velocities[wake_cp_range[i], 2]
+        vz_wb[i, :] = dfdc_velocities[wake_cp_range[i], 2]
         vr_wb[i, :] = dfdc_velocities[wake_cp_range[i], 3]
         # rotor on wake
-        vx_wr[i, :] = dfdc_velocities[wake_cp_range[i], 4]
+        vz_wr[i, :] = dfdc_velocities[wake_cp_range[i], 4]
         vr_wr[i, :] = dfdc_velocities[wake_cp_range[i], 5]
         # wake on wake
-        vx_ww[i, :] = dfdc_velocities[wake_cp_range[i], 6]
+        vz_ww[i, :] = dfdc_velocities[wake_cp_range[i], 6]
         vr_ww[i, :] = dfdc_velocities[wake_cp_range[i], 7]
         # total on wake
-        vx_wake[i, :] = dfdc_velocities[wake_cp_range[i], 8]
+        vz_wake[i, :] = dfdc_velocities[wake_cp_range[i], 8]
         vr_wake[i, :] = dfdc_velocities[wake_cp_range[i], 9]
     end
 
@@ -336,60 +336,60 @@ function get_dfdc()
         Gamr=dfdcGamr,
         # - Induced Velocities
         # body on body
-        vx_bb_duct,
+        vz_bb_duct,
         vr_bb_duct,
-        vx_bb_hub,
+        vz_bb_hub,
         vr_bb_hub,
         # rotor on body
-        vx_br_duct,
+        vz_br_duct,
         vr_br_duct,
-        vx_br_hub,
+        vz_br_hub,
         vr_br_hub,
         # wake on body
-        vx_bw_duct,
+        vz_bw_duct,
         vr_bw_duct,
-        vx_bw_hub,
+        vz_bw_hub,
         vr_bw_hub,
         # total on body
-        vx_duct,
+        vz_duct,
         vr_duct,
-        vx_hub,
+        vz_hub,
         vr_hub,
         # body on rotor
-        vx_rb,
+        vz_rb,
         vr_rb,
         # rotor on rotor
-        vx_rr,
+        vz_rr,
         vr_rr,
         # wake on rotor
-        vx_rw,
+        vz_rw,
         vr_rw,
         # total on rotor
-        vx_rotor,
+        vz_rotor,
         vr_rotor,
         # body on wake
-        vx_wb,
+        vz_wb,
         vr_wb,
         # rotor on wake
-        vx_wr,
+        vz_wr,
         vr_wr,
         # wake on wake
-        vx_ww,
+        vz_ww,
         vr_ww,
         # total on wake
-        vx_wake,
+        vz_wake,
         vr_wake,
         # wake on hub interface
-        vx_hiw,
+        vz_hiw,
         vr_hiw,
         # wake on duct interface
-        vx_diw,
+        vz_diw,
         vr_diw,
         # wake on hub wake
-        vx_hww,
+        vz_hww,
         vr_hww,
         # wake on duct wake
-        vx_dww,
+        vz_dww,
         vr_dww,
         # - Meridional Velocities
         Vm_hub,

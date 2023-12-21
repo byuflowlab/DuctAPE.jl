@@ -293,10 +293,10 @@ function plot_wake_on_wake(states, inputs)
 
     # - Rename unit velocities for convenience - #
     #wake on wake affect
-    vx_ww = inputs.vx_ww
+    vz_ww = inputs.vz_ww
     vr_ww = inputs.vr_ww
     #body on rotor
-    vx_rw = inputs.vx_rw
+    vz_rw = inputs.vz_rw
     vr_rw = inputs.vr_rw
     # rotor geometry
     Rtip = inputs.reference_parameters.Rref
@@ -311,21 +311,21 @@ function plot_wake_on_wake(states, inputs)
     # get wake-on-rotor velocity for comparision
     nr, nrotor = size(Gamr)
     nwake, nxwake = size(gamw)
-    vx_rotor = similar(Gamr) .= 0.0
+    vz_rotor = similar(Gamr) .= 0.0
     vr_rotor = similar(Gamr) .= 0.0
 
         for jwake in 1:nwake
-            @views vx_rotor[:, 1] .+= vx_rw[1, jwake] * gamw[jwake, :]
+            @views vz_rotor[:, 1] .+= vz_rw[1, jwake] * gamw[jwake, :]
             @views vr_rotor[:, 1] .+= vr_rw[1, jwake] * gamw[jwake, :]
         end
     pvx = plot(;xlabel="wake-induced Axial Velocity", ylabel="r/Rtip")
     pvr = plot(;xlabel="wake-induced radial Velocity", ylabel="r/Rtip")
     pvm = plot(;xlabel="wake-induced radial Velocity", ylabel="r/Rtip")
-    plot!(pvx, vx_rotor, rpc,linewidth=2, color=:black,label="On Rotor")
+    plot!(pvx, vz_rotor, rpc,linewidth=2, color=:black,label="On Rotor")
     plot!(pvr, vr_rotor, rpc,linewidth=2, color=:black,label="On Rotor")
 
     # get the approximate wake-on-wake velocities
-    vx_wake = zeros(nr, nxwake)
+    vz_wake = zeros(nr, nxwake)
     vr_wake = zeros(nr, nxwake)
 
     for iplane in 1:nxwake
@@ -333,7 +333,7 @@ function plot_wake_on_wake(states, inputs)
         # - Loop through wake vortex sheets - #
         # add wake induced velocities
         for jwake in 1:nr
-            @views vx_wake[:, iplane] .+= inputs.vx_ww[iplane, jwake] * gamw[jwake, :]
+            @views vz_wake[:, iplane] .+= inputs.vz_ww[iplane, jwake] * gamw[jwake, :]
             @views vr_wake[:, iplane] .+= inputs.vr_ww[iplane, jwake] * gamw[jwake, :]
         end
 
@@ -341,7 +341,7 @@ function plot_wake_on_wake(states, inputs)
 
     for i in 1:5:30
 
-    plot!(pvx, vx_wake[:,i], rpc,label="on plane $i stations behind rotor")
+    plot!(pvx, vz_wake[:,i], rpc,label="on plane $i stations behind rotor")
     plot!(pvr, vr_wake[:,i], rpc,label="on plane $i stations behind rotor")
     # plot!(vxa_bar[:,i], rpe,linestyle=:dot,label="averge at $i stations behind rotor")
 end
@@ -359,13 +359,13 @@ function plot_body_on_wake(states, inputs)
 
     # - Rename unit velocities for convenience - #
     # body on wake vortex
-    vx_wb = inputs.vx_wb
+    vz_wb = inputs.vz_wb
     vr_wb = inputs.vr_wb
     #body on wake affect
-    vx_wba = inputs.vx_wba
+    vz_wba = inputs.vz_wba
     vr_wba = inputs.vr_wba
     #body on rotor
-    vx_rb = inputs.vx_rb
+    vz_rb = inputs.vz_rb
     vr_rb = inputs.vr_rb
     Rtip = inputs.reference_parameters.Rref
 
@@ -378,11 +378,11 @@ function plot_body_on_wake(states, inputs)
     nwake, nxwake = size(gamw)
     vxa_wake = zeros(nr, nxwake)
     vra_wake = zeros(nr, nxwake)
-    vx_wake = similar(gamw) .= 0.0
+    vz_wake = similar(gamw) .= 0.0
     vr_wake = similar(gamw) .= 0.0
 
     for iwake in 1:nxwake
-        @views vxa_wake[:, iwake] .+= vx_wba[iwake] * gamb
+        @views vxa_wake[:, iwake] .+= vz_wba[iwake] * gamb
         @views vra_wake[:, iwake] .+= vr_wba[iwake] * gamb
     end
 
@@ -393,12 +393,12 @@ function plot_body_on_wake(states, inputs)
     end
 
     for iwake in 1:nwake
-        @views vx_wake[iwake, :] .+= vx_wb[iwake] * gamb
+        @views vz_wake[iwake, :] .+= vz_wb[iwake] * gamb
         @views vr_wake[iwake, :] .+= vr_wb[iwake] * gamb
     end
 
     # for reference, also get the body induced velocities at the rotor plane
-    vx_rotor = vx_rb[1] * gamb
+    vz_rotor = vz_rb[1] * gamb
     vr_rotor = vr_rb[1] * gamb
 
     # look at the rotor velocties compared to just behind the rotor and one or two other locations
@@ -408,14 +408,14 @@ function plot_body_on_wake(states, inputs)
     plot(;xlabel="Body-induced Axial Velocity", ylabel="r/Rtip")
     for i in 1:5:30
         if i ==1
-    plot!(vx_rotor, rpc,linewidth=2, color=:black, label="On Rotor")
+    plot!(vz_rotor, rpc,linewidth=2, color=:black, label="On Rotor")
 end
     # plot!(vxa_wake[:,1], rpc,label="on plane just behind rotor")
-    # plot!(vx_wake[:,1], rpe,label="on wakes just behind rotor")
+    # plot!(vz_wake[:,1], rpe,label="on wakes just behind rotor")
 
     # plot!(vxa_wake[:,i], rpc,label="on plane $i stations behind rotor")
     plot!(vxa_bar[:,i], rpe,label="averge at $i stations behind rotor")
-    plot!(vx_wake[:,i], rpe,linestyle=:dash,label="on wakes $i stations behind rotor")
+    plot!(vz_wake[:,i], rpe,linestyle=:dash,label="on wakes $i stations behind rotor")
 end
 
     savefig(savepath*"bodywake-vel-exp.pdf")
@@ -757,7 +757,7 @@ function plotbladevelocities(cdump, inputs)
     por = plot(; xlabel=L"\Omega r", ylabel="radial positions")
 
     plot!(pvx, cdump.Wx_rotor, rpc; label="Wx")
-    plot!(pvx, cdump.vx_rotor, rpc; label="vx")
+    plot!(pvx, cdump.vz_rotor, rpc; label="vx")
     plot!(pvx, cdump.vxfrombody, rpc; label="vxi from body")
     plot!(pvx, cdump.vxfromwake, rpc; label="vxi from wake")
     plot!(pvx, cdump.vxfromrotor, rpc; label="vxi from rotor")

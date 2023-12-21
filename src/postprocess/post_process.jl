@@ -11,7 +11,7 @@ function post_process(states, inputs)
     # gamw,
     # Gamr,
     # sigr,
-    # vx_rotor,
+    # vz_rotor,
     # vr_rotor,
     # vtheta_rotor,
     # Wx_rotor,
@@ -178,16 +178,16 @@ function post_process(states, inputs)
     ## -- Pressure on Body Wakes -- ##
     ductwake_cp, ductwake_vs = get_bodywake_cps(
         iv.Gamr,
-        inputs.vx_dww,
+        inputs.vz_dww,
         inputs.vr_dww,
         iv.gamw,
-        inputs.vx_dwr,
+        inputs.vz_dwr,
         inputs.vr_dwr,
         iv.sigr,
-        inputs.vx_dwb,
+        inputs.vz_dwb,
         inputs.vr_dwb,
         iv.mub,
-        inputs.vx_dwbte,
+        inputs.vz_dwbte,
         inputs.vr_dwbte,
         (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
         inputs.duct_wake_panels,
@@ -201,16 +201,16 @@ function post_process(states, inputs)
 
     hubwake_cp, hubwake_vs = get_bodywake_cps(
         iv.Gamr,
-        inputs.vx_hww,
+        inputs.vz_hww,
         inputs.vr_hww,
         iv.gamw,
-        inputs.vx_hwr,
+        inputs.vz_hwr,
         inputs.vr_hwr,
         iv.sigr,
-        inputs.vx_hwb,
+        inputs.vz_hwb,
         inputs.vr_hwb,
         iv.mub,
-        inputs.vx_hwbte,
+        inputs.vz_hwbte,
         inputs.vr_hwbte,
         (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
         inputs.hub_wake_panels,
@@ -507,32 +507,32 @@ end
 Calculate the induced velocities on one of the body wakes (unit velocity inputs determine which one)
 """
 function calculate_induced_velocities_on_bodywake(
-    vx_w, vr_w, gamw, vx_r, vr_r, sigr, vx_b, vr_b, mub, vx_bte, vr_bte, TEidxs, Vinf
+    vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, mub, vz_bte, vr_bte, TEidxs, Vinf
 )
 
     # problem dimensions
     nrotor = size(sigr, 2) # number of rotors
-    np = size(vx_b, 1) # number of panels in bodywake
+    np = size(vz_b, 1) # number of panels in bodywake
 
     # initialize outputs
     vx = Vinf * ones(eltype(gamw), np) # axial induced velocity
     vr = zeros(eltype(gamw), np) # radial induced velocity
 
     # add body induced velocities
-    @views vx[:] .+= vx_b * mub
+    @views vx[:] .+= vz_b * mub
     @views vr[:] .+= vr_b * mub
 
     # add body TE induced velocities
-    @views vx[:] .+= vx_bte * mub[TEidxs]
+    @views vx[:] .+= vz_bte * mub[TEidxs]
     @views vr[:] .+= vr_bte * mub[TEidxs]
 
     # add wake induced velocities
-    @views vx[:] .+= vx_w * gamw
+    @views vx[:] .+= vz_w * gamw
     @views vr[:] .+= vr_w * gamw
 
     # add rotor induced velocities
     for jrotor in 1:nrotor
-        @views vx[:] .+= vx_r[jrotor] * sigr[:, jrotor]
+        @views vx[:] .+= vz_r[jrotor] * sigr[:, jrotor]
         @views vr[:] .+= vr_r[jrotor] * sigr[:, jrotor]
     end
 
@@ -668,16 +668,16 @@ Calculate the pressure coefficient distributions on one of the body wakes
 """
 function get_bodywake_cps(
     Gamr,
-    vx_w,
+    vz_w,
     vr_w,
     gamw,
-    vx_r,
+    vz_r,
     vr_r,
     sigr,
-    vx_b,
+    vz_b,
     vr_b,
     mub,
-    vx_bte,
+    vz_bte,
     vr_bte,
     TEidxs,
     panels,
@@ -692,12 +692,12 @@ function get_bodywake_cps(
     # - Get "surface" velocities - #
 
     # get induced velocities
-    vx_bodywake, vr_bodywake = calculate_induced_velocities_on_bodywake(
-        vx_w, vr_w, gamw, vx_r, vr_r, sigr, vx_b, vr_b, mub, vx_bte, vr_bte, TEidxs, Vinf
+    vz_bodywake, vr_bodywake = calculate_induced_velocities_on_bodywake(
+        vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, mub, vz_bte, vr_bte, TEidxs, Vinf
     )
 
     # get "surface" velocities
-    Vmat = [vx_bodywake vr_bodywake]
+    Vmat = [vz_bodywake vr_bodywake]
     vs = [dot(v, t) for (v, t) in zip(eachrow(Vmat), panels.tangent)]
 
     # - Get steady pressure coefficients - #
@@ -1037,22 +1037,22 @@ function get_intermediate_values(states, inputs)
     _, _, _, vxfrombody, vrfrombody, vxfromwake, vrfromwake, vxfromrotor, vrfromrotor = calculate_induced_velocities_on_rotors(
         blade_elements,
         Gamr,
-        inputs.vx_rw,
+        inputs.vz_rw,
         inputs.vr_rw,
         gamw,
-        inputs.vx_rr,
+        inputs.vz_rr,
         inputs.vr_rr,
         sigr,
-        inputs.vx_rb,
+        inputs.vz_rb,
         inputs.vr_rb,
         mub,
-        inputs.vx_rbte,
+        inputs.vz_rbte,
         inputs.vr_rbte,
         (p -> p.idx).(inputs.body_doublet_panels.TEnodes);
         debug=true,
     )
 
-    vx_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+    vz_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
         Gamr, gamw, sigr, mub, inputs
     )
 
@@ -1069,7 +1069,7 @@ function get_intermediate_values(states, inputs)
         gamw,
         Gamr,
         sigr,
-        vx_rotor,
+        vz_rotor,
         vr_rotor,
         vtheta_rotor,
         Wx_rotor,
