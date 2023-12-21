@@ -732,8 +732,27 @@ function precomputed_inputs(
         isduct=!noduct,
         ishub=!nohub,
         grid=grid[1, :, 1:length(rpe)], #TODO: what is this used for, and why is it not the whole grid?
+        TF, #floating point type to pass around
     )
 end
+
+
+function initialize_rotorwake_aero(inputs)
+
+    # promoted type
+    TF =  inputs.TF
+
+    # Initialize
+    Gamr = zeros(TF, length(inputs.blade_elements[1].rbe),length(inputs.blade_elements))
+    sigr = zeros(TF, length(inputs.blade_elements[1].rbe)+1,length(inputs.blade_elements))
+    gamw = zeros(TF, inputs.wake_vortex_panels.totnode)
+
+
+ initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
+
+ return Gamr, sigr, gamw
+ end
+
 
 """
 """
