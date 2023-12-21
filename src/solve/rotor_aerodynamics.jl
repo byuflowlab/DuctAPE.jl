@@ -138,6 +138,32 @@ function reframe_rotor_velocities(
     return Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
 
+function calculate_rotor_velocities(Gamr, gamw, sigr, inputs)
+    # - Get induced velocities on rotor planes - #
+    vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
+        inputs.blade_elements,
+        Gamr,
+        inputs.vz_rw,
+        inputs.vr_rw,
+        gamw,
+        inputs.vz_rr,
+        inputs.vr_rr,
+        sigr,
+    )
+
+    # - Reframe rotor velocities into blade element frames
+    Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
+        vz_rotor,
+        vr_rotor,
+        vtheta_rotor,
+        inputs.freestream.Vinf,
+        inputs.blade_elements.Omega,
+        inputs.rotor_panel_centers,
+    )
+
+    return vz_rotor, vr_rotor, vtheta_rotor, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
+end
+
 """
 """
 function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
@@ -173,21 +199,19 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
     return vz_rotor, vr_rotor, vtheta_rotor, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
 
-
 """
 """
 function gamma_from_coeffs!(Gamr, Wmag_rotor, blade_elements, cl)
-
     for (irotor, be) in enumerate(blade_elements)
-    # calculate vortex strength
-    Gamr[:,irotor] = @. 1.0 / 2.0 * Wmag_rotor[:,irotor] * be.chords * cl[:,irotor]
-end
+        # calculate vortex strength
+        Gamr[:, irotor] = @. 1.0 / 2.0 * Wmag_rotor[:, irotor] * be.chords * cl[:, irotor]
+    end
 
     return Gamr
 end
 
 # function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements, rho)
-function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements,cd, rho)
+function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements, cd, rho)
 
     # calculate source strength
     # TODO: need to figure out if there should be a division by r here or not.

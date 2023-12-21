@@ -97,6 +97,19 @@ end
 
 """
 """
+function calculate_wake_velocities(gamw, sigr, inputs)
+
+    # - Get induced velocities on wake - #
+    vz_wake, vr_wake = calculate_induced_velocities_on_wakes(
+        inputs.vz_ww, inputs.vr_ww, gamw, inputs.vz_wr, inputs.vr_wr, sigr
+    )
+
+    # - Reframe rotor velocities into blade element frames
+    return reframe_wake_velocities(vz_wake, vr_wake, inputs.freestream.Vinf)
+end
+
+"""
+"""
 function calculate_wake_velocities(gamw, sigr, gamb, inputs)
 
     # - Get induced velocities on wake - #
