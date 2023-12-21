@@ -38,7 +38,7 @@ function post_process(states, inputs)
     nw = nr + 1
 
     # - Extract convenient input fields - #
-    Vinf = inputs.Vinf
+    Vinf = inputs.freestream.Vinf
     Vref = inputs.reference_parameters.Vref
     Rref = inputs.reference_parameters.Rref
     rhoinf = inputs.freestream.rhoinf
@@ -396,7 +396,7 @@ function get_body_vs(mub, gamw, sigr, inputs)
     nrotor = size(sigr, 2)
 
     # - Influence from Freestream - #
-    Vinf = inputs.Vinf * [1.0 0.0] # axisymmetric, so no radial component
+    Vinf = inputs.freestream.Vinf * [1.0 0.0] # axisymmetric, so no radial component
     vsfromvinf = repeat(Vinf, body_doublet_panels.totpanel) # need velocity on each panel
 
     ## -- Velocity Contributions from body -- ##
@@ -1029,7 +1029,7 @@ function get_intermediate_values(states, inputs)
     # - Extract commonly used items from precomputed inputs - #
     blade_elements = inputs.blade_elements
     rpc = inputs.rotor_panel_centers
-    Vinf = inputs.Vinf
+    Vinf = inputs.freestream.Vinf
 
     # - Extract states - #
     mub, gamw, Gamr, sigr = extract_state_variables(states, inputs)

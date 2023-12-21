@@ -165,7 +165,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         vz_rotor,
         vr_rotor,
         vtheta_rotor,
-        inputs.Vinf,
+        inputs.freestream.Vinf,
         inputs.blade_elements.Omega,
         inputs.rotor_panel_centers,
     )
