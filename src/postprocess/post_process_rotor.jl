@@ -103,16 +103,29 @@ function states_to_outputs_rotor_only(states, inputs)
 
         affrac[ir] = inputs.blade_elements[1].inner_fraction[ir]
 
-        # look up lift and drag data for the nearest two input sections
-        clin[ir], cdin[ir] = search_polars(
-            inputs.blade_elements[1].inner_airfoil[ir], alpha[ir]
+        # get local Reynolds number
+        reynolds = calc_reynolds(
+            chord[ir], W[ir], inputs.freestream.rhoinf, inputs.freestream.muinf
         )
-        clout[ir], cdout[ir] = search_polars(
-            inputs.blade_elements[1].outer_airfoil[ir], alpha[ir]
+
+        # get local Mach number
+        mach = W[ir] / inputs.freestream.asound
+
+        cl[ir], cd[ir] = lookup_clcd(
+            inputs.blade_elements[1].inner_airfoil[ir],
+            inputs.blade_elements[1].outer_airfoil[ir],
+            affrac[ir],
+            W[ir],
+            inputs.blade_elements[1].solidity[ir],
+            inputs.blade_elements[1].stagger[ir],
+            alpha[ir],
+            phi[ir],
+            reynolds,
+            mach,
+            inputs.freestream.asound;
+            verbose=false,
+            fliplift=false,
         )
-        # linearly interpolate between those two values at your blade element location
-        cl[ir] = fm.linear([0.0; 1.0], [clin[ir], clout[ir]], affrac[ir])
-        cd[ir] = fm.linear([0.0; 1.0], [cdin[ir], cdout[ir]], affrac[ir])
     end
 
     return (;
