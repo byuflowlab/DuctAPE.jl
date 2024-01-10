@@ -11,6 +11,8 @@ using ForwardDiff
 const frd = ForwardDiff
 using FiniteDiff
 const fnd = FiniteDiff
+using StaticArrays
+const sa = StaticArrays
 
 include("test_utils.jl")
 
@@ -26,6 +28,7 @@ include("induced_velocities.jl")
 include("influence_coefficients.jl")
 include("linear_system_assembly.jl")
 include("pre_processing_tests.jl")
+include("relaxation_tests.jl")
 
 # - add back in after body is validated and need to get rotor/wake working again.
 # include("blade_element_aero_lookups.jl")

@@ -33,20 +33,20 @@ Tests for controlled successive under relaxation functions
 end
 
 @testset "Wake Strength Relaxation" begin
-    gamw = ones(3, 2)
-    deltag_prev = zeros(size(Gamr))
-    deltag = ones(size(Gamr))
+    gamw = ones(3)
+    deltag_prev = zeros(size(gamw))
+    deltag = ones(size(gamw))
     maxdeltagamw = Array{Float64,0}(undef)
     maxdeltagamw[] = 0.0
 
     dt.relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=0.5, btw=0.6, pfw=1.2)
 
-    @test gamw == 1.6 * ones(3, 2)
+    @test gamw == 1.6 * ones(3)
     @test maxdeltagamw[] == 1.0
 end
 
 @testset "Convergence Criteria" begin
-    conv = MVector{1,Bool}(false)
+    conv = sa.MVector{1,Bool}(false)
     maxBGamr = ones(2)
     maxdeltaBGamr = ones(2)
     maxdeltagamw = Array{Float64,0}(undef)

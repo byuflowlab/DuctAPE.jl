@@ -396,7 +396,7 @@ end
     # check ductwakeinterfaceid
     @test inputs.ductwakeinterfaceid == 15:17
 
-    @test inputs.num_wake_x_panels == 7
+    @test inputs.num_wake_z_panels == 7
     @test all(
         inputs.rotorwakeid .== [
             1 1
@@ -566,6 +566,7 @@ end
         hubwakeinterfaceid=nothing,
         num_wake_x_nodes,
         num_wake_x_panels,
+        Vconv=[0.0],
     )
 
     # - initialize outputs - #
