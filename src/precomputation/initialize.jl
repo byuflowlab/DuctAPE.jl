@@ -821,6 +821,8 @@ function initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
        .+sqrt.((V[2:end] .+ vzind[1:(end - 1)]).^2 .+ vthetaind[1:(end - 1)].^2))/2.0
         Wm_dist[end] = sqrt((V[end] + vzind[end])^2 + vthetaind[end]^2)
 
+        inputs.Vconv[1] = sum(Wm_dist)/length(Wm_dist)
+
         # populate this section of the wake average velocities
         for (wid, wmap) in enumerate(eachrow(inputs.rotorwakepanelid))
             if wmap[2] >= irotor && wmap[2] < irotor + 1
