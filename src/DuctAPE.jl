@@ -21,6 +21,8 @@ using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in 
 using NLsolve
 using ImplicitAD
 
+using Printf
+
 #---------------------------------#
 #            INCLUDES             #
 #---------------------------------#
