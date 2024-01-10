@@ -29,7 +29,7 @@ function solve!(
     gamw,
     gamw_est,
     gamb=nothing;
-    nosource=false,
+    nosource=true,
     maxiter=1e2,
     verbose=false,
     nrf=0.5,
@@ -40,10 +40,10 @@ function solve!(
     btw=0.6,
     pfw=1.2,
     f_circ=1e-3, #DFDC values
-    # f_sig=1e-3, #tighter tolerances don't seem to help much
     f_dgamw=2e-4, #DFDC Values
-    # f_circ=1e-10, #tighter tolerances don't seem to help much
-    # f_dgamw=2e-12, # tighter tolderances don't seem to help much
+    # f_circ=1e-10, # tighter tolerances don't appear to help much in accuracy
+    # f_dgamw=2e-12,
+    f_sigr=1e-2, # DFDC doesn't converge on sigr
 )
     freestream = inputs.freestream
 
@@ -211,6 +211,7 @@ function solve!(
                 inputs.Vconv[1];
                 f_circ=f_circ,
                 f_dgamw=f_dgamw,
+                f_sigr=f_sigr,
                 verbose=verbose,
             )
         end
@@ -282,7 +283,7 @@ function relax_Gamr!(
         # note: deltahat here is actually 1/deltahat which is the version needed later
         for (j, d) in enumerate(eachrow(deltahat))
             if abs(delta[j]) < eps()
-                d[1] = sign(delta[j]) * sign(maxdBGamr[i]) #avoid division by zero
+                d[1] = sign(delta[j]) * sign(maxBGamr[i]) #avoid division by zero
             else
                 d[1] = maxBGamr[i] ./ delta[j]
             end
@@ -357,29 +358,25 @@ function relax_sigr!(
     omega = nrf .* ones(TF, size(sigr, 1))
     deltahat = zeros(TF, size(sigr, 1))
 
-    for (i, (BS, b, delta_prev, delta)) in
-        enumerate(zip(eachcol(sigr), B, eachcol(delta_prev_mat), eachcol(delta_mat)))
-
-        # multiply by B to get Bsigr values
-        BS .*= b
-        delta .*= b
+    for (i, (BS, delta_prev, delta)) in
+        enumerate(zip(eachcol(sigr), eachcol(delta_prev_mat), eachcol(delta_mat)))
 
         # - Set the normalization value based on the maximum magnitude value of B*sigr
 
         # find max magnitude
-        maxBsigr[i], mi = findmax(abs.(BS))
+        maxsigr[i], mi = findmax(abs.(BS))
 
         # maintain sign of original value
-        maxBsigr[i] *= sign(BS[mi])
+        maxsigr[i] *= sign(BS[mi])
 
         # make sure we don't have any weird jumps
         meang = sum(BS) / length(BS)
-        if meang > 0.0 # if mean is positive, make sure maxBsigr[i] is at least 0.1
-            maxBsigr[i] = max(maxBsigr[i], 0.1)
-        elseif meang < 0.0 # if mean is negative, make sure maxBsigr[i] is at most -0.1
-            maxBsigr[i] = min(maxBsigr[i], -0.1)
-        else # if the average is zero, then set maxBsigr[i] to zero
-            maxBsigr[i] = 0.0
+        if meang > 0.0 # if mean is positive, make sure maxsigr[i] is at least 0.1
+            maxsigr[i] = max(maxsigr[i], 0.1)
+        elseif meang < 0.0 # if mean is negative, make sure maxsigr[i] is at most -0.1
+            maxsigr[i] = min(maxsigr[i], -0.1)
+        else # if the average is zero, then set maxsigr[i] to zero
+            maxsigr[i] = 0.0
         end
 
         # note: delta = sigr_new .- sigr
@@ -388,7 +385,7 @@ function relax_sigr!(
             if abs(delta[j]) < eps()
                 d[1] = sign(delta[j]) * sign(maxdBsigr[i]) #avoid division by zero
             else
-                d[1] = maxBsigr[i] ./ delta[j]
+                d[1] = maxsigr[i] ./ delta[j]
             end
         end
 
@@ -396,7 +393,7 @@ function relax_sigr!(
         bladeomega[i], oi = findmin(abs.(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        if -0.2 > nrf / (deltahat[oi] * maxBsigr[i]) > 0.4
+        if -0.2 > nrf / (deltahat[oi] * maxsigr[i]) > 0.4
             bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
         else
             bladeomega[i] = nrf
@@ -412,15 +409,13 @@ function relax_sigr!(
         end
 
         # save max difference for convergence criteria
-        # maxdeltaBsigr[i] = maximum(delta)
-        maxdeltaBsigr[i], mdi = findmax(abs.(delta))
+        # maxdeltasigr[i] = maximum(delta)
+        maxdeltasigr[i], mdi = findmax(abs.(delta))
         # maintain sign of original value
-        maxdeltaBsigr[i] *= sign(delta[mdi])
+        maxdeltasigr[i] *= sign(delta[mdi])
 
         # relax sigr for this blade
         BS .+= omega .* delta
-        # remove the *b
-        BS ./= b
     end
 
     if test
@@ -488,6 +483,7 @@ function check_convergence!(
     Vref;
     f_circ=1e-3,
     f_dgamw=2e-4,
+    f_sigr=1e-3,
     verbose=false,
 )
 
@@ -498,7 +494,7 @@ function check_convergence!(
     # set convergence flag
     conv[] =
         abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
-        abs(maxdeltasigr[idS]) < f_circ * abs(maxsigr[idS]) &&
+        abs(maxdeltasigr[idS]) < f_sigr * abs(maxsigr[idS]) &&
         maxdeltagamw[] < f_dgamw * Vref # abs already taken care of
     # abs(maxdeltagamw[]) < f_dgamw * Vref
 
@@ -508,15 +504,15 @@ function check_convergence!(
     #     maxdeltagamw[] < f_dgamw * Vref
 
     if verbose
-        @printf "\t%-16s      %-16s" "maxdBGamr" "f*maxBGamr"
+        @printf "\t%-16s      %-16s" "maxdBGamr" "fG*maxBGamr"
         println()
         @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ * abs(maxBGamr[idG])
         println()
-        @printf "\t%-16s      %-16s" "maxdsigr" "f*maxsigr"
+        @printf "\t%-16s      %-16s" "maxdsigr" "fs*maxsigr"
         println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltasigr[idS]) f_circ * abs(maxsigr[idS])
+        @printf "\t%1.16f    %1.16f" abs(maxdeltasigr[idS]) f_sigr * abs(maxsigr[idS])
         println()
-        @printf "\t%-16s      %-16s" "maxdgamw" "f*Vconv"
+        @printf "\t%-16s      %-16s" "maxdgamw" "fg*Vconv"
         println()
         @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vref
         println()
@@ -550,6 +546,19 @@ function check_convergence!(
     # conv[] =
     # max(abs.(maxdeltaBGamr)...) < f_circ * max(abs.(maxBGamr)...) &&
     #     maxdeltagamw[] < f_dgamw * Vref
+
+    if verbose
+        @printf "\t%-16s      %-16s" "maxdBGamr" "fG*maxBGamr"
+        println()
+        @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ * abs(maxBGamr[idG])
+        println()
+        @printf "\t%-16s      %-16s" "maxdgamw" "fg*Vconv"
+        println()
+        @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vref
+        println()
+        println()
+    end
+
 
     return conv
 end
