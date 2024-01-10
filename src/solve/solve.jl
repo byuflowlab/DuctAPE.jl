@@ -122,6 +122,13 @@ function solve!(
         # get difference between estimated Gamr and old Gamr
         @. deltaG = Gamr_est - Gamr
 
+        # Keep for now, used in test development
+        # println("BGX = ", inputs.blade_elements[1].B*Gamr_est[:,1])
+        # println("BGAM = ", inputs.blade_elements[1].B*Gamr[:,1])
+        # println("BGMAX = ", maximum(inputs.blade_elements[1].B*Gamr[:,1]))
+        # println("NRC = ", length(Gamr))
+        # println("DBGOLD =", deltaG_prev)
+
         # relax Gamr values
         relax_Gamr!(
             Gamr,
@@ -171,39 +178,42 @@ function solve!(
         # get difference beetween estimated gamw and old gamw
         @. deltag = gamw_est - gamw
 
+        # Keep for now, used in test development
+        # println("GAMTH = ", gamw_est)
+        # println("GTH = ", gamw)
+        # println("NPTOT = ", length(gamw))
+        # println()
+        # println("DGOLD =", deltag_prev)
+
         # relax gamw values
         relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=nrf, btw=btw, pfw=pfw)
 
         # converged?
         if nosource
-        check_convergence!(
-            conv,
-            maxBGamr,
-            maxdeltaBGamr,
-            maxdeltagamw,
-            # inputs.reference_parameters.Vref;
-            inputs.Vconv[1],
-            f_circ=f_circ,
-            f_dgamw=f_dgamw,
-            verbose=verbose,
-        )
+            check_convergence!(
+                conv,
+                maxBGamr,
+                maxdeltaBGamr,
+                maxdeltagamw,
+                inputs.Vconv[1];
+                f_circ=f_circ,
+                f_dgamw=f_dgamw,
+                verbose=verbose,
+            )
         else
-        check_convergence!(
-            conv,
-            maxBGamr,
-            maxdeltaBGamr,
-            maxsigr,
-            maxdeltasigr,
-            maxdeltagamw,
-            # inputs.reference_parameters.Vref;
-            inputs.Vconv[1];
-            f_circ=f_circ,
-            f_dgamw=f_dgamw,
-            verbose=verbose,
-        )
-    end
-
-        # print iteration information if verbose is true
+            check_convergence!(
+                conv,
+                maxBGamr,
+                maxdeltaBGamr,
+                maxsigr,
+                maxdeltasigr,
+                maxdeltagamw,
+                inputs.Vconv[1];
+                f_circ=f_circ,
+                f_dgamw=f_dgamw,
+                verbose=verbose,
+            )
+        end
     end
 
     inputs.converged[1] = conv[1]
@@ -247,7 +257,7 @@ function relax_Gamr!(
         enumerate(zip(eachcol(Gamr), B, eachcol(delta_prev_mat), eachcol(delta_mat)))
 
         # multiply by B to get BGamr values
-        BG.*=b
+        BG .*= b
         delta .*= b
 
         # - Set the normalization value based on the maximum magnitude value of B*Gamr
@@ -272,9 +282,9 @@ function relax_Gamr!(
         # note: deltahat here is actually 1/deltahat which is the version needed later
         for (j, d) in enumerate(eachrow(deltahat))
             if abs(delta[j]) < eps()
-                d[1] = sign(delta[j])*sign(maxdBGamr[i]) #avoid division by zero
+                d[1] = sign(delta[j]) * sign(maxdBGamr[i]) #avoid division by zero
             else
-                d[1] =  maxBGamr[i]./delta[j]
+                d[1] = maxBGamr[i] ./ delta[j]
             end
         end
 
@@ -282,7 +292,7 @@ function relax_Gamr!(
         bladeomega[i], oi = findmin(abs.(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        if -0.2 > nrf/(deltahat[oi]*maxBGamr[i]) > 0.4
+        if -0.2 > nrf / (deltahat[oi] * maxBGamr[i]) > 0.4
             bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
         else
             bladeomega[i] = nrf
@@ -312,8 +322,8 @@ function relax_Gamr!(
     if test
         return Gamr, bladeomega, omega
     else
-    return Gamr
-end
+        return Gamr
+    end
 end
 
 """
@@ -343,36 +353,42 @@ function relax_sigr!(
 
     # initilize
     TF = eltype(sigr)
+    bladeomega = nrf .* ones(TF, size(sigr, 2))
     omega = nrf .* ones(TF, size(sigr, 1))
     deltahat = zeros(TF, size(sigr, 1))
-    bladeomega = MVector{1,TF}(0.5)
 
-    for (i, (S, delta_prev, delta)) in
-        enumerate(zip(eachcol(sigr), eachcol(delta_prev_mat), eachcol(delta_mat)))
+    for (i, (BS, b, delta_prev, delta)) in
+        enumerate(zip(eachcol(sigr), B, eachcol(delta_prev_mat), eachcol(delta_mat)))
+
+        # multiply by B to get Bsigr values
+        BS .*= b
+        delta .*= b
+
         # - Set the normalization value based on the maximum magnitude value of B*sigr
 
         # find max magnitude
-        maxsigr[i], mi = findmax(abs.(S))
+        maxBsigr[i], mi = findmax(abs.(BS))
 
         # maintain sign of original value
-        maxsigr[i] *= sign(S[mi])
+        maxBsigr[i] *= sign(BS[mi])
 
         # make sure we don't have any weird jumps
-        meang = sum(S) / length(S)
-        if meang > 0.0 # if mean is positive, make sure maxsigr[i] is at least 0.1
-            maxsigr[i] = max(maxsigr[i], 0.1)
-        elseif meang < 0.0 # if mean is negative, make sure maxsigr[i] is at most -0.1
-            maxsigr[i] = min(maxsigr[i], -0.1)
-        else # if the average is zero, then set maxsigr[i] to zero
-            maxsigr[i] = 0.0
+        meang = sum(BS) / length(BS)
+        if meang > 0.0 # if mean is positive, make sure maxBsigr[i] is at least 0.1
+            maxBsigr[i] = max(maxBsigr[i], 0.1)
+        elseif meang < 0.0 # if mean is negative, make sure maxBsigr[i] is at most -0.1
+            maxBsigr[i] = min(maxBsigr[i], -0.1)
+        else # if the average is zero, then set maxBsigr[i] to zero
+            maxBsigr[i] = 0.0
         end
 
         # note: delta = sigr_new .- sigr
+        # note: deltahat here is actually 1/deltahat which is the version needed later
         for (j, d) in enumerate(eachrow(deltahat))
-            if delta[j] < eps()
-                d[1] = 0.0
+            if abs(delta[j]) < eps()
+                d[1] = sign(delta[j]) * sign(maxdBsigr[i]) #avoid division by zero
             else
-                d[1] = maxsigr[i] ./ delta[j]
+                d[1] = maxBsigr[i] ./ delta[j]
             end
         end
 
@@ -380,7 +396,11 @@ function relax_sigr!(
         bladeomega[i], oi = findmin(abs.(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
+        if -0.2 > nrf / (deltahat[oi] * maxBsigr[i]) > 0.4
+            bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
+        else
+            bladeomega[i] = nrf
+        end
 
         # scale blade element relaxation factor
         for (o, d, dp) in zip(eachrow(omega), delta, eachrow(delta_prev))
@@ -391,17 +411,23 @@ function relax_sigr!(
             dp[1] = d
         end
 
-        # save max relaxation factor for convergence criteria
-        maxdeltasigr[i] = maximum(omega)
+        # save max difference for convergence criteria
+        # maxdeltaBsigr[i] = maximum(delta)
+        maxdeltaBsigr[i], mdi = findmax(abs.(delta))
+        # maintain sign of original value
+        maxdeltaBsigr[i] *= sign(delta[mdi])
 
         # relax sigr for this blade
-        S .+= omega .* delta
+        BS .+= omega .* delta
+        # remove the *b
+        BS ./= b
     end
 
     if test
+        return sigr, bladeomega, omega
     else
-    return sigr
-end
+        return sigr
+    end
 end
 
 """
@@ -415,7 +441,9 @@ end
 - `pf1::Float=0.4` : press forward factor 1
 - `pf2::Float=0.5` : press forward factor 2
 """
-function relax_gamw!(gamw, delta_prev, delta, maxdeltagamw; nrf=0.5, btw=0.6, pfw=1.2, test=false)
+function relax_gamw!(
+    gamw, delta_prev, delta, maxdeltagamw; nrf=0.5, btw=0.6, pfw=1.2, test=false
+)
 
     # initilize
     TF = eltype(gamw)
@@ -444,8 +472,8 @@ function relax_gamw!(gamw, delta_prev, delta, maxdeltagamw; nrf=0.5, btw=0.6, pf
     if test
         return gamw, omega
     else
-    return gamw
-end
+        return gamw
+    end
 end
 
 """
@@ -472,7 +500,7 @@ function check_convergence!(
         abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
         abs(maxdeltasigr[idS]) < f_circ * abs(maxsigr[idS]) &&
         maxdeltagamw[] < f_dgamw * Vref # abs already taken care of
-        # abs(maxdeltagamw[]) < f_dgamw * Vref
+    # abs(maxdeltagamw[]) < f_dgamw * Vref
 
     # # set convergence flag, note: this is how dfdc does it, without regard to which rotor for the Gamr values
     # conv[] =
@@ -480,19 +508,17 @@ function check_convergence!(
     #     maxdeltagamw[] < f_dgamw * Vref
 
     if verbose
-        # ff = Printf.Format("%1.6f    %1.6f")
-        # fs = Printf.Format("%-16s    %-16s")
-        @printf "\t%-16s      %-16s" "maxdBGamr"  "f*maxBGamr"
+        @printf "\t%-16s      %-16s" "maxdBGamr" "f*maxBGamr"
         println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG])  f_circ * abs(maxBGamr[idG])
+        @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ * abs(maxBGamr[idG])
         println()
-        @printf "\t%-16s      %-16s" "maxdsigr"  "f*maxsigr"
+        @printf "\t%-16s      %-16s" "maxdsigr" "f*maxsigr"
         println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltasigr[idS])  f_circ * abs(maxsigr[idS])
+        @printf "\t%1.16f    %1.16f" abs(maxdeltasigr[idS]) f_circ * abs(maxsigr[idS])
         println()
-        @printf "\t%-16s      %-16s" "maxdgamw"  "f*Vconv"
+        @printf "\t%-16s      %-16s" "maxdgamw" "f*Vconv"
         println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[])  f_dgamw * Vref
+        @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vref
         println()
         println()
     end
@@ -518,17 +544,15 @@ function check_convergence!(
     conv[] =
         abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
         maxdeltagamw[] < f_dgamw * Vref # abs already taken care of
-        # abs(maxdeltagamw[]) < f_dgamw * Vref
+    # abs(maxdeltagamw[]) < f_dgamw * Vref
 
     # # set convergence flag, note: this is how dfdc does it, without regard to which rotor for the Gamr values
     # conv[] =
     # max(abs.(maxdeltaBGamr)...) < f_circ * max(abs.(maxBGamr)...) &&
     #     maxdeltagamw[] < f_dgamw * Vref
 
-
     return conv
 end
-
 # OLD STUFF
 #
 #
