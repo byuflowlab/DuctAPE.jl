@@ -10,6 +10,7 @@ C---- Check for rational relaxation factors based on BGAM changes
       RLXB = 0.5
       IRMAX = 0
       DBGMAX = 0.0
+      FDBG = 0.0
       DO IR = 1, NRC
        DBG = (BGX(IR)-BGAM(IR))
        IF(ABS(DBG).GT.ABS(DBGMAX)) THEN
@@ -23,6 +24,8 @@ C---- Check for rational relaxation factors based on BGAM changes
        ENDIF
       END DO
 C ----- TODO: save RLXB value
+      write(99,*) 'FDBG = ', FDGB
+      write(99,*) 'DBGMAX = ', DBGMAX
       write(99,*) 'RLXB = ', RLXB
 C
 C---- Update blade circulation using CSOR
