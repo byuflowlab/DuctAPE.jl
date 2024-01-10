@@ -109,7 +109,7 @@ function write_af_section(f, airfoil_data)
     write(f, "!       CDmin      CLCDmin     dCDdCL^2\n")
     write(
         f,
-        "    $(airfoil_data.cdmin)     $(airfoil_data.clcdmin)     $(airfoil_data.dcdcl2)\n",
+        "    $(airfoil_data.cdmin)     $(airfoil_data.clcdmin)     $(airfoil_data.dcddcl2)\n",
     )
     write(f, "!       REref        REexp\n")
     write(f, "    $(airfoil_data.Re_ref)     $(airfoil_data.Re_exp)\n")
@@ -136,7 +136,7 @@ function test_gen_dfdc_case()
         mcrit=0.70000,
         cdmin=0.12000E-01,
         clcdmin=0.10000,
-        dcdcl2=0.50000E-02,
+        dcddcl2=0.50000E-02,
         Re_ref=0.20000E+06,
         Re_exp=0.35000,
     )]
@@ -301,7 +301,7 @@ function write_ducttape_params(
     write(f, "twists = $(rotor_data[1].twist * pi / 180.0)\n")
 
     #Airfoil Data:
-    (; alpha0, clmax, clmin, dclda, dclda_stall, dcl_stall, cdmin, clcdmin, dcdcl2, cmcon, Re_ref, Re_exp, mcrit) = airfoil_data[1]
+    (; alpha0, clmax, clmin, dclda, dclda_stall, dcl_stall, cdmin, clcdmin, dcddcl2, cmcon, Re_ref, Re_exp, mcrit) = airfoil_data[1]
 
     write(
         f,
@@ -314,7 +314,7 @@ function write_ducttape_params(
    $dcl_stall,
    $cdmin,
    $clcdmin,
-   $dcdcl2,
+   $dcddcl2,
    $cmcon,
    $Re_ref,
    $Re_exp,

@@ -30,7 +30,7 @@ function gen_straightwake_case(;savepath="dev_debug_archive/dfdc_testing/")
         mcrit=0.70000,
         cdmin=0.12000E-01,
         clcdmin=0.10000,
-        dcdcl2=0.50000E-02,
+        dcddcl2=0.50000E-02,
         Re_ref=0.20000E+06,
         Re_exp=0.35000,
     )]

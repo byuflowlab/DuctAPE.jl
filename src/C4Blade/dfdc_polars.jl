@@ -7,7 +7,7 @@
 - `dcl_stall::Float` : cl increment from initial to total stall.
 - `cdmin::Float` : minimum cd
 - `cldmin::Float` : cl at cdmin
-- `dcdcl2::Float` : quadratic curve factor for cd curve (d(cd)/d(cl^2))
+- `dcddcl2::Float` : quadratic curve factor for cd curve (d(cd)/d(cl^2))
 - `cmcon::Float` : pitching moment constant
 - `Re_ref::Float` : reference Reynolds number at which cd values apply
 - `Re_exp::Float` : Reynolds number exponent scaling (cd = cd*(Re/Re_ref)^Re_exp)
@@ -22,7 +22,7 @@ struct DFDCairfoil{TF}
     dcl_stall::TF
     cdmin::TF
     clcdmin::TF
-    dcdcl2::TF
+    dcddcl2::TF
     cmcon::TF
     Re_ref::TF
     Re_exp::TF
@@ -38,7 +38,7 @@ function DFDCairfoil(;
     dcl_stall=0.1,
     cdmin=0.01,
     clcdmin=0.5,
-    dcdcl2=0.005,
+    dcddcl2=0.005,
     cmcon=0.0,
     Re_ref=1e6,
     Re_exp=0.35,
@@ -53,7 +53,7 @@ function DFDCairfoil(;
         dcl_stall,
         cdmin,
         clcdmin,
-        dcdcl2,
+        dcddcl2,
         cmcon,
         Re_ref,
         Re_exp,
@@ -88,7 +88,7 @@ function dfdceval(
         dcl_stall,
         cdmin,
         clcdmin,
-        dcdcl2,
+        dcddcl2,
         cmcon,
         Re_ref,
         Re_exp,
@@ -192,8 +192,8 @@ function dfdceval(
 
     # include quadratic lift drag terms from airfoil and annulus
 
-    # cdcl2 = dcdcl2 + dcdcl2_stall
-    cdcl2 = dcdcl2  # no chance of getting messed up...
+    # cdcl2 = dcddcl2 + dcddcl2_stall
+    cdcl2 = dcddcl2  # no chance of getting messed up...
 
     # in the basic linear lift range drag is a function of lift
     # cd = cd0 (constant) + quadratic with cl)

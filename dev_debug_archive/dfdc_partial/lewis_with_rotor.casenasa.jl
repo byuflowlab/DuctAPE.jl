@@ -34,7 +34,7 @@ for sidx in 1:25
             dcl_stall,
             cdmin,
             clcdmin,
-            dcdcl2,
+            dcddcl2,
             0.0, #cmom
             re_ref,
             re_exp,

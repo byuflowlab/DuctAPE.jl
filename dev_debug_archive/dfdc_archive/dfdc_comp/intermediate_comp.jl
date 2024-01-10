@@ -60,7 +60,7 @@ dclda_stall = 0.5
 dcl_stall = 0.2
 cdmin = 0.012
 cldmin = 0.1
-dcdcl2 = 0.005
+dcddcl2 = 0.005
 cmcon = 0.0
 Re_ref = 2e5
 Re_exp = 0.35
@@ -79,7 +79,7 @@ afparams = (;
     dcl_stall,
     cdmin,
     cldmin,
-    dcdcl2,
+    dcddcl2,
     cmcon,
     Re_ref,
     Re_exp,

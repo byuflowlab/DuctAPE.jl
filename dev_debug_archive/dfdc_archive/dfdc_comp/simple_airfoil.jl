@@ -70,7 +70,7 @@ where
    CL    =  CL at which CD = CD                              ( CLDMIN )
      o                         o
 
-   b     =  quadratic CD(CL) coefficient  d(CD)/d(CL**2)     ( DCDCL2 )
+   b     =  quadratic CD(CL) coefficient  d(CD)/d(CL**2)     ( dcddcl2 )
 
 
    Re    =  Reynolds Number at which CD formula applies      ( REREF )
