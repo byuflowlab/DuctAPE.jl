@@ -1,34 +1,57 @@
 """
-    precomputed_inputs(duct_coordinates, hub_coordinates, rotorstator_parameters, freestream; kwargs...)
+    generate_geometry(
+    duct_coordinates,
+    hub_coordinates,
+    paneling_constants,
+    rotorstator_parameters;
+    kwargs...
+    )
 
-Initializes the geometry, panels, and aerodynamic influence coefficient matrices.
+Generates repaneled geometry based on the input coordinates and parameters.
+
+Note that the contents of `paneling_constants` will for the most part be required to remain constant across optimization iterations if gradient-based optimization is used.
 
 # Arguments:
 - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
 - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
-- `paneling_constants.wake_length=1.0` : non-dimensional length (based on maximum duct chord) that the wake extends past the furthest trailing edge.
+- `paneling_constants.NTuple' : Named tuple containing parameters necessary for repaneling including:
+    - `:npanels::Vector{Int}` : Vector of the number of panels to place in the axial direction aft of the first rotor and between discrete system locations such as rotor locations, solid body trailing edges, and the end of the wake.  For example, if there is a single rotor and the duct and center body trailing edges align, 'npanels' would be a 2-element vector containing 1) the number of panels from the rotor to the duct trailing edge and 2) the number of panels from the duct trailing edge to the end of the wake.
+    - `:nhub_inlet::Int` : number of nodes to include from the center body leading edge to the foremost rotor location
+    - `:nduct_inlet::Int` : number of nodes to include from the duct leading edge to the foremost rotor location
+    - `:wake_length::Float` : non-dimensional (relative to duct chord length) distance to extend wake aft of duct trailing edge
+    - `:nwake_sheets::Int` : number of wake sheets (1 more than the number of blade elements to use)
 - `rotorstator_parameters`: named tuple of rotor parameters
-- `freestream`: freestream parameters
-- `reference_parameters`: reference parameters
 
 # Keyword Arguments
 - `finterp=FLOWMath.akima`: Method used to interpolate the duct and hub geometries.
 - `autoshiftduct::Bool=false' : Boolean for whether to automatically shift the duct to the correct radial position based on foremost rotor tip radius and tip gap.
 
-NOTE: The `paneling_constants.nwake_sheets`, `zwake`, `nhub`, `nduct_inner`, and `nduct_outer` arguments should
-always be provided when performing gradient-based optimizatoin in order to ensure that the
-resulting paneling is consistent between optimization iterations.
+# Returns:
+- `system_geometry::NTuple` : Named tuple of geometry items required as an input to the `precomputed_inputs()` function:
+    - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
+    - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
+    - `Rtips::Vector{Float}` : values of rotor tip radii
+    - `Rhubs::Vector{Float}` : values of rotor hub radii
+    - `rpe::Vector{Float}` : rotor node locations
+    - `grid::Array{Float,3}` : nodes locations for wake, [z-r dimension, axial direction, radial direction]
+    - `zwake::Vector{Float}` : axial positions of repaneled geometry
+    - `rwake::Vector{Float}` : radial positions of first wake nodes
+    - `rotor_indices_in_wake::Vector{Int}` : indices in axial direction of where rotors lie in the wake
+    - `ductTE_index::Int` : index in axial direction of where duct trailing edge hits in the wake
+    - `hubTE_index::Int` : index in axial direction of where center body trailing edge hits in the wake
+    - `nohub::Bool` : flag if hub coordinates = `nothing`
+    - `noduct::Bool` : flag if duct coordinates = `nothing`
+    - `rotoronly::Bool` : flag if no bodies are defined (not currently used)
+
+
 """
-function precomputed_inputs(
+function generate_geometry(
     duct_coordinates,
     hub_coordinates,
     paneling_constants,
-    rotorstator_parameters, #vector of named tuples
-    freestream,
-    reference_parameters;
+    rotorstator_parameters; #vector of named tuples
     finterp=fm.akima,
     autoshiftduct=false,
-    debug=false,
 )
 
     ## -- Rename for Convenience -- ##
@@ -39,7 +62,6 @@ function precomputed_inputs(
         eltype(rotorstator_parameters[1].Omega),
         eltype(duct_coordinates),
         eltype(hub_coordinates),
-        eltype(freestream.Vinf),
     )
 
     # number of rotors
@@ -78,9 +100,6 @@ function precomputed_inputs(
         paneling_constants.wake_length,
         paneling_constants.npanels,
     )
-
-    # Save number of wake panels in x-direction
-    num_wake_z_panels = length(zwake) - 1
 
     # - Repanel Bodies - #
     rp_duct_coordinates, rp_hub_coordinates = repanel_bodies(
@@ -135,13 +154,174 @@ function precomputed_inputs(
         rp_duct_coordinates, rp_hub_coordinates, tip_gaps, rotorstator_parameters.rotorzloc
     )
 
-    # generate body paneling
-    if nohub
-        body_vortex_panels = generate_panels(rp_duct_coordinates)
-    else
-        body_vortex_panels = generate_panels([rp_duct_coordinates, rp_hub_coordinates])
+    for i in 1:num_rotors
+        @assert Rtips[i] > Rhubs[i] "Rotor #$i Tip Radius is set to be less than its Hub Radius."
     end
 
+    #----------------------------------#
+    # Generate Discretized Wake Sheets #
+    #----------------------------------#
+    # get discretization of wakes at leading rotor position
+
+    for i in 1:num_rotors
+        @assert Rtips[i] > Rhubs[i] "Rotor #$i Tip Radius is set to be less than its Hub Radius."
+    end
+
+    #rotor panel edges
+    rpe = range(Rhubs[1], Rtips[1]; length=paneling_constants.nwake_sheets)
+
+    # wake sheet starting radius including dummy sheets for tip gap.
+    if tip_gaps[1] == 0.0
+        rwake = rpe
+    else
+        rwake = [rpe; Rtips[1] + tip_gaps[1]]
+    end
+
+    # Initialize wake "grid"
+    grid = initialize_wake_grid(rp_duct_coordinates, rp_hub_coordinates, zwake, rwake)
+
+    # Relax "Grid"
+    relax_grid!(grid; max_iterations=100, tol=1e-9, verbose=false)
+
+    return (;
+        duct_coordinates=rp_duct_coordinates,
+        hub_coordinates=rp_hub_coordinates,
+        Rtips,
+        Rhubs,
+        rpe,
+        grid,
+        zwake,
+        rwake,
+        rotor_indices_in_wake,
+        ductTE_index,
+        hubTE_index,
+        nohub,
+        noduct,
+        rotoronly,
+    )
+end
+
+"""
+    precomputed_inputs(duct_coordinates, hub_coordinates, paneling_constants, rotorstator_parameters, freestream, reference_parameters; kwargs...)
+    precomputed_inputs(system_geometry, rotorstator_parameters, freestream, reference_parameters)
+
+Initializes the geometry, panels, and aerodynamic influence coefficient matrices.
+
+# Arguments:
+- `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
+- `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
+- `paneling_constants.wake_length=1.0` : non-dimensional length (based on maximum duct chord) that the wake extends past the furthest trailing edge.
+- `geometry::NTuple' : Named tuple containing the outputs of the generate_geometry() function
+- `rotorstator_parameters`: named tuple of rotor parameters
+- `freestream`: freestream parameters
+- `reference_parameters`: reference parameters
+
+# Keyword Arguments
+- `finterp=FLOWMath.akima`: Method used to interpolate the duct and hub geometries.
+- `autoshiftduct::Bool=false' : Boolean for whether to automatically shift the duct to the correct radial position based on foremost rotor tip radius and tip gap.
+
+"""
+function precomputed_inputs(
+    duct_coordinates,
+    hub_coordinates,
+    paneling_constants,
+    rotorstator_parameters, #vector of named tuples
+    freestream,
+    reference_parameters;
+    finterp=fm.akima,
+    autoshiftduct=false,
+    debug=false,
+)
+    system_geometry = generate_geometry(
+        duct_coordinates,
+        hub_coordinates,
+        paneling_constants,
+        rotorstator_parameters; #vector of named tuples
+        finterp=finterp,
+        autoshiftduct=autoshiftduct,
+    )
+
+    return precomputed_inputs(
+        system_geometry,
+        rotorstator_parameters, #vector of named tuples
+        freestream,
+        reference_parameters;
+        debug=debug,
+    )
+end
+
+function precomputed_inputs(
+    system_geometry,
+    rotorstator_parameters, #vector of named tuples
+    freestream,
+    reference_parameters;
+    debug=false,
+)
+    (;
+        duct_coordinates,
+        hub_coordinates,
+        Rtips,
+        Rhubs,
+        rpe,
+        grid,
+        zwake,
+        rwake,
+        rotor_indices_in_wake,
+        ductTE_index,
+        hubTE_index,
+        nohub,
+        noduct,
+        rotoronly,
+    ) = system_geometry
+
+    ## -- Rename for Convenience -- ##
+    # promoted type
+    TF = promote_type(
+        eltype(rotorstator_parameters[1].chords),
+        eltype(rotorstator_parameters[1].twists),
+        eltype(rotorstator_parameters[1].Omega),
+        eltype(duct_coordinates),
+        eltype(hub_coordinates),
+        eltype(freestream.Vinf),
+    )
+
+    # number of rotors
+    num_rotors = length(rotorstator_parameters)
+
+    #---------------------------------#
+    #         GENERATE PANELS         #
+    #---------------------------------#
+    # generate body paneling
+    if  nohub
+        body_vortex_panels = generate_panels(duct_coordinates)
+    else
+        body_vortex_panels = generate_panels([duct_coordinates, hub_coordinates])
+    end
+
+    # generate wake sheet paneling
+    wake_vortex_panels = generate_wake_panels(
+        grid[1, :, 1:length(rpe)], grid[2, :, 1:length(rpe)]
+    )
+
+    # generate body wake panels for convenience (used in getting surface pressure of body wakes in post processing)
+    duct_wake_panels = generate_panels(
+        [grid[1, ductTE_index:end, end]'; grid[2, ductTE_index:end, end]']
+    )
+    hub_wake_panels = generate_panels(
+        [grid[1, hubTE_index:end, 1]'; grid[2, hubTE_index:end, 1]']
+    )
+
+    # rotor source panel objects
+    rotor_source_panels = [
+        generate_rotor_panels(
+            rotorstator_parameters[i].rotorzloc,
+            grid[2, rotor_indices_in_wake[i], 1:length(rpe)],
+        ) for i in 1:num_rotors
+    ]
+
+    #---------------------------------#
+    #           BOOKKEEPING           #
+    #---------------------------------#
     # book keep wake wall interfaces
     # !NOTE: assumes duct geometry given first in paneling.  could generalize this, but not worth it for now.
     if nohub
@@ -176,42 +356,12 @@ function precomputed_inputs(
         )
     end
 
-    #----------------------------------#
-    # Generate Discretized Wake Sheets #
-    #----------------------------------#
-    # get discretization of wakes at leading rotor position
-
-    for i in 1:num_rotors
-        @assert Rtips[i] > Rhubs[i] "Rotor #$i Tip Radius is set to be less than its Hub Radius."
-    end
-
-    #rotor panel edges
-    rpe = range(Rhubs[1], Rtips[1]; length=paneling_constants.nwake_sheets)
-
-    # wake sheet starting radius including dummy sheets for tip gap.
-    if tip_gaps[1] == 0.0
-        rwake = rpe
-    else
-        rwake = [rpe; Rtips[1] + tip_gaps[1]]
-    end
-
-    # Initialize wake "grid"
-    grid = initialize_wake_grid(rp_duct_coordinates, rp_hub_coordinates, zwake, rwake)
-
-    # Relax "Grid"
-    relax_grid!(grid; max_iterations=100, tol=1e-9, verbose=false)
-
-    # generate wake sheet paneling
-    wake_vortex_panels = generate_wake_panels(
-        grid[1, :, 1:length(rpe)], grid[2, :, 1:length(rpe)]
-    )
-
     # calculate radius dependent "constant" for wake strength calcualtion
     wakeK = get_wake_k(wake_vortex_panels)
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
     rotorwakepanelid = ones(Int, wake_vortex_panels.totpanel, 2)
-    num_wake_z_panels = length(zwake)-1
+    num_wake_z_panels = length(zwake) - 1
     for i in 1:(length(rwake))
         rotorwakepanelid[(1 + (i - 1) * num_wake_z_panels):(i * num_wake_z_panels), 1] .= i
     end
@@ -232,27 +382,11 @@ function precomputed_inputs(
     # Go through the wake panels and determine the indices that have interfaces with the hub and wake
     hubwakeinterfaceid = 1:(hubTE_index - 1) #first rotor-wake-body interface is at index 1, this is also on the first wake sheet, so the hub trailing edge index in the zwake vector should be (or one away from, need to check) the last interface point
     ductwakeinterfaceid =
-        num_wake_z_panels * (paneling_constants.nwake_sheets - 1) .+ (1:(ductTE_index - 1))
-
-    # generate body wake panels for convenience (used in getting surface pressure of body wakes in post processing)
-    duct_wake_panels = generate_panels(
-        [grid[1, ductTE_index:end, end]'; grid[2, ductTE_index:end, end]']
-    )
-    hub_wake_panels = generate_panels(
-        [grid[1, hubTE_index:end, 1]'; grid[2, hubTE_index:end, 1]']
-    )
+        num_wake_z_panels * (length(rwake) - 1) .+ (1:(ductTE_index - 1))
 
     #------------------------------------------#
-    # Generate Rotor Panels and Blade Elements #
+    #          Generate Blade Elements         #
     #------------------------------------------#
-
-    # rotor source panel objects
-    rotor_source_panels = [
-        generate_rotor_panels(
-            rotorstator_parameters[i].rotorzloc,
-            grid[2, rotor_indices_in_wake[i], 1:length(rpe)],
-        ) for i in 1:num_rotors
-    ]
 
     # rotor blade element objects
     blade_elements = [
@@ -650,6 +784,8 @@ function precomputed_inputs(
 
     return (;
         converged=[false],
+        Vconv=[0.0],
+        iterations=[0],
         lu_decomp_flag,
         #freestream
         freestream,
@@ -727,8 +863,8 @@ function precomputed_inputs(
         # operating conditions
         Vinf=freestream.Vinf, # freestream parameters
         # - Debugging/Plotting
-        duct_coordinates=(noduct ? nothing : rp_duct_coordinates),
-        hub_coordinates=(nohub ? nothing : rp_hub_coordinates),
+        duct_coordinates,
+        hub_coordinates,
         isduct=!noduct,
         ishub=!nohub,
         grid=grid[1, :, 1:length(rpe)], #TODO: what is this used for, and why is it not the whole grid?
