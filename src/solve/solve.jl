@@ -218,6 +218,7 @@ function solve!(
     end
 
     inputs.converged[1] = conv[1]
+    inputs.iterations[1] = iter
 
     return Gamr, sigr, gamw
 end
