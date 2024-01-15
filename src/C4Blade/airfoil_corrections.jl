@@ -47,15 +47,19 @@ function stalllimiters(
 
     # fill nominal cls
     fillcl = [
-        cl_ns[1:(N - 1)]
-        cl[clminid:clmaxid]
-        cl_ps[(end - N + 2):end]
+        # cl_ns[1:(N - 1)]
+        cl_ns[1:N]
+        cl[clminid+1:clmaxid-1]
+        cl_ps[end-N+1:end]
+        # cl_ps[(end - N + 2):end]
     ]
     # fill nominal cds
     fillcd = [
-        cd_ns[1:(N - 1)]
-        cd[clminid:clmaxid]
-        cd_ps[(end - N + 2):end]
+        # cd_ns[1:(N - 1)]
+        cd_ns[1:N]
+        cd[clminid+1:clmaxid-1]
+        cd_ps[end-N+1:end]
+        # cd_ps[(end - N + 2):end]
     ]
 
     clblend1 = FLOWMath.sigmoid_blend.(cl_ns, fillcl, aoaext, aoamin, blend_hardness)
