@@ -24,7 +24,7 @@ println("\nPRECOMPUTED INPUTS TESTS")
     @test hubTE_index == 4
 end
 
-@testset "Body Repanleing" begin
+@testset "Body Repaneling" begin
     # get input data
     include("data/basic_two_rotor_for_test.jl")
 
@@ -339,6 +339,53 @@ end
     @test blade_elements[2].Omega == rotorstator_parameters[2].Omega
     @test blade_elements[2].Rhub == rotorstator_parameters[2].Rhub
     @test blade_elements[2].Rtip == rotorstator_parameters[2].Rtip
+end
+
+#TODO: geometry generation function test
+@testset "Geometry Generation" begin
+    include("data/basic_two_rotor_for_test.jl")
+
+    sg = dt.generate_geometry(
+        duct_coordinates,
+        hub_coordinates,
+        paneling_constants,
+        rotorstator_parameters; #vector of named tuples
+        finterp=fm.linear,
+        autoshiftduct=false,
+    )
+
+    @test sg.duct_coordinates == [
+        1.0 0.75 0.5 0.25 0.0 0.25 0.5 0.75 1.0
+        2.0 1.75 1.5 1.75 2.0 2.25 2.5 2.25 2.0
+    ]
+
+    @test sg.hub_coordinates == [0.0 0.25 0.5 0.75 1.0; 0.0 0.25 0.5 0.25 0.0]
+
+    @test sg.Rhubs == [0.25, 0.25]
+    @test sg.Rtips == [1.75, 1.75]
+    @test sg.noduct == false
+    @test sg.nohub == false
+    @test sg.rotoronly == false
+    @test sg.rwake == sg.rpe
+    @test sg.rpe == 0.25:0.75:1.75
+    @test sg.zwake == [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    @test sg.rotor_indices_in_wake == [1, 3]
+
+    testgrid = similar(sg.grid) .= 0.0
+    testgrid[:, :, 1] = [
+        0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0
+        0.25 0.5 0.25 0.0 0.0 0.0 0.0 0.0
+    ]
+    testgrid[:, :, 2] = [
+        0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0
+        1.0 0.9861636413819727 1.0008941893344476 1.0314740183248352 1.056241323544226 1.0718388705767528 1.080459189206699 1.0833330706503477
+    ]
+    testgrid[:, :, 3] = [
+        0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0
+        1.75 1.5 1.75 2.0 2.0 2.0 2.0 2.0
+    ]
+
+    @test isapprox(sg.grid, testgrid, atol=1e-12)
 end
 
 @testset "Dimension and Indexing Checks" begin
