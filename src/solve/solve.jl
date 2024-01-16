@@ -18,7 +18,6 @@
 # end
 
 """
-
 """
 function solve!(
     inputs,
@@ -27,8 +26,7 @@ function solve!(
     sigr,
     sigr_est,
     gamw,
-    gamw_est,
-    gamb=nothing;
+    gamw_est;
     nosource=true,
     maxiter=1e2,
     verbose=false,
@@ -79,11 +77,11 @@ function solve!(
         end
 
         # Solve linear system if including
-        if !isnothing(gamb)
+        if !isnothing(inputs.gamb)
             # in place solve for gamb
             # TODO: update this function to match new methods
             calculate_body_vortex_strengths!(
-                gamb,
+                inputs.gamb,
                 inputs.A_bb,
                 inputs.b_bf,
                 inputs.kidx,
@@ -96,7 +94,7 @@ function solve!(
 
             # Update rotor blade element velocities
             _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-                Gamr, gamw, sigr, gamb, inputs
+                Gamr, gamw, sigr, inputs.gamb, inputs
             )
         else
 
@@ -166,8 +164,8 @@ function solve!(
         end
 
         # Update Vm_avg in wake using new Gamr and sigma
-        if !isnothing(gamb)
-            Wm_wake = calculate_wake_velocities(gamw, sigr, gamb, inputs)
+        if !isnothing(inputs.gamb)
+            Wm_wake = calculate_wake_velocities(gamw, sigr, inputs.gamb, inputs)
         else
             Wm_wake = calculate_wake_velocities(gamw, sigr, inputs)
         end

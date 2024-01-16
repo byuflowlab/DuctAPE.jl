@@ -20,7 +20,19 @@ Note that the contents of `paneling_constants` will for the most part be require
     - `:nduct_inlet::Int` : number of nodes to include from the duct leading edge to the foremost rotor location
     - `:wake_length::Float` : non-dimensional (relative to duct chord length) distance to extend wake aft of duct trailing edge
     - `:nwake_sheets::Int` : number of wake sheets (1 more than the number of blade elements to use)
-- `rotorstator_parameters`: named tuple of rotor parameters
+- `rotorstator_parameters::Vector{NTuple}`: Vector of named tuple of rotor parameters
+    - 'rotorzloc::Float` : axial position of rotor
+    - 'r::Vector{Float}` : non-dimensional radial positions of stations along the blade
+    - 'chords::Vector{Float}` : dimensional chord distribution
+    - 'twists::Vector{Float}` : dimensional twist distribution (radians)
+    - 'airfoils::Vector{::AFType}` : Vector of airfoil objects.
+    - 'Rtip::Float` : dimensional tip radius
+    - 'Rhub::Float` : dimensional hub radius
+    - 'tip_gap::Float` : gap from rotor tip to duct wall (not yet functional)
+    - 'B::Int` : number of blades
+    - 'Omega::Float` : rotor rotation rate in radians per second
+    - 'fliplift::Bool` : boolean as to whether to flip the looked up cl for the blade element (may be useful for stator sections).
+
 
 # Keyword Arguments
 - `finterp=FLOWMath.akima`: Method used to interpolate the duct and hub geometries.
@@ -482,7 +494,11 @@ function precomputed_inputs(
         repeat(Vs; outer=(1, size(body_vortex_panels.itcontrolpoint, 2))),
     )
 
+    # initial RHS includes only freestream values
     RHS = assemble_rhs_matrix(vdnb, vdnpcp, body_vortex_panels)
+
+    # initial body strengths are the strengths without the rotor inductions
+    gamb = LHS \ RHS
 
     # - rotor to body - #
     # preallocate AICnr and AICtr
@@ -821,6 +837,7 @@ function precomputed_inputs(
         A_bb=LHS, # body to body
         AICt,
         b_bf=RHS, # freestream contribution to body boundary conditions
+        gamb, # Body strengths
         A_br=AICnr, # rotor to body (total)
         AICtr,
         A_bw=AICnw, # wake to body (total)
@@ -973,6 +990,7 @@ function initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
     return Gamr, sigr, gamw
 end
 
+# TODO: stuff below here is deprecated
 # TODO: need to update the state intialization using CCBlade for rotor aero
 # NOTE: body strengths are not states
 # NOTE: states is a misnomer here, consider a different term
