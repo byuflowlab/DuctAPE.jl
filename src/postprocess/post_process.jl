@@ -4,7 +4,14 @@ Various Post-processing functions
 
 =#
 
-function post_process(states, inputs)
+function post_process(
+        states,
+        inputs;
+        write_outputs=false,
+        outfile="dfdc_data.jl",
+        checkoutfileexists=false,
+        tuple_name="ductape_data",
+    )
 
     # - things contained in iv tuple
     # mub,
@@ -270,7 +277,8 @@ function post_process(states, inputs)
 
     ## -- Assemble Output Tuple -- ##
 
-    return (;
+
+    outs = (;
         # - Geometry - #
         Rref,
         rotor_panel_center=rpc,
@@ -382,6 +390,18 @@ function post_process(states, inputs)
         induced_efficiency,
         ideal_efficiency,
     )
+
+    if write_outputs
+        write_data(
+            outs,
+            outfile;
+            tuple_name=tuple_name,
+            checkoutfileexists=checkoutfileexists
+        )
+    end
+
+    return outs
+
 end
 
 ######################################################################

@@ -21,9 +21,6 @@ function calculate_induced_velocities_on_wakes(
     vz_wb=nothing,
     vr_wb=nothing,
     gamb=nothing,
-    vz_wbte=nothing,
-    vr_wbte=nothing,
-    TEidxs=nothing;
     debug=false,
 )
 
@@ -34,57 +31,24 @@ function calculate_induced_velocities_on_wakes(
     vz_wake = similar(gamw, size(vz_ww, 1), 1) .= 0 # axial induced velocity
     vr_wake = similar(gamw, size(vr_ww, 1), 1) .= 0 # axial induced velocity
 
-    if debug
-        # initialize outputs
-        vzb_wake = similar(vz_wake) .= 0 # axial induced velocity
-        vrb_wake = similar(vz_wake) .= 0 # radial induced velocity
-        vzr_wake = similar(vz_wake) .= 0 # axial induced velocity
-        vrr_wake = similar(vz_wake) .= 0 # radial induced velocity
-        vzw_wake = similar(vz_wake) .= 0 # axial induced velocity
-        vrw_wake = similar(vz_wake) .= 0 # radial induced velocity
-    end
-
     # add body induced velocities
     if gamb != nothing
         @views vz_wake .+= vz_wb * gamb
         @views vr_wake .+= vr_wb * gamb
-        if debug
-            @views vzb_wake .+= vz_wb * gamb
-            @views vrb_wake .+= vr_wb * gamb
-        end
-
-        @views vz_wake .+= vz_wbte * gamb[TEidxs]
-        @views vr_wake .+= vr_wbte * gamb[TEidxs]
-        if debug
-            @views vzb_wake .+= vz_wbte * gamb[TEidxs]
-            @views vrb_wake .+= vr_wbte * gamb[TEidxs]
-        end
     end
 
     # add rotor induced velocities
     for jrotor in 1:nrotor
         @views vz_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
         @views vr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
-        if debug
-            @views vzr_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
-            @views vrr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
-        end
     end
 
     # add wake induced velocities
     @views vz_wake .+= vz_ww * gamw
     @views vr_wake .+= vr_ww * gamw
-    if debug
-        @views vzw_wake .+= vz_ww * gamw
-        @views vrw_wake .+= vr_ww * gamw
-    end
 
     # return raw induced velocities
-    if debug
-        return vz_wake, vr_wake, vzb_wake, vrb_wake, vzr_wake, vrr_wake, vzw_wake, vrw_wake
-    else
-        return vz_wake, vr_wake
-    end
+    return vz_wake, vr_wake
 end
 
 function reframe_wake_velocities(vz_wake, vr_wake, Vinf)
@@ -123,9 +87,6 @@ function calculate_wake_velocities(gamw, sigr, gamb, inputs)
         inputs.vz_wb,
         inputs.vr_wb,
         gamb,
-        inputs.vz_wbte,
-        inputs.vr_wbte,
-        (p -> p.idx).(inputs.body_vortex_panels.TEnodes),
     )
 
     # - Reframe rotor velocities into blade element frames

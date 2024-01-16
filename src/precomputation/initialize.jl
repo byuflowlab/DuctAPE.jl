@@ -388,7 +388,10 @@ function precomputed_inputs(
         rotorwakeid[(1 + (i - 1) * num_wake_z_nodes):(i * num_wake_z_nodes), 1] .= i
     end
     for (i, wn) in enumerate(eachcol(wake_vortex_panels.node))
-        rotorwakeid[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
+        # TODO: DFDC geometry doesn't line up wake and rotor perfectly, so need a more robust option.
+        # rotorwakeid[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
+        # TODO: current tests are passing, but look here if things break in the future.
+        rotorwakeid[i, 2] = findmin(x -> abs(x - wn[1]), rotorstator_parameters.rotorzloc)[2]
     end
 
     # Go through the wake panels and determine the indices that have interfaces with the hub and wake
@@ -837,6 +840,7 @@ function precomputed_inputs(
         A_bb=LHS, # body to body
         AICt,
         b_bf=RHS, # freestream contribution to body boundary conditions
+        RHS = similar(RHS).=0.0,
         gamb, # Body strengths
         A_br=AICnr, # rotor to body (total)
         AICtr,
@@ -988,97 +992,4 @@ function initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
     calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
 
     return Gamr, sigr, gamw
-end
-
-# TODO: stuff below here is deprecated
-# TODO: need to update the state intialization using CCBlade for rotor aero
-# NOTE: body strengths are not states
-# NOTE: states is a misnomer here, consider a different term
-"""
-    initialize_states(inputs)
-
-Calculate an initial guess for the state variables
-"""
-function initialize_states(inputs)
-
-    # get floating point type
-    TF = promote_type(
-        eltype(inputs.blade_elements[1].chords),
-        eltype(inputs.blade_elements[1].twists),
-        eltype(inputs.blade_elements[1].Omega),
-        eltype(inputs.duct_coordinates),
-    )
-
-    # - Initialize body vortex strengths (rotor-off linear problem) - #
-    # set up right hand side
-    RHS = update_RHS(
-        inputs.b_bf,
-        inputs.A_bw,
-        zeros(TF, inputs.wake_vortex_panels.totpanel),
-        inputs.A_br,
-        zeros(TF, inputs.rotor_source_panels[1].totpanel, 2),
-    )
-
-    #rename for convenience later
-    nbodies = inputs.body_vortex_panels.nbodies
-    # solve body-only problem
-    # mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels, nbodies)
-    # mub = solve_body_strengths(inputs.A_bb, RHS, inputs.prescribedpanels)
-
-    mub = solve_body_strengths(
-        inputs.A_bb,
-        RHS,
-        inputs.LHSlsq,
-        inputs.LHSlsqlu,
-        inputs.tLHSred,
-        inputs.b_bf0,
-        inputs.prescribedpanels,
-    )
-
-    # - Initialize blade circulation and source strengths (assume open rotor) - #
-
-    # get problem dimensions (number of radial stations x number of rotors)
-    nr = length(inputs.blade_elements[1].rbe)
-    num_rotors = length(inputs.blade_elements)
-    nwake = inputs.wake_vortex_panels.totpanel
-
-    # initialize outputs
-    Gamr = zeros(TF, nr, num_rotors)
-    sigr = zeros(TF, nr, num_rotors)
-    gamw = zeros(TF, nwake)
-
-    # initialize velocities on rotor blade elements
-    _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-        Gamr,
-        gamw,
-        sigr,
-        similar(mub) .= 0.0,
-        inputs,
-        # Gamr, gamw, sigr, mub, inputs
-    )
-
-    # initialize circulation and source panel strengths
-    calculate_gamma_sigma!(
-        Gamr,
-        sigr,
-        inputs.blade_elements,
-        Wm_rotor,
-        Wtheta_rotor,
-        Wmag_rotor,
-        inputs.freestream,
-    )
-
-    # - update wake strengths - #
-    Wm_wake = calculate_wake_velocities(gamw, sigr, mub, inputs)
-    calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
-
-    # - Combine initial states into one vector - #
-    states = vcat(
-        mub,                # body vortex panel strengths
-        gamw,               # wake vortex sheet strengths
-        reduce(vcat, Gamr), # rotor circulation strengths
-        reduce(vcat, sigr), # rotor source panel strengths
-    )
-
-    return states
 end
