@@ -5,7 +5,9 @@ Various Post-processing functions
 =#
 
 function post_process(
-        states,
+        Gamr,
+        sigr,
+        gamw,
         inputs;
         write_outputs=false,
         outfile="dfdc_data.jl",
@@ -14,23 +16,19 @@ function post_process(
     )
 
     # - things contained in iv tuple
-    # mub,
-    # gamw,
-    # Gamr,
-    # sigr,
     # vz_rotor,
     # vr_rotor,
     # vtheta_rotor,
-    # Wx_rotor,
+    # Wz_rotor,
     # Wtheta_rotor,
     # Wm_rotor,
     # Wmag_rotor,
-    # vxfrombody,
-    # vrfrombody,
-    # vxfromwake,
-    # vrfromwake,
-    # vxfromrotor,
-    # vrfromrotor,
+    # vzfrombody,
+    # vrb_rotor,
+    # vzw_rotor,
+    # vrw_rotor,
+    # vzr_rotor,
+    # vrr_rotor,
     # Gamma_tilde,
     # H_tilde,
     # phi,
@@ -38,10 +36,10 @@ function post_process(
     # cl,
     # cd,
 
-    iv = get_intermediate_values(states, inputs) #intermediate values
+    iv = get_intermediate_values(Gamr, sigr, gamw, inputs) #intermediate values
 
     # get problem dimensions
-    nr, nrotor = size(iv.Gamr)
+    nr, nrotor = size(Gamr)
     nw = nr + 1
 
     # - Extract convenient input fields - #
@@ -67,26 +65,9 @@ function post_process(
     rpe = inputs.rotor_panel_edges
     Rhub = rpe[1, :]
     Rtip = rpe[end, :]
-    rpl = reshape(reduce(vcat, (p -> p.len).(inputs.rotor_source_panels)), (nr, nrotor))
+    rpl = reshape(reduce(vcat, (p -> p.influence_length).(inputs.rotor_source_panels)), (nr, nrotor))
 
     ref = (; Vinf, Vref, Rref, rhoinf, muinf, asound, Omega, B)
-
-    # get blade element coefficients
-    clift, cdrag, inflow_angle, angle_of_attack = get_blade_aero(
-        iv.Wmag_rotor,
-        iv.Wm_rotor,
-        iv.Wtheta_rotor,
-        solidity,
-        stagger,
-        chord,
-        twist,
-        afparamsin,
-        afparamsout,
-        innerfrac,
-        rhoinf,
-        muinf,
-        asound,
-    )
 
     # - Rotor Thrust - #
     # inviscid thrust
@@ -96,7 +77,7 @@ function post_process(
 
     # viscous thrust
     rotor_viscous_thrust, rotor_viscous_thrust_dist = viscous_rotor_thrust(
-        iv.Wx_rotor, iv.Wmag_rotor, B, chord, rpl, iv.cd, rhoinf
+        iv.Wz_rotor, iv.Wmag_rotor, B, chord, rpl, iv.cd, rhoinf
     )
 
     # total thrust
@@ -105,7 +86,7 @@ function post_process(
     # - Rotor Torque - #
     # inviscid torque
     rotor_inviscid_torque, rotor_inviscid_torque_dist = inviscid_rotor_torque(
-        iv.Wx_rotor, rpc, rpl, iv.Gamma_tilde, rhoinf
+        iv.Wz_rotor, rpc, rpl, iv.Gamma_tilde, rhoinf
     )
 
     # viscous torque
@@ -134,43 +115,42 @@ function post_process(
     end
 
     ## -- Surface Velocity on Bodies -- ##
-    # body_surface_velocity, duct_inner_vs, duct_outer_vs, hub_vs, vtot_on_body, vsfromvinf, vsfrombodypanels, vsfromTEpanels, vsfromgradmu, vsfromwake, vsfromrotors
-    bodyv = get_body_vs(iv.mub, iv.gamw, iv.sigr, inputs)
+    vtan_tuple = get_body_tangential_velocities(inputs, gamw, sigr)
 
     (;
-        vtot_on_body,
-        body_surface_velocity,
-        duct_inner_vs,
-        duct_outer_vs,
-        hub_vs,
-        vsfromvinf,
-        vsfrombodypanels,
-        duct_inner_vs_from_body,
-        duct_outer_vs_from_body,
-        hub_vs_from_body,
-        vsfromTEpanels,
-        duct_inner_vs_from_TE,
-        duct_outer_vs_from_TE,
-        hub_vs_from_TE,
-        vsfromgradmu,
-        duct_inner_vs_from_gradmu,
-        duct_outer_vs_from_gradmu,
-        hub_vs_from_gradmu,
-        vsfromwake,
-        duct_inner_vs_from_wake,
-        duct_outer_vs_from_wake,
-        hub_vs_from_wake,
-        vsfromrotors,
-        duct_inner_vs_from_rotor,
-        duct_outer_vs_from_rotor,
-        hub_vs_from_rotor,
-    ) = bodyv
+        # Total and components
+        Vtan,
+        vtan_vinf, # tangential velocity from freestream
+        vtan_body,
+        body_jump_term,
+        vtan_wake,
+        vtan_rotors,
+        # Splits:
+        # duct inner surface (casing)
+        vtan_casing,
+        vtan_casing_b,
+        casing_jump_term,
+        vtan_casing_w,
+        vtan_casing_r,
+        # duct outer surface (nacelle)
+        vtan_nacelle,
+        vtan_nacelle_b,
+        nacelle_jump_term,
+        vtan_nacelle_w,
+        vtan_nacelle_r,
+        # center body
+        vtan_centerbody,
+        vtan_centerbody_b,
+        centerbody_jump_term,
+        vtan_centerbody_w,
+        vtan_centerbody_r,
+    ) = vtan_tuple
 
     ## -- Pressure on Bodies -- ##
-    body_cp, duct_inner_cp, duct_outer_cp, hub_cp, body_x, duct_inner_x, duct_outer_x, hub_x = get_body_cps(
-        body_surface_velocity,
-        iv.Gamr,
-        iv.sigr,
+    body_cp, casing_cp, nacelle_cp, centerbody_cp, body_x, casing_x, nacelle_x, centerbody_x = get_body_cps(
+        Vtan,
+        Gamr,
+        sigr,
         iv.Wm_rotor,
         Vinf,
         Vref,
@@ -178,25 +158,22 @@ function post_process(
         Omega,
         didr,
         hidr,
-        inputs.body_doublet_panels,
+        inputs.body_vortex_panels,
         inputs.isduct,
     )
 
     ## -- Pressure on Body Wakes -- ##
-    ductwake_cp, ductwake_vs = get_bodywake_cps(
-        iv.Gamr,
+    ductwake_cp, ductwake_vtan = get_bodywake_cps(
+        Gamr,
         inputs.vz_dww,
         inputs.vr_dww,
-        iv.gamw,
+        gamw,
         inputs.vz_dwr,
         inputs.vr_dwr,
-        iv.sigr,
+        sigr,
         inputs.vz_dwb,
         inputs.vr_dwb,
-        iv.mub,
-        inputs.vz_dwbte,
-        inputs.vr_dwbte,
-        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
+        inputs.gamb[1:inputs.body_vortex_panels.totnode],
         inputs.duct_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -206,20 +183,17 @@ function post_process(
         body="duct",
     )
 
-    hubwake_cp, hubwake_vs = get_bodywake_cps(
-        iv.Gamr,
+    hubwake_cp, hubwake_vtan = get_bodywake_cps(
+        Gamr,
         inputs.vz_hww,
         inputs.vr_hww,
-        iv.gamw,
+        gamw,
         inputs.vz_hwr,
         inputs.vr_hwr,
-        iv.sigr,
+        sigr,
         inputs.vz_hwb,
         inputs.vr_hwb,
-        iv.mub,
-        inputs.vz_hwbte,
-        inputs.vr_hwbte,
-        (p -> p.idx).(inputs.body_doublet_panels.TEnodes),
+        inputs.gamb[1:inputs.body_vortex_panels.totnode],
         inputs.hub_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -231,12 +205,12 @@ function post_process(
 
     ## -- Duct Outputs -- ##
     # - Put duct pressures together - #
-    duct_cp = [duct_inner_cp; duct_outer_cp]
+    duct_cp = [casing_cp; nacelle_cp]
 
     # - Calculate Thrust from Bodies - #
 
     body_thrust, _ = forces_from_pressure(
-        duct_cp, inputs.body_doublet_panels; rhoinf=rhoinf, Vref=Vref
+        duct_cp, inputs.body_vortex_panels; rhoinf=rhoinf, Vref=Vref
     )
 
     ## -- Total Outputs -- ##
@@ -273,87 +247,57 @@ function post_process(
     )
 
     # - Thrust and Torque Coefficients - #
-    CT, CQ = tqcoeff(total_thrust, total_torque, rhoinf, Omega, Rref)
+    CT, CQ, CP = tqpcoeff(total_thrust, total_torque, rhoinf, Omega, Rref)
 
     ## -- Assemble Output Tuple -- ##
 
-
+    #TODO: standardize the output naming conventions
     outs = (;
-        # - Geometry - #
-        Rref,
-        rotor_panel_center=rpc,
-        chord,
-        twist,
-        inputs.duct_coordinates,
-        inputs.hub_coordinates,
-        inputs.body_doublet_panels,
-        inputs.rotor_source_panels,
-        inputs.wake_vortex_panels,
         # - Intermediate Values - #
         intermediate_values=iv,
         # - Reference Values - #
         reference_values=ref,
         # - States - #
-        mub=iv.mub,
-        gamw=iv.gamw,
-        Gamr=iv.Gamr,
-        sigr=iv.sigr,
+        Gamr,
+        gamw,
+        sigr,
+        gamb=inputs.gamb,
         # - Body Values - #
         # body thrust
         body_thrust,
-        # surface velocities and pressures
-        # duct_inner_vs,
-        duct_inner_cp,
-        duct_inner_x,
-        # duct_outer_vs,
-        duct_outer_cp,
-        duct_outer_x,
-        # hub_vs,
-        hub_cp,
-        hub_x,
+        # surface pressures
+        casing_cp,
+        casing_x,
+        nacelle_cp,
+        nacelle_x,
+        centerbody_cp,
+        centerbody_x,
         #individual body velocity contributions
-        vtot_on_body,
-        body_surface_velocity,
-        duct_inner_vs,
-        duct_outer_vs,
-        hub_vs,
-        vsfromvinf,
-        vsfrombodypanels,
-        duct_inner_vs_from_body,
-        duct_outer_vs_from_body,
-        hub_vs_from_body,
-        vsfromTEpanels,
-        duct_inner_vs_from_TE,
-        duct_outer_vs_from_TE,
-        hub_vs_from_TE,
-        vsfromgradmu,
-        duct_inner_vs_from_gradmu,
-        duct_outer_vs_from_gradmu,
-        hub_vs_from_gradmu,
-        vsfromwake,
-        duct_inner_vs_from_wake,
-        duct_outer_vs_from_wake,
-        hub_vs_from_wake,
-        vsfromrotors,
-        duct_inner_vs_from_rotor,
-        duct_outer_vs_from_rotor,
-        hub_vs_from_rotor,
-        # body_surface_velocity,
-        # vtot_on_body,
-        # vsfromvinf,
-        # vsfrombodypanels,
-        # vsfromTEpanels,
-        # vsfromgradmu,
-        # vsfromwake,
-        # vsfromrotors,
+        Vtan,
+        vtan_casing,
+        vtan_nacelle,
+        vtan_centerbody,
+        vtan_vinf,
+        vtan_body,
+        vtan_casing_b,
+        vtan_nacelle_b,
+        vtan_centerbody_b,
+        vtan_wake,
+        vtan_casing_w,
+        vtan_nacelle_w,
+        vtan_centerbody_w,
+        vtan_rotors,
+        vtan_casing_r,
+        vtan_nacelle_r,
+        vtan_centerbody_r,
         # - Body Wake Values - #
         # surface velocities and pressures
-        ductwake_vs,
+        ductwake_vtan,
         ductwake_cp,
-        ductwake_x=inputs.duct_wake_panels.controlpoint[:, 1],
-        hubwake_vs,
+        ductwake_x=inputs.duct_wake_panels.controlpoint[1,:],
+        hubwake_vtan,
         hubwake_cp,
-        hubwake_x=inputs.hub_wake_panels.controlpoint[:, 1],
+        hubwake_x=inputs.hub_wake_panels.controlpoint[1, :],
         # - Rotor Values - #
         rotor_efficiency,
         rotor_inviscid_thrust,
@@ -375,11 +319,12 @@ function post_process(
         rotor_viscous_power,
         rotor_viscous_power_dist,
         rotor_power,
-        # - Blade Values - #
-        clift,
-        cdrag,
-        angle_of_attack,
-        inflow_angle,
+        CP,
+        # - Blade Element Values - #
+        iv.cl,
+        iv.cd,
+        iv.alpha,
+        iv.phi,
         blade_normal_force_per_unit_span,
         blade_tangential_force_per_unit_span,
         # - Total Values - #
@@ -410,98 +355,93 @@ end
 #                                                                    #
 ######################################################################
 
-function get_body_vs(mub, gamw, sigr, inputs)
+"""
+"""
+function get_body_tangential_velocities(inputs, gamw, sigr)
     # - rename for convenience - #
-    (; body_doublet_panels, A_br, A_bw) = inputs
+    (; AICt, AICtr, AICtw, body_vortex_panels, gamb) = inputs
     nrotor = size(sigr, 2)
 
     # - Influence from Freestream - #
-    Vinf = inputs.freestream.Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    vsfromvinf = repeat(Vinf, body_doublet_panels.totpanel) # need velocity on each panel
+    Vs = inputs.freestream.Vinf * [1.0; 0.0] # axisymmetric, so no radial component
+    Vsmat = repeat(Vs; outer=(1, size(inputs.body_vortex_panels.controlpoint, 2))) # need velocity on each panel
+    vtan_vinf = [dot(v, t) for (v, t) in zip(eachcol(Vsmat), eachcol(body_vortex_panels.tangent))]
 
-    ## -- Velocity Contributions from body -- ##
+    # initialize total
+    Vtan = copy(vtan_vinf)
 
-    # - Body-induced Surface Velocity - #
-    vsfrombodypanels = vfromdoubletpanels(
-        body_doublet_panels.controlpoint, body_doublet_panels.nodes, mub
-    )
+    # - Velocity Contributions from body - #
 
-    # - "Wake"-induced Surface Velocity - #
-    vsfromTEpanels = vfromTE(
-        body_doublet_panels.controlpoint, body_doublet_panels.TEnodes, mub
-    )
+    # Panel-on-panel influence
+    vtan_body = AICt * gamb[1:size(AICt, 2)]
+    Vtan .+= vtan_body
 
-    # - ∇μ/2 surface velocity - #
-    vsfromgradmu = vfromgradmutry3b(body_doublet_panels, mub)
+    # Jump Term
+    jumpduct = (gamb[1:(body_vortex_panels.npanel[1])] + gamb[2:(body_vortex_panels.nnode[1])]) / 2
+    jumphub =
+        (
+            gamb[(body_vortex_panels.nnode[1]):(body_vortex_panels.totpanel)] +
+            gamb[(body_vortex_panels.nnode[1] + 1):(body_vortex_panels.totpanel + 1)]
+        ) / 2.0
+    body_jump_term = [jumpduct; jumphub]
+    Vtan .-= body_jump_term / 2.0
 
-    ## -- Velocity Contributions from rotors and wake -- ##
-    # - wake velocity components - #
-    vsfromwake = vfromvortexpanels(
-        inputs.body_doublet_panels.controlpoint,
-        inputs.wake_vortex_panels.controlpoint,
-        inputs.wake_vortex_panels.len,
-        gamw,
-    )
+    # - Velocity Contributions from wake - #
+    vtan_wake = AICtw * gamw
+    Vtan .+= vtan_wake
 
-    # - rotor velocity components - #
-    vsfromrotors = similar(vsfromwake) .= 0.0
+    # - Velocity Contributions from rotors - #
+    vtan_rotors = similar(vtan_wake,(length(Vtan),nrotor))
     for jrotor in 1:nrotor
-        vfromsourcepanels!(
-            vsfromrotors,
-            inputs.body_doublet_panels.controlpoint,
-            inputs.rotor_source_panels[jrotor].controlpoint,
-            inputs.rotor_source_panels[jrotor].len,
-            sigr[:, jrotor],
-        )
+        @views vtan_rotors[:,jrotor] = AICtr[:,:,jrotor] * sigr[:,jrotor]
+        Vtan .+= vtan_rotors[:,jrotor]
     end
 
-    ## -- Total Velocity -- ##
-    #theoretically, vtot_on_body dot nhat should be zero and vtot_on_body dot that should be norm(vtot_on_body)
-    vtot_on_body =
-        vsfromvinf .+ vsfrombodypanels .+ vsfromTEpanels .+ vsfromgradmu .+ vsfromwake .+
-        vsfromrotors
+    # - Split Velocities associates with inner and outer duct and hub - #
+    # total tangential velocities
+    vtan_casing, vtan_nacelle, vtan_centerbody, _, _, _ = split_bodies(Vtan, body_vortex_panels)
 
-    # - Get magnitude and split - #
-    vs_body = norm.(eachrow(vtot_on_body))
+    # tangential velocities due to body
+    vtan_casing_b, vtan_nacelle_b, vtan_centerbody_b, _, _, _ = split_bodies(
+        vtan_body, body_vortex_panels
+    )
 
-    vsdi, vsdo, vsh, _, _, _ = split_bodies(vs_body, body_doublet_panels; duct=true)
-    vbdi, vbdo, vbh, _, _, _ = split_bodies(
-        vsfrombodypanels, body_doublet_panels; duct=true
-    )
-    vtedi, vtedo, vteh, _, _, _ = split_bodies(
-        vsfromTEpanels, body_doublet_panels; duct=true
-    )
-    vgmdi, vgmdo, vgmh, _, _, _ = split_bodies(vsfromgradmu, body_doublet_panels; duct=true)
-    vwdi, vwdo, vwh, _, _, _ = split_bodies(vsfromwake, body_doublet_panels; duct=true)
-    vrdi, vrdo, vrh, _, _, _ = split_bodies(vsfromrotors, body_doublet_panels; duct=true)
+    # jump terms
+    casing_jump_term, nacelle_jump_term, centerbody_jump_term, _, _, _ = split_bodies(body_jump_term, body_vortex_panels)
+
+    # tangential velocities due to wake
+    vtan_casing_w, vtan_nacelle_w, vtan_centerbody_w, _, _, _ = split_bodies(vtan_wake, body_vortex_panels)
+
+    # tangential velocities due to rotors
+    vtan_casing_r, vtan_nacelle_r, vtan_centerbody_r, _, _, _ = split_bodies(vtan_rotors, body_vortex_panels)
 
     return (;
-        vtot_on_body=vtot_on_body,
-        body_surface_velocity=vs_body,
-        duct_inner_vs=vsdi,
-        duct_outer_vs=vsdo,
-        hub_vs=vsh,
-        vsfromvinf=vsfromvinf,
-        vsfrombodypanels=vsfrombodypanels,
-        duct_inner_vs_from_body=vbdi,
-        duct_outer_vs_from_body=vbdo,
-        hub_vs_from_body=vbh,
-        vsfromTEpanels=vsfromTEpanels,
-        duct_inner_vs_from_TE=vtedi,
-        duct_outer_vs_from_TE=vtedo,
-        hub_vs_from_TE=vteh,
-        vsfromgradmu=vsfromgradmu,
-        duct_inner_vs_from_gradmu=vgmdi,
-        duct_outer_vs_from_gradmu=vgmdo,
-        hub_vs_from_gradmu=vgmh,
-        vsfromwake=vsfromwake,
-        duct_inner_vs_from_wake=vwdi,
-        duct_outer_vs_from_wake=vwdo,
-        hub_vs_from_wake=vwh,
-        vsfromrotors=vsfromrotors,
-        duct_inner_vs_from_rotor=vrdi,
-        duct_outer_vs_from_rotor=vrdo,
-        hub_vs_from_rotor=vrh,
+        # Total and components
+        Vtan,
+        vtan_vinf, # tangential velocity from freestream
+        vtan_body,
+        body_jump_term,
+        vtan_wake,
+        vtan_rotors,
+        # Splits:
+        # duct inner surface (casing)
+        vtan_casing,
+        vtan_casing_b,
+        casing_jump_term,
+        vtan_casing_w,
+        vtan_casing_r,
+        # duct outer surface (nacelle)
+        vtan_nacelle,
+        vtan_nacelle_b,
+        nacelle_jump_term,
+        vtan_nacelle_w,
+        vtan_nacelle_r,
+        # center body
+        vtan_centerbody,
+        vtan_centerbody_b,
+        centerbody_jump_term,
+        vtan_centerbody_w,
+        vtan_centerbody_r,
     )
 end
 
@@ -527,7 +467,7 @@ end
 Calculate the induced velocities on one of the body wakes (unit velocity inputs determine which one)
 """
 function calculate_induced_velocities_on_bodywake(
-    vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, mub, vz_bte, vr_bte, TEidxs, Vinf
+    vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, gamb, Vinf
 )
 
     # problem dimensions
@@ -535,29 +475,25 @@ function calculate_induced_velocities_on_bodywake(
     np = size(vz_b, 1) # number of panels in bodywake
 
     # initialize outputs
-    vx = Vinf * ones(eltype(gamw), np) # axial induced velocity
+    vz = Vinf * ones(eltype(gamw), np) # axial induced velocity
     vr = zeros(eltype(gamw), np) # radial induced velocity
 
     # add body induced velocities
-    @views vx[:] .+= vz_b * mub
-    @views vr[:] .+= vr_b * mub
-
-    # add body TE induced velocities
-    @views vx[:] .+= vz_bte * mub[TEidxs]
-    @views vr[:] .+= vr_bte * mub[TEidxs]
+    @views vz[:] .+= vz_b * gamb
+    @views vr[:] .+= vr_b * gamb
 
     # add wake induced velocities
-    @views vx[:] .+= vz_w * gamw
+    @views vz[:] .+= vz_w * gamw
     @views vr[:] .+= vr_w * gamw
 
     # add rotor induced velocities
     for jrotor in 1:nrotor
-        @views vx[:] .+= vz_r[jrotor] * sigr[:, jrotor]
+        @views vz[:] .+= vz_r[jrotor] * sigr[:, jrotor]
         @views vr[:] .+= vr_r[jrotor] * sigr[:, jrotor]
     end
 
     # return raw induced velocities
-    return vx, vr
+    return vz, vr
 end
 
 ######################################################################
@@ -574,6 +510,22 @@ function steady_cp(vs, vinf, vref)
 end
 
 """
+only used in post-process for cp.
+expression not in dfdc theory, comes from source code.
+"""
+function calculate_entropy_jumps(sigr, Wm_rotor)
+    # average sigr's
+    sigr_avg = similar(Wm_rotor, size(sigr,1)-1, size(sigr,2)) .=0
+    for (i,s) in enumerate(eachcol(sigr))
+        sigr_avg[:,i] = (s[2:end]+s[1:end-1])/2.0
+    end
+
+    # multiply by Wm_rotor's
+    return sigr_avg .* Wm_rotor
+end
+
+
+"""
 Calculate change in pressure coefficient aft of rotor, due to rotor
 """
 function delta_cp(deltaH, deltaS, Vtheta, Vref)
@@ -587,7 +539,7 @@ end
 """
 Calculate net circulation and enthalpy and entropy disk jumps
 """
-function calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
+function calculate_rotor_jumps(Gamr, Omega, B, sigr, Wm_rotor)
 
     # - Calculate net circulations - #
     Gamma_tilde = calculate_net_circulation(Gamr, B)
@@ -596,7 +548,7 @@ function calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
     Htilde = calculate_enthalpy_jumps(Gamr, Omega, B)
 
     # - Calculate entropy disk jump - #
-    Stilde = calculate_entropy_jumps(sigr, Vm_rotor)
+    Stilde = calculate_entropy_jumps(sigr, Wm_rotor)
 
     return Gamma_tilde, Htilde, Stilde
 end
@@ -605,12 +557,12 @@ end
 Calculate change in pressure coefficient due to rotors specifically on the body panels aft of the rotors
 """
 function calculate_body_delta_cp!(
-    cp, Gamr, sigr, Vm_rotor, Vref, Omega, B, body_doublet_panels, didr, hidr
+    cp, Gamr, sigr, Wm_rotor, Vref, Omega, B, body_vortex_panels, didr, hidr
 )
 
     ## -- Calculate change in pressure coefficient -- ##
 
-    Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
+    Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Wm_rotor)
 
     nrotor = size(Gamr, 2)
 
@@ -618,10 +570,10 @@ function calculate_body_delta_cp!(
 
         # - Get the tangential velocities on the bodies - #
         v_theta_duct = calculate_vtheta(
-            Gamma_tilde[end, ir], body_doublet_panels.controlpoint[didr[ir], 2]
+            Gamma_tilde[end, ir], body_vortex_panels.controlpoint[2, didr[ir]]
         )
         v_theta_hub = calculate_vtheta(
-            Gamma_tilde[1, ir], body_doublet_panels.controlpoint[hidr[ir], 2]
+            Gamma_tilde[1, ir], body_vortex_panels.controlpoint[2, hidr[ir]]
         )
 
         # assemble change in cp due to enthalpy and entropy behind rotor(s)
@@ -635,11 +587,11 @@ end
 """
 Calculate change in pressure coefficient due to rotors specifically on the body wakes
 """
-function calculate_bodywake_delta_cp(Gamr, sigr, Vm_rotor, Vref, Omega, B, r; body="duct")
+function calculate_bodywake_delta_cp(Gamr, sigr, Wm_rotor, Vref, Omega, B, r; body="duct")
 
     ## -- Calculate change in pressure coefficient -- ##
 
-    Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Vm_rotor)
+    Gamma_tilde, Htilde, Stilde = calculate_rotor_jumps(Gamr, Omega, B, sigr, Wm_rotor)
 
     # - Get the tangential velocities on the bodies - #
     if body == "duct"
@@ -666,7 +618,7 @@ formulation taken from DFDC source code. TODO: derive where the expressions came
 
 """
 function get_body_cps(
-    Vs, Gamr, sigr, Vm_rotor, Vinf, Vref, B, Omega, didr, hidr, body_doublet_panels, isduct
+    Vs, Gamr, sigr, Wm_rotor, Vinf, Vref, B, Omega, didr, hidr, body_vortex_panels, isduct
 )
 
     # - Calculate standard pressure coefficient expression - #
@@ -674,13 +626,13 @@ function get_body_cps(
 
     # - add the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
     calculate_body_delta_cp!(
-        cp, Gamr, sigr, Vm_rotor, Vref, Omega, B, body_doublet_panels, didr, hidr
+        cp, Gamr, sigr, Wm_rotor, Vref, Omega, B, body_vortex_panels, didr, hidr
     )
 
     # - Split body strengths into inner/outer duct and hub - #
-    cpdi, cpdo, cph, xdi, xdo, xh = split_bodies(cp, body_doublet_panels; duct=isduct)
+    cpdi, cpdo, cph, xdi, xdo, xh = split_bodies(cp, body_vortex_panels; duct=isduct)
 
-    return cp, cpdi, cpdo, cph, body_doublet_panels.controlpoint[:, 1], xdi, xdo, xh
+    return cp, cpdi, cpdo, cph, body_vortex_panels.controlpoint[:, 1], xdi, xdo, xh
 end
 
 """
@@ -696,12 +648,9 @@ function get_bodywake_cps(
     sigr,
     vz_b,
     vr_b,
-    mub,
-    vz_bte,
-    vr_bte,
-    TEidxs,
+    gamb,
     panels,
-    Vm_rotor,
+    Wm_rotor,
     Omega,
     B,
     Vinf,
@@ -713,22 +662,22 @@ function get_bodywake_cps(
 
     # get induced velocities
     vz_bodywake, vr_bodywake = calculate_induced_velocities_on_bodywake(
-        vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, mub, vz_bte, vr_bte, TEidxs, Vinf
+        vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, gamb, Vinf
     )
 
     # get "surface" velocities
     Vmat = [vz_bodywake vr_bodywake]
-    vs = [dot(v, t) for (v, t) in zip(eachrow(Vmat), panels.tangent)]
+    vtan = [dot(v, t) for (v, t) in zip(eachrow(Vmat), panels.tangent)]
 
     # - Get steady pressure coefficients - #
-    cp_steady = steady_cp(vs, Vinf, Vref)
+    cp_steady = steady_cp(vtan, Vinf, Vref)
 
     # - Get delta cp - #
     deltacp = calculate_bodywake_delta_cp(
-        Gamr, sigr, Vm_rotor, Vref, Omega, B, panels.controlpoint[:, 2]; body=body
+        Gamr, sigr, Wm_rotor, Vref, Omega, B, panels.controlpoint[2, :]; body=body
     )
 
-    return cp_steady .+ deltacp, vs
+    return cp_steady .+ deltacp, vtan
 end
 
 """
@@ -738,11 +687,11 @@ function forces_from_pressure(cps, panels; rhoinf=1.225, Vref=1.0)
 
     # - rename for convenience - #
     #just want x-component of normals since it's axisymmetric
-    ns = panels.normal[:, 1]
+    ns = panels.normal[1,:]
     #radial positions
-    rs = panels.controlpoint[:, 2]
+    rs = panels.controlpoint[2, :]
     #panel lengths
-    ds = panels.len
+    ds = panels.influence_length
     # dimensions
     np = length(cps)
 
@@ -792,20 +741,20 @@ function inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rhoinf)
 end
 
 function viscous_rotor_thrust(
-    Wx_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rhoinf
+    Wz_rotor, Wmag_rotor, B, chord, rotor_panel_length, cd, rhoinf
 )
 
     # get dimensions
-    nr, nrotor = size(Wx_rotor)
+    nr, nrotor = size(Wz_rotor)
 
     #initialize
-    dTv = similar(Wx_rotor) .= 0.0
+    dTv = similar(Wz_rotor) .= 0.0
 
     for irotor in 1:nrotor
         for ir in 1:nr
             hrwc = 0.5 * rhoinf * Wmag_rotor[ir, irotor] * chord[ir, irotor]
             bdr = B[irotor] * rotor_panel_length[ir, irotor]
-            dTv[ir, irotor] = -hrwc * cd[ir, irotor] * Wx_rotor[ir, irotor] * bdr
+            dTv[ir, irotor] = -hrwc * cd[ir, irotor] * Wz_rotor[ir, irotor] * bdr
         end
     end
 
@@ -815,7 +764,7 @@ function viscous_rotor_thrust(
 end
 
 function inviscid_rotor_torque(
-    Wx_rotor, rotor_panel_center, rotor_panel_length, Gamma_tilde, rhoinf
+    Wz_rotor, rotor_panel_center, rotor_panel_length, Gamma_tilde, rhoinf
 )
 
     # dimensions
@@ -827,7 +776,7 @@ function inviscid_rotor_torque(
     for irotor in 1:nrotor
         for ir in 1:nr
             rdr = rotor_panel_center[ir, irotor] * rotor_panel_length[ir, irotor]
-            dQi[ir, irotor] = rhoinf * Gamma_tilde[ir, irotor] * Wx_rotor[ir, irotor] * rdr
+            dQi[ir, irotor] = rhoinf * Gamma_tilde[ir, irotor] * Wz_rotor[ir, irotor] * rdr
         end
     end
 
@@ -897,14 +846,15 @@ function get_ideal_efficiency(total_thrust, rhoinf, Vinf, Rref)
     end
 end
 
-function tqcoeff(thrust, torque, rhoinf, Omega, Rref)
+function tqpcoeff(thrust, torque, rhoinf, Omega, Rref)
     T = promote_type(eltype(thrust), eltype(torque), eltype(Omega))
     CT = zeros(T, length(Omega))
     CQ = zeros(T, length(Omega))
+    CP = zeros(T, length(Omega))
 
     for (i, o) in enumerate(Omega)
         if isapprox(o, 0.0)
-            CT[i] = CQ[i] = 0.0
+            CT[i] = CQ[i] = CP[i] = 0.0
         else
             # reference diameter
             D = 2.0 * Rref
@@ -917,10 +867,13 @@ function tqcoeff(thrust, torque, rhoinf, Omega, Rref)
 
             # torque coefficient
             CQ[i] = torque / (rhoinf * n^2 * D^5)
+
+            # power coefficient
+            CP[i] = CQ[i] * o
         end
     end
 
-    return CT, CQ
+    return CT, CQ, CP
 end
 
 function get_blade_aero(
@@ -1044,17 +997,27 @@ end
 ######################################################################
 """
 """
-function get_intermediate_values(states, inputs)
+function get_intermediate_values(Gamr, sigr, gamw, inputs)
 
     # - Extract commonly used items from precomputed inputs - #
     blade_elements = inputs.blade_elements
     rpc = inputs.rotor_panel_centers
     Vinf = inputs.freestream.Vinf
+    freestream = inputs.freestream
 
-    # - Extract states - #
-    mub, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+    calculate_body_vortex_strengths!(
+        inputs.gamb,
+        inputs.A_bb,
+        inputs.b_bf,
+        gamw,
+        inputs.A_bw,
+        sigr,
+        inputs.A_br,
+        inputs.RHS;
+        debug=false,
+    )
 
-    _, _, _, vxfrombody, vrfrombody, vxfromwake, vrfromwake, vxfromrotor, vrfromrotor = calculate_induced_velocities_on_rotors(
+    vz_rotor, vr_rotor, vtheta_rotor, vzb_rotor, vrb_rotor, vzw_rotor, vrw_rotor, vzr_rotor, vrr_rotor = calculate_induced_velocities_on_rotors(
         blade_elements,
         Gamr,
         inputs.vz_rw,
@@ -1065,47 +1028,78 @@ function get_intermediate_values(states, inputs)
         sigr,
         inputs.vz_rb,
         inputs.vr_rb,
-        mub,
-        inputs.vz_rbte,
-        inputs.vr_rbte,
-        (p -> p.idx).(inputs.body_doublet_panels.TEnodes);
-        debug=true,
+        inputs.gamb[1:(inputs.body_vortex_panels.totnode)];
+        post=true,
     )
 
-    vz_rotor, vr_rotor, vtheta_rotor, Wx_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-        Gamr, gamw, sigr, mub, inputs
+    Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
+        vz_rotor, vr_rotor, vtheta_rotor, Vinf, inputs.blade_elements.Omega, rpc
     )
 
     Gamma_tilde = calculate_net_circulation(Gamr, blade_elements.B)
 
     H_tilde = calculate_enthalpy_jumps(Gamr, blade_elements.Omega, blade_elements.B)
 
-    _, _, phi, alpha, cl, cd = calculate_gamma_sigma(
-        blade_elements, Wm_rotor, Wtheta_rotor, Wmag_rotor, inputs.freestream; debug=true
+    cl, cd, phi, alpha = update_coeffs(
+        blade_elements,
+        Wm_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        freestream;
+        post=true,
+        verbose=false,
     )
 
-    return (;
-        mub,
+    vz_wake, vr_wake, vzb_wake, vrb_wake, vzr_wake, vrr_wake, vzw_wake, vrw_wake = calculate_induced_velocities_on_wakes(
+        inputs.vz_ww,
+        inputs.vr_ww,
         gamw,
-        Gamr,
+        inputs.vz_wr,
+        inputs.vr_wr,
         sigr,
+        inputs.vz_wb,
+        inputs.vr_wb,
+        inputs.gamb[1:(inputs.body_vortex_panels.totnode)];
+        post=true,
+    )
+
+    Wz_wake, Wm_wake = reframe_wake_velocities(vz_wake, vr_wake, Vinf; post=true)
+
+    return (;
+        # velocities at rotor
         vz_rotor,
         vr_rotor,
         vtheta_rotor,
-        Wx_rotor,
+        Wz_rotor,
         Wtheta_rotor,
         Wm_rotor,
         Wmag_rotor,
-        vxfrombody,
-        vrfrombody,
-        vxfromwake,
-        vrfromwake,
-        vxfromrotor,
-        vrfromrotor,
+        # raw induced velocities on rotor
+        vzb_rotor,
+        vrb_rotor,
+        vzw_rotor,
+        vrw_rotor,
+        vzr_rotor,
+        vrr_rotor,
+        # velocities at wake
+        vz_wake,
+        vr_wake,
+        Wz_wake,
+        Wm_wake,
+        # raw induced velocities on wake
+        vzb_wake,
+        vrb_wake,
+        vzw_wake,
+        vrw_wake,
+        vzr_wake,
+        vrr_wake,
+        # tilde jumps on blades
         Gamma_tilde,
         H_tilde,
+        # blade element angles
         phi,
         alpha,
+        # blade element forces
         cl,
         cd,
     )
@@ -1126,28 +1120,28 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
     TF = promote_type(eltype(probe_poses), eltype(states))
 
     # - rename for convenience - #
-    (; rotor_source_panels, wake_vortex_panels, body_doublet_panels, blade_elements) =
+    (; rotor_source_panels, wake_vortex_panels, body_vortex_panels, blade_elements) =
         inputs
 
     # get number of rotor blades
     num_blades = blade_elements.B
 
     # - extract states - #
-    mub, gamw, Gamr, sigr = extract_state_variables(states, inputs)
+    gamb, gamw, Gamr, sigr = extract_state_variables(states, inputs)
 
     # - dimensions - #
     nv = size(probe_poses, 1)
     nr, nrotor = size(Gamr)
 
     # - initialize - #
-    Vxr = zeros(TF, nv, 2)
+    Vzr = zeros(TF, nv, 2)
     Vb = zeros(TF, nv, 2)
     Vr = zeros(TF, nv, 2)
     Vw = zeros(TF, nv, 2)
     vtheta = zeros(TF, nv)
 
     ##### ----- Axial and Radial Velocity ----- #####
-    vfromdoubletpanels!(Vb, probe_poses, body_doublet_panels.nodes, mub)
+    vfromdoubletpanels!(Vb, probe_poses, body_vortex_panels.nodes, gamb)
     for i in 1:length(rotor_source_panels)
         vfromsourcepanels!(
             Vr,
@@ -1161,7 +1155,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
         Vw, probe_poses, wake_vortex_panels.controlpoint, wake_vortex_panels.len, gamw
     )
 
-    Vxr .+= Vb .+ Vr .+ Vw
+    Vzr .+= Vb .+ Vr .+ Vw
 
     ###### ----- Tangential Velocity ----- #####
     # TODO: there is something here that is making things jump around.
@@ -1212,26 +1206,26 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
     for (ip, probe) in enumerate(eachrow(probe_poses))
 
         # - Find wake stations just in front, and just behind - #
-        wxid1 = findlast(x -> x <= probe[1], wakecpx[1, :])
-        wxid2 = findfirst(x -> x >= probe[1], wakecpx[1, :])
+        wzid1 = findlast(x -> x <= probe[1], wakecpx[1, :])
+        wzid2 = findfirst(x -> x >= probe[1], wakecpx[1, :])
 
         # check if outside the wake or on the edge
-        if isnothing(wxid1)
+        if isnothing(wzid1)
             if probe[1] < rotorzloc[1]
                 #outside of wake
                 vtheta[ip] = 0.0
                 continue
             else
-                wxid1 = wxid2
+                wzid1 = wzid2
             end
 
-        elseif isnothing(wxid2)
+        elseif isnothing(wzid2)
             if probe[1] > wakecpx[end, end]
                 #outside of wake
                 vtheta[ip] = 0.0
                 continue
             else
-                wxid2 = wxid1
+                wzid2 = wzid1
             end
         end
 
@@ -1239,12 +1233,12 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
         xrid = findlast(x -> x <= probe[1], rotorzloc)
 
         # - Find the wake station just below and just above - #
-        wrid1 = findlast(x -> x <= probe[2], wakecpr[:, wxid1])
-        wrid2 = findfirst(x -> x >= probe[2], wakecpr[:, wxid2])
+        wrid1 = findlast(x -> x <= probe[2], wakecpr[:, wzid1])
+        wrid2 = findfirst(x -> x >= probe[2], wakecpr[:, wzid2])
 
         # Check if outside the wake, or on the edge
         if isnothing(wrid1)
-            if probe[2] < (wakecpr[wxid1, 1] + wakecpr[wxid2, 1]) / 2
+            if probe[2] < (wakecpr[wzid1, 1] + wakecpr[wzid2, 1]) / 2
                 #outside of wake
                 vtheta[ip] = 0.0
                 continue
@@ -1253,7 +1247,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
             end
 
         elseif isnothing(wrid2)
-            if probe[2] > (wakecpr[end, wxid1] + wakecpr[end, wxid2]) / 2
+            if probe[2] > (wakecpr[end, wzid1] + wakecpr[end, wzid2]) / 2
                 #outside of wake
                 vtheta[ip] = 0.0
                 continue
@@ -1269,31 +1263,31 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
             #on edges, just use the edge value
             if wrid1 == wrid2
                 vtheta[ip] =
-                    Gamma_tilde_rotor[wrid2, xrid] ./ (2 * pi .* wakecpr[wrid2, wxid1])
+                    Gamma_tilde_rotor[wrid2, xrid] ./ (2 * pi .* wakecpr[wrid2, wzid1])
             else
-                vthetaself1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1, wxid1])
-                vthetaself2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2, wxid1])
+                vthetaself1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1, wzid1])
+                vthetaself2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2, wzid1])
                 vtheta[ip] =
                     fm.linear(
-                        [wakecpr[wrid1, wxid1]; wakecpr[wrid2, wxid1]],
+                        [wakecpr[wrid1, wzid1]; wakecpr[wrid2, wzid1]],
                         [vthetaself1; vthetaself2],
                         probe[2],
                     ) ./ (2 * pi * probe[2])
             end
 
-        elseif wxid1 == wxid2
+        elseif wzid1 == wzid2
             # inline with wake control points need to interpolate in r only
 
             #on edges, just use the edge value
             if wrid1 == wrid2
                 vtheta[ip] =
-                    Gamma_tilde_grid[wrid1, wxid1] ./ (2 * pi * wakecpr[wrid1, wxid1])
+                    Gamma_tilde_grid[wrid1, wzid1] ./ (2 * pi * wakecpr[wrid1, wzid1])
             else
-                vtheta1 = Gamma_tilde_grid[wrid1, wxid1]# ./ (2 * pi * wakecpr[wrid1, wxid1])
-                vtheta2 = Gamma_tilde_grid[wrid2, wxid1]#./ (2 * pi * wakecpr[wrid2, wxid1])
+                vtheta1 = Gamma_tilde_grid[wrid1, wzid1]# ./ (2 * pi * wakecpr[wrid1, wzid1])
+                vtheta2 = Gamma_tilde_grid[wrid2, wzid1]#./ (2 * pi * wakecpr[wrid2, wzid1])
                 vtheta[ip] =
                     fm.linear(
-                        [wakecpr[wrid1, wxid1]; wakecpr[wrid2, wxid1]],
+                        [wakecpr[wrid1, wzid1]; wakecpr[wrid2, wzid1]],
                         [vtheta1; vtheta2],
                         probe[2],
                     ) ./ (2 * pi * probe[2])
@@ -1301,7 +1295,7 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
 
         elseif wrid1 == wrid2
             #wake radius doesn't change, just use first radial point
-            vtheta[ip] = Gamma_tilde_grid[wrid1, wxid1] ./ (2 * pi * wakecpr[wrid1, wxid1])
+            vtheta[ip] = Gamma_tilde_grid[wrid1, wzid1] ./ (2 * pi * wakecpr[wrid1, wzid1])
 
         else
 
@@ -1310,34 +1304,34 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
                 vtx2r1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1])
                 vtx2x2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2])
             else
-                vtx2r1 = Gamma_tilde_grid[wrid1, wxid2]# ./ (2 * pi * wakecpr[wrid1])
-                vtx2x2 = Gamma_tilde_grid[wrid2, wxid2]# ./ (2 * pi * wakecpr[wrid2])
+                vtx2r1 = Gamma_tilde_grid[wrid1, wzid2]# ./ (2 * pi * wakecpr[wrid1])
+                vtx2x2 = Gamma_tilde_grid[wrid2, wzid2]# ./ (2 * pi * wakecpr[wrid2])
             end
 
             if probe[1] > rotorzloc[xrid]
                 vtx1r1 = Gamma_tilde_rotor[wrid1, xrid]# ./ (2 * pi * wakecpr[wrid1])
                 vtx1r2 = Gamma_tilde_rotor[wrid2, xrid]# ./ (2 * pi * wakecpr[wrid2])
             else
-                vtx1r1 = Gamma_tilde_grid[wrid1, wxid1]# ./ (2 * pi * wakecpr[wrid1])
-                vtx1r2 = Gamma_tilde_grid[wrid2, wxid1]# ./ (2 * pi * wakecpr[wrid2])
+                vtx1r1 = Gamma_tilde_grid[wrid1, wzid1]# ./ (2 * pi * wakecpr[wrid1])
+                vtx1r2 = Gamma_tilde_grid[wrid2, wzid1]# ./ (2 * pi * wakecpr[wrid2])
             end
 
             r1 = fm.linear(
-                [wakecpx[wrid1, wxid1]; wakecpx[wrid1, wxid2]],
-                [wakecpr[wrid1, wxid1]; wakecpr[wrid1, wxid2]],
+                [wakecpx[wrid1, wzid1]; wakecpx[wrid1, wzid2]],
+                [wakecpr[wrid1, wzid1]; wakecpr[wrid1, wzid2]],
                 probe[1],
             )
             r2 = fm.linear(
-                [wakecpx[wrid2, wxid1]; wakecpx[wrid2, wxid2]],
-                [wakecpr[wrid2, wxid1]; wakecpr[wrid2, wxid2]],
+                [wakecpx[wrid2, wzid1]; wakecpx[wrid2, wzid2]],
+                [wakecpr[wrid2, wzid1]; wakecpr[wrid2, wzid2]],
                 probe[1],
             )
 
             vt1 = fm.linear(
-                [wakecpx[wrid1, wxid1]; wakecpx[wrid1, wxid2]], [vtx1r1; vtx2r1], probe[1]
+                [wakecpx[wrid1, wzid1]; wakecpx[wrid1, wzid2]], [vtx1r1; vtx2r1], probe[1]
             )
             vt2 = fm.linear(
-                [wakecpx[wrid2, wxid1]; wakecpx[wrid2, wxid2]], [vtx1r2; vtx2x2], probe[1]
+                [wakecpx[wrid2, wzid1]; wakecpx[wrid2, wzid2]], [vtx1r2; vtx2x2], probe[1]
             )
 
             vtheta[ip] = fm.linear([r1; r2], [vt1; vt2], probe[2]) ./ (2 * pi * probe[2])
@@ -1345,10 +1339,10 @@ function probe_velocity_field(probe_poses, inputs, states; debug=false)
     end
 
     if debug
-        return Vxr[:, 1],
-        Vxr[:, 2], vtheta, Vb[:, 1], Vb[:, 2], Vr[:, 1], Vr[:, 2], Vw[:, 1],
+        return Vzr[:, 1],
+        Vzr[:, 2], vtheta, Vb[:, 1], Vb[:, 2], Vr[:, 1], Vr[:, 2], Vw[:, 1],
         Vw[:, 2]
     else
-        return Vxr[:, 1], Vxr[:, 2], vtheta
+        return Vzr[:, 1], Vzr[:, 2], vtheta
     end
 end

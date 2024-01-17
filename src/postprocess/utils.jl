@@ -49,12 +49,12 @@ function write_data(
 
     # Write data to file
     # loop through keys and values
-    for (kp, p) in zip(keys(outs), outs)
-        #need to put quotes on strings
+    for (k, p) in zip(keys(outs), outs)
         if typeof(p) <: String
-            write(f, "\t$kp = \"$(p)\",\n")
+            #need to put quotes on strings
+            write(f, "\t$k = \"$(p)\",\n")
         else
-            write(f, "\t$kp = $p,\n")
+            write(f, "\t$k = $p,\n")
         end
     end
 

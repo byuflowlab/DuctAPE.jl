@@ -10,7 +10,7 @@ function calculate_body_vortex_strengths!(
 
     # problem dimensions
     nbn = size(A_bw, 1) # number of body nodes
-    nrotor = size(A_br, 1) # number of rotors
+    nrotor = size(A_br, 3) # number of rotors
 
     # add freestream contributions to right hand side
     # note: the negative was already included in the precomputation for the freestream.
@@ -25,7 +25,7 @@ function calculate_body_vortex_strengths!(
     # note: the subtraction is not included in the coefficients here, so we need to subract
     for jrotor in 1:nrotor
         # get induced velocity in the x-direction
-        @views RHS[1:nbn] .-= A_br[jrotor, :, :] * sigr[:, jrotor]
+        @views RHS[1:nbn] .-= A_br[:, :, jrotor] * sigr[:, jrotor]
     end
 
     return ldiv!(gamb, A_bb, RHS)

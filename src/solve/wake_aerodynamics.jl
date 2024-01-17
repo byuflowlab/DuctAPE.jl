@@ -20,8 +20,8 @@ function calculate_induced_velocities_on_wakes(
     sigr,
     vz_wb=nothing,
     vr_wb=nothing,
-    gamb=nothing,
-    debug=false,
+    gamb=nothing;
+    post=false,
 )
 
     # get number of rotors
@@ -31,32 +31,59 @@ function calculate_induced_velocities_on_wakes(
     vz_wake = similar(gamw, size(vz_ww, 1), 1) .= 0 # axial induced velocity
     vr_wake = similar(gamw, size(vr_ww, 1), 1) .= 0 # axial induced velocity
 
+    if post
+        # initialize outputs
+        vzb_wake = similar(vz_wake) .= 0 # axial induced velocity
+        vrb_wake = similar(vz_wake) .= 0 # radial induced velocity
+        vzr_wake = similar(vz_wake) .= 0 # axial induced velocity
+        vrr_wake = similar(vz_wake) .= 0 # radial induced velocity
+        vzw_wake = similar(vz_wake) .= 0 # axial induced velocity
+        vrw_wake = similar(vz_wake) .= 0 # radial induced velocity
+    end
+
     # add body induced velocities
     if gamb != nothing
         @views vz_wake .+= vz_wb * gamb
         @views vr_wake .+= vr_wb * gamb
+
+        if post
+            @views vzb_wake .+= vz_wb * gamb
+            @views vrb_wake .+= vr_wb * gamb
+        end
     end
 
     # add rotor induced velocities
     for jrotor in 1:nrotor
         @views vz_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
         @views vr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
+        if post
+            @views vzr_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
+            @views vrr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
+        end
     end
 
     # add wake induced velocities
     @views vz_wake .+= vz_ww * gamw
     @views vr_wake .+= vr_ww * gamw
 
-    # return raw induced velocities
-    return vz_wake, vr_wake
+    #  return raw induced velocities
+    if post
+        return vz_wake, vr_wake, vzb_wake, vrb_wake, vzr_wake, vrr_wake, vzw_wake, vrw_wake
+    else
+        return vz_wake, vr_wake
+    end
 end
 
-function reframe_wake_velocities(vz_wake, vr_wake, Vinf)
+function reframe_wake_velocities(vz_wake, vr_wake, Vinf; post=false)
     #add freestream to induced axial velocity
     Wz_wake = vz_wake .+ Vinf
 
-    # return meridional velocities
-    return sqrt.(Wz_wake .^ 2 .+ vr_wake .^ 2)
+    if post
+        return Wz_wake, sqrt.(Wz_wake .^ 2 .+ vr_wake .^ 2)
+    else
+        # return meridional velocities
+        return sqrt.(Wz_wake .^ 2 .+ vr_wake .^ 2)
+    end
 end
 
 """
@@ -137,7 +164,7 @@ end
 Calculate wake vortex strengths
 
 """
-function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=false)
+function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=false)
 
     # get net circulation of upstream rotors
     Gamma_tilde = calculate_net_circulation(Gamr, inputs.blade_elements.B)
@@ -196,7 +223,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; debug=fal
         # )
     end
 
-    if debug
+    if post
         return gamw, deltaGamma2, deltaH
     else
         return gamw

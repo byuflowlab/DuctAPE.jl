@@ -68,6 +68,7 @@ include("solve/body_aerodynamics.jl")
 ##### ----- POST-PROCESSING ----- #####
 
 include("postprocess/post_process.jl")
+include("postprocess/utils.jl")
 
 ##### ----- SPECIALTY ----- #####
 

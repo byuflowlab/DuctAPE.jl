@@ -19,8 +19,8 @@ function calculate_induced_velocities_on_rotors(
     sigr,
     vz_rb=nothing,
     vr_rb=nothing,
-    gamb=nothing,
-    debug=false,
+    gamb=nothing;
+    post=false,
 )
 
     # problem dimensions
@@ -31,6 +31,18 @@ function calculate_induced_velocities_on_rotors(
     vr_rotor = similar(Gamr) .= 0 # radial induced velocity
     vtheta_rotor = similar(Gamr) .= 0 # tangential induced velocity
 
+    if post
+
+        # initialize outputs
+        vzb_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vrb_rotor = similar(Gamr) .= 0 # radial induced velocity
+
+        vzw_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vrw_rotor = similar(Gamr) .= 0 # radial induced velocity
+
+        vzr_rotor = similar(Gamr) .= 0 # axial induced velocity
+        vrr_rotor = similar(Gamr) .= 0 # radial induced velocity
+    end
 
     # loop through each affected rotor
     for irotor in 1:nrotor
@@ -39,18 +51,30 @@ function calculate_induced_velocities_on_rotors(
         if gamb != nothing
             @views vz_rotor[:, irotor] .+= vz_rb[irotor] * gamb
             @views vr_rotor[:, irotor] .+= vr_rb[irotor] * gamb
-
+            if post
+                @views vzb_rotor[:, irotor] .+= vz_rb[irotor] * gamb
+                @views vrb_rotor[:, irotor] .+= vr_rb[irotor] * gamb
+            end
         end
 
         # add wake induced velocities
         @views vz_rotor[:, irotor] .+= vz_rw[irotor] * gamw
         @views vr_rotor[:, irotor] .+= vr_rw[irotor] * gamw
 
+        if post
+            @views vzw_rotor[:, irotor] .+= vz_rw[irotor] * gamw[:]
+            @views vrw_rotor[:, irotor] .+= vr_rw[irotor] * gamw[:]
+        end
+
         # add rotor induced velocities
         for jrotor in 1:nrotor
             @views vz_rotor[:, irotor] .+= vz_rr[irotor, jrotor] * sigr[:, jrotor]
             @views vr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
 
+            if post
+                @views vzr_rotor[:, irotor] .+= vz_rr[irotor, jrotor] * sigr[:, jrotor]
+                @views vrr_rotor[:, irotor] .+= vr_rr[irotor, jrotor] * sigr[:, jrotor]
+            end
         end
 
         # add self-induced tangential velocity
@@ -66,7 +90,14 @@ function calculate_induced_velocities_on_rotors(
         end
     end
 
-    return vz_rotor, vr_rotor, vtheta_rotor
+    # return raw induced velocities
+    if post
+        return vz_rotor,
+        vr_rotor, vtheta_rotor, vzb_rotor, vrb_rotor, vzw_rotor, vrw_rotor, vzr_rotor,
+        vrr_rotor
+    else
+        return vz_rotor, vr_rotor, vtheta_rotor
+    end
 end
 
 """
@@ -233,7 +264,7 @@ function calculate_gamma_sigma(
     Wtheta_rotor,
     Wmag_rotor,
     freestream;
-    debug=false,
+    post=false,
     verbose=false,
 )
 
@@ -261,7 +292,7 @@ function calculate_gamma_sigma(
         Wtheta_rotor,
         Wmag_rotor,
         freestream;
-        debug=debug,
+        post=post,
         verbose=verbose,
     )
 end
@@ -281,29 +312,29 @@ function calculate_gamma_sigma!(
     Wtheta_rotor,
     Wmag_rotor,
     freestream;
-    debug=false,
+    post=false,
     verbose=false,
 )
 
     #update coeffs
-    if debug
-        cl, cd, phidb, alphadb, cldb, cddb = update_coeffs!(
+    if post
+        cl, cd, phidb, alphadb, cldb, cddb = update_coeffs(
             blade_elements,
             Wm_rotor,
             Wtheta_rotor,
             Wmag_rotor,
             freestream;
-            debug=debug,
+            post=post,
             verbose=verbose,
         )
     else
-        cl, cd = update_coeffs!(
+        cl, cd = update_coeffs(
             blade_elements,
             Wm_rotor,
             Wtheta_rotor,
             Wmag_rotor,
             freestream;
-            debug=debug,
+            post=post,
             verbose=verbose,
         )
     end
@@ -317,13 +348,13 @@ function calculate_gamma_sigma!(
     return Gamr, sigr
 end
 
-function update_coeffs!(
+function update_coeffs(
     blade_elements,
     Wm_rotor,
     Wtheta_rotor,
     Wmag_rotor,
     freestream;
-    debug=false,
+    post=false,
     verbose=false,
 )
 
@@ -333,12 +364,10 @@ function update_coeffs!(
     cl = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
     cd = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
 
-    if debug
+    if post
         # initialize extra outputs
         phidb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
         alphadb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
-        cldb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
-        cddb = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
     end
 
     # loop through rotors
@@ -390,18 +419,15 @@ function update_coeffs!(
                 fliplift=fliplift,
             )
 
-            if debug
+            if post
                 phidb[ir, irotor] = phi
                 alphadb[ir, irotor] = alpha
-                cldb[ir, irotor] = cl
-                cddb[ir, irotor] = cd
             end
         end
     end
 
-    if debug
-        return cl, cd, phidb, alphadb, cldb, cddb
-        # return phidb, alphadb, cldb, cddb
+    if post
+        return cl, cd, phidb, alphadb
     else
         # return nothing
         return cl, cd
@@ -504,15 +530,6 @@ search_polars(airfoil, alpha, re=0.0, ma=0.0) = c4b.afeval(airfoil, alpha, re, m
 #                           STUFF FOR WAKE                           #
 #                                                                    #
 ######################################################################
-
-"""
-only used in post-process for cp.
-expression not in dfdc theory, comes from source code.
-todo: derive in theory doc
-"""
-function calculate_entropy_jumps(sigr, Vm)
-    return sigr .* Vm
-end
 
 """
     calculate_enthalpy_jumps(Gamr, Omega, num_blades)

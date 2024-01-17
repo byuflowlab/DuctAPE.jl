@@ -505,17 +505,17 @@ function precomputed_inputs(
 
     # - rotor to body - #
     # preallocate AICnr and AICtr
-    Cb = size(body_vortex_panels.controlpoint, 2)
-    Nr = size(rotor_source_panels[1].node, 2)
+    ncp_body = size(body_vortex_panels.controlpoint, 2)
+    nnode_rotor = size(rotor_source_panels[1].node, 2)
 
-    AICnr = zeros(TF, num_rotors, Cb, Nr)
-    AICtr = zeros(TF, num_rotors, Cb, Nr)
+    AICnr = zeros(TF, ncp_body, nnode_rotor, num_rotors)
+    AICtr = zeros(TF, ncp_body, nnode_rotor, num_rotors)
 
     # loop through rotor objects
     for (j, rp) in enumerate(rotor_source_panels)
         source_aic!(
-            view(AICnr, j, :, :),
-            view(AICtr, j, :, :),
+            view(AICnr, :, :, j),
+            view(AICtr, :, :, j),
             body_vortex_panels.controlpoint,
             body_vortex_panels.normal,
             body_vortex_panels.tangent,
@@ -670,121 +670,125 @@ function precomputed_inputs(
     # radial components
     vr_ww = v_ww[:, :, 2]
 
-    # TODO: you are here, but it seems like the rest of these are redundant and simply keeping track of indices in the wake would suffice.  Need to explore more before changing things though.
 
-    # ##### ----- Induced Velcocities on Duct Wake ----- #####
-    # # - body to duct wake - #
-    # v_dwb = influencefromdoubletpanels(
-    #     duct_wake_panels.controlpoint,
-    #     body_vortex_panels.nodes,
-    #     ones(TF, 2, body_vortex_panels.totpanel),
-    # )
+    # TODO: these are only used in the post-processing step. Is there a better way to do this by simply bookkeeping the associated wake indices?  Maybe, but this is simpler to put together for now.
+    ##### ----- Induced Velcocities on Duct Wake ----- #####
+    # - body to duct wake - #
+    v_dwb = induced_velocities_from_vortex_panels_on_points(
+        duct_wake_panels.controlpoint,
+        body_vortex_panels.node,
+        body_vortex_panels.nodemap,
+        body_vortex_panels.influence_length,
+        ones(TF, 2, body_vortex_panels.totpanel),
+    )
 
-    # # axial components
-    # vz_dwb = v_dwb[:, :, 1]
+    # - body TE to duct wake - #
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_dwb, :, :, :),
+        duct_wake_panels.controlpoint,
+        body_vortex_panels.tenode,
+        body_vortex_panels.teinfluence_length,
+        body_vortex_panels.tendotn,
+        body_vortex_panels.tencrossn,
+        body_vortex_panels.teadjnodeidxs,
+    )
 
-    # # - body TE to ductwake - #
-    # v_dwbte = influencefromTE(
-    #     duct_wake_panels.controlpoint,
-    #     body_vortex_panels.TEnodes,
-    #     ones(TF, 2, body_vortex_panels.totpanel),
-    # )
+    # axial components
+    vz_dwb = v_dwb[:, :, 1]
 
-    # # axial components
-    # vz_dwbte = v_dwbte[:, :, 1]
+    # radial components
+    vr_dwb = v_dwb[:, :, 2]
 
-    # # radial components
-    # vr_dwbte = v_dwbte[:, :, 2]
+    # - rotor to duct wake - #
+    v_dwr = [
+        induced_velocities_from_source_panels_on_points(
+            duct_wake_panels.controlpoint,
+            rotor_source_panels[j].node,
+            rotor_source_panels[j].nodemap,
+            rotor_source_panels[j].influence_length,
+            ones(TF, 2, rotor_source_panels[j].totpanel),
+        ) for j in 1:length(rotor_source_panels)
+    ]
 
-    # # radial components
-    # vr_dwb = v_dwb[:, :, 2]
+    # axial components
+    vz_dwr = [v_dwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 
-    # # - rotor to duct wake - #
-    # v_dwr = [
-    #     influencefromsourcepanels(
-    #         duct_wake_panels.controlpoint,
-    #         rotor_source_panels[j].controlpoint,
-    #         rotor_source_panels[j].len,
-    #         ones(TF, 2, rotor_source_panels[j].npanels),
-    #     ) for j in 1:length(rotor_source_panels)
-    # ]
+    # radial components
+    vr_dwr = [v_dwr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
 
-    # # axial components
-    # vz_dwr = [v_dwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
+    # - wake to duct wake - #
+    v_dww = induced_velocities_from_vortex_panels_on_points(
+        duct_wake_panels.controlpoint,
+        wake_vortex_panels.node,
+        wake_vortex_panels.nodemap,
+        wake_vortex_panels.influence_length,
+        ones(TF, 2, wake_vortex_panels.totpanel),
+    )
 
-    # # radial components
-    # vr_dwr = [v_dwr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
+    # axial components
+    vz_dww = v_dww[:, :, 1]
 
-    # # - wake to duct wake - #
-    # v_dww = influencefromvortexpanels(
-    #     duct_wake_panels.controlpoint,
-    #     wake_vortex_panels.controlpoint,
-    #     wake_vortex_panels.len,
-    #     ones(TF, 2, wake_vortex_panels.totpanel),
-    # )
+    # radial components
+    vr_dww = v_dww[:, :, 2]
 
-    # # axial components
-    # vz_dww = v_dww[:, :, 1]
+    ##### ----- Induced Velcocities on Hub Wake ----- #####
+    # - body to hub wake - #
+    v_hwb = induced_velocities_from_vortex_panels_on_points(
+        hub_wake_panels.controlpoint,
+        body_vortex_panels.node,
+        body_vortex_panels.nodemap,
+        body_vortex_panels.influence_length,
+        ones(TF, 2, body_vortex_panels.totpanel),
+    )
 
-    # # radial components
-    # vr_dww = v_dww[:, :, 2]
+    # - body TE to hub wake - #
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_hwb, :, :, :),
+        hub_wake_panels.controlpoint,
+        body_vortex_panels.tenode,
+        body_vortex_panels.teinfluence_length,
+        body_vortex_panels.tendotn,
+        body_vortex_panels.tencrossn,
+        body_vortex_panels.teadjnodeidxs,
+    )
 
-    # ##### ----- Induced Velcocities on Hub Wake ----- #####
-    # # - body to duct wake - #
-    # v_hwb = influencefromdoubletpanels(
-    #     hub_wake_panels.controlpoint,
-    #     body_vortex_panels.nodes,
-    #     ones(TF, 2, body_vortex_panels.totpanel),
-    # )
+    # axial components
+    vz_hwb = v_hwb[:, :, 1]
 
-    # # axial components
-    # vz_hwb = v_hwb[:, :, 1]
+    # radial components
+    vr_hwb = v_hwb[:, :, 2]
 
-    # # radial components
-    # vr_hwb = v_hwb[:, :, 2]
+    # - rotor to hub wake - #
+    v_hwr = [
+        induced_velocities_from_source_panels_on_points(
+            hub_wake_panels.controlpoint,
+            rotor_source_panels[j].node,
+            rotor_source_panels[j].nodemap,
+            rotor_source_panels[j].influence_length,
+            ones(TF, 2, rotor_source_panels[j].totpanel),
+        ) for j in 1:length(rotor_source_panels)
+    ]
 
-    # # - body TE to hubwake - #
-    # v_hwbte = influencefromTE(
-    #     hub_wake_panels.controlpoint,
-    #     body_vortex_panels.TEnodes,
-    #     ones(TF, 2, body_vortex_panels.totpanel),
-    # )
+    # axial components
+    vz_hwr = [v_hwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
 
-    # # axial components
-    # vz_hwbte = v_hwbte[:, :, 1]
+    # radial components
+    vr_hwr = [v_hwr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
 
-    # # radial components
-    # vr_hwbte = v_hwbte[:, :, 2]
+    # - wake to hub wake - #
+    v_hww = induced_velocities_from_vortex_panels_on_points(
+        hub_wake_panels.controlpoint,
+        wake_vortex_panels.node,
+        wake_vortex_panels.nodemap,
+        wake_vortex_panels.influence_length,
+        ones(TF, 2, wake_vortex_panels.totpanel),
+    )
 
-    # # - rotor to duct wake - #
-    # v_hwr = [
-    #     influencefromsourcepanels(
-    #         hub_wake_panels.controlpoint,
-    #         rotor_source_panels[j].controlpoint,
-    #         rotor_source_panels[j].len,
-    #         ones(TF, 2, rotor_source_panels[j].npanels),
-    #     ) for j in 1:length(rotor_source_panels)
-    # ]
+    # axial components
+    vz_hww = v_hww[:, :, 1]
 
-    # # axial components
-    # vz_hwr = [v_hwr[j][:, :, 1] for j in 1:length(rotor_source_panels)]
-
-    # # radial components
-    # vr_hwr = [v_hwr[j][:, :, 2] for j in 1:length(rotor_source_panels)]
-
-    # # - wake to duct wake - #
-    # v_hww = influencefromvortexpanels(
-    #     hub_wake_panels.controlpoint,
-    #     wake_vortex_panels.controlpoint,
-    #     wake_vortex_panels.len,
-    #     ones(TF, 2, wake_vortex_panels.totpanel),
-    # )
-
-    # # axial components
-    # vz_hww = v_hww[:, :, 1]
-
-    # # radial components
-    # vr_hww = v_hww[:, :, 2]
+    # radial components
+    vr_hww = v_hww[:, :, 2]
 
     #---------------------------------#
     #     Misc Values for Indexing    #
@@ -850,12 +854,12 @@ function precomputed_inputs(
         v_wb, # body to wake
         v_wr, # rotor to wake
         v_ww, # wake to wake
-        # v_dwb, # body to duct wake
-        # v_dwr, # rotor to duct wake
-        # v_dww, # wake to duct wake
-        # v_hwb, # body to hub wake
-        # v_hwr, # rotor to hub wake
-        # v_hww, # wake to hub wake
+        v_dwb, # body to duct wake
+        v_dwr, # rotor to duct wake
+        v_dww, # wake to duct wake
+        v_hwb, # body to hub wake
+        v_hwr, # rotor to hub wake
+        v_hww, # wake to hub wake
         # TODO: are both the separated out and full versions needed?  why not just one or the other?
         vz_rb, # body to rotor (x-direction)
         vr_rb, # body to rotor (r-direction)
@@ -869,18 +873,18 @@ function precomputed_inputs(
         vr_wr, # rotor to wake ( r-direction)
         vz_ww, # wake to wake (x-direction)
         vr_ww, # wake to wake ( r-direction)
-        # vz_dwb, # body to duct wake (x-direction)
-        # vr_dwb, # body to duct wake ( r-direction)
-        # vz_dwr, # rotor to duct wake (x-direction)
-        # vr_dwr, # rotor to duct wake ( r-direction)
-        # vz_dww, # wake to duct wake (x-direction)
-        # vr_dww, # wake to duct wake ( r-direction)
-        # vz_hwb, # body to hub wake (x-direction)
-        # vr_hwb, # body to hub wake ( r-direction)
-        # vz_hwr, # rotor to hub wake (x-direction)
-        # vr_hwr, # rotor to hub wake ( r-direction)
-        # vz_hww, # wake to hub wake (x-direction)
-        # vr_hww, # wake to hub wake ( r-direction)
+        vz_dwb, # body to duct wake (x-direction)
+        vr_dwb, # body to duct wake ( r-direction)
+        vz_dwr, # rotor to duct wake (x-direction)
+        vr_dwr, # rotor to duct wake ( r-direction)
+        vz_dww, # wake to duct wake (x-direction)
+        vr_dww, # wake to duct wake ( r-direction)
+        vz_hwb, # body to hub wake (x-direction)
+        vr_hwb, # body to hub wake ( r-direction)
+        vz_hwr, # rotor to hub wake (x-direction)
+        vr_hwr, # rotor to hub wake ( r-direction)
+        vz_hww, # wake to hub wake (x-direction)
+        vr_hww, # wake to hub wake ( r-direction)
         # operating conditions
         Vinf=freestream.Vinf, # freestream parameters
         # - Debugging/Plotting

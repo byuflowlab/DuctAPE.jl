@@ -28,11 +28,13 @@ include("induced_velocities.jl")
 include("influence_coefficients.jl")
 include("linear_system_assembly.jl")
 include("pre_processing_tests.jl")
+
 include("relaxation_tests.jl")
+
+include("post_processing_tests.jl")
 
 # - add back in after body is validated and need to get rotor/wake working again.
 # include("blade_element_aero_lookups.jl")
-# include("post_processing_tests.jl")
 
 # - Not necessary for now - #
 # include("test_cascade_functions.jl")

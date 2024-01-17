@@ -63,25 +63,25 @@ function split_bodies(vec, body_panels; duct=true, hub=true)
         return TF[], TF[], vec, TF[], TF[], body_panels.controlpoint[:, 1]
     else
         # split duct into inner and outer
-        ndpan = body_panels.endpointidxs[1, 2]
+        ndpan = body_panels.endpanelidxs[2, 1]
         # get duct leading edge index. assumes duct comes first in vector
-        _, leidx = findmin(body_panels.controlpoint[1:ndpan, 1])
+        _, leidx = findmin(body_panels.controlpoint[1, 1:ndpan])
         if !hub
             #duct only
             return vec[1:leidx, :],
             vec[(leidx + 1):ndpan, :],
             TF[],
-            body_panels.controlpoint[1:leidx, 1],
-            body_panels.controlpoint[(leidx + 1):ndpan, 1],
+            body_panels.controlpoint[1, 1:leidx],
+            body_panels.controlpoint[1, (leidx + 1):ndpan],
             TF[]
         else
             #duct and hub
             return vec[1:leidx, :],
             vec[(leidx + 1):ndpan, :],
             vec[(ndpan + 1):end, :],
-            body_panels.controlpoint[1:leidx, 1],
-            body_panels.controlpoint[(leidx + 1):ndpan, 1],
-            body_panels.controlpoint[(ndpan + 1):end, 1]
+            body_panels.controlpoint[1, 1:leidx],
+            body_panels.controlpoint[1, (leidx + 1):ndpan],
+            body_panels.controlpoint[1, (ndpan + 1):end]
         end
     end
 
