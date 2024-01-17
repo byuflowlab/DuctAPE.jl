@@ -1,4 +1,5 @@
-# Thrust Tests
+println("POST PROCESSING TESTS")
+
 @testset "Post-Processing" begin
 
     #---------------------------------#
@@ -21,7 +22,9 @@
     rotor_panel_length = dfdc_thrust_inviscid[:, 3]
     dfdc_tinv_dist = dfdc_thrust_inviscid[:, 4]
 
-    tinv, tinv_dist = dt.inviscid_rotor_trust(Wtheta, Gamma_tilde, rotor_panel_length, rhoinf)
+    tinv, tinv_dist = dt.inviscid_rotor_trust(
+        Wtheta, Gamma_tilde, rotor_panel_length, rhoinf
+    )
 
     @test all(isapprox.(dfdc_tinv_dist, tinv_dist; atol=1e-6))
 
@@ -101,12 +104,10 @@
     panel_length = dfdc_duct_thrust[:, 5]
     panel_radial_position = dfdc_duct_thrust[:, 6]
     dfdc_d_thrust = -0.5 * rhoinf * Vref^2 * dfdc_duct_thrust[end, 7]
+    controlpoint = zeros(2, length(panel_radial_position))
+    controlpoint[2, :] = panel_radial_position
 
-    ductpanel = (;
-        normal=xnormal,
-        len=panel_length,
-        controlpoint=[zeros(length(panel_radial_position)) panel_radial_position],
-    )
+    ductpanel = (; normal=xnormal' .* 1.0, influence_length=panel_length, controlpoint)
 
     duct_thrust, _ = dt.forces_from_pressure(
         cpleft .- cpright, ductpanel; rhoinf=rhoinf, Vref=Vref
@@ -121,14 +122,14 @@
     panel_length = dfdc_hub_thrust[:, 5]
     panel_radial_position = dfdc_hub_thrust[:, 6]
     dfdc_h_thrust = -0.5 * rhoinf * Vref^2 * dfdc_hub_thrust[end, 7]
+    controlpoint = zeros(2, length(panel_radial_position))
+    controlpoint[2, :] = panel_radial_position
 
-    hubpanel = (;
-        normal=xnormal,
-        len=panel_length,
-        controlpoint=[zeros(length(panel_radial_position)) panel_radial_position],
+    hubpanel = (; normal=xnormal' .* 1.0, influence_length=panel_length, controlpoint)
+
+    hub_thrust, _ = dt.forces_from_pressure(
+        cpleft .- cpright, hubpanel; rhoinf=rhoinf, Vref=Vref
     )
-
-    hub_thrust, _ = dt.forces_from_pressure(cpleft.-cpright, hubpanel; rhoinf=rhoinf, Vref=Vref)
 
     @test isapprox(-hub_thrust, dfdc_h_thrust; atol=1e-4)
 

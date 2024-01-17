@@ -422,7 +422,7 @@ end
     @test size(inputs.vz_rb[1]) == (2, nnode)
     @test size(inputs.vr_rb) == (2,)
     @test size(inputs.vr_rb[1]) == (2, nnode)
-    @test size(inputs.A_br) == (nrotor, npan, nrnode[1])
+    @test size(inputs.A_br) == (npan, nrnode[1], nrotor)
     @test size(inputs.vz_rr) == (2, 2)
     @test size(inputs.vz_rr[1]) == (2, nrnode[1])
     @test size(inputs.vr_rr) == (2, 2)
