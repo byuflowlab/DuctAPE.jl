@@ -1,5 +1,5 @@
  # DFDC ELEMENT INDICES:
- # elemenent, first node, last node,  first panel, last panel
+ # elemenent, first node, last node,                   first panel, last panel
  dfdc_eid = [
            1           1          62           1          61
            2          63         169          62         167
