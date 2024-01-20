@@ -13,14 +13,14 @@ out of place calculation of panel method influence coefficients (V dot nhat) for
 
 Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
 
-**Arguments:**
+# Arguments:
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
 - `nodemap::Matrix{Int}` : [1 2] node indices for each panel
 - `influence_length::Vector{Float}` : lengths of influencing panels
 
-**Returns:**
+# Returns:
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
@@ -50,7 +50,7 @@ in place calculation of panel method influence coefficients (V dot nhat) for a s
 
 Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
 
-**Arguments:**
+# Arguments:
 - `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
@@ -102,14 +102,14 @@ out of place calculation of panel method influence coefficients (V dot nhat) for
 
 Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
 
-**Arguments:**
+# Arguments:
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
 - `nodemap::Matrix{Int}` : [1 2] node indices for each panel
 - `influence_length::Vector{Float}` : lengths of influencing panels
 
-**Returns:**
+# Returns:
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
@@ -135,7 +135,7 @@ in place calculation of panel method influence coefficients (V dot nhat) for a s
 
 Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
 
-**Arguments:**
+# Arguments:
 - `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
@@ -280,14 +280,14 @@ out of place calculation of panel method influence coefficients (V dot nhat) for
 
 Used for constructing the RHS boundary conditions due to rotor source panels.
 
-**Arguments:**
+# Arguments:
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
 - `nodemap::Matrix{Int}` : [1 2] node indices for each panel
 - `influence_length::Vector{Float}` : lengths of influencing panels
 
-**Returns:**
+# Returns:
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
@@ -313,7 +313,7 @@ end
     AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
 
-**Arguments:**
+# Arguments:
 - `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
@@ -356,11 +356,11 @@ end
 out of place calculation of RHS contributions due to freestream.
 Note that the freestream is assumed to have zero radial component in the underlying theory, but here we allow an arbitrary 2D vector for velocity for taking the dot product easier.
 
-**Arguments:**
+# Arguments:
 - `normals::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `Vinfmat::Matrix{Float}` : [z r] components of freestream velocity (r's should be zero)
 
-**Returns:**
+# Returns:
 - `RHS::Vector{Float}` : vector of normal components of freestream velocity on input panels
 """
 function freestream_influence_vector(normals, Vinfmat)
@@ -378,7 +378,7 @@ end
 in place calculation of RHS contributions due to freestream.
 Note that the freestream is assumed to have zero radial component in the underlying theory, but here we allow an arbitrary 2D vector for velocity for taking the dot product easier.
 
-**Arguments:**
+# Arguments:
 - `RHS::Vector{Float}` : vector of normal components of freestream velocity on input panels
 - `normals::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `Vinfmat::Matrix{Float}` : [z r] components of freestream velocity (r's should be zero)

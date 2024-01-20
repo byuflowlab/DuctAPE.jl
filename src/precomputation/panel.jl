@@ -298,11 +298,11 @@ end
 
 Calculate the vector, \$\\mathbf{r}\$, and distance, \$|r|\$, from the node to the evaluation point
 
-**Arguments:**
+# Arguments:
  - `node::Array{Float}` : [x y] position of node
  - `point::Array{Float}` : [x y] position of point.
 
-**Returns**
+# Returns:
  - `r::Vector{Float}` : vector from node to evaluation point
  - `rmag::Float` : length of panel between node and evaluation point
 """
@@ -332,7 +332,7 @@ end
 
 Get unit normal to panel.
 
-**Arguments:**
+# Arguments:
  - `d::Vector{Float}` : vector from node1 to node2.
  - `dmag::Float` : panel length
 
@@ -353,7 +353,7 @@ end
 
 Get unit tangent to panel.
 
-**Arguments:**
+# Arguments:
  - `d::Vector{Float}` : vector from node1 to node2.
  - `dmag::Float` : panel length
 

@@ -10,7 +10,7 @@ end
 
 Calculate N cosine spaced points.
 
-**Arguments:**
+# Arguments:
  - `N::Int` : Number of points
 
 """
@@ -100,13 +100,13 @@ cross2mag(A, B) = A[1] * B[2] - A[2] * B[1]
     repanel_airfoil(x,y;N)
     repanel_airfoil(xy;N)
 Takes x and y coordinates of an airfoil  and uses a cosine spaced akima spline to fill in the gaps
-**Arguments**
+# Arguments:
 - `x::Vector{Float64}` : vector containing the x coordinates of the airfoil
 - `y::Vector{Float64}` : vector containing the y components of the airfoil
 - `xy::Array{Float64,2}` : Array of x and y coordinates with X in the first column and y in the 2nd
 **Keyword Arguements**
 - `N::Int` : Number of data points to be returned after repaneling. Will only return odd numbers, if N is even, N+1 points will be returned.
-**Returns**
+# Returns:
 - `xreturn::Vector{Float64}` : Repaneled, cosine spaced x corrdinates of the airfoil
 - `yreturn::Vector{Float64}` : y coordinates of the repaneled airfoil obtained using an akima spline
 - `xyreturn::Array{Float64}` : If the coordinates were input as an array, this will be returned with x in the 1st column and y in the 2nd.
@@ -215,11 +215,11 @@ end
 
 Split the upper and lower halves of the airfoil coordinates. Assumes odd number of coordinates (leading edge repeated).
 
-**Arguments:**
+# Arguments:
  - `x::Array{Float}` : Array of x coordinates
  - `z::Array{Float}` : Array of z coordinates
 
-**Returns:**
+# Returns:
  - `xu::Array{Float}` : Array of upper half of x coordinates
  - `xl::Array{Float}` : Array of lower half of x coordinates
  - `zu::Array{Float}` : Array of upper half of z coordinates
@@ -239,7 +239,7 @@ end
 
 Normalize airfoil to unit chord and shift leading edge to zero. Adjusts coordinates in place.
 
-**Arguments:**
+# Arguments:
  - `x::Array{Float}` : Array of x coordinates
  - `z::Array{Float}` : Array of z coordinates
 
@@ -300,12 +300,12 @@ end
 
 Linear transfrom of values from range (source_range[1], raend) to (target_range[1], target_range[end])
 
-**Arguments:**
+# Arguments:
 - `source_range::Vector{Float{` : range values come from
 - `target_range::Vector{Float}` : range onto which we are transforming
 - `source_values::Array{Float}` : array of source_values to transform
 
-**Returns:**
+# Returns:
  - `target_values::Array{Float}` : array of transformed source_values onto target range
 """
 function linear_transform(source_range, target_range, source_values)

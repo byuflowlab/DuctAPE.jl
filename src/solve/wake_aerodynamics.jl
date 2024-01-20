@@ -211,6 +211,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
     if inputs.ductwakeinterfaceid != nothing
         gamw[inputs.ductwakeinterfaceid] .= 0.0
 
+        #TODO: get this updated
         # gamw[end, 1:(inputs.ductTE_index)] = range(
         #     0.0, gamw[end, inputs.ductTE_index]; length=inputs.ductTE_index
         # )

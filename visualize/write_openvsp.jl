@@ -35,7 +35,7 @@ end
 
 Write an OpenVSP .bem file for visualizing rotor geometry.
 
-**Keyword Arguments:**
+# Keyword Arguments:
 ## File Info
 - `savepath::String` : save path
 - `filename::String` : file name, will allways be appended by ".bem"

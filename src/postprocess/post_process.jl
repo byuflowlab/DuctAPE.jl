@@ -4,16 +4,163 @@ Various Post-processing functions
 
 =#
 
+"""
+
+Post-processes the converged rotor and wake strengths and outputs various performance metrics.
+
+# Arguments:
+- `Gamr::Matrix{Float}` :
+- `sigr::Matrix{Float}` :
+- `gamw::vector{Float}` :
+- `inputs::NamedTuple` :
+
+# Keyword Arguments:
+- `write_outputs::Bool=false` :
+- `outfile::String="dfdc_data.jl"` :
+- `checkoutfileexists::Bool=false` :
+- `tuple_name::String="ductape_data"` :
+
+# Returns:
+- `outputs::NamedTuple` : Named tuple of output values including:
+  - `Gamr::Matrix{Float}` : Circulation strengths.
+  - `gamw::Vector{Float}` : Wake panel node strengths.
+  - `sigr::Matrix{Float}` : Rotor source panel node strengths.
+  - `gamb::Vector{Float}` : Body panel node strengths.
+  - `intermediate_values::NamedTuple` : Values used in intermediate calculations.
+  - `reference_values::NamedTuple` : Reference Values.
+  - `bodies::NamedTuple` : Outputs associated with the duct and center body.
+  - `body_wakes::NamedTuple` : Outputs associated with the duct and centerbody wakes.
+  - `rotors::NamedTuple` : Outputs associated with the rotors.
+  - `totals::NamedTuple` : Outputs associated with the system as a whole.
+
+See extended help for details of what the inputs and outputs objects contain.
+
+# Extended help
+
+### Input Details:
+
+  - **`inputs`**
+
+### Output Details:
+
+  - **`intermediate_values`**
+      - `vz_rotor::Matrix{Float}` :
+      - `vr_rotor::Matrix{Float}` :
+      - `vtheta_rotor::Matrix{Float}` :
+      - `Wz_rotor::Matrix{Float}` :
+      - `Wtheta_rotor::Matrix{Float}` :
+      - `Wm_rotor::Matrix{Float}` :
+      - `Wmag_rotor::Matrix{Float}` :
+      - `vz_rotor_b::Matrix{Float}` :
+      - `vr_rotor_b::Matrix{Float}` :
+      - `vz_rotor_w::Matrix{Float}` :
+      - `vr_rotor_w::Matrix{Float}` :
+      - `vz_rotor_r::Matrix{Float}` :
+      - `vr_rotor_r::Matrix{Float}` :
+      - `vz_wake::Matrix{Float}` :
+      - `vr_wake::Matrix{Float}` :
+      - `Wz_wake::Matrix{Float}` :
+      - `Wm_wake::Matrix{Float}` :
+      - `vz_wake_b::Matrix{Float}` :
+      - `vr_wake_b::Matrix{Float}` :
+      - `vz_wake_w::Matrix{Float}` :
+      - `vr_wake_w::Matrix{Float}` :
+      - `vz_wake_r::Matrix{Float}` :
+      - `vr_wake_r::Matrix{Float}` :
+      - `Gamma_tilde::Matrix{Float}` :
+      - `H_tilde::Matrix{Float}` :
+      - `phi::Matrix{Float}` :
+      - `alpha::Matrix{Float}` :
+      - `cl::Matrix{Float}` :
+      - `cd::Matrix{Float}` :
+  - **`reference_values`**
+    - `Vinf::Float` :
+    - `Vref::Float` :
+    - `Rref::Float` :
+    - `rhoinf::Float` :
+    - `muinf::Float` :
+    - `asound::Float` :
+    - `Omega::Float` :
+    - `B::Float` :
+  - **`bodies`**
+    - `thrust::Float` :
+    - `cp_casing::Vector{Float}` :
+    - `zpts_casing::Vector{Float}` :
+    - `cp_nacelle::Vector{Float}` :
+    - `zpts_nacelle::Vector{Float}` :
+    - `cp_centerbody::Vector{Float}` :
+    - `zpts_centerbody::Vector{Float}` :
+    - `Vtan::Vector{Float}` :
+    - `vtan_casing::Vector{Float}` :
+    - `vtan_nacelle::Vector{Float}` :
+    - `vtan_centerbody::Vector{Float}` :
+    - `vtan_vinf::Vector{Float}` :
+    - `vtan_body::Vector{Float}` :
+    - `vtan_casing_b::Vector{Float}` :
+    - `vtan_nacelle_b::Vector{Float}` :
+    - `vtan_centerbody_b::Vector{Float}` :
+    - `vtan_wake::Vector{Float}` :
+    - `vtan_casing_w::Vector{Float}` :
+    - `vtan_nacelle_w::Vector{Float}` :
+    - `vtan_centerbody_w::Vector{Float}` :
+    - `vtan_rotors::Vector{Float}` :
+    - `vtan_casing_r::Vector{Float}` :
+    - `vtan_nacelle_r::Vector{Float}` :
+    - `vtan_centerbody_r::Vector{Float}` :
+  - **`body_wakes`**
+    - `vtan_ductwake::Vector{Float}` :
+    - `cp_ductwake::Vector{Float}` :
+    - `zpts_ductwake::Vector{Float}` :
+    - `vtan_hubwake::Vector{Float}` :
+    - `cp_hubwake::Vector{Float}` :
+    - `zpts_hubwake::Vector{Float}` :
+  - **`rotors`**
+    - `efficiency::Vector{Float}` :
+    - `inviscid_thrust::Vector{Float}` :
+    - `inviscid_thrust_dist::Matrix{Float}` :
+    - `viscous_thrust::Vector{Float}` :
+    - `viscous_thrust_dist::Matrix{Float}` :
+    - `thrust::Vector{Float}` :
+    - `CT::Vector{Float}` :
+    - `inviscid_torque::Vector{Float}` :
+    - `inviscid_torque_dist::Matrix{Float}` :
+    - `viscous_torque::Vector{Float}` :
+    - `viscous_torque_dist::Matrix{Float}` :
+    - `torque::Vector{Float}` :
+    - `CQ::Vector{Float}` :
+    - `inviscid_power::Vector{Float}` :
+    - `inviscid_power_dist::Matrix{Float}` :
+    - `viscous_power::Vector{Float}` :
+    - `viscous_power_dist::Matrix{Float}` :
+    - `power::Vector{Float}` :
+    - `CP::Vector{Float}` :
+    - `cl::Matrix{Float}` :
+    - `cd::Matrix{Float}` :
+    - `alpha::Matrix{Float}` :
+    - `phi::Matrix{Float}` :
+    - `blade_normal_force_per_unit_span::Matrix{Float}` :
+    - `blade_tangential_force_per_unit_span::Matrix{Float}` :
+  - **`totals`**
+    - `thrust::Float` :
+    - `torque::Float` :
+    - `power::Float` :
+    - `CT::Float` :
+    - `CQ::Float` :
+    - `CP::Float` :
+    - `total_efficiency::Float` :
+    - `induced_efficiency::Float` :
+    - `ideal_efficiency::Float` :
+"""
 function post_process(
-        Gamr,
-        sigr,
-        gamw,
-        inputs;
-        write_outputs=false,
-        outfile="dfdc_data.jl",
-        checkoutfileexists=false,
-        tuple_name="ductape_data",
-    )
+    Gamr,
+    sigr,
+    gamw,
+    inputs;
+    write_outputs=false,
+    outfile="dfdc_data.jl",
+    checkoutfileexists=false,
+    tuple_name="ductape_data",
+)
 
     # - things contained in iv tuple
     # vz_rotor,
@@ -24,11 +171,11 @@ function post_process(
     # Wm_rotor,
     # Wmag_rotor,
     # vzfrombody,
-    # vrb_rotor,
-    # vzw_rotor,
-    # vrw_rotor,
-    # vzr_rotor,
-    # vrr_rotor,
+    # vr_rotor_b,
+    # vz_rotor_w,
+    # vr_rotor_w,
+    # vz_rotor_r,
+    # vr_rotor_r,
     # Gamma_tilde,
     # H_tilde,
     # phi,
@@ -65,7 +212,9 @@ function post_process(
     rpe = inputs.rotor_panel_edges
     Rhub = rpe[1, :]
     Rtip = rpe[end, :]
-    rpl = reshape(reduce(vcat, (p -> p.influence_length).(inputs.rotor_source_panels)), (nr, nrotor))
+    rpl = reshape(
+        reduce(vcat, (p -> p.influence_length).(inputs.rotor_source_panels)), (nr, nrotor)
+    )
 
     ref = (; Vinf, Vref, Rref, rhoinf, muinf, asound, Omega, B)
 
@@ -147,7 +296,7 @@ function post_process(
     ) = vtan_tuple
 
     ## -- Pressure on Bodies -- ##
-    body_cp, casing_cp, nacelle_cp, centerbody_cp, body_x, casing_x, nacelle_x, centerbody_x = get_body_cps(
+    _, cp_casing, cp_nacelle, cp_centerbody, _, zpts_casing, zpts_nacelle, zpts_centerbody = get_body_cps(
         Vtan,
         Gamr,
         sigr,
@@ -163,7 +312,7 @@ function post_process(
     )
 
     ## -- Pressure on Body Wakes -- ##
-    ductwake_cp, ductwake_vtan = get_bodywake_cps(
+    cp_ductwake, vtan_ductwake = get_bodywake_cps(
         Gamr,
         inputs.vz_dww,
         inputs.vr_dww,
@@ -173,7 +322,7 @@ function post_process(
         sigr,
         inputs.vz_dwb,
         inputs.vr_dwb,
-        inputs.gamb[1:inputs.body_vortex_panels.totnode],
+        inputs.gamb[1:(inputs.body_vortex_panels.totnode)],
         inputs.duct_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -183,7 +332,7 @@ function post_process(
         body="duct",
     )
 
-    hubwake_cp, hubwake_vtan = get_bodywake_cps(
+    cp_hubwake, vtan_hubwake = get_bodywake_cps(
         Gamr,
         inputs.vz_hww,
         inputs.vr_hww,
@@ -193,7 +342,7 @@ function post_process(
         sigr,
         inputs.vz_hwb,
         inputs.vr_hwb,
-        inputs.gamb[1:inputs.body_vortex_panels.totnode],
+        inputs.gamb[1:(inputs.body_vortex_panels.totnode)],
         inputs.hub_wake_panels,
         iv.Wm_rotor,
         Omega,
@@ -205,7 +354,7 @@ function post_process(
 
     ## -- Duct Outputs -- ##
     # - Put duct pressures together - #
-    duct_cp = [casing_cp; nacelle_cp]
+    duct_cp = [cp_casing; cp_nacelle]
 
     # - Calculate Thrust from Bodies - #
 
@@ -247,106 +396,114 @@ function post_process(
     )
 
     # - Thrust and Torque Coefficients - #
-    CT, CQ, CP = tqpcoeff(total_thrust, total_torque, rhoinf, Omega, Rref)
+    rotor_CT, rotor_CQ, rotor_CP = tqpcoeff(rotor_thrust, rotor_torque, rhoinf, Omega, Rref)
+    total_CT, total_CQ, total_CP = tqpcoeff(total_thrust, total_torque, rhoinf, Omega, Rref)
 
     ## -- Assemble Output Tuple -- ##
 
     #TODO: standardize the output naming conventions
     outs = (;
-        # - Intermediate Values - #
-        intermediate_values=iv,
-        # - Reference Values - #
-        reference_values=ref,
         # - States - #
         Gamr,
         gamw,
         sigr,
         gamb=inputs.gamb,
+        # - Intermediate Values - #
+        intermediate_values=iv,
+        # - Reference Values - #
+        reference_values=ref,
         # - Body Values - #
-        # body thrust
-        body_thrust,
-        # surface pressures
-        casing_cp,
-        casing_x,
-        nacelle_cp,
-        nacelle_x,
-        centerbody_cp,
-        centerbody_x,
-        #individual body velocity contributions
-        Vtan,
-        vtan_casing,
-        vtan_nacelle,
-        vtan_centerbody,
-        vtan_vinf,
-        vtan_body,
-        vtan_casing_b,
-        vtan_nacelle_b,
-        vtan_centerbody_b,
-        vtan_wake,
-        vtan_casing_w,
-        vtan_nacelle_w,
-        vtan_centerbody_w,
-        vtan_rotors,
-        vtan_casing_r,
-        vtan_nacelle_r,
-        vtan_centerbody_r,
+        bodies=(;
+            # body thrust
+            thrust=body_thrust,
+            # surface pressures
+            cp_casing,
+            zpts_casing,
+            cp_nacelle,
+            zpts_nacelle,
+            cp_centerbody,
+            zpts_centerbody,
+            #individual body velocity contributions
+            Vtan,
+            vtan_casing,
+            vtan_nacelle,
+            vtan_centerbody,
+            vtan_vinf,
+            vtan_body,
+            vtan_casing_b,
+            vtan_nacelle_b,
+            vtan_centerbody_b,
+            vtan_wake,
+            vtan_casing_w,
+            vtan_nacelle_w,
+            vtan_centerbody_w,
+            vtan_rotors,
+            vtan_casing_r,
+            vtan_nacelle_r,
+            vtan_centerbody_r,
+        ),
         # - Body Wake Values - #
-        # surface velocities and pressures
-        ductwake_vtan,
-        ductwake_cp,
-        ductwake_x=inputs.duct_wake_panels.controlpoint[1,:],
-        hubwake_vtan,
-        hubwake_cp,
-        hubwake_x=inputs.hub_wake_panels.controlpoint[1, :],
+        body_wakes=(;
+            # surface velocities and pressures
+            vtan_ductwake,
+            cp_ductwake,
+            zpts_ductwake=inputs.duct_wake_panels.controlpoint[1, :],
+            vtan_hubwake,
+            cp_hubwake,
+            zpts_hubwake=inputs.hub_wake_panels.controlpoint[1, :],
+        ),
         # - Rotor Values - #
-        rotor_efficiency,
-        rotor_inviscid_thrust,
-        rotor_inviscid_thrust_dist,
-        rotor_viscous_thrust,
-        rotor_viscous_thrust_dist,
-        rotor_thrust,
-        CT,
-        # rotor torque
-        rotor_inviscid_torque,
-        rotor_inviscid_torque_dist,
-        rotor_viscous_torque,
-        rotor_viscous_torque_dist,
-        rotor_torque,
-        CQ,
-        # rotor power
-        rotor_inviscid_power,
-        rotor_inviscid_power_dist,
-        rotor_viscous_power,
-        rotor_viscous_power_dist,
-        rotor_power,
-        CP,
-        # - Blade Element Values - #
-        iv.cl,
-        iv.cd,
-        iv.alpha,
-        iv.phi,
-        blade_normal_force_per_unit_span,
-        blade_tangential_force_per_unit_span,
+        rotors=(;
+            efficiency=rotor_efficiency,
+            inviscid_thrust=rotor_inviscid_thrust,
+            inviscid_thrust_dist=rotor_inviscid_thrust_dist,
+            viscous_thrust=rotor_viscous_thrust,
+            viscous_thrust_dist=rotor_viscous_thrust_dist,
+            thrust=rotor_thrust,
+            CT = rotor_CT,
+            # rotor torque
+            inviscid_torque=rotor_inviscid_torque,
+            inviscid_torque_dist=rotor_inviscid_torque_dist,
+            viscous_torque=rotor_viscous_torque,
+            viscous_torque_dist=rotor_viscous_torque_dist,
+            torque=rotor_torque,
+            CQ = rotor_CQ,
+            # rotor power
+            inviscid_power=rotor_inviscid_power,
+            inviscid_power_dist=rotor_inviscid_power_dist,
+            viscous_power=rotor_viscous_power,
+            viscous_power_dist=rotor_viscous_power_dist,
+            power=rotor_power,
+            CP = rotor_CP,
+            # - Blade Element Values - #
+            cl=iv.cl,
+            cd=iv.cd,
+            alpha=iv.alpha,
+            phi=iv.phi,
+            blade_normal_force_per_unit_span,
+            blade_tangential_force_per_unit_span,
+        ),
         # - Total Values - #
-        total_thrust,
-        total_torque,
-        total_power,
-        total_efficiency=total_efficiency[1],
-        induced_efficiency,
-        ideal_efficiency,
+        totals=(;
+            thrust=total_thrust,
+            torque=total_torque,
+            power=total_power,
+            CT=total_CT[1],
+            CQ=total_CQ[1],
+            CP=total_CP[1],
+            total_efficiency=total_efficiency[1],
+            induced_efficiency,
+            ideal_efficiency,
+        ),
     )
 
     if write_outputs
         write_data(
-            outs,
-            outfile;
-            tuple_name=tuple_name,
-            checkoutfileexists=checkoutfileexists
+            outs, outfile; tuple_name=tuple_name, checkoutfileexists=checkoutfileexists
         )
     end
 
     return outs
-
 end
 
 ######################################################################
@@ -820,7 +977,7 @@ end
 function get_total_efficiency(total_thrust, total_power, Vinf)
     eta = zeros(eltype(total_thrust), length(total_thrust))
     for i in 1:length(total_thrust)
-        if Vinf == 0.0 || total_power[i] <= 0.0 || total_thrust[i] <= 0.0
+        if Vinf <= 0.0 || total_power[i] <= 0.0 || total_thrust[i] <= 0.0
             #do nothing
         else
             eta[i] = total_thrust[i] * Vinf / total_power[i]
@@ -830,7 +987,7 @@ function get_total_efficiency(total_thrust, total_power, Vinf)
 end
 
 function get_induced_efficiency(Tinv, Tduct, Pinv, Vinf)
-    if Vinf == 0.0 || Pinv == 0.0
+    if Vinf <= 0.0 || Pinv <= 0.0
         return 0.0
     else
         return Vinf * (Tinv .+ Tduct) ./ Pinv
@@ -863,10 +1020,10 @@ function tqpcoeff(thrust, torque, rhoinf, Omega, Rref)
             n = o / (2.0 * pi)
 
             # thrust coefficient
-            CT[i] = thrust / (rhoinf * n^2 * D^4)
+            CT[i] = thrust[i] / (rhoinf * n^2 * D^4)
 
             # torque coefficient
-            CQ[i] = torque / (rhoinf * n^2 * D^5)
+            CQ[i] = torque[i] / (rhoinf * n^2 * D^5)
 
             # power coefficient
             CP[i] = CQ[i] * o
@@ -1014,10 +1171,10 @@ function get_intermediate_values(Gamr, sigr, gamw, inputs)
         sigr,
         inputs.A_br,
         inputs.RHS;
-        debug=false,
+        post=false,
     )
 
-    vz_rotor, vr_rotor, vtheta_rotor, vzb_rotor, vrb_rotor, vzw_rotor, vrw_rotor, vzr_rotor, vrr_rotor = calculate_induced_velocities_on_rotors(
+    vz_rotor, vr_rotor, vtheta_rotor, vz_rotor_b, vr_rotor_b, vz_rotor_w, vr_rotor_w, vz_rotor_r, vr_rotor_r = calculate_induced_velocities_on_rotors(
         blade_elements,
         Gamr,
         inputs.vz_rw,
@@ -1050,7 +1207,7 @@ function get_intermediate_values(Gamr, sigr, gamw, inputs)
         verbose=false,
     )
 
-    vz_wake, vr_wake, vzb_wake, vrb_wake, vzr_wake, vrr_wake, vzw_wake, vrw_wake = calculate_induced_velocities_on_wakes(
+    vz_wake, vr_wake, vz_wake_b, vr_wake_b, vz_wake_r, vr_wake_r, vz_wake_w, vr_wake_w = calculate_induced_velocities_on_wakes(
         inputs.vz_ww,
         inputs.vr_ww,
         gamw,
@@ -1075,24 +1232,24 @@ function get_intermediate_values(Gamr, sigr, gamw, inputs)
         Wm_rotor,
         Wmag_rotor,
         # raw induced velocities on rotor
-        vzb_rotor,
-        vrb_rotor,
-        vzw_rotor,
-        vrw_rotor,
-        vzr_rotor,
-        vrr_rotor,
+        vz_rotor_b,
+        vr_rotor_b,
+        vz_rotor_w,
+        vr_rotor_w,
+        vz_rotor_r,
+        vr_rotor_r,
         # velocities at wake
         vz_wake,
         vr_wake,
         Wz_wake,
         Wm_wake,
         # raw induced velocities on wake
-        vzb_wake,
-        vrb_wake,
-        vzw_wake,
-        vrw_wake,
-        vzr_wake,
-        vrr_wake,
+        vz_wake_b,
+        vr_wake_b,
+        vz_wake_w,
+        vr_wake_w,
+        vz_wake_r,
+        vr_wake_r,
         # tilde jumps on blades
         Gamma_tilde,
         H_tilde,

@@ -8,7 +8,8 @@ An adaptation of CCBlade that allows additional airfoil types suitable for casca
 
 module C4Blade
 
-using FLOWMath: FLOWMath
+using FLOWMath
+const fm = FLOWMath
 using ImplicitAD
 
 # export Rotor, Section, OperatingPoint, Outputs
@@ -28,7 +29,7 @@ include("airfoil_corrections.jl") # various airfoil to cascade corrections
 
 Parameters defining the rotor (apply to all sections).
 
-**Arguments**
+# Arguments:
 - `Rhub::Float64`: hub radius (along blade length)
 - `Rtip::Float64`: tip radius (along blade length)
 - `B::Int64`: number of blades
@@ -79,7 +80,7 @@ end
 
 Define sectional properties for one station along rotor
 
-**Arguments**
+# Arguments:
 - `r::Float64`: radial location along blade
 - `chord::Float64`: corresponding local chord length
 - `theta::Float64`: corresponding twist angle (radians)
@@ -111,7 +112,7 @@ The x direction is the axial direction, and y direction is the tangential direct
 See Documentation for more detail on coordinate systems.
 `Vx` and `Vy` vary radially at same locations as `r` in the rotor definition.
 
-**Arguments**
+# Arguments:
 - `Vx::Float64`: velocity in x-direction along blade
 - `Vy::Float64`: velocity in y-direction along blade
 - `pitch::Float64`: pitch angle (radians)
@@ -148,7 +149,7 @@ end
 
 Outputs from the BEM solver along the radius.
 
-**Arguments**
+# Arguments:
 - `Np::Float64`: normal force per unit length
 - `Tp::Float64`: tangential force per unit length
 - `a::Float64`: axial induction factor
@@ -410,12 +411,12 @@ end
 
 Solve the BEM equations for given rotor geometry and operating point.
 
-**Arguments**
+# Arguments:
 - `rotor::Rotor`: rotor properties
 - `section::Section`: section properties
 - `op::OperatingPoint`: operating point
 
-**Returns**
+# Returns:
 - `outputs::Outputs`: BEM output data including loads, induction factors, etc.
 """
 function solve(rotor, section, op)
@@ -566,7 +567,7 @@ end
 
 Uniform inflow through rotor.  Returns an OperatingPoint object.
 
-**Arguments**
+# Arguments:
 - `Vinf::Float`: freestream speed (m/s)
 - `Omega::Float`: rotation speed (rad/s)
 - `r::Float`: radial location where inflow is computed (m)
@@ -599,7 +600,7 @@ end
 Compute relative wind velocity components along blade accounting for inflow conditions
 and orientation of turbine.  See Documentation for angle definitions.
 
-**Arguments**
+# Arguments:
 - `Vhub::Float64`: freestream speed at hub (m/s)
 - `Omega::Float64`: rotation speed (rad/s)
 - `pitch::Float64`: pitch angle (rad)
@@ -675,12 +676,12 @@ end
 integrate the thrust/torque across the blade,
 including 0 loads at hub/tip, using a trapezoidal rule.
 
-**Arguments**
+# Arguments:
 - `rotor::Rotor`: rotor object
 - `sections::Vector{Section}`: rotor object
 - `outputs::Vector{Outputs}`: output data along blade
 
-**Returns**
+# Returns:
 - `T::Float64`: thrust (along x-dir see Documentation).
 - `Q::Float64`: torque (along x-dir see Documentation).
 """
@@ -728,7 +729,7 @@ end
 
 Nondimensionalize the outputs.
 
-**Arguments**
+# Arguments:
 - `T::Float64`: thrust (N)
 - `Q::Float64`: torque (N-m)
 - `Vhub::Float64`: hub speed used in turbine normalization (m/s)
@@ -737,7 +738,7 @@ Nondimensionalize the outputs.
 - `rotor::Rotor`: rotor object
 - `rotortype::String`: normalization type
 
-**Returns**
+# Returns:
 
 `if rotortype == "windturbine"`
 - `CP::Float64`: power coefficient

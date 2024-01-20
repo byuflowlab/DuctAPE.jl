@@ -5,14 +5,14 @@ Utility functions for post-processing
 """
     write_data(outs, filename; checkoutfileexists=false)
 
-Writes NTuples, specifically for writing out the output of the `post_procces()` function.
+Writes NamedTuples, specifically for writing out the output of the `post_procces()` function.
 
-**Arguments:**
-- `outs::NTuple` : Named tuple to write to file.
+# Arguments:
+- `outs::NamedTuple` : Named tuple to write to file.
 - `filename::String` : file name (including full desired path and file type) for file to write
 
-**Keyword Arguments:**
-- `tuple_name::String` : desired variable name of written NTuple
+# Keyword Arguments:
+- `tuple_name::String` : desired variable name of written NamedTuple
 - `checkoutfileexists::Bool=false` : boolean for whether to check if the outfile already exists and whether or not to overwrite it.
 
 """

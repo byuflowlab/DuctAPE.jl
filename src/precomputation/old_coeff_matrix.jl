@@ -5,17 +5,17 @@
 
 Function similar to FLOWFoil assemble coefficient functions, but only for one-way effects.
 
-**Arguments:**
+# Arguments:
 - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 - `influence_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects doing the influencing
 - `affect_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects being affected
 
 Multiple Dispatch allows for single panel objects as one or both inputs as well if there is only one body influencing and/or being affected.
 
-**Keyword Arguments:**
+# Keyword Arguments:
 - `singularity::String` : selects "vortex" or "source" as the singularity for which to calculate the x values.  vortex is default.
 
-**Returns:**
+# Returns:
 - `vxdmat::Matrix{Float}` : v_x_ij * d_j for all i, j
 - `vrdmat::Matrix{Float}` : v_r_ij * d_j for all i, j
 """
@@ -189,14 +189,14 @@ end
 
 Function simiar to FLOWFoil's calculate_ring_vortex_influence function, but specifically for geometry not located on the body; used in one-way coefficient calculations.
 
-**Arguments:**
+# Arguments:
 - `paneli::FLOWFoil.AxiSymPanel` : the ith panel (the panel being influenced).
 - `panelj::FLOWFoil.AxiSymPanel` : the jth panel (the panel doing the influencing).
 - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 - `i::Int` : index for ith panel
 - `j::Int` : index for jth panel
 
-**Returns:**
+# Returns:
 - `aij::Float` : Influence of vortex ring strength at panel j onto panel i.
 """
 function calculate_ring_vortex_influence_off_body(paneli, panelj, mesh, i, j)
@@ -294,13 +294,13 @@ end
 
 Calculate x-component of velocity influence of vortex ring.
 
-**Arguments:**
+# Arguments:
 - `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
 - `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
 - `rj::Float` : r-location of the jth panel control point
 - `m::Float` : Elliptic Function parameter
 
-**Returns:**
+# Returns:
 - `vxij::Float` : x-component of velocity induced by panel j onto panel i
 """
 function get_vz_ring_vortex_off_body(x, r, rj, m)
@@ -329,13 +329,13 @@ end
 
 Calculate r-component of velocity influence of vortex ring.
 
-**Arguments:**
+# Arguments:
 - `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
 - `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
 - `rj::Float` : r-location of the jth panel control point
 - `m::Float` : Elliptic Function parameter
 
-**Returns:**
+# Returns:
 - `vrij::Float` : r-component of velocity induced by panel j onto panel i
 """
 function get_vr_ring_vortex_off_body(x, r, rj, m)
@@ -367,14 +367,14 @@ end
 
 Function simiar to FLOWFoil's calculate_ring_vortex_influence function, but specifically for geometry not located on the body; used in one-way coefficient calculations, and for sources rather than vortices.
 
-**Arguments:**
+# Arguments:
 - `paneli::FLOWFoil.AxiSymPanel` : the ith panel (the panel being influenced).
 - `panelj::FLOWFoil.AxiSymPanel` : the jth panel (the panel doing the influencing).
 - `mesh::OneWayMesh` : OneWayMesh object with relative geometry from influence to affected panels.
 - `i::Int` : index for ith panel
 - `j::Int` : index for jth panel
 
-**Returns:**
+# Returns:
 - `aij::Float` : Influence of source ring strength at panel j onto panel i.
 """
 function calculate_ring_source_influence_off_body(paneli, panelj, mesh, i, j)
@@ -432,13 +432,13 @@ end
 
 Calculate x-component of velocity influence of source ring.
 
-**Arguments:**
+# Arguments:
 - `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
 - `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
 - `rj::Float` : r-location of the jth panel control point
 - `m::Float` : Elliptic Function parameter
 
-**Returns:**
+# Returns:
 - `uij::Float` : x-component of velocity induced by panel j onto panel i
 """
 function get_vz_ring_source_off_body(x, r, rj, dj, m)
@@ -467,13 +467,13 @@ end
 
 Calculate r-component of velocity influence of source ring.
 
-**Arguments:**
+# Arguments:
 - `x::Float` : ratio of difference of ith and jth panel x-locations and jth panel r-location ( (xi-xj)/rj )
 - `r::Float` : ratio of r-locations of ith and jth panels (ri/rj)
 - `rj::Float` : r-location of the jth panel control point
 - `m::Float` : Elliptic Function parameter
 
-**Returns:**
+# Returns:
 - `vij::Float` : r-component of velocity induced by panel j onto panel i
 """
 function get_vr_ring_source_off_body(x, r, rj, m)

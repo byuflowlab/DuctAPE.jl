@@ -18,13 +18,13 @@ out of place calculation of axial and radial components of induced velocity for 
 
 Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
 
-**Arguments:**
+# Arguments:
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `node::Matrix{Float}` : [z r] coordinates of vortex rings
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 - `gamma::Vector{Float}` : vortex constant circulation values
 
-**Returns:**
+# Returns:
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_vortex_panels_on_points(
@@ -47,7 +47,7 @@ in place calculation of axial and radial components of induced velocity for a se
 
 Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
 
-**Arguments:**
+# Arguments:
 - `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `node::Matrix{Float}` : [z r] coordinates of vortex rings
@@ -101,13 +101,13 @@ out of place calculation of axial and radial components of induced velocity for 
 
 Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
 
-**Arguments:**
+# Arguments:
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `node::Matrix{Float}` : [z r] coordinates of source rings
 - `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
 - `gamma::Vector{Float}` : source constant circulation values
 
-**Returns:**
+# Returns:
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_source_panels_on_points(
@@ -130,7 +130,7 @@ in place calculation of axial and radial components of induced velocity for a se
 
 Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
 
-**Arguments:**
+# Arguments:
 - `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `node::Matrix{Float}` : [z r] coordinates of source rings
@@ -250,13 +250,13 @@ end
 #Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
 #Note: there is probably a more efficient way to achieve this functionality.
 
-#**Arguments:**
+## Arguments:
 #- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 #- `node::Matrix{Float}` : [z r] coordinates of vortex rings
 #- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 #- `gamma::Vector{Float}` : vortex constant circulation values
 
-#**Returns:**
+## Returns:
 #- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to vortex rings
 #"""
 #function total_velocities_induced_by_vortex_panels(
@@ -283,7 +283,7 @@ end
 #Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
 #Note: there is probably a more efficient way to achieve this functionality.
 
-#**Arguments:**
+## Arguments:
 #- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to vortex rings
 #- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 #- `node::Matrix{Float}` : [z r] coordinates of vortex rings
@@ -318,13 +318,13 @@ end
 #Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
 #Note: there is probably a more efficient way to achieve this functionality.
 
-#**Arguments:**
+## Arguments:
 #- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 #- `node::Matrix{Float}` : [z r] coordinates of source rings
 #- `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
 #- `sigma::Vector{Float}` : source constant circulation values
 
-#**Returns:**
+## Returns:
 #- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to source rings
 #"""
 #function total_velocities_induced_by_source_panels(
@@ -351,7 +351,7 @@ end
 #Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
 #Note: there is probably a more efficient way to achieve this functionality.
 
-#**Arguments:**
+## Arguments:
 #- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to source rings
 #- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 #- `node::Matrix{Float}` : [z r] coordinates of source rings

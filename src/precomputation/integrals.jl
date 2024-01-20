@@ -10,7 +10,7 @@
 
 """
 
-**Arguments:**
+# Arguments:
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function nominal_vortex_induced_velocity_sample(
@@ -106,7 +106,7 @@ end
 
 """
 
-**Arguments:**
+# Arguments:
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function self_vortex_induced_velocity_sample(
@@ -181,7 +181,7 @@ end
 
 """
 
-**Arguments:**
+# Arguments:
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function nominal_source_induced_velocity_sample(
@@ -267,7 +267,7 @@ end
 
 """
 
-**Arguments:**
+# Arguments:
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function self_source_induced_velocity_sample(

@@ -90,13 +90,13 @@ abstract type AFType end
 
 Evaluate airfoil aerodynamic performance
 
-**Arguments**
+# Arguments:
 - `af::AFType or Function`: dispatch on AFType or if function call: `cl, cd = af(alpha, Re, Mach)`
 - `alpha::Float64`: angle of attack in radians
 - `Re::Float64`: Reynolds number
 - `Mach::Float64`: Mach number
 
-**Returns**
+# Returns:
 - `cl::Float64`: lift coefficient
 - `cd::Float64`: drag coefficient
 """
@@ -120,7 +120,7 @@ A simple parameterized lift and drag curve.
 - `cl = m (alpha - alpha0)` (capped by clmax/clmin)
 - `cd = cd0 + cd2 * cl^2`
 
-**Arguments**
+# Arguments:
 - `m::Float64`: lift curve slope
 - `alpha0::Float64`: zero-lift angle of attack
 - `clmax::Float64`: maximum lift coefficient
@@ -159,7 +159,7 @@ end
 
 Airfoil data that varies with angle of attack.  Data is fit with an Akima spline.
 
-**Arguments**
+# Arguments:
 - `alpha::Vector{Float64}`: angles of attack
 - `cl::Vector{Float64}`: corresponding lift coefficients
 - `cd::Vector{Float64}`: corresponding drag coefficients
@@ -171,7 +171,7 @@ or
 
 a file
 
-**Arguments**
+# Arguments:
 - `filename::String`: name/path of file to read in
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
@@ -213,7 +213,7 @@ end
 
 Write airfoil data to file
 
-**Arguments**
+# Arguments:
 - `filename(s)::String or Vector{String} or Matrix{String}`: name/path of file to write to
 - `af::AFType`: writing is dispatched based on type (AlphaAF, AlphaReAF, etc.)
 - `radians::Bool`: true if you want angle of attack to be written in radians
@@ -236,7 +236,7 @@ end
 Airfoil data that varies with angle of attack and Reynolds number.
 Data is fit with a recursive Akima spline.
 
-**Arguments**
+# Arguments:
 - `alpha::Vector{Float64}`: angles of attack
 - `Re::Vector{Float64}`: Reynolds numbers
 - `cl::Matrix{Float64}`: lift coefficients where cl[i, j] corresponds to alpha[i], Re[j]
@@ -248,7 +248,7 @@ or
 
 filenames with one file per Reynolds number.
 
-**Arguments**
+# Arguments:
 - `filenames::Vector{String}`: name/path of files to read in, each at a different Reynolds number in ascending order
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
@@ -314,7 +314,7 @@ end
 Airfoil data that varies with angle of attack and Mach number.
 Data is fit with a recursive Akima spline.
 
-**Arguments**
+# Arguments:
 - `alpha::Vector{Float64}`: angles of attack
 - `Mach::Vector{Float64}`: Mach numbers
 - `cl::Matrix{Float64}`: lift coefficients where cl[i, j] corresponds to alpha[i], Mach[j]
@@ -326,7 +326,7 @@ or
 
 filenames with one file per Mach number.
 
-**Arguments**
+# Arguments:
 - `filenames::Vector{String}`: name/path of files to read in, each at a different Mach number in ascending order
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
@@ -393,7 +393,7 @@ end
 Airfoil data that varies with angle of attack, Reynolds number, and Mach number.
 Data is fit with a recursive Akima spline.
 
-**Arguments**
+# Arguments:
 - `alpha::Vector{Float64}`: angles of attack
 - `Re::Vector{Float64}`: Reynolds numbers
 - `Mach::Vector{Float64}`: Mach numbers
@@ -403,7 +403,7 @@ Data is fit with a recursive Akima spline.
 
 or files with one per Re/Mach combination
 
-**Arguments**
+# Arguments:
 - `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to Re[i] Mach[j] with Reynolds number and Mach number in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
@@ -479,13 +479,13 @@ struct PrandtlGlauert <: MachCorrection end
 
 Mach number correction for lift/drag coefficient
 
-**Arguments**
+# Arguments:
 - `mc::MachCorrection`: used for dispatch
 - `cl::Float64`: lift coefficient before correction
 - `cd::Float64`: drag coefficient before correction
 - `Mach::Float64`: Mach number
 
-**Returns**
+# Returns:
 - `cl::Float64`: lift coefficient after correction
 - `cd::Float64`: drag coefficient after correction
 """
@@ -513,13 +513,13 @@ abstract type ReCorrection end
 
 Reynolds number correction for lift/drag coefficient
 
-**Arguments**
+# Arguments:
 - `re::ReCorrection`: used for dispatch
 - `cl::Float64`: lift coefficient before correction
 - `cd::Float64`: drag coefficient before correction
 - `Re::Float64`: Reynolds number
 
-**Returns**
+# Returns:
 - `cl::Float64`: lift coefficient after correction
 - `cd::Float64`: drag coefficient after correction
 """
@@ -534,7 +534,7 @@ end
 Skin friction model for a flat plate.
 `cd *= (Re0 / Re)^p`
 
-**Arguments**
+# Arguments:
 - `Re0::Float64`: reference Reynolds number (i.e., no corrections at this number)
 - `p::Float64`: exponent in flat plate model.  0.5 for laminar (Blasius solution), ~0.2 for fully turbulent (Schlichting empirical fit)
 """
@@ -564,7 +564,7 @@ abstract type RotationCorrection end
 
 Rotation correction (3D stall delay).
 
-**Arguments**
+# Arguments:
 - `rc::RotationCorrection`: used for dispatch
 - `cl::Float64`: lift coefficient before correction
 - `cd::Float64`: drag coefficient before correction
@@ -575,7 +575,7 @@ Rotation correction (3D stall delay).
 - `phi::Float64`: local inflow angles (defaults to angle of attack is precomputing since it is only known for on-the-fly computations)
 - `alpha_max_corr::Float64`: angle of attack for maximum correction (tapers off to zero by 90 degrees)
 
-**Returns**
+# Returns:
 - `cl::Float64`: lift coefficient after correction
 - `cd::Float64`: drag coefficient after correction
 """
@@ -589,7 +589,7 @@ end
 
 DuSelig correction for lift an Eggers correction for drag.
 
-**Arguments**
+# Arguments:
 - `a, b, d::Float64`: parameters in Du-Selig paper.  Normally just 1.0 for each.
 - `m::Float64`: lift curve slope.  Defaults to 2 pi for zero argument version.
 - `alpha0::Float64`: zero-lift angle of attack.  Defaults to 0 for zero argument version.
@@ -681,7 +681,7 @@ abstract type TipCorrection end
 
 Tip corrections for 3D flow.
 
-**Arguments**
+# Arguments:
 - `tc::TipCorrection`: used for dispatch
 - `r::Float64`: local radius
 - `Rhub::Float64`: hub radius
@@ -689,7 +689,7 @@ Tip corrections for 3D flow.
 - `phi::Float64`: inflow angle
 - `B::Integer`: number of blades
 
-**Returns**
+# Returns:
 - `F::Float64`: tip loss factor to multiple against loads.
 """
 function tip_correction(::TipCorrection, r, Rhub, Rtip, phi, B)
@@ -739,14 +739,14 @@ end
 
 Viterna extrapolation.  Follows Viterna paper and somewhat follows NREL version of AirfoilPrep, but with some modifications for better robustness and smoothness.
 
-**Arguments**
+# Arguments:
 - `alpha::Vector{Float64}`: angles of attack
 - `cl::Vector{Float64}`: correspnding lift coefficients
 - `cd::Vector{Float64}`: correspnding drag coefficients
 - `cr75::Float64`: chord/Rtip at 75% Rtip
 - `nalpha::Int64`: number of discrete points (angles of attack) to include in extrapolation
 
-**Returns**
+# Returns:
 - `alpha::Vector{Float64}`: angle of attack from -pi to pi
 - `cl::Vector{Float64}`: correspnding extrapolated lift coefficients
 - `cd::Vector{Float64}`: correspnding extrapolated drag coefficients

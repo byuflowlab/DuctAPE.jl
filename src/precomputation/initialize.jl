@@ -14,13 +14,13 @@ Note that the contents of `paneling_constants` will for the most part be require
 # Arguments:
 - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
 - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
-- `paneling_constants.NTuple' : Named tuple containing parameters necessary for repaneling including:
+- `paneling_constants.NamedTuple' : Named tuple containing parameters necessary for repaneling including:
     - `:npanels::Vector{Int}` : Vector of the number of panels to place in the axial direction aft of the first rotor and between discrete system locations such as rotor locations, solid body trailing edges, and the end of the wake.  For example, if there is a single rotor and the duct and center body trailing edges align, 'npanels' would be a 2-element vector containing 1) the number of panels from the rotor to the duct trailing edge and 2) the number of panels from the duct trailing edge to the end of the wake.
     - `:nhub_inlet::Int` : number of nodes to include from the center body leading edge to the foremost rotor location
     - `:nduct_inlet::Int` : number of nodes to include from the duct leading edge to the foremost rotor location
     - `:wake_length::Float` : non-dimensional (relative to duct chord length) distance to extend wake aft of duct trailing edge
     - `:nwake_sheets::Int` : number of wake sheets (1 more than the number of blade elements to use)
-- `rotorstator_parameters::Vector{NTuple}`: Vector of named tuple of rotor parameters
+- `rotorstator_parameters::Vector{NamedTuple}`: Vector of named tuple of rotor parameters
     - 'rotorzloc::Float` : axial position of rotor
     - 'r::Vector{Float}` : non-dimensional radial positions of stations along the blade
     - 'chords::Vector{Float}` : dimensional chord distribution
@@ -39,7 +39,7 @@ Note that the contents of `paneling_constants` will for the most part be require
 - `autoshiftduct::Bool=false' : Boolean for whether to automatically shift the duct to the correct radial position based on foremost rotor tip radius and tip gap.
 
 # Returns:
-- `system_geometry::NTuple` : Named tuple of geometry items required as an input to the `precomputed_inputs()` function:
+- `system_geometry::NamedTuple` : Named tuple of geometry items required as an input to the `precomputed_inputs()` function:
     - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
     - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
     - `Rtips::Vector{Float}` : values of rotor tip radii
@@ -223,7 +223,7 @@ Initializes the geometry, panels, and aerodynamic influence coefficient matrices
 - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
 - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
 - `paneling_constants.wake_length=1.0` : non-dimensional length (based on maximum duct chord) that the wake extends past the furthest trailing edge.
-- `geometry::NTuple' : Named tuple containing the outputs of the generate_geometry() function
+- `geometry::NamedTuple' : Named tuple containing the outputs of the generate_geometry() function
 - `rotorstator_parameters`: named tuple of rotor parameters
 - `freestream`: freestream parameters
 - `reference_parameters`: reference parameters

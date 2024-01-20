@@ -36,6 +36,7 @@ function solve!(
     conv = MVector{1,Bool}(false)
     iter = 0
 
+    #TODO: check how DFDC does this part.
     # initialize differences
     deltaG_prev = Gamr_est .- Gamr
     deltaG = similar(deltaG_prev) .= 0.0
@@ -69,7 +70,7 @@ function solve!(
                 sigr,
                 inputs.A_br,
                 inputs.RHS;
-                debug=false,
+                post=false,
             )
 
             # Update rotor blade element velocities with body influence
@@ -94,7 +95,7 @@ function solve!(
             Wtheta_rotor,
             Wmag_rotor,
             freestream;
-            debug=false,
+            post=false,
             verbose=false,
         )
 
@@ -123,6 +124,7 @@ function solve!(
             pf2=pf2,
         )
 
+        #TODO: is this the right way to do this? or should sigr get updated even if it's not used in "residual"?
         if nosource
             sigr .= 0.0
         else
@@ -205,6 +207,7 @@ function solve!(
 end
 
 """
+# Arguments:
 - `Gamr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
@@ -310,6 +313,7 @@ function relax_Gamr!(
 end
 
 """
+# Arguments:
 - `sigr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
@@ -408,6 +412,7 @@ function relax_sigr!(
 end
 
 """
+# Arguments:
 - `gamw::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values

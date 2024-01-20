@@ -16,7 +16,7 @@ import FLOWMath as fm
 
 """
 
-**Arguments:**
+# Arguments:
 - `thrust::Float` : desired thrust force.
 - `exit_area::Float` : exit area of nozzle
 - `Vinf::Float` : freestream velocity
@@ -27,7 +27,7 @@ import FLOWMath as fm
 - `lift_polars::Vector{Matrix{Float}}` : matrix [α cℓ] of angles of attack vs lift coefficients for desired airfoils
 -
 
-**Keyword Arguments:**
+# Keyword Arguments:
 - `rho::Float` : air density (ρ), assumed constant = 1.225 kg/m3
 - `ambient_static_pressure::Float` : ambient static pressure, default = 101325.0 Pa
 - `ambient_static_temperature::Float` : ambient static temperature, default = 288.15 K
@@ -38,7 +38,7 @@ import FLOWMath as fm
 - `verbose::Bool` : if true, will print out warning if solidity exceeds 0.3
 - `debug::Bool` : if true, function returns intermediate values in a named tuple
 
-**Returns:**
+# Returns:
 - `chords::Vector{Float}` : vector of chord distribution
 - `twists::Vector{Float}` : vector of twist distribution
 - `debug::NamedTuple` : NamedTuple of intermediate values

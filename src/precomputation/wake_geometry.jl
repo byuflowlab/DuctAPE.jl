@@ -79,10 +79,10 @@ Generate paneling for each wake line emanating from the rotor blade elements.
 - `zgrid::Matrix{Float}` : x-location of each grid point
 - `rgrid::Matrix{Float}` : r-location of each grid point
 
-**Keyword Arguments:**
+# Keyword Arguments:
 - `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
 
-**Returns:**
+# Returns:
 - `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
 """
 function generate_wake_panels(zgrid, rgrid)
@@ -105,13 +105,13 @@ end
 
 Intialize the wake grid
 
-**Arguments:**
+# Arguments:
 - `body_geometry::DuctAPE.body_geometry` : Duct Geometry Object.
 - `rzl::Vector{Float}` : Vector of x-positions for the rotors
 - `rwake::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
 - `grid_options::DuctAPE.GridOptions` : GridOptions object
 
-**Returns:**
+# Returns:
 - `zgrid::Matrix{Float64,2}` : 2D Array of x grid points
 - `rgrid::Matrix{Float64,2}` : 2D Array of r grid points
 """
@@ -194,17 +194,17 @@ end
 
 Relax grid using elliptic grid solver.
 
-**Arguments:**
+# Arguments:
  - `xg::Matrix{Float64}` : Initial x grid points guess
  - `rg::Matrix{Float64}` : Initial r grid points guess
  - `nxi::Int` : number of xi (x) stations in the grid
  - `neta::Int` : number of eta (r) stations in the grid
 
-**Keyword Arguments:**
+# Keyword Arguments:
  - `max_iterations::Int` : maximum number of iterations to run, default=100
  - `tol::Float` : convergence tolerance, default = 1e-9
 
-**Returns:**
+# Returns:
  - `x_relax_points::Matrix{Float64}` : Relaxed x grid points
  - `r_relax_points::Matrix{Float64}` : Relaxed r grid points
 """

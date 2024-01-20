@@ -251,10 +251,10 @@ end
 
 Calculate rotor circulation and source strengths using blade element data and inflow velocities.
 
-**Arguments:**
+# Arguments:
 `Vm::Matrix{Float}` : Meridional velocity (including freestream and induced velocity) at rotor planes. Must be a matrix of size number of blade elements by number of rotors.
 
-**Returns:**
+# Returns:
 `Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
 `sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
 """
@@ -483,9 +483,9 @@ function lookup_clcd(
     elseif typeof(inner_airfoil) <: c4b.DTCascade
         # - Cascade Lookups - #
         # get inner values
-        clin, cdin = c4b.caseval(inner_airfoil, stagger, inflow, reynolds, mach, solidity)
+        clin, cdin = c4b.caseval(inner_airfoil, inflow, reynolds, stagger, solidity, mach)
         # get outer values
-        clout, cdout = c4b.caseval(outer_airfoil, stagger, inflow, reynolds, mach, solidity)
+        clout, cdout = c4b.caseval(outer_airfoil, inflow, reynolds, stagger, solidity, mach)
     elseif typeof(inner_airfoil) <: c4b.AFType
         # - Airfoil Lookups - #
         # get inner values

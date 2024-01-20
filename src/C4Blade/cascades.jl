@@ -94,7 +94,7 @@ abstract type DTCascade end
 
 #Data is fit with a recursive Akima spline.
 
-#**Arguments**
+## Arguments:
 #- `inflow::Vector{Float64}`: inflow angles
 #- `stagger::Vector{Float64}`: stagger angle
 #- `cl::Matrix{Float64}`: lift coefficients where cl[i, j] corresponds to inflow[i], stagger[j]
@@ -108,7 +108,7 @@ abstract type DTCascade end
 
 #filenames with one file per Reynolds number.
 
-#**Arguments**
+## Arguments:
 #- `filenames::Vector{String}`: name/path of files to read in, each at a different stagger angle in ascending order
 #- `radians::Bool`: true if angle of attack in file is given in radians
 #"""
@@ -197,7 +197,7 @@ abstract type DTCascade end
 
 #Data is fit with a recursive Akima spline.
 
-#**Arguments**
+## Arguments:
 #- `stagger::Vector{Float64}`: stagger angles
 #- `alpha::Vector{Float64}`: inflow angles
 #- `Re::Vector{Float64}`: Reynolds numbers
@@ -207,7 +207,7 @@ abstract type DTCascade end
 
 #or files with one per Re/stagger combination
 
-#**Arguments**
+## Arguments:
 #- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j] corresponds to stagger[i], Re[j] with stagger angle and Reynolds number in ascending order.
 #- `radians::Bool`: true if angle of attack in file is given in radians
 #"""
@@ -310,7 +310,7 @@ abstract type DTCascade end
 
 #Data is fit with a recursive Akima spline.
 
-#**Arguments**
+## Arguments:
 #- `stagger::Vector{Float64}`: stagger angles
 #- `inflow::Vector{Float64}`: inflow angles
 #- `Re::Vector{Float64}`: Reynolds numbers
@@ -321,7 +321,7 @@ abstract type DTCascade end
 
 #or files with one per Re/Mach combination
 
-#**Arguments**
+## Arguments:
 #- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k] corresponds to stagger[i] Re[j] Mach[k] with each in ascending order.
 #- `radians::Bool`: true if angle of attack in file is given in radians
 #"""
@@ -438,7 +438,7 @@ abstract type DTCascade end
 
 Data is fit recursively with Akima splines.
 
-**Arguments**
+# Arguments:
 - `inflow::Vector{Float64}`: inflow angles
 - `Re::Vector{Float64}`: Reynolds numbers
 - `stagger::Vector{Float64}`: stagger angles
@@ -450,7 +450,7 @@ Data is fit recursively with Akima splines.
 
 or files with one per Re/Stagger/Solidty/Mach combination
 
-**Arguments**
+# Arguments:
 - `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k, ell] corresponds to Re[i] Stagger[j] Stagger[k] and Solidity[k] with each in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
@@ -568,14 +568,14 @@ end
 
 # Return lift and drag coefficients based on airfoil object type and flow conditions.
 
-# **Arguments:**
+# # Arguments:
 #  - `cas::AFType` : Airfoil object either of a CCBlade airfoil type or custom type (custom if solidity information is included).
 #  - `stagger::Vector{Float64}`: stagger angles
 #  - `inflow::Vector{Float64}`: inflow angles
 #  - `reynolds::Float` : Reynolds number
 #  - `mach::Float` : Mach number
 
-# **Returns:**
+# # Returns:
 #  - `cl::Float` : section lift coefficient
 #  - `cd::Float` : section drag coefficient
 # """
@@ -610,7 +610,7 @@ function interp5d(
     output = Array{R}(undef, nx1pt, nx2pt, nx3pt, nx4pt, nx5pt)
 
     for i in 1:nd
-        x5interp[i, :, :, :] .= interp4d(
+        x5interp[i, :, :, :] .= fm.interp4d(
             interp1d,
             x1data,
             x2data,

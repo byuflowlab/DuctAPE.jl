@@ -5,7 +5,7 @@ Calculate body vortex strengths
 kid is kutta indices, where kid[1] is the row/column to keep and kid[2] is the row/column to subtract from kid[1] and then delete (1 is the first duct panel, and 2 is the Nth duct panel)
 """
 function calculate_body_vortex_strengths!(
-    gamb, A_bb, b_bf, gamw, A_bw, sigr, A_br, RHS; debug=false
+    gamb, A_bb, b_bf, gamw, A_bw, sigr, A_br, RHS; post=false
 )
 
     # problem dimensions
