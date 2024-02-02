@@ -803,6 +803,20 @@ function precomputed_inputs(
         ones(TF, 2, wake_vortex_panels.totpanel),
     )
 
+    # - wake TE to wake - #
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_ww, :, :, :),
+        wake_vortex_panels.controlpoint,
+        wake_vortex_panels.tenode,
+        wake_vortex_panels.teinfluence_length,
+        wake_vortex_panels.tendotn,
+        wake_vortex_panels.tencrossn,
+        wake_vortex_panels.teadjnodeidxs,
+    )
+
+
+
+
     # axial components
     vz_ww = v_ww[:, :, 1]
 

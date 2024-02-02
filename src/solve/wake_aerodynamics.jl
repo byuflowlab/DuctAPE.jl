@@ -44,12 +44,12 @@ function calculate_induced_velocities_on_wakes(
     # add body induced velocities
     if gamb != nothing
         #TODO: look into signs here, may need to flip them
-        @views vz_wake .-= vz_wb * gamb
-        @views vr_wake .-= vr_wb * gamb
+        @views vz_wake .+= vz_wb * gamb
+        @views vr_wake .+= vr_wb * gamb
 
         if post
-            @views vzb_wake .-= vz_wb * gamb
-            @views vrb_wake .-= vr_wb * gamb
+            @views vzb_wake .+= vz_wb * gamb
+            @views vrb_wake .+= vr_wb * gamb
         end
     end
 
@@ -64,8 +64,8 @@ function calculate_induced_velocities_on_wakes(
     end
 
     # add wake induced velocities
-    @views vz_wake .-= vz_ww * gamw
-    @views vr_wake .-= vr_ww * gamw
+    @views vz_wake .+= vz_ww * gamw
+    @views vr_wake .+= vr_ww * gamw
 
     #  return raw induced velocities
     if post
@@ -204,7 +204,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
         else
 
             # wake strength density taken from rotor to next rotor constant along streamlines
-            gw[1] = (K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) / Wm_avg
+            gw[1] = -(K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) / Wm_avg
         end
     end
 
@@ -213,21 +213,26 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
         # gamw[inputs.ductwakeinterfaceid] .= 0.0
 
         #TODO: double check this is working properly.
-        gamw[inputs.ductwakeinterfaceid] = range(
-            0.0,
-            gamw[inputs.ductwakeinterfaceid[end]];
-            length=length(inputs.ductwakeinterfaceid) + 1,
-        )[2:end]
+        gamw[inputs.ductwakeinterfacenodeid] =
+            gamw[inputs.ductwakeinterfacenodeid[end]+1] * (
+                1.0 .-
+                (inputs.ductwakeinterfacenodeid[end] .- inputs.ductwakeinterfacenodeid) / (
+                    inputs.ductwakeinterfacenodeid[end] -
+                    inputs.ductwakeinterfacenodeid[1] + 1
+                )
+            )
     end
     if inputs.hubwakeinterfaceid != nothing
         # gamw[inputs.hubwakeinterfaceid] .= 0.0
 
         #TODO: double check this is working properly.
-        gamw[inputs.hubwakeinterfaceid] = range(
-            0.0,
-            gamw[inputs.hubwakeinterfaceid[end]];
-            length=length(inputs.hubwakeinterfaceid) + 1,
-        )[2:end]
+        println(gamw[inputs.hubwakeinterfacenodeid[end]+1])
+        gamw[inputs.hubwakeinterfacenodeid] =
+            gamw[inputs.hubwakeinterfacenodeid[end]+1] * (
+                1.0 .-
+                (reverse(inputs.hubwakeinterfacenodeid) .- inputs.hubwakeinterfacenodeid[1]) /
+                length(inputs.hubwakeinterfacenodeid)
+            )
     end
 
     if post

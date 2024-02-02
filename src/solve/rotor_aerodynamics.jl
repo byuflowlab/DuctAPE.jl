@@ -58,12 +58,12 @@ function calculate_induced_velocities_on_rotors(
         end
 
         # add wake induced velocities
-        @views vz_rotor[:, irotor] .-= vz_rw[irotor] * gamw
-        @views vr_rotor[:, irotor] .-= vr_rw[irotor] * gamw
+        @views vz_rotor[:, irotor] .+= vz_rw[irotor] * gamw
+        @views vr_rotor[:, irotor] .+= vr_rw[irotor] * gamw
 
         if post
-            @views vzw_rotor[:, irotor] .-= vz_rw[irotor] * gamw[:]
-            @views vrw_rotor[:, irotor] .-= vr_rw[irotor] * gamw[:]
+            @views vzw_rotor[:, irotor] .+= vz_rw[irotor] * gamw[:]
+            @views vrw_rotor[:, irotor] .+= vr_rw[irotor] * gamw[:]
         end
 
         # add rotor induced velocities

@@ -11,7 +11,7 @@ function solve!(
     nosource=true,
     maxiter=1e2,
     verbose=false,
-    nrf=0.5,
+    nrf=0.4,
     bt1=0.2,
     bt2=0.6,
     pf1=0.4,
@@ -224,7 +224,7 @@ end
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
 - `B::Vector{Float}` : number of blades on each rotor
-- `nrf::Float=0.5` : nominal relaxation factor
+- `nrf::Float=0.4` : nominal relaxation factor
 - `bt1::Float=0.2` : backtrack factor 1
 - `bt2::Float=0.6` : backtrack factor 2
 - `pf1::Float=0.4` : press forward factor 1
@@ -237,7 +237,7 @@ function relax_Gamr!(
     maxBGamr,
     maxdeltaBGamr,
     B;
-    nrf=0.5,
+    nrf=0.4,
     bt1=0.2,
     bt2=0.6,
     pf1=0.4,
@@ -291,7 +291,6 @@ function relax_Gamr!(
         bladeomega[i], oi = findmin(abs.(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        println(nrf / (deltahat[oi]))
         if -0.2 > (nrf / deltahat[oi]) || (nrf / deltahat[oi]) > 0.4
             bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
         else
@@ -334,7 +333,7 @@ end
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
 - `B::Vector{Float}` : number of blades on each rotor
-- `nrf::Float=0.5` : nominal relaxation factor
+- `nrf::Float=0.4` : nominal relaxation factor
 - `bt1::Float=0.2` : backtrack factor 1
 - `bt2::Float=0.6` : backtrack factor 2
 - `pf1::Float=0.4` : press forward factor 1
@@ -346,7 +345,7 @@ function relax_sigr!(
     delta_mat,
     maxsigr,
     maxdeltasigr;
-    nrf=0.5,
+    nrf=0.4,
     bt1=0.2,
     bt2=0.6,
     pf1=0.4,
@@ -433,19 +432,19 @@ end
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
 - `B::Vector{Float}` : number of blades on each rotor
-- `nrf::Float=0.5` : nominal relaxation factor
+- `nrf::Float=0.4` : nominal relaxation factor
 - `bt1::Float=0.2` : backtrack factor 1
 - `bt2::Float=0.6` : backtrack factor 2
 - `pf1::Float=0.4` : press forward factor 1
 - `pf2::Float=0.5` : press forward factor 2
 """
 function relax_gamw!(
-    gamw, delta_prev, delta, maxdeltagamw; nrf=0.5, btw=0.6, pfw=1.2, test=false
+    gamw, delta_prev, delta, maxdeltagamw; nrf=0.4, btw=0.6, pfw=1.2, test=false
 )
 
     # initilize
     TF = eltype(gamw)
-    omega = MVector{1,TF}(0.5)
+    omega = MVector{1,TF}(nrf)
 
     # update delta gamw max for convergence criteria
     maxdeltagamw[], mi = findmax(abs.(delta))
