@@ -41,11 +41,11 @@ iter0_controlpoint_vels = reformat_controlpoint_velocities(
 )
 # vel object contains: (; duct_vel, hub_vel, wake_vel, rotor_vel)
 
-# - Beginning of First Iteration - #
-include("iter1_controlpoint_vzvr.jl")
-iter1_controlpoint_vels = reformat_controlpoint_velocities(
-    vzvr1, pidx, nhub_interface_panels, nduct_interface_panels
-)
+# # - Beginning of First Iteration - #
+# include("iter1_controlpoint_vzvr.jl")
+# iter1_controlpoint_vels = reformat_controlpoint_velocities(
+#     vzvr1, pidx, nhub_interface_panels, nduct_interface_panels
+# )
 
 # - Beginning of Second Iteration - #
 include("iter2_controlpoint_vzvr.jl")
@@ -53,26 +53,30 @@ iter2_controlpoint_vels = reformat_controlpoint_velocities(
     vzvr2, pidx, nhub_interface_panels, nduct_interface_panels
 )
 
-##### ----- Gamr ----- #####
+#### ----- control point pressures ----- #####
+
+# ##### ----- Gamr ----- #####
 include("initial_bgam.jl")
 Gamr0 = reformat_circulation(BGAM, B)
 include("iter1_relaxed_bgam.jl")
-Gamr1 = reformat_circulation(BGAM, B)
+Gamr1 = reformat_circulation(relaxed_BGAM, B)
 
 ##### ----- gamw ----- #####
+# include("initial_gamw_in_solve.jl")
 include("initial_gamw.jl")
-gamw0 = reformat_gamw(GAMTH, nidx, nhub_interface_nodes, nduct_interface_nodes)
+gamw0 = reformat_gamw(GAMTH0, nidx, nhub_interface_nodes, nduct_interface_nodes)
 
-# gamw_est
-include("iter1_gamw.jl")
-gamw_est = reformat_gamw(GAMTH, nidx, nhub_interface_nodes, nduct_interface_nodes)
+# # gamw_est
+# include("iter1_gamw.jl")
+# gamw_est = reformat_gamw(GAMTH1, nidx, nhub_interface_nodes, nduct_interface_nodes)
 
 include("iter1_relaxed_gamw.jl")
 gamw1 = reformat_gamw(relaxed_GTH, nidx, nhub_interface_nodes, nduct_interface_nodes)
 
 ##### ----- sigr ----- #####
 include("initial_sigr.jl")
-sigr0 = SIGVSP
+# include("iter1_sigr.jl")
+include("iter2_sigr.jl")
 
 ##### ----- blade element data ----- #####
 #these are the values that give us (and include) the Gamr_est values
@@ -80,9 +84,75 @@ sigr0 = SIGVSP
 include("iter1_extended_blade_element_values.jl")
 bev1 = reformat_extended_blade_elements(extended_blade_element_values, B)
 
-##### ----- wake velocities ----- #####
-include("iter1_wm_wake_panels.jl")
-Wm_wake = reformat_wake_panel_vels(VMAV, nhub_interface_panels, nduct_interface_panels)
+# ##### ----- wake velocities ----- #####
+# include("iter1_wm_wake_panels.jl")
+# Wm_wake = reformat_wake_panel_vels(VMAV, nhub_interface_panels, nduct_interface_panels)
 
-include("iter1_wm_wake_wm_avg.jl")
-Wm_avg = reformat_wmavg(wakevels_iter1[:,2], nhub_interface_nodes, nduct_interface_nodes)
+# include("iter1_wm_wake_wm_avg.jl")
+# Wm_avg = reformat_wmavg(wakevels_iter1[:, 2], nhub_interface_nodes, nduct_interface_nodes)
+
+##### ----- Body Pressures ----- #####
+include("initial_body_cp.jl")
+duct_cpR0, hub_cpR0 = reformat_body_cp(body_cpR0, pidx)
+include("initial_body_cp_withdeltas.jl")
+duct_cpdel0, hub_cpdel0 = reformat_body_cp(body_cpR0, pidx)
+include("iter1_body_cp.jl")
+duct_cpR1, hub_cpR1 = reformat_body_cp(body_cpR1, pidx)
+include("iter2_body_cp.jl")
+duct_cpR2, hub_cpR2 = reformat_body_cp(body_cpR2, pidx)
+include("iter2_body_cp_withdeltas.jl")
+duct_cpdel2, hub_cpdel2 = reformat_body_cp(body_cpR2, pidx)
+
+##### ----- Wake on body AIC's ----- #####
+include("wake_on_body_coeffs.jl")
+w2baic, w2baic_pcp = reformat_wake_aic(
+    aicgth, nidx, pidx, nidranges, pidranges, nhub_interface_nodes, nduct_interface_nodes
+)
+wakerhs0 = reformat_rhs(aicgth, GAMTH0, pidx)
+
+# ##### ----- Linear System RHS's ----- #####
+include("initial_vinfrhs.jl")
+vinfrhs0 = reformat_rhs(vinf0rhs, pidx)
+
+##### ----- Linear System Solution ----- #####
+include("initial_gamb.jl")
+gamb0 = reformat_sol(res0[:, 1], nidx)
+
+##### ----- Rotor on body AIC's ----- #####
+include("rotor_on_body_coeffs.jl")
+r2baic, r2baic_pcp = reformat_rotor_aic(aicsigr, nidx, pidx, nidranges, pidranges)
+
+##### ----- Body induced unit velocities ----- #####
+include("body_aicz.jl")
+include("body_aicr.jl")
+b2bvhat, b2rvhat, b2wvhat = reformat_body_vhat(
+    bodyaicz, bodyaicr, nidx, pidx, pidranges, nhub_interface_panels, nduct_interface_panels
+)
+
+##### ----- Rotor induced unit velocities ----- #####
+include("rotor_aicz.jl")
+include("rotor_aicr.jl")
+r2bvhat, r2rvhat, r2wvhat = reformat_rotor_vhat(
+    rotoraicz,
+    rotoraicr,
+    nidx,
+    nidranges,
+    pidx,
+    pidranges,
+    nhub_interface_panels,
+    nduct_interface_panels,
+)
+
+##### ----- Wake induced unit velocities ----- #####
+include("wake_aicz.jl")
+include("wake_aicr.jl")
+w2bvhat, w2rvhat, w2wvhat = reformat_wake_vhat(
+    wakeaicz,
+    wakeaicr,
+    nidx,
+    nidranges,
+    pidx,
+    pidranges,
+    nhub_interface_panels,
+    nduct_interface_panels,
+)

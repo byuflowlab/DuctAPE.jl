@@ -1,6 +1,7 @@
 #=
 Tests for controlled successive under relaxation functions
 =#
+println("\nCSUR TESTS")
 
 @testset "Circulation Relaxation" begin
     Gamr = ones(3, 2)

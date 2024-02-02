@@ -25,7 +25,7 @@ hub_interface_wake = [
     reverse(dfdc_hub_coordinates[1:hii, :]; dims=1)
     dfdc_hub_wake_coordinates[2:end, :]
 ]
-hubTE_index = length(reverse(dfdc_hub_coordinates[1:hii, 1]; dims=1))
+hubTE_index = length(dfdc_hub_coordinates[1:hii, 1])
 
 duct_interface_wake = [
     dfdc_duct_coordinates[dii:end, :]
