@@ -81,8 +81,8 @@ include("iter2_sigr.jl")
 ##### ----- blade element data ----- #####
 #these are the values that give us (and include) the Gamr_est values
 #note that DFDC doesn't actually use Wr_rotor values, just Wz and Wtheta
-include("iter1_extended_blade_element_values.jl")
-bev1 = reformat_extended_blade_elements(extended_blade_element_values, B)
+# include("iter1_extended_blade_element_values.jl")
+# bev1 = reformat_extended_blade_elements(extended_blade_element_values2, B)
 
 # ##### ----- wake velocities ----- #####
 # include("iter1_wm_wake_panels.jl")

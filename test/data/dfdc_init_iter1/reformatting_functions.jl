@@ -88,7 +88,7 @@ end
 
 """
 """
-function reformat_wake_panel_vels(VMAV, nhub_interface_panels, nduct_interface_panels)
+function reformat_wake_panel_vels(VMAV, nhub_interface_panels, nduct_interface_panels, pidranges)
     # fill in first and last wake sheet with zeros?
     # these are the average velocities at the wake panels
     return [
