@@ -225,11 +225,9 @@ function add_te_gap_aic!(
     teinfluence_length,
     tendotn,
     tencrossn,
-    teadjnodeidxs,
+    teadjnodeidxs;
+    wake=false,
 )
-
-    # vvel = zeros(eltype(AICn), 2, 2)
-    # svel = zeros(eltype(AICn), 2, 2)
 
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
@@ -244,14 +242,6 @@ function add_te_gap_aic!(
             ),
         )
 
-            # # get unit induced velocity from the panel onto the control point
-            # vvel .= nominal_vortex_panel_integration(
-            #     tenode[j, 1, :], tenode[j, 2, :], lj, cpi
-            # )
-            # svel .= nominal_source_panel_integration(
-            #     tenode[j, 1, :], tenode[j, 2, :], lj, cpi
-            # )
-
             # get unit induced velocity from the panel onto the control point
             vvel = StaticArrays.SMatrix{2,2}(
                 nominal_vortex_panel_integration(tenode[j, 1, :], tenode[j, 2, :], lj, cpi)
@@ -263,9 +253,12 @@ function add_te_gap_aic!(
             for k in 1:2
                 # fill the Matrix
                 AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
-                # AICn[i, nmap[k]] += dot(-ncn[k] * svel[k, :], nhat)
                 AICt[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], that)
-                # AICt[i, nmap[k]] += dot(-ncn[k] * svel[k, :], that)
+                if wake
+                    # wake "TE Panels" only have the vortex influence
+                    AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :], nhat)
+                    AICt[i, nmap[k]] += dot(ndn[k] * vvel[k, :], that)
+                end
             end #for k
         end #for j
     end #for i
@@ -291,9 +284,7 @@ Used for constructing the RHS boundary conditions due to rotor source panels.
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
-function source_aic(
-    controlpoint, normal, tangent, node, nodemap, influence_length
-)
+function source_aic(controlpoint, normal, tangent, node, nodemap, influence_length)
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
     N = size(node, 2)
@@ -301,9 +292,7 @@ function source_aic(
     AICn = zeros(T, M, N)
     AICt = zeros(T, M, N)
 
-    source_aic!(
-        AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
-    )
+    source_aic!(AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length)
 
     return AICn, AICt
 end

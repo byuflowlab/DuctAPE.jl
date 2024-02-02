@@ -58,12 +58,12 @@ function calculate_induced_velocities_on_rotors(
         end
 
         # add wake induced velocities
-        @views vz_rotor[:, irotor] .+= vz_rw[irotor] * gamw
-        @views vr_rotor[:, irotor] .+= vr_rw[irotor] * gamw
+        @views vz_rotor[:, irotor] .-= vz_rw[irotor] * gamw
+        @views vr_rotor[:, irotor] .-= vr_rw[irotor] * gamw
 
         if post
-            @views vzw_rotor[:, irotor] .+= vz_rw[irotor] * gamw[:]
-            @views vrw_rotor[:, irotor] .+= vr_rw[irotor] * gamw[:]
+            @views vzw_rotor[:, irotor] .-= vz_rw[irotor] * gamw[:]
+            @views vrw_rotor[:, irotor] .-= vr_rw[irotor] * gamw[:]
         end
 
         # add rotor induced velocities
@@ -120,7 +120,9 @@ function reframe_rotor_velocities(
     Wm_rotor = sqrt.(Wz_rotor .^ 2 .+ vr_rotor .^ 2)
 
     # Get the inflow magnitude at the rotor as the combination of all the components
-    Wmag_rotor = sqrt.(Wz_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+    # TODO: DFDC doesn't use vr_rotor here.  check if it uses Wm_rotor for anything
+    # Wmag_rotor = sqrt.(Wz_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
+    Wmag_rotor = sqrt.(Wz_rotor .^ 2 .+ Wtheta_rotor .^ 2)
 
     return Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
@@ -185,7 +187,7 @@ end
 
 """
 """
-function gamma_from_coeffs!(Gamr, Wmag_rotor, blade_elements, cl)
+function calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, blade_elements, cl)
     for (irotor, be) in enumerate(blade_elements)
         # calculate vortex strength
         Gamr[:, irotor] = @. 1.0 / 2.0 * Wmag_rotor[:, irotor] * be.chords * cl[:, irotor]
@@ -194,8 +196,8 @@ function gamma_from_coeffs!(Gamr, Wmag_rotor, blade_elements, cl)
     return Gamr
 end
 
-# function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements, rho)
-function sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements, cd, rho)
+# function calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, rho)
+function calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, cd, rho)
 
     # calculate source strength
     # TODO: need to figure out if there should be a division by r here or not.
@@ -260,7 +262,7 @@ Calculate rotor circulation and source strengths using blade element data and in
 """
 function calculate_gamma_sigma(
     blade_elements,
-    Wm_rotor,
+    Wz_rotor,
     Wtheta_rotor,
     Wmag_rotor,
     freestream;
@@ -288,7 +290,7 @@ function calculate_gamma_sigma(
         Gamr,
         sigr,
         blade_elements,
-        Wm_rotor,
+        Wz_rotor,
         Wtheta_rotor,
         Wmag_rotor,
         freestream;
@@ -308,7 +310,7 @@ function calculate_gamma_sigma!(
     Gamr,
     sigr,
     blade_elements,
-    Wm_rotor,
+    Wz_rotor,
     Wtheta_rotor,
     Wmag_rotor,
     freestream;
@@ -318,9 +320,9 @@ function calculate_gamma_sigma!(
 
     #update coeffs
     if post
-        cl, cd, phidb, alphadb, cldb, cddb = update_coeffs(
+        cl, cd, phidb, alphadb, cldb, cddb = calculate_blade_element_coefficients(
             blade_elements,
-            Wm_rotor,
+            Wz_rotor,
             Wtheta_rotor,
             Wmag_rotor,
             freestream;
@@ -328,9 +330,9 @@ function calculate_gamma_sigma!(
             verbose=verbose,
         )
     else
-        cl, cd = update_coeffs(
+        cl, cd = calculate_blade_element_coefficients(
             blade_elements,
-            Wm_rotor,
+            Wz_rotor,
             Wtheta_rotor,
             Wmag_rotor,
             freestream;
@@ -340,17 +342,17 @@ function calculate_gamma_sigma!(
     end
 
     # - get circulation strength - #
-    gamma_from_coeffs!(Gamr, Wmag_rotor, blade_elements, cl)
+    calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, blade_elements, cl)
 
     # - get source strength - #
-    sigma_from_coeffs!(sigr, Wmag_rotor, blade_elements, cd, freestream.rhoinf)
+    calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, cd, freestream.rhoinf)
 
     return Gamr, sigr
 end
 
-function update_coeffs(
+function calculate_blade_element_coefficients(
     blade_elements,
-    Wm_rotor,
+    Wz_rotor,
     Wtheta_rotor,
     Wmag_rotor,
     freestream;
@@ -389,7 +391,9 @@ function update_coeffs(
 
             # calculate angle of attack
             phi, alpha = calculate_inflow_angles(
-                Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
+                # Wz rather Wm used here in DFDC, presumable because the blade elements are definied in the z-r plane rather than the meridional direction
+                # Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
+                Wz_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
             )
 
             # get local Reynolds number
@@ -511,8 +515,8 @@ function calculate_inflow_angles(Wm_rotor, Wtheta_rotor, stagger)
     phi = atan.(-Wtheta_rotor, Wm_rotor)
 
     #angle of attack
-    alpha = phi - stagger
     # alpha = twist .- phi
+    alpha = phi - stagger
 
     return phi, alpha
 end

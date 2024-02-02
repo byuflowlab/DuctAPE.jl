@@ -163,5 +163,5 @@ function generate_rotor_panels(rotorzloc, rwake)
     x = fill(rotorzloc, length(rwake))
     xr = [x'; rwake']
 
-    return generate_panels(xr; isbody=false)
+    return generate_panels(xr; isbody=false, isrotor=true)
 end

@@ -43,12 +43,13 @@ function calculate_induced_velocities_on_wakes(
 
     # add body induced velocities
     if gamb != nothing
-        @views vz_wake .+= vz_wb * gamb
-        @views vr_wake .+= vr_wb * gamb
+        #TODO: look into signs here, may need to flip them
+        @views vz_wake .-= vz_wb * gamb
+        @views vr_wake .-= vr_wb * gamb
 
         if post
-            @views vzb_wake .+= vz_wb * gamb
-            @views vrb_wake .+= vr_wb * gamb
+            @views vzb_wake .-= vz_wb * gamb
+            @views vrb_wake .-= vr_wb * gamb
         end
     end
 
@@ -63,8 +64,8 @@ function calculate_induced_velocities_on_wakes(
     end
 
     # add wake induced velocities
-    @views vz_wake .+= vz_ww * gamw
-    @views vr_wake .+= vr_ww * gamw
+    @views vz_wake .-= vz_ww * gamw
+    @views vr_wake .-= vr_ww * gamw
 
     #  return raw induced velocities
     if post
@@ -209,19 +210,24 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
 
     # - Wake-Body Interface Treatment - #
     if inputs.ductwakeinterfaceid != nothing
-        gamw[inputs.ductwakeinterfaceid] .= 0.0
+        # gamw[inputs.ductwakeinterfaceid] .= 0.0
 
-        #TODO: get this updated
-        # gamw[end, 1:(inputs.ductTE_index)] = range(
-        #     0.0, gamw[end, inputs.ductTE_index]; length=inputs.ductTE_index
-        # )
+        #TODO: double check this is working properly.
+        gamw[inputs.ductwakeinterfaceid] = range(
+            0.0,
+            gamw[inputs.ductwakeinterfaceid[end]];
+            length=length(inputs.ductwakeinterfaceid) + 1,
+        )[2:end]
     end
     if inputs.hubwakeinterfaceid != nothing
-        gamw[inputs.hubwakeinterfaceid] .= 0.0
+        # gamw[inputs.hubwakeinterfaceid] .= 0.0
 
-        # gamw[1, 1:(inputs.hubTE_index)] = range(
-        #     0.0, gamw[1, inputs.hubTE_index]; length=inputs.hubTE_index
-        # )
+        #TODO: double check this is working properly.
+        gamw[inputs.hubwakeinterfaceid] = range(
+            0.0,
+            gamw[inputs.hubwakeinterfaceid[end]];
+            length=length(inputs.hubwakeinterfaceid) + 1,
+        )[2:end]
     end
 
     if post
@@ -229,74 +235,4 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
     else
         return gamw
     end
-end
-
-function initialize_wake_vortex_strengths(Vinf, Gamr, Omega, B, rotor_panel_edges, nxwake)
-
-    # get net circulations
-    Gamma_tilde = calculate_net_circulation(Gamr, B)
-
-    # get enthalpy jumps
-    H_tilde = calculate_enthalpy_jumps(Gamr, Omega, B)
-
-    # initialize Wm_wake with freestream and rotation assuming open rotor
-    Wm_wake = marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
-
-    # return initialized wake vortex strengths
-    gwhub = Wm_wake[1, :] .- Vinf
-    gw = Wm_wake[2:end, :] .- Wm_wake[1:(end - 1), :]
-    gwduct = Vinf .- Wm_wake[end, :]
-    planegw = [gwhub'; gw; gwduct']
-    gamw = repeat(planegw; inner=(1, nxwake))
-    return reduce(vcat, gamw')
-end
-
-"""
-get meridional velocities using the marching method for when Vinf outside of wake is known.
-"""
-function marched_vm(Vinf, Gamma_tilde, H_tilde, rotor_panel_edges)
-
-    #get floating point type
-    TF = eltype(Gamma_tilde)
-
-    #rename for convenience
-    nr, nrotor = size(Gamma_tilde)
-
-    #initialize
-    Wm_wake = zeros(TF, nr, nrotor)
-
-    # Loop through rotors
-    for irotor in 1:nrotor
-
-        # Loop through radial stations
-        #march from just outside the tip to the hub
-        for ir in nr:-1:1
-            if ir == nr
-
-                #this is the change at the tip, so we need to set Vm2 to Vinf, and set Gamma dn H 2's to zeros
-                radical =
-                    Vinf^2 +
-                    (1.0 / (2.0 * pi * rotor_panel_edges[ir, irotor]))^2 *
-                    (-Gamma_tilde[ir, irotor]^2) - 2.0 * (-H_tilde[ir, irotor])
-            else
-
-                #otherwise, we just take the differences inside as-is
-                radical =
-                    Wm_wake[ir + 1, irotor]^2 +
-                    (1.0 / (2.0 * pi * rotor_panel_edges[ir, irotor]))^2 *
-                    (Gamma_tilde[ir + 1, irotor]^2 - Gamma_tilde[ir, irotor]^2) -
-                    2.0 * (H_tilde[ir + 1, irotor] - H_tilde[ir, irotor])
-            end
-
-            # compute the meridional velocity value, avoiding negative square roots and divisions by zero later
-            if radical > 0.0
-                Wm_wake[ir, irotor] = sqrt(radical)
-            else
-                Wm_wake[ir, irotor] = 0.1 * Vinf
-            end
-        end
-    end
-
-    #Wm_wake should now be in the order of hub to tip
-    return Wm_wake
 end

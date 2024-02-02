@@ -45,10 +45,10 @@ function solve!(
     deltag_prev = gamw_est .- gamw
     deltag = similar(deltag_prev) .= 0.0
 
-    # zero out sigr if not used
-    if nosource
-        sigr .= 0.0
-    end
+    # # zero out sigr before first iteration
+    # if nosource
+    #     sigr .= 0.0
+    # end
 
     # loop until converged or max iterations are reached
     while !conv[] && iter <= maxiter
@@ -58,7 +58,7 @@ function solve!(
             println("Iteration $(iter):")
         end
 
-        # Solve linear system if including
+        ##### ----- Solve linear system if including ----- #####
         if !isnothing(inputs.gamb)
             # in place solve for gamb
             calculate_body_vortex_strengths!(
@@ -67,36 +67,37 @@ function solve!(
                 inputs.b_bf,
                 gamw,
                 inputs.A_bw,
+                inputs.A_pw,
                 sigr,
                 inputs.A_br,
+                inputs.A_pr,
                 inputs.RHS;
                 post=false,
             )
 
             # Update rotor blade element velocities with body influence
             # note: only use the values in gamb associated with the node strengths
-            _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+            _, _, _, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
                 Gamr, gamw, sigr, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
             )
         else
 
             # Update rotor blade element velocities without body influence
-            _, _, _, _, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+            _, _, _, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
                 Gamr, gamw, sigr, inputs
             )
         end
 
+        ##### ----- Calculate Blade Element Values ----- #####
+        # calculate lift and drag coefficients along blades
+        cl, cd = calculate_blade_element_coefficients(
+            inputs.blade_elements, Wz_rotor, Wtheta_rotor, Wmag_rotor, inputs.freestream;
+        )
+
+        ##### ----- Estimate and Relax Gamr ----- #####
         # in-place solve for Gamr, updating Gamr_est
-        calculate_gamma_sigma!(
-            Gamr_est,
-            sigr,
-            inputs.blade_elements,
-            Wm_rotor,
-            Wtheta_rotor,
-            Wmag_rotor,
-            freestream;
-            post=false,
-            verbose=false,
+        calculate_rotor_circulation_strengths!(
+            Gamr_est, Wmag_rotor, inputs.blade_elements, cl
         )
 
         # get difference between estimated Gamr and old Gamr
@@ -124,27 +125,7 @@ function solve!(
             pf2=pf2,
         )
 
-        #TODO: is this the right way to do this? or should sigr get updated even if it's not used in "residual"?
-        if nosource
-            sigr .= 0.0
-        else
-            # get difference between estimated Gamr and old Gamr
-            @. deltaS = sigr_est - sigr
-
-            # relax Gamr values
-            relax_sigr!(
-                sigr,
-                deltaS_prev,
-                deltaS,
-                maxsigr,
-                maxdeltasigr;
-                nrf=nrf,
-                bt1=bt1,
-                bt2=bt2,
-                pf1=pf1,
-                pf2=pf2,
-            )
-        end
+        ##### ----- Estimate and Relax gamw ----- #####
 
         # Update Vm_avg in wake using new Gamr and sigma
         if !isnothing(inputs.gamb)
@@ -170,6 +151,37 @@ function solve!(
 
         # relax gamw values
         relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=nrf, btw=btw, pfw=pfw)
+
+        ##### ----- Update sigr ----- #####
+        if nosource
+            # Update rotor blade element velocities without body influence
+            _, _, _, _, _, _, Wmag_rotor = calculate_rotor_velocities(
+                Gamr, gamw, sigr, inputs
+            )
+
+            # update sigr in place
+            calculate_rotor_source_strengths!(
+                sigr, Wmag_rotor, inputs.blade_elements, cd, inputs.freestream.rhoinf
+            )
+
+        else
+            # - Relax Sigr if including in "residual" - #
+            # get difference between estimated Gamr and old Gamr
+            @. deltaS = sigr_est - sigr
+            # relax Gamr values
+            relax_sigr!(
+                sigr,
+                deltaS_prev,
+                deltaS,
+                maxsigr,
+                maxdeltasigr;
+                nrf=nrf,
+                bt1=bt1,
+                bt2=bt2,
+                pf1=pf1,
+                pf2=pf2,
+            )
+        end
 
         # converged?
         if nosource
@@ -245,6 +257,7 @@ function relax_Gamr!(
         # multiply by B to get BGamr values
         BG .*= b
         delta .*= b
+        delta_prev .*= b
 
         # - Set the normalization value based on the maximum magnitude value of B*Gamr
 
@@ -278,7 +291,8 @@ function relax_Gamr!(
         bladeomega[i], oi = findmin(abs.(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        if -0.2 > nrf / (deltahat[oi] * maxBGamr[i]) > 0.4
+        println(nrf / (deltahat[oi]))
+        if -0.2 > (nrf / deltahat[oi]) || (nrf / deltahat[oi]) > 0.4
             bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
         else
             bladeomega[i] = nrf
@@ -303,6 +317,8 @@ function relax_Gamr!(
         BG .+= omega .* delta
         # remove the *b
         BG ./= b
+        delta ./= b
+        delta_prev ./= b
     end
 
     if test

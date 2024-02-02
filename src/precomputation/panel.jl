@@ -20,6 +20,7 @@ function generate_panels(
     axistol=1e-15,
     tegaptol=1e1 * eps(),
     isbody=true,
+    isrotor=false,
 ) where {TF}
 
     ## -- SETUP -- ##
@@ -141,7 +142,7 @@ function generate_panels(
     tendotn = zeros(TF, 2, nbodies) #bodies, node1,2
     tencrossn = zeros(TF, 2, nbodies) #bodies, node1,2
 
-    if isbody
+    if !isrotor
         def_te_panel!(
             tenode,
             tenormal,
