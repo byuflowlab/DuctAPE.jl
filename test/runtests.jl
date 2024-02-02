@@ -30,12 +30,12 @@ include("linear_system_assembly.jl")
 include("pre_processing_tests.jl")
 
 # - solve related tests - #
+include("iteration_step_tests.jl")
 include("relaxation_tests.jl")
 include("wake_aero_tests.jl")
 
 # - post process related tests - #
 include("post_processing_tests.jl")
-include("dfdc_comparison.jl")
 
 
 # - Need to update, add, fix, etc. - #

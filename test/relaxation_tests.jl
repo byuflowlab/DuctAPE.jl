@@ -18,7 +18,7 @@ println("\nCSUR TESTS")
         maxBGamr,
         maxdeltaBGamr,
         B;
-        nrf=0.5,
+        nrf=0.4,
         bt1=0.2,
         bt2=0.6,
         pf1=0.4,
@@ -26,9 +26,9 @@ println("\nCSUR TESTS")
         test=true,
     )
 
-    @test bladeomega == [0.5, 0.5] # note this is for each blade
-    @test omega == [0.3, 0.3, 0.3] # note this is for the last blade
-    @test isapprox(Gamr, 1.3 * ones(size(Gamr)))
+    @test bladeomega == [0.4, 0.4] # note this is for each blade
+    @test omega == [0.24, 0.24, 0.24] # note this is for the last blade
+    @test isapprox(Gamr, 1.24 * ones(size(Gamr)))
     @test maxBGamr == [3.0, 2.0]
     @test isapprox(maxdeltaBGamr, [3.0, 2.0]) #ΔΓ is 1.0, and this is ΔBΓ so it's just the number of blades
 end
@@ -40,9 +40,9 @@ end
     maxdeltagamw = Array{Float64,0}(undef)
     maxdeltagamw[] = 0.0
 
-    dt.relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=0.5, btw=0.6, pfw=1.2)
+    dt.relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=0.4, btw=0.6, pfw=1.2)
 
-    @test gamw == 1.6 * ones(3)
+    @test gamw == 1.48 * ones(3)
     @test maxdeltagamw[] == 1.0
 end
 

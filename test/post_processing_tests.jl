@@ -135,6 +135,68 @@ println("\nPOST PROCESSING TESTS")
 
 end
 
+@testset "Body Surface Pressure" begin
+    datapath = "data/dfdc_init_iter1/"
+    include(datapath * "ductape_parameters.jl")
+    include(datapath * "ductape_formatted_dfdc_geometry.jl")
+
+    # generate inputs
+    inputs = dt.precomputed_inputs(
+        system_geometry,
+        rotorstator_parameters, #vector of named tuples
+        freestream,
+        reference_parameters;
+        debug=false,
+    )
+
+    # - Parameters - #
+    B = 5 #there are 5 blades
+
+    # - read in index file - #
+    # in the case here, element 1 is the hub, 2 is the duct, 3 is the rotor, 4 is the hub wake, 14 is the duct wake, and the rest are the interior wake sheets.
+    include(datapath * "element_indices.jl")
+
+    # get ranges of element idices
+    nidx = dfdc_eid[:, 2:3]
+    pidx = dfdc_eid[:, 4:5]
+    nidranges = nidx[:, 2] .- nidx[:, 1] .+ 1
+    pidranges = pidx[:, 2] .- pidx[:, 1] .+ 1
+
+    # - read in geometry file to help find indices - #
+    include(datapath * "dfdc_geometry.jl")
+
+    # get wake sheet length
+    num_wake_z_panels = num_wake_z_nodes - 1
+
+    # get number of nodes and panels on bodies interface with wake
+    nhub_interface_nodes = num_wake_z_nodes - nidranges[4]
+    nduct_interface_nodes = num_wake_z_nodes - nidranges[end]
+    nhub_interface_panels = num_wake_z_panels - pidranges[4]
+    nduct_interface_panels = num_wake_z_panels - pidranges[end]
+
+    # - read in functions to reformat - #
+    include(datapath * "reformatting_functions.jl")
+    include(datapath * "iter2_sigr.jl")
+    include(datapath * "iter1_relaxed_gamw.jl")
+    gamw1 = reformat_gamw(relaxed_GTH, nidx, nhub_interface_nodes, nduct_interface_nodes)
+    include(datapath * "iter1_relaxed_bgam.jl")
+    Gamr1 = reformat_circulation(bgamr1, B)
+
+    # - Body Pressures - #
+    include(datapath * "iter2_body_cp_withdeltas.jl")
+    duct_cpR2, hub_cpR2 = reformat_body_cp(body_cpR2, pidx)
+
+    Gamr = zeros(length(Gamr1), 1) .= copy(Gamr1)
+    sigr = zeros(length(sigr2), 1) .= copy(sigr2)
+    gamw = -copy(gamw1)
+    outs = dt.post_process(Gamr, sigr, gamw, inputs; write_outputs=false)
+
+    duct_cp = [outs.bodies.cp_casing_out; outs.bodies.cp_nacelle_out]
+    centerbody_cp = outs.bodies.cp_centerbody_out
+    @test all(isapprox.(duct_cp, reverse(duct_cpR2), atol=1e-2))
+    @test all(isapprox.(centerbody_cp, reverse(hub_cpR2), atol=1e-2))
+end
+
 #TODO: update this test to use DuctAPE.c4b
 # @testset "Rotor Loads" begin
 

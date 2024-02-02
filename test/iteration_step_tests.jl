@@ -1,66 +1,4 @@
-println("\nMISC TESTS")
-
-@testset "Body Surface Pressure" begin
-    datapath = "data/dfdc_init_iter1/"
-    include(datapath * "ductape_parameters.jl")
-    include(datapath * "ductape_formatted_dfdc_geometry.jl")
-
-    # generate inputs
-    inputs = dt.precomputed_inputs(
-        system_geometry,
-        rotorstator_parameters, #vector of named tuples
-        freestream,
-        reference_parameters;
-        debug=false,
-    )
-
-    # - Parameters - #
-    B = 5 #there are 5 blades
-
-    # - read in index file - #
-    # in the case here, element 1 is the hub, 2 is the duct, 3 is the rotor, 4 is the hub wake, 14 is the duct wake, and the rest are the interior wake sheets.
-    include(datapath * "element_indices.jl")
-
-    # get ranges of element idices
-    nidx = dfdc_eid[:, 2:3]
-    pidx = dfdc_eid[:, 4:5]
-    nidranges = nidx[:, 2] .- nidx[:, 1] .+ 1
-    pidranges = pidx[:, 2] .- pidx[:, 1] .+ 1
-
-    # - read in geometry file to help find indices - #
-    include(datapath * "dfdc_geometry.jl")
-
-    # get wake sheet length
-    num_wake_z_panels = num_wake_z_nodes - 1
-
-    # get number of nodes and panels on bodies interface with wake
-    nhub_interface_nodes = num_wake_z_nodes - nidranges[4]
-    nduct_interface_nodes = num_wake_z_nodes - nidranges[end]
-    nhub_interface_panels = num_wake_z_panels - pidranges[4]
-    nduct_interface_panels = num_wake_z_panels - pidranges[end]
-
-    # - read in functions to reformat - #
-    include(datapath * "reformatting_functions.jl")
-    include(datapath * "iter2_sigr.jl")
-    include(datapath * "iter1_relaxed_gamw.jl")
-    gamw1 = reformat_gamw(relaxed_GTH, nidx, nhub_interface_nodes, nduct_interface_nodes)
-    include(datapath * "iter1_relaxed_bgam.jl")
-    Gamr1 = reformat_circulation(relaxed_BGAM, B)
-
-    # - Body Pressures - #
-    include(datapath * "iter2_body_cp_withdeltas.jl")
-    duct_cpR2, hub_cpR2 = reformat_body_cp(body_cpR2, pidx)
-
-    Gamr = zeros(length(Gamr1), 1) .= copy(Gamr1)
-    sigr = zeros(length(sigr2), 1) .= copy(sigr2)
-    gamw = -copy(gamw1)
-    outs = dt.post_process(Gamr, sigr, gamw, inputs; write_outputs=false)
-
-    duct_cp = [outs.bodies.cp_casing_out; outs.bodies.cp_nacelle_out]
-    centerbody_cp = outs.bodies.cp_centerbody_out
-    @test all(isapprox.(duct_cp, reverse(duct_cpR2), atol=1e-2))
-    @test all(isapprox.(centerbody_cp, reverse(hub_cpR2), atol=1e-2))
-end
+println("\nITERATION STEP THROUGH TESTS")
 
 @testset "Iteration Steps" begin
     ##### ----- Set up ----- #####
@@ -145,7 +83,7 @@ end
 
     _, vr_rotor, _, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = dt.calculate_rotor_velocities(
         Gamr1mat,
-        gamw1,
+        -gamw1,
         sigr2mat,
         inputs.gamb[1:(inputs.body_vortex_panels.totnode)],
         inputs,
@@ -157,8 +95,7 @@ end
     @test isapprox(Wmag_rotor, be2.Wmag, atol=1e-1)
     @test isapprox(Wtheta_rotor, be2.Wtheta, atol=1e-4)
 
-    ##### ----- Test ----- #####
-    #TODO: with updated rotor velocities, test blade element values (cl, cd, phi, alpha)
+    ##### ----- Test cl, cd, and angles ----- #####
     cl, cd, phi, alpha = dt.calculate_blade_element_coefficients(
         inputs.blade_elements,
         Wz_rotor,
@@ -173,8 +110,7 @@ end
     @test isapprox(pi / 2.0 .- phi, be2.phi, atol=1e-3)
     @test isapprox(alpha, be2.alpha, atol=1e-3)
 
-    ##### ----- Test ----- #####
-    #TODO: with updated blade values, test estimated Gamr
+    ##### ----- Test estimated Gamr ----- #####
 
     Gamr_est = similar(Gamr1mat) .= 0
     dt.calculate_rotor_circulation_strengths!(
@@ -182,8 +118,8 @@ end
     )
     @test isapprox(Gamr_est, be2.Gamr_est ./ B, atol=1e-2)
 
-    ##### ----- Test ----- #####
-    #TODO; with estimated Gamr test relaxed Gamr and convergence criteria
+    ##### ----- Test relaxed Gamr ----- #####
+    # with estimated Gamr test relaxed Gamr
     include(datapath * "iter2_relaxed_bgam.jl")
     Gamr2 = reformat_circulation(bgamr2, B)
     Gamr2mat = [Gamr2;;]
@@ -211,20 +147,52 @@ end
 
     @test isapprox(Gamr2test, Gamr2, atol=1e-3)
 
+    ##### ----- Test wake velocities ----- #####
+    include(datapath * "iter2_wm_wake_panels.jl")
+    Wm_wake2 = reformat_wake_panel_vels(
+        VMAV, nhub_interface_panels, nduct_interface_panels, pidranges
+    )
+
+    Wm_wake = dt.calculate_wake_velocities(
+        -gamw1, sigr2mat, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
+    )
+
+    Wm_wake_test = copy(Wm_wake)
+    Wm_wake_test[inputs.ductwakeinterfaceid] .= 0.0
+    Wm_wake_test[inputs.hubwakeinterfaceid] .= 0.0
+
+    @test isapprox(Wm_wake_test, Wm_wake2, atol=5e-2)
+
+    ##### ----- Test estimated gamw ----- #####
+    include(datapath * "iter2_gamw_est.jl")
+    gamw2_est = reformat_gamw(GAMTH2, nidx, nhub_interface_nodes, nduct_interface_nodes)
+
+    gamw_est_test = copy(gamw2_est) .= 0
+    dt.calculate_wake_vortex_strengths!(gamw_est_test, Gamr2test, Wm_wake, inputs)
+
+    @test maximum(gamw_est_test .+ gamw2_est) < 0.11
+
+    ##### ----- Test relaxed gam ----- #####
+    include(datapath * "iter2_relaxed_gamw.jl")
+    gamw_relax2 = reformat_gamw(
+        relaxed_GTH, nidx, nhub_interface_nodes, nduct_interface_nodes
+    )
+    include(datapath * "iter2_dgold.jl")
+    deltag_prev = reformat_gamw(-dgold2, nidx, nhub_interface_nodes, nduct_interface_nodes)
+
+    deltag = -(gamw2_est - gamw1)
+    maxdeltagamw = MVector{1,Float64}(0.0)
+
+    # relax gamw values
+    gamw2_test, omega = dt.relax_gamw!(
+        -copy(gamw1), deltag_prev, deltag, maxdeltagamw; test=true
+    )
+
+    @test maximum(gamw2_test .+ gamw_relax2) < 1e-5
+
     ##### ----- Test ----- #####
-    #TODO: with relaxed Gamr, text jump terms
-
-    #
-    #TODO: you are here TODO: you are here TODO: you are here
-    #
+    #TODO: with relaxed gamw and Gamr and test convergence criteria,
 
     ##### ----- Test ----- #####
-    #TODO; with updated body strengths, test wake velocities
-
-    ##### ----- Test ----- #####
-    #TODO; with updated wake velocities, test estimated gamw
-
-    ##### ----- Test ----- #####
-    #TODO: with estimated gamw, test relaxed gamw and convergence criteria
-
+    #TODO: with everything done, test sigr to be used for next iteration.
 end
