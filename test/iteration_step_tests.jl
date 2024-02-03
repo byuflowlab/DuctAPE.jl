@@ -190,9 +190,25 @@ println("\nITERATION STEP THROUGH TESTS")
 
     @test maximum(gamw2_test .+ gamw_relax2) < 1e-5
 
-    ##### ----- Test ----- #####
-    #TODO: with relaxed gamw and Gamr and test convergence criteria,
+    ##### ----- Test Convergence Criteria ----- #####
+    @test isapprox(maxdeltagamw[], -13.8755674)
+    @test isapprox(maxdeltaBGamr[], -12.9095955, atol=1e-2)
+    @test isapprox(maxBGamr[], 12.3562546)
 
     ##### ----- Test ----- #####
     #TODO: with everything done, test sigr to be used for next iteration.
+    # Update rotor blade element velocities without body influence
+    include(datapath * "iter3_sigr.jl")
+    sigr3mat = [sigr3;;]
+
+    _, _, _, _, _, _, Wmag_rotor = dt.calculate_rotor_velocities(
+        Gamr2test, gamw2_test, sigr2mat, inputs
+    )
+
+    # update sigr in place
+    dt.calculate_rotor_source_strengths!(
+        sigr2mat, Wmag_rotor, inputs.blade_elements, cd, inputs.freestream.rhoinf
+    )
+
+    @test isapprox(sigr2mat, sigr3mat, atol=1e-2)
 end

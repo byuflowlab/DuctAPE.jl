@@ -618,7 +618,7 @@ wdi = wakeductinterfacepanelid
     body_jump_term = [jumpduct; jumphub]
 
     vtot_jump = similar(Vtot) .= 0.0
-    for (vt, tan) in zip(eachrow(vtot_jump), eachrow(inputs.body_vortex_panels.tangent))
+    for (vt, tan) in zip(eachrow(vtot_jump), eachrow(body_vortex_panels.tangent))
         vt .+= body_jump_term.*tan./2.0
     end
 

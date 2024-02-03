@@ -960,7 +960,7 @@ function precomputed_inputs(
 
     return (;
         converged=[false],
-        Vconv=[0.0],
+        Vconv=[reference_parameters.Vref],
         iterations=[0],
         lu_decomp_flag,
         #freestream
@@ -1087,8 +1087,14 @@ function initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
     rotor_panel_centers = inputs.rotor_panel_centers
 
     # - inialize for re-use - #
-    Vinf = similar(Gamr) .= inputs.freestream.Vinf # if desired, you can add the body induced velocities at each rotor control point to this array.
-    vzind = zeros(eltype(Gamr), size(rotor_panel_centers, 1))
+    Vinf = similar(Gamr) .= freestream.Vinf # if desired, you can add the body induced velocities at each rotor control point to this array.
+    if haskey(inputs, :gamb)
+        vzind, _, _, _, _, _, _ = calculate_rotor_velocities(
+            Gamr, gamw, sigr, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
+            )
+    else
+        vzind = zeros(eltype(Gamr), size(rotor_panel_centers, 1))
+    end
     vthetaind = zeros(eltype(Gamr), size(rotor_panel_centers, 1))
     Wm_dist = similar(Gamr, size(sigr,1)) .= 0
     Wm_wake = similar(Gamr, inputs.wake_vortex_panels.totpanel) .= 0
@@ -1133,11 +1139,11 @@ function initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
         G .= 0.5 .* out.cl .* out.W .* be.chords
 
         # Get source strength starting point (note we need the values at the nodes not centers, so average the values and use the end values on the end points)
-        s[1] = @. 0.5 * out.cd[1] * out.W[1] * be.chords[1]
+        s[1] = @. be.B/(4.0*pi)* out.cd[1] * out.W[1] * be.chords[1]
         @. s[2:(end - 1)] =
-            (0.5 * out.cd[2:end] * out.W[2:end] * be.chords[2:end] +
-            0.5 * out.cd[1:(end - 1)] * out.W[1:(end - 1)] * be.chords[1:(end - 1)])/2.0
-        s[end] = @. 0.5 * out.cd[end] * out.W[end] * be.chords[end]
+            (be.B/(4.0*pi)* out.cd[2:end] * out.W[2:end] * be.chords[2:end] +
+            be.B/(4.0*pi)* out.cd[1:(end - 1)] * out.W[1:(end - 1)] * be.chords[1:(end - 1)])/2.0
+        s[end] = @. be.B/(4.0*pi)* out.cd[end] * out.W[end] * be.chords[end]
 
         # Get velocity distribution between this rotor and the next (same deal as with source panels, since wakes extend from source panel endpoints, we need to average velocities and use the ends for endpoints)
         Wm_dist[1]  =  sqrt((V[1] + vzind[1])^2 + vthetaind[1]^2)
@@ -1145,7 +1151,8 @@ function initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
        .+sqrt.((V[2:end] .+ vzind[1:(end - 1)]).^2 .+ vthetaind[1:(end - 1)].^2))/2.0
         Wm_dist[end] = sqrt((V[end] + vzind[end])^2 + vthetaind[end]^2)
 
-        inputs.Vconv[1] = sum(Wm_dist)/length(Wm_dist)
+        # Change convergence criteria?
+        # inputs.Vconv[1] = sum(Wm_dist)/length(Wm_dist)
 
         # populate this section of the wake average velocities
         for (wid, wmap) in enumerate(eachrow(inputs.rotorwakepanelid))

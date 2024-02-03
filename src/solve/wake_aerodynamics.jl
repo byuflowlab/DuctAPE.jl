@@ -212,7 +212,6 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
     if inputs.ductwakeinterfaceid != nothing
         # gamw[inputs.ductwakeinterfaceid] .= 0.0
 
-        #TODO: double check this is working properly.
         gamw[inputs.ductwakeinterfacenodeid] =
             gamw[inputs.ductwakeinterfacenodeid[end]+1] * (
                 1.0 .-
@@ -225,8 +224,6 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
     if inputs.hubwakeinterfaceid != nothing
         # gamw[inputs.hubwakeinterfaceid] .= 0.0
 
-        #TODO: double check this is working properly.
-        println(gamw[inputs.hubwakeinterfacenodeid[end]+1])
         gamw[inputs.hubwakeinterfacenodeid] =
             gamw[inputs.hubwakeinterfacenodeid[end]+1] * (
                 1.0 .-
