@@ -17,7 +17,6 @@ const sa = StaticArrays
 include("test_utils.jl")
 
 println("Running Tests...")
-include("iteration_step_tests.jl")
 
 # - Active Development - #
 # include("solve_checks.jl")
@@ -33,6 +32,7 @@ include("pre_processing_tests.jl")
 # - solve related tests - #
 include("relaxation_tests.jl")
 include("wake_aero_tests.jl")
+include("iteration_step_tests.jl")
 
 # - post process related tests - #
 include("post_processing_tests.jl")

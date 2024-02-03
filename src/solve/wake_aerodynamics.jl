@@ -210,7 +210,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
 
     # - Wake-Body Interface Treatment - #
     if inputs.ductwakeinterfaceid != nothing
-        # gamw[inputs.ductwakeinterfaceid] .= 0.0
+        # gamw[inputs.ductwakeinterfacenodeid] .= 0.0
 
         gamw[inputs.ductwakeinterfacenodeid] =
             gamw[inputs.ductwakeinterfacenodeid[end]+1] * (
@@ -222,7 +222,7 @@ function calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs; post=fals
             )
     end
     if inputs.hubwakeinterfaceid != nothing
-        # gamw[inputs.hubwakeinterfaceid] .= 0.0
+        # gamw[inputs.hubwakeinterfacenodeid] .= 0.0
 
         gamw[inputs.hubwakeinterfacenodeid] =
             gamw[inputs.hubwakeinterfacenodeid[end]+1] * (
