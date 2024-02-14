@@ -3,16 +3,19 @@ using Test
 println("Compiling Package")
 using DuctAPE
 const dt = DuctAPE
-# using CCBlade
-# const ccb = CCBlade
+
 using FLOWMath
 const fm = FLOWMath
-using ForwardDiff
-const frd = ForwardDiff
-using FiniteDiff
-const fnd = FiniteDiff
+
 using StaticArrays
 const sa = StaticArrays
+
+using ForwardDiff
+const frd = ForwardDiff
+using ReverseDiff
+const rd = ReverseDiff
+using FiniteDiff
+const fnd = FiniteDiff
 
 include("test_utils.jl")
 

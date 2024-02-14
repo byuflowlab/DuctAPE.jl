@@ -59,7 +59,7 @@ iter2_controlpoint_vels = reformat_controlpoint_velocities(
 include("initial_bgam.jl")
 Gamr0 = reformat_circulation(BGAM, B)
 include("iter1_relaxed_bgam.jl")
-Gamr1 = reformat_circulation(relaxed_BGAM, B)
+Gamr1 = reformat_circulation(bgamr1, B)
 
 ##### ----- gamw ----- #####
 # include("initial_gamw_in_solve.jl")
