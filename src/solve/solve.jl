@@ -291,11 +291,20 @@ function relax_Gamr!(
         bladeomega[i], oi = findmin(abs.(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        if -0.2 > (nrf / deltahat[oi]) || (nrf / deltahat[oi]) > 0.4
+        if -bt1 > (nrf / deltahat[oi]) || (nrf / deltahat[oi]) > pf1
             bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
         else
             bladeomega[i] = nrf
         end
+
+        if (nrf / deltahat[oi]) < -bt1
+            bladeomega[i] *= bt1
+        elseif (nrf / deltahat[oi]) > pf1
+            bladeomega[i] *= pf1
+        else
+            bladeomega[i] = nrf
+        end
+
 
         # scale blade element relaxation factor
         for (o, d, dp) in zip(eachrow(omega), delta, eachrow(delta_prev))

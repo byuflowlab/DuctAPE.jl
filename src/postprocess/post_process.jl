@@ -1109,14 +1109,32 @@ function inviscid_rotor_torque(
 end
 
 function viscous_rotor_torque(
-    Wtheta_rotor, Wmag_rotor, B, chord, rotor_panel_center, rotor_panel_length, cd, rhoinf
+    Wtheta_rotor,
+    Wmag_rotor,
+    B,
+    chord,
+    rotor_panel_center,
+    rotor_panel_length,
+    cd,
+    rhoinf;
+    TF=nothing,
 )
 
     # dimensions
     nr, nrotor = size(Wtheta_rotor)
 
     # initialize
-    dQv = similar(chord) .= 0.0
+    if isnothing(TF)
+        TF = promote_type(
+            eltype(Wtheta_rotor),
+            eltype(Wmag_rotor),
+            eltype(chord),
+            eltype(rotor_panel_center),
+            eltype(cd),
+        )
+    end
+
+    dQv = zeros(TF, size(chord))
 
     for irotor in 1:nrotor
         for ir in 1:nr
@@ -1141,7 +1159,10 @@ function viscous_rotor_power(Qvisc, Omega)
 end
 
 function get_total_efficiency(total_thrust, total_power, Vinf)
-    eta = zeros(eltype(total_thrust), length(total_thrust))
+    TF = promote_type(eltype(total_thrust), eltype(total_power), eltype(Vinf))
+
+    eta = zeros(TF, length(total_thrust))
+
     for i in 1:length(total_thrust)
         if Vinf <= 0.0 || total_power[i] < eps() || total_thrust[i] <= 0.0
             #do nothing, efficiency can't physically be negative or infinite.
@@ -1149,6 +1170,7 @@ function get_total_efficiency(total_thrust, total_power, Vinf)
             eta[i] = total_thrust[i] * Vinf / total_power[i]
         end
     end
+
     return eta
 end
 

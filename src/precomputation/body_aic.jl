@@ -444,10 +444,12 @@ end
 #---------------------------------#
 """
 """
-function assemble_rhs_matrix(vdnb, vdnpcp, panels)
+function assemble_rhs_matrix(vdnb, vdnpcp, panels; TF=nothing)
 
     # get type
-    TF = promote_type(eltype(vdnb), eltype(vdnpcp))
+    if isnothing(TF)
+        TF = promote_type(eltype(vdnb), eltype(vdnpcp))
+    end
 
     # initialize RHS matrix
     RHS = zeros(TF, panels.totnode + 2)

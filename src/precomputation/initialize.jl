@@ -508,7 +508,7 @@ function precomputed_inputs(
     )
 
     # initial RHS includes only freestream values
-    RHS = assemble_rhs_matrix(vdnb, vdnpcp, body_vortex_panels)
+    RHS = assemble_rhs_matrix(vdnb, vdnpcp, body_vortex_panels; TF=TF)
 
     # initial body strengths are the strengths without the rotor inductions
     gamb = LHS \ RHS
@@ -987,8 +987,8 @@ function precomputed_inputs(
         hubidsaftofrotors,
         ductwakeinterfaceid, # wake panel indices that lie on top of duct wall
          hubwakeinterfaceid, # wake panel indices that lie on top of hub wall
-    hubwakeinterfacenodeid, # wake node indices that lie on top of hub wall
-    ductwakeinterfacenodeid, # wake node indicues that lie on top of duct wall
+         hubwakeinterfacenodeid=collect(hubwakeinterfacenodeid), # wake node indices that lie on top of hub wall
+    ductwakeinterfacenodeid=collect(ductwakeinterfacenodeid), # wake node indicues that lie on top of duct wall
     wakehubinterfacepanelid, # hub panel indices that interface with wake
     wakeductinterfacepanelid, # duct panel indices that interface with wake
         rotorwakeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel

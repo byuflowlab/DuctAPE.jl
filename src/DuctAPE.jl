@@ -7,21 +7,19 @@ module DuctAPE
 using FLOWMath # used for various items, mostly interpolation
 const fm = FLOWMath #rename FLOWMath for convenience
 
-include("C4Blade/C4Blade.jl")
+include("C4Blade/C4Blade.jl") # augmented CCBlade implementation (cascade compatible CCBlade)
 const c4b = C4Blade
-# using CCBlade # used for airfoil types
-# const ccb = CCBlade #rename ccblade for convenience
 
 using SpecialFunctions # required for elliptic integrals
 using QuadGK # required for integration of linear panels
-using StaticArrays
+using StaticArrays # used in miscellaneous places for code efficiency
 
 using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
 
-using NLsolve
-using ImplicitAD
+# using NLsolve
+# using ImplicitAD
 
-using Printf
+using Printf # used when verbose option is selected
 
 #---------------------------------#
 #            INCLUDES             #

@@ -22,6 +22,7 @@ function calculate_body_vortex_strengths!(
 
     # add wake vortex sheet contributions to right hand side
     RHS[1:nbn] .-= A_bw * gamw
+
     # add wake influence on psuedo control points
     # TODO: may want to make this not hard coded at some point
     RHS[nbn + 1] -= A_pw[1, :]' * gamw

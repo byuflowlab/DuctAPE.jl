@@ -41,7 +41,9 @@ Parameters defining the rotor (apply to all sections).
 - `tip::TipCorrection`: correction method for hub/tip loss
 """
 struct Rotor{
-    TF,
+    TFrh,
+    TFrt,
+    TFp,
     TI,
     TB,
     T1<:Union{Nothing,MachCorrection},
@@ -49,10 +51,10 @@ struct Rotor{
     T3<:Union{Nothing,RotationCorrection},
     T4<:Union{Nothing,TipCorrection},
 }
-    Rhub::TF
-    Rtip::TF
+    Rhub::TFrh
+    Rtip::TFrt
     B::TI
-    precone::TF
+    precone::TFp
     turbine::TB
     mach::T1
     re::T2
@@ -86,10 +88,10 @@ Define sectional properties for one station along rotor
 - `theta::Float64`: corresponding twist angle (radians)
 - `af::Function or AFType`: if function form is: `cl, cd = af(alpha, Re, Mach)`
 """
-struct Section{TF,TAF}
-    r::TF
-    chord::TF
-    theta::TF
+struct Section{TFr,TFc,TFt,TAF}
+    r::TFr
+    chord::TFc
+    theta::TFt
     af::TAF
 end
 
