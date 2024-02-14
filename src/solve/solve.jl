@@ -219,6 +219,107 @@ function solve!(
 end
 
 """
+"""
+function solve_pc!(
+    inputs,
+    Gamr,
+    sigr,
+    gamw,
+    gamw_est;
+    maxiter=1e2,
+    verbose=false,
+    nrf=0.4,
+    bt1=0.2,
+    bt2=0.6,
+    pf1=0.4,
+    pf2=0.5,
+    btw=0.6,
+    pfw=1.2,
+    f_dgamw=2e-4, #DFDC Values
+)
+    freestream = inputs.freestream
+
+    # initialize convergence criteria
+    TF = eltype(Gamr)
+    maxdeltagamw = MVector{1,TF}(0.0)
+    conv = MVector{1,Bool}(false)
+    iter = 0
+
+    # initialize differences
+    deltag_prev = gamw_est .- gamw
+    deltag = similar(deltag_prev) .= 0.0
+
+    # loop until converged or max iterations are reached
+    while !conv[] && iter <= maxiter
+        # update iteration number
+        iter += 1
+        if verbose
+            println("Iteration $(iter):")
+        end
+
+        ##### ----- Solve linear system if including ----- #####
+        if !isnothing(inputs.gamb)
+            # in place solve for gamb
+            calculate_body_vortex_strengths!(
+                inputs.gamb,
+                inputs.A_bb,
+                inputs.b_bf,
+                gamw,
+                inputs.A_bw,
+                inputs.A_pw,
+                sigr,
+                inputs.A_br,
+                inputs.A_pr,
+                inputs.RHS;
+                post=false,
+            )
+
+            # Update rotor blade element velocities with body influence
+            # note: only use the values in gamb associated with the node strengths
+            _, _, _, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+                Gamr, gamw, sigr, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
+            )
+        else
+
+            # Update rotor blade element velocities without body influence
+            _, _, _, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
+                Gamr, gamw, sigr, inputs
+            )
+        end
+
+        ##### ----- Estimate and Relax gamw ----- #####
+
+        # Update Vm_avg in wake using new Gamr and sigma
+        if !isnothing(inputs.gamb)
+            Wm_wake = calculate_wake_velocities(
+                gamw, sigr, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
+            )
+        else
+            Wm_wake = calculate_wake_velocities(gamw, sigr, inputs)
+        end
+
+        # in-place solve for gamw, update gamw_est
+        calculate_wake_vortex_strengths!(gamw_est, Gamr, Wm_wake, inputs)
+
+        # get difference beetween estimated gamw and old gamw
+        @. deltag = gamw_est - gamw
+
+        # relax gamw values
+        relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=nrf, btw=btw, pfw=pfw)
+
+        # converged?
+        check_convergence_pc!(
+            conv, maxdeltagamw, inputs.Vconv[1]; f_dgamw=f_dgamw, verbose=verbose
+        )
+    end
+
+    inputs.converged[1] = conv[1]
+    inputs.iterations[1] = iter
+
+    return Gamr, sigr, gamw
+end
+
+"""
 # Arguments:
 - `Gamr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
@@ -304,7 +405,6 @@ function relax_Gamr!(
         else
             bladeomega[i] = nrf
         end
-
 
         # scale blade element relaxation factor
         for (o, d, dp) in zip(eachrow(omega), delta, eachrow(delta_prev))
@@ -504,9 +604,9 @@ function check_convergence!(
 
     # set convergence flag
     conv[] =
-        abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
-        abs(maxdeltasigr[idS]) < f_sigr * abs(maxsigr[idS]) &&
-        maxdeltagamw[] < f_dgamw * Vref # abs already taken care of
+        abs(maxdeltaBGamr[idG]) < (f_circ * abs(maxBGamr[idG])) &&
+        abs(maxdeltasigr[idS]) < (f_sigr * abs(maxsigr[idS])) &&
+        maxdeltagamw[] < (f_dgamw * Vref) # abs already taken care of
     # abs(maxdeltagamw[]) < f_dgamw * Vref
 
     # # set convergence flag, note: this is how dfdc does it, without regard to which rotor for the Gamr values
@@ -549,8 +649,8 @@ function check_convergence!(
 
     # set convergence flag
     conv[] =
-        abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
-        maxdeltagamw[] < f_dgamw * Vref # abs already taken care of
+        abs(maxdeltaBGamr[idG]) < (f_circ * abs(maxBGamr[idG])) &&
+        maxdeltagamw[] < (f_dgamw * Vref) # abs already taken care of
     # abs(maxdeltagamw[]) < f_dgamw * Vref
 
     # # set convergence flag, note: this is how dfdc does it, without regard to which rotor for the Gamr values
@@ -563,6 +663,22 @@ function check_convergence!(
         println()
         @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ * abs(maxBGamr[idG])
         println()
+        @printf "\t%-16s      %-16s" "maxdgamw" "fg*Vconv"
+        println()
+        @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vref
+        println()
+        println()
+    end
+
+    return conv
+end
+
+function check_convergence_pc!(conv, maxdeltagamw, Vref; f_dgamw=2e-4, verbose=false)
+
+    # set convergence flag
+    conv[] = abs(maxdeltagamw[]) < (f_dgamw * Vref)
+
+    if verbose
         @printf "\t%-16s      %-16s" "maxdgamw" "fg*Vconv"
         println()
         @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vref
