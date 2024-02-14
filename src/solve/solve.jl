@@ -27,13 +27,19 @@ function solve!(
     freestream = inputs.freestream
 
     # initialize convergence criteria
-    TF = eltype(Gamr)
-    maxBGamr = MVector{1,TF}(0.0)
-    maxdeltaBGamr = MVector{1,TF}(0.0)
-    maxsigr = MVector{1,TF}(0.0)
-    maxdeltasigr = MVector{1,TF}(0.0)
-    maxdeltagamw = MVector{1,TF}(0.0)
-    conv = MVector{1,Bool}(false)
+    TF = promote_type(eltype(Gamr), eltype(gamw), eltype(sigr))
+    # maxBGamr = MVector{1,TF}(0.0)
+    # maxdeltaBGamr = MVector{1,TF}(0.0)
+    # maxsigr = MVector{1,TF}(0.0)
+    # maxdeltasigr = MVector{1,TF}(0.0)
+    # maxdeltagamw = MVector{1,TF}(0.0)
+    # conv = MVector{1,Bool}(false)
+    maxBGamr = TF[0.0]
+    maxdeltaBGamr = TF[0.0]
+    maxsigr = TF[0.0]
+    maxdeltasigr = TF[0.0]
+    maxdeltagamw = TF[0.0]
+    conv = [false]
     iter = 0
 
     #TODO: check how DFDC does this part.
@@ -305,7 +311,6 @@ function relax_Gamr!(
             bladeomega[i] = nrf
         end
 
-
         # scale blade element relaxation factor
         for (o, d, dp) in zip(eachrow(omega), delta, eachrow(delta_prev))
             # if differences changed sign, use backtrack factor, if sign is same, use press forward factor
@@ -453,7 +458,8 @@ function relax_gamw!(
 
     # initilize
     TF = eltype(gamw)
-    omega = MVector{1,TF}(nrf)
+    # omega = MVector{1,TF}(nrf)
+    omega = TF[nrf]
 
     # update delta gamw max for convergence criteria
     maxdeltagamw[], mi = findmax(abs.(delta))
