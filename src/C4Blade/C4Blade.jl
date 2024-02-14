@@ -19,6 +19,7 @@ using ImplicitAD
 include("airfoils.jl")  # all the code related to airfoil data
 include("cascades.jl")  # all the code related to cascade data
 include("dfdc_polars.jl")  # all the code related to dfdc (XROTOR) style data
+include("prescribed_circulation.jl")
 include("airfoil_corrections.jl") # various airfoil to cascade corrections
 
 # --------- structs -------------

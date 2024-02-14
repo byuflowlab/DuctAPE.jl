@@ -958,6 +958,13 @@ function precomputed_inputs(
     # get the total number of vortex panels on the bodies
     num_body_panels = body_vortex_panels.totpanel
 
+    # prescribed circulation?
+    if eltype(rotorstator_parameters[1].airfoils) <: c4b.ADM
+        prescribed_circulation = true
+    else
+        prescribed_circulation = false
+    end
+
     return (;
         converged=[false],
         Vconv=[reference_parameters.Vref],
@@ -1057,6 +1064,7 @@ function precomputed_inputs(
         ishub=!nohub,
         grid=grid[1, :, 1:length(rpe)], #TODO: what is this used for, and why is it not the whole grid?
         TF, #floating point type to pass around
+        prescribed_circulation,
     )
 end
 

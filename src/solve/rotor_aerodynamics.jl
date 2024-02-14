@@ -345,7 +345,9 @@ function calculate_gamma_sigma!(
     calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, blade_elements, cl)
 
     # - get source strength - #
-    calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, cd, freestream.rhoinf)
+    calculate_rotor_source_strengths!(
+        sigr, Wmag_rotor, blade_elements, cd, freestream.rhoinf
+    )
 
     return Gamr, sigr
 end
@@ -393,7 +395,9 @@ function calculate_blade_element_coefficients(
             phi, alpha = calculate_inflow_angles(
                 # Wz rather Wm used here in DFDC, presumable because the blade elements are definied in the z-r plane rather than the meridional direction
                 # Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
-                Wz_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
+                Wz_rotor[ir, irotor],
+                Wtheta_rotor[ir, irotor],
+                stagger,
             )
 
             # get local Reynolds number
@@ -411,6 +415,8 @@ function calculate_blade_element_coefficients(
                 blade_elements[irotor].inner_airfoil[ir],
                 blade_elements[irotor].outer_airfoil[ir],
                 blade_elements[irotor].inner_fraction[ir],
+                blade_elements[irotor].chords[ir],
+                blade_elements[irotor].B,
                 Wmag_rotor[ir, irotor],
                 solidity,
                 stagger,
@@ -442,6 +448,8 @@ function lookup_clcd(
     inner_airfoil,
     outer_airfoil,
     inner_fraction,
+    chord,
+    B,
     Wmag,
     solidity,
     stagger,
@@ -496,6 +504,11 @@ function lookup_clcd(
         clin, cdin = search_polars(inner_airfoil, alpha)
         # get outer values
         clout, cdout = search_polars(outer_airfoil, alpha)
+    elseif typeof(inner_airfoil) <: c4b.ADM
+        clin = clfromGamr(inner_airfoil.prescribed_circulation, Wmag, chord)
+        clout = clfromGamr(outer_airfoil.prescribed_circulation, Wmag, chord)
+        cdin = cdfromsigr(inner_airfoil.prescribed_source_strength, Wmag, chord, B)
+        cdout = cdfromsigr(outer_airfoil.prescribed_source_strength, Wmag, chord, B)
     else
         @error "No blade element datatype: $(typeof(inner_airfoil)) defined."
     end
@@ -505,6 +518,14 @@ function lookup_clcd(
     cd = fm.linear([0.0; 1.0], [cdin, cdout], inner_fraction)
 
     return cl, cd
+end
+
+function clfromGamr(Gamr, Wmag, c)
+    return 2.0 * Gamr / (Wmag * c)
+end
+
+function cdfromsigr(sigr, Wmag, c, B)
+    return sigr * 4.0 * pi / (B * Wmag * c)
 end
 
 """
