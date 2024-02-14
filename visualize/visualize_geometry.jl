@@ -7,7 +7,6 @@ function visualize_paneling(;
     nodes=true,
     wakeinterfaceid=[],
     prescribedpanels=nothing,
-    TEnodes=true,
     normals=true,
     normal_scaling=0.1,
     savepath="",
@@ -18,6 +17,12 @@ function visualize_paneling(;
     nodemarkersize=2,
     cpmarkersize=2,
 )
+
+    ## -- fix user errors -- ##
+    # if file name isn't given as a vector, make it one
+    if typeof(filename) <: String
+        filename = [filename]
+    end
 
     ## -- Initialize Plot -- ##
     # plot generated body_panels
@@ -77,37 +82,19 @@ function visualize_paneling(;
             end
         end
 
-        # plot trailing edge (wake) nodes
-        if TEnodes
-            for i in 1:length(body_panels.TEnodes)
-                lab = i == 1 ? "Body TE Nodes" : ""
-                plot!(
-                    p,
-                    [body_panels.TEnodes[i].pos[1]],
-                    [body_panels.TEnodes[i].pos[2]];
-                    label=lab,
-                    color=mygray[1],
-                    seriestype=:scatter,
-                    markersize=tesize,
-                )
-            end
+        #plot node (vortex) points
+        if nodes
+            plot!(
+                p,
+                body_panels.node[:, 1],
+                body_panels.node[:, 2];
+                color=myblue[2],
+                seriestype=:scatter,
+                markersize=bnsize,
+                label="Vortex Nodes",
+            )
         end
 
-        #plot nodes
-        if nodes
-            for i in 1:length(body_panels.len)
-                lab = i == 1 ? "Body Nodes" : ""
-                plot!(
-                    p,
-                    body_panels.nodes[i, :, 1],
-                    body_panels.nodes[i, :, 2];
-                    label=lab,
-                    color=myblue[2],
-                    seriestype=:scatter,
-                    markersize=bnsize,
-                )
-            end
-        end
 
         #plot control points
         if controlpoints
@@ -141,7 +128,7 @@ function visualize_paneling(;
 
         #plot normal
         if normals
-            for i in 1:length(body_panels.len)
+            for i in 1:size(body_panels.normal,1)
                 lab = i == 1 ? "Body Normals" : ""
                 plot!(
                     p,

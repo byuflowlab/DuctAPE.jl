@@ -4,7 +4,7 @@ Default Plots Settings for creating tikz native figures for dissertation
 
 using Plots;
 pgfplotsx();
-# pyplot()
+# pythonplot()
 using LaTeXStrings
 using Measures
 
@@ -18,7 +18,7 @@ default(;
     #     dpi,
     #     extra_kwargs,
     #     extra_plot_kwargs,
-    fontfamily="Palatino Roman",
+    fontfamily="Monaco",
     #     foreground_color,
     #     html_output_format,
     #     inset_subplots,
@@ -35,7 +35,8 @@ default(;
     #     plot_titlefontvalign,
     #     pos,
     #     show,
-    size=(400, 300) .* 5.0 ./ 4.0, #it appears that 100 ≈ 1inch in LaTeX
+    # size=(400, 300), #it appears that 100 ≈ 1inch in LaTeX
+    size=(300, 225), #it appears that 100 ≈ 1inch in LaTeX
     # size=(600, 450), #it appears that 100 ≈ 1inch in LaTeX
     # size=(800, 600), #it appears that 100 ≈ 1inch in LaTeX
     #     tex_output_standalone,
@@ -103,12 +104,12 @@ default(;
     #      :Subplot
     #######################
     #     annotationcolor,
-    annotationfontfamily="Palatino Roman",
+    annotationfontfamily="Monaco",
     annotationfontsize=10,
-    #     annotationhalign,
+    annotationhalign=:left,
     #     annotationrotation,
     #     annotations,
-    #     annotationvalign,
+    annotationvalign=:bottom,
     #     aspect_ratio,
     background_color_inside=nothing,
     background_color_legend=nothing,
@@ -117,13 +118,10 @@ default(;
     #     camera,
     #     clims,
     color_palette=[
-        RGB(0.0, 46.0 / 255.0, 93.0 / 255.0), #BYU Blue
-        RGB(155.0 / 255.0, 0.0, 0.0), #"BYU" Red
-        RGB(128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0), #Middle Gray
-        RGB(162.0 / 255.0, 227.0 / 255.0, 162.0 / 255.0), #Light Green
-        RGB(243.0 / 255.0, 209.0 / 255.0, 243.0 / 255.0), #Pink
-        RGB(205.0 / 255.0, 179.0 / 255.0, 0.0), #Yellow
-        RGB(161.0 / 255.0, 161.0 / 255.0, 226.0 / 255.0), #Purple
+        RGB(0.0 / 255, 92.0 / 255, 171.0 / 255) # royal blue
+        RGB(192.0 / 255, 83.0 / 255, 103.0 / 255) # royal red
+        RGB(143.0 / 255, 166.0 / 255, 81.0 / 255) # royal green
+        RGB(130.0 / 255, 130.0 / 255, 130.0 / 255) # royal gray
     ],
     #     colorbar,
     #     colorbar_continuous_values,
@@ -229,15 +227,15 @@ default(;
     #     widen,
 )
 
-mycolors = [
-    RGB(0, 46 / 255, 93 / 255), #BYU Blue
-    RGB(155 / 255, 0, 0), #"BYU" Red
-    RGB(128 / 255, 128 / 255, 128 / 255), #Middle Gray
-    RGB(162 / 255, 227 / 255, 162 / 255), #Light Green
-    RGB(243 / 255, 209 / 255, 243 / 255), #Pink
-    RGB(205 / 255, 179 / 255, 0.0), #Yellow
-    RGB(161 / 255, 161 / 255, 226 / 255), #Purple
-]
+byublue = RGB(0.0, 46.0 / 255, 93.0 / 255) #BYU Blue
+darkblue = RGB(0 / 255, 25 / 255, 50 / 255)
+byured = RGB(155.0 / 255, 0, 0) #"BYU" Red
+darkred = RGB(50 / 255, 0 / 255, 25 / 255)
+middlegray = RGB(128.0 / 255, 128.0 / 255, 128.0 / 255) #Middle Gray
+myblue = RGB(0.0 / 255, 92.0 / 255, 171.0 / 255) # royal blue
+myred = RGB(192.0 / 255, 83.0 / 255, 103.0 / 255) # royal red
+mygreen = RGB(143.0 / 255, 166.0 / 255, 81.0 / 255) # royal green
+mygray = RGB(130.0 / 255, 130.0 / 255, 130.0 / 255) # royal gray
 
 """
 """

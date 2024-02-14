@@ -1,4 +1,4 @@
-/Users/jmehr/Box Sync/Code_Development/DuctTAPE/test/data/APC-5x5.75_airfoils/APC-5x5.75_airfoil_r-0.057190639999999994 RAW
+/Users/jmehr/Box Sync/Code_Development/DuctAPE/test/data/APC-5x5.75_airfoils/APC-5x5.75_airfoil_r-0.057190639999999994 RAW
 15949.721479895008
 0.0
 -0.2617993877991494 -0.47439303668642674 0.19091607472110522

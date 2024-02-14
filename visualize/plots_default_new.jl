@@ -4,7 +4,7 @@ Default Plots Settings for creating tikz native figures for dissertation
 
 using Plots;
 pgfplotsx();
-# pyplot()
+# pythonplot()
 using LaTeXStrings
 using Measures
 
@@ -18,7 +18,7 @@ default(;
     #     dpi,
     #     extra_kwargs,
     #     extra_plot_kwargs,
-    fontfamily="Palatino Roman",
+    fontfamily="Computer Modern",
     #     foreground_color,
     #     html_output_format,
     #     inset_subplots,
@@ -73,7 +73,7 @@ default(;
     #     markeralpha,
     #     markercolor,
     #     markershape,
-    markersize=1.5,
+    markersize=3,
     markerstrokealpha=0,
     #     markerstrokecolor,
     #     markerstrokestyle,
@@ -103,7 +103,7 @@ default(;
     #      :Subplot
     #######################
     #     annotationcolor,
-    annotationfontfamily="Palatino Roman",
+    annotationfontfamily="Computer Modern",
     annotationfontsize=10,
     #     annotationhalign,
     #     annotationrotation,

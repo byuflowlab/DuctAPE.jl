@@ -50,7 +50,7 @@ function dt_full_wrapper(inputs)
     ]
 
     # - set up the rest of the parameters/inputs to the analysis - #
-    xrotor = 0.5
+    rotorzloc = 0.5
     B = 5
     r = 0.16:0.06669722222222223:0.760275
     twists = [
@@ -82,7 +82,7 @@ function dt_full_wrapper(inputs)
     wake_length = 1.0
     npanels = [30, 20, 40]
     rotor_parameters = [(;
-        xrotor,
+        rotorzloc,
         nwake_sheets,
         r=r ./ Rtip, #non-dimensionalize
         chords,
@@ -209,7 +209,7 @@ function dt_full_wrapper(inputs)
         1.3396208450880929 0.007272727272727265
     ]
 
-    # println("\t\tRunning DuctTAPE Analysis")
+    # println("\t\tRunning DuctAPE Analysis")
     # - run analyze_propulsor function - #
     # out, _, _, _, _ = @time dt.analyze_propulsor(
     out, _, _, _, _ = dt.analyze_propulsor(
@@ -305,7 +305,7 @@ function dt_prepost_wrapper(inputs)
         0.835
     ]
     # - set up the rest of the parameters/inputs to the analysis - #
-    xrotor = 0.5
+    rotorzloc = 0.5
     B = 5
     r = 0.16:0.06669722222222223:0.760275
     twists = [
@@ -337,7 +337,7 @@ function dt_prepost_wrapper(inputs)
     wake_length = 1.0
     npanels = [30, 20, 40]
     rotor_parameters = [(;
-        xrotor,
+        rotorzloc,
         nwake_sheets,
         r=r ./ Rtip, #non-dimensionalize
         chords,
@@ -464,7 +464,7 @@ function dt_prepost_wrapper(inputs)
         1.3396208450880929 0.007272727272727265
     ]
 
-    # println("\tRunning DuctTAPE precomputations")
+    # println("\tRunning DuctAPE precomputations")
     # initialize various inputs used in analysis
     precomps = dt.precomputed_inputs(
         duct_coordinates,
@@ -479,7 +479,7 @@ function dt_prepost_wrapper(inputs)
 
     mub, gamw, Gamr, sigr = dt.extract_state_variables(initial_states, precomps)
 
-    # println("\tRunning DuctTAPE post-processing")
+    # println("\tRunning DuctAPE post-processing")
     out = dt.post_process(initial_states, precomps)
 
     # - return some representative outputs - #

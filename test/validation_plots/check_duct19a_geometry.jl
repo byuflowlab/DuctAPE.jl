@@ -1,7 +1,7 @@
 using FLOWFoil
 const ff = FLOWFoil
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 
 include("../../plots_default.jl")
 
