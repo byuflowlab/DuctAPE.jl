@@ -12,8 +12,8 @@ const sa = StaticArrays
 
 using ForwardDiff
 const frd = ForwardDiff
-using ReverseDiff
-const rd = ReverseDiff
+# using ReverseDiff
+# const rd = ReverseDiff
 using FiniteDiff
 const fnd = FiniteDiff
 
