@@ -4,17 +4,17 @@ This version takes a given open rotor geometry and operating point and outputs t
 
 """
 
-**Arguments:**
+# Arguments:
 - `Rtip::Float` : Rotor tip radius
 - `RPM::Float` : rotations per minute
 - `J::Float` : Advance ratio
 - `ct::Float` : thrust coefficient
 - `Vinf::Float` : freestream velocity for ducted operation
 
-**Keyword Arguments:**
+# Keyword Arguments:
 - `rho::Float` : air density, default = 1.225 kg/m^3
 
-**Returns:**
+# Returns:
 - `exit_area::Float` : exit area
 - `debug::NamedTuple` : named tuple containing intermediate calculation values
 """

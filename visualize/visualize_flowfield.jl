@@ -1,7 +1,7 @@
 using GeometricTools
 const gt = GeometricTools
-using DuctTAPE
-const dt = DuctTAPE
+using DuctAPE
+const dt = DuctAPE
 using FLOWMath
 const fm = FLOWMath
 
@@ -15,7 +15,7 @@ function visualize_flowfield(
     gamw=nothing,
     Gamr=nothing,
     num_blades=[1],
-    xrotor=[0.0],
+    rotorzloc=[0.0],
     Pmax=nothing,
     Pmin=nothing,
     verbose=false,
@@ -69,7 +69,7 @@ function visualize_flowfield(
         println("\t"^(1) * "Grid size:\t\t$(NDIVS)")
     end
     if verbose
-        println("\t"^(1) * "Number of nodes :\t$(fieldgrid.nnodes)")
+        println("\t"^(1) * "Number of nodes :\t$(fieldgrid.totnode)")
     end
 
     # Targets where to probe the velocity
@@ -132,7 +132,7 @@ function visualize_flowfield(
 
         # reshape the wake panel control points into the wake sheets
         nsheets = size(Gamr, 1) + 1
-        nwakex = Int(wake_panels.npanels / nsheets)
+        nwakex = Int(wake_panels.totpanel / nsheets)
         wakecpx = reshape(wake_panels.controlpoint[:, 1], (nwakex, nsheets))'
         wakecpr = reshape(wake_panels.controlpoint[:, 2], (nwakex, nsheets))'
 
@@ -157,7 +157,7 @@ function visualize_flowfield(
             Gamma_tilde_be[end]
         ]
         for ix in 1:size(tgridx, 2)
-            gtid = findlast(x -> x <= tgridx[1, ix], xrotor)
+            gtid = findlast(x -> x <= tgridx[1, ix], rotorzloc)
             vthetagrid[:, ix] = dt.calculate_vtheta(Gamma_tilde_ws[:, gtid], tgridr[:, ix])
         end
 
