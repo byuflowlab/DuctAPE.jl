@@ -29,6 +29,6 @@ ImplicitAD = "0.3"
 IterativeSolvers = "0.9"
 LineSearches = "7"
 NLsolve = "4"
+QuadGK = "2"
 SpecialFunctions = "2"
 julia = "1.7"
-
