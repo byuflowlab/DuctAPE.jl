@@ -1071,10 +1071,9 @@ function initialize_rotorwake_aero(inputs)
     sigr = zeros(TF, length(inputs.blade_elements[1].rbe)+1,length(inputs.blade_elements))
     gamw = zeros(TF, inputs.wake_vortex_panels.totnode)
 
+    initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
 
- initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
-
- return Gamr, sigr, gamw
+    return Gamr, sigr, gamw
  end
 
 
