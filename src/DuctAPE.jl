@@ -16,8 +16,9 @@ using StaticArrays # used in miscellaneous places for code efficiency
 
 using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
 
-# using NLsolve
-# using ImplicitAD
+using NLsolve
+using LineSearches
+using ImplicitAD
 
 using Printf # used when verbose option is selected
 
