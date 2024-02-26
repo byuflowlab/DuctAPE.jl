@@ -16,9 +16,13 @@ using StaticArrays # used in miscellaneous places for code efficiency
 
 using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
 
-using NLsolve
-using LineSearches
+# Fancy new solve required pacakges
+using NLsolve #for newton solver
+# using ForwardDiff
+# const fd = ForwardDiff
+using LineSearches: BackTracking
 using ImplicitAD
+const iad = ImplicitAD
 
 using Printf # used when verbose option is selected
 

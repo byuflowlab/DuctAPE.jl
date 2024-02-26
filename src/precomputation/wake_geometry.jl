@@ -7,7 +7,7 @@ npanels is a vector of number of panels between each discrete point.  so somethi
 function discretize_wake(
     duct_coordinates,
     hub_coordinates,
-    rotorzloc, # rotor x locations
+    rotorzloc, # rotor axial locations
     wake_length,
     npanels;
 )

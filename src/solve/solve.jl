@@ -77,7 +77,7 @@ function solve!(
                 sigr,
                 inputs.A_br,
                 inputs.A_pr,
-                inputs.RHS;
+                inputs.LHS;
                 post=false,
             )
 
@@ -550,16 +550,20 @@ function check_convergence!(
     f_circ=1e-3,
     f_dgamw=2e-4,
     verbose=false,
+    use_abstol=false,
 )
 
     # find max ratio among blades and use that for convergence
     _, idG = findmax(maxdeltaBGamr ./ maxBGamr)
 
     # set convergence flag
-    conv[] =
-        abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
-        maxdeltagamw[] < f_dgamw * Vref # abs already taken care of
-    # abs(maxdeltagamw[]) < f_dgamw * Vref
+    if use_abstol
+        conv[] = abs(maxdeltaBGamr[idG]) < f_circ && abs(maxdeltagamw[]) < f_dgamw
+    else
+        conv[] =
+            abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
+            abs(maxdeltagamw[]) < f_dgamw * Vref
+    end
 
     # # set convergence flag, note: this is how dfdc does it, without regard to which rotor for the Gamr values
     # conv[] =

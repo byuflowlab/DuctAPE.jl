@@ -9,7 +9,8 @@ Calculate axial, radial, and tangential induced velocity on the rotors.
 `gamw::Matrix{Float}` : wake circulation values (must be a matrix). Size is number of wake sheets by number of "panels" per sheet.
 """
 function calculate_induced_velocities_on_rotors(
-    blade_elements,
+    B,
+    rotor_panel_center,
     Gamr,
     vz_rw,
     vr_rw,
@@ -78,15 +79,14 @@ function calculate_induced_velocities_on_rotors(
         end
 
         # add self-induced tangential velocity
-        B = blade_elements[irotor].B
-        r = blade_elements[irotor].rbe
-        @views vtheta_rotor[:, irotor] .+= B .* Gamr[:, irotor] ./ (4 * pi * r)
+        r = rotor_panel_center[:, irotor]
+        @views vtheta_rotor[:, irotor] .+= B[irotor] .* Gamr[:, irotor] ./ (4.0 * pi * r)
 
         # add induced tangential velocity from upstream rotors
         for jrotor in 1:(irotor - 1)
-            B = blade_elements[jrotor].B
-            r = blade_elements[jrotor].rbe
-            @views vtheta_rotor[:, irotor] .+= B .* Gamr[:, jrotor] ./ (2 * pi * r)
+            r = rotor_panel_center[:, jrotor]
+            @views vtheta_rotor[:, irotor] .+=
+                B[irotor] .* Gamr[:, jrotor] ./ (2.0 * pi * r)
         end
     end
 
@@ -103,7 +103,7 @@ end
 """
 """
 function reframe_rotor_velocities(
-    vz_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rotor_panel_centers
+    vz_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rotor_panel_center
 )
 
     # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
@@ -113,7 +113,7 @@ function reframe_rotor_velocities(
     Wtheta_rotor = similar(vtheta_rotor) .= vtheta_rotor
 
     for i in 1:length(Omega)
-        Wtheta_rotor[:, i] .-= Omega[i] .* rotor_panel_centers[:, i]
+        Wtheta_rotor[:, i] .-= Omega[i] .* rotor_panel_center[:, i]
     end
 
     # meridional component
@@ -127,10 +127,40 @@ function reframe_rotor_velocities(
     return Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
 
+"""
+"""
+function reframe_rotor_velocities!(
+    Cz_rotor,
+    Ctheta_rotor,
+    Cmag_rotor,
+    Vz_rotor,
+    Vtheta_rotor,
+    Vinf,
+    Omega,
+    rotor_panel_center,
+)
+
+    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
+    @. Cz_rotor = Vz_rotor + Vinf
+
+    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
+    Ctheta_rotor .= Vtheta_rotor
+
+    for (io, O) in enumerate(Omega)
+        @. Ctheta_rotor[:, io] -= O * rotor_panel_center[:, io]
+    end
+
+    # Get the inflow magnitude at the rotor as the combination of axial and tangential components
+    @. Cmag_rotor = sqrt(Cz_rotor^2 + Ctheta_rotor^2)
+
+    return Cz_rotor, Ctheta_rotor, Cmag_rotor
+end
+
 function calculate_rotor_velocities(Gamr, gamw, sigr, inputs)
     # - Get induced velocities on rotor planes - #
     vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        inputs.blade_elements,
+        inputs.blade_elements.B,
+        reduce(hcat, inputs.blade_elements.rbe),
         Gamr,
         inputs.vz_rw,
         inputs.vr_rw,
@@ -147,7 +177,7 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, inputs)
         vtheta_rotor,
         inputs.freestream.Vinf,
         inputs.blade_elements.Omega,
-        inputs.rotor_panel_centers,
+        reduce(hcat, inputs.blade_elements.rbe),
     )
 
     return vz_rotor, vr_rotor, vtheta_rotor, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
@@ -159,7 +189,8 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
 
     # - Get induced velocities on rotor planes - #
     vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        inputs.blade_elements,
+        inputs.blade_elements.B,
+        reduce(hcat, inputs.blade_elements.rbe),
         Gamr,
         inputs.vz_rw,
         inputs.vr_rw,
@@ -179,65 +210,77 @@ function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
         vtheta_rotor,
         inputs.freestream.Vinf,
         inputs.blade_elements.Omega,
-        inputs.rotor_panel_centers,
+        reduce(hcat, inputs.blade_elements.rbe),
     )
 
     return vz_rotor, vr_rotor, vtheta_rotor, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
 end
 
 """
+- `ivr:NamedTuple` : induced velocities on rotor
 """
-function calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, blade_elements, cl)
-    for (irotor, be) in enumerate(blade_elements)
+function calculate_induced_velocities_on_rotors!(
+    Vz_rotor, Vtheta_rotor, Gamr, gamw, sigr, gamb, ivr, B, rotor_panel_center
+)
+
+    # - Get induced velocities on rotor planes - #
+    Vz_rotor, _, Vtheta_rotor = calculate_induced_velocities_on_rotors(
+        B,
+        rotor_panel_center,
+        Gamr,
+        ivr.vz_rw,
+        ivr.vr_rw,
+        gamw,
+        ivr.vz_rr,
+        ivr.vr_rr,
+        sigr,
+        ivr.vz_rb,
+        ivr.vr_rb,
+        gamb,
+    )
+
+    return Vz_rotor, Vtheta_rotor
+end
+
+"""
+"""
+function calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, chords, cls)
+    for (G, c, cl, W) in
+        zip(eachcol(Gamr), eachcol(chords), eachcol(cls), eachcol(Wmag_rotor))
         # calculate vortex strength
-        Gamr[:, irotor] = @. 1.0 / 2.0 * Wmag_rotor[:, irotor] * be.chords * cl[:, irotor]
+        @. G = 0.5 * W * c * cl
     end
 
     return Gamr
 end
 
 # function calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, rho)
-function calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, cd, rho)
+function calculate_rotor_source_strengths!(sigr, Wmag_rotor, chords, B, cd)
 
-    # calculate source strength
-    # TODO: need to figure out if there should be a division by r here or not.
-    #NOTE: theory sigr doesn't make any sense. consider using actual drag equation until you have good reason not to
-    #= it doesn't look like DFDC has the division, even though it's in the theory doc
-    #it's possible (but I haven't been able to find it, that they divide by r later for some reason
-    =#
-    # this one is in the theory doc
-    # things converge twice as fast with this one...
-    # sigr[:] .= B / (4.0 * pi * r) * Wmag_rotor * c * cd
-    # this one is in the DFDC source code
-    # things converge slower, likely because the values are so small...
-    # sigr[:] .= B / (4.0 * pi) * Wmag_rotor * c * cd
+    # Loop through rotors
+    for irotor in 1:length(B)
 
-    for (irotor, be) in enumerate(blade_elements)
-        B = be.B
-
+        # Loop through blade panel nodes
         for inode in 1:size(sigr, 1)
+
+            # Get average of blade element values at nodes
             if inode == 1
                 W = Wmag_rotor[inode, irotor]
-                c = be.chords[inode]
-                # cd = be.cd[inode]
-                d = cd[inode]
+                c = chords[inode, irotor]
+                d = cd[inode, irotor]
 
             elseif inode == size(sigr, 1)
                 W = Wmag_rotor[inode - 1, irotor]
-                c = be.chords[inode - 1]
-                # cd = be.cd[inode-1]
-                d = cd[inode - 1]
+                c = chords[inode - 1, irotor]
+                d = cd[inode - 1, irotor]
 
             else
                 W = Wmag_rotor[(inode - 1):inode, irotor]
-                c = be.chords[(inode - 1):inode]
-                # cd = be.cd[inode-1:inode]
-                d = cd[(inode - 1):inode]
+                c = chords[(inode - 1):inode, irotor]
+                d = cd[(inode - 1):inode, irotor]
             end
 
-            sigr[inode, irotor] = B / (4 * pi) * sum(W .* c .* d) / length(d)
-            # sigr[:] .= B / (4 * pi) * sum(W .* c .* cd ./ r) / length(cd)
-            # sigr[:] .= B / (4 * pi) * rho * sum(W^2 .* c .* cd ./ r) / length(cd)
+            sigr[inode, irotor] = B[irotor] / (4.0 * pi) * sum(W .* c .* d) / length(d)
         end
     end
 
@@ -342,10 +385,12 @@ function calculate_gamma_sigma!(
     end
 
     # - get circulation strength - #
-    calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, blade_elements, cl)
+    calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, blade_elements.chords, cl)
 
     # - get source strength - #
-    calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, cd, freestream.rhoinf)
+    calculate_rotor_source_strengths!(
+        sigr, Wmag_rotor, blade_elements.chords, blade_elements.B, cds
+    )
 
     return Gamr, sigr
 end
@@ -359,12 +404,38 @@ function calculate_blade_element_coefficients(
     post=false,
     verbose=false,
 )
+    cl = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
+    cd = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
+
+    return calculate_blade_element_coefficients!(
+        cl,
+        cd,
+        blade_elements,
+        Wz_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        freestream;
+        post=post,
+        verbose=verbose,
+    )
+end
+
+"""
+"""
+function calculate_blade_element_coefficients!(
+    cl,
+    cd,
+    blade_elements,
+    Wz_rotor,
+    Wtheta_rotor,
+    Wmag_rotor,
+    freestream;
+    post=false,
+    verbose=false,
+)
 
     # problem dimensions
     nr, nrotor = size(Wmag_rotor) #num radial stations, num rotors
-
-    cl = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
-    cd = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
 
     if post
         # initialize extra outputs
@@ -393,7 +464,9 @@ function calculate_blade_element_coefficients(
             phi, alpha = calculate_inflow_angles(
                 # Wz rather Wm used here in DFDC, presumable because the blade elements are definied in the z-r plane rather than the meridional direction
                 # Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
-                Wz_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
+                Wz_rotor[ir, irotor],
+                Wtheta_rotor[ir, irotor],
+                stagger,
             )
 
             # get local Reynolds number
@@ -433,7 +506,6 @@ function calculate_blade_element_coefficients(
     if post
         return cl, cd, phidb, alphadb
     else
-        # return nothing
         return cl, cd
     end
 end

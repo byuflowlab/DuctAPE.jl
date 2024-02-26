@@ -988,9 +988,9 @@ function precomputed_inputs(
         ductwakeinterfaceid, # wake panel indices that lie on top of duct wall
          hubwakeinterfaceid, # wake panel indices that lie on top of hub wall
          hubwakeinterfacenodeid=collect(hubwakeinterfacenodeid), # wake node indices that lie on top of hub wall
-    ductwakeinterfacenodeid=collect(ductwakeinterfacenodeid), # wake node indicues that lie on top of duct wall
-    wakehubinterfacepanelid, # hub panel indices that interface with wake
-    wakeductinterfacepanelid, # duct panel indices that interface with wake
+        ductwakeinterfacenodeid=collect(ductwakeinterfacenodeid), # wake node indicies that lie on top of duct wall
+        wakehubinterfacepanelid, # hub panel indices that interface with wake
+        wakeductinterfacepanelid, # duct panel indices that interface with wake
         rotorwakeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel
         rotorwakepanelid, # [rotor panel index, and closest forward rotor id] for each wake panel
         num_wake_z_nodes, # number of nodes in axial direction of wake sheet
@@ -999,17 +999,17 @@ function precomputed_inputs(
         # body_system_matrices, # includes the various LHS and RHS matrics and vectors for solving the linear system for the body
         # - Influence Matrices - #
         A_bb=LHS, # body to body LU decomposed
-        # A_bb=prelhs, # body to body no factorization
-        AICt,
+        LHS=prelhs, # body to body no factorization
+        AICt, #TODO: unused?
         b_bf=RHS, # freestream contribution to body boundary conditions
-        RHS = similar(RHS).=0.0,
+        # RHS = similar(RHS).=0.0,
         gamb, # Body strengths
         A_br=AICnr, # rotor to body (total)
         A_pr=AICpr, # rotor to body (total)
-        AICtr,
+        AICtr, #TODO: unused?
         A_bw=AICnw, # wake to body (total)
         A_pw=AICpw,
-        AICtw,
+        AICtw, #TODO: unused?
         v_bb, # body to body
         v_br, # rotor to body
         v_bw, # wake to body
@@ -1051,12 +1051,12 @@ function precomputed_inputs(
         # operating conditions
         Vinf=freestream.Vinf, # freestream parameters
         # - Debugging/Plotting
-        duct_coordinates,
-        hub_coordinates,
+        duct_coordinates, #TODO: needed?
+        hub_coordinates, #TODO: needed?
         isduct=!noduct,
         ishub=!nohub,
-        grid=grid[1, :, 1:length(rpe)], #TODO: what is this used for, and why is it not the whole grid?
-        TF, #floating point type to pass around
+        grid=grid[1, :, 1:length(rpe)], #TODO: needed? (not whole grid if there is a tip gap)
+        TF, #floating point type to pass around #TODO: not sure this is a good idea...
     )
 end
 
