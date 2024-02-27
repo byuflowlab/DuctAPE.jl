@@ -17,7 +17,7 @@ function vectorize!(propulsor)
 
     # - Assemble (almost) everything into one big vector - #
     # Note: we use reduce for the vectors and namedtuples that could contain vectors
-    xv = [
+    return [
         duct_coordinates[:]
         centerbody_coordinates[:]
         reduce(vcat, rsp.B)
@@ -29,16 +29,13 @@ function vectorize!(propulsor)
         reduce(vcat, rsp.Rhub)
         reduce(vcat, rsp.tip_gap)
         reduce(vcat, rsp.rotor_z_loc)
+        reduce(vcat, rsp.fliplift) # TODO: change this from a bool to 0.0 or 1.0 and update the coefficient calculation function for it.
         #TODO: need to remove nwake_sheets from rotor parameters, it's already in the paneling constants
         reduce(vcat, [paneling_constants...])
         reduce(vcat, [freestream...])
         reduce(vcat, [reference_parameters...])
+        c4b.vectorize_airfoils(rsp.airfoils) #TODO add official test for this function
     ]
-
-    # - not quite ready for everything to be a differentiated variable so some things won't go into the vector - #
-    pv = (; rsp.fliplift, rsp.airfoils)
-
-    return xv, pv
 end
 
 """

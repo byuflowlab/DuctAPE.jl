@@ -405,8 +405,8 @@ function precomputed_inputs(
     ductwakeinterfacenodeid = num_wake_z_nodes * (length(rwake) - 1) .+ (1:ductTE_index)
 
     # Indices of body panels interfacing with wakes
-    wakehubinterfacepanelid = (body_vortex_panels.npanel[2]-hubTE_index+2):body_vortex_panels.npanel[2] # note -2 to account for hubTE_index being for node not panels.  would have had a -1 otherwise.
-    wakeductinterfacepanelid = reverse(1:ductTE_index-1)
+    wakehubinterfacepanelid = collect((body_vortex_panels.npanel[2]-hubTE_index+2):body_vortex_panels.npanel[2]) # note -2 to account for hubTE_index being for node not panels.  would have had a -1 otherwise.
+    wakeductinterfacepanelid = collect(reverse(1:ductTE_index-1))
 
     #------------------------------------------#
     #          Generate Blade Elements         #

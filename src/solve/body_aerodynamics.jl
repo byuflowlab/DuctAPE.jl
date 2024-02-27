@@ -58,12 +58,12 @@ function calculate_body_vortex_strengths!(
     end
 
     if post # return gamb, wake RHS, and first rotor RHS
-        return iad.implicit_linear(nothing, gamb; lsolve=ldiv!, Af=A_bb), RHSw, RHSr
+        return iad.implicit_linear(LHS, gamb; lsolve=ldiv!, Af=A_bb), RHSw, RHSr
         # return ldiv!(gamb, A_bb, RHS), RHSw, RHSr
     else
 
         # use ImplicitAD overwrite gamb
-        return iad.implicit_linear(nothing, gamb; lsolve=ldiv!, Af=A_bb)
+        return iad.implicit_linear(LHS, gamb; lsolve=ldiv!, Af=A_bb)
 
         # use ldiv! in place for gamb
         # return ldiv!(gamb, A_bb, RHS)

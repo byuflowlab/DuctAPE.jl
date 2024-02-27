@@ -1,10 +1,36 @@
+#"""
+#"""
+#function reinterpolate_bodies(
+#    duct_coordinates,
+#    centerbody_coordinates,
+#    zwake,
+#    ncenterbody_inlet,
+#    nduct_inlet;
+#    finterp=FLOWMath.akima,
+#)
+
+##TODO: initialize repaneled coordinates
+
+#return  reinterpolate_bodies!(
+#    duct_coordinates,
+#    centerbody_coordinates,
+#    zwake,
+#    ncenterbody_inlet,
+#    nduct_inlet;
+#    finterp=FLOWMath.akima,
+#)
+
+#end
+
 """
 """
-function repanel_bodies(
+function reinterpolate_bodies!(
+    rp_duct_coordinates,
+    rp_centerbody_coordinates,
     duct_coordinates,
-    hub_coordinates,
+    centerbody_coordinates,
     zwake,
-    nhub_inlet,
+    ncenterbody_inlet,
     nduct_inlet;
     finterp=FLOWMath.akima,
 )
@@ -28,11 +54,11 @@ function repanel_bodies(
     new_rduct_grid_outer = finterp(zduct_outer, rduct_outer, new_zduct_grid)
 
     # - interpolate hub geometry to provided grid locations - #
-    zhub = view(hub_coordinates, :, 1)
-    rhub = view(hub_coordinates, :, 2)
-    hub_trailing_index = min(length(zwake), searchsortedfirst(zwake, zhub[end]))
-    new_zhub_grid = zwake[1:hub_trailing_index]
-    new_rhub_grid = finterp(zhub, rhub, new_zhub_grid)
+    zhub = view(centerbody_coordinates, :, 1)
+    rhub = view(centerbody_coordinates, :, 2)
+    centerbody_trailing_index = min(length(zwake), searchsortedfirst(zwake, zhub[end]))
+    new_zcenterbody_grid = zwake[1:centerbody_trailing_index]
+    new_rcenterbody_grid = finterp(zhub, rhub, new_zcenterbody_grid)
 
     # - update hub geometry between leading edge and rotor - #
     if isnothing(nduct_inlet)
@@ -44,11 +70,13 @@ function repanel_bodies(
         new_rhub = view(rhub, 1:ridx, 2)
     else
         # interpolate hub geometry between leading edge and rotor
-        # new_zhub = range(zhub[1, 1], new_zhub_grid[1], nhub_inlet + 1)
+        # new_zhub = range(zhub[1, 1], new_zcenterbody_grid[1], ncenterbody_inlet + 1)
 
-        scale = new_zhub_grid[1] - zhub[1]
+        scale = new_zcenterbody_grid[1] - zhub[1]
         transform = zhub[1]
-        new_zhub = scaled_cosine_spacing(nhub_inlet + 1, 2 * scale, transform; mypi=pi / 2)
+        new_zhub = scaled_cosine_spacing(
+            ncenterbody_inlet + 1, 2 * scale, transform; mypi=pi / 2
+        )
         new_rhub = finterp(zhub, rhub, new_zhub)
     end
 
@@ -86,7 +114,7 @@ function repanel_bodies(
     end
 
     # assemble new duct coordinates
-    updated_duct_coordinates = hcat(
+    rp_duct_coordinates .= hcat(
         [reverse(new_zduct_grid)'; reverse(new_rduct_grid)'],
         [reverse(new_zduct_inner)[2:end]'; reverse(new_rduct_inner)[2:end]'],
         [new_zduct_inner[2:(end - 1)]'; new_rduct_outer[2:(end - 1)]'],
@@ -94,11 +122,12 @@ function repanel_bodies(
     )
 
     # assemble new hub coordinates
-    updated_hub_coordinates = hcat(
-        [new_zhub[1:(end - 1)]'; new_rhub[1:(end - 1)]'], [new_zhub_grid'; new_rhub_grid']
+    rp_centerbody_coordinates .= hcat(
+        [new_zhub[1:(end - 1)]'; new_rhub[1:(end - 1)]'],
+        [new_zcenterbody_grid'; new_rcenterbody_grid'],
     )
 
-    return updated_duct_coordinates, updated_hub_coordinates
+    return rp_duct_coordinates, rp_centerbody_coordinates
 end
 
 """
@@ -118,39 +147,3 @@ function place_duct!(duct_coordinates, Rtip, rotorzloc, tip_gap)
 
     return duct_coordinates
 end
-
-# """
-#     generate_body_panels(duct_coordinates, hub_coordinates, discretization; kwargs...)
-
-# Define the paneling (see [`FLOWFoil.AxisymmetricPanel`](@ref)) for the duct and hub.
-
-# # Arguments:
-# - `duct_coordinates::Array{Float64,2}` : duct coordinates, starting from trailing edge, going clockwise
-# - `hub_coordinates::Array{Float64,2}` : hub coordinates, starting from leading edge
-
-# # Keyword Arguments:
-# - `method` : Axisymmetric method as defined by FLOWFoil, defaults to `AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true])`
-
-# """
-# function generate_body_panels(duct_coordinates, hub_coordinates)
-#     # use FLOWFoil to generate panels
-#     if duct_coordinates != nothing
-#         duct_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false])
-#         duct_panels = ff.generate_panels(duct_method, duct_coordinates)
-#     end
-
-#     if hub_coordinates != nothing
-#         hub_method = ff.AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [true])
-#         hub_panels = ff.generate_panels(hub_method, hub_coordinates)
-#     end
-
-#     if duct_coordinates != nothing && hub_coordinates != nothing
-#         return [duct_panels; hub_panels]
-#     elseif duct_coordinates == nothing && hub_coordinates != nothing
-#         return [hub_panels]
-#     elseif duct_coordinates != nothing && hub_coordinates == nothing
-#         return [duct_panels]
-#     else
-#         return []
-#     end
-# end

@@ -13,6 +13,7 @@ println("\nITERATION STEP THROUGH TESTS")
         freestream,
         reference_parameters;
         debug=false,
+        finterp=fm.linear,
     )
 
     # - Parameters - #

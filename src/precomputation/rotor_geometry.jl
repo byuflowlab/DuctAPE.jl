@@ -29,7 +29,31 @@
 """
 """
 function get_blade_ends_from_body_geometry(
-    duct_coordinates, hub_coordinates, tip_gaps, rotorzloc
+    duct_coordinates, centerbody_coordinates, tip_gaps, rotorzloc
+)
+    TF = promete_type(
+        eltype(duct_coordinates),
+        eltype(centerbody_coordinates),
+        eltype(tip_gap),
+        eltype(rotorzloc),
+    )
+
+    Rtip = zeros(TF, length(rotorzloc))
+    Rhub = zeros(TF, length(rotorzloc))
+
+    return get_blade_ends_from_body_geometry!(
+        Rtip, Rhub, duct_coordinates, centerbody_coordinates, tip_gaps, rotorzloc
+    )
+end
+
+function get_blade_ends_from_body_geometry!(
+    Rtip,
+    Rhub,
+    duct_coordinates,
+    centerbody_coordinates,
+    tip_gaps,
+    rotorzloc;
+    silence_warnings=true,
 )
 
     # - Get hub and tip wall indices - #
@@ -37,22 +61,40 @@ function get_blade_ends_from_body_geometry(
     iduct = zeros(Int, length(rotorzloc))
     for i in 1:length(rotorzloc)
         #indices
-        _, ihub[i] = findmin(x -> abs(x - rotorzloc[i]), view(hub_coordinates, 1, :))
+        _, ihub[i] = findmin(x -> abs(x - rotorzloc[i]), view(centerbody_coordinates, 1, :))
         _, iduct[i] = findmin(x -> abs(x - rotorzloc[i]), view(duct_coordinates, 1, :))
     end
 
+    # - Add warnings about over writing Rhub and Rtip
+    if !silence_warnings
+        for (irotor, (R, r)) in enumerate(zip(Rtip, Rhub))
+            if r !== centerbody_coordinates[2, ihub[irotor]]
+                @warn "Overwriting Rhub for rotor $(irotor) to place it at the centerbody wall.  Moving from $(r) to $(centerbody_coordinates[2, ihub[irotor]])"
+            end
+            if R !== duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor]
+                @warn "Overwriting Rtip for rotor $(irotor) to place it at the correct tip gap relative to the casing wall. Moving from $(R) to $(duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor])"
+            end
+        end
+    end
+
     # - Get hub and tip radial positions - #
-    Rhubs = hub_coordinates[2, ihub]
+    Rhub .= centerbody_coordinates[2, ihub]
+
     #need to shift the tips down by the distance of the tip gaps to get the actual tip radii
     #note that for stators, the tip gap should be zero anyway.
-    Rtips = duct_coordinates[2, iduct] .- tip_gaps
+    Rtip .= duct_coordinates[2, iduct] .- tip_gaps
 
-    return Rtips, Rhubs
+    # check that the rotor radii aren't messed up
+    for (irotor, (R, r)) in enumerate(zip(Rtip, Rhub))
+        @assert R > r "Rotor #$(irotor) Tip Radius is set to be less than its Hub Radius. Consider setting the `autoshiftduct` option to true and/or check the input geometry."
+    end
+
+    return Rtip, Rhub
 end
 
 """
     generate_blade_elements(B, Omega, rotorzloc, rblade, chords, twists, solidity, airfoils,
-        duct_coordinates, hub_coordinates, r)
+        duct_coordinates, centerbody_coordinates, r)
 
 Use the duct and hub geometry to dimensionalize the non-dimensional radial positions in
 `rblade`. Then return a [`BladeElements`](@ref) struct.

@@ -113,16 +113,24 @@ function analyze(
     )
 
     # - Vectorize propulsor - #
-    # inputs, parameters = vectorize!(propulsor)
-    inputs, _ = vectorize!(propulsor)
+    inputs = vectorize!(propulsor)
 
     # - combine cache and constants - #
     const_cache = (;
-        constants...,
-        # parameters,
-        # TODO: write generate_cache function (need to go through and figure out what all goes in the cache)
-        dimensions=cache_and_dims.cache_dims,
-        cache=cache_and_dims.cache,
+        # Constants
+        constants.nlsolve_method,
+        constants.nlsolve_autodiff,
+        constants.nlsolve_linesearch,
+        constants.nlsolve_ftol,
+        constants.nlsolve_iteration_limit,
+        constants.verbose,
+        constants.converged,
+        # TODO: write generate_caches function (need to go through and figure out what all goes in the cache)
+        # Caches
+        cache_and_dims.solve_parameter_cache,
+        cache_and_dims.solve_parameter_cache_dims,
+        cache_and_dims.solve_cache,
+        cache_and_dims.solve_cache_dims,
         fx=x -> (propulsor),
     )
 
@@ -130,12 +138,10 @@ function analyze(
     velocity_states = implicit(solve_iad, solve_iad_res!, inputs, const_cache)
 
     # - Post-Process - #
-    # reshape velocities
-    Vz_rotor, Vtheta_rotor, Cm_wake = extract_state_vars(velocity_states, state_dims)
 
     # do the rest of the post-processing
     # TODO: write this function
-    outs = post_process_iad(Vz_rotor, Vtheta_rotor, Cm_wake, propulsor, cache_and_dims)
+    outs = post_process_iad(velocity_states, propulsor, CACHES) #TODO: figure out what caches need to be passed in
 
     return outs
 end
@@ -161,31 +167,64 @@ function solve_iad(inputs, const_cache)
         nlsolve_iteration_limit,
         verbose,
         converged,
-        # TODO: work backwards from estimate_states and figure out what needs to get passed in here as far as cache's, dimensions, and parameters go.
-        cache,
-        parameters,
-        dimensions,
+        solve_cache,
+        solve_cache_dims, #TODO: put state_dims inside the solve_cache_dims (same dims as estimates)
+        solve_parameter_cache,
+        solve_parameter_cache_dims,
     ) = const_cache
 
     # - Get propulsor back out using fx(x) in constants - #
-    # TODO: figure out how to make sure these are floats in this context, probably need to look at how implicitAD strips things to floats and apply something similar when putting together the outputs of the fx function
+    # TODO: figure out how to make sure these are floats in this context, probably need to look at how implicitAD (or eduardo in flowpanel) strips things to floats and apply something similar when putting together the outputs of the fx function
+    # propulsor includes: duct_coordinates, centerbody_coordinates, rotorstator_parameters, paneling_constants, operating_point, and reference_parameters
     (; propulsor) = fx(inputs)
+
+    # - Extract solve_parameter_cache - #
+    solve_parameter_cache_vec = @views pat.get_tmp(solve_parameter_cache, inputs)
+    solve_parameter_containers = withdraw_solve_parameter_cache(
+        solve_parameter_cache, solve_parameter_cache_dims
+    )
 
     # - Do precomputations - #
     # TODO: re-think how to set up this function and outputs.
-    bp, rp, op = precompute_parameters_iad!(propulsor)
+    # solve_parameter_containers includes pointers to the solve_parameter_cache for ivr, ivw, linsys, blade_elements, and idmaps
+    precompute_solve_parameters_iad!(
+        solve_parameter_containers.ivr,
+        solve_parameter_containers.ivw,
+        solve_parameter_containers.ivb,
+        solve_parameter_containers.linsys,
+        solve_parameter_containers.blade_elements,
+        solve_parameter_containers.idmaps,
+        propulsor,
+    )
 
     # - Initialize Aero - #
-    # TODO: write this function
-    # Note: you can solve the isolated body system and use that for the initial guess here because it's just an initial guess, it doesn't matter what it is relative to the differentiated variables.
-    # TODO: re-think the inputs to this function, don't just use mega tuples.
-    Vz_rotor, Vtheta_rotor, Cm_wake = initialize_velocities(parameters, cache)
+    Vz_rotor, Vtheta_rotor, Cm_wake = initialize_velocities(
+        op,
+        blade_elements,
+        linsys,
+        ivr,
+        ivw,
+        solve_parameter_containers.idmaps.nbodynodes,
+        solve_parameter_containers.idmaps.rotorwakenodeid,
+    )
 
     # - Wrap residual - #
     function rwrap!(r, state_variables)
-        # Note: the inputs going into ImplicitAD don't need to get passed in to NLsolve, right?
-        # return nls_res!(r, state_variables, inputs, constants)
-        return nls_res!(r, state_variables, (; parameters, dimensions, cache))
+        return nls_res!(
+            r,
+            state_variables,
+            (;
+                op,               # includes freestream and Omega
+                ivr,              # induced velocities on rotor panels
+                ivw,              # induced velocities on wake panels
+                linsys,           # includes AIC's for linear system
+                blade_elements,   # includes blade element geometry
+                idmaps,           # book keeping items
+                solve_cache,      # cache for containers used in solve
+                solve_cache_dims, # dimensions for shaping the view of the solve cache
+                solve_cache_dims.state_dims, # dimensions for state variable extraction
+            ),
+        )
     end
 
     result = NLsolve.nlsolve(
@@ -218,34 +257,7 @@ basically just copy and paste the solve function but replace the nlsolve with a 
  - return the residual and various outputs if you want to return them
 
 """
-function solve_iad_res!(r, state_variables, inputs, const_cache)
-
-    # - Extract constants - #
-    (;
-        fx,
-        nlsolve_method,
-        nlsolve_autodiff,
-        nlsolve_linesearch,
-        nlsolve_ftol,
-        nlsolve_iteration_limit,
-        verbose,
-        parameters,
-        dimensions,
-        cache,
-    ) = const_cache
-
-    # - Get propulsor back out using fx(x) in constants - #
-    (; propulsor) = fx(inputs)
-
-    # - Do precomputations - #
-    populate_cache!(cache, propulsor)
-
-    # - Initialize Aero - #
-    Gamr, gamw, sigr = extract_state_vars(state_variables)
-
-    # - Call nlsolve residual - #
-    return nls_res!(r, [Gamr; gamw; sigr], (; parameters, dimensions, cache))
-end
+function solve_iad_res!(r, state_variables, inputs, const_cache) end
 
 """
 This is the residual that gets passed into nlsolve, and is just for converging Gamr and gamw.
@@ -272,24 +284,24 @@ function nls_res!(r, state_variables, parameters)
     # - Extract and Reset Cache - #
     # TODO: test this process.
     # get cache vector of correct types
-    cache_vec = @views pat.get_tmp(solve_cache, state_variables)
+    solve_cache_vec = @views pat.get_tmp(solve_cache, state_variables)
     # view cache vector and get named tuple of containers used for intermediate variables in solve
-    # TODO: write this function
-    containers = withdraw_solve_cache(cache_vec, solve_cache_dims)
-    # zero out contents of containers to avoid any potential contamination issues
     # TODO: test this function
-    reset_containers!(containers) #note: also zeros out state estimates
+    solve_containers = withdraw_solve_cache(solve_cache_vec, solve_cache_dims)
+    # zero out contents of solve_containers to avoid any potential contamination issues
+    # TODO: test this function
+    reset_solve_containers!(solve_containers) #note: also zeros out state estimates
 
     # - Estimate New States - #
     # TODO: test this function
     estimate_states!(
-        containers.Vz_est,
-        containers.Vtheta_est,
-        containers.Cm_est,
+        solve_containers.Vz_est,
+        solve_containers.Vtheta_est,
+        solve_containers.Cm_est,
         Vz_rotor,
         Vtheta_rotor,
         Cm_wake,
-        containers,
+        solve_containers,
         op,
         ivr,
         ivw,
@@ -300,9 +312,9 @@ function nls_res!(r, state_variables, parameters)
 
     # - Get final Residual Values - #
     r .= [
-        reshape(containers.Vz_est .- Vz_rotor, length(Vz_rotor))
-        reshape(containers.Vtheta_est .- Vtheta_rotor, length(Vtheta_rotor))
-        containers.Cm_est .- Cm_wake
+        reshape(solve_containers.Vz_est .- Vz_rotor, length(Vz_rotor))
+        reshape(solve_containers.Vtheta_est .- Vtheta_rotor, length(Vtheta_rotor))
+        solve_containers.Cm_est .- Cm_wake
     ]
 
     return r
@@ -323,7 +335,8 @@ function estimate_states!(
     ivw,
     linsys,
     blade_elements,
-    idmaps,
+    idmaps;
+    verbose=false,
 )
 
     # - Get Absolute Rotor Velocities - #
@@ -350,7 +363,7 @@ function estimate_states!(
         containers.Cmag_rotor,
         op;
         post=false,
-        verbose=false,
+        verbose=verbose,
     )
 
     # - Calculate Blade Element Circulation - #
@@ -400,7 +413,7 @@ function estimate_states!(
     # - Solve Linear System for Body Strengths - #
     calculate_body_vortex_strengths!(
         containers.gamb,
-        linsys.A_bb,
+        linsys.A_bb_LU;
         linsys.b_bf,
         containers.gamw,
         linsys.A_bw,
@@ -408,7 +421,7 @@ function estimate_states!(
         containers.sigr,
         linsys.A_br,
         linsys.A_pr,
-        linsys.A_bb_LU;
+        linsys.A_bb,
     )
 
     # - Calcuate Vz_est and Vtheta_est- #
