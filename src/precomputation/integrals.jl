@@ -22,27 +22,20 @@ function nominal_vortex_induced_velocity_sample(
     cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t) # r coordinate
 
     # get relative geometry: xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
-    calculate_xrm!(
-        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], controlpoint, cache_vec[1:2]
-    )
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
 
     # Get velocity components at sample points
-    vortex_ring_vz!(
-        cache_vec[7],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[6],
+    cache_vec[7] = vortex_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[6],#rj
         1.0,
-        cache_vec[11:15],
+        view(cache_vec, 11:15),
     ) #vz
-    vortex_ring_vr!(
-        cache_vec[8],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[6],
-        cache_vec[11:16],
+
+    cache_vec[8] = vortex_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], view(cache_vec, 11:16)
     ) #vr
 
     #=
@@ -130,7 +123,7 @@ function subtracted_singular_vortex_influence(node, controlpoint)
     return axial, radial
 end
 
-function subtracted_singular_vortex_influence!(axial, radial, node, controlpoint, cache_vec)
+function subtracted_singular_vortex_influence!(node, controlpoint, cache_vec)
     cache_vec[1] = (controlpoint[1] - node[1])^2 + (controlpoint[2] - node[2])^2
     cache_vec[2] = controlpoint[1] - node[1]
     cache_vec[3] = node[2] - controlpoint[2]
@@ -162,12 +155,6 @@ function analytically_integrated_vortex_influence(r, influence_length)
     return axial, radial
 end
 
-function analytically_integrated_vortex_influence!(axial, radial, r, influence_length)
-    axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
-    radial = 0.0
-    return axial, radial
-end
-
 """
 
 # Arguments:
@@ -182,41 +169,24 @@ function self_vortex_induced_velocity_sample(
     cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
 
     # get relative geometry
-    calculate_xrm!(
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[6],
-        controlpoint,
-        [cache_vec[1]; cache_vec[2]],
-    )
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
 
     # Get velocity components at sample points
-    vortex_ring_vz!(
-        cache_vec[7],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[2],
+    cache_vec[7] = vortex_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[2],#rj
         1.0,
-        cache_vec[11:15],
+        view(cache_vec, 11:15),
     ) #vz
-    vortex_ring_vr!(
-        cache_vec[8],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[2],
-        cache_vec[11:16],
+    cache_vec[8] = vortex_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[2], view(cache_vec, 11:16)
     ) #vr
 
     # Get singular piece to subtract
-    subtracted_singular_vortex_influence!(
-        cache_vec[9],
-        cache_vec[10],
-        [cache_vec[1]; cache_vec[2]],
-        controlpoint,
-        cache_vec[11:15],
+    cache_vec[9], cache_vec[10] = subtracted_singular_vortex_influence!(
+        [cache_vec[1]; cache_vec[2]], controlpoint, view(cache_vec, 11:15)
     )
 
     #=
@@ -261,8 +231,8 @@ function self_vortex_panel_integration(
 
     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
 
-    analytically_integrated_vortex_influence!(
-        cache_vec[1], cache_vec[2], controlpoint[2], influence_length
+    cache_vec[1], cache_vec[2] = analytically_integrated_vortex_influence(
+        controlpoint[2], influence_length
     )
 
     V .*= influence_length
@@ -299,26 +269,18 @@ function nominal_source_induced_velocity_sample(
     cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
 
     # get relative geometry
-    calculate_xrm!(
-        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], controlpoint, cache_vec[1:2]
-    )
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
 
     # Get velocity components at sample points
-    source_ring_vz!(
-        cache_vec[7],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[6],
-        cache_vec[11:15],
+    cache_vec[7] = source_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[6],#rj
+        view(cache_vec, 11:15),
     )
-    source_ring_vr!(
-        cache_vec[8],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[6],
-        cache_vec[11:16],
+    cache_vec[8] = source_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], view(cache_vec, 11:16)
     )
 
     #=
@@ -396,7 +358,7 @@ function subtracted_singular_source_influence(node, controlpoint)
     return axial, radial
 end
 
-function subtracted_singular_source_influence!(axial, radial, node, controlpoint, cache_vec)
+function subtracted_singular_source_influence!(node, controlpoint, cache_vec)
     cache_vec[1] = (controlpoint[1] - node[1])^2 + (controlpoint[2] - node[2])^2
     #TODO: write up math and check signs here.
     cache_vec[2] = controlpoint[1] - node[1]
@@ -421,12 +383,6 @@ function analytically_integrated_source_influence(r, influence_length)
     return axial, radial
 end
 
-function analytically_integrated_source_influence!(axial, radial, r, influence_length)
-    radial = (influence_length / (4.0 * pi * r)) * (1.0 + log(2.0 * r / influence_length))
-    axial = 0.0
-    return axial, radial
-end
-
 """
 
 # Arguments:
@@ -441,35 +397,23 @@ function self_source_induced_velocity_sample(
     cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
 
     # get relative geometry
-    calculate_xrm!(
-        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], controlpoint, cache_vec[1:2]
-    )
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
 
     # Get velocity components at sample points
-    source_ring_vz!(
-        cache_vec[7],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[2],
-        cache_vec[11:15],
+    cache_vec[7] = source_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[2],#rj
+        view(cache_vec, 11:15),
     )
-    source_ring_vr!(
-        cache_vec[8],
-        cache_vec[3],
-        cache_vec[4],
-        cache_vec[5],
-        cache_vec[2],
-        cache_vec[11:16],
+    cache_vec[8] = source_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[2], view(cache_vec, 11:16)
     )
 
     # Get singular piece to subtract
-    subtracted_singular_source_influence!(
-        cache_vec[9],
-        cache_vec[10],
-        [cache_vec[1]; cache_vec[2]],
-        controlpoint,
-        cache_vec[11:15],
+    cache_vec[9], cache_vec[10] = subtracted_singular_source_influence!(
+        [cache_vec[1]; cache_vec[2]], controlpoint, view(cache_vec, 11:15)
     )
 
     #=
@@ -514,8 +458,8 @@ function self_source_panel_integration(
 
     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
 
-    analytically_integrated_source_influence!(
-        cache_vec[1], cache_vec[2], controlpoint[2], influence_length
+    cache_vec[1], cache_vec[2] = analytically_integrated_source_influence(
+        controlpoint[2], influence_length
     )
 
     V .*= influence_length

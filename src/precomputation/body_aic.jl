@@ -260,7 +260,7 @@ function add_te_gap_aic!(
     cache_vec=nothing,
 )
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
+        cache_vec = zeros(eltype(controlpoint), 16)
     end
 
     # Loop through control points being influenced

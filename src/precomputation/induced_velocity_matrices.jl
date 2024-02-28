@@ -153,7 +153,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `gamma::Vector{Float}` : source constant circulation values
 """
 function induced_velocities_from_source_panels_on_points!(
-    VEL, controlpoint, node, nodemap, influence_length, strength, cache_vec=nothing
+    VEL, controlpoint, node, nodemap, influence_length, strength; cache_vec=nothing
 )
     # vel = zeros(eltype(VEL), 2, 2)
     if isnothing(cache_vec)
@@ -207,14 +207,14 @@ function induced_velocities_from_trailing_edge_gap_panel!(
     teinfluence_length,
     tendotn,
     tencrossn,
-    teadjnodeidxs,
+    teadjnodeidxs;
     cache_vec=nothing,
 )
 
     # vvel = zeros(eltype(AICn), 2, 2)
     # svel = zeros(eltype(AICn), 2, 2)
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
+        cache_vec = zeros(eltype(controlpoint), 16)
     end
 
     # Loop through control points being influenced
