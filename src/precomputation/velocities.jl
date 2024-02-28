@@ -36,6 +36,27 @@ function calculate_xrm(controlpoint, node)
     end
 end
 
+function calculate_xrm!(xi, rho, m, rj, controlpoint, node)
+    if isapprox(node[2], 0.0)
+        xi = rho = m = rj = 0.0
+        return 0.0, 0.0, 0.0, 0.0
+    else
+        # normalized axial distance
+        xi = (controlpoint[1] - node[1]) / node[2]
+
+        # normalized radial distance
+        rho = controlpoint[2] / node[2]
+
+        # elliptic integral parameter
+        m = (4.0 * rho) / (xi^2 + (rho + 1)^2)
+
+        # influence point radial position
+        rj = node[2]
+
+        return xi, rho, m, rj
+    end
+end
+
 ######################################################################
 #                                                                    #
 #                        Elliptic Functions                          #
@@ -59,6 +80,18 @@ function get_elliptics(m)
         m = 1.0
     end
     return SpecialFunctions.ellipk(m), SpecialFunctions.ellipe(m)
+end
+
+function get_elliptics!(K, E, m)
+    if m > 1 || isnan(m)
+        #m cannot be greater than 1 for elliptic functions, and cannot mathematically be either, but numerically might be infinitesimally larger.
+        m = 1.0
+    end
+
+    K = SpecialFunctions.ellipk(m)
+    E = SpecialFunctions.ellipe(m)
+
+    return K, E
 end
 
 ######################################################################
@@ -105,11 +138,37 @@ function vortex_ring_vz(xi, rho, m, r_influence, influence_length)
         #get values for elliptic integrals
         K, E = get_elliptics(m)
 
-        # negative in Lewis' version is due to Lewis' convention that the vortex is postive clockwise
-        # return -1.0 / den1 * (K - (1.0 + num2 / den2) * E)
-        # No negative in your derivation with vortex postive according to right hand coordinate system
-        # TODO: this may affect coupling with rotor model, need to check signs there.
         return 1.0 / den1 * (K - (1.0 + num2 / den2) * E)
+    end
+end
+
+function vortex_ring_vz!(vz, xi, rho, m, r_influence, influence_length, cache_vec)
+
+    # check panel locations
+    if abs(r_influence) <= eps()
+        # if influence on the axis, the influence is set to zero
+        vz = 0.0
+        return vz
+    elseif (xi^2 + (rho - 1.0)^2 <= eps())
+        # set self-induced case is "smoke ring" self influence in axial direction only.
+        smoke_ring_vz!(vz, r_influence, influence_length)
+        return vz
+    else
+        #get the first denominator
+        cache_vec[1] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
+
+        #get numerator and denominator of second fraction
+        cache_vec[2] = 2.0 * (rho - 1.0)
+        cache_vec[3] = xi^2 + (rho - 1.0)^2
+
+        #get values for elliptic integrals
+        get_elliptics!(cache_vec[4], cache_vec[5], m)
+
+        vz =
+            1.0 / cache_vec[1] *
+            (cache_vec[4] - (1.0 + cache_vec[2] / cache_vec[3]) * cache_vec[5])
+
+        return vz
     end
 end
 
@@ -121,6 +180,15 @@ function smoke_ring_vz(r_influence, influence_length)
     # Lamb has negative out front due to vortex in opposite direction to you
     return 1.0 / (4.0 * pi * r_influence) *
            (log(8.0 * pi * r_influence / influence_length) - 0.25)
+end
+
+function smoke_ring_vz!(vz, r_influence, influence_length)
+    # return -1.0 / (4.0 * pi * r_influence) * (log(8.0 * pi * r_influence / influence_length) - 0.25)
+    # Lamb has negative out front due to vortex in opposite direction to you
+    vz =
+        1.0 / (4.0 * pi * r_influence) *
+        (log(8.0 * pi * r_influence / influence_length) - 0.25)
+    return vz
 end
 
 """
@@ -159,6 +227,33 @@ function vortex_ring_vr(xi, rho, m, r_influence)
     end
 end
 
+function vortex_ring_vr!(vr, xi, rho, m, r_influence, cache_vec)
+
+    # return 0.0 for self-induced, influence on axis, or target on axis cases
+    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence) <= eps() || isapprox(rho, 0.0)
+        vr = 0.0
+        return vr
+    else
+        #get numerator and denominator of first fraction
+        cache_vec[1] = xi / rho
+        cache_vec[2] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
+
+        #get numerator and denominator of second fraction
+        cache_vec[3] = 2.0 * rho
+        cache_vec[4] = xi^2 + (rho - 1.0)^2
+
+        #get values for elliptic integrals
+        get_elliptics!(cache_vec[5], cache_vec[6], m)
+
+        # positive is what lewis had using Gamma in opposite direction to you
+        # return cache_vec[1] / cache_vec[2] * (cache_vec[5] - (1.0 + cache_vec[3] / cache_vec[4]) * cache_vec[6])
+        # negative sign is what you got in your derivation
+        vr =
+            -cache_vec[1] / cache_vec[2] *
+            (cache_vec[5] - (1.0 + cache_vec[3] / cache_vec[4]) * cache_vec[6])
+        return vr
+    end
+end
 ##### ----- Source ----- #####
 
 """
@@ -194,6 +289,28 @@ function source_ring_vz(xi, rho, m, r_influence)
     end
 end
 
+function source_ring_vz!(vz, xi, rho, m, r_influence, cache_vec)
+
+    # return zero for the self-induced off body case
+    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence) < eps() || abs(rho) < eps()
+        vz = 0.0
+        return vz
+    else
+
+        #get values for elliptic integrals
+        get_elliptics!(cache_vec[1], cache_vec[2], m)
+
+        #get the first denominator
+        cache_vec[3] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
+
+        #get numerator and denominator of second fraction
+        cache_vec[4] = 2 * xi * cache_vec[2]
+        cache_vec[5] = xi^2 + (rho - 1)^2
+
+        return 1.0 / cache_vec[3] * (cache_vec[4] / cache_vec[5])
+    end
+end
+
 """
 radial velocity induced by axisymmetric source ring. returns zero if source ring is on axis of rotation (zero radius), the point of influence is on the axis, or if self-inducing velocity.
 
@@ -225,5 +342,29 @@ function source_ring_vr(xi, rho, m, r_influence)
         den2 = xi^2 + (rho - 1)^2
 
         return num1 / den1 * (K - (1.0 - num2 / den2) * E)
+    end
+end
+
+function source_ring_vr!(vr, xi, rho, m, r_influence, cache_vec)
+
+    # return zero for the self-induced off-body case
+    if (xi^2 + (rho - 1.0)^2 <= eps()) || isapprox(r_influence, 0.0) || isapprox(rho, 0.0)
+        vr = 0.0
+        return vr
+    else
+
+        #get values for elliptic integrals
+        get_elliptics!(cache_vec[1], cache_vec[2], m)
+
+        #get numerator and denominator of first fraction
+        cache_vec[3] = 1.0 / rho
+        cache_vec[4] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
+
+        #get numerator and denominator of second fraction
+        cache_vec[5] = 2 * rho * (rho - 1.0)
+        cache_vec[6] = xi^2 + (rho - 1)^2
+
+        return cache_vec[3] / cache_vec[4] *
+               (cache_vec[1] - (1.0 - cache_vec[5] / cache_vec[6]) * cache_vec[2])
     end
 end

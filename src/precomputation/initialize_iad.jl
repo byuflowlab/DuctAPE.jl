@@ -138,16 +138,185 @@ end
 """
 """
 function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
-    # - Extract induced velocities on rotor - #
-    (; v_rr, v_rr, v_rw, v_rw, v_rb, v_rb) = ivr
+    # - Extract Tuples - #
+    # Extract induced velocities on rotor
+    (; v_rr, v_rw, v_rb) = ivr
 
-    # - Extract induced velocities on wake - #
-    (; v_wr, v_wr, v_ww, v_ww, v_wb, v_wb) = ivw
+    # Extract induced velocities on wake
+    (; v_wr, v_ww, v_wb) = ivw
 
-    # - Extract induced velocities on body - #
-    (; v_br, v_br, v_bw, v_bw, v_bb, v_bb) = ivb
+    # Extract induced velocities on body
+    (; v_br, v_bw, v_bb) = ivb
 
-    return nothing
+    ##### ----- Velocities on Bodies ----- #####
+    # - Bodies on Bodies - #
+    # body panels on body panels
+    induced_velocities_from_vortex_panels_on_points!(
+        view(v_bb, :, :, :),
+        body_vortex_panels.controlpoint,
+        body_vortex_panels.node,
+        body_vortex_panels.nodemap,
+        body_vortex_panels.influence_length,
+        ones(TF, 2, body_vortex_panels.totpanel),
+    )
+
+    # Add influence of body trailing edge gap "panels"
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_bb, :, :, :),
+        body_vortex_panels.controlpoint,
+        body_vortex_panels.tenode,
+        body_vortex_panels.teinfluence_length,
+        body_vortex_panels.tendotn,
+        body_vortex_panels.tencrossn,
+        body_vortex_panels.teadjnodeidxs,
+    )
+
+    # - Rotors on Bodies - #
+    # rotor panels to body panels
+    induced_velocities_from_source_panels_on_points!(
+        view(v_br, :, :, :),
+        body_vortex_panels.controlpoint,
+        rotor_source_panels.node,
+        rotor_source_panels.nodemap,
+        rotor_source_panels.influence_length,
+        ones(TF, 2, rotor_source_panels.totnode),
+    )
+
+    # - Wake on Bodies - #
+    # wake panels to body panels
+    induced_velocities_from_vortex_panels_on_points!(
+        view(v_bw, :, :, :),
+        body_vortex_panels.controlpoint,
+        wake_vortex_panels.node,
+        wake_vortex_panels.nodemap,
+        wake_vortex_panels.influence_length,
+        ones(TF, 2, wake_vortex_panels.totpanel),
+    )
+
+    # wake "TE panels" to body panels
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_bw, :, :, :),
+        body_vortex_panels.controlpoint,
+        wake_vortex_panels.tenode,
+        wake_vortex_panels.teinfluence_length,
+        wake_vortex_panels.tendotn,
+        wake_vortex_panels.tencrossn,
+        wake_vortex_panels.teadjnodeidxs,
+    )
+
+    ##### ----- Velocities on Rotors ----- #####
+    # - Rotors on Rotors - #
+    induced_velocities_from_source_panels_on_points!(
+        view(v_rr, :, :, :),
+        rotor_source_panels.controlpoint,
+        rotor_source_panels.node,
+        rotor_source_panels.nodemap,
+        rotor_source_panels.influence_length,
+        ones(TF, 2, rotor_source_panels.totnode),
+    )
+
+    # - Bodies on Rotors - #
+    # body panels on rotor panels
+    induced_velocities_from_vortex_panels_on_points!(
+        view(v_rb, :, :, :),
+        rotor_source_panels.controlpoint,
+        body_vortex_panels.node,
+        body_vortex_panels.nodemap,
+        body_vortex_panels.influence_length,
+        ones(TF, 2, body_vortex_panels.totpanel),
+    )
+
+    # add influence from body trailing edge gap "panels"
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_rb, :, :, :),
+        rotor_source_panels[i].controlpoint,
+        body_vortex_panels.tenode,
+        body_vortex_panels.teinfluence_length,
+        # -body_vortex_panels.teinfluence_length,
+        body_vortex_panels.tendotn,
+        body_vortex_panels.tencrossn,
+        body_vortex_panels.teadjnodeidxs,
+    )
+
+    # - Wake on Rotors - #
+    # wake panels on rotor panels
+    induced_velocities_from_vortex_panels_on_points!(
+        view(v_rw, :, :, :),
+        rotor_source_panels[i].controlpoint,
+        wake_vortex_panels.node,
+        wake_vortex_panels.nodemap,
+        wake_vortex_panels.influence_length,
+        ones(TF, 2, wake_vortex_panels.totpanel),
+    )
+
+    # add influence from wake "trailing edge panels"
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_rw, :, :, :),
+        rotor_source_panels[i].controlpoint,
+        wake_vortex_panels.tenode,
+        wake_vortex_panels.teinfluence_length,
+        wake_vortex_panels.tendotn,
+        wake_vortex_panels.tencrossn,
+        wake_vortex_panels.teadjnodeidxs,
+    )
+
+    ##### ----- Velocities on Wakes ----- #####
+    # - Bodies on Wakes - #
+    # body panels to wake panels
+    induced_velocities_from_vortex_panels_on_points!(
+        view(v_wb, :, :, :),
+        wake_vortex_panels.controlpoint,
+        body_vortex_panels.node,
+        body_vortex_panels.nodemap,
+        body_vortex_panels.influence_length,
+        ones(TF, 2, body_vortex_panels.totpanel),
+    )
+
+    # add influence from body trailing edge gap "panels"
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_wb, :, :, :),
+        wake_vortex_panels.controlpoint,
+        body_vortex_panels.tenode,
+        body_vortex_panels.teinfluence_length,
+        # -body_vortex_panels.teinfluence_length,
+        body_vortex_panels.tendotn,
+        body_vortex_panels.tencrossn,
+        body_vortex_panels.teadjnodeidxs,
+    )
+
+    # - Rotors to Wakes - #
+    induced_velocities_from_source_panels_on_points!(
+        view(v_wr, :, :, :),
+        wake_vortex_panels.controlpoint,
+        rotor_source_panels.node,
+        rotor_source_panels.nodemap,
+        rotor_source_panels.influence_length,
+        ones(TF, 2, rotor_source_panels.totpanel),
+    )
+
+    # - Wake on Wake - #
+    # wake panels on wake panels
+    induced_velocities_from_vortex_panels_on_points!(
+        view(v_ww, :, :, :),
+        wake_vortex_panels.controlpoint,
+        wake_vortex_panels.node,
+        wake_vortex_panels.nodemap,
+        wake_vortex_panels.influence_length,
+        ones(TF, 2, wake_vortex_panels.totpanel),
+    )
+
+    # add influence from wake "trailing edge panels"
+    induced_velocities_from_trailing_edge_gap_panel!(
+        view(v_ww, :, :, :),
+        wake_vortex_panels.controlpoint,
+        wake_vortex_panels.tenode,
+        wake_vortex_panels.teinfluence_length,
+        wake_vortex_panels.tendotn,
+        wake_vortex_panels.tencrossn,
+        wake_vortex_panels.teadjnodeidxs,
+    )
+
+    return ivr, ivw, ivb
 end
 
 """
@@ -236,7 +405,7 @@ function precompute_parameters_iad!(
     )
 
     # - Panel Everything - #
-    # TODO: write a function that just does all the paneling
+    # TODO: test this function
     generate_all_panels!(
         panels,
         idmaps,
@@ -245,13 +414,18 @@ function precompute_parameters_iad!(
         rotorstator_parameters,
         paneling_constants,
         precomp_containers.wake_grid;
-        itcpshift=0.05,
-        axistol=1e-15,
-        tegaptol=1e1 * eps(),
+        itcpshift=itcpshift,
+        axistol=axistol,
+        tegaptol=tegaptol,
         silence_warnings=silence_warnings,
     )
 
     # - Compute Influence Matrices - #
+    #
+    #
+    # TODO: !!!!! - YOUR ARE HERE - !!!!!
+    #
+    #
     # TODO: write a function that does all the influence matrix stuff
     calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
 

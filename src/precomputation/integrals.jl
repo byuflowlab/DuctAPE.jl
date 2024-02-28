@@ -14,19 +14,36 @@
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function nominal_vortex_induced_velocity_sample(
-    t, node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
 )
 
     # Transform from (0,1) to actual position on panel
-    z = linear_transform(nondimrange, [node1[1]; node2[1]], t)
-    r = linear_transform(nondimrange, [node1[2]; node2[2]], t)
+    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t) # z coordinate
+    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t) # r coordinate
 
-    # get relative geometry
-    xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
+    # get relative geometry: xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
+    calculate_xrm!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], controlpoint, cache_vec[1:2]
+    )
 
     # Get velocity components at sample points
-    vz = vortex_ring_vz(xi, rho, m, r0, 1.0) #shouldn't need influence length
-    vr = vortex_ring_vr(xi, rho, m, r0)
+    vortex_ring_vz!(
+        cache_vec[7],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[6],
+        1.0,
+        cache_vec[11:15],
+    ) #vz
+    vortex_ring_vr!(
+        cache_vec[8],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[6],
+        cache_vec[11:16],
+    ) #vr
 
     #=
     assemble output components in the format:
@@ -38,7 +55,12 @@ function nominal_vortex_induced_velocity_sample(
     #     [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
     # )
     return StaticArrays.SVector{4}(
-        [vz * (1.0 - t); vz * t; vr * (1.0 - t); vr * t] * influence_length
+        [
+            cache_vec[7] * (1.0 - t)
+            cache_vec[7] * t
+            cache_vec[8] * (1.0 - t)
+            cache_vec[8] * t
+        ] * influence_length,
     )
     #  return [vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length
 end
@@ -47,13 +69,25 @@ end
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
 function nominal_vortex_panel_integration(
-    node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0], debug=false
+    node1,
+    node2,
+    influence_length,
+    controlpoint,
+    cache_vec;
+    nondimrange=[0.0; 1.0],
+    debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return nominal_vortex_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint; nondimrange=nondimrange
+            t,
+            node1,
+            node2,
+            influence_length,
+            controlpoint,
+            cache_vec;
+            nondimrange=nondimrange,
         )
     end
 
@@ -96,9 +130,39 @@ function subtracted_singular_vortex_influence(node, controlpoint)
     return axial, radial
 end
 
+function subtracted_singular_vortex_influence!(axial, radial, node, controlpoint, cache_vec)
+    cache_vec[1] = (controlpoint[1] - node[1])^2 + (controlpoint[2] - node[2])^2
+    cache_vec[2] = controlpoint[1] - node[1]
+    cache_vec[3] = node[2] - controlpoint[2]
+    cache_vec[4] = 2.0 * pi * cache_vec[1]
+    cache_vec[5] = 64.0 * controlpoint[2]^2
+
+    if isapprox(cache_vec[1], 0.0) || isapprox(controlpoint[2], 0.0)
+        axial = 0.0
+    else
+        axial =
+            cache_vec[3] / cache_vec[4] -
+            log(cache_vec[1] / cache_vec[5]) / (8.0 * pi * controlpoint[2])
+    end
+
+    if isapprox(controlpoint[2], 0.0)
+        radial = 0.0
+    else
+        radial = cache_vec[2] / cache_vec[4]
+    end
+
+    return axial, radial
+end
+
 """
 """
 function analytically_integrated_vortex_influence(r, influence_length)
+    axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
+    radial = 0.0
+    return axial, radial
+end
+
+function analytically_integrated_vortex_influence!(axial, radial, r, influence_length)
     axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
     radial = 0.0
     return axial, radial
@@ -110,22 +174,50 @@ end
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function self_vortex_induced_velocity_sample(
-    t, node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
 )
 
     # Transform from (0,1) to actual position on panel
-    z0 = linear_transform(nondimrange, [node1[1]; node2[1]], t)
-    r0 = linear_transform(nondimrange, [node1[2]; node2[2]], t)
+    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t)
+    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
 
     # get relative geometry
-    xi, rho, m, _ = calculate_xrm(controlpoint, [z0; r0])
+    calculate_xrm!(
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[6],
+        controlpoint,
+        [cache_vec[1]; cache_vec[2]],
+    )
 
     # Get velocity components at sample points
-    vz = vortex_ring_vz(xi, rho, m, r0, 1.0) #shouldn't need influence length
-    vr = vortex_ring_vr(xi, rho, m, r0)
+    vortex_ring_vz!(
+        cache_vec[7],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[2],
+        1.0,
+        cache_vec[11:15],
+    ) #vz
+    vortex_ring_vr!(
+        cache_vec[8],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[2],
+        cache_vec[11:16],
+    ) #vr
 
     # Get singular piece to subtract
-    vzs, vrs = subtracted_singular_vortex_influence([z0; r0], controlpoint)
+    subtracted_singular_vortex_influence!(
+        cache_vec[9],
+        cache_vec[10],
+        [cache_vec[1]; cache_vec[2]],
+        controlpoint,
+        cache_vec[11:15],
+    )
 
     #=
     assemble output components in the format:
@@ -134,10 +226,10 @@ function self_vortex_induced_velocity_sample(
         (due to transformation of integration range to/from range=(0,1))
      =#
     return [
-        vz * (1.0 - t) - vzs / 2.0
-        vz * t .- vzs / 2.0
-        vr * (1.0 - t) .- vrs / 2.0
-        vr * t .- vrs / 2.0
+        cache_vec[7] * (1.0 - t) - cache_vec[9] / 2.0
+        cache_vec[7] * t .- cache_vec[9] / 2.0
+        cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
+        cache_vec[8] * t .- cache_vec[10] / 2.0
     ]
 end
 
@@ -145,22 +237,36 @@ end
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
 function self_vortex_panel_integration(
-    node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0], debug=false
+    node1,
+    node2,
+    influence_length,
+    controlpoint,
+    cache_vec;
+    nondimrange=[0.0; 1.0],
+    debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return self_vortex_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint; nondimrange=nondimrange
+            t,
+            node1,
+            node2,
+            influence_length,
+            controlpoint,
+            cache_vec;
+            nondimrange=nondimrange,
         )
     end
 
     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
 
-    vza, _ = analytically_integrated_vortex_influence(controlpoint[2], influence_length)
+    analytically_integrated_vortex_influence!(
+        cache_vec[1], cache_vec[2], controlpoint[2], influence_length
+    )
 
     V .*= influence_length
-    V[1:2] .+= vza / 2.0
+    V[1:2] .+= cache_vec[1] / 2.0
 
     if debug
         return reshape(V, (2, 2)), err
@@ -185,19 +291,35 @@ end
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function nominal_source_induced_velocity_sample(
-    t, node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
 )
 
     # Transform from (0,1) to actual position on panel
-    z = linear_transform(nondimrange, [node1[1]; node2[1]], t)
-    r = linear_transform(nondimrange, [node1[2]; node2[2]], t)
+    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t)
+    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
 
     # get relative geometry
-    xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
+    calculate_xrm!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], controlpoint, cache_vec[1:2]
+    )
 
     # Get velocity components at sample points
-    vz = source_ring_vz(xi, rho, m, r0)
-    vr = source_ring_vr(xi, rho, m, r0)
+    source_ring_vz!(
+        cache_vec[7],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[6],
+        cache_vec[11:15],
+    )
+    source_ring_vr!(
+        cache_vec[8],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[6],
+        cache_vec[11:16],
+    )
 
     #=
     assemble output components in the format:
@@ -205,9 +327,14 @@ function nominal_source_induced_velocity_sample(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    # return StaticArrays.SMatrix{2,2}([vz * [1.0 - t; t] vr * [1.0 - t; t]] * influence_length)
+    # return StaticArrays.SMatrix{2,2}([cache_vec[7] * [1.0 - t; t] cache_vec[8] * [1.0 - t; t]] * influence_length)
     return StaticArrays.SVector{4}(
-        [vz * (1.0 - t); vz * t; vr * (1.0 - t); vr * t] * influence_length
+        [
+            cache_vec[7] * (1.0 - t)
+            cache_vec[7] * t
+            cache_vec[8] * (1.0 - t)
+            cache_vec[8] * t
+        ] * influence_length,
     )
 end
 
@@ -215,13 +342,25 @@ end
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
 function nominal_source_panel_integration(
-    node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0], debug=false
+    node1,
+    node2,
+    influence_length,
+    controlpoint,
+    cache_vec;
+    nondimrange=[0.0; 1.0],
+    debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return nominal_source_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint; nondimrange=nondimrange
+            t,
+            node1,
+            node2,
+            influence_length,
+            controlpoint,
+            cache_vec;
+            nondimrange=nondimrange,
         )
     end
 
@@ -257,9 +396,32 @@ function subtracted_singular_source_influence(node, controlpoint)
     return axial, radial
 end
 
+function subtracted_singular_source_influence!(axial, radial, node, controlpoint, cache_vec)
+    cache_vec[1] = (controlpoint[1] - node[1])^2 + (controlpoint[2] - node[2])^2
+    #TODO: write up math and check signs here.
+    cache_vec[2] = controlpoint[1] - node[1]
+    cache_vec[3] = controlpoint[2] - node[2]
+    cache_vec[4] = 2.0 * pi * cache_vec[1]
+    # den2 = 64.0 * controlpoint[2]^2
+    cache_vec[5] = controlpoint[2]^2 #DFDC has no 64 here somehow
+
+    radial =
+        cache_vec[3] / cache_vec[4] -
+        log(cache_vec[1] / cache_vec[5]) / (8.0 * pi * controlpoint[2])
+    axial = cache_vec[2] / cache_vec[4]
+
+    return axial, radial
+end
+
 """
 """
 function analytically_integrated_source_influence(r, influence_length)
+    radial = (influence_length / (4.0 * pi * r)) * (1.0 + log(2.0 * r / influence_length))
+    axial = 0.0
+    return axial, radial
+end
+
+function analytically_integrated_source_influence!(axial, radial, r, influence_length)
     radial = (influence_length / (4.0 * pi * r)) * (1.0 + log(2.0 * r / influence_length))
     axial = 0.0
     return axial, radial
@@ -271,22 +433,44 @@ end
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
 function self_source_induced_velocity_sample(
-    t, node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+    t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
 )
 
     # Transform from (0,1) to actual position on panel
-    z0 = linear_transform(nondimrange, [node1[1]; node2[1]], t)
-    r0 = linear_transform(nondimrange, [node1[2]; node2[2]], t)
+    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t)
+    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
 
     # get relative geometry
-    xi, rho, m, _ = calculate_xrm(controlpoint, [z0; r0])
+    calculate_xrm!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], controlpoint, cache_vec[1:2]
+    )
 
     # Get velocity components at sample points
-    vz = source_ring_vz(xi, rho, m, r0)
-    vr = source_ring_vr(xi, rho, m, r0)
+    source_ring_vz!(
+        cache_vec[7],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[2],
+        cache_vec[11:15],
+    )
+    source_ring_vr!(
+        cache_vec[8],
+        cache_vec[3],
+        cache_vec[4],
+        cache_vec[5],
+        cache_vec[2],
+        cache_vec[11:16],
+    )
 
     # Get singular piece to subtract
-    vzs, vrs = subtracted_singular_source_influence([z0; r0], controlpoint)
+    subtracted_singular_source_influence!(
+        cache_vec[9],
+        cache_vec[10],
+        [cache_vec[1]; cache_vec[2]],
+        controlpoint,
+        cache_vec[11:15],
+    )
 
     #=
     assemble output components in the format:
@@ -295,10 +479,10 @@ function self_source_induced_velocity_sample(
         (due to transformation of integration range to/from range=(0,1))
      =#
     return [
-        vz * (1.0 - t) .- vzs / 2.0
-        vz * t .- vzs / 2.0
-        vr * (1.0 - t) .- vrs / 2.0
-        vr * t .- vrs / 2.0
+        cache_vec[7] * (1.0 - t) .- cache_vec[9] / 2.0
+        cache_vec[7] * t .- cache_vec[9] / 2.0
+        cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
+        cache_vec[8] * t .- cache_vec[10] / 2.0
     ]
 end
 
@@ -306,22 +490,36 @@ end
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
 function self_source_panel_integration(
-    node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0], debug=false
+    node1,
+    node2,
+    influence_length,
+    controlpoint,
+    cache_vec;
+    nondimrange=[0.0; 1.0],
+    debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return self_source_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint; nondimrange=nondimrange
+            t,
+            node1,
+            node2,
+            influence_length,
+            controlpoint,
+            cache_vec;
+            nondimrange=nondimrange,
         )
     end
 
     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
 
-    vza, vra = analytically_integrated_source_influence(controlpoint[2], influence_length)
+    analytically_integrated_source_influence!(
+        cache_vec[1], cache_vec[2], controlpoint[2], influence_length
+    )
 
     V .*= influence_length
-    V[3:4] .+= vra / 2.0
+    V[3:4] .+= cache_vec[2] / 2.0
 
     if debug
         return reshape(V, (2, 2)), err
