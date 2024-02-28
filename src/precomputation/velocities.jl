@@ -36,27 +36,6 @@ function calculate_xrm(controlpoint, node)
     end
 end
 
-function calculate_xrm!(cache_vec, controlpoint, node)
-    if isapprox(node[2], 0.0)
-        cache_vec .= 0.0
-        return cache_vec
-    else
-        # normalized axial distance
-        cache_vec[1] = (controlpoint[1] - node[1]) / node[2]
-
-        # normalized radial distance
-        cache_vec[2] = controlpoint[2] / node[2]
-
-        # elliptic integral parameter
-        cache_vec[3] = (4.0 * cache_vec[2]) / (cache_vec[1]^2 + (cache_vec[2] + 1)^2)
-
-        # influence point radial position
-        cache_vec[4] = node[2]
-
-        return cache_vec
-    end
-end
-
 ######################################################################
 #                                                                    #
 #                        Elliptic Functions                          #
@@ -126,32 +105,11 @@ function vortex_ring_vz(xi, rho, m, r_influence, influence_length)
         #get values for elliptic integrals
         K, E = get_elliptics(m)
 
+        # negative in Lewis' version is due to Lewis' convention that the vortex is postive clockwise
+        # return -1.0 / den1 * (K - (1.0 + num2 / den2) * E)
+        # No negative in your derivation with vortex postive according to right hand coordinate system
+        # TODO: this may affect coupling with rotor model, need to check signs there.
         return 1.0 / den1 * (K - (1.0 + num2 / den2) * E)
-    end
-end
-
-function vortex_ring_vz!(xi, rho, m, r_influence, influence_length, cache_vec)
-
-    # check panel locations
-    if abs(r_influence) <= eps()
-        # if influence on the axis, the influence is set to zero
-        return 0.0
-    elseif (xi^2 + (rho - 1.0)^2 <= eps())
-        # set self-induced case is "smoke ring" self influence in axial direction only.
-        return smoke_ring_vz(r_influence, influence_length)
-    else
-        #get the first denominator
-        cache_vec[1] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
-
-        #get numerator and denominator of second fraction
-        cache_vec[2] = 2.0 * (rho - 1.0)
-        cache_vec[3] = xi^2 + (rho - 1.0)^2
-
-        #get values for elliptic integrals
-        cache_vec[4], cache_vec[5] = get_elliptics(m)
-
-        return 1.0 / cache_vec[1] *
-               (cache_vec[4] - (1.0 + cache_vec[2] / cache_vec[3]) * cache_vec[5])
     end
 end
 
@@ -201,30 +159,6 @@ function vortex_ring_vr(xi, rho, m, r_influence)
     end
 end
 
-function vortex_ring_vr!(xi, rho, m, r_influence, cache_vec)
-
-    # return 0.0 for self-induced, influence on axis, or target on axis cases
-    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence) <= eps() || isapprox(rho, 0.0)
-        return 0.0
-    else
-        #get numerator and denominator of first fraction
-        cache_vec[1] = xi / rho
-        cache_vec[2] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
-
-        #get numerator and denominator of second fraction
-        cache_vec[3] = 2.0 * rho
-        cache_vec[4] = xi^2 + (rho - 1.0)^2
-
-        #get values for elliptic integrals
-        cache_vec[5], cache_vec[6] = get_elliptics(m)
-
-        # positive is what lewis had using Gamma in opposite direction to you
-        # return cache_vec[1] / cache_vec[2] * (cache_vec[5] - (1.0 + cache_vec[3] / cache_vec[4]) * cache_vec[6])
-        # negative sign is what you got in your derivation
-        return -cache_vec[1] / cache_vec[2] *
-               (cache_vec[5] - (1.0 + cache_vec[3] / cache_vec[4]) * cache_vec[6])
-    end
-end
 ##### ----- Source ----- #####
 
 """
@@ -260,27 +194,6 @@ function source_ring_vz(xi, rho, m, r_influence)
     end
 end
 
-function source_ring_vz!(xi, rho, m, r_influence, cache_vec)
-
-    # return zero for the self-induced off body case
-    if (xi^2 + (rho - 1.0)^2 <= eps()) || abs(r_influence) < eps() || abs(rho) < eps()
-        return 0.0
-    else
-
-        #get values for elliptic integrals
-        cache_vec[1], cache_vec[2] = get_elliptics(m)
-
-        #get the first denominator
-        cache_vec[3] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
-
-        #get numerator and denominator of second fraction
-        cache_vec[4] = 2 * xi * cache_vec[2]
-        cache_vec[5] = xi^2 + (rho - 1)^2
-
-        return 1.0 / cache_vec[3] * (cache_vec[4] / cache_vec[5])
-    end
-end
-
 """
 radial velocity induced by axisymmetric source ring. returns zero if source ring is on axis of rotation (zero radius), the point of influence is on the axis, or if self-inducing velocity.
 
@@ -312,28 +225,5 @@ function source_ring_vr(xi, rho, m, r_influence)
         den2 = xi^2 + (rho - 1)^2
 
         return num1 / den1 * (K - (1.0 - num2 / den2) * E)
-    end
-end
-
-function source_ring_vr!(xi, rho, m, r_influence, cache_vec)
-
-    # return zero for the self-induced off-body case
-    if (xi^2 + (rho - 1.0)^2 <= eps()) || isapprox(r_influence, 0.0) || isapprox(rho, 0.0)
-        return 0.0
-    else
-
-        #get values for elliptic integrals
-        cache_vec[1], cache_vec[2] = get_elliptics(m)
-
-        #get numerator and denominator of first fraction
-        cache_vec[3] = 1.0 / rho
-        cache_vec[4] = 2.0 * pi * r_influence * sqrt(xi^2 + (rho + 1.0)^2)
-
-        #get numerator and denominator of second fraction
-        cache_vec[5] = 2 * rho * (rho - 1.0)
-        cache_vec[6] = xi^2 + (rho - 1)^2
-
-        return cache_vec[3] / cache_vec[4] *
-               (cache_vec[1] - (1.0 - cache_vec[5] / cache_vec[6]) * cache_vec[2])
     end
 end

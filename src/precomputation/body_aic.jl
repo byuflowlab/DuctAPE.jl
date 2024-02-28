@@ -59,22 +59,11 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function vortex_aic_boundary_on_boundary!(
-    AICn,
-    AICt,
-    controlpoint,
-    normal,
-    tangent,
-    node,
-    nodemap,
-    influence_length;
-    cache_vec=nothing,
+    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
 
     # NOTE: it is slighlty faster/fewer allocations to just define a new static array in the loop than to preallocate such a small matrix.
     # vel = zeros(eltype(AICn), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
-    end
 
     # loop through panels doing the influencing
     for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
@@ -88,12 +77,12 @@ function vortex_aic_boundary_on_boundary!(
             if i != j
                 # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 )
             else
                 # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_vortex_panel_integration(n1, n2, lj, cpi)
                 )
             end
 
@@ -125,7 +114,7 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
 function vortex_aic_boundary_on_field(
-    controlpoint, normal, tangent, node, nodemap, influence_length; cache_vec=nothing
+    controlpoint, normal, tangent, node, nodemap, influence_length
 )
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
@@ -135,15 +124,7 @@ function vortex_aic_boundary_on_field(
     AICt = zeros(T, M, N)
 
     vortex_aic_boundary_on_field!(
-        AICn,
-        AICt,
-        controlpoint,
-        normal,
-        tangent,
-        node,
-        nodemap,
-        influence_length;
-        cache_vec=cache_vec,
+        AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
     )
 
     return AICn, AICt
@@ -162,20 +143,9 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function vortex_aic_boundary_on_field!(
-    AICn,
-    AICt,
-    controlpoint,
-    normal,
-    tangent,
-    node,
-    nodemap,
-    influence_length;
-    cache_vec=nothing,
+    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
     # vel = zeros(eltype(AICn), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
-    end
 
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
@@ -190,13 +160,13 @@ function vortex_aic_boundary_on_field!(
                 # if so:
                 # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_vortex_panel_integration(n1, n2, lj, cpi)
                 )
             else
                 # if not:
                 # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 )
             end
 
@@ -257,11 +227,7 @@ function add_te_gap_aic!(
     tencrossn,
     teadjnodeidxs;
     wake=false,
-    cache_vec=nothing,
 )
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(controlpoint), 16)
-    end
 
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
@@ -278,14 +244,10 @@ function add_te_gap_aic!(
 
             # get unit induced velocity from the panel onto the control point
             vvel = StaticArrays.SMatrix{2,2}(
-                nominal_vortex_panel_integration(
-                    tenode[j, 1, :], tenode[j, 2, :], lj, cpi, cache_vec
-                ),
+                nominal_vortex_panel_integration(tenode[j, 1, :], tenode[j, 2, :], lj, cpi)
             )
             svel = StaticArrays.SMatrix{2,2}(
-                nominal_source_panel_integration(
-                    tenode[j, 1, :], tenode[j, 2, :], lj, cpi, cache_vec
-                ),
+                nominal_source_panel_integration(tenode[j, 1, :], tenode[j, 2, :], lj, cpi)
             )
 
             for k in 1:2
@@ -322,9 +284,7 @@ Used for constructing the RHS boundary conditions due to rotor source panels.
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
-function source_aic(
-    controlpoint, normal, tangent, node, nodemap, influence_length; cache_vec=nothing
-)
+function source_aic(controlpoint, normal, tangent, node, nodemap, influence_length)
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
     N = size(node, 2)
@@ -332,17 +292,7 @@ function source_aic(
     AICn = zeros(T, M, N)
     AICt = zeros(T, M, N)
 
-    source_aic!(
-        AICn,
-        AICt,
-        controlpoint,
-        normal,
-        tangent,
-        node,
-        nodemap,
-        influence_length;
-        cache_vec=cache_vec,
-    )
+    source_aic!(AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length)
 
     return AICn, AICt
 end
@@ -361,20 +311,9 @@ end
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function source_aic!(
-    AICn,
-    AICt,
-    controlpoint,
-    normal,
-    tangent,
-    node,
-    nodemap,
-    influence_length;
-    cache_vec=nothing,
+    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
 )
     # vel = zeros(eltype(AICn), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
-    end
 
     # Loop through control points being influenced
     for (i, (cpi, nhat, that)) in
@@ -387,7 +326,7 @@ function source_aic!(
             # get unit induced velocity from the panel onto the control point
             # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
             vel = StaticArrays.SMatrix{2,2}(
-                nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                nominal_source_panel_integration(n1, n2, lj, cpi)
             )
 
             for k in 1:2

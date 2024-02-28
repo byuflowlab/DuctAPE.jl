@@ -28,7 +28,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_vortex_panels_on_points(
-    controlpoints, nodes, nodemap, influence_lengths, strengths; cache_vec=nothing
+    controlpoints, nodes, nodemap, influence_lengths, strengths
 )
 
     # Initialize
@@ -36,13 +36,7 @@ function induced_velocities_from_vortex_panels_on_points(
     VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_vortex_panels_on_points!(
-        VEL,
-        controlpoints,
-        nodes,
-        nodemap,
-        influence_lengths,
-        strengths;
-        cache_vec=cache_vec,
+        VEL, controlpoints, nodes, nodemap, influence_lengths, strengths
     )
 
     return VEL
@@ -61,12 +55,9 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `gamma::Vector{Float}` : vortex constant circulation values
 """
 function induced_velocities_from_vortex_panels_on_points!(
-    VEL, controlpoint, node, nodemap, influence_length, strength; cache_vec=nothing
+    VEL, controlpoint, node, nodemap, influence_length, strength
 )
     # vel = zeros(eltype(VEL), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
-    end
 
     # loop through panels doing the influencing
     for (j, (nmap, lj, gammaj)) in
@@ -81,13 +72,13 @@ function induced_velocities_from_vortex_panels_on_points!(
                 # if so:
                 # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_vortex_panel_integration(n1, n2, lj, cpi)
                 )
             else
                 # if not:
                 # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 )
             end
 
@@ -120,7 +111,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_source_panels_on_points(
-    controlpoints, nodes, nodemap, influence_lengths, strengths; cache_vec=nothing
+    controlpoints, nodes, nodemap, influence_lengths, strengths
 )
 
     # Initialize
@@ -128,13 +119,7 @@ function induced_velocities_from_source_panels_on_points(
     VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_source_panels_on_points!(
-        VEL,
-        controlpoints,
-        nodes,
-        nodemap,
-        influence_lengths,
-        strengths;
-        cache_vec=cache_vec,
+        VEL, controlpoints, nodes, nodemap, influence_lengths, strengths
     )
 
     return VEL
@@ -153,12 +138,9 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `gamma::Vector{Float}` : source constant circulation values
 """
 function induced_velocities_from_source_panels_on_points!(
-    VEL, controlpoint, node, nodemap, influence_length, strength; cache_vec=nothing
+    VEL, controlpoint, node, nodemap, influence_length, strength
 )
     # vel = zeros(eltype(VEL), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
-    end
 
     #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow
 
@@ -175,13 +157,13 @@ function induced_velocities_from_source_panels_on_points!(
                 # if so:
                 # vel .= self_source_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_source_panel_integration(n1, n2, lj, cpi)
                 )
             else
                 # if not:
                 # vel .= nominal_source_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_source_panel_integration(n1, n2, lj, cpi)
                 )
             end
 
@@ -201,21 +183,11 @@ end
 """
 """
 function induced_velocities_from_trailing_edge_gap_panel!(
-    VEL,
-    controlpoint,
-    tenode,
-    teinfluence_length,
-    tendotn,
-    tencrossn,
-    teadjnodeidxs;
-    cache_vec=nothing,
+    VEL, controlpoint, tenode, teinfluence_length, tendotn, tencrossn, teadjnodeidxs
 )
 
     # vvel = zeros(eltype(AICn), 2, 2)
     # svel = zeros(eltype(AICn), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(controlpoint), 16)
-    end
 
     # Loop through control points being influenced
     for (i, cpi) in enumerate(eachcol(controlpoint))
@@ -235,18 +207,18 @@ function induced_velocities_from_trailing_edge_gap_panel!(
             if isapprox(cpi, 0.5 * (n1 .+ n2))
                 # if so:
                 vvel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_vortex_panel_integration(n1, n2, lj, cpi)
                 )
                 svel = StaticArrays.SMatrix{2,2}(
-                    self_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_source_panel_integration(n1, n2, lj, cpi)
                 )
             else
                 # if not:
                 vvel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 )
                 svel = StaticArrays.SMatrix{2,2}(
-                    nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_source_panel_integration(n1, n2, lj, cpi)
                 )
             end
 
