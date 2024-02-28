@@ -100,6 +100,18 @@ function generate_wake_panels(wake_grid)
     return wake_panels
 end
 
+function generate_wake_panels!(wake_panels, wake_grid)
+    # extract wake_grid size
+    _, nz, nr = size(wake_grid)
+
+    # define wake lines
+    wake_lines = [[wake_grid[1, :, ir]'; wake_grid[2, :, ir]'] for ir in 1:nr]
+
+    # generate paneling for each wake line
+    return generate_panels!(wake_panels, wake_lines; isbody=false)
+end
+
+
 """
     initialize_wake_grid(body_geometry, rzl, rblade)
 

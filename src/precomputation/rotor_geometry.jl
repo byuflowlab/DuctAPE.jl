@@ -203,7 +203,26 @@ end
 # generates rotor panels
 function generate_rotor_panels(rotorzloc, rwake)
     x = fill(rotorzloc, length(rwake))
-    xr = [x'; rwake']
+    xr = @views [x'; rwake']
 
     return generate_panels(xr; isbody=false, isrotor=true)
+end
+
+function generate_rotor_panels!(
+    rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+)
+    TF = promote_type(
+        eltype(rotorzloc), eltype(wake_grid), eltype.([rotor_source_panels...])...
+    )
+
+    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotorzloc)]
+
+    for irotor in 1:length(rotorzloc)
+        @views xr[irotor] = [
+            fill(rotorzloc[irotor], nwake_sheets)'
+            wake_grid[2, rotor_indices_in_wake[irotor], 1:nwake_sheets]'
+        ]
+    end
+
+    return generate_panels!(rotor_source_panels, xr; isbody=false, isrotor=true)
 end

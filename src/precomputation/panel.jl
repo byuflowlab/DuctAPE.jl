@@ -10,6 +10,10 @@ function generate_panels(coordinates::Matrix{TF}; kwargs...) where {TF}
     return generate_panels([coordinates]; kwargs...)
 end
 
+function generate_panels!(panels, coordinates::Matrix{TF}; kwargs...) where {TF}
+    return generate_panels!(panels, [coordinates]; kwargs...)
+end
+
 """
 generates NamedTuple of panel geometry items from a vector of matrices of coordinates
 assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
@@ -29,11 +33,11 @@ function generate_panels(
     # number of panels to generate for each body
     npanel = nnode .- 1
     # number of bodies
-    nbodies = length(npanel)
+    nbodies = [length(npanel)]
     # total number of panels in system
-    totpanel = sum(npanel)
+    totpanel = [sum(npanel)]
     # total number of nodes in system
-    totnode = totpanel + nbodies
+    totnode = [totpanel + nbodies]
 
     # - Initialize Outputs - #
     # control points
@@ -56,6 +60,96 @@ function generate_panels(
     normal = zeros(TF, 2, totpanel)
     # panel unit tangents
     tangent = zeros(TF, 2, totpanel)
+
+    # internal control point
+    itcontrolpoint = zeros(TF, 2, nbodies)
+    itnormal = zeros(TF, 2, nbodies)
+    #note: unused, but required input later
+    ittangent = zeros(TF, 2, nbodies)
+
+    # trailing edge gap
+    tenode = zeros(TF, nbodies, 2, 2) # body, node1-2, x-r
+    tenormal = zeros(TF, 2, nbodies) #body, x-r
+    teinfluence_length = zeros(TF, nbodies)
+    teadjnodeidxs = similar(endnodeidxs) .= 1 #can't be the same as endpoints, because we may have repeated values for non-duct bodies
+    tendotn = zeros(TF, 2, nbodies) #bodies, node1,2
+    tencrossn = zeros(TF, 2, nbodies) #bodies, node1,2
+
+    panels = (;
+        controlpoint,
+        endnodeidxs,
+        endnodes,
+        endpanelidxs,
+        influence_length,
+        itcontrolpoint,
+        itnormal,
+        ittangent,
+        nbodies,
+        nnode,
+        node,
+        nodemap,
+        normal,
+        npanel,
+        prescribednodeidxs,
+        tangent,
+        teadjnodeidxs,
+        teinfluence_length,
+        tencrossn,
+        tendotn,
+        tenode,
+        tenormal,
+        totnode,
+        totpanel,
+    )
+
+    return generate_panels!(
+        panels,
+        coordinates;
+        itcpshift=itcpshift,
+        axistol=axistol,
+        tegaptol=tegaptol,
+        isbody=isbody,
+        isrotor=isrotor,
+    )
+end
+
+function generate_panels!(
+    panels,
+    coordinates::Vector{Matrix{TF}};
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
+    isbody=true,
+    isrotor=false,
+) where {TF}
+
+    # - Extract Panel Fields - #
+    (;
+        controlpoint,
+        endnodeidxs,
+        endnodes,
+        endpanelidxs,
+        influence_length,
+        itcontrolpoint,
+        itnormal,
+        ittangent,
+        nbodies,
+        nnode,
+        node,
+        nodemap,
+        normal,
+        npanel,
+        prescribednodeidxs,
+        tangent,
+        teadjnodeidxs,
+        teinfluence_length,
+        tencrossn,
+        tendotn,
+        tenode,
+        tenormal,
+        totnode,
+        totpanel,
+    ) = panels
 
     # initialize index for entire array
     pidx = 1 # panel index
@@ -115,10 +209,6 @@ function generate_panels(
     end
 
     # - Internal Panel Stuff - #
-    itcontrolpoint = zeros(TF, 2, nbodies)
-    itnormal = zeros(TF, 2, nbodies)
-    #note: unused, but required input later
-    ittangent = zeros(TF, 2, nbodies)
 
     if size(node, 2) > 2 && isbody
         def_it_panel!(
@@ -135,12 +225,6 @@ function generate_panels(
     end
 
     # - Trailing Edge Panel Stuff - #
-    tenode = zeros(TF, nbodies, 2, 2) # body, node1-2, x-r
-    tenormal = zeros(TF, 2, nbodies) #body, x-r
-    teinfluence_length = zeros(TF, nbodies)
-    teadjnodeidxs = similar(endnodeidxs) .= 1 #can't be the same as endpoints, because we may have repeated values for non-duct bodies
-    tendotn = zeros(TF, 2, nbodies) #bodies, node1,2
-    tencrossn = zeros(TF, 2, nbodies) #bodies, node1,2
 
     if !isrotor
         def_te_panel!(
@@ -163,32 +247,7 @@ function generate_panels(
     # Save the node index for nodes that are on the axis and need to be prescribed.
     prescribednodeidxs = findall(x -> abs(x) <= eps(), node[2, :])
 
-    return (;
-        nbodies,
-        npanel,
-        nnode,
-        totpanel,
-        totnode,
-        controlpoint,
-        node,
-        nodemap,
-        influence_length,
-        normal,
-        tangent,
-        endnodes,
-        endnodeidxs,
-        endpanelidxs,
-        itcontrolpoint,
-        itnormal,
-        ittangent,
-        prescribednodeidxs,
-        tenode,
-        tenormal,
-        teinfluence_length,
-        teadjnodeidxs,
-        tendotn,
-        tencrossn,
-    )
+    return panels
 end
 
 function def_it_panel!(

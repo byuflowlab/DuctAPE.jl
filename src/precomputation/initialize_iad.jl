@@ -105,6 +105,9 @@ function generate_all_panels!(
     rotorstator_parameters,
     paneling_constants,
     wake_grid;
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
     silence_warnings=true,
 )
 
@@ -115,23 +118,18 @@ function generate_all_panels!(
 
     ##### ----- Fill Panel Objects ----- #####
     # - Body Panels - #
-    #
-    #
-    # TODO: !!! YOU ARE HERE !!!
-    #
-    #
-    # TODO: write in-place version of this function
-    body_vortex_panels = generate_panels([rp_duct_coordinates, rp_centerbody_coordinates])
+    # TODO: test this function
+    generate_panels!(body_vortex_panels, [rp_duct_coordinates, rp_centerbody_coordinates])
 
     # - Rotor Panels - #
-    #TODO: write a refactored and inplace version of this function using the inputs here that doesn't make a vector of tuples, but rather a tuple of vectors
-    rotor_source_panels = generate_rotor_panels(
-        rotorzloc, wake_grid, rotor_indices_in_wake, nwakesheets
+    #TODO: test this function
+    generate_rotor_panels!(
+        rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
     )
 
     # - Wake Panels - #
-    # TODO: write in-place version of this function
-    wake_vortex_panels = generate_wake_panels(wake_grid[:, :, 1:nwake_sheets])
+    # TODO: test this function
+    generate_wake_panels!(wake_vortex_panels, wake_grid[:, :, 1:nwake_sheets])
 
     #TODO; what other panels are actually needed? do you need the body wake panels or no?
     return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
@@ -205,6 +203,9 @@ function precompute_parameters_iad!(
     precomp_containers; # contains wake_grid and repaneled duct and centerbody coordinates
     max_wake_relax_iter=100,
     wake_relax_tol=1e-9,
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
     finterp=fm.akima,
     silence_warnings=true,
 )
@@ -244,6 +245,9 @@ function precompute_parameters_iad!(
         rotorstator_parameters,
         paneling_constants,
         precomp_containers.wake_grid;
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
         silence_warnings=silence_warnings,
     )
 

@@ -22,6 +22,7 @@ TODO: move to analysis.jl
 function define_constants(;
     # - General Parameters - #
     verbose=false,
+    silence_warnings=true,
     # - NLSolve Parameters - #
     # nlsolve parameters
     nlsolve_method=:newton,
@@ -37,10 +38,18 @@ function define_constants(;
     outfile="outputs.jl",
     checkoutfileexists=false,
     tuple_name="outs",
+    # - Geometry Re-interpolation and generation options - #
+    finterp=fm.akima,
+    max_wake_relax_iter=100,
+    wake_relax_tol=1e-9,
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
 )
     return (;
         # - General Parameters - #
         verbose,
+        silence_warnings,
         # - NLSolve Parameters - #
         # nlsolve parameters
         nlsolve_method,
@@ -54,6 +63,18 @@ function define_constants(;
         else
             LineSearches.Static()
         end,
+        # - Post-processing Options - #
+        write_outputs,
+        outfile,
+        checkoutfileexists,
+        tuple_name,
+        # - Geometry Re-interpolation and generation options - #
+        finterp,
+        max_wake_relax_iter,
+        wake_relax_tol,
+        itcpshift,
+        axistol,
+        tegaptol,
     )
 end
 
@@ -117,14 +138,23 @@ function analyze(
 
     # - combine cache and constants - #
     const_cache = (;
-        # Constants
+        # - Constants - #
+        #nlsolve options
         constants.nlsolve_method,
         constants.nlsolve_autodiff,
         constants.nlsolve_linesearch,
         constants.nlsolve_ftol,
         constants.nlsolve_iteration_limit,
         constants.verbose,
+        constants.silence_warnings,
         constants.converged,
+        #geometry options
+        constants.finterp,
+        constants.max_wake_relax_iter,
+        constants.wake_relax_tol,
+        constants.itcpshift,
+        constants.axistol,
+        constants.tegaptol,
         # TODO: write generate_caches function (need to go through and figure out what all goes in the cache)
         # Caches
         cache_and_dims.solve_parameter_cache,
@@ -159,14 +189,26 @@ function solve_iad(inputs, const_cache)
     # Note: it will have to be done twice, but oh well.
     # - Extract constants - #
     (;
+        #general
+        verbose,
+        silence_warnings,
+        #inputs
         fx,
+        #solve
         nlsolve_method,
         nlsolve_autodiff,
         nlsolve_linesearch,
         nlsolve_ftol,
         nlsolve_iteration_limit,
-        verbose,
         converged,
+        #geometry
+        finterp,
+        max_wake_relax_iter,
+        wake_relax_tol,
+        itcpshift,
+        axistol,
+        tegaptol,
+        #caches
         solve_cache,
         solve_cache_dims, #TODO: put state_dims inside the solve_cache_dims (same dims as estimates)
         solve_parameter_cache,
@@ -194,7 +236,14 @@ function solve_iad(inputs, const_cache)
         solve_parameter_containers.linsys,
         solve_parameter_containers.blade_elements,
         solve_parameter_containers.idmaps,
-        propulsor,
+        propulsor;
+        max_wake_relax_iter=max_wake_relax_iter,
+        wake_relax_tol=wake_relax_tol,
+        itcpshift=itcpshift,
+        axistol=axistol,
+        tegaptol=tegaptol,
+        finterp=finterp,
+        silence_warnings=silence_warnings,
     )
 
     # - Initialize Aero - #
