@@ -321,9 +321,147 @@ end
 
 """
 """
-function initialize_linear_system(linsys, ivb, body_vortex_panels)
-    # - Extract Linear System - #
+function initialize_linear_system!(
+    linsys, ivb, body_vortex_panels, wake_vortex_panels, Vinf, precomp_containers
+)
+    # - Extract Tuples - #
+
+    # containers for precomputation intermediate values
+    (; AICn, AICpcp) = precomp_containers
+
+    # linear system
     (; A_bb, A_bb_LU, lu_decomp_flag, b_bf, A_br, A_pr, A_bw, A_pw) = linsys
+
+    # velocities on body
+    (; v_br, v_bw, v_bb) = ivb
+
+    # body panels
+    (;
+        npanel,
+        nnode,
+        totpanel,
+        totnode,
+        prescribednodeidxs,
+        nodemap,
+        node,
+        tenode,
+        influence_length,
+        teinfluence_length,
+        controlpoint,
+        itcontrolpoint,
+        normal,
+        itnormal,
+        tendotn,
+        tencrossn,
+        teadjnodeidxs,
+    ) = body_vortex_panels
+
+    ##### ----- Generate LHS ----- #####
+
+    # TODO write this function
+    calculate_normal_velocity!(@veiw(AICn[:, :]), v_bb, normal)
+
+    # Boundary on internal psuedo control point influence coefficients
+    vortex_aic_boundary_on_field!(
+        @view(AICpcp[:]), itcontrolpoint, itnormal, node, nodemap, influence_length
+    )
+
+    # Add Trailing Edge Gap Panel Influences to panels
+    add_te_gap_aic!(
+        @view(AICn[:, :]),
+        controlpoint,
+        normal,
+        tenode,
+        teinfluence_length,
+        tendotn,
+        tencrossn,
+        teadjnodeidxs,
+    )
+
+    # Add Trailing Edge Gap Panel Influences to internal pseudo control point
+    add_te_gap_aic!(
+        @view(AICpcp[:, :]),
+        itcontrolpoint,
+        itnormal,
+        tenode,
+        teinfluence_length,
+        tendotn,
+        tencrossn,
+        teadjnodeidxs,
+    )
+
+    # Assemble Raw LHS Matrix into A_bb
+    assemble_lhs_matrix!(
+        @view(A_bb[:, :]),
+        AICn,
+        AICpcp,
+        npanel,
+        nnode,
+        totpanel,
+        totnode,
+        prescribednodeidxs;
+        dummyval=1.0,
+    )
+
+    # - LU Decomposition - #
+    A_bb_LU.factors .= lu!(A_bb, NoPivot(); check=false).factors # need to do it this way if A_bb_LU contains a view into a PreallocationTools DiffCache this allocates quite a bit more than just overwriting it though.
+    # A_bb_LU = lu!(prelhs, NoPivot(); check=false) #this will overwrite A_bb_LU, and not update anything it was previously pointing to
+
+    # check if success
+    lu_decomp_flag[1] = eltype(v_bb)(issuccess(LHS))
+
+    # - Freestream RHS - #
+    assemble_rhs_matrix!(
+        @view(b_bf[:]), Vinf, normal, itnormal, totpanel, totnode, prescribednodeidxs
+    )
+
+    ##### ----- Rotor AIC ----- #####
+    #TODO: write this function with the rotor induced velocities as inputs
+    source_aic!(@view(A_br[:, :]), v_br, normal)
+    source_aic!(@view(A_pr[:, :]), v_br, normal)
+
+    ##### ----- Wake AIC ----- #####
+    # - wake pto body - #
+    # TODO write this function
+    calculate_normal_velocity!(@veiw(A_bw[:, :]), v_bw, normal)
+
+    # wakes are horseshoes, so they also have a "trailing edge panel"
+    add_te_gap_aic!(
+        @view(A_bw[:, :]),
+        controlpoint,
+        normal,
+        tangent,
+        wake_vortex_panels.tenode,
+        wake_vortex_panels.teinfluence_length,
+        wake_vortex_panels.tendotn,
+        wake_vortex_panels.tencrossn,
+        wake_vortex_panels.teadjnodeidxs;
+        wake=true,
+    )
+
+    # - Boundary on internal psuedo control point influence coefficients - #
+    vortex_aic_boundary_on_field!(
+        @view(A_pw[:]),
+        itcontrolpoint,
+        itnormal,
+        wake_vortex_panels.node,
+        wake_vortex_panels.nodemap,
+        wake_vortex_panels.influence_length,
+    )
+
+    # wakes are not horseshoes, so they also have a "trailing edge panel"
+    add_te_gap_aic!(
+        @view(A_pw[:]),
+        itcontrolpoint,
+        itnormal,
+        ittangent,
+        wake_vortex_panels.tenode,
+        wake_vortex_panels.teinfluence_length,
+        wake_vortex_panels.tendotn,
+        wake_vortex_panels.tencrossn,
+        wake_vortex_panels.teadjnodeidxs;
+        wake=true,
+    )
 
     return linsys
 end

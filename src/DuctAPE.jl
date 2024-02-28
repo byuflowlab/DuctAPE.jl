@@ -14,7 +14,8 @@ using SpecialFunctions # required for elliptic integrals
 using QuadGK # required for integration of linear panels
 using StaticArrays # used in miscellaneous places for code efficiency
 
-using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
+using LinearAlgebra#: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
+const la = LinearAlgebra
 
 # Fancy new solve required pacakges
 using NLsolve #for newton solver

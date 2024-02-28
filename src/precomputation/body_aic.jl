@@ -113,18 +113,15 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 - `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
-function vortex_aic_boundary_on_field(
-    controlpoint, normal, tangent, node, nodemap, influence_length
-)
+function vortex_aic_boundary_on_field(controlpoint, normal, node, nodemap, influence_length)
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
     N = size(node, 2)
 
     AICn = zeros(T, M, N)
-    AICt = zeros(T, M, N)
 
     vortex_aic_boundary_on_field!(
-        AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+        AICn, controlpoint, normal, node, nodemap, influence_length
     )
 
     return AICn, AICt
@@ -143,13 +140,12 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function vortex_aic_boundary_on_field!(
-    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+    AICn, controlpoint, normal, node, nodemap, influence_length
 )
     # vel = zeros(eltype(AICn), 2, 2)
 
     # Loop through control points being influenced
-    for (i, (cpi, nhat, that)) in
-        enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
+    for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
         # loop through panels doing the influencing
         for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
             n1 = view(node, :, nmap[1])
@@ -179,12 +175,11 @@ function vortex_aic_boundary_on_field!(
             for k in 1:2
                 # fill the Matrix
                 AICn[i, nmap[k]] += dot(vel[k, :], nhat)
-                AICt[i, nmap[k]] += dot(vel[k, :], that)
             end #for k
         end #for j
     end #for i
 
-    return nothing
+    return AICn
 end
 
 ##### ----- Add Kutta ----- #####
@@ -217,10 +212,8 @@ end
 """
 function add_te_gap_aic!(
     AICn,
-    AICt,
     controlpoint,
     normal,
-    tangent,
     tenode,
     teinfluence_length,
     tendotn,
@@ -230,8 +223,7 @@ function add_te_gap_aic!(
 )
 
     # Loop through control points being influenced
-    for (i, (cpi, nhat, that)) in
-        enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
+    for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
         # loop through bodies
         for (j, (lj, ndn, ncn, nmap)) in enumerate(
             zip(
@@ -253,11 +245,9 @@ function add_te_gap_aic!(
             for k in 1:2
                 # fill the Matrix
                 AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
-                AICt[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], that)
                 if wake
                     # wake "TE Panels" only have the vortex influence
                     AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :], nhat)
-                    AICt[i, nmap[k]] += dot(ndn[k] * vvel[k, :], that)
                 end
             end #for k
         end #for j
@@ -352,7 +342,7 @@ Note that the freestream is assumed to have zero radial component in the underly
 # Returns:
 - `RHS::Vector{Float}` : vector of normal components of freestream velocity on input panels
 """
-function freestream_influence_vector(normals, Vinfmat)
+function freestream_influence_vector(normals, Vinfmat::AbstractMatrix{TF}) where {TF}
     T = promote_type(eltype(normals), eltype(Vinfmat))
     N = size(normals, 2)
 
@@ -372,9 +362,17 @@ Note that the freestream is assumed to have zero radial component in the underly
 - `normals::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `Vinfmat::Matrix{Float}` : [z r] components of freestream velocity (r's should be zero)
 """
-function freestream_influence_vector!(RHS, normals, Vinfmat)
+function freestream_influence_vector!(RHS, normals, Vinfmat::AbstractMatrix{TF}) where {TF}
     for (i, (n, v)) in enumerate(zip(eachcol(normals), eachcol(Vinfmat)))
         RHS[i] -= dot(v, n)
+    end
+
+    return nothing
+end
+
+function freestream_influence_vector!(RHS, normals, Vinf)
+    for (i, n) in enumerate(eachcol(normals))
+        RHS[i] -= dot([Vinf; eltype(RHS)(0.0)], n)
     end
 
     return nothing
@@ -385,7 +383,9 @@ end
 #---------------------------------#
 """
 """
-function assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
+function assemble_lhs_matrix(
+    AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
+)
 
     # get type
     TF = promote_type(eltype(AICn), eltype(AICpcp))
@@ -393,7 +393,17 @@ function assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
     # initialize LHS matrix
     LHS = zeros(TF, panels.totnode + 2, panels.totnode + 2)
 
-    assemble_lhs_matrix!(LHS, AICn, AICpcp, panels; dummyval=dummyval)
+    assemble_lhs_matrix!(
+        LHS,
+        AICn,
+        AICpcp,
+        npanel,
+        nnode,
+        totpanel,
+        totnode,
+        prescribednodeidxs;
+        dummyval=dummyval,
+    )
 
     return LHS
 end
@@ -403,10 +413,9 @@ AICn is nominal v dot n
 AICpcp is v dot n where n is for psuedo control point
 AICg is v dot n where v is from trailing edge gap panels
 """
-function assemble_lhs_matrix!(LHS, AICn, AICpcp, panels; dummyval=1.0)
-
-    # extract stuff from panels
-    (; npanel, nnode, totpanel, totnode, prescribednodeidxs) = panels
+function assemble_lhs_matrix!(
+    LHS, AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
+)
 
     # - Place standard influence coefficients - #
     # 1:totpanel, 1:totnode are standard AIC values
@@ -444,33 +453,55 @@ end
 #---------------------------------#
 """
 """
-function assemble_rhs_matrix(vdnb, vdnpcp, panels; TF=nothing)
+function assemble_rhs_matrix(
+    vdnb, vdnpcp, panels, npanel, nnode, totpanel, totnode, prescribednodeidxs
+)
 
     # get type
-    if isnothing(TF)
-        TF = promote_type(eltype(vdnb), eltype(vdnpcp))
-    end
+    TF = promote_type(eltype(vdnb), eltype(vdnpcp))
 
     # initialize RHS matrix
     RHS = zeros(TF, panels.totnode + 2)
 
-    assemble_rhs_matrix!(RHS, vdnb, vdnpcp, panels)
+    assemble_rhs_matrix!(
+        RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+    )
 
     return RHS
 end
 
 """
 """
-function assemble_rhs_matrix!(RHS, vdnb, vdnpcp, panels)
-
-    # extract stuff from panels
-    (; npanel, nnode, totpanel, totnode, prescribednodeidxs) = panels
+function assemble_rhs_matrix!(
+    RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+)
 
     # - Place standard influence coefficients - #
     # 1:totpanel, 1:totnode are standard AIC values
     RHS[1:totpanel] .= vdnb
 
     # - Place Duct pseudo control point freestream influence - #
+    RHS[totnode - 1] = vdnpcp[1]
+
+    # - Place hub pseudo control point freestream influence - #
+    if length(prescribednodeidxs) == 1
+        RHS[totnode + 2] = vdnpcp[2]
+    end
+
+    return RHS
+end
+
+function assemble_rhs_matrix!(
+    RHS, Vinf, normal, itnormal, totpanel, totnode, prescribednodeidxs
+)
+
+    # - Place standard influence coefficients - #
+    # 1:totpanel, 1:totnode are standard AIC values
+    RHS[1:totpanel] .= vdnb
+    freestream_influence_vector!(view(RHS, 1:totpanel), normal, Vinf)
+
+    # - Place Duct pseudo control point freestream influence - #
+    vdnpcp = freestream_influence_vector(itnormal, Vinf)
     RHS[totnode - 1] = vdnpcp[1]
 
     # - Place hub pseudo control point freestream influence - #

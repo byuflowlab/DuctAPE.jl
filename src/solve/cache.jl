@@ -137,12 +137,12 @@ function initialize_caches(paneling_constants; cache_levels=1, chunksize=12)
     # - influences on body - #
     gamb
     A_bb
+    A_bb_LU
     b_bf
     A_bw
     A_pw
     A_br
     A_pr
-    LHS
 
     # - Assemble/Return NamedTuple - #
     return (;
@@ -188,7 +188,11 @@ function withdraw_solve_parameter_cache(vec, dims)
     # - linear system - #
     linsys = (;
         A_bb=reshape(vec[dims.linsys.A_bb.index], dims.linsys.A_bb.shape),
-        A_bb_LU=reshape(vec[dims.linsys.A_bb_LU.index], dims.linsys.A_bb_LU.shape),
+        A_bb_LU=la.LU(
+            reshape(view(vec, dims.linsys.A_bb_LU.index), dims.linsys.A_bb_LU.shape),
+            [i for i in 1:dims.linsys.A_bb_LU.shape[1]],
+            0,
+        ),
         b_bf=reshape(vec[dims.linsys.b_bf.index], dims.linsys.b_bf.shape),
         A_bw=reshape(vec[dims.linsys.A_bw.index], dims.linsys.A_bw.shape),
         A_pw=reshape(vec[dims.linsys.A_pw.index], dims.linsys.A_pw.shape),
