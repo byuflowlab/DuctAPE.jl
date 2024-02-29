@@ -73,7 +73,7 @@ function vortex_aic_boundary_on_boundary!(
     # NOTE: it is slighlty faster/fewer allocations to just define a new static array in the loop than to preallocate such a small matrix.
     # vel = zeros(eltype(AICn), 2, 2)
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
+        cache_vec = zeros(eltype(node), 20)
     end
 
     # loop through panels doing the influencing
@@ -174,7 +174,7 @@ function vortex_aic_boundary_on_field!(
 )
     # vel = zeros(eltype(AICn), 2, 2)
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
+        cache_vec = zeros(eltype(node), 20)
     end
 
     # Loop through control points being influenced
@@ -260,7 +260,7 @@ function add_te_gap_aic!(
     cache_vec=nothing,
 )
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(controlpoint), 16)
+        cache_vec = zeros(eltype(controlpoint), 20)
     end
 
     # Loop through control points being influenced
@@ -373,7 +373,7 @@ function source_aic!(
 )
     # vel = zeros(eltype(AICn), 2, 2)
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
+        cache_vec = zeros(eltype(node), 20)
     end
 
     # Loop through control points being influenced

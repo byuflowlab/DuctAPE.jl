@@ -18,11 +18,11 @@ function nominal_vortex_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t) # z coordinate
-    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t) # r coordinate
+    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t) # z coordinate
+    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t) # r coordinate
 
     # get relative geometry: xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
-    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
 
     # Get velocity components at sample points
     cache_vec[7] = vortex_ring_vz!(
@@ -165,11 +165,11 @@ function self_vortex_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t)
-    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
+    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t)
 
     # get relative geometry
-    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
 
     # Get velocity components at sample points
     cache_vec[7] = vortex_ring_vz!(
@@ -186,7 +186,7 @@ function self_vortex_induced_velocity_sample(
 
     # Get singular piece to subtract
     cache_vec[9], cache_vec[10] = subtracted_singular_vortex_influence!(
-        [cache_vec[1]; cache_vec[2]], controlpoint, view(cache_vec, 11:15)
+        (cache_vec[1], cache_vec[2]), controlpoint, view(cache_vec, 11:15)
     )
 
     #=
@@ -265,11 +265,11 @@ function nominal_source_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t)
-    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
+    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t)
 
     # get relative geometry
-    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
 
     # Get velocity components at sample points
     cache_vec[7] = source_ring_vz!(
@@ -393,11 +393,11 @@ function self_source_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, [node1[1]; node2[1]], t)
-    cache_vec[2] = fm.linear(nondimrange, [node1[2]; node2[2]], t)
+    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t)
 
     # get relative geometry
-    calculate_xrm!(view(cache_vec, 3:6), controlpoint, cache_vec[1:2])
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
 
     # Get velocity components at sample points
     cache_vec[7] = source_ring_vz!(
@@ -413,7 +413,7 @@ function self_source_induced_velocity_sample(
 
     # Get singular piece to subtract
     cache_vec[9], cache_vec[10] = subtracted_singular_source_influence!(
-        [cache_vec[1]; cache_vec[2]], controlpoint, view(cache_vec, 11:15)
+        (cache_vec[1], cache_vec[2]), controlpoint, view(cache_vec, 11:15)
     )
 
     #=

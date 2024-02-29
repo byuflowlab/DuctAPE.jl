@@ -65,7 +65,7 @@ function induced_velocities_from_vortex_panels_on_points!(
 )
     # vel = zeros(eltype(VEL), 2, 2)
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
+        cache_vec = zeros(eltype(node), 20)
     end
 
     # loop through panels doing the influencing
@@ -157,7 +157,7 @@ function induced_velocities_from_source_panels_on_points!(
 )
     # vel = zeros(eltype(VEL), 2, 2)
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 16)
+        cache_vec = zeros(eltype(node), 20)
     end
 
     #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow
@@ -214,7 +214,7 @@ function induced_velocities_from_trailing_edge_gap_panel!(
     # vvel = zeros(eltype(AICn), 2, 2)
     # svel = zeros(eltype(AICn), 2, 2)
     if isnothing(cache_vec)
-        cache_vec = zeros(eltype(controlpoint), 16)
+        cache_vec = zeros(eltype(controlpoint), 20)
     end
 
     # Loop through control points being influenced
