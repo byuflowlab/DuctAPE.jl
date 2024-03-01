@@ -95,16 +95,13 @@ function analyze(x, fx=x -> x, constants=define_constants())
     )
 
     # - Initialize Aero and Converge Gamr and gamw - #
-    Gamr_gamw_sigr = implicit(solve_iad, solve_iad_res!, x, const_cache)
+    velocity_states = implicit(solve_iad, solve_iad_res!, x, const_cache)
 
     # - Post-Process - #
-    # de-vectorize Gamr and gamw
-    # TODO: write this function
-    Gamr, gamw, sigr = extract_state_vars(Gamr_gamw_sigr, const_cache.cache_dims)
-
     # do the rest of the post-processing
     # TODO: write this function
-    outs = post_process_iad(Gamr, gamw, sigr, x, cache_and_dims)
+    # NOTE: post processing cache doesn't need to be fancy, since it's just here in the analysis and will always be the same type if derivative checks are turned off.
+    outs = post_process_iad(velocity_states, fx(x), cache_and_dims)
 
     return outs
 end
@@ -115,7 +112,10 @@ TODO: move to analysis.jl
 function analyze(
     propulsor,
     constants=define_constants();
-    cache_and_dims=generate_cache(repanel(propulsor)),
+    precomp_container_caching=generate_precomp_container_cache(repanel(propulsor)),
+    solve_parameter_caching=generate_solve_parameters_cache(repanel(propulsor)),
+    solve_container_caching=generate_solve_containter_cache(repanel(propulsor)),
+    post_caching=generate_post_cache(repanel(propulsor)),
 )
 
     # - Check that propulsor has the required fields - #
@@ -157,10 +157,12 @@ function analyze(
         constants.tegaptol,
         # TODO: write generate_caches function (need to go through and figure out what all goes in the cache)
         # Caches
-        cache_and_dims.solve_parameter_cache,
-        cache_and_dims.solve_parameter_cache_dims,
-        cache_and_dims.solve_cache,
-        cache_and_dims.solve_cache_dims,
+        precomp_container_caching...,
+        # precomp_container_cache_dims,
+        solve_parameter_caching...,
+        # solve_parameter_cache_dims,
+        solve_container_caching...,
+        # solve_container_cache_dims,
         fx=x -> (propulsor),
     )
 
@@ -171,7 +173,8 @@ function analyze(
 
     # do the rest of the post-processing
     # TODO: write this function
-    outs = post_process_iad(velocity_states, propulsor, CACHES) #TODO: figure out what caches need to be passed in
+    # NOTE: post processing cache doesn't need to be fancy, since it's just here in the analysis and will always be the same type if derivative checks are turned off.
+    outs = post_process_iad(velocity_states, propulsor, post_caching)
 
     return outs
 end
@@ -209,26 +212,34 @@ function solve_iad(inputs, const_cache)
         axistol,
         tegaptol,
         #caches
-        solve_cache,
-        solve_cache_dims, #TODO: put state_dims inside the solve_cache_dims (same dims as estimates)
+        precomp_container_cache,
+        precomp_container_cache_dims,
         solve_parameter_cache,
         solve_parameter_cache_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
     ) = const_cache
 
     # - Get propulsor back out using fx(x) in constants - #
-    # TODO: figure out how to make sure these are floats in this context, probably need to look at how implicitAD (or eduardo in flowpanel) strips things to floats and apply something similar when putting together the outputs of the fx function
+    # TODO: figure out how to make sure these are floats in this context, probably need to look at how implicitAD (or eduardo in flowpanel) strips things to floats and apply something similar when putting together the outputs of the fx function (dispatch on type of inputs maybe?)
     # propulsor includes: duct_coordinates, centerbody_coordinates, rotorstator_parameters, paneling_constants, operating_point, and reference_parameters
     (; propulsor) = fx(inputs)
 
+    # - Extract precomp_container_cache - #
+    precomp_container_cache_vec = @views pat.get_tmp(precomp_container_cache, inputs)
+    # TODO: test this function
+    precomp_containers = withdraw_precomp_container_cache(precomp_container_cache, precomp_container_cache_dims)
+
     # - Extract solve_parameter_cache - #
+    # TODO; can these just be floats?  If so, want a different setup than using PreallocationTools.  Want something closer to the fx function for inputs. but return the parameters cache, also want to zero it out.
     solve_parameter_cache_vec = @views pat.get_tmp(solve_parameter_cache, inputs)
+    # TODO: test this function
     solve_parameter_containers = withdraw_solve_parameter_cache(
         solve_parameter_cache, solve_parameter_cache_dims
     )
 
     # - Do precomputations - #
-    # TODO: re-think how to set up this function and outputs.
-    # solve_parameter_containers includes pointers to the solve_parameter_cache for ivr, ivw, linsys, blade_elements, and idmaps
+    # TODO: test this function
     precompute_solve_parameters_iad!(
         solve_parameter_containers.ivr,
         solve_parameter_containers.ivw,
@@ -236,7 +247,8 @@ function solve_iad(inputs, const_cache)
         solve_parameter_containers.linsys,
         solve_parameter_containers.blade_elements,
         solve_parameter_containers.idmaps,
-        propulsor;
+        propulsor,
+        precomp_containers;
         max_wake_relax_iter=max_wake_relax_iter,
         wake_relax_tol=wake_relax_tol,
         itcpshift=itcpshift,
@@ -247,31 +259,39 @@ function solve_iad(inputs, const_cache)
     )
 
     # - Initialize Aero - #
+    # TODO; test this function
     Vz_rotor, Vtheta_rotor, Cm_wake = initialize_velocities(
         op,
         blade_elements,
         linsys,
         ivr,
         ivw,
-        solve_parameter_containers.idmaps.nbodynodes,
+        solve_parameter_containers.idmaps.body_totnodes,
         solve_parameter_containers.idmaps.rotorwakenodeid,
     )
 
     # - Wrap residual - #
     function rwrap!(r, state_variables)
+        #TODO: Test this function
         return nls_res!(
             r,
             state_variables,
             (;
-                op,               # includes freestream and Omega
-                ivr,              # induced velocities on rotor panels
-                ivw,              # induced velocities on wake panels
-                linsys,           # includes AIC's for linear system
-                blade_elements,   # includes blade element geometry
-                idmaps,           # book keeping items
-                solve_cache,      # cache for containers used in solve
-                solve_cache_dims, # dimensions for shaping the view of the solve cache
-                solve_cache_dims.state_dims, # dimensions for state variable extraction
+                op,             # includes freestream and Omega
+                ivr,            # induced velocities on rotor panels
+                ivw,            # induced velocities on wake panels
+                linsys,         # includes AIC's for linear system
+                blade_elements, # includes blade element geometry
+                idmaps,         # book keeping items
+                solve_container_cache,      # cache for containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+                solve_container_cache_dims.state_dims, # dimensions for state variable extraction
+                # solve_parameter_containers: precomputed parameters used in state estimation
+                solve_parameter_containers.ivr,
+                solve_parameter_containers.ivw,
+                solve_parameter_containers.linsys,
+                solve_parameter_containers.blade_elements,
+                solve_parameter_containers.idmaps,
             ),
         )
     end
@@ -322,8 +342,13 @@ function nls_res!(r, state_variables, parameters)
         blade_elements,   # includes blade element geometry
         idmaps,           # book keeping items
         state_dims,       # dimensions for state variable extraction
-        solve_cache,      # cache for containers used in solve
-        solve_cache_dims, # dimensions for shaping the view of the solve cache
+        solve_container_cache,      # cache for containers used in solve
+        solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+        ivr,              # induced unit velocities on rotors
+        ivw,              # induced unit velocities on wakes
+        linsys,           # Linear System components
+        blade_elements,   # Blade element geometry and airfoils
+        idmaps,           # index maps for accessing some tricky things
     ) = parameters
 
     # - Separate out the state variables - #
@@ -331,12 +356,12 @@ function nls_res!(r, state_variables, parameters)
     Vz_rotor, Vtheta_rotor, Cm_wake = extract_state_vars(state_variables, state_dims)
 
     # - Extract and Reset Cache - #
-    # TODO: test this process.
     # get cache vector of correct types
-    solve_cache_vec = @views pat.get_tmp(solve_cache, state_variables)
-    # view cache vector and get named tuple of containers used for intermediate variables in solve
+    solve_container_cache_vec = @views pat.get_tmp(solve_container_cache, state_variables)
     # TODO: test this function
-    solve_containers = withdraw_solve_cache(solve_cache_vec, solve_cache_dims)
+    solve_containers = withdraw_solve_container_cache(
+        solve_container_cache_vec, solve_container_cache_dims
+    )
     # zero out contents of solve_containers to avoid any potential contamination issues
     # TODO: test this function
     reset_solve_containers!(solve_containers) #note: also zeros out state estimates
@@ -440,7 +465,7 @@ function estimate_states!(
         Cm_wake,
         idmaps.wake_nodemap,
         idmaps.wake_endnodeidxs,
-        idmaps.rotorwakeid,
+        idmaps.rotorwakenodeid,
     )
 
     # - Calculate Wake Panel Strengths - #
@@ -453,9 +478,9 @@ function estimate_states!(
         blade_elements.B,
         op.Omega,
         wakeK,
-        idmaps.rotorwakeid,
+        idmaps.rotorwakenodeid,
         idmaps.ductwakeinterfacenodeid,
-        idmaps.hubwakeinterfacenodeid;
+        idmaps.cbwakeinterfacenodeid;
         post=false,
     )
 
@@ -481,7 +506,7 @@ function estimate_states!(
         containers.Gamr,
         containers.gamw,
         containers.sigr,
-        containers.gamb[1:(idmaps.totnodes_body)],
+        containers.gamb[1:(idmaps.body_totnodes)],
         ivr,
         blade_elements.B,
         blade_elements.rotor_panel_center,
@@ -495,7 +520,7 @@ function estimate_states!(
         containers.vr_wake,
         containers.gamw,
         containers.sigr,
-        containers.gamb[1:(idmaps.totnodes_body)],
+        containers.gamb[1:(idmaps.body_totnodes)],
         ivw,
         op.Vinf,
     )

@@ -176,7 +176,7 @@ println("\nITERATION STEP THROUGH TESTS")
         Wm_wake,
         inputs.wake_vortex_panels.nodemap,
         inputs.wake_vortex_panels.endnodeidxs,
-        inputs.rotorwakeid,
+        inputs.rotorwakenodeid,
     )
 
     dt.calculate_wake_vortex_strengths!(
@@ -186,9 +186,9 @@ println("\nITERATION STEP THROUGH TESTS")
         inputs.blade_elements.B,
         inputs.blade_elements.Omega,
         inputs.wakeK,
-        inputs.rotorwakeid,
+        inputs.rotorwakenodeid,
         inputs.ductwakeinterfacenodeid,
-        inputs.hubwakeinterfacenodeid;
+        inputs.cbwakeinterfacenodeid;
         post=false,
     )
 

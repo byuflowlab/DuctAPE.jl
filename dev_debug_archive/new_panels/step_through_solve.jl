@@ -52,7 +52,7 @@ inputs = dt.precomputed_inputs(
     hubidsaftofrotors,
     ductwakeinterfaceid, # wake panel indices that lie on top of duct wall
     hubwakeinterfaceid, # wake panel indices that lie on top of hub wall
-    rotorwakeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel
+    rotorwakenodeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel
     # - Linear System - #
     body_system_matrices, # includes the various LHS and RHS matrics and vectors for solving the linear system for the body
     # - Influence Matrices - #
@@ -323,8 +323,8 @@ for iw in 1:nw
         gamw[iw] =
             (
                 inputs.wakeK[iw] *
-                deltaGamma2[inputs.rotorwakeid[iw, 1], inputs.rotorwakeid[iw, 2]] +
-                deltaH[inputs.rotorwakeid[iw], inputs.rotorwakeid[iw, 2]]
+                deltaGamma2[inputs.rotorwakenodeid[iw, 1], inputs.rotorwakenodeid[iw, 2]] +
+                deltaH[inputs.rotorwakenodeid[iw], inputs.rotorwakenodeid[iw, 2]]
             ) / Wm_wake[iw]
     end
 end

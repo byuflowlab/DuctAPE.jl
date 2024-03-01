@@ -192,6 +192,80 @@ function generate_blade_elements(
     )
 end
 
+function interpolate_blade_elements!(blade_elements, rsp, Rtips, Rhubs, rotor_panel_center)
+
+    # Note: rotorstator_parameters (rsp) includes these B, Omega, rotorzloc, rnondim, chords, twists, airfoils, fliplift
+
+    # - Extract Blade Elements - #
+    (;
+        B,
+        Rhub,
+        Rtip,
+        rotor_panel_centers,
+        chords,
+        twists,
+        stagger,
+        solidity,
+        inner_airfoil,
+        outer_airfoil,
+        inner_fraction,
+        fliplift,
+    ) = blade_elements
+
+    Rtip .= Rtips
+    Rhub .= Rhubs
+    B .= rsp.B
+    fliplift .= rsp.fliplift
+
+    for irotor in 1:length(B)
+
+        # dimensionalize the blade element radial positions
+        rblade = fm.linear([0.0; 1.0], [0.0; Rtip[irotor]], rsp.r)
+
+        # update chord lengths
+        chords[:, irotor] .= fm.akima(rblade, chords, rotor_panel_centers)
+
+        # update twists
+        twists[:, irotor] .= fm.akima(rblade, twists, rotor_panel_centers)
+
+        # update stagger
+        stagger[:, irotor] .= get_stagger(twists)
+
+        # update solidity
+        solidity[:, irotor] .= get_local_solidity(B, chords, rotor_panel_centers)
+
+        # get bounding airfoil polars
+        outer_airfoil[:, irotor] .= similar(airfoils, length(rotor_panel_centers))
+        inner_airfoil[:, irotor] .= similar(airfoils, length(rotor_panel_centers))
+        inner_fraction[:, irotor] .= similar(airfoils, TF, length(rotor_panel_centers))
+
+        for ir in 1:(length(rotor_panel_centers))
+            # outer airfoil
+            io = min(length(rblade), searchsortedfirst(rblade, rotor_panel_centers[ir]))
+            outer_airfoil[ir] = airfoils[io]
+
+            # inner airfoil
+            ii = max(1, io - 1)
+            inner_airfoil[ir] = airfoils[ii]
+
+            # fraction of inner airfoil's polars to use
+            if rblade[io] == rblade[ii]
+                inner_fraction[ir] = 1.0
+            else
+                inner_fraction[ir] =
+                    (rotor_panel_centers[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
+            end
+
+            # Check incorrect extrapolation
+            if inner_fraction[ir] > 1.0
+                inner_fraction[ir] = 1.0
+            end
+        end
+    end
+
+    return blade_elements
+end
+
 function get_local_solidity(B, chord, r)
     return B .* chord ./ (2.0 * pi * r)
 end

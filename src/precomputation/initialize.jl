@@ -383,16 +383,16 @@ function precomputed_inputs(
     end
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
-    rotorwakeid = ones(Int, wake_vortex_panels.totnode, 2)
+    rotorwakenodeid = ones(Int, wake_vortex_panels.totnode, 2)
     num_wake_z_nodes = length(zwake)
     for i in 1:(rotorstator_parameters[1].nwake_sheets)
-        rotorwakeid[(1 + (i - 1) * num_wake_z_nodes):(i * num_wake_z_nodes), 1] .= i
+        rotorwakenodeid[(1 + (i - 1) * num_wake_z_nodes):(i * num_wake_z_nodes), 1] .= i
     end
     for (i, wn) in enumerate(eachcol(wake_vortex_panels.node))
         # TODO: DFDC geometry doesn't line up wake and rotor perfectly, so need a more robust option.
-        # rotorwakeid[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
+        # rotorwakenodeid[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
         # TODO: current tests are passing, but look here if things break in the future.
-        rotorwakeid[i, 2] = findmin(x -> abs(x - wn[1]), rotorstator_parameters.rotorzloc)[2]
+        rotorwakenodeid[i, 2] = findmin(x -> abs(x - wn[1]), rotorstator_parameters.rotorzloc)[2]
     end
 
     # Indices in wake of panels interfacing with solid walls
@@ -401,7 +401,7 @@ function precomputed_inputs(
         num_wake_z_panels * (length(rwake) - 1) .+ (1:(ductTE_index - 1))
 
     # Indices of wake nodes interfacing with solid bodies
-    hubwakeinterfacenodeid = 1:hubTE_index
+    cbwakeinterfacenodeid = 1:hubTE_index
     ductwakeinterfacenodeid = num_wake_z_nodes * (length(rwake) - 1) .+ (1:ductTE_index)
 
     # Indices of body panels interfacing with wakes
@@ -987,11 +987,11 @@ function precomputed_inputs(
         hubidsaftofrotors,
         ductwakeinterfaceid, # wake panel indices that lie on top of duct wall
          hubwakeinterfaceid, # wake panel indices that lie on top of hub wall
-         hubwakeinterfacenodeid=collect(hubwakeinterfacenodeid), # wake node indices that lie on top of hub wall
+         cbwakeinterfacenodeid=collect(cbwakeinterfacenodeid), # wake node indices that lie on top of hub wall
         ductwakeinterfacenodeid=collect(ductwakeinterfacenodeid), # wake node indicies that lie on top of duct wall
         wakehubinterfacepanelid, # hub panel indices that interface with wake
         wakeductinterfacepanelid, # duct panel indices that interface with wake
-        rotorwakeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel
+        rotorwakenodeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel
         rotorwakepanelid, # [rotor panel index, and closest forward rotor id] for each wake panel
         num_wake_z_nodes, # number of nodes in axial direction of wake sheet
         num_wake_z_panels, # number of panels in each wake sheet

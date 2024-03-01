@@ -186,7 +186,7 @@ end
 
 """
 """
-function average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs, rotorwakeid)
+function average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs, rotorwakenodeid)
 
     # Loop through each node, averaging velocities from panel centers
     for iw in 1:length(Cm_avg)
@@ -219,9 +219,9 @@ function calculate_wake_vortex_strengths!(
     B,
     Omega,
     wakeK,
-    rotorwakeid,
+    rotorwakenodeid,
     ductwakeinterfacenodeid,
-    hubwakeinterfacenodeid;
+    cbwakeinterfacenodeid;
     post=false,
 )
 
@@ -235,7 +235,7 @@ function calculate_wake_vortex_strengths!(
     deltaGamma2, deltaH = get_sheet_jumps(Gamma_tilde, H_tilde)
 
     for (iw, (Cm, gw, K, sheetid, rotorid)) in
-        enumerate(zip(Cm_avg, eachrow(gamw), wakeK, rotorwakeid[:, 1], rotorwakeid[:, 2]))
+        enumerate(zip(Cm_avg, eachrow(gamw), wakeK, rotorwakenodeid[:, 1], rotorwakenodeid[:, 2]))
 
         # calculate the wake vortex strength
         if Cm < eps()
@@ -260,14 +260,14 @@ function calculate_wake_vortex_strengths!(
                 (ductwakeinterfacenodeid[end] - ductwakeinterfacenodeid[1] + 1)
             )
     end
-    if !isnothing(hubwakeinterfacenodeid)
-        # gamw[hubwakeinterfacenodeid] .= 0.0
+    if !isnothing(cbwakeinterfacenodeid)
+        # gamw[cbwakeinterfacenodeid] .= 0.0
 
-        gamw[hubwakeinterfacenodeid] =
-            gamw[hubwakeinterfacenodeid[end] + 1] * (
+        gamw[cbwakeinterfacenodeid] =
+            gamw[cbwakeinterfacenodeid[end] + 1] * (
                 1.0 .-
-                (reverse(hubwakeinterfacenodeid) .- hubwakeinterfacenodeid[1]) /
-                length(hubwakeinterfacenodeid)
+                (reverse(cbwakeinterfacenodeid) .- cbwakeinterfacenodeid[1]) /
+                length(cbwakeinterfacenodeid)
             )
     end
 

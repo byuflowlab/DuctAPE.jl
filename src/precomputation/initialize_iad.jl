@@ -322,12 +322,9 @@ end
 """
 """
 function initialize_linear_system!(
-    linsys, ivb, body_vortex_panels, wake_vortex_panels, Vinf, precomp_containers
+    linsys, ivb, body_vortex_panels, wake_vortex_panels, Vinf, AICn, AICpcp
 )
     # - Extract Tuples - #
-
-    # containers for precomputation intermediate values
-    (; AICn, AICpcp) = precomp_containers
 
     # linear system
     (; A_bb, A_bb_LU, lu_decomp_flag, b_bf, A_br, A_pr, A_bw, A_pw) = linsys
@@ -358,12 +355,12 @@ function initialize_linear_system!(
 
     ##### ----- Generate LHS ----- #####
 
-    # TODO write this function
+    # TODO officially test this function
     calculate_normal_velocity!(@veiw(AICn[:, :]), v_bb, normal)
 
     # Boundary on internal psuedo control point influence coefficients
     vortex_aic_boundary_on_field!(
-        @view(AICpcp[:]), itcontrolpoint, itnormal, node, nodemap, influence_length
+        @view(AICpcp[:, :]), itcontrolpoint, itnormal, node, nodemap, influence_length
     )
 
     # Add Trailing Edge Gap Panel Influences to panels
@@ -416,16 +413,14 @@ function initialize_linear_system!(
     )
 
     ##### ----- Rotor AIC ----- #####
-    #TODO: write this function with the rotor induced velocities as inputs
-    source_aic!(@view(A_br[:, :]), v_br, normal)
-    source_aic!(@view(A_pr[:, :]), v_br, normal)
+    calculate_normal_velocity!(@view(A_br[:, :]), v_br, normal)
+    calculate_normal_velocity!(@view(A_pr[:, :]), v_br, normal)
 
     ##### ----- Wake AIC ----- #####
-    # - wake pto body - #
-    # TODO write this function
+    # - wake panels to body panels - #
     calculate_normal_velocity!(@veiw(A_bw[:, :]), v_bw, normal)
 
-    # wakes are horseshoes, so they also have a "trailing edge panel"
+    # add contributions from wake "trailing edge panels"
     add_te_gap_aic!(
         @view(A_bw[:, :]),
         controlpoint,
@@ -439,9 +434,9 @@ function initialize_linear_system!(
         wake=true,
     )
 
-    # - Boundary on internal psuedo control point influence coefficients - #
+    # - wake panels on internal psuedo control point influence coefficients - #
     vortex_aic_boundary_on_field!(
-        @view(A_pw[:]),
+        @view(A_pw[:, :]),
         itcontrolpoint,
         itnormal,
         wake_vortex_panels.node,
@@ -449,9 +444,9 @@ function initialize_linear_system!(
         wake_vortex_panels.influence_length,
     )
 
-    # wakes are not horseshoes, so they also have a "trailing edge panel"
+    # add contributions from wake "trailing edge panels" on pseudo control point
     add_te_gap_aic!(
-        @view(A_pw[:]),
+        @view(A_pw[:, :]),
         itcontrolpoint,
         itnormal,
         ittangent,
@@ -466,9 +461,10 @@ function initialize_linear_system!(
     return linsys
 end
 
-"""
-"""
-function interpolate_blade_elements!(blade_elements, rotor_source_panels)
+function interpolate_blade_elements!(blade_elements, rsp, Rtips, Rhubs, rotor_panel_center)
+
+    # Note: rotorstator_parameters (rsp) includes these B, Omega, rotorzloc, rnondim, chords, twists, airfoils, fliplift
+
     # - Extract Blade Elements - #
     (;
         B,
@@ -485,15 +481,105 @@ function interpolate_blade_elements!(blade_elements, rotor_source_panels)
         fliplift,
     ) = blade_elements
 
-    return nothing
+    Rtip .= Rtips
+    Rhub .= Rhubs
+    B .= rsp.B
+    fliplift .= rsp.fliplift
+
+    for irotor in 1:length(B)
+
+        # dimensionalize the blade element radial positions
+        rblade = fm.linear([0.0; 1.0], [0.0; Rtip[irotor]], rsp.r)
+
+        # update chord lengths
+        chords[:, irotor] .= fm.akima(rblade, chords, rotor_panel_centers)
+
+        # update twists
+        twists[:, irotor] .= fm.akima(rblade, twists, rotor_panel_centers)
+
+        # update stagger
+        stagger[:, irotor] .= get_stagger(twists)
+
+        # update solidity
+        solidity[:, irotor] .= get_local_solidity(B, chords, rotor_panel_centers)
+
+        # get bounding airfoil polars
+        outer_airfoil[:, irotor] .= similar(airfoils, length(rotor_panel_centers))
+        inner_airfoil[:, irotor] .= similar(airfoils, length(rotor_panel_centers))
+        inner_fraction[:, irotor] .= similar(airfoils, TF, length(rotor_panel_centers))
+
+        for ir in 1:(length(rotor_panel_centers))
+            # outer airfoil
+            io = min(length(rblade), searchsortedfirst(rblade, rotor_panel_centers[ir]))
+            outer_airfoil[ir] = airfoils[io]
+
+            # inner airfoil
+            ii = max(1, io - 1)
+            inner_airfoil[ir] = airfoils[ii]
+
+            # fraction of inner airfoil's polars to use
+            if rblade[io] == rblade[ii]
+                inner_fraction[ir] = 1.0
+            else
+                inner_fraction[ir] =
+                    (rotor_panel_centers[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
+            end
+
+            # Check incorrect extrapolation
+            if inner_fraction[ir] > 1.0
+                inner_fraction[ir] = 1.0
+            end
+        end
+    end
+
+    return blade_elements
 end
 
 """
+wnm = wake_vortex_panels.nodemap
+venids = wake_vortex_panels.endnodeidxs
+btn = body_vortex_panes.totnode
+rwnid = rotorwakenodeid
 """
-function set_index_maps!(idmaps, paneling_constants)
+function set_index_maps!(
+    idmaps, npanels, nwake_sheets, dte_minus_cbte, wnm, wenids, btn, rwnid
+)
     # - Extract Index Maps - #
-    (;) = idmaps
-    return nothing
+    (;
+        wake_nodemap,
+        wake_endnodeidxs,
+        rotorwakenodeid,
+        ductwakeinterfacenodeid,
+        cbwakeinterfacenodeid,
+        # rotor_indices_in_wake, # should be taken care of already
+        body_totnodes,
+    ) = idmaps
+
+    wake_nodemap .= wnm
+    wake_endnodeidxs .= wenids
+    body_totnodes .= btn
+    rotorwakenodeid .= rwnid
+
+    if iszero(dte_minus_cbte) || dte_minus_cbte < 0
+        cb_te_id = sum(npanels[1:(end - 1)]) + 1
+    else
+        cb_te_id = sum(npanels[1:(end - 2)]) + 1
+    end
+    cbwakeinterfacenodeid .= collect(range(1, cb_te_id; step=1))
+
+    if iszero(dte_minus_cbte) || dte_minus_cbte > 0
+        duct_te_id = sum(npanels[1:(end - 1)]) + 1
+    else
+        duct_te_id = sum(npanels[1:(end - 2)]) + 1
+    end
+
+    ductteinwake = (sum(npanels) + 1) * nwake_sheets - (npanels[end] + 1)
+
+    ductwakeinterfacenodeid .= collect(
+        range(ductteinwake - duct_te_id, ductteinwake; step=1)
+    )
+
+    return idmaps
 end
 
 """
@@ -519,13 +605,17 @@ function precompute_parameters_iad!(
 
     # - Extract propulsor - #
     (;
-        duct_coordinates, # Matrix
+        duct_coordinates,       # Matrix
         centerbody_coordinates, # Matrix
-        rotorstator_parameters, # Vector of NamedTuples of a bunch of stuff...
-        paneling_constants, # NamedTuple of numbers and vectors of numbers
-        operating_point, # NamedTuple of numbers
-        reference_parameters, # NamedTuple of numbers
+        rotorstator_parameters, # TODO: make this a named tuple of vectors
+        paneling_constants,     # NamedTuple of scalars and vectors of scalars
+        operating_point,        # NamedTuple of vectors (TODO) of numbers
+        reference_parameters,   # NamedTuple of vectors (TODO) of numbers
     ) = propulsor
+
+    # - Extract Precomp Containers - #
+    (; panels, wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, AICn, AICpcp) =
+        precomp_containers
 
     # - Reinterpolate Geometry and Generate Wake Grid - #
     # TODO: test this function
@@ -547,11 +637,11 @@ function precompute_parameters_iad!(
     generate_all_panels!(
         panels,
         idmaps,
-        precomp_containers.rp_duct_coordinates,
-        precomp_containers.rp_centerbody_coordinates,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
         rotorstator_parameters,
         paneling_constants,
-        precomp_containers.wake_grid;
+        wake_grid;
         itcpshift=itcpshift,
         axistol=axistol,
         tegaptol=tegaptol,
@@ -559,24 +649,19 @@ function precompute_parameters_iad!(
     )
 
     # - Compute Influence Matrices - #
-    #
-    #
-    # TODO: !!!!! - YOUR ARE HERE - !!!!!
-    #
-    #
-    # TODO: write a function that does all the influence matrix stuff
+    # TODO: test this function
     calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
 
     # - Set up Linear System - #
-    # TODO: write function that assembles the linear system
-    initialize_linear_system!(linsys, ivb, panels.body_vortex_panels)
+    # TODO: test this function
+    initialize_linear_system!(linsys, ivb, panels.body_vortex_panels, AICn, AICpcp)
 
     # - Interpolate Blade Elements - #
-    # TODO: write function that interpolates the blade elements
+    # TODO: test this function
     interpolate_blade_elements!(blade_elements, panels.rotor_source_panels)
 
     # - Save all the index mapping (bookkeeping) - #
-    # TODO: write a function for any additional index mapping that didn't get added in the above functions
+    # TODO: test this function
     set_index_maps!(idmaps, paneling_constants)
 
     return ivr, ivw, ivb, linsys, blade_elements, idmaps, panels
@@ -585,7 +670,7 @@ end
 """
 """
 function initialize_velocities(
-    op, blade_elements, linsys, ivr, ivw, nbodynodes, rotorwakenodeid
+    op, blade_elements, linsys, ivr, ivw, body_totnodes, rotorwakenodeid
 )
 
     ##### ----- Initialize ----- #####
@@ -618,8 +703,8 @@ function initialize_velocities(
     vzb = zeros(TF, nbe)
     vrb = zeros(TF, nbe)
     for irotor in 1:length(blade_elements.Omega)
-        vzb[:, irotor] = ivr.vz_rb[irotor] * gamb[1:nbodynodes]
-        vrb[:, irotor] = ivr.vr_rb[irotor] * gamb[1:nbodynodes]
+        vzb[:, irotor] = ivr.vz_rb[irotor] * gamb[1:body_totnodes]
+        vrb[:, irotor] = ivr.vr_rb[irotor] * gamb[1:body_totnodes]
     end
 
     ##### ----- Loop through rotors ----- #####

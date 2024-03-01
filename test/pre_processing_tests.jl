@@ -435,9 +435,9 @@ end
 
     # - Index (Bookkeeping) Checks - #
     # check rotor indices on hub and duct
-    # check rotorwakeid
-    @test size(inputs.rotorwakeid, 2) == 2
-    @test size(inputs.rotorwakeid, 1) == inputs.wake_vortex_panels.totnode
+    # check rotorwakenodeid
+    @test size(inputs.rotorwakenodeid, 2) == 2
+    @test size(inputs.rotorwakenodeid, 1) == inputs.wake_vortex_panels.totnode
     # check hubwakeinterfaceid
     @test inputs.hubwakeinterfaceid == 1:3
     # check ductwakeinterfaceid
@@ -445,7 +445,7 @@ end
 
     @test inputs.num_wake_z_panels == 7
     @test all(
-        inputs.rotorwakeid .== [
+        inputs.rotorwakenodeid .== [
             1 1
             1 1
             1 2
@@ -592,18 +592,18 @@ end
     end
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
-    rotorwakeid = ones(Int, wake_vortex_panels.totnode, 2)
+    rotorwakenodeid = ones(Int, wake_vortex_panels.totnode, 2)
     num_wake_x_nodes = length(zwake)
     for i in 1:(length(rwake))
-        rotorwakeid[(1 + (i - 1) * num_wake_x_nodes):(i * num_wake_x_nodes), 1] .= i
+        rotorwakenodeid[(1 + (i - 1) * num_wake_x_nodes):(i * num_wake_x_nodes), 1] .= i
     end
     for (i, wn) in enumerate(eachcol(wake_vortex_panels.node))
-        rotorwakeid[i, 2] = findlast(x -> x <= wn[1], rotorzloc)
+        rotorwakenodeid[i, 2] = findlast(x -> x <= wn[1], rotorzloc)
     end
 
     inputs = (;
         wakeK,
-        rotorwakeid,
+        rotorwakenodeid,
         rotorwakepanelid,
         freestream,
         blade_elements,

@@ -98,12 +98,12 @@ function precompute_inputs_rotor_only(
     wakeK = get_wake_k(wake_vortex_panels)
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
-    rotorwakeid = ones(Int, wake_vortex_panels.totpanel, 2)
+    rotorwakenodeid = ones(Int, wake_vortex_panels.totpanel, 2)
     for i in 1:(rotor_parameters[1].nwake_sheets)
-        rotorwakeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
+        rotorwakenodeid[(1 + (i - 1) * num_wake_x_panels):(i * num_wake_x_panels), 1] .= i
     end
     for (i, cp) in enumerate(eachrow(wake_vortex_panels.controlpoint))
-        rotorwakeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.rotorzloc)
+        rotorwakenodeid[i, 2] = findlast(x -> x < cp[1], rotor_parameters.rotorzloc)
     end
 
     ######################################################################
@@ -192,7 +192,7 @@ function precompute_inputs_rotor_only(
         # nxwake=length(xrange) - 1,
         num_wake_x_panels,
         wakeK,
-        rotorwakeid,
+        rotorwakenodeid,
         vz_rw=vz_rw,
         vr_rw=vr_rw,
         vz_rr=vz_rr,
