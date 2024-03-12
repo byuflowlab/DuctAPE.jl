@@ -25,7 +25,7 @@ function calculate_induced_velocities_on_wakes(
 )
 
     # get number of rotors
-    nrotor = size(sigr, 2)
+    nbe, nrotor = size(sigr)
 
     # initialize outputs
     vz_wake = similar(gamw, size(vz_ww, 1), 1) .= 0 # axial induced velocity
@@ -55,11 +55,12 @@ function calculate_induced_velocities_on_wakes(
 
     # add rotor induced velocities
     for jrotor in 1:nrotor
-        @views vz_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
-        @views vr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
+        jrotorrange = (nbe * (jrotor - 1) + 1):(nbe * jrotor)
+        @views vz_wake .+= vz_wr[:, jrotorrange] * sigr[:, jrotor]
+        @views vr_wake .+= vr_wr[:, jrotorrange] * sigr[:, jrotor]
         if post
-            @views vzr_wake .+= vz_wr[jrotor] * sigr[:, jrotor]
-            @views vrr_wake .+= vr_wr[jrotor] * sigr[:, jrotor]
+            @views vzr_wake .+= vz_wr[:, jrotorrange] * sigr[:, jrotor]
+            @views vrr_wake .+= vr_wr[:, jrotorrange] * sigr[:, jrotor]
         end
     end
 
@@ -137,15 +138,24 @@ end
 function calculate_wake_velocities!(Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb, ivw, Vinf)
 
     # - Get induced velocities on wake - #
-    vz_wake, vr_wake = calculate_induced_velocities_on_wakes(
-        ivw.vz_ww, ivw.vr_ww, gamw, ivw.vz_wr, ivw.vr_wr, sigr, ivw.vz_wb, ivw.vr_wb, gamb
+    vz_wake[:], vr_wake[:] = calculate_induced_velocities_on_wakes(
+        @view(ivw.v_ww[:, :, 1]),
+        @view(ivw.v_ww[:, :, 2]),
+        gamw,
+        @view(ivw.v_wr[:, :, 1]),
+        @view(ivw.v_wr[:, :, 2]),
+        sigr,
+        @view(ivw.v_wb[:, :, 1]),
+        @view(ivw.v_wb[:, :, 2]),
+        gamb,
     )
 
     # - Reframe rotor velocities into blade element frames
-    return reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf)
+    return reframe_wake_velocities!(@view(Cm_wake[:]), vz_wake, vr_wake, Vinf)
 end
 
 function get_sheet_jumps(Gamma_tilde, H_tilde)
+
     # get problem size
     nr, nrotor = size(Gamma_tilde)
     # number of wakes is one more than number of blade elements
@@ -156,6 +166,15 @@ function get_sheet_jumps(Gamma_tilde, H_tilde)
 
     deltaGamma2 = zeros(TF, nw, nrotor)
     deltaH = zeros(TF, nw, nrotor)
+
+    get_sheet_jumps!(deltaGamma2, deltaH, Gamma_tilde, H_tilde)
+
+    return deltaGamma2, deltaH
+end
+
+function get_sheet_jumps!(deltaGamma2, deltaH, Gamma_tilde, H_tilde)
+    # get problem size
+    nw, nrotor = size(deltaGamma2)
 
     for irotor in 1:nrotor
 
@@ -186,21 +205,21 @@ end
 
 """
 """
-function average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs, rotorwakenodeid)
+function average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs)
 
     # Loop through each node, averaging velocities from panel centers
     for iw in 1:length(Cm_avg)
 
         # Get average meridional velocity at node
-        if iw in endnodeidxs[1, :]
-            Cm_avg[iw] = Cm_wake[searchsortedfirst(nodemap[1, :], iw)]
-        elseif iw in endnodeidxs[2, :]
-            Cm_avg[iw] = Cm_wake[searchsortedfirst(nodemap[2, :], iw)]
+        if iw in @view(endnodeidxs[1, :])
+            Cm_avg[iw] = Cm_wake[searchsortedfirst(@view(nodemap[1, :]), iw)]
+        elseif iw in @view(endnodeidxs[2, :])
+            Cm_avg[iw] = Cm_wake[searchsortedfirst(@view(nodemap[2, :]), iw)]
         else
             Cm_avg[iw] =
                 0.5 * (
-                    Cm_wake[searchsortedfirst(nodemap[1, :], iw)] +
-                    Cm_wake[searchsortedfirst(nodemap[2, :], iw)]
+                    Cm_wake[searchsortedfirst(@view(nodemap[1, :]), iw)] +
+                    Cm_wake[searchsortedfirst(@view(nodemap[2, :]), iw)]
                 )
         end
     end
@@ -214,28 +233,39 @@ Calculate wake vortex strengths
 # function calculate_wake_vortex_strengths!(gamw, Gamr, Cm_wake, inputs; post=false)
 function calculate_wake_vortex_strengths!(
     gamw,
+    Gamma_tilde,
+    H_tilde,
+    deltaGamma2,
+    deltaH,
     Gamr,
     Cm_avg,
     B,
     Omega,
     wakeK,
-    rotorwakenodeid,
-    ductwakeinterfacenodeid,
-    cbwakeinterfacenodeid;
+    wake_panel_sheet_be_map,
+    wake_node_ids_along_casing_wake_interface,
+    wake_node_ids_along_centerbody_wake_interface;
     post=false,
 )
 
     # get net circulation of upstream rotors
-    Gamma_tilde = calculate_net_circulation(Gamr, B)
+    calculate_net_circulation!(Gamma_tilde, Gamr, B)
 
     # get enthalpy jump across disks
-    H_tilde = calculate_enthalpy_jumps(Gamr, Omega, B)
+    calculate_enthalpy_jumps!(H_tilde, Gamr, Omega, B)
 
     # get the circulation squared and enthalpy jumps across the wake sheets
-    deltaGamma2, deltaH = get_sheet_jumps(Gamma_tilde, H_tilde)
+    get_sheet_jumps!(deltaGamma2, deltaH, Gamma_tilde, H_tilde)
 
-    for (iw, (Cm, gw, K, sheetid, rotorid)) in
-        enumerate(zip(Cm_avg, eachrow(gamw), wakeK, rotorwakenodeid[:, 1], rotorwakenodeid[:, 2]))
+    for (iw, (Cm, gw, K, sheetid, rotorid)) in enumerate(
+        zip(
+            Cm_avg,
+            eachrow(gamw),
+            wakeK,
+            @view(wake_panel_sheet_be_map[:, 1]),
+            @view(wake_panel_sheet_be_map[:, 2]),
+        ),
+    )
 
         # calculate the wake vortex strength
         if Cm < eps()
@@ -250,24 +280,24 @@ function calculate_wake_vortex_strengths!(
     end
 
     # - Wake-Body Interface Treatment - #
-    if !isnothing(ductwakeinterfacenodeid)
-        # gamw[ductwakeinterfacenodeid] .= 0.0
+    if !isnothing(wake_node_ids_along_casing_wake_interface)
+        # gamw[wake_node_ids_along_casing_wake_interface] .= 0.0
 
-        gamw[ductwakeinterfacenodeid] =
-            gamw[ductwakeinterfacenodeid[end] + 1] * (
+        gamw[wake_node_ids_along_casing_wake_interface] =
+            gamw[wake_node_ids_along_casing_wake_interface[end] + 1] * (
                 1.0 .-
-                (ductwakeinterfacenodeid[end] .- ductwakeinterfacenodeid) /
-                (ductwakeinterfacenodeid[end] - ductwakeinterfacenodeid[1] + 1)
+                (wake_node_ids_along_casing_wake_interface[end] .- wake_node_ids_along_casing_wake_interface) /
+                (wake_node_ids_along_casing_wake_interface[end] - wake_node_ids_along_casing_wake_interface[1] + 1)
             )
     end
-    if !isnothing(cbwakeinterfacenodeid)
-        # gamw[cbwakeinterfacenodeid] .= 0.0
+    if !isnothing(wake_node_ids_along_centerbody_wake_interface)
+        # gamw[wake_node_ids_along_centerbody_wake_interface] .= 0.0
 
-        gamw[cbwakeinterfacenodeid] =
-            gamw[cbwakeinterfacenodeid[end] + 1] * (
+        gamw[wake_node_ids_along_centerbody_wake_interface] =
+            gamw[wake_node_ids_along_centerbody_wake_interface[end] + 1] * (
                 1.0 .-
-                (reverse(cbwakeinterfacenodeid) .- cbwakeinterfacenodeid[1]) /
-                length(cbwakeinterfacenodeid)
+                (reverse(wake_node_ids_along_centerbody_wake_interface) .- wake_node_ids_along_centerbody_wake_interface[1]) /
+                length(wake_node_ids_along_centerbody_wake_interface)
             )
     end
 

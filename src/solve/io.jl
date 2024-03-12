@@ -1,5 +1,31 @@
 """
 """
+function vectorize_inputs(vz_rotor, vtheta_rotor, Cm_wake)
+    total_length = 0
+
+    # vz_rotor Dims
+    s = size(vz_rotor)
+    lvz = lfs(s)
+    Vz = (; index=(total_length + 1):(total_length + lvz), shape=s)
+    total_length += lvz
+
+    # vtheta_rotor Dims
+    s = size(vtheta_rotor)
+    lvt = lfs(s)
+    Vtheta = (; index=(total_length + 1):(total_length + lvt), shape=s)
+    total_length += lvt
+
+    # Cm_wake Dims
+    s = size(Cm_wake)
+    l = lfs(s)
+    Cm = (; index=(total_length + 1):(total_length + l), shape=s)
+
+    return [reshape(vz_rotor, lvz); reshape(vtheta_rotor, lvt); Cm_wake],
+    (; vz_rotor=Vz, vtheta_rotor=Vtheta, Cm_wake=Cm)
+end
+
+"""
+"""
 function vectorize!(propulsor)
 
     # - Extract propulsor - #
@@ -43,9 +69,9 @@ end
 function extract_state_vars(vars, dims)
 
     # - Separate out - #
-    Vz_rotor = @views reshape(vars[dims.Vz.index], dims.Vz.shape)
-    Vtheta_rotor = @views reshape(vars[dims.Vtheta.index], dims.Vtheta.shape)
-    Cm_wake = @views reshape(vars[dims.Cm.index], dims.Cm.shape)
+    vz_rotor = @views reshape(vars[dims.vz_rotor.index], dims.vz_rotor.shape)
+    vtheta_rotor = @views reshape(vars[dims.vtheta_rotor.index], dims.vtheta_rotor.shape)
+    Cm_wake = @views reshape(vars[dims.Cm_wake.index], dims.Cm_wake.shape)
 
-    return Vz_rotor, Vtheta_rotor, Cm_wake
+    return vz_rotor, vtheta_rotor, Cm_wake
 end

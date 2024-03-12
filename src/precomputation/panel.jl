@@ -33,11 +33,11 @@ function generate_panels(
     # number of panels to generate for each body
     npanel = nnode .- 1
     # number of bodies
-    nbodies = [length(npanel)]
+    nbodies = length(npanel)
     # total number of panels in system
-    totpanel = [sum(npanel)]
+    totpanel = sum(npanel)
     # total number of nodes in system
-    totnode = [totpanel + nbodies]
+    totnode = totpanel + nbodies
 
     # - Initialize Outputs - #
     # control points
@@ -74,6 +74,13 @@ function generate_panels(
     teadjnodeidxs = similar(endnodeidxs) .= 1 #can't be the same as endpoints, because we may have repeated values for non-duct bodies
     tendotn = zeros(TF, 2, nbodies) #bodies, node1,2
     tencrossn = zeros(TF, 2, nbodies) #bodies, node1,2
+
+    # count number of prescribed nodes
+    npnid = 0
+    for c in coordinates
+        npnid += count(x -> abs(x) <= eps(), c[2, :])
+    end
+    prescribednodeidxs = ones(Int, npnid)
 
     panels = (;
         controlpoint,

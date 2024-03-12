@@ -54,7 +54,7 @@ function compare_namedtuples(tuple1, tuple2)
                         getproperty(tuple1, field), getproperty(tuple2, field)
                     ),
                 )
-            elseif typeof(getproperty(tuple1, field)) <: Vector#{<:NamedTuple}
+            elseif typeof(getproperty(tuple1, field)) <: AbstractArray
                 for i in 1:length(getproperty(tuple1, field))
                     try
                         append!(

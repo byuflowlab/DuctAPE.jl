@@ -427,8 +427,8 @@ for irotor in 1:nrotor
         end
 
         # interpolate inner and outer values
-        cl = fm.linear([0.0; 1.0], [clin, clout], blade_elements[irotor].inner_fraction[ir])
-        cd = fm.linear([0.0; 1.0], [cdin, cdout], blade_elements[irotor].inner_fraction[ir])
+        cl = FLOWMath.linear([0.0; 1.0], [clin, clout], blade_elements[irotor].inner_fraction[ir])
+        cd = FLOWMath.linear([0.0; 1.0], [cdin, cdout], blade_elements[irotor].inner_fraction[ir])
 
         # printval("cl in: ", clin)
         # printval("cl interp: ", cl)

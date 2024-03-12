@@ -23,8 +23,8 @@ println("\nPANEL INITIALIZATION TESTS")
     @test panels.endnodeidxs == [1; 1;;]
     @test panels.endpanelidxs == [1; 1;;]
     @test panels.influence_length == [1.0]
-    @test panels.totpanel == 1
-    @test panels.totnode == 2
+    @test panels.totpanel == [1]
+    @test panels.totnode == [2]
     @test panels.npanel == [1]
     @test panels.nnode == [2]
     @test panels.tenode == [0.0 0.0;;; 0.0 0.0] # this test doesn't make sense in this case, but is present for completeness and to let me know if this behavior of the second index staying zeros changes.
@@ -98,6 +98,8 @@ println("\nPANEL INITIALIZATION TESTS")
     @test panels.tencrossn[:, 1] == [0.0, 0.0]
     @test all(isapprox.(panels.tencrossn[:, 2], -[sqrt(2) / 2, sqrt(2) / 2]))
     @test all(isapprox.(panels.teinfluence_length, [0.0, 0.0]))
+    @test panels.totnode == [8]
+    @test panels.totpanel == [6]
 
     # - TE panel specific tests - #
     x1 = [1.0; 0.5; 0.0; 0.5; 1.0]

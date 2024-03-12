@@ -1,14 +1,31 @@
-function wake_grid_residuals!(resid, proposed_grid, original_grid, xi, eta)
+function elliptic_grid_residual!(r, y, x, p)
 
-    # wake grid dimensions
-    _, nxi, neta = size(grid)
+    # - extract parameters - #
+    (; xi, eta, gridshape, itshape, proposed_grid_cache) = p
+    proposed_grid = get_tmp(proposed_grid_cache, y)
+    proposed_grid .= reshape(x, gridshape)
 
-    # separate x and r components of proposed grid
+    # dimensions
+    nxi = length(xi)
+    neta = length(eta)
+
+    # - Initialize Residual - #
+    # note: the boundary values are kept constant, so want to set those to zero before getting started
+    r .= y .- reshape(proposed_grid[:, 2:end, 2:(end - 1)], :)
+
+    # - reshape vector into 3D array - #
+    resid = reshape(r, itshape)
+
+    #overwrite proposed_grid internals with the current state variables
+    proposed_grid[:, 2:end, 2:(end - 1)] .= reshape(y, itshape)
+
+    # separate x and r components of proposed wake_grid
     xr = view(proposed_grid, 1, :, :)
     rr = view(proposed_grid, 2, :, :)
 
-    # initialize residuals
-    resid .= proposed_grid .- original_grid
+    # for cache testing
+    # TF = eltype(y)
+    # x_xi = TF[1.0]
 
     # loop over interior streamlines
     for j in 2:(neta - 1)
@@ -25,7 +42,7 @@ function wake_grid_residuals!(resid, proposed_grid, original_grid, xi, eta)
         xhat = iszero(enorm) ? 0.0 : dx / enorm
         rhat = iszero(enorm) ? 0.0 : dr / enorm
 
-        # calculate 1st derivatives using finite differencing on irregular grid
+        # calculate 1st derivatives using finite differencing on irregular wake_grid
         dxi1 = xi[end] - xi[end - 1]
         dxi2 = xi[end - 1] - xi[end - 2]
 
@@ -38,16 +55,16 @@ function wake_grid_residuals!(resid, proposed_grid, original_grid, xi, eta)
         x_xi = dxdx1 + dxi1 * (dxdx1 - dxdx2) / (dxi1 + dxi2)
         r_xi = drdx1 + dxi1 * (drdx1 - drdx2) / (dxi1 + dxi2)
 
-        # # populate residual vector
+        # populate residual vector
         tmp = xhat * x_xi + rhat * r_xi
-        resid[1, end, j] = xhat * tmp
-        resid[2, end, j] = rhat * tmp
+        resid[1, end, j - 1] = xhat * tmp
+        resid[2, end, j - 1] = rhat * tmp
 
         # -- Interior Residuals --- #
 
         for i in 2:(nxi - 1)
 
-            # calculate 1st derivatives using finite differencing on an irregular grid
+            # calculate 1st derivatives using finite differencing on an irregular wake_grid
             dximinus = xi[i] - xi[i - 1]
             dxiplus = xi[i + 1] - xi[i]
             dxiavg = 0.5 * (dximinus + dxiplus)
@@ -61,7 +78,7 @@ function wake_grid_residuals!(resid, proposed_grid, original_grid, xi, eta)
             x_xi = (xr[i + 1, j] - xr[i - 1, j]) / (2.0 * dxiavg)
             r_xi = (rr[i + 1, j] - rr[i - 1, j]) / (2.0 * dxiavg)
 
-            # calculate 2nd derivatives using finite differencing on an irregular grid
+            # calculate 2nd derivatives using finite differencing on an irregular wake_grid
             ravgplus = 0.5 * (rr[i, j] + rr[i, j + 1])
             ravgminus = 0.5 * (rr[i, j] + rr[i, j - 1])
             ravg = 0.5 * (ravgplus + ravgminus)
@@ -100,42 +117,89 @@ function wake_grid_residuals!(resid, proposed_grid, original_grid, xi, eta)
             gamma = x_xi^2 + r_xi^2
 
             # populate residual vector
-            resid[1, i, j] =
+            resid[1, i - 1, j - 1] =
                 alpha * x_xixi - 2.0 * beta * x_xieta + gamma * x_etaeta -
                 beta * r_xi * x_eta * detaminus * detaplus / ravg
-            resid[2, i, j] =
+            resid[2, i - 1, j - 1] =
                 alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
                 beta * r_xi * r_eta * detaminus * detaplus / ravg
         end
     end
 
-    return resid
+    return r
 end
 
-nx = 10
-nr = 10
+function solve_elliptic_grid_iad(x, p)
 
-x = range(0, 1; length=nx)
-grid = zeros(2, nx, nr)
-for j in 1:nr
-    grid[1, :, j] .= x
-    for i in 1:nx
-        rt = 0.3 + 0.1 * (x[i])^2
-        rb = 0.2 - 0.1 * (x[i])^2
-        grid[2, i, j] = (j - 1) / (nr - 1) * rt + (nr - j) / (nr - 1) * rb
+    # - Wrap residual - #
+    function rwrap!(r, y)
+        return elliptic_grid_residual!(r, y, x, p)
     end
+
+    wake_grid = reshape(x, p.gridshape)
+
+    # - Call NLsolve - #
+    # df = OnceDifferentiable(rwrap!, x, similar(x))
+    result = NLsolve.nlsolve(
+        # df,
+        rwrap!,
+        reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
+        method=:newton,
+        autodiff=:forward,
+        linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b), #used in newton method, unused otherwise so fine to keep it here.
+        ftol=p.wake_nlsolve_ftol,
+        iterations=p.wake_max_iter,
+        show_trace=p.verbose,
+    )
+
+    # - overwrite output in place - #
+    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(result.zero, p.itshape)
+
+    return x
 end
 
-vtk_save(vtk_grid("original", grid))
+"""
+TODO: will want to pass a convergence flag that get's updated so we can break out if the wake geometry did not converge and pass a fail flag to the optimizer
+"""
+function solve_elliptic_grid!(
+    wake_grid; wake_nlsolve_ftol=1e-14, wake_max_iter=10, verbose=false
+)
 
-fresid = (x) -> reshape(wake_grid_residuals(reshape(x, size(grid)), grid), :)
+    # - dimensions - #
+    gridshape = size(wake_grid)
+    nx = gridshape[2]
+    nr = gridshape[3]
 
-x0 = reshape(grid, :)
+    # - precomputation - #
+    eta = zeros(eltype(wake_grid), nr)
+    for j in 2:nr
+        @views eta[j] = wake_grid[2, 1, j] .^ 2 - wake_grid[2, 1, j - 1] .^ 2 + eta[j - 1]
+    end
+    xi = @view(wake_grid[1, :, 1]) .- @view(wake_grid[1, 1, 1])
 
-result = nlsolve(fresid, x0)
+    # - set up solve - #
+    p = (;
+        eta,
+        xi,
+        gridshape,
+        proposed_grid_cache=DiffCache(wake_grid),
+        itshape=(gridshape[1], gridshape[2] - 1, gridshape[3] - 2),
+        wake_nlsolve_ftol,
+        wake_max_iter,
+        verbose,
+    )
 
-x = result.zero
+    # - solve - #
+    y = implicit(solve_elliptic_grid_iad, elliptic_grid_residual!, reshape(wake_grid, :), p)
 
-new_grid = reshape(x, size(grid))
+    for g in eachrow(view(y, :))
+        if g[1] < eps()
+            g[1] = 0.0
+        end
+    end
 
-vtk_save(vtk_grid("revised", new_grid))
+    # - format outputs - #
+    wake_grid .= reshape(y, gridshape)
+
+    return wake_grid
+end

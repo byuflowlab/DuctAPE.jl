@@ -46,7 +46,7 @@ nduct_inlet = 5
 
 # update the body paneling to match the wake discretization
 new_duct_xr, new_hub_xr = dt.update_body_geometry(
-    duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=fm.linear
+    duct_coordinates, hub_coordinates, xwake, nhub_inlet, nduct_inlet; finterp=FLOWMath.linear
 )
 
 # shift the duct geometry according to the leading rotor tip radius, and return the rotor hub and tip dimensions for all rplace_duct(duct_coordinates, hub_coordinates, Rtip, rotorzlocs)otors

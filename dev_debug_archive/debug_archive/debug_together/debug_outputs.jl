@@ -138,10 +138,10 @@ function debug_outputs(states, inputs; suffix="")
             inputs.blade_elements[1].outer_airfoil[ir], alpha[ir]
         )
         # linearly interpolate between those two values at your blade element location
-        cl[ir] = fm.linear(
+        cl[ir] = FLOWMath.linear(
             [0.0; 1.0], [clin, clout], inputs.blade_elements[1].inner_fraction[ir]
         )
-        cd[ir] = fm.linear(
+        cd[ir] = FLOWMath.linear(
             [0.0; 1.0], [cdin, cdout], inputs.blade_elements[1].inner_fraction[ir]
         )
     end

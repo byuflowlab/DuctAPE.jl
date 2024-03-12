@@ -13,7 +13,7 @@ println("\nITERATION STEP THROUGH TESTS")
         freestream,
         reference_parameters;
         debug=false,
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
     )
 
     # - Parameters - #
@@ -187,8 +187,8 @@ println("\nITERATION STEP THROUGH TESTS")
         inputs.blade_elements.Omega,
         inputs.wakeK,
         inputs.rotorwakenodeid,
-        inputs.ductwakeinterfacenodeid,
-        inputs.cbwakeinterfacenodeid;
+        inputs.wake_node_ids_along_casing_wake_interface,
+        inputs.wake_node_ids_along_centerbody_wake_interface;
         post=false,
     )
 

@@ -144,7 +144,7 @@ function visualize_flowfield(
         # spline the wake sheets
         tgridr = similar(tgridx) .= 0.0
         for i in 1:nsheets
-            tgridr[i, :] = fm.linear(wakecpx[i, :], wakecpr[i, :], tgridx[i, :])
+            tgridr[i, :] = FLOWMath.linear(wakecpx[i, :], wakecpr[i, :], tgridx[i, :])
         end
 
         # Third, get the vtheta values at the interpolated points
@@ -172,7 +172,7 @@ function visualize_flowfield(
                     # println("target: ", tar, "inside rrange")
                     # we're inside the wake radially
                     # get the tangential velocity
-                    Utheta[it] = fm.akima(tgridr[:, xid], vthetagrid[:, xid], tar[2])
+                    Utheta[it] = FLOWMath.akima(tgridr[:, xid], vthetagrid[:, xid], tar[2])
                 end
             end
         end

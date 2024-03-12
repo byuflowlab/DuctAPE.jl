@@ -62,7 +62,7 @@ function generate_geometry(
     hub_coordinates,
     paneling_constants,
     rotorstator_parameters; #vector of named tuples
-    finterp=fm.akima,
+    finterp=FLOWMath.akima,
     autoshiftduct=false,
 )
 
@@ -240,7 +240,7 @@ function precomputed_inputs(
     rotorstator_parameters, #vector of named tuples
     freestream,
     reference_parameters;
-    finterp=fm.akima,
+    finterp=FLOWMath.akima,
     autoshiftduct=false,
     debug=false,
 )
@@ -401,12 +401,12 @@ function precomputed_inputs(
         num_wake_z_panels * (length(rwake) - 1) .+ (1:(ductTE_index - 1))
 
     # Indices of wake nodes interfacing with solid bodies
-    cbwakeinterfacenodeid = 1:hubTE_index
-    ductwakeinterfacenodeid = num_wake_z_nodes * (length(rwake) - 1) .+ (1:ductTE_index)
+    wake_node_ids_along_centerbody_wake_interface = 1:hubTE_index
+    wake_node_ids_along_casing_wake_interface = num_wake_z_nodes * (length(rwake) - 1) .+ (1:ductTE_index)
 
     # Indices of body panels interfacing with wakes
-    wakehubinterfacepanelid = collect((body_vortex_panels.npanel[2]-hubTE_index+2):body_vortex_panels.npanel[2]) # note -2 to account for hubTE_index being for node not panels.  would have had a -1 otherwise.
-    wakeductinterfacepanelid = collect(reverse(1:ductTE_index-1))
+    wake_panel_ids_along_centerbody_wake_interface = collect((body_vortex_panels.npanel[2]-hubTE_index+2):body_vortex_panels.npanel[2]) # note -2 to account for hubTE_index being for node not panels.  would have had a -1 otherwise.
+    wake_panel_ids_along_casing_wake_interface = collect(reverse(1:ductTE_index-1))
 
     #------------------------------------------#
     #          Generate Blade Elements         #
@@ -987,10 +987,10 @@ function precomputed_inputs(
         hubidsaftofrotors,
         ductwakeinterfaceid, # wake panel indices that lie on top of duct wall
          hubwakeinterfaceid, # wake panel indices that lie on top of hub wall
-         cbwakeinterfacenodeid=collect(cbwakeinterfacenodeid), # wake node indices that lie on top of hub wall
-        ductwakeinterfacenodeid=collect(ductwakeinterfacenodeid), # wake node indicies that lie on top of duct wall
-        wakehubinterfacepanelid, # hub panel indices that interface with wake
-        wakeductinterfacepanelid, # duct panel indices that interface with wake
+         wake_node_ids_along_centerbody_wake_interface=collect(wake_node_ids_along_centerbody_wake_interface), # wake node indices that lie on top of hub wall
+        wake_node_ids_along_casing_wake_interface=collect(wake_node_ids_along_casing_wake_interface), # wake node indicies that lie on top of duct wall
+        wake_panel_ids_along_centerbody_wake_interface, # hub panel indices that interface with wake
+        wake_panel_ids_along_casing_wake_interface, # duct panel indices that interface with wake
         rotorwakenodeid, # [rotor panel edge index, and closest forward rotor id] for each wake panel
         rotorwakepanelid, # [rotor panel index, and closest forward rotor id] for each wake panel
         num_wake_z_nodes, # number of nodes in axial direction of wake sheet

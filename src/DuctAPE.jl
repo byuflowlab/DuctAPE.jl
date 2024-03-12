@@ -5,7 +5,6 @@ module DuctAPE
 #---------------------------------#
 
 using FLOWMath # used for various items, mostly interpolation
-const fm = FLOWMath #rename FLOWMath for convenience
 
 include("C4Blade/C4Blade.jl") # augmented CCBlade implementation (cascade compatible CCBlade)
 const c4b = C4Blade
@@ -14,18 +13,22 @@ using SpecialFunctions # required for elliptic integrals
 using QuadGK # required for integration of linear panels
 using StaticArrays # used in miscellaneous places for code efficiency
 
-using LinearAlgebra#: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
-const la = LinearAlgebra
+using LinearAlgebra
 
-# Fancy new solve required pacakges
+using PreallocationTools
+
+# new solve required pacakges
 using NLsolve #for newton solver
-# using ForwardDiff
-# const fd = ForwardDiff
-using LineSearches: BackTracking
+using LineSearches
 using ImplicitAD
-const iad = ImplicitAD
+# using ForwardDiff
 
 using Printf # used when verbose option is selected
+
+#---------------------------------#
+#             EXPORTS             #
+#---------------------------------#
+export c4b
 
 #---------------------------------#
 #            INCLUDES             #
@@ -34,10 +37,16 @@ using Printf # used when verbose option is selected
 ##### ----- UTILITIES ----- #####
 # general utility functions
 include("utilities/utils.jl")
+include("solve/io.jl") #TODO: move to utilities
+include("solve/cache.jl")
+include("types.jl")
+
+##### ----- Analysis ----- #####
 
 ##### ----- PRECOMPUTATION ----- #####
 # Pre-solve initializations
 include("precomputation/initialize.jl")
+include("precomputation/initialize_iad.jl")
 
 # Body Geometry Functions
 include("precomputation/body_geometry.jl")
@@ -48,7 +57,7 @@ include("precomputation/rotor_geometry.jl")
 
 # Wake Geometry Functions
 include("precomputation/wake_geometry.jl")
-# include("precomputation/wake_geometry_residual.jl")
+include("precomputation/wake_geometry_residual.jl")
 
 # Aero Influence Matrices
 include("precomputation/integrals.jl")
@@ -59,6 +68,7 @@ include("precomputation/induced_velocity_matrices.jl")
 ##### ----- SOLVER ----- #####
 
 include("solve/solve.jl")
+include("solve/solve_iad.jl")
 
 # Rotor Aerodynamic Functions
 include("solve/rotor_aerodynamics.jl")
@@ -71,8 +81,9 @@ include("solve/body_aerodynamics.jl")
 
 ##### ----- POST-PROCESSING ----- #####
 
-include("postprocess/post_process.jl")
+# include("postprocess/post_process.jl")
 include("postprocess/utils.jl")
+include("postprocess/post_process_iad.jl")
 
 ##### ----- SPECIALTY ----- #####
 

@@ -269,7 +269,7 @@ function look_up_angle_of_attack(lift_polars, lift_coefficients, ns)
         i2 = searchsortedfirst(lift_polars[is][:, 2], cl)
 
         # interpolate
-        angles_of_attack[is] = fm.linear(
+        angles_of_attack[is] = FLOWMath.linear(
             [lift_polars[is][i1, 2]; lift_polars[is][i2, 2]],
             [lift_polars[is][i1, 1]; lift_polars[is][i2, 1]],
             cl,

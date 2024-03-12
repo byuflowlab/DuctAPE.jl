@@ -42,7 +42,7 @@ end
         zwake,
         paneling_constants.nhub_inlet,
         paneling_constants.nduct_inlet;
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
     )
 
     @test size(rp_duct_coordinates, 1) < size(rp_duct_coordinates, 2)
@@ -78,7 +78,7 @@ end
         zwake,
         paneling_constants.nhub_inlet,
         paneling_constants.nduct_inlet;
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
     )
 
     rpb4 = copy(rp_duct_coordinates)
@@ -112,7 +112,7 @@ end
         zwake,
         paneling_constants.nhub_inlet,
         paneling_constants.nduct_inlet;
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
     )
 
     dt.place_duct!(
@@ -151,7 +151,7 @@ end
         zwake,
         paneling_constants.nhub_inlet,
         paneling_constants.nduct_inlet;
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
     )
 
     dt.place_duct!(
@@ -256,7 +256,7 @@ end
         zwake,
         paneling_constants.nhub_inlet,
         paneling_constants.nduct_inlet;
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
     )
 
     dt.place_duct!(
@@ -350,7 +350,7 @@ end
         hub_coordinates,
         paneling_constants,
         rotorstator_parameters; #vector of named tuples
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
         autoshiftduct=false,
     )
 
@@ -399,7 +399,7 @@ end
         rotorstator_parameters, #vector of named tuples
         freestream,
         reference_parameters;
-        finterp=fm.linear,
+        finterp=FLOWMath.linear,
         autoshiftduct=true,
     )
 

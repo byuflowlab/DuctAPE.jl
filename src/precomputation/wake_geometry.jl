@@ -42,7 +42,7 @@ function discretize_wake(
     if iszero(dte_minus_cbte)
         zd = vcat(rotorzloc, cb_tez, cb_tez + wake_length)
         @assert length(npanels) == length(rotorzloc) + 1 "Length of vector `npanels` should be one more than the length of vector `rotorzloc` when the duct and centerbody trailing edges align."
-    elseif dte_minus_cbte > 0 #duct_tez < cb_tez
+    elseif dte_minus_cbte < 0 #duct_tez < cb_tez
         zd = vcat(rotorzloc, duct_tez, cb_tez, cb_tez + wake_length)
         @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and centerbody trailing edges do not align."
     else #dte_minus_cbte > 0 # duct_tez < cb_tez
@@ -72,47 +72,6 @@ function discretize_wake(
 end
 
 """
-    generate_wake_panels(zgrid, rgrid; kwargs...)
-
-Generate paneling for each wake line emanating from the rotor blade elements.
-
-# Arguments:
-- `zgrid::Matrix{Float}` : x-location of each wake_grid point
-- `rgrid::Matrix{Float}` : r-location of each wake_grid point
-
-# Keyword Arguments:
-- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
-
-# Returns:
-- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
-"""
-function generate_wake_panels(wake_grid)
-
-    # extract wake_grid size
-    _, nz, nr = size(wake_grid)
-
-    # define wake lines
-    wake_lines = [[grid[1, :, ir]'; grid[2, :, ir]'] for ir in 1:nr]
-
-    # generate paneling for each wake line
-    wake_panels = generate_panels(wake_lines; isbody=false)
-
-    return wake_panels
-end
-
-function generate_wake_panels!(wake_panels, wake_grid)
-    # extract wake_grid size
-    _, nz, nr = size(wake_grid)
-
-    # define wake lines
-    wake_lines = [[wake_grid[1, :, ir]'; wake_grid[2, :, ir]'] for ir in 1:nr]
-
-    # generate paneling for each wake line
-    return generate_panels!(wake_panels, wake_lines; isbody=false)
-end
-
-
-"""
     initialize_wake_grid(body_geometry, rzl, rblade)
 
 Intialize the wake wake_grid
@@ -127,10 +86,10 @@ Intialize the wake wake_grid
 - `zgrid::Matrix{Float64,2}` : 2D Array of x wake_grid points
 - `rgrid::Matrix{Float64,2}` : 2D Array of r wake_grid points
 """
-function initialize_wake_grid(duct_coordinates, centerbody_coordinates, zwake, rwake)
+function initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake)
     TF = promote_type(
-        eltype(duct_coordinates),
-        eltype(centerbody_coordinates),
+        eltype(rp_duct_coordinates),
+        eltype(rp_centerbody_coordinates),
         eltype(zwake),
         eltype(rwake),
     )
@@ -145,13 +104,16 @@ function initialize_wake_grid(duct_coordinates, centerbody_coordinates, zwake, r
     wake_grid = zeros(TF, 2, nx, nr)
 
     return initialize_wake_grid!(
-        wake_grid, duct_coordinates, centerbody_coordinates, zwake, rwake
+        wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
     )
 end
 
 function initialize_wake_grid!(
-    wake_grid, duct_coordinates, centerbody_coordinates, zwake, rwake
+    wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
 )
+
+    # get dimensions
+    _, nx, nr = size(wake_grid)
 
     # set x-locations
     wake_grid[1, :, :] .= zwake
@@ -163,24 +125,24 @@ function initialize_wake_grid!(
     rzl = zwake[1]
 
     # centerbody trailing edge
-    cb_tez = centerbody_coordinates[1, end]
+    cb_tez = rp_centerbody_coordinates[1, end]
 
     # duct trailing edge
-    duct_tez = duct_coordinates[1, 1]
+    duct_tez = rp_duct_coordinates[1, 1]
 
     # set inner radial locations
-    _, icenterbody_rotor = findmin(x -> abs(x - rzl), view(centerbody_coordinates, 1, :))
+    _, icenterbody_rotor = findmin(x -> abs(x - rzl), view(rp_centerbody_coordinates, 1, :))
     _, icenterbody_te = findmin(x -> abs(x - cb_tez), zwake)
 
-    wake_grid[2, 1:icenterbody_te, 1] .= centerbody_coordinates[2, icenterbody_rotor:end]
-    wake_grid[2, (icenterbody_te + 1):end, 1] .= centerbody_coordinates[2, end]
+    wake_grid[2, 1:icenterbody_te, 1] .= rp_centerbody_coordinates[2, icenterbody_rotor:end]
+    wake_grid[2, (icenterbody_te + 1):end, 1] .= rp_centerbody_coordinates[2, end]
 
     # set outer radial locations
-    _, leidx = findmin(view(duct_coordinates, 1, :))
-    _, iduct_rotor = findmin(x -> abs(x - rzl), view(duct_coordinates, 1, 1:leidx))
+    _, leidx = findmin(view(rp_duct_coordinates, 1, :))
+    _, iduct_rotor = findmin(x -> abs(x - rzl), view(rp_duct_coordinates, 1, 1:leidx))
     _, iduct_te = findmin(x -> abs(x - duct_tez), zwake)
-    wake_grid[2, 1:iduct_te, end] .= duct_coordinates[2, iduct_rotor:-1:1]
-    wake_grid[2, (iduct_te + 1):end, end] .= duct_coordinates[2, 1]
+    wake_grid[2, 1:iduct_te, end] .= rp_duct_coordinates[2, iduct_rotor:-1:1]
+    wake_grid[2, (iduct_te + 1):end, end] .= rp_duct_coordinates[2, 1]
 
     # --- Define Inner wake_grid Points --- #
 
@@ -218,6 +180,160 @@ function initialize_wake_grid!(
     return wake_grid
 end
 
+function generate_wake_grid(
+    problem_dimensions,
+    rp_duct_coordinates,
+    rp_centerbody_coordinates,
+    Rhub1,
+    Rtip1,
+    tip_gap1,
+    zwake;
+    wake_nlsolve_ftol=1e-14,
+    wake_max_iter=100,
+    max_wake_relax_iter=3,
+    wake_relax_tol=1e-14,
+    verbose=false,
+    silence_warnings=true,
+)
+    TF = promote_type(
+        eltype(rp_duct_coordinates),
+        eltype(rp_centerbody_coordinates),
+        typeof(Rhub1),
+        typeof(Rtip1),
+    )
+
+    wake_grid = zeros(TF, 2, problem_dimensions.nwsn, problem_dimensions.nws)
+
+    return generate_wake_grid!(
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        Rhub1,
+        Rtip1,
+        tip_gap1,
+        zwake;
+        wake_nlsolve_ftol=wake_nlsolve_ftol,
+        wake_max_iter=wake_max_iter,
+        max_wake_relax_iter=max_wake_relax_iter,
+        wake_relax_tol=wake_relax_tol,
+        verbose=verbose,
+        silence_warnings=silence_warnings,
+    )
+end
+
+function generate_wake_grid!(
+    wake_grid,
+    rp_duct_coordinates,
+    rp_centerbody_coordinates,
+    Rhub1,
+    Rtip1,
+    tip_gap1,
+    zwake;
+    wake_nlsolve_ftol=1e-14,
+    wake_max_iter=100,
+    max_wake_relax_iter=3,
+    wake_relax_tol=1e-14,
+    verbose=false,
+    silence_warnings=true,
+)
+
+    #rotor panel edges
+    rpe = range(Rhub1, Rtip1, size(wake_grid, 3))
+
+    # wake sheet starting radius including dummy sheets for tip gap.
+    if tip_gap1 == 0.0
+        rwake = rpe
+    else
+        rwake = [rpe; Rtip1 + tip_gap1]
+    end
+
+    # Initialize wake "grid"
+    initialize_wake_grid!(
+        wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
+    )
+
+    # Relax "Grid"
+    relax_grid!(
+        wake_grid;
+        max_wake_relax_iter=max_wake_relax_iter,
+        wake_relax_tol=wake_relax_tol,
+        verbose=verbose,
+        silence_warnings=silence_warnings,
+    )
+    solve_elliptic_grid!(
+        wake_grid;
+        wake_nlsolve_ftol=wake_nlsolve_ftol,
+        wake_max_iter=wake_max_iter,
+        verbose=verbose,
+    )
+
+    return wake_grid
+end
+
+"""
+    generate_wake_panels(zgrid, rgrid; kwargs...)
+
+Generate paneling for each wake line emanating from the rotor blade elements.
+
+# Arguments:
+- `zgrid::Matrix{Float}` : x-location of each wake_grid point
+- `rgrid::Matrix{Float}` : r-location of each wake_grid point
+
+# Keyword Arguments:
+- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+
+# Returns:
+- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
+"""
+function generate_wake_panels(wake_grid)
+
+    # extract wake_grid size
+    _, nz, nr = size(wake_grid)
+
+    # define wake lines
+    wake_lines = [[wake_grid[1, :, ir]'; wake_grid[2, :, ir]'] for ir in 1:nr]
+
+    # generate paneling for each wake line
+    wake_panels = generate_panels(wake_lines; isbody=false)
+
+    return wake_panels
+end
+
+"""
+"""
+function generate_wake_panels!(wake_panels, wake_grid)
+    # extract wake_grid size
+    _, nz, nr = size(wake_grid)
+
+    # define wake lines
+    wake_lines = [[wake_grid[1, :, ir]'; wake_grid[2, :, ir]'] for ir in 1:nr]
+
+    # generate paneling for each wake line
+    return generate_panels!(wake_panels, wake_lines; isbody=false)
+end
+
+"""
+"""
+function get_wake_k(wake_vortex_panels)
+    # initialize output
+    K = zeros(eltype(wake_vortex_panels.node), wake_vortex_panels.totnode)
+
+    # Loop through panels
+    for (iw, wnr) in enumerate(wake_vortex_panels.node[2, :])
+        # check if panel has zero radius
+        if wnr < eps()
+            K[iw] = 0.0
+        else
+            K[iw] = -1.0 ./ (8.0 .* pi^2 .* wnr .^ 2)
+        end
+    end
+
+    return K
+end
+
+#---------------------------------#
+#    DFDC-like wake relaxation    #
+#---------------------------------#
 """
     relax_grid!(xg, rg, nxi, neta; max_wake_relax_iter, wake_relax_tol)
 
@@ -542,64 +658,4 @@ function relax_grid!(
     end
 
     return wake_grid
-end
-
-function generate_wake_grid!(
-    wake_grid,
-    rp_duct_coordinates,
-    rp_centerbody_coordinates,
-    Rhub,
-    Rtip,
-    nwake_sheets;
-    max_wake_relax_iter=100,
-    wake_relax_tol=1e-9,
-    verbose=false,
-    silence_warnings=true,
-)
-
-    #rotor panel edges
-    rpe = range(Rhub[1], Rtip[1]; length=nwake_sheets)
-
-    # wake sheet starting radius including dummy sheets for tip gap.
-    if tip_gaps[1] == 0.0
-        rwake = rpe
-    else
-        rwake = [rpe; Rtip[1] + tip_gaps[1]]
-    end
-
-    # Initialize wake "grid"
-    # TODO: create an in-place version of this and have wake_grid preallocated
-    initialize_wake_grid!(
-        wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
-    )
-
-    # Relax "Grid"
-    relax_grid!(
-        wake_grid;
-        max_wake_relax_iter=max_wake_relax_iter,
-        wake_relax_tol=wake_relax_tol,
-        verbose=verbose,
-        silence_warnings=silence_warnings,
-    )
-
-    return wake_grid
-end
-
-"""
-"""
-function get_wake_k(wake_vortex_panels)
-    # initialize output
-    K = zeros(eltype(wake_vortex_panels.node), wake_vortex_panels.totnode)
-
-    # Loop through panels
-    for (iw, wnr) in enumerate(wake_vortex_panels.node[2, :])
-        # check if panel has zero radius
-        if wnr < eps()
-            K[iw] = 0.0
-        else
-            K[iw] = -1.0 ./ (8.0 .* pi^2 .* wnr .^ 2)
-        end
-    end
-
-    return K
 end

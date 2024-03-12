@@ -27,8 +27,8 @@ function get_rotor_loads(W, phi, cl, cd, blade_element, fs)
     torque = Tpfull .* rfull
 
     # integrate Thrust and Torque (trapezoidal)
-    T = blade_element.B * fm.trapz(rfull, thrust)
-    Q = blade_element.B * fm.trapz(rfull, torque)
+    T = blade_element.B * FLOWMath.trapz(rfull, thrust)
+    Q = blade_element.B * FLOWMath.trapz(rfull, torque)
     P = Q * blade_element.Omega
 
     ## -- Get Non-dimensional versions -- ##

@@ -31,10 +31,10 @@
 function get_blade_ends_from_body_geometry(
     duct_coordinates, centerbody_coordinates, tip_gaps, rotorzloc
 )
-    TF = promete_type(
+    TF = promote_type(
         eltype(duct_coordinates),
         eltype(centerbody_coordinates),
-        eltype(tip_gap),
+        eltype(tip_gaps),
         eltype(rotorzloc),
     )
 
@@ -131,13 +131,13 @@ function generate_blade_elements(
     )
 
     # dimensionalize the blade element radial positions
-    rblade = fm.linear([0.0; 1.0], [0.0; Rtip], rnondim)
+    rblade = FLOWMath.linear([0.0; 1.0], [0.0; Rtip], rnondim)
 
     # update chord lengths
-    chords = fm.akima(rblade, chords, rbe)
+    chords = FLOWMath.akima(rblade, chords, rbe)
 
     # update twists
-    twists = fm.akima(rblade, twists, rbe)
+    twists = FLOWMath.akima(rblade, twists, rbe)
 
     # update stagger
     stagger = get_stagger(twists)
@@ -208,12 +208,30 @@ function generate_rotor_panels(rotorzloc, rwake)
     return generate_panels(xr; isbody=false, isrotor=true)
 end
 
+function generate_rotor_panels(
+    rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+)
+    TF = promote_type(eltype(rotorzloc), eltype(wake_grid))
+
+    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotorzloc)]
+
+    for irotor in 1:length(rotorzloc)
+        @views xr[irotor] = [
+            fill(rotorzloc[irotor], nwake_sheets)'
+            wake_grid[2, rotor_indices_in_wake[irotor], 1:nwake_sheets]'
+        ]
+    end
+
+    return generate_panels(xr; isbody=false, isrotor=true)
+end
+
+"""
+Needs to be tested
+"""
 function generate_rotor_panels!(
     rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
 )
-    TF = promote_type(
-        eltype(rotorzloc), eltype(wake_grid), eltype.([rotor_source_panels...])...
-    )
+    TF = promote_type(eltype(rotorzloc), eltype(wake_grid))
 
     xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotorzloc)]
 

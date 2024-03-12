@@ -22,28 +22,26 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 
 # Returns:
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
-- `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
 function vortex_aic_boundary_on_boundary(
-    controlpoint, normal, tangent, node, nodemap, influence_length
+    controlpoint, normal, node, nodemap, influence_length
 )
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
     N = size(node, 2)
 
     AICn = zeros(T, M, N)
-    AICt = zeros(T, M, N)
 
     vortex_aic_boundary_on_boundary!(
-        AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+        AICn, controlpoint, normal, node, nodemap, influence_length
     )
 
-    return AICn, AICt
+    return AICn
 end
 
 """
     vortex_aic_boundary_on_boundary!(
-    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+    AICn, controlpoint, normal, node, nodemap, influence_length
 )
 
 in place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric vortex rings (also on body surface)
@@ -59,17 +57,19 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function vortex_aic_boundary_on_boundary!(
-    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+    AICn, controlpoint, normal, node, nodemap, influence_length; cache_vec=nothing
 )
 
     # NOTE: it is slighlty faster/fewer allocations to just define a new static array in the loop than to preallocate such a small matrix.
     # vel = zeros(eltype(AICn), 2, 2)
+    if isnothing(cache_vec)
+        cache_vec = zeros(eltype(node), 20)
+    end
 
     # loop through panels doing the influencing
     for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
         # Loop through control points being influenced
-        for (i, (cpi, nhat, that)) in
-            enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
+        for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
             n1 = view(node, :, nmap[1])
             n2 = view(node, :, nmap[2])
 
@@ -77,19 +77,18 @@ function vortex_aic_boundary_on_boundary!(
             if i != j
                 # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             else
                 # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi)
+                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             end
 
             for k in 1:2
                 # fill the Matrix
                 AICn[i, nmap[k]] += dot(vel[k, :], nhat)
-                AICt[i, nmap[k]] += dot(vel[k, :], that)
             end #for k
         end #for i
     end #for j
@@ -111,9 +110,10 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 
 # Returns:
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
-- `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
-function vortex_aic_boundary_on_field(controlpoint, normal, node, nodemap, influence_length)
+function vortex_aic_boundary_on_field(
+    controlpoint, normal, node, nodemap, influence_length; cache_vec=nothing
+)
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
     N = size(node, 2)
@@ -121,10 +121,10 @@ function vortex_aic_boundary_on_field(controlpoint, normal, node, nodemap, influ
     AICn = zeros(T, M, N)
 
     vortex_aic_boundary_on_field!(
-        AICn, controlpoint, normal, node, nodemap, influence_length
+        AICn, controlpoint, normal, node, nodemap, influence_length; cache_vec=cache_vec
     )
 
-    return AICn, AICt
+    return AICn
 end
 
 """
@@ -140,9 +140,12 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function vortex_aic_boundary_on_field!(
-    AICn, controlpoint, normal, node, nodemap, influence_length
+    AICn, controlpoint, normal, node, nodemap, influence_length; cache_vec=nothing
 )
     # vel = zeros(eltype(AICn), 2, 2)
+    if isnothing(cache_vec)
+        cache_vec = zeros(eltype(node), 20)
+    end
 
     # Loop through control points being influenced
     for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
@@ -156,13 +159,13 @@ function vortex_aic_boundary_on_field!(
                 # if so:
                 # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi)
+                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             else
                 # if not:
                 # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             end
 
@@ -179,7 +182,7 @@ function vortex_aic_boundary_on_field!(
         end #for j
     end #for i
 
-    return AICn
+    return nothing
 end
 
 ##### ----- Add Kutta ----- #####
@@ -220,7 +223,11 @@ function add_te_gap_aic!(
     tencrossn,
     teadjnodeidxs;
     wake=false,
+    cache_vec=nothing,
 )
+    if isnothing(cache_vec)
+        cache_vec = zeros(eltype(controlpoint), 20)
+    end
 
     # Loop through control points being influenced
     for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
@@ -236,10 +243,14 @@ function add_te_gap_aic!(
 
             # get unit induced velocity from the panel onto the control point
             vvel = StaticArrays.SMatrix{2,2}(
-                nominal_vortex_panel_integration(tenode[j, 1, :], tenode[j, 2, :], lj, cpi)
+                nominal_vortex_panel_integration(
+                    tenode[j, 1, :], tenode[j, 2, :], lj, cpi, cache_vec
+                ),
             )
             svel = StaticArrays.SMatrix{2,2}(
-                nominal_source_panel_integration(tenode[j, 1, :], tenode[j, 2, :], lj, cpi)
+                nominal_source_panel_integration(
+                    tenode[j, 1, :], tenode[j, 2, :], lj, cpi, cache_vec
+                ),
             )
 
             for k in 1:2
@@ -253,7 +264,7 @@ function add_te_gap_aic!(
         end #for j
     end #for i
 
-    return AICn, AICt
+    return AICn
 end
 
 # TODO: need to test these
@@ -272,24 +283,26 @@ Used for constructing the RHS boundary conditions due to rotor source panels.
 
 # Returns:
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
-- `AICt::Matrix{Float}` : N controlpoint x N+1 node  array of V dot that values
 """
-function source_aic(controlpoint, normal, tangent, node, nodemap, influence_length)
+function source_aic(
+    controlpoint, normal, node, nodemap, influence_length; cache_vec=nothing
+)
     T = promote_type(eltype(node), eltype(controlpoint))
     M = size(controlpoint, 2)
     N = size(node, 2)
 
     AICn = zeros(T, M, N)
-    AICt = zeros(T, M, N)
 
-    source_aic!(AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length)
+    source_aic!(
+        AICn, controlpoint, normal, node, nodemap, influence_length; cache_vec=cache_vec
+    )
 
-    return AICn, AICt
+    return AICn
 end
 
 """
     source_aic!(
-    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+    AICn, controlpoint, normal, node, nodemap, influence_length
 )
 
 # Arguments:
@@ -301,13 +314,15 @@ end
 - `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 """
 function source_aic!(
-    AICn, AICt, controlpoint, normal, tangent, node, nodemap, influence_length
+    AICn, controlpoint, normal, node, nodemap, influence_length; cache_vec=nothing
 )
     # vel = zeros(eltype(AICn), 2, 2)
+    if isnothing(cache_vec)
+        cache_vec = zeros(eltype(node), 20)
+    end
 
     # Loop through control points being influenced
-    for (i, (cpi, nhat, that)) in
-        enumerate(zip(eachcol(controlpoint), eachcol(normal), eachcol(tangent)))
+    for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
         # loop through panels doing the influencing
         for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
             n1 = view(node, :, nmap[1])
@@ -316,18 +331,17 @@ function source_aic!(
             # get unit induced velocity from the panel onto the control point
             # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
             vel = StaticArrays.SMatrix{2,2}(
-                nominal_source_panel_integration(n1, n2, lj, cpi)
+                nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
             )
 
             for k in 1:2
                 # fill the Matrix
                 AICn[i, nmap[k]] += dot(vel[k, :], nhat)
-                AICt[i, nmap[k]] += dot(vel[k, :], that)
             end #for k
         end #for j
     end #for i
 
-    return AICn, AICt
+    return AICn
 end
 
 ##### ----- Freestream ----- #####
@@ -342,7 +356,7 @@ Note that the freestream is assumed to have zero radial component in the underly
 # Returns:
 - `RHS::Vector{Float}` : vector of normal components of freestream velocity on input panels
 """
-function freestream_influence_vector(normals, Vinfmat::AbstractMatrix{TF}) where {TF}
+function freestream_influence_vector(normals, Vinfmat)
     T = promote_type(eltype(normals), eltype(Vinfmat))
     N = size(normals, 2)
 
@@ -362,17 +376,9 @@ Note that the freestream is assumed to have zero radial component in the underly
 - `normals::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `Vinfmat::Matrix{Float}` : [z r] components of freestream velocity (r's should be zero)
 """
-function freestream_influence_vector!(RHS, normals, Vinfmat::AbstractMatrix{TF}) where {TF}
+function freestream_influence_vector!(RHS, normals, Vinfmat)
     for (i, (n, v)) in enumerate(zip(eachcol(normals), eachcol(Vinfmat)))
         RHS[i] -= dot(v, n)
-    end
-
-    return nothing
-end
-
-function freestream_influence_vector!(RHS, normals, Vinf)
-    for (i, n) in enumerate(eachcol(normals))
-        RHS[i] -= dot([Vinf; eltype(RHS)(0.0)], n)
     end
 
     return nothing
@@ -391,7 +397,7 @@ function assemble_lhs_matrix(
     TF = promote_type(eltype(AICn), eltype(AICpcp))
 
     # initialize LHS matrix
-    LHS = zeros(TF, panels.totnode + 2, panels.totnode + 2)
+    LHS = zeros(TF, totnode + 2, totnode + 2)
 
     assemble_lhs_matrix!(
         LHS,
@@ -454,14 +460,14 @@ end
 """
 """
 function assemble_rhs_matrix(
-    vdnb, vdnpcp, panels, npanel, nnode, totpanel, totnode, prescribednodeidxs
+    vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
 )
 
     # get type
     TF = promote_type(eltype(vdnb), eltype(vdnpcp))
 
     # initialize RHS matrix
-    RHS = zeros(TF, panels.totnode + 2)
+    RHS = zeros(TF, totnode + 2)
 
     assemble_rhs_matrix!(
         RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
@@ -510,6 +516,16 @@ function assemble_rhs_matrix!(
     end
 
     return RHS
+end
+
+"""
+"""
+function calculate_normal_velocity(velocity_vector, normal)
+    AIC = zeros(eltype(velocity_vector), size(velocity_vector, 1), size(velocity_vector, 2))
+
+    calculate_normal_velocity!(AIC, velocity_vector, normal)
+
+    return AIC
 end
 
 """

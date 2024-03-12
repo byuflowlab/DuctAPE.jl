@@ -556,14 +556,14 @@ end
 """
 function get_body_tangential_velocities(inputs, gamw, sigr)
     # - rename for convenience - #
-    (; v_bb, v_br, v_bw, body_vortex_panels, gamb, TF, cbwakeinterfacenodeid, ductwakeinterfacenodeid, wakehubinterfacepanelid, wakeductinterfacepanelid) = inputs
+    (; v_bb, v_br, v_bw, body_vortex_panels, gamb, TF, wake_node_ids_along_centerbody_wake_interface, wake_node_ids_along_casing_wake_interface, wake_panel_ids_along_centerbody_wake_interface, wake_panel_ids_along_casing_wake_interface) = inputs
     nrotor = size(sigr, 2)
 
     # rename for convenience
-hwi = cbwakeinterfacenodeid
-dwi = ductwakeinterfacenodeid
-whi = wakehubinterfacepanelid
-wdi = wakeductinterfacepanelid
+hwi = wake_node_ids_along_centerbody_wake_interface
+dwi = wake_node_ids_along_casing_wake_interface
+whi = wake_panel_ids_along_centerbody_wake_interface
+wdi = wake_panel_ids_along_casing_wake_interface
 
     # TODO also consider including the body wakes here as well.
 

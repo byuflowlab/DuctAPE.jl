@@ -14,7 +14,6 @@ function calculate_body_vortex_strengths!(
 
     # add freestream contributions to right hand side
     gamb .= b_bf
-    # RHS .= b_bf
 
     if post
         RHSw = similar(RHS) .= 0
@@ -23,32 +22,26 @@ function calculate_body_vortex_strengths!(
 
     # add wake vortex sheet contributions to right hand side
     gamb[1:nbn] .-= A_bw * gamw
-    # RHS[1:nbn] .-= A_bw * gamw
 
     # add wake influence on psuedo control points
     # TODO: may want to make this not hard coded at some point
-    gamb[nbn + 1] -= A_pw[1, :]' * gamw
-    gamb[nbn + 4] -= A_pw[2, :]' * gamw
-    # RHS[nbn + 1] -= A_pw[1, :]' * gamw
-    # RHS[nbn + 4] -= A_pw[2, :]' * gamw
+    gamb[nbn + 1] -= @view(A_pw[1, :])' * gamw
+    gamb[nbn + 4] -= @view(A_pw[2, :])' * gamw
 
     if post
         RHSw[1:nbn] .-= A_bw * gamw
-        RHSw[nbn + 1] -= A_pw[1, :]' * gamw
-        RHSw[nbn + 4] -= A_pw[2, :]' * gamw
+        RHSw[nbn + 1] -= @view(A_pw[1, :])' * gamw
+        RHSw[nbn + 4] -= @view(A_pw[2, :])' * gamw
     end
 
     # add rotor source sheet contributions to right hand side
     for jrotor in 1:nrotor
         # get induced velocity in the x-direction
         @views gamb[1:nbn] .-= A_br[:, :, jrotor] * sigr[:, jrotor]
-        # @views RHS[1:nbn] .-= A_br[:, :, jrotor] * sigr[:, jrotor]
         # add rotor influence on pseudo control points
         # TODO: may want to make this not hard coded at some point
         @views gamb[nbn + 1] -= A_pr[1, :, jrotor]' * sigr[:, jrotor]
         @views gamb[nbn + 4] -= A_pr[2, :, jrotor]' * sigr[:, jrotor]
-        # @views RHS[nbn + 1] -= A_pr[1, :, jrotor]' * sigr[:, jrotor]
-        # @views RHS[nbn + 4] -= A_pr[2, :, jrotor]' * sigr[:, jrotor]
 
         if post
             @views RHSr[1:nbn] .-= A_br[:, :, jrotor] * sigr[:, jrotor]
@@ -58,12 +51,12 @@ function calculate_body_vortex_strengths!(
     end
 
     if post # return gamb, wake RHS, and first rotor RHS
-        return iad.implicit_linear(LHS, gamb; lsolve=ldiv!, Af=A_bb), RHSw, RHSr
+        return ImplicitAD.implicit_linear(LHS, gamb; lsolve=ldiv!, Af=A_bb), RHSw, RHSr
         # return ldiv!(gamb, A_bb, RHS), RHSw, RHSr
     else
 
         # use ImplicitAD overwrite gamb
-        return iad.implicit_linear(LHS, gamb; lsolve=ldiv!, Af=A_bb)
+        return ImplicitAD.implicit_linear(LHS, gamb; lsolve=ldiv!, Af=A_bb)
 
         # use ldiv! in place for gamb
         # return ldiv!(gamb, A_bb, RHS)

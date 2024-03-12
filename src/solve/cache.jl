@@ -49,7 +49,7 @@ function get_problem_dimensions(paneling_constants)
         paneling_constants
 
     # number of rotors is one less than the length of npanels if the duct and hub trailing edges line up, and is two less if they don't
-    nr = iszero(dte_minus_cbte) ? length(npanels) - 1 : length(npanels) - 2
+    nrotor = iszero(dte_minus_cbte) ? length(npanels) - 1 : length(npanels) - 2
 
     # number of wake sheets (blade nodes)
     nws = nwake_sheets
@@ -59,25 +59,36 @@ function get_problem_dimensions(paneling_constants)
 
     # number of body panels
     # TODO: need number of duct and centerbody nodes separately as well
-    nbp = nduct_inlet * 2 + ncenterbody_inlet
+    ndp = nduct_inlet * 2
+    ncbp = ncenterbody_inlet
     # add rest of panels mutual between centerbody and duct
-    nbp += if iszero(dte_minus_cbte)
-        sum(npanels[1:(end - 1)]) * 3
+    if iszero(dte_minus_cbte)
+        ndp += sum(npanels[1:(end - 1)]) * 2
+        ncbp += sum(npanels[1:(end - 1)])
     else
-        sum(npanels[1:(end - 2)]) * 3
+        ndp += sum(npanels[1:(end - 2)]) * 2
+        ncbp += sum(npanels[1:(end - 2)])
     end
+
     # add additional duct or centerbody panels if one extends further back
     if dte_minus_cbte > 0
-        nbp += npanels[end - 1] * 2
+        ndp += npanels[end - 1] * 2
     elseif dte_minus_cbte < 0
-        nbp += npanels[end - 1]
+        ncbp += npanels[end - 1]
     end
 
+    # duct and center body nodes are 1 more than number of panels
+    ndn = ndp + 1
+    ncbn = ncbp + 1
+
+    # number of body panels is sum of duct and centerbody panels
+    nbp = ndp + ncbp
     # number of body nodes is number of panels + number of bodies
-    npn = nbp + 2
+    nbn = ndn + ncbn
 
     # number of nodes in each wake sheet
-    nwsn = sum(npanels) + 1
+    nwsp = sum(npanels)
+    nwsn = nwsp + 1
 
     # number of wake panels is the total number of npanels times the number of wake sheets
     nwp = sum(npanels) * nwake_sheets
@@ -98,7 +109,7 @@ function get_problem_dimensions(paneling_constants)
     end
 
     return (;
-        nr,     # number of rotors
+        nrotor,     # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
         ndn,    # number of duct nodes
@@ -108,6 +119,7 @@ function get_problem_dimensions(paneling_constants)
         nws,    # number of wake sheets (also rotor nodes)
         nbe,    # number of blade elements (also rotor panels)
         nwsn,   # number of nodes in each wake sheet
+        nwsp,   # number of panels in each wake sheet
         ndwin,  # number of duct-wake interfacing nodes
         ncbwin, # number of centerbody-wake interfacing nodes
     )
@@ -162,7 +174,7 @@ function allocate_precomp_container_cache(paneling_constants)
 
     # return tuple of initialized cache and associated dimensions
     return (;
-        precomp_container_cache=pat.DiffCache(zeros(total_length)),
+        precomp_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
         precomp_container_cache_dims=(;
             rp_duct_coordinates, rp_centerbody_coordinates, wake_grid, AICn, AICpcp
         ),
@@ -175,7 +187,7 @@ function allocate_solve_parameter_cache(paneling_constants)
     pd = get_problem_dimensions(paneling_constants)
 
     (;
-        nr,     # number of rotors
+        nrotor,     # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
         ndn,    # number of duct nodes
@@ -235,8 +247,8 @@ function allocate_solve_parameter_cache(paneling_constants)
     # TODO: WHAT TO DO ABOUT AIRFOILS?
 
     # - Index Maps - #
-    ductwakeinterfacenodeid
-    cbwakeinterfacenodeid
+    wake_node_ids_along_casing_wake_interface
+    wake_node_ids_along_centerbody_wake_interface
     rotorwakenodeid
     wake_nodemap
     wake_endnodeidxs
@@ -245,9 +257,9 @@ function allocate_solve_parameter_cache(paneling_constants)
 
     #TODO; decide if this can be all floats or if you actually need to use the diff cache stuff.
     return (;
-        solve_parameter_cache=pat.DiffCache(zeros(total_length)),
+        solve_parameter_cache=PreallocationTools.DiffCache(zeros(total_length)),
         solve_parameter_cache_dims=(;
-            ivr=(;),
+            ivr=(; v_rb, v_rr, v_rw),
             ivw=(;),
             ivb=(;),
             linsys=(; A_bb, A_bb_LU, b_bf, A_bw, A_pw, A_br, A_pr),
@@ -263,7 +275,7 @@ function allocate_solve_container_cache(paneling_constants)
     pd = get_problem_dimensions(paneling_constants)
 
     (;
-        nr,     # number of rotors
+        nrotor,     # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
         nbn,    # number of body nodes
@@ -274,17 +286,18 @@ function allocate_solve_container_cache(paneling_constants)
     total_length = 0
 
     # Strengths
-    s = (nbn,)
+    # TODO: is this always going to be 2?, may want to add nb for nbodies to problem dims and then do +nb
+    s = (nbn + 2,)
     l = lfs(s)
     gamb = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
-    s = (nbe, 2)
+    s = (nbe, nrotor)
     l = lfs(s)
     Gamr = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
-    s = (nbe, 2)
+    s = (nbe + 1, nrotor)
     l = lfs(s)
     sigr = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
@@ -295,9 +308,15 @@ function allocate_solve_container_cache(paneling_constants)
     total_length += l
 
     # Blade Element Values
-    s = (nbe, nr)
+    s = (nbe, nrotor)
     l = lfs(s)
     beta1 = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Cz_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Ctheta_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
     Cmag_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
@@ -307,6 +326,30 @@ function allocate_solve_container_cache(paneling_constants)
     total_length += l
 
     cd = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    alpha = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    reynolds = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    mach = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    # Circulation
+    Gamma_tilde = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    H_tilde = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbe + 1, nrotor)
+    l = lfs(s)
+    deltaGamma2 = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    deltaH = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
     # Wake Velocities
@@ -319,12 +362,12 @@ function allocate_solve_container_cache(paneling_constants)
     total_length += l
 
     # State estimates
-    s = (nbe, nr)
+    s = (nbe, nrotor)
     l = lfs(s)
-    Vz_est = (; index=(total_length + 1):(total_length + l), shape=s)
+    vz_est = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
-    Vtheta_est = (; index=(total_length + 1):(total_length + l), shape=s)
+    vtheta_est = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
     s = (nwp,)
@@ -332,22 +375,37 @@ function allocate_solve_container_cache(paneling_constants)
     Cm_est = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
+    s = (nwn,)
+    l = lfs(s)
+    Cm_avg = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
     return (;
-        solve_container_cache=pat.DiffCache(zeros(total_length)),
+        solve_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
         solve_container_cache_dims=(;
             gamb,
             Gamr,
             sigr,
             gamw,
             beta1,
+            alpha,
+            reynolds,
+            mach,
+            Cz_rotor,
+            Ctheta_rotor,
             Cmag_rotor,
             cl,
             cd,
             vz_wake,
             vr_wake,
-            Vz_est,
-            Vtheta_est,
+            vz_est,
+            vtheta_est,
             Cm_est,
+            Cm_avg,
+            Gamma_tilde,
+            H_tilde,
+            deltaGamma2,
+            deltaH,
         ),
     )
 end
@@ -358,7 +416,7 @@ function allocate_post_cache(paneling_constants)
     pd = get_problem_dimensions(paneling_constants)
 
     (;
-        nr,     # number of rotors
+        nrotor, # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
         ndn,    # number of duct nodes
@@ -375,7 +433,9 @@ function allocate_post_cache(paneling_constants)
     # - initialize - #
     total_length = 0
 
-    return (; post_cache=pat.DiffCache(zeros(total_length)), post_cache_dims=(;))
+    return (;
+        post_cache=PreallocationTools.DiffCache(zeros(total_length)), post_cache_dims=(;)
+    )
 end
 
 ######################################################################
@@ -428,7 +488,7 @@ function withdraw_solve_parameter_cache(vec, dims)
     # - linear system - #
     linsys = (;
         A_bb=reshape(@view(vec[dims.linsys.A_bb.index]), dims.linsys.A_bb.shape),
-        A_bb_LU=la.LU(
+        A_bb_LU=LinearAlgebra.LU(
             reshape(@view(vec[dims.linsys.A_bb_LU.index]), dims.linsys.A_bb_LU.shape),
             [i for i in 1:dims.linsys.A_bb_LU.shape[1]],
             0,
@@ -443,9 +503,6 @@ function withdraw_solve_parameter_cache(vec, dims)
     # - blade element geometry - #
     blade_elements(;
         B=reshape(@view(vec[dims.blade_elements.B.index]), dims.blade_elements.B.shape),
-        Omega=reshape(
-            @view(vec[dims.blade_elements.Omega.index]), dims.blade_elements.Omega.shape
-        ),
         fliplift=reshape(
             @view(vec[dims.blade_elements.fliplift.index]),
             dims.blade_elements.fliplift.shape,
@@ -475,13 +532,21 @@ function withdraw_solve_parameter_cache(vec, dims)
 
     # - index maps - #
     idmaps = (;
-        ductwakeinterfacenodeid=reshape(
-            @view(vec[dims.idmaps.ductwakeinterfacenodeid.index]),
-            dims.idmaps.ductwakeinterfacenodeid.shape,
+        wake_node_ids_along_casing_wake_interface=reshape(
+            @view(vec[dims.idmaps.wake_node_ids_along_casing_wake_interface.index]),
+            dims.idmaps.wake_node_ids_along_casing_wake_interface.shape,
         ),
-        cbwakeinterfacenodeid=reshape(
-            @view(vec[dims.idmaps.cbwakeinterfacenodeid.index]),
-            dims.idmaps.cbwakeinterfacenodeid.shape,
+        wake_node_ids_along_centerbody_wake_interface=reshape(
+            @view(vec[dims.idmaps.wake_node_ids_along_centerbody_wake_interface.index]),
+            dims.idmaps.wake_node_ids_along_centerbody_wake_interface.shape,
+        ),
+        id_of_first_casing_panel_aft_of_each_rotor=reshape(
+            @view(vec[dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.index]),
+            dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.shape,
+        ),
+        id_of_first_centerbody_panel_aft_of_each_rotor=reshape(
+            @view(vec[dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.index]),
+            dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.shape,
         ),
         rotorwakenodeid=reshape(
             @view(vec[dims.idmaps.rotorwakenodeid.index]), dims.idmaps.rotorwakenodeid.shape
@@ -516,18 +581,28 @@ function withdraw_solve_container_cache(vec, dims)
         gamw=reshape(@view(vec[dims.gamw.index]), dims.gamw.shape),
 
         # Blade Element Values
-        beta1=reshape(@view(vec[dims.beta1.index]), dims.beta1.shape),
+        Cz_rotor=reshape(@view(vec[dims.Cz_rotor.index]), dims.Cz_rotor.shape),
+        Ctheta_rotor=reshape(@view(vec[dims.Ctheta_rotor.index]), dims.Ctheta_rotor.shape),
         Cmag_rotor=reshape(@view(vec[dims.Cmag_rotor.index]), dims.Cmag_rotor.shape),
         cl=reshape(@view(vec[dims.cl.index]), dims.cl.shape),
         cd=reshape(@view(vec[dims.cd.index]), dims.cd.shape),
+        beta1=reshape(@view(vec[dims.beta1.index]), dims.beta1.shape),
+        alpha=reshape(@view(vec[dims.alpha.index]), dims.alpha.shape),
+        reynolds=reshape(@view(vec[dims.reynolds.index]), dims.reynolds.shape),
+        mach=reshape(@view(vec[dims.mach.index]), dims.mach.shape),
 
         # Wake Velocities
         vz_wake=reshape(@view(vec[dims.vz_wake.index]), dims.vz_wake.shape),
         vr_wake=reshape(@view(vec[dims.vr_wake.index]), dims.vr_wake.shape),
+        Cm_avg=reshape(@view(vec[dims.Cm_avg.index]), dims.Cm_avg.shape),
+        Gamma_tilde=reshape(@view(vec[dims.Gamma_tilde.index]), dims.Gamma_tilde.shape),
+        H_tilde=reshape(@view(vec[dims.H_tilde.index]), dims.H_tilde.shape),
+        deltaGamma2=reshape(@view(vec[dims.deltaGamma2.index]), dims.deltaGamma2.shape),
+        deltaH=reshape(@view(vec[dims.deltaH.index]), dims.deltaH.shape),
 
         # State estimates
-        Vz_est=reshape(@view(vec[dims.Vz_est.index]), dims.Vz_est.shape),
-        Vtheta_est=reshape(@view(vec[dims.Vtheta_est.index]), dims.Vtheta_est.shape),
+        vz_est=reshape(@view(vec[dims.vz_est.index]), dims.vz_est.shape),
+        vtheta_est=reshape(@view(vec[dims.vtheta_est.index]), dims.vtheta_est.shape),
         Cm_est=reshape(@view(vec[dims.Cm_est.index]), dims.Cm_est.shape),
     )
 end
@@ -536,7 +611,7 @@ end
 """
 function withdraw_post_parameter_cache(vec, dims)
     idmaps = (;
-        ductidsaftofrotors=(), wakeductinterfacepanelid=(), wakehubinterfacepanelid=()
+        ductidsaftofrotors=(), wake_panel_ids_along_casing_wake_interface=(), wake_panel_ids_along_centerbody_wake_interface=()
     )
     return (;)
 end
