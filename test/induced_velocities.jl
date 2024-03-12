@@ -95,7 +95,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -114,7 +114,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -133,7 +133,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -152,7 +152,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -174,7 +174,7 @@ end
 
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -196,7 +196,7 @@ end
 
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -218,7 +218,7 @@ end
 
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -240,7 +240,7 @@ end
 
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -269,7 +269,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -288,7 +288,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -307,7 +307,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -326,7 +326,7 @@ end
 
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -348,7 +348,7 @@ end
 
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -369,7 +369,7 @@ end
 
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -390,7 +390,7 @@ end
 
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -411,7 +411,7 @@ end
 
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint; nondimrange=[0.0; 1.0]
+            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
         )
 
         # Compare with DFDC integration values
@@ -454,19 +454,19 @@ end
 
         # [vz1 vr1; vz2 vr2]
         vn12cp1 = dt.self_vortex_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1], zeros(20)
         )
 
         vn12cp2 = dt.nominal_vortex_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2], zeros(20)
         )
 
         vn23cp1 = dt.nominal_vortex_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1], zeros(20)
         )
 
         vn23cp2 = dt.nominal_vortex_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2], zeros(20)
         )
 
         @test all(VEL[1, 1, :] .== vn12cp1[1, :])
@@ -502,19 +502,19 @@ end
 
         # [vz1 vr1; vz2 vr2]
         vn12cp1 = dt.self_source_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1], zeros(20)
         )
 
         vn12cp2 = dt.nominal_source_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2]
+            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2], zeros(20)
         )
 
         vn23cp1 = dt.nominal_source_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1], zeros(20)
         )
 
         vn23cp2 = dt.nominal_source_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2]
+            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2], zeros(20)
         )
 
         @test all(VEL[1, 1, :] .== vn12cp1[1, :])
