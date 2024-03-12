@@ -84,7 +84,9 @@ function nominal_vortex_panel_integration(
         )
     end
 
+
     V, err = quadgk(fsample, 0.0, 1.0; order=3, maxevals=1e2, atol=1e-6)
+
 
     if debug
         return reshape(V, (2, 2)), err
@@ -229,7 +231,9 @@ function self_vortex_panel_integration(
         )
     end
 
+
     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
+
 
     cache_vec[1], cache_vec[2] = analytically_integrated_vortex_influence(
         controlpoint[2], influence_length
@@ -326,7 +330,9 @@ function nominal_source_panel_integration(
         )
     end
 
+
     V, err = quadgk(fsample, 0.0, 1.0; order=3, maxevals=1e2, atol=1e-6)
+
 
     if debug
         return reshape(V, (2, 2)), err
@@ -456,7 +462,9 @@ function self_source_panel_integration(
         )
     end
 
+
     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
+
 
     cache_vec[1], cache_vec[2] = analytically_integrated_source_influence(
         controlpoint[2], influence_length
