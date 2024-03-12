@@ -28,7 +28,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_vortex_panels_on_points(
-    controlpoints, nodes, nodemap, influence_lengths, strengths
+    controlpoints, nodes, nodemap, influence_lengths, strengths; cache_vec=nothing
 )
 
     # Initialize
@@ -36,7 +36,13 @@ function induced_velocities_from_vortex_panels_on_points(
     VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_vortex_panels_on_points!(
-        VEL, controlpoints, nodes, nodemap, influence_lengths, strengths
+        VEL,
+        controlpoints,
+        nodes,
+        nodemap,
+        influence_lengths,
+        strengths;
+        cache_vec=cache_vec,
     )
 
     return VEL
@@ -55,9 +61,12 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `gamma::Vector{Float}` : vortex constant circulation values
 """
 function induced_velocities_from_vortex_panels_on_points!(
-    VEL, controlpoint, node, nodemap, influence_length, strength
+    VEL, controlpoint, node, nodemap, influence_length, strength; cache_vec=nothing
 )
     # vel = zeros(eltype(VEL), 2, 2)
+    if isnothing(cache_vec)
+        cache_vec = zeros(eltype(node), 20)
+    end
 
     # loop through panels doing the influencing
     for (j, (nmap, lj, gammaj)) in
@@ -72,13 +81,13 @@ function induced_velocities_from_vortex_panels_on_points!(
                 # if so:
                 # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi)
+                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             else
                 # if not:
                 # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             end
 
@@ -111,7 +120,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_source_panels_on_points(
-    controlpoints, nodes, nodemap, influence_lengths, strengths
+    controlpoints, nodes, nodemap, influence_lengths, strengths; cache_vec=nothing
 )
 
     # Initialize
@@ -119,7 +128,13 @@ function induced_velocities_from_source_panels_on_points(
     VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_source_panels_on_points!(
-        VEL, controlpoints, nodes, nodemap, influence_lengths, strengths
+        VEL,
+        controlpoints,
+        nodes,
+        nodemap,
+        influence_lengths,
+        strengths;
+        cache_vec=cache_vec,
     )
 
     return VEL
@@ -138,9 +153,12 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `gamma::Vector{Float}` : source constant circulation values
 """
 function induced_velocities_from_source_panels_on_points!(
-    VEL, controlpoint, node, nodemap, influence_length, strength
+    VEL, controlpoint, node, nodemap, influence_length, strength; cache_vec=nothing
 )
     # vel = zeros(eltype(VEL), 2, 2)
+    if isnothing(cache_vec)
+        cache_vec = zeros(eltype(node), 20)
+    end
 
     #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow
 
@@ -157,13 +175,13 @@ function induced_velocities_from_source_panels_on_points!(
                 # if so:
                 # vel .= self_source_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_source_panel_integration(n1, n2, lj, cpi)
+                    self_source_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             else
                 # if not:
                 # vel .= nominal_source_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_source_panel_integration(n1, n2, lj, cpi)
+                    nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             end
 
@@ -183,11 +201,21 @@ end
 """
 """
 function induced_velocities_from_trailing_edge_gap_panel!(
-    VEL, controlpoint, tenode, teinfluence_length, tendotn, tencrossn, teadjnodeidxs
+    VEL,
+    controlpoint,
+    tenode,
+    teinfluence_length,
+    tendotn,
+    tencrossn,
+    teadjnodeidxs;
+    cache_vec=nothing,
 )
 
     # vvel = zeros(eltype(AICn), 2, 2)
     # svel = zeros(eltype(AICn), 2, 2)
+    if isnothing(cache_vec)
+        cache_vec = zeros(eltype(controlpoint), 20)
+    end
 
     # Loop through control points being influenced
     for (i, cpi) in enumerate(eachcol(controlpoint))
@@ -207,18 +235,18 @@ function induced_velocities_from_trailing_edge_gap_panel!(
             if isapprox(cpi, 0.5 * (n1 .+ n2))
                 # if so:
                 vvel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi)
+                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
                 svel = StaticArrays.SMatrix{2,2}(
-                    self_source_panel_integration(n1, n2, lj, cpi)
+                    self_source_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             else
                 # if not:
                 vvel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi)
+                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
                 svel = StaticArrays.SMatrix{2,2}(
-                    nominal_source_panel_integration(n1, n2, lj, cpi)
+                    nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
                 )
             end
 
@@ -231,146 +259,3 @@ function induced_velocities_from_trailing_edge_gap_panel!(
 
     return VEL
 end
-
-######################################################################
-#                                                                    #
-#    Vector of total (sum of) velocity induced by panels on points   #
-#                                                                    #
-######################################################################
-
-#TODO: The rest of these need to be updated still
-
-##---------------------------------#
-##     Vortex Panels on Points     #
-##---------------------------------#
-
-#"""
-#out of place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric vortex rings but only returning sum of velocities on each control point
-
-#Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
-#Note: there is probably a more efficient way to achieve this functionality.
-
-## Arguments:
-#- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-#- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-#- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
-#- `gamma::Vector{Float}` : vortex constant circulation values
-
-## Returns:
-#- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to vortex rings
-#"""
-#function total_velocities_induced_by_vortex_panels(
-#    controlpoints::AbstractMatrix{T1},
-#    nodes::AbstractMatrix{T2},
-#    influence_lengths::AbstractVector{T3},
-#    strengthal_velocities_induced_by_vortex_panelss::AbstractArray{T4},
-#) where {T1,T2,T3,T4}
-
-#    # Initialize
-#    T = promote_type(T1, T2, T3, T4)
-#    V = zeros(T, size(controlpoints, 1), 2)
-
-#    total_velocities_induced_by_vortex_panels!(
-#        V, controlpoints, nodes, influence_lengths, strengths
-#    )
-
-#    return V
-#end
-
-#"""
-#In place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric vortex rings but only returning sum of velocities on each control point
-
-#Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
-#Note: there is probably a more efficient way to achieve this functionality.
-
-## Arguments:
-#- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to vortex rings
-#- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-#- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-#- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
-#- `gamma::Vector{Float}` : vortex constant circulation values
-#"""
-#function total_velocities_induced_by_vortex_panels!(
-#    V, controlpoints, nodes, influence_lengths, strengths
-#)
-
-#    # Loop through control points
-#    for (i, (cpi, vel)) in enumerate(zip(eachcol(controlpoints), eachcol(V)))
-#        # loop through panels doing the influencing
-#        for (j, (gamma, nj, lj)) in
-#            enumerate(zip(strengths, eachcol(nodes), influence_lengths))
-
-#            # get unit induced velocity from the panel onto the control point
-#            vortex_induced_velocity!(vel, cpi, nj, lj, gamma)
-#        end
-#    end
-
-#    return nothing
-#end
-
-##---------------------------------#
-##     Source Panels on Points     #
-##---------------------------------#
-
-#"""
-#out of place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric source rings but only returning sum of velocities on each control point
-
-#Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
-#Note: there is probably a more efficient way to achieve this functionality.
-
-## Arguments:
-#- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-#- `node::Matrix{Float}` : [z r] coordinates of source rings
-#- `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
-#- `sigma::Vector{Float}` : source constant circulation values
-
-## Returns:
-#- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to source rings
-#"""
-#function total_velocities_induced_by_source_panels(
-#    controlpoints::AbstractMatrix{T1},
-#    nodes::AbstractArray{T2},
-#    influence_lengths::AbstractVector{T3},
-#    strengths::AbstractArray{T4},
-#) where {T1,T2,T3,T4}
-
-#    # Initialize
-#    T = promote_type(T1, T2, T3, T4)
-#    V = zeros(T, size(controlpoints, 1), 2)
-
-#    total_velocities_induced_by_source_panels!(
-#        V, controlpoints, nodes, influence_lengths, strengths
-#    )
-
-#    return V
-#end
-
-#"""
-#in place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric source rings but only returning sum of velocities on each control point
-
-#Used in calculating velocities on body surfaces in preparation to obtain tangential components and eventually pressure distributions.
-#Note: there is probably a more efficient way to achieve this functionality.
-
-## Arguments:
-#- `V::Array{Float}` : N-controlpoint x [vz, vr] array of summed induced velocity components due to source rings
-#- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-#- `node::Matrix{Float}` : [z r] coordinates of source rings
-#- `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
-#- `sigma::Vector{Float}` : source constant circulation values
-#"""
-#function total_velocities_induced_by_source_panels!(
-#    V, controlpoints, nodes, influence_length, strengths
-#)
-#    for (i, (cpi, vel)) in enumerate(zip(eachcol(controlpoints), eachcol(V)))
-#        # loop through panels doing the influencing
-#        for (j, (sigma, nj, lj)) in
-#            enumerate(zip(strengths, eachcol(nodes), influence_length))
-
-#            # get unit induced velocity from the panel onto the control point
-#            source_induced_velocity!(vel, cpi, nj, lj, sigma)
-#        end
-#    end
-
-#    return nothing
-#end
-
