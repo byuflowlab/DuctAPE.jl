@@ -376,6 +376,7 @@ function estimate_states!(
         solve_containers.cd,
     )
 
+
     # - Get Average Wake Velocities - #
     # currently has 5 allocations
     average_wake_velocities!(
@@ -384,6 +385,7 @@ function estimate_states!(
         idmaps.wake_nodemap,
         idmaps.wake_endnodeidxs,
     )
+
 
     # - Calculate Wake Panel Strengths - #
     # in-place solve for gamw,
@@ -404,6 +406,9 @@ function estimate_states!(
         idmaps.wake_node_ids_along_centerbody_wake_interface;
     )
 
+    printval(solve_containers.gamb, "before body strengths")
+    #TODO!!! The body strengths solved here are not the same in the solve vs post process.  the problem must be in one of these inputs.
+
     # - Solve Linear System for Body Strengths - #
     # currently has 18 allocations
     calculate_body_vortex_strengths!(
@@ -418,6 +423,8 @@ function estimate_states!(
         linsys.A_pr,
         linsys.A_bb,
     )
+
+    printval(solve_containers.gamb, "after body strengths")
 
     # - Calcuate vz_est and vtheta_est- #
     # TODO: test this function
@@ -436,6 +443,8 @@ function estimate_states!(
         blade_elements.rotor_panel_centers,
     )
 
+    printval(solve_containers.gamb, "after induced vels")
+
     # - Calculate Velocities on Wake Panels - #
     # TODO: test this function
     # currently has 23 allocations
@@ -447,8 +456,10 @@ function estimate_states!(
         solve_containers.sigr,
         @view(solve_containers.gamb[1:(idmaps.body_totnodes)]),
         ivw,
-        operating_point.Vinf,
+        operating_point.Vinf[1],
     )
+
+    printval(solve_containers.gamb, "after wake vels")
 
     # return estimated states
     return vz_est, vtheta_est, Cm_est
