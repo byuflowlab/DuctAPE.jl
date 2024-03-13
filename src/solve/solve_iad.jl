@@ -218,11 +218,37 @@ function solve_iad(inputs, const_cache)
         )
     end
 
-    result = NLsolve.nlsolve(
+    # - Wrap Jacobian - #
+    # configure jacobian
+    jconfig = ForwardDiff.JacobianConfig(
         rwrap!,
+        inputs, # object of size of residual vector
+        inputs, # object of size of input vector
+        ForwardDiff.Chunk{12}(), #TODO: set the chunk size as an option and make sure the solver cache chunk and this chunk size match. PreallocationTools chooses poorly if not given a chunk size
+    )
+    # get allocated array for jacobian
+    J = DiffResults.JacobianResult(
+        inputs, # object of size of residual vector
+        inputs, # object of size of input vector
+       )
+    # store everything in a cache that can be accessed inside the solver
+    jcache = (; rwrap!, J, config=jconfig, r=zeros(size(inputs)))
+
+    # wrap the jacobian
+    function jwrap!(J, state_variables)
+        ForwardDiff.jacobian!(
+            jcache.J, jcache.rwrap!, jcache.r, state_variables, jcache.config
+        )
+        J .= DiffResults.jacobian(jcache.J)
+        return J
+    end
+
+    df = NLsolve.OnceDifferentiable(rwrap!, jwrap!, inputs, similar(inputs))
+    result = NLsolve.nlsolve(
+        df,
         inputs; # initial states guess
         method=nlsolve_method,
-        autodiff=nlsolve_autodiff,
+        # autodiff=nlsolve_autodiff,
         linesearch=nlsolve_linesearch_method(nlsolve_linesearch_kwargs...),
         linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
         ftol=nlsolve_ftol,
@@ -275,6 +301,11 @@ function residual!(r, state_variables, parameters)
     # TODO: test this function
     # Note: there are 32 allocations for this function, can that be reduced to zero?
     reset_containers!(solve_containers) #note: also zeros out state estimates
+
+    println(
+        "type of gamb in residual: ",
+        eltype(solve_containers.gamb) != Float64 ? "Dual" : "Float",
+    )
 
     # - Estimate New States - #
     # TODO: test this function
@@ -360,7 +391,7 @@ function estimate_states!(
     # - Calculate Blade Element Circulation - #
     # currently has 9 allocations
     calculate_rotor_circulation_strengths!(
-        @view(solve_containers.Gamr[:, :]),
+        solve_containers.Gamr,
         solve_containers.Cmag_rotor,
         blade_elements.chords,
         solve_containers.cl,
@@ -369,28 +400,26 @@ function estimate_states!(
     # - Calculate Rotor Panel Strengths - #
     # currently has 122 allocations
     calculate_rotor_source_strengths!(
-        @view(solve_containers.sigr[:, :]),
+        solve_containers.sigr,
         solve_containers.Cmag_rotor,
         blade_elements.chords,
         blade_elements.B,
         solve_containers.cd,
     )
 
-
     # - Get Average Wake Velocities - #
     # currently has 5 allocations
     average_wake_velocities!(
-        @view(solve_containers.Cm_avg[:]),
+        solve_containers.Cm_avg,
         Cm_wake, # state var
         idmaps.wake_nodemap,
         idmaps.wake_endnodeidxs,
     )
 
-
     # - Calculate Wake Panel Strengths - #
     # in-place solve for gamw,
     # currently has 27 allocations
-    calculate_wake_vortex_strengths!(
+    dt.calculate_wake_vortex_strengths!(
         solve_containers.gamw,
         solve_containers.Gamma_tilde,
         solve_containers.H_tilde,
@@ -401,17 +430,17 @@ function estimate_states!(
         blade_elements.B,
         operating_point.Omega,
         wakeK,
-        idmaps.wake_panel_sheet_be_map,
+        idmaps.wake_node_sheet_be_map,
         idmaps.wake_node_ids_along_casing_wake_interface,
         idmaps.wake_node_ids_along_centerbody_wake_interface;
     )
 
-    printval(solve_containers.gamb, "before body strengths")
-    #TODO!!! The body strengths solved here are not the same in the solve vs post process.  the problem must be in one of these inputs.
-
     # - Solve Linear System for Body Strengths - #
     # currently has 18 allocations
-    calculate_body_vortex_strengths!(
+    # TODO: BUG: doesn't match at all to old outputs.  last entry is super large too, should be close to zero
+    # TODO: must be a bug in the linsys sizing or initialization.
+    # the gamw and sigr match pretty well (there's likely an indexing difference in gamw, I think the old one was wrong)
+    dt.calculate_body_vortex_strengths!(
         solve_containers.gamb,
         linsys.A_bb_LU,
         linsys.b_bf,
@@ -422,9 +451,8 @@ function estimate_states!(
         linsys.A_br,
         linsys.A_pr,
         linsys.A_bb,
+        solve_containers.rhs,
     )
-
-    printval(solve_containers.gamb, "after body strengths")
 
     # - Calcuate vz_est and vtheta_est- #
     # TODO: test this function
@@ -443,8 +471,6 @@ function estimate_states!(
         blade_elements.rotor_panel_centers,
     )
 
-    printval(solve_containers.gamb, "after induced vels")
-
     # - Calculate Velocities on Wake Panels - #
     # TODO: test this function
     # currently has 23 allocations
@@ -458,8 +484,6 @@ function estimate_states!(
         ivw,
         operating_point.Vinf[1],
     )
-
-    printval(solve_containers.gamb, "after wake vels")
 
     # return estimated states
     return vz_est, vtheta_est, Cm_est

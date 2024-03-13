@@ -624,6 +624,8 @@ function calculate_enthalpy_jumps!(H_tilde, Gamr, Omega, num_blades)
 
     # number of blade elements (or radial positions) and rotors
     nr, nrotor = size(Gamr)
+    # reset H_tilde
+    H_tilde .= 0.0
 
     for ir in 1:nr
         for irotor in 1:nrotor
@@ -662,6 +664,8 @@ function calculate_net_circulation!(Gamma_tilde, Gamr, num_blades)
 
     # number of blade elements (or radial positions) and rotors
     nr, nrotor = size(Gamr)
+    # reset Gamma_tilde
+    Gamma_tilde .= 0.0
 
     for ir in 1:nr
         for irotor in 1:nrotor

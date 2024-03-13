@@ -165,6 +165,7 @@ function induced_velocities_from_source_panels_on_points!(
     # loop through panels doing the influencing
     for (j, (nmap, lj, sigmaj)) in
         enumerate(zip(eachcol(nodemap), influence_length, eachcol(strength)))
+
         # Loop through control points being influenced
         for (i, cpi) in enumerate(eachcol(controlpoint))
             n1 = view(node, :, nmap[1])

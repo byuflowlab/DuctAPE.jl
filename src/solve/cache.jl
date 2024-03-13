@@ -291,6 +291,8 @@ function allocate_solve_container_cache(paneling_constants)
     l = lfs(s)
     gamb = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
+    rhs = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
 
     s = (nbe, nrotor)
     l = lfs(s)
@@ -384,6 +386,7 @@ function allocate_solve_container_cache(paneling_constants)
         solve_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
         solve_container_cache_dims=(;
             gamb,
+            rhs,
             Gamr,
             sigr,
             gamw,
@@ -576,6 +579,7 @@ function withdraw_solve_container_cache(vec, dims)
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),
+        rhs=reshape(@view(vec[dims.rhs.index]), dims.rhs.shape),
         Gamr=reshape(@view(vec[dims.Gamr.index]), dims.Gamr.shape),
         sigr=reshape(@view(vec[dims.sigr.index]), dims.sigr.shape),
         gamw=reshape(@view(vec[dims.gamw.index]), dims.gamw.shape),

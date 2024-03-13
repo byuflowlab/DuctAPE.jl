@@ -303,7 +303,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        ones(TF, 2, body_vortex_panels.totpanel[1]),
+        ones(TF, 2, body_vortex_panels.totpanel),
     )
 
     # Add influence of body trailing edge gap "panels"
@@ -325,7 +325,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, rotor_source_panels.totnode[1]),
+        ones(TF, 2, rotor_source_panels.totnode),
     )
 
     # - Wake on Bodies - #
@@ -336,7 +336,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, wake_vortex_panels.totpanel[1]),
+        ones(TF, 2, wake_vortex_panels.totpanel),
     )
 
     # wake "TE panels" to body panels
@@ -358,7 +358,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, rotor_source_panels.totnode[1]),
+        ones(TF, 2, rotor_source_panels.totnode),
     )
 
     # - Bodies on Rotors - #
@@ -369,7 +369,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        ones(TF, 2, body_vortex_panels.totpanel[1]),
+        ones(TF, 2, body_vortex_panels.totpanel),
     )
 
     # add influence from body trailing edge gap "panels"
@@ -392,7 +392,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, wake_vortex_panels.totpanel[1]),
+        ones(TF, 2, wake_vortex_panels.totpanel),
     )
 
     # add influence from wake "trailing edge panels"
@@ -558,13 +558,15 @@ function initialize_linear_system(
     ##### ----- Rotor AIC ----- #####
     A_br = calculate_normal_velocity(v_br, normal)
 
-    A_pr = induced_velocities_from_source_panels_on_points(
+    v_pr = induced_velocities_from_source_panels_on_points(
         itcontrolpoint,
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(eltype(b_bf),size(v_br,2))
+        ones(eltype(b_bf), 2, rotor_source_panels.totnode),
     )
+
+    A_pr = calculate_normal_velocity(v_pr, normal)
 
     ##### ----- Wake AIC ----- #####
     # - wake panels to body panels - #
@@ -584,13 +586,15 @@ function initialize_linear_system(
     )
 
     # - wake panels on internal psuedo control point influence coefficients - #
-    A_pw = vortex_aic_boundary_on_field(
+    v_pw = vortex_aic_boundary_on_field(
         itcontrolpoint,
         itnormal,
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
     )
+
+    A_pw = calculate_normal_velocity(v_pw, normal)
 
     # add contributions from wake "trailing edge panels" on pseudo control point
     add_te_gap_aic!(
@@ -949,23 +953,23 @@ function set_index_maps(
     =#
     # indices of wake nodes interfacing with the centerbody wall
     if iszero(dte_minus_cbte) || dte_minus_cbte < 0
-        cb_te_id = sum(npanels[1:(end - 1)]) + 1
+        index_of_cb_te_along_wake_sheet = sum(npanels[1:(end - 1)]) + 1
     else
-        cb_te_id = sum(npanels[1:(end - 2)]) + 1
+        index_of_cb_te_along_wake_sheet = sum(npanels[1:(end - 2)]) + 1
     end
-    wake_node_ids_along_centerbody_wake_interface = collect(range(1, cb_te_id; step=1))
+    wake_node_ids_along_centerbody_wake_interface = collect(range(1, index_of_cb_te_along_wake_sheet; step=1))
 
     # indices of wake nodes interfacing with the casing wall
     if iszero(dte_minus_cbte) || dte_minus_cbte > 0
-        duct_te_id = sum(npanels[1:(end - 1)]) + 1
+        index_of_duct_te_along_wake_sheet = sum(npanels[1:(end - 1)]) + 1
+        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - (npanels[end] + 1)
     else
-        duct_te_id = sum(npanels[1:(end - 2)]) + 1
+        index_of_duct_te_along_wake_sheet = sum(npanels[1:(end - 2)]) + 1
+        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - (sum(npanels[end-1:end]) + 1)
     end
 
-    ductteinwake = (sum(npanels) + 1) * nwake_sheets - (npanels[end] + 1)
-
     wake_node_ids_along_casing_wake_interface = collect(
-        range(ductteinwake - duct_te_id, ductteinwake; step=1)
+        range(index_of_wake_node_at_duct_te - index_of_duct_te_along_wake_sheet, index_of_wake_node_at_duct_te; step=1)
     )
 
     # indices of wake panels interfacing with centerbody wall
@@ -1040,7 +1044,7 @@ function set_index_maps(
         id_of_first_centerbody_panel_aft_of_each_rotor = [ncenterbody_inlet+1; ncenterbody_inlet .+ [npanels[i] for i in 1:length(npanels)-3]]
     end
 
-    # - Map of wake panel index to the wake sheet on which it resides and the last rotor ahead of the node - #
+    # - Map of wake panel index to the wake sheet on which it resides and the last rotor ahead of the panel - #
     wake_panel_sheet_be_map = ones(Int, nwp, 2)
     for i in 1:nwake_sheets
         wake_panel_sheet_be_map[(1 + (i - 1) * nwsp):(i * nwsp), 1] .= i
@@ -1051,10 +1055,23 @@ function set_index_maps(
         end
     end
 
+    # - Map of wake node index to the wake sheet on which it resides and the last rotor ahead of the node - #
+    nwsn = nwsp+1
+    wake_node_sheet_be_map = ones(Int, wenids[end], 2)
+    for i in 1:nwake_sheets
+        wake_node_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), 1] .= i
+        for (ir, r) in enumerate(
+            eachrow(@view(wake_node_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), :]))
+        )
+            r[2] = min(nrotor, searchsortedlast(rotor_indices_in_wake, ir))
+        end
+    end
+
     return (;
         wake_nodemap,
         wake_endnodeidxs,
         wake_panel_sheet_be_map,
+        wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
         wake_node_ids_along_centerbody_wake_interface,
         wake_panel_ids_along_casing_wake_interface,
@@ -1400,8 +1417,7 @@ function initialize_velocities(
     vrind = zeros(TF, nbe_col)
 
     # Solve Linear System for gamb
-    gamb = copy(linsys.b_bf)
-    ImplicitAD.implicit_linear(linsys.A_bb, gamb; lsolve=ldiv!, Af=linsys.A_bb_LU)
+    gamb = ImplicitAD.implicit_linear(linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU)
 
     # - Get body-induced velocities on rotors - #
     vzb = zeros(TF, nbe)

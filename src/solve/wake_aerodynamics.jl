@@ -268,14 +268,13 @@ function calculate_wake_vortex_strengths!(
     )
 
         # calculate the wake vortex strength
-        if Cm < eps()
+        if abs(Cm) < eps()
             # avoid division by zero
             gw[1] = 0.0
         else
 
-            # wake strength density taken from rotor to next rotor constant along streamlines
-            gw[1] =
-                -(K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) / Cm_avg[iw]
+            # calculate wake node strength
+            gw[1] = -(K * deltaGamma2[sheetid, rotorid] + deltaH[sheetid, rotorid]) / Cm
         end
     end
 
@@ -286,8 +285,13 @@ function calculate_wake_vortex_strengths!(
         gamw[wake_node_ids_along_casing_wake_interface] =
             gamw[wake_node_ids_along_casing_wake_interface[end] + 1] * (
                 1.0 .-
-                (wake_node_ids_along_casing_wake_interface[end] .- wake_node_ids_along_casing_wake_interface) /
-                (wake_node_ids_along_casing_wake_interface[end] - wake_node_ids_along_casing_wake_interface[1] + 1)
+                (
+                    wake_node_ids_along_casing_wake_interface[end] .-
+                    wake_node_ids_along_casing_wake_interface
+                ) / (
+                    wake_node_ids_along_casing_wake_interface[end] -
+                    wake_node_ids_along_casing_wake_interface[1] + 1
+                )
             )
     end
     if !isnothing(wake_node_ids_along_centerbody_wake_interface)
@@ -296,8 +300,10 @@ function calculate_wake_vortex_strengths!(
         gamw[wake_node_ids_along_centerbody_wake_interface] =
             gamw[wake_node_ids_along_centerbody_wake_interface[end] + 1] * (
                 1.0 .-
-                (reverse(wake_node_ids_along_centerbody_wake_interface) .- wake_node_ids_along_centerbody_wake_interface[1]) /
-                length(wake_node_ids_along_centerbody_wake_interface)
+                (
+                    reverse(wake_node_ids_along_centerbody_wake_interface) .-
+                    wake_node_ids_along_centerbody_wake_interface[1]
+                ) / length(wake_node_ids_along_centerbody_wake_interface)
             )
     end
 

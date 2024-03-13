@@ -21,7 +21,7 @@ using PreallocationTools
 using NLsolve #for newton solver
 using LineSearches
 using ImplicitAD
-# using ForwardDiff
+using ForwardDiff
 
 using Printf # used when verbose option is selected
 
@@ -104,16 +104,5 @@ include("preliminary_design/1DModel_B.jl")
 include("precomputation/initialize_rotor_only.jl")
 include("solve/solve_rotor_only.jl")
 include("postprocess/post_process_rotor.jl")
-
-# # -- Debugging -- ##
-# include("initialize_manual.jl")
-function printval(val, str)
-    if eltype(val) != Float64 && eltype(val) != Int64
-        println(str, ": ", (p -> p.value).(val), " (Dual)")
-    else
-        println(str, ": ", val)
-    end
-    return nothing
-end
 
 end
