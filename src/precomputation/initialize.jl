@@ -1006,7 +1006,7 @@ function precomputed_inputs(
         # body_system_matrices, # includes the various LHS and RHS matrics and vectors for solving the linear system for the body
         # - Influence Matrices - #
         A_bb=LHS, # body to body LU decomposed
-        # A_bb=prelhs, # body to body no factorization
+        lhsraw = prelhs, # body to body no factorization
         AICt,
         b_bf=RHS, # freestream contribution to body boundary conditions
         RHS = similar(RHS).=0.0,
