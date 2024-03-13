@@ -418,7 +418,7 @@ function estimate_states!(
     # - Calculate Wake Panel Strengths - #
     # in-place solve for gamw,
     # currently has 27 allocations
-    dt.calculate_wake_vortex_strengths!(
+    calculate_wake_vortex_strengths!(
         solve_containers.gamw,
         solve_containers.Gamma_tilde,
         solve_containers.H_tilde,
@@ -439,7 +439,7 @@ function estimate_states!(
     # TODO: BUG: doesn't match at all to old outputs.  last entry is super large too, should be close to zero
     # TODO: must be a bug in the linsys sizing or initialization.
     # the gamw and sigr match pretty well (there's likely an indexing difference in gamw, I think the old one was wrong)
-    dt.calculate_body_vortex_strengths!(
+    calculate_body_vortex_strengths!(
         solve_containers.gamb,
         linsys.A_bb_LU,
         linsys.b_bf,

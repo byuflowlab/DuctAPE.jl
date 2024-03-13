@@ -80,7 +80,7 @@ function generate_panels(
     for c in coordinates
         npnid += count(x -> abs(x) <= eps(), c[2, :])
     end
-    prescribednodeidxs = ones(Int, npnid)
+    prescribednodeidxs = zeros(Int, npnid)
 
     panels = (;
         controlpoint,
@@ -252,7 +252,7 @@ function generate_panels!(
 
     # - Prescribed Nodes - #
     # Save the node index for nodes that are on the axis and need to be prescribed.
-    prescribednodeidxs = findall(x -> abs(x) <= eps(), node[2, :])
+    prescribednodeidxs[:] = findall(x -> abs(x) <= eps(), node[2, :])
 
     return panels
 end
