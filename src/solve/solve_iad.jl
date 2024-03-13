@@ -301,11 +301,6 @@ function residual!(r, state_variables, parameters)
     # Note: there are 32 allocations for this function, can that be reduced to zero?
     reset_containers!(solve_containers) #note: also zeros out state estimates
 
-    println(
-        "type of gamb in residual: ",
-        eltype(solve_containers.gamb) != Float64 ? "Dual" : "Float",
-    )
-
     # - Estimate New States - #
     # TODO: test this function
     estimate_states!(
