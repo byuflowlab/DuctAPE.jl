@@ -154,17 +154,17 @@ end
     nlsolve_method::TY = :newton
     nlsolve_autodiff::TY = :forward
     nlsolve_ftol::TF = 1e-8 #1e-8 is nlsolve default
-    nlsolve_iteration_limit::TI = 200 #1000 is nlsolve default
+    nlsolve_iteration_limit::TI = 50 #1000 is nlsolve default
     nlsolve_show_trace::TB = false
     # line search parameters
     nlsolve_linesearch_method::Tls = LineSearches.MoreThuente
     nlsolve_linesearch_kwargs::Tlsk = (;)
     nlsolve_converged::AbstractVector{TB} = [false]
-    tuple_name::TS = "outs"
     # - Post-processing Options - #
     write_outputs::TB = false
     outfile::TS = "outputs.jl"
     checkoutfileexists::TB = false
+    output_tuple_name::TS = "outs"
 end
 
 """

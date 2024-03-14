@@ -19,7 +19,7 @@ function post_process_iad!(
     write_outputs=false,
     outfile="outputs.jl",
     checkoutfileexists=false,
-    tuple_name="outs",
+    output_tuple_name="outs",
 )
 
     ### --- SETUP --- ###
@@ -390,7 +390,7 @@ function post_process_iad!(
 
     if write_outputs
         write_data(
-            outs, outfile; tuple_name=tuple_name, checkoutfileexists=checkoutfileexists
+            outs, outfile; output_tuple_name=output_tuple_name, checkoutfileexists=checkoutfileexists
         )
     end
 

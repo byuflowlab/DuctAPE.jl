@@ -5,83 +5,24 @@
 ######################################################################
 
 """
-TODO: move to analysis.jl
 """
 function analyze(
-    propulsor;
+    propulsor::Propulsor,
+    ivr,
+    ivw,
+    ivb,
+    linsys,
+    blade_elements,
+    wakeK,
+    idmaps,
+    panels,
+    problem_dimensions;
     options=set_options(),
     # precomp_container_caching=nothing,
     # solve_parameter_caching=nothing,
     solve_container_caching=nothing,
     # post_caching=nothing
 )
-
-    # if isnothing(precomp_container_caching)
-    #     precomp_container_caching = generate_precomp_container_cache(
-    #         propulsor.paneling_constants
-    #     )
-    # end
-    # if isnothing(solve_parameter_caching)
-    #     solve_parameter_caching = generate_solve_parameter_cache(
-    #         propulsor.paneling_constants
-    #     )
-    # end
-    # if isnothing(post_caching)
-    #     post_caching = generate_post_cache(
-    #         propulsor.paneling_constants
-    #     )
-    # end
-    if isnothing(solve_container_caching)
-        solve_container_caching = allocate_solve_container_cache(
-            propulsor.paneling_constants
-        )
-    end
-
-    # TODO: write generate_caches function (need to go through and figure out what all goes in the cache)
-    # - Pull out the Caches - #
-    # (; precomp_container_cache, precomp_container_cache_dims) = precomp_container_caching
-    # (; post_cache, post_cache_dims) = post_caching
-
-    # # - Reshape precomp_container_cache - #
-    # # TODO: get a different type to dispatch on here
-    # precomp_container_cache_vec = @views pat.get_tmp(precomp_container_cache, TF(1.0))
-    # # TODO: test this function
-    # precomp_containers = withdraw_precomp_container_cache(
-    #     precomp_container_cache, precomp_container_cache_dims
-    # )
-
-    # # - Reshape solve_parameter_cache - #
-    # solve_parameter_cache_vec = @views pat.get_tmp(solve_parameter_cache, inputs)
-    # # TODO: test this function
-    # solve_parameter_containers = withdraw_solve_parameter_cache(
-    #     solve_parameter_cache, solve_parameter_cache_dims
-    # )
-
-    # - Do precomputations - #
-    # out-of-place version currently has 22,292,181 allocations.
-    ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels, problem_dimensions = precompute_parameters_iad(
-        propulsor;
-        wake_nlsolve_ftol=options.wake_nlsolve_ftol,
-        wake_max_iter=options.wake_max_iter,
-        max_wake_relax_iter=options.max_wake_relax_iter,
-        wake_relax_tol=options.wake_relax_tol,
-        autoshiftduct=options.autoshiftduct,
-        itcpshift=options.itcpshift,
-        axistol=options.axistol,
-        tegaptol=options.tegaptol,
-        finterp=options.finterp,
-        silence_warnings=options.silence_warnings,
-        verbose=options.verbose,
-    )
-
-    if iszero(linsys.lu_decomp_flag[1])
-        if !silence_warnings
-            @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
-            #TODO: write this function that returns the same as outs below, but all zeros
-            return zero_outputs(), false
-        end
-    end
-
     # - Initialize Aero - #
     # TODO; add some sort of unit test for this function
     # note: if using a cache for intermediate calcs here, doesn't need to be fancy.
@@ -98,6 +39,13 @@ function analyze(
 
     # - Vectorize Inputs - #
     inputs, state_dims = vectorize_inputs(vz_rotor, vtheta_rotor, Cm_wake)
+
+    # - Set up Solve Container Cache - #
+    if isnothing(solve_container_caching)
+        solve_container_caching = allocate_solve_container_cache(
+            propulsor.paneling_constants
+        )
+    end
 
     # - combine cache and constants - #
     const_cache = (;
@@ -150,13 +98,103 @@ function analyze(
         write_outputs=options.write_outputs,
         outfile=options.outfile,
         checkoutfileexists=options.checkoutfileexists,
-        tuple_name=options.tuple_name,
+        output_tuple_name=options.output_tuple_name,
     )
 
-    return outs, true
-    # return velocity_states
+    return outs, (; ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels), true
 end
 
+"""
+TODO: move to analysis.jl
+"""
+function analyze(
+    propulsor::Propulsor;
+    options=set_options(),
+    # precomp_container_caching=nothing,
+    # solve_parameter_caching=nothing,
+    solve_container_caching=nothing,
+    # post_caching=nothing
+)
+
+    # if isnothing(precomp_container_caching)
+    #     precomp_container_caching = generate_precomp_container_cache(
+    #         propulsor.paneling_constants
+    #     )
+    # end
+    # if isnothing(solve_parameter_caching)
+    #     solve_parameter_caching = generate_solve_parameter_cache(
+    #         propulsor.paneling_constants
+    #     )
+    # end
+    # if isnothing(post_caching)
+    #     post_caching = generate_post_cache(
+    #         propulsor.paneling_constants
+    #     )
+    # end
+
+    # TODO: write generate_caches function (need to go through and figure out what all goes in the cache)
+    # - Pull out the Caches - #
+    # (; precomp_container_cache, precomp_container_cache_dims) = precomp_container_caching
+    # (; post_cache, post_cache_dims) = post_caching
+
+    # # - Reshape precomp_container_cache - #
+    # # TODO: get a different type to dispatch on here
+    # precomp_container_cache_vec = @views pat.get_tmp(precomp_container_cache, TF(1.0))
+    # # TODO: test this function
+    # precomp_containers = withdraw_precomp_container_cache(
+    #     precomp_container_cache, precomp_container_cache_dims
+    # )
+
+    # # - Reshape solve_parameter_cache - #
+    # solve_parameter_cache_vec = @views pat.get_tmp(solve_parameter_cache, inputs)
+    # # TODO: test this function
+    # solve_parameter_containers = withdraw_solve_parameter_cache(
+    #     solve_parameter_cache, solve_parameter_cache_dims
+    # )
+
+    # - Do precomputations - #
+    # out-of-place version currently has 22,292,181 allocations.
+    ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels, problem_dimensions = precompute_parameters_iad(
+        propulsor;
+        wake_nlsolve_ftol=options.wake_nlsolve_ftol,
+        wake_max_iter=options.wake_max_iter,
+        max_wake_relax_iter=options.max_wake_relax_iter,
+        wake_relax_tol=options.wake_relax_tol,
+        autoshiftduct=options.autoshiftduct,
+        itcpshift=options.itcpshift,
+        axistol=options.axistol,
+        tegaptol=options.tegaptol,
+        finterp=options.finterp,
+        silence_warnings=options.silence_warnings,
+        verbose=options.verbose,
+    )
+
+    if iszero(linsys.lu_decomp_flag[1])
+        if !silence_warnings
+            @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
+            #TODO: write this function that returns the same as outs below, but all zeros
+            return zero_outputs(), false
+        end
+    end
+
+    return analyse(
+        propulsor,
+        ivr,
+        ivw,
+        ivb,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+        panels,
+        problem_dimensions;
+        options=options,
+        # precomp_container_caching=nothing,
+        # solve_parameter_caching=nothing,
+        solve_container_caching=solve_container_caching,
+        # post_caching=nothing
+    )
+end
 #---------------------------------#
 #              SOLVE              #
 #---------------------------------#
@@ -229,7 +267,7 @@ function solve_iad(inputs, const_cache)
     J = DiffResults.JacobianResult(
         inputs, # object of size of residual vector
         inputs, # object of size of input vector
-       )
+    )
     # store everything in a cache that can be accessed inside the solver
     jcache = (; rwrap!, J, config=jconfig, r=zeros(size(inputs)))
 
@@ -328,6 +366,11 @@ function residual!(r, state_variables, parameters)
     r[state_dims.vz_rotor.index] .= reshape(solve_containers.vz_est, :)
     r[state_dims.vtheta_rotor.index] .= reshape(solve_containers.vtheta_est, :)
     r[state_dims.Cm_wake.index] .= solve_containers.Cm_est
+
+    ##NOTE: can't use a smaller residual with NLsolve
+    #r[1] = solve_containers.vz_est[findmax(abs.(solve_containers.vz_est))[2]]
+    #r[2] = solve_containers.vtheta_est[findmax(abs.(solve_containers.vtheta_est))[2]]
+    #r[3] = solve_containers.Cm_est[findmax(abs.(solve_containers.Cm_est))[2]]
 
     return r
 end
