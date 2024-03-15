@@ -434,7 +434,7 @@ function assemble_lhs_matrix!(
     LHS[(npanel[1] + 1):totpanel, end] .+= dummyval
 
     # - Place internal duct pseudo control point row - #
-    LHS[totpanel + 1, 1:totnode] .+= AICpcp[1, :]
+    LHS[totpanel + 1, 1:totnode] .+= @view(AICpcp[1, :])
 
     # - Place Kutta condition Row - #
     LHS[(totpanel + 2), 1] = LHS[totpanel + 2, nnode[1]] = 1.0
@@ -448,7 +448,7 @@ function assemble_lhs_matrix!(
         LHS[totpanel + 4, prescribednodeidxs[2]] = 1.0
     else
         # internal pseudo control point
-        LHS[totpanel + 4, 1:totnode] .= AICpcp[2, :]
+        LHS[totpanel + 4, 1:totnode] .= @view(AICpcp[2, :])
     end
 
     return LHS
@@ -520,20 +520,20 @@ end
 
 """
 """
-function calculate_normal_velocity(velocity_vector, normal)
-    AIC = zeros(eltype(velocity_vector), size(velocity_vector, 1), size(velocity_vector, 2))
+function calculate_normal_velocity(velocity_arrray, normal)
+    AIC = zeros(eltype(velocity_arrray), size(velocity_arrray, 1), size(velocity_arrray, 2))
 
-    calculate_normal_velocity!(AIC, velocity_vector, normal)
+    calculate_normal_velocity!(AIC, velocity_arrray, normal)
 
     return AIC
 end
 
 """
 """
-function calculate_normal_velocity!(AIC, velocity_vector, normal)
+function calculate_normal_velocity!(AIC, velocity_arrray, normal)
     for j in 1:size(AIC, 2)
         for i in 1:size(AIC, 1)
-            AIC[i, j] = dot(velocity_vector[i, j, :], normal[:, i])
+            AIC[i, j] = dot(velocity_arrray[i, j, :], normal[:, i])
         end
     end
     return AIC
