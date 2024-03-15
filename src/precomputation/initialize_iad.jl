@@ -507,7 +507,7 @@ function initialize_linear_system(
 
     # Add Trailing Edge Gap Panel Influences to panels
     add_te_gap_aic!(
-        @view(AICn[:, :]),
+        AICn,
         controlpoint,
         normal,
         tenode,
@@ -519,7 +519,7 @@ function initialize_linear_system(
 
     # Add Trailing Edge Gap Panel Influences to internal pseudo control point
     add_te_gap_aic!(
-        @view(AICpcp[:, :]),
+        AICpcp,
         itcontrolpoint,
         itnormal,
         tenode,
@@ -541,7 +541,7 @@ function initialize_linear_system(
     )
 
     # - LU Decomposition - #
-    A_bb_LU = lu!(A_bb, NoPivot(); check=false)
+    A_bb_LU = lu!(copy(A_bb), NoPivot(); check=false)
 
     # check if success
     lu_decomp_flag = [eltype(v_bb)(issuccess(A_bb_LU))]
@@ -558,15 +558,15 @@ function initialize_linear_system(
     ##### ----- Rotor AIC ----- #####
     A_br = calculate_normal_velocity(v_br, normal)
 
-    v_pr = induced_velocities_from_source_panels_on_points(
+    A_pr = source_aic(
         itcontrolpoint,
+        itnormal,
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(eltype(b_bf), 2, rotor_source_panels.totnode),
     )
 
-    A_pr = calculate_normal_velocity(v_pr, normal)
+    # A_pr = calculate_normal_velocity(v_pr, itnormal)
 
     ##### ----- Wake AIC ----- #####
     # - wake panels to body panels - #
@@ -574,7 +574,7 @@ function initialize_linear_system(
 
     # add contributions from wake "trailing edge panels"
     add_te_gap_aic!(
-        @view(A_bw[:, :]),
+        A_bw,
         controlpoint,
         normal,
         wake_vortex_panels.tenode,
@@ -586,7 +586,7 @@ function initialize_linear_system(
     )
 
     # - wake panels on internal psuedo control point influence coefficients - #
-    v_pw = vortex_aic_boundary_on_field(
+    A_pw = vortex_aic_boundary_on_field(
         itcontrolpoint,
         itnormal,
         wake_vortex_panels.node,
@@ -594,11 +594,11 @@ function initialize_linear_system(
         wake_vortex_panels.influence_length,
     )
 
-    A_pw = calculate_normal_velocity(v_pw, normal)
+    # A_pw = calculate_normal_velocity(v_pw, itnormal)
 
     # add contributions from wake "trailing edge panels" on pseudo control point
     add_te_gap_aic!(
-        @view(A_pw[:, :]),
+        A_pw,
         itcontrolpoint,
         itnormal,
         wake_vortex_panels.tenode,
@@ -611,6 +611,7 @@ function initialize_linear_system(
 
     return (; A_bb, A_bb_LU, lu_decomp_flag, b_bf, A_br, A_pr, A_bw, A_pw)
 end
+
 """
 """
 function initialize_linear_system!(
@@ -653,16 +654,16 @@ function initialize_linear_system!(
     ##### ----- Generate LHS ----- #####
 
     # TODO officially test this function
-    calculate_normal_velocity!(@view(AICn[:, :]), v_bb, normal)
+    calculate_normal_velocity!(AICn, v_bb, normal)
 
     # Boundary on internal psuedo control point influence coefficients
     vortex_aic_boundary_on_field!(
-        @view(AICpcp[:, :]), itcontrolpoint, itnormal, node, nodemap, influence_length
+        AICpcp, itcontrolpoint, itnormal, node, nodemap, influence_length
     )
 
     # Add Trailing Edge Gap Panel Influences to panels
     add_te_gap_aic!(
-        @view(AICn[:, :]),
+        AICn,
         controlpoint,
         normal,
         tenode,
@@ -686,7 +687,7 @@ function initialize_linear_system!(
 
     # Assemble Raw LHS Matrix into A_bb
     assemble_lhs_matrix!(
-        @view(A_bb[:, :]),
+        A_bb,
         AICn,
         AICpcp,
         npanel,
@@ -698,7 +699,7 @@ function initialize_linear_system!(
     )
 
     # - LU Decomposition - #
-    A_bb_LU.factors .= lu!(A_bb, NoPivot(); check=false).factors # need to do it this way if A_bb_LU contains a view into a PreallocationTools DiffCache this allocates quite a bit more than just overwriting it though.
+    A_bb_LU.factors .= lu!(copy(A_bb), NoPivot(); check=false).factors # need to do it this way if A_bb_LU contains a view into a PreallocationTools DiffCache this allocates quite a bit more than just overwriting it though.
     # A_bb_LU = lu!(prelhs, NoPivot(); check=false) #this will overwrite A_bb_LU, and not update anything it was previously pointing to
 
     # check if success
@@ -916,6 +917,7 @@ wenids = wake_vortex_panels.endnodeidxs
 nwn =  problem_dimensions.nwn
 nwsn = problem_dimensions.nwsn
 nbn = problem_dimensions.nbn
+ndp = body_vortex_panels.npanel[1]
 riiw = rotor_indices_in_wake
 
     wake_panel_sheet_be_map = ones(Int, wake_vortex_panels.totnode, 2)
@@ -931,7 +933,18 @@ riiw = rotor_indices_in_wake
     end
 """
 function set_index_maps(
-    npanels, ncenterbody_inlet, nwake_sheets, dte_minus_cbte, wnm, wenids, nwp, nwsp, nbn, riiw, nrotor
+    npanels,
+    ncenterbody_inlet,
+    nwake_sheets,
+    dte_minus_cbte,
+    wnm,
+    wenids,
+    nwp,
+    nwsp,
+    nbn,
+    ndp,
+    riiw,
+    nrotor,
 )
 
     # - Quick Access Maps - #
@@ -957,19 +970,25 @@ function set_index_maps(
     else
         index_of_cb_te_along_wake_sheet = sum(npanels[1:(end - 2)]) + 1
     end
-    wake_node_ids_along_centerbody_wake_interface = collect(range(1, index_of_cb_te_along_wake_sheet; step=1))
+    wake_node_ids_along_centerbody_wake_interface = collect(
+        range(1, index_of_cb_te_along_wake_sheet; step=1)
+    )
 
     # indices of wake nodes interfacing with the casing wall
     if iszero(dte_minus_cbte) || dte_minus_cbte > 0
         index_of_duct_te_along_wake_sheet = sum(npanels[1:(end - 1)]) + 1
-        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - (npanels[end] + 1)
+        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - (npanels[end])
     else
         index_of_duct_te_along_wake_sheet = sum(npanels[1:(end - 2)]) + 1
-        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - (sum(npanels[end-1:end]) + 1)
+        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - sum(npanels[(end - 1):end])
     end
 
     wake_node_ids_along_casing_wake_interface = collect(
-        range(index_of_wake_node_at_duct_te - index_of_duct_te_along_wake_sheet, index_of_wake_node_at_duct_te; step=1)
+        range(
+            index_of_wake_node_at_duct_te - index_of_duct_te_along_wake_sheet + 1,
+            index_of_wake_node_at_duct_te;
+            step=1,
+        ),
     )
 
     # indices of wake panels interfacing with centerbody wall
@@ -983,25 +1002,25 @@ function set_index_maps(
     # indices of wake panels interfacing with casing wall
     if iszero(dte_minus_cbte) || dte_minus_cbte > 0
         duct_te_id = sum(npanels[1:(end - 1)])
+        ductteinwake = sum(npanels) * nwake_sheets - npanels[end]
     else
         duct_te_id = sum(npanels[1:(end - 2)])
+        ductteinwake = sum(npanels) * nwake_sheets - npanels[end] - 1
     end
 
-    ductteinwake = (sum(npanels)) * nwake_sheets - (npanels[end])
-
     wake_panel_ids_along_casing_wake_interface = collect(
-        range(ductteinwake - duct_te_id, ductteinwake; step=1)
+        range(ductteinwake - duct_te_id + 1, ductteinwake; step=1)
     )
 
     # indices of duct panels interfacing with wake
-    if dte_minus_cbte <= 0
+    if dte_minus_cbte >= 0
         duct_panel_ids_along_centerbody_wake_interface = collect(
-            1:sum([npanels[i] for i in (length(npanels) - 1):-1:1])
+            sum([npanels[i] for i in 1:(length(npanels) - 1)]):-1:1
         )
     else
-        dte_minus_cbte > 0
+        dte_minus_cbte < 0
         duct_panel_ids_along_centerbody_wake_interface = collect(
-            1:sum([npanels[i] for i in (length(npanels) - 2):-1:1])
+            sum([npanels[i] for i in 1:(length(npanels) - 2)]):-1:1
         )
     end
 
@@ -1026,12 +1045,12 @@ function set_index_maps(
     =#
     if dte_minus_cbte < 0
         id_of_first_casing_panel_aft_of_each_rotor = cumsum([
-            npanels[i] for i in (length(npanels) - 1):-1:1
-        ])[2:end]
-    elseif dte_minus_cbte > 0
-        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
             npanels[i] for i in (length(npanels) - 2):-1:1
         ])
+    elseif dte_minus_cbte > 0
+        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
+            npanels[i] for i in (length(npanels) - 1):-1:1
+        ])[2:end]
     else
         id_of_first_casing_panel_aft_of_each_rotor = cumsum([
             npanels[i] for i in (length(npanels) - 1):-1:1
@@ -1039,10 +1058,17 @@ function set_index_maps(
     end
 
     if iszero(dte_minus_cbte)
-        id_of_first_centerbody_panel_aft_of_each_rotor = [ncenterbody_inlet+1; ncenterbody_inlet .+ [npanels[i] for i in 1:length(npanels)-2]]
+        id_of_first_centerbody_panel_aft_of_each_rotor = [
+            ncenterbody_inlet + 1
+            ncenterbody_inlet .+ cumsum([npanels[i] for i in 1:(length(npanels) - 2)])
+        ]
     else
-        id_of_first_centerbody_panel_aft_of_each_rotor = [ncenterbody_inlet+1; ncenterbody_inlet .+ [npanels[i] for i in 1:length(npanels)-3]]
+        id_of_first_centerbody_panel_aft_of_each_rotor = [
+            ncenterbody_inlet + 1
+            ncenterbody_inlet .+ cumsum([npanels[i] for i in 1:(length(npanels) - 3)])
+        ]
     end
+    id_of_first_centerbody_panel_aft_of_each_rotor .+= ndp #add on number of duct panels
 
     # - Map of wake panel index to the wake sheet on which it resides and the last rotor ahead of the panel - #
     wake_panel_sheet_be_map = ones(Int, nwp, 2)
@@ -1056,7 +1082,7 @@ function set_index_maps(
     end
 
     # - Map of wake node index to the wake sheet on which it resides and the last rotor ahead of the node - #
-    nwsn = nwsp+1
+    nwsn = nwsp + 1
     wake_node_sheet_be_map = ones(Int, wenids[end], 2)
     for i in 1:nwake_sheets
         wake_node_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), 1] .= i
@@ -1104,7 +1130,15 @@ e_map
     end
 """
 function set_index_maps!(
-    idmaps, npanels, nwake_sheets, ncenterbody_inlet, dte_minus_cbte, wnm, wenids, nbn, wpsbm
+    idmaps,
+    npanels,
+    nwake_sheets,
+    ncenterbody_inlet,
+    dte_minus_cbte,
+    wnm,
+    wenids,
+    nbn,
+    wpsbm,
 )
     # - Extract Index Maps - #
     (;
@@ -1139,33 +1173,43 @@ function set_index_maps!(
     ductteinwake = (sum(npanels) + 1) * nwake_sheets - (npanels[end] + 1)
 
     wake_node_ids_along_casing_wake_interface .= collect(
-        range(ductteinwake - duct_te_id, ductteinwake; step=1)
+        range(ductteinwake - duct_te_id + 1, ductteinwake; step=1)
     )
 
     for i in 1:nwake_sheets
         wake_panel_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), 1] .= i
-        for (ir,r) in enumerate(eachrow(@view(wake_panel_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), :])))
-            r[2] = min(nrotor,searchsortedlast(rotor_indices_in_wake, ir))
+        for (ir, r) in enumerate(
+            eachrow(@view(wake_panel_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), :]))
+        )
+            r[2] = min(nrotor, searchsortedlast(rotor_indices_in_wake, ir))
         end
     end
 
     if dte_minus_cbte < 0
-        id_of_first_casing_panel_aft_of_each_rotor = cumsum([npanels[i] for i in length(npanels)-1:-1:1])[2:end]
+        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
+            npanels[i] for i in (length(npanels) - 1):-1:1
+        ])[2:end]
     elseif dte_minus_cbte > 0
-        id_of_first_casing_panel_aft_of_each_rotor = cumsum([npanels[i] for i in length(npanels)-2:-1:1])
+        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
+            npanels[i] for i in (length(npanels) - 2):-1:1
+        ])
     else
-        id_of_first_casing_panel_aft_of_each_rotor = cumsum([npanels[i] for i in length(npanels)-1:-1:1])
+        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
+            npanels[i] for i in (length(npanels) - 1):-1:1
+        ])
     end
 
     if iszero(dte_minus_cbte)
-        id_of_first_centerbody_panel_aft_of_each_rotor = [ncenterbody_inlet+1; ncenterbody_inlet .+ [npanels[i] for i in 1:length(npanels)-2]]
+        id_of_first_centerbody_panel_aft_of_each_rotor = [
+            ncenterbody_inlet + 1
+            ncenterbody_inlet .+ [npanels[i] for i in 1:(length(npanels) - 2)]
+        ]
     else
-        id_of_first_centerbody_panel_aft_of_each_rotor = [ncenterbody_inlet+1; ncenterbody_inlet .+ [npanels[i] for i in 1:length(npanels)-3]]
+        id_of_first_centerbody_panel_aft_of_each_rotor = [
+            ncenterbody_inlet + 1
+            ncenterbody_inlet .+ [npanels[i] for i in 1:(length(npanels) - 3)]
+        ]
     end
-
-
-
-
 
     return idmaps
 end
@@ -1255,12 +1299,20 @@ function precompute_parameters_iad(
 
     # - Set up Linear System - #
     linsys = initialize_linear_system(
-        ivb, body_vortex_panels, rotor_source_panels, wake_vortex_panels, operating_point.Vinf
+        ivb,
+        body_vortex_panels,
+        rotor_source_panels,
+        wake_vortex_panels,
+        operating_point.Vinf,
     )
 
     # - Interpolate Blade Elements - #
     blade_elements = interpolate_blade_elements(
-        rotorstator_parameters, Rtips, Rhubs, rotor_source_panels.controlpoint[2, :], problem_dimensions.nbe
+        rotorstator_parameters,
+        Rtips,
+        Rhubs,
+        rotor_source_panels.controlpoint[2, :],
+        problem_dimensions.nbe,
     )
 
     # - Get geometry-based constants for wake node strength calculations - #
@@ -1277,11 +1329,20 @@ function precompute_parameters_iad(
         problem_dimensions.nwp,
         problem_dimensions.nwsp,
         problem_dimensions.nbn,
+        problem_dimensions.ndn - 1, #number of duct panels
         rotor_indices_in_wake,
         problem_dimensions.nrotor,
     )
 
-    return ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, (; body_vortex_panels, rotor_source_panels, wake_vortex_panels), problem_dimensions
+    return ivr,
+    ivw,
+    ivb,
+    linsys,
+    blade_elements,
+    wakeK,
+    idmaps,
+    (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
+    problem_dimensions
 end
 
 """

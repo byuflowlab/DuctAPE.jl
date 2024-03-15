@@ -17,15 +17,16 @@ function discretize_wake(
     duct_lez = minimum(duct_coordinates[:, 1])
     duct_tez = maximum(duct_coordinates[:, 1])
 
+    # extract hub leading and trailing edge location
+    cb_lez = minimum(centerbody_coordinates[:, 1])
+    cb_tez = maximum(centerbody_coordinates[:, 1])
+
     # calculate duct chord
-    duct_chord = duct_tez - duct_lez
+    duct_chord = max(duct_tez, cb_tez) - min(duct_lez, cb_lez)
+    # duct_chord = duct_tez - duct_lez
 
     # dimensionalize wake_length
     wake_length *= duct_chord
-
-    # extract centerbody leading and trailing edge location
-    cb_lez = minimum(centerbody_coordinates[:, 1])
-    cb_tez = maximum(centerbody_coordinates[:, 1])
 
     # ensure rotors are ordered properly
     !issorted(rotorzloc) && sort!(rotorzloc)
