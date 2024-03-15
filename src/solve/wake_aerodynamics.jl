@@ -242,7 +242,7 @@ function calculate_wake_vortex_strengths!(
     B,
     Omega,
     wakeK,
-    wake_panel_sheet_be_map,
+    wake_node_sheet_be_map,
     wake_node_ids_along_casing_wake_interface,
     wake_node_ids_along_centerbody_wake_interface;
     post=false,
@@ -262,8 +262,8 @@ function calculate_wake_vortex_strengths!(
             Cm_avg,
             eachrow(gamw),
             wakeK,
-            @view(wake_panel_sheet_be_map[:, 1]),
-            @view(wake_panel_sheet_be_map[:, 2]),
+            @view(wake_node_sheet_be_map[:, 1]),
+            @view(wake_node_sheet_be_map[:, 2]),
         ),
     )
 
