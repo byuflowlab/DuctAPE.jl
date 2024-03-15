@@ -656,12 +656,12 @@ function calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr,
     for irotor in 1:nrotor
 
         # - Get the tangential velocities on the bodies - #
-        v_theta_duct = calculate_vtheta(Gamma_tilde[end, irotor], cpr[didr[irotor]])[1]
-        v_theta_hub = calculate_vtheta(Gamma_tilde[1, irotor], cpr[hidr[irotor]])[1]
+        v_theta_duct = calculate_vtheta(Gamma_tilde[end, irotor], @view(cpr[1:didr[irotor]]))
+        v_theta_hub = calculate_vtheta(Gamma_tilde[1, irotor], @view(cpr[hidr[irotor]:end]))
 
         # assemble change in cp due to enthalpy and entropy behind rotor(s)
-        cp[didr[irotor]] += delta_cp(Htilde[end, irotor], Stilde[end, irotor], v_theta_duct, Vref)
-        cp[hidr[irotor]] += delta_cp(Htilde[1, irotor], Stilde[1, irotor], v_theta_hub, Vref)
+        cp[1:didr[irotor]] += delta_cp(Htilde[end, irotor], Stilde[end, irotor], v_theta_duct, Vref)
+        cp[hidr[irotor]:end] += delta_cp(Htilde[1, irotor], Stilde[1, irotor], v_theta_hub, Vref)
     end
 
     return nothing
