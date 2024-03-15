@@ -177,7 +177,7 @@ function analyze(
         end
     end
 
-    return analyse(
+    return analyze(
         propulsor,
         ivr,
         ivw,
@@ -474,8 +474,6 @@ function estimate_states!(
 
     # - Solve Linear System for Body Strengths - #
     # currently has 18 allocations
-    # TODO: BUG: doesn't match at all to old outputs.  last entry is super large too, should be close to zero
-    # TODO: must be a bug in the linsys sizing or initialization.
     # the gamw and sigr match pretty well (there's likely an indexing difference in gamw, I think the old one was wrong)
     calculate_body_vortex_strengths!(
         solve_containers.gamb,
