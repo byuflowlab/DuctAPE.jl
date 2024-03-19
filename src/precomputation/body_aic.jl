@@ -255,10 +255,11 @@ function add_te_gap_aic!(
 
             for k in 1:2
                 # fill the Matrix
-                AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
                 if wake
                     # wake "TE Panels" only have the vortex influence
                     AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :], nhat)
+                else
+                    AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
                 end
             end #for k
         end #for j

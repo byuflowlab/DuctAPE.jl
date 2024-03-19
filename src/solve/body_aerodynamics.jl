@@ -13,7 +13,7 @@ function calculate_body_vortex_strengths!(
     nrotor = size(A_br, 3) # number of rotors
 
     # add freestream contributions to right hand side
-    rhs .= b_bf
+    rhs .= -b_bf
 
     if post
         RHSw = similar(RHS) .= 0

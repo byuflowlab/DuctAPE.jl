@@ -42,6 +42,7 @@ include("solve/cache.jl")
 include("types.jl")
 
 ##### ----- Analysis ----- #####
+include("analysis/analyses.jl")
 
 ##### ----- PRECOMPUTATION ----- #####
 # Pre-solve initializations

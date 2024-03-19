@@ -270,8 +270,9 @@ function allocate_solve_parameter_cache(paneling_constants)
 end
 
 """
+TODO: add another version of this that sets up cache for DFDC-like CSOR solve
 """
-function allocate_solve_container_cache(paneling_constants)
+function allocate_solve_container_cache(solve_type::NewtonSolve, paneling_constants)
     pd = get_problem_dimensions(paneling_constants)
 
     (;
@@ -615,7 +616,9 @@ end
 """
 function withdraw_post_parameter_cache(vec, dims)
     idmaps = (;
-        ductidsaftofrotors=(), wake_panel_ids_along_casing_wake_interface=(), wake_panel_ids_along_centerbody_wake_interface=()
+        ductidsaftofrotors=(),
+        wake_panel_ids_along_casing_wake_interface=(),
+        wake_panel_ids_along_centerbody_wake_interface=(),
     )
     return (;)
 end
