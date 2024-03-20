@@ -455,6 +455,23 @@ function assemble_lhs_matrix!(
     return LHS
 end
 
+"""
+    factorize_LHS!(Apivot::AbstractMatrix, A::AbstractMatrix) -> Alu
+
+Returns the LU decomposition of `A` using `Apivot` as storage memory to pivot
+leaving `A` unchanged.
+"""
+function factorize_LHS!(Apivot, A::AbstractMatrix{T}) where {T}
+
+    # Prepare pivot array
+    extract_primals!(Apivot, A)
+
+    # LU decomposition
+    Alu = LinearAlgebra.lu!(Apivot, NoPivot())
+
+    return Alu
+end
+
 #---------------------------------#
 #      RHS Matrix Assembly        #
 #---------------------------------#

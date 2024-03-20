@@ -4,52 +4,58 @@
 
 """
 """
-function solve_iad(inputs, const_cache)
+function solve_iad(sensitivity_parameters, const_cache)
 
-    ##### ----- Do everything in here ----- #####
-    # Note: put all the precomputation in here, but not in the nlsolve residual.
-    # Note: it will have to be done twice, but oh well.
     # - Extract constants - #
     (;
-        #general
+        # General
         verbose,
-        #nlsolve options
+        silence_warnings,
+        # nlsolve options
         nlsolve_method,
-        nlsolve_autodiff,
         nlsolve_linesearch_method,
         nlsolve_linesearch_kwargs,
         nlsolve_ftol,
         nlsolve_iteration_limit,
-        nlsolve_converged,
-        # Parameters
-        operating_point,
-        ivr,
-        ivw,
-        linsys,
-        blade_elements,
-        wakeK,
+        converged,
+        # Constant Parameters
+        airfoils,
         idmaps,
-        state_dims,
-        #caches
-        # solve_parameter_cache,
-        # solve_parameter_cache_dims,
+        solve_parameter_cache_dims,
+        # Cache(s)
         solve_container_cache,
         solve_container_cache_dims,
     ) = const_cache
 
+    # - Extract Initial Guess Vector for State Variables - #
+    # TODO: rename this to vectorize velocities since the state_dims are named tuples of the velocity names
+    initial_guess, state_dims = vectorize_inputs(
+        reshape(
+            @view(sensitivity_parameters[solve_parameter_cache_dims.vz_rotor.index]),
+            solve_parameter_cache_dims.vz_rotor.shape,
+        ),
+        reshape(
+            @view(sensitivity_parameters[solve_parameter_cache_dims.vtheta_rotor.index]),
+            solve_parameter_cache_dims.vtheta_rotor.shape,
+        ),
+        reshape(
+            @view(sensitivity_parameters[solve_parameter_cache_dims.Cm_wake.index]),
+            solve_parameter_cache_dims.Cm_wake.shape,
+        ),
+    )
+
     # - Wrap residual - #
-    function rwrap!(r, state_variables)
-        #TODO: Test this function
+    if verbose
+        println("  " * "Wrapping Residual and Jacobian")
+    end
+    function rwrap!(resid, state_variables)
         return residual!(
-            r,
+            resid,
             state_variables,
+            sensitivity_parameters,
             (;
-                operating_point,# includes freestream and Omega
-                ivr,            # induced velocities on rotor panels
-                ivw,            # induced velocities on wake panels
-                linsys,         # includes AIC's for linear system
-                blade_elements, # includes blade element geometry
-                wakeK,          # Geometry-based constant for wake strength calculation
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                airfoils,
                 idmaps,         # book keeping items
                 state_dims,     # dimensions for state variable extraction
                 solve_container_cache,      # cache for solve_containers used in solve
@@ -62,31 +68,39 @@ function solve_iad(inputs, const_cache)
     # configure jacobian
     jconfig = ForwardDiff.JacobianConfig(
         rwrap!,
-        inputs, # object of size of residual vector
-        inputs, # object of size of input vector
+        initial_guess, # object of size of residual vector
+        initial_guess, # object of size of state_variable vector
         ForwardDiff.Chunk{12}(), #TODO: set the chunk size as an option and make sure the solver cache chunk and this chunk size match. PreallocationTools chooses poorly if not given a chunk size
     )
     # get allocated array for jacobian
-    Jwork = DiffResults.JacobianResult(
-        inputs, # object of size of residual vector
-        inputs, # object of size of input vector
+    JR = DiffResults.JacobianResult(
+        initial_guess, # object of size of residual vector
+        initial_guess, # object of size of state_variable vector
     )
     # store everything in a cache that can be accessed inside the solver
-    jcache = (; rwrap!, Jwork, config=jconfig, r=zeros(size(inputs)))
+    jcache = (; rwrap!, JR, config=jconfig, resid=zeros(size(initial_guess)))
 
     # wrap the jacobian
     function jwrap!(J, state_variables)
         ForwardDiff.jacobian!(
-            jcache.Jwork, jcache.rwrap!, jcache.r, state_variables, jcache.config
-        );
-        J = DiffResults.jacobian(jcache.Jwork);
+            jcache.JR, jcache.rwrap!, jcache.resid, state_variables, jcache.config
+        )
+        J .= DiffResults.jacobian(jcache.JR)
         return J
     end
 
-    df = NLsolve.OnceDifferentiable(rwrap!, jwrap!, inputs, similar(inputs))
+    # build the OnceDifferentiable object
+    df = NLsolve.OnceDifferentiable(
+        rwrap!, jwrap!, initial_guess, similar(initial_guess) .= 0
+    )
+
+    # - SOLVE - #
+    if verbose
+        println("  "*"Newton Solve Trace:")
+    end
     result = NLsolve.nlsolve(
         df,
-        inputs; # initial states guess
+        initial_guess; # initial states guess
         method=nlsolve_method,
         # autodiff=nlsolve_autodiff,
         linesearch=nlsolve_linesearch_method(nlsolve_linesearch_kwargs...),
@@ -97,7 +111,7 @@ function solve_iad(inputs, const_cache)
     )
 
     # update convergence flag
-    nlsolve_converged[1] = NLsolve.converged(result)
+    converged[1] = NLsolve.converged(result)
 
     return result.zero
 end
@@ -109,24 +123,34 @@ end
 """
 This is the residual that gets passed into nlsolve, and is just for converging Gamr and gamw.
 """
-function residual!(r, state_variables, parameters)
-    # - Extract Parameters - #
+function residual!(resid, state_variables, sensitivity_parameters, constants)
+    # - Extract constants - #
     (;
-        operating_point,             # includes freestream and Omega
-        ivr,            # induced velocities on rotor panels
-        ivw,            # induced velocities on wake panels
-        linsys,         # includes AIC's for linear system
-        blade_elements, # includes blade element geometry
-        wakeK,
-        idmaps,         # book keeping items
-        state_dims,     # dimensions for state variable extraction
+        idmaps,                     # book keeping items
+        solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
+        airfoils,                   # airfoils
+        state_dims,                 # dimensions for state variable extraction
         solve_container_cache,      # cache for solve_containers used in solve
         solve_container_cache_dims, # dimensions for shaping the view of the solve cache
-    ) = parameters
+    ) = constants
 
     # - Separate out the state variables - #
     # TODO: test this function
     vz_rotor, vtheta_rotor, Cm_wake = extract_state_vars(state_variables, state_dims)
+
+    # separate out sensitivity_parameters here as well
+    solve_solve_parameters_tuple = withdraw_solve_parameter_cache(
+        sensitivity_parameters, solve_parameter_cache_dims
+    )
+
+    (;
+        operating_point, # freestream, Omega, etc.
+        ivr,             # induced velocities on rotor panels
+        ivw,             # induced velocities on wake panels
+        linsys,          # includes AIC's for linear system
+        blade_elements,  # includes blade element geometry
+        wakeK,           # geometric "constants" for wake node strength calculation
+    ) = solve_solve_parameters_tuple
 
     # - Extract and Reset Cache - #
     # get cache vector of correct types
@@ -145,18 +169,15 @@ function residual!(r, state_variables, parameters)
     # - Estimate New States - #
     # TODO: test this function
     estimate_states!(
-        solve_containers.vz_est,
-        solve_containers.vtheta_est,
-        solve_containers.Cm_est,
+        solve_containers,
         vz_rotor,
         vtheta_rotor,
         Cm_wake,
-        solve_containers,
         operating_point,
         ivr,
         ivw,
         linsys,
-        blade_elements,
+        (; blade_elements..., airfoils...),
         wakeK,
         idmaps,
     )
@@ -166,28 +187,25 @@ function residual!(r, state_variables, parameters)
     solve_containers.vtheta_est .-= vtheta_rotor
     solve_containers.Cm_est .-= Cm_wake
 
-    r[state_dims.vz_rotor.index] .= reshape(solve_containers.vz_est, :)
-    r[state_dims.vtheta_rotor.index] .= reshape(solve_containers.vtheta_est, :)
-    r[state_dims.Cm_wake.index] .= solve_containers.Cm_est
+    resid[state_dims.vz_rotor.index] .= reshape(solve_containers.vz_est, :)
+    resid[state_dims.vtheta_rotor.index] .= reshape(solve_containers.vtheta_est, :)
+    resid[state_dims.Cm_wake.index] .= solve_containers.Cm_est
 
     ##NOTE: can't use a smaller residual with NLsolve
-    #r[1] = solve_containers.vz_est[findmax(abs.(solve_containers.vz_est))[2]]
-    #r[2] = solve_containers.vtheta_est[findmax(abs.(solve_containers.vtheta_est))[2]]
-    #r[3] = solve_containers.Cm_est[findmax(abs.(solve_containers.Cm_est))[2]]
+    #resid[1] = solve_containers.vz_est[findmax(abs.(solve_containers.vz_est))[2]]
+    #resid[2] = solve_containers.vtheta_est[findmax(abs.(solve_containers.vtheta_est))[2]]
+    #resid[3] = solve_containers.Cm_est[findmax(abs.(solve_containers.Cm_est))[2]]
 
-    return r
+    return resid
 end
 
 """
 """
 function estimate_states!(
-    vz_est,
-    vtheta_est,
-    Cm_est,
+    solve_containers,
     vz_rotor,
     vtheta_rotor,
     Cm_wake,
-    solve_containers,
     operating_point,
     ivr,
     ivw,
@@ -197,6 +215,11 @@ function estimate_states!(
     idmaps;
     verbose=false,
 )
+
+# - Rename for Convenience - #
+vz_est = solve_containers.vz_est
+vtheta_est = solve_containers.vtheta_est
+Cm_est = solve_containers.Cm_est
 
     # - Get Absolute Rotor Velocities - #
     # currently has 9 allocations

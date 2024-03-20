@@ -313,3 +313,22 @@ function linear_transform(source_range, target_range, source_values)
            (target_range[end] - target_range[1]) .* (source_values .- source_range[1]) /
            (source_range[end] - source_range[1])
 end
+
+"""
+"""
+function extract_primals!(Avalue, A::AbstractMatrix{T}) where {T}
+
+    if T<:ForwardDiff.Dual #|| T<:ReverseDiff.TrackedReal  # Automatic differentiation case
+
+        # Extract primal values of A
+        # value = T<:ForwardDiff.Dual ? ForwardDiff.value : ReverseDiff.value
+        value = ForwardDiff.value
+        map!(value, Avalue, A)
+
+    else                                # Normal case
+        # Deep copy A
+        Avalue .= A
+    end
+
+    return Avalue
+end

@@ -54,13 +54,10 @@ function post_process_iad!(
     # - Estimate New States - #
     # currently has 280 allocations
     estimate_states!(
-        solve_containers.vz_est,
-        solve_containers.vtheta_est,
-        solve_containers.Cm_est,
+        solve_containers,
         vz_rotor,
         vtheta_rotor,
         Cm_wake,
-        solve_containers,
         operating_point,
         ivr,
         ivw,

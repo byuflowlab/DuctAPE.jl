@@ -144,13 +144,17 @@ function solve_elliptic_grid_iad(x, p)
         # df,
         rwrap!,
         reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
-        method=:newton,
-        autodiff=:forward,
-        linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b), #used in newton method, unused otherwise so fine to keep it here.
+        # method=:newton,
+        # autodiff=:forward,
+        method=p.wake_nlsolve_method,
+        autodiff=p.wake_nlsolve_autodiff,
+        linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
         ftol=p.wake_nlsolve_ftol,
         iterations=p.wake_max_iter,
         show_trace=p.verbose,
     )
+
+    p.converged[1] = NLsolve.converged(result)
 
     # - overwrite output in place - #
     wake_grid[:, 2:end, 2:(end - 1)] .= reshape(result.zero, p.itshape)
@@ -162,7 +166,13 @@ end
 TODO: will want to pass a convergence flag that get's updated so we can break out if the wake geometry did not converge and pass a fail flag to the optimizer
 """
 function solve_elliptic_grid!(
-    wake_grid; wake_nlsolve_ftol=1e-14, wake_max_iter=10, verbose=false
+    wake_grid;
+    wake_nlsolve_method=:newton,
+    wake_nlsolve_autodiff=:forward,
+    wake_nlsolve_ftol=1e-14,
+    wake_max_iter=10,
+    converged=[false],
+    verbose=false,
 )
 
     # - dimensions - #
@@ -184,8 +194,11 @@ function solve_elliptic_grid!(
         gridshape,
         proposed_grid_cache=DiffCache(wake_grid),
         itshape=(gridshape[1], gridshape[2] - 1, gridshape[3] - 2),
+        wake_nlsolve_method,
+        wake_nlsolve_autodiff,
         wake_nlsolve_ftol,
         wake_max_iter,
+        converged,
         verbose,
     )
 
@@ -230,8 +243,11 @@ function relax_grid!(
     wake_grid;
     max_wake_relax_iter=100,
     wake_relax_tol=1e-9,
+    converged,
     verbose=false,
     silence_warnings=true,
+    ntab=1,
+    tabchar="    ",
 )
     xr = view(wake_grid, 1, :, :)
     rr = view(wake_grid, 2, :, :)
@@ -293,7 +309,7 @@ function relax_grid!(
 
     for iterate in 1:max_wake_relax_iter
         if verbose
-            println("iteration $iterate")
+            println(tabchar^(ntab)*"iteration $iterate")
         end
 
         #initialize max step
@@ -499,8 +515,9 @@ function relax_grid!(
         #TODO: need to figure out how the dset numbers and relaxation factors are chosen.  Why are they the values that they are? Does it have something to do with the SLOR setup?
         if dmax < wake_relax_tol * dxy
             if verbose
-                println("iterations = ", iterate)
+                println(tabchar^(ntab)*"Total iterations: $iterate")
             end
+            converged[1]=true
             return wake_grid
         end
 
@@ -516,14 +533,15 @@ function relax_grid!(
 
         if dmax < dset3 * dxy
             if verbose
-                println("iterations = ", iterate)
+                println(tabchar^(ntab)*"Total iterations = $iterate")
             end
+            converged[1]=true
             return wake_grid
         end
     end
 
     if verbose
-        println("iterations = ", iterate)
+        println(tabchar^(ntab)*"Total iterations = ", max_wake_relax_iter, "\n")
     end
 
     if !silence_warnings

@@ -4,56 +4,91 @@ function analyze(
     propulsor::Propulsor,
     options=set_options();
     # precomp_container_caching=nothing,
-    # solve_parameter_caching=nothing,
+    solve_parameter_caching=nothing,
     solve_container_caching=nothing,
     # post_caching=nothing
 )
 
+    # - Get type to dispatch caches - #
+    TF = promote_type(
+        eltype(propulsor.duct_coordinates),
+        eltype(propulsor.centerbody_coordinates),
+        eltype(propulsor.operating_point.Vinf),
+        eltype(propulsor.operating_point.Omega),
+        eltype(propulsor.operating_point.rhoinf),
+        eltype(propulsor.operating_point.muinf),
+        eltype(propulsor.operating_point.asound),
+        eltype(propulsor.rotorstator_parameters.B),
+        eltype(propulsor.rotorstator_parameters.Rhub),
+        eltype(propulsor.rotorstator_parameters.Rtip),
+        eltype(propulsor.rotorstator_parameters.rotorzloc),
+        eltype(propulsor.rotorstator_parameters.chords),
+        eltype(propulsor.rotorstator_parameters.twists),
+    )
+
     # if isnothing(precomp_container_caching)
-    #     precomp_container_caching = generate_precomp_container_cache(
-    #         propulsor.paneling_constants
-    #     )
-    # end
-    # if isnothing(solve_parameter_caching)
-    #     solve_parameter_caching = generate_solve_parameter_cache(
-    #         propulsor.paneling_constants
-    #     )
-    # end
-    # if isnothing(post_caching)
-    #     post_caching = generate_post_cache(
+    #     precomp_container_caching = allocate_precomp_container_cache(
     #         propulsor.paneling_constants
     #     )
     # end
 
-    # TODO: write generate_caches function (need to go through and figure out what all goes in the cache)
+    # if isnothing(post_caching)
+    #     post_caching = allocate_post_cache(
+    #         propulsor.paneling_constants
+    #     )
+    # end
+
     # - Pull out the Caches - #
     # (; precomp_container_cache, precomp_container_cache_dims) = precomp_container_caching
     # (; post_cache, post_cache_dims) = post_caching
 
     # # - Reshape precomp_container_cache - #
-    # # TODO: get a different type to dispatch on here
-    # precomp_container_cache_vec = @views pat.get_tmp(precomp_container_cache, TF(1.0))
-    # # TODO: test this function
+    # precomp_container_cache_vec = @views PreallocationTools.get_tmp(precomp_container_cache, TF(1.0))
     # precomp_containers = withdraw_precomp_container_cache(
     #     precomp_container_cache, precomp_container_cache_dims
     # )
 
-    # # - Reshape solve_parameter_cache - #
-    # solve_parameter_cache_vec = @views pat.get_tmp(solve_parameter_cache, inputs)
-    # # TODO: test this function
-    # solve_parameter_containers = withdraw_solve_parameter_cache(
-    #     solve_parameter_cache, solve_parameter_cache_dims
-    # )
+    # - Set up Solver Sensitivity Paramter Cache - #
+
+    # Allocate Cache
+    if isnothing(solve_parameter_caching)
+        solve_parameter_caching = allocate_solve_parameter_cache(
+            options.solve_options, propulsor.paneling_constants
+        )
+    end
+
+    # separate out caching items
+    (; solve_parameter_cache, solve_parameter_cache_dims) = solve_parameter_caching
+
+    # get correct cache type
+    solve_parameter_cache_vector = @views PreallocationTools.get_tmp(
+        solve_parameter_cache, TF(1.0)
+    )
+
+    # reshape cache
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+
+    # copy over operating point
+    for f in fieldnames(typeof(propulsor.operating_point))
+        solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
+    end
 
     # - Do precomputations - #
+    if options.verbose
+        println("Pre-computing Parameters")
+    end
     # out-of-place version currently has 22,292,181 allocations.
-    ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels, problem_dimensions = precompute_parameters_iad(
+    # TODO: do this in place for the solve input cache items. eventually will want to have a post-processing and output cache too.
+    ivb, airfoils, idmaps, panels, problem_dimensions = precompute_parameters_iad!(
+        solve_parameter_tuple.ivr,
+        solve_parameter_tuple.ivw,
+        solve_parameter_tuple.blade_elements,
+        solve_parameter_tuple.linsys,
+        solve_parameter_tuple.wakeK,
         propulsor;
         wake_solve_options=options.wake_options,
-        # wake_nlsolve_ftol=options.wake_nlsolve_ftol,
-        # wake_max_iter=options.wake_max_iter,
-        # max_wake_relax_iter=options.max_wake_relax_iter,
-        # wake_relax_tol=options.wake_relax_tol,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,
@@ -63,28 +98,36 @@ function analyze(
         verbose=options.verbose,
     )
 
-    if iszero(linsys.lu_decomp_flag[1])
-        if !silence_warnings
-            @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
-            #TODO: write this function that returns the same as outs below, but all zeros
-            return zero_outputs(), false
+    # - Check that the precomputation went well - #
+    #=
+      NOTE: If the linear system or wake did not converge, there is likely a serious problem that would lead to an error in the solve, so we will exit here with a fail flag for an optimizer or user
+    =#
+    if iszero(solve_parameter_tuple.linsys.lu_decomp_flag[1]) ||
+        !options.wake_options.converged[1]
+        if !options.silence_warnings
+            if iszero(solve_parameter_tuple.linsys.lu_decomp_flag[1])
+                @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
+            elseif !options.wake_options.converged[1]
+                @warn "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good."
+            end
         end
+        #TODO: write a function that returns the same as outs below, but all zeros
+        return [],#zero_outputs(),
+        (; solve_parameter_tuple..., ivb, airfoils, idmaps, panels, problem_dimensions),
+        false
     end
 
+    # - Continue with Analysis - #
     return analyze(
         propulsor,
-        ivr,
-        ivw,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        airfoils,
         ivb,
-        linsys,
-        blade_elements,
-        wakeK,
-        idmaps,
         panels,
+        idmaps,
         problem_dimensions,
         options;
-        # precomp_container_caching=nothing,
-        # solve_parameter_caching=nothing,
         solve_container_caching=solve_container_caching,
         # post_caching=nothing
     )
@@ -94,23 +137,21 @@ end
 """
 function analyze(
     propulsor::Propulsor,
-    ivr,
-    ivw,
+    solve_parameter_cache_vector,
+    solve_parameter_cache_dims,
+    airfoils,
     ivb,
-    linsys,
-    blade_elements,
-    wakeK,
-    idmaps,
     panels,
+    idmaps,
     problem_dimensions,
     options=set_options();
     # precomp_container_caching=nothing,
-    # solve_parameter_caching=nothing,
     solve_container_caching=nothing,
     # post_caching=nothing
 )
 
     # - Finish Pre-Processing - #
+
     # Set up Solve Container Cache
     if isnothing(solve_container_caching)
         solve_container_caching = allocate_solve_container_cache(
@@ -121,64 +162,95 @@ function analyze(
     # - Process - #
     velocity_states = process(
         options.solve_options,
-        propulsor::Propulsor,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        airfoils,
+        solve_container_caching,
+        idmaps,
+        options,
+    )
+
+    # - Post-Process - #
+    # TODO: probably just move this bit inside the post-process to clean up inputs
+    # actually probably want to do a second dispatch, one with all the inputs, and one that extracts all the caches and calls the one with all the inputs.
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+    (; ivr, ivw, linsys, blade_elements, wakeK) = solve_parameter_tuple
+
+    # NOTE: post processing cache doesn't need to be fancy, since it's just here in the analysis and will always be the same type if derivative checks are turned off.
+    # update tests for this function
+    outs = post_process(
+        options.solve_options,
+        solve_container_caching,
+        velocity_states,
+        vectorize_inputs(
+            solve_parameter_tuple.vz_rotor,
+            solve_parameter_tuple.vtheta_rotor,
+            solve_parameter_tuple.Cm_wake,
+        )[2], # TODO: think of a better way to get the state_dims
+        propulsor.operating_point,
+        propulsor.reference_parameters,
         ivr,
         ivw,
         ivb,
         linsys,
-        blade_elements,
+        (; blade_elements..., airfoils...),
         wakeK,
+        panels.body_vortex_panels,
+        panels.rotor_source_panels.influence_length,
         idmaps,
-        panels,
-        problem_dimensions,
-        options,
-        solve_container_caching,
+        problem_dimensions;
+        write_outputs=options.write_outputs,
+        outfile=options.outfile,
+        checkoutfileexists=options.checkoutfileexists,
+        output_tuple_name=options.output_tuple_name,
+        verbose=options.verbose,
     )
 
-    # - Post-Process - #
-    # NOTE: post processing cache doesn't need to be fancy, since it's just here in the analysis and will always be the same type if derivative checks are turned off.
-    # update tests for this function
-
-    return outs, (; ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels), true
+    return outs,
+    (; ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels),
+    options.solve_options.converged[1]
 end
 
 """
 """
 function process(
-    process_type::NewtonSolve,
-    propulsor::Propulsor,
-    ivr,
-    ivw,
-    ivb,
-    linsys,
-    blade_elements,
-    wakeK,
-    idmaps,
-    panels,
-    problem_dimensions,
-    options,
+    solve_options::NewtonSolve,
+    solve_parameter_cache_vector,
+    solve_parameter_cache_dims,
+    airfoils,
     solve_container_caching,
+    idmaps,
+    options,
 )
 
-    # - Rename for Convenience - #
-    (; solve_options) = options
-
     # - Initialize Aero - #
+    if options.verbose
+        println("\nInitializing Velocities")
+    end
+    # view the initial conditions out of the inputs cache
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+    (; vz_rotor, vtheta_rotor, Cm_wake, operating_point, linsys, ivr, ivw) =
+        solve_parameter_tuple
+
+    # initialize velocities
     # TODO; add some sort of unit test for this function
-    # note: if using a cache for intermediate calcs here, doesn't need to be fancy.
-    # out-of-place version currently has 2990 allocations
-    vz_rotor, vtheta_rotor, Cm_wake = initialize_velocities(
-        propulsor.operating_point,
-        blade_elements,
-        linsys,
-        ivr,
-        ivw,
+    # TODO: need to update these in place
+    initialize_velocities!(
+        vz_rotor,
+        vtheta_rotor,
+        Cm_wake,
+        solve_parameter_tuple.operating_point,
+        (; solve_parameter_tuple.blade_elements..., airfoils...),
+        solve_parameter_tuple.linsys,
+        solve_parameter_tuple.ivr,
+        solve_parameter_tuple.ivw,
         idmaps.body_totnodes,
         idmaps.wake_panel_sheet_be_map,
     )
-
-    # - Vectorize Inputs - #
-    inputs, state_dims = vectorize_inputs(vz_rotor, vtheta_rotor, Cm_wake)
 
     # - combine cache and constants - #
     const_cache = (;
@@ -187,27 +259,26 @@ function process(
         options.silence_warnings,
         #nlsolve options
         solve_options.nlsolve_method,
-        solve_options.nlsolve_autodiff,
         solve_options.nlsolve_linesearch_method,
         solve_options.nlsolve_linesearch_kwargs,
         solve_options.nlsolve_ftol,
         solve_options.nlsolve_iteration_limit,
-        solve_options.nlsolve_converged,
-        # Parameters
-        propulsor.operating_point,
-        ivr,
-        ivw,
-        linsys,
-        blade_elements,
-        wakeK,
+        solve_options.converged,
+        # Constant Parameters
+        airfoils,
         idmaps,
-        state_dims,
+        solve_parameter_cache_dims,
         # Cache(s)
         solve_container_caching...,
     )
 
-    # - Initialize Aero and Converge Gamr and gamw - #
-    return ImplicitAD.implicit(solve_iad, residual!, inputs, const_cache)
+    # - Solve with ImplicitAD - #
+    if options.verbose
+        println("\nSolving Nonlinear System using Newton Method")
+    end
+    return ImplicitAD.implicit(
+        solve_iad, residual!, solve_parameter_cache_vector, const_cache
+    )
 end
 
 """
@@ -217,13 +288,10 @@ function process(
     propulsor::Propulsor,
     ivr,
     ivw,
-    ivb,
     linsys,
     blade_elements,
     wakeK,
     idmaps,
-    panels,
-    problem_dimensions,
     options,
     solve_container_caching,
 )
@@ -232,6 +300,7 @@ function process(
     (; verbose, solve_options) = options
 
     # - Initialize States - #
+    Gamr, sigr, amw = initialize_rotorwake_aero(inputs)
 
     # vectorize inputs
 
@@ -280,7 +349,11 @@ function post_process(
     outfile="outputs.jl",
     checkoutfileexists=false,
     output_tuple_name="outs",
+    verbose=false,
 )
+    if verbose
+        println("\nPost-Processing")
+    end
     return post_process_iad!(
         solve_container_caching,
         states,
@@ -297,10 +370,10 @@ function post_process(
         influence_length,
         idmaps,
         problem_dimensions;
-        write_outputs=options.write_outputs,
-        outfile=options.outfile,
-        checkoutfileexists=options.checkoutfileexists,
-        output_tuple_name=options.output_tuple_name,
+        write_outputs=write_outputs,
+        outfile=outfile,
+        checkoutfileexists=checkoutfileexists,
+        output_tuple_name=output_tuple_name,
     )
 end
 

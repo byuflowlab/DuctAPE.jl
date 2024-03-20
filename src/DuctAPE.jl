@@ -33,13 +33,14 @@ export c4b
 #---------------------------------#
 #            INCLUDES             #
 #---------------------------------#
+##### ----- TYPES ----- #####
+include("types.jl")
 
 ##### ----- UTILITIES ----- #####
 # general utility functions
 include("utilities/utils.jl")
 include("solve/io.jl") #TODO: move to utilities
 include("solve/cache.jl")
-include("types.jl")
 
 ##### ----- Analysis ----- #####
 include("analysis/analyses.jl")

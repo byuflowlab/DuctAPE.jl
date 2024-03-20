@@ -42,7 +42,7 @@ end
 
 function ReferenceParameters(Vref, Rref)
     return ReferenceParameters(
-        isscalar(Vref) ? [Vref] : Vref, isscalar(rhoinf) ? [Rref] : Rref
+        isscalar(Vref) ? [Vref] : Vref, isscalar(Rref) ? [Rref] : Rref
     )
 end
 
@@ -83,7 +83,7 @@ struct RotorStatorParameters{
     fliplift::Tf
 end
 
-function RotorStatorParameters(Vref, Rref)
+function RotorStatorParameters(B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift)
     return RotorStatorParameters(
         isscalar(B) ? [B] : B,
         isscalar(rotorzloc) ? [rotorzloc] : rotorzloc,
@@ -98,7 +98,7 @@ function RotorStatorParameters(Vref, Rref)
         else
             airfoils
         end,
-        isscalar(fliplif) ? [fliplift] : fliplift,
+        isscalar(fliplift) ? [fliplift] : fliplift,
     )
 end
 
@@ -149,33 +149,36 @@ end
 @kwdef struct QuickWake{TF,TI,TB}
     wake_nlsolve_ftol::TF = 1e-9
     wake_max_iter::TI = 100
-    wake_converged::AbstractVector{TB} = [false]
+    converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct NewtonWake{TF,TI,TB}
+@kwdef struct NewtonWake{TSym,TF,TI,TB}
     # elliptic grid solve options
+    wake_nlsolve_method::TSym = :newton
+    wake_nlsolve_autodiff::TSym = :forward
     wake_nlsolve_ftol::TF = 1e-14
     wake_max_iter::TI = 100
-    wake_converged::AbstractVector{TB} = [false]
-    max_wake_relax_iter::TI = 3
-    wake_relax_tol::TF = 1e-14
+    converged::AbstractVector{TB} = [false]
+    max_wake_relax_iter::TI = 20
+    wake_relax_tol::TF = 1e-9
 end
 
-@kwdef struct NewtonSolve{TY,TF,TI,TB,Tls,Tlsk}
+@kwdef struct NewtonSolve{TSym,TF,TI,TB,Tls,Tlsk}
     # - Options for overall solve - #
     # nlsolve parameters
-    nlsolve_method::TY = :newton
-    nlsolve_autodiff::TY = :forward
+    nlsolve_method::TSym = :newton
+    # nlsolve_autodiff::TSym = :forward
     nlsolve_ftol::TF = 1e-8 #1e-8 is nlsolve default
-    nlsolve_iteration_limit::TI = 50 #1000 is nlsolve default
+    nlsolve_iteration_limit::TI = 20 #1000 is nlsolve default
     nlsolve_show_trace::TB = false
     # line search parameters
     nlsolve_linesearch_method::Tls = LineSearches.MoreThuente
     nlsolve_linesearch_kwargs::Tlsk = (;)
-    nlsolve_converged::AbstractVector{TB} = [false]
+    converged::AbstractVector{TB} = [false]
 end
 
-# struct QNewtonSolve{}
+# struct QuasiNewtonSolve{}
+    # converged::AbstractVector{TB} = [false]
 # end
 
 """

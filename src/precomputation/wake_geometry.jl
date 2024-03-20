@@ -268,18 +268,43 @@ end
 """
 """
 function relax_grid!(
-    wake_solve_options::NewtonWake, wake_grid; verbose=false, silence_warnings=true
+    wake_solve_options::NewtonWake,
+    wake_grid;
+    verbose=false,
+    silence_warnings=true,
+    tabchar="    ",
+    ntab=1,
 )
+    if verbose
+        println("Preconditioning Elliptic Grid System using SLOR")
+    end
+    # - Relax grid to allow Newton solve a tractable starting point - #
     relax_grid!(
         wake_grid;
         max_wake_relax_iter=wake_solve_options.max_wake_relax_iter,
         wake_relax_tol=wake_solve_options.wake_relax_tol,
+        converged=wake_solve_options.converged,
         verbose=verbose,
+        tabchar="\t",
+        ntab=1,
     )
+
+    # - Converge grid with Newton Solve - #
+
+    # reset convergence flag
+    wake_solve_options.converged[1] = false
+
+    if verbose
+        println("Solving Elliptic Grid System using Newton Method")
+    end
+    # solve
     solve_elliptic_grid!(
         wake_grid;
+        wake_nlsolve_method=wake_solve_options.wake_nlsolve_method,
+        wake_nlsolve_autodiff=wake_solve_options.wake_nlsolve_autodiff,
         wake_nlsolve_ftol=wake_solve_options.wake_nlsolve_ftol,
         wake_max_iter=wake_solve_options.wake_max_iter,
+        wake_solve_options.converged,
         verbose=verbose,
     )
 
@@ -345,12 +370,16 @@ end
 
 """
 """
-function get_wake_k(wake_vortex_panels)
+function get_wake_k(r, nwn)
     # initialize output
-    K = zeros(eltype(wake_vortex_panels.node), wake_vortex_panels.totnode)
+    K = zeros(eltype(r), nwn)
 
+    return get_wake_k!(K, r)
+end
+
+function get_wake_k!(K, r)
     # Loop through panels
-    for (iw, wnr) in enumerate(wake_vortex_panels.node[2, :])
+    for (iw, wnr) in enumerate(r)
         # check if panel has zero radius
         if wnr < eps()
             K[iw] = 0.0

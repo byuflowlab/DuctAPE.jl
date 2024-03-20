@@ -1,4 +1,3 @@
-
 """
 length from size
 move to utilities
@@ -183,7 +182,11 @@ end
 
 """
 """
-function allocate_solve_parameter_cache(paneling_constants)
+function allocate_solve_parameter_cache(
+    solve_type::NewtonSolve, paneling_constants; fd_chunk_size=12, levels=2
+)
+
+    # - Get problem dimensions - #
     pd = get_problem_dimensions(paneling_constants)
 
     (;
@@ -204,67 +207,212 @@ function allocate_solve_parameter_cache(paneling_constants)
     # - initialize - #
     total_length = 0
 
-    ############################################################
-    ############################################################
-    ##### ----- TODO; YOUR ARE HERE ----- ######################
-    ############################################################
-    ############################################################
+    # - Initial Guesses - #
+    s = (nrotor * nbe,)
+    l = lfs(s)
+    vz_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtheta_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nwp,)
+    l = lfs(s)
+    Cm_wake = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    # - Operating Point - #
+    s = (1,)
+    l = lfs(s)
+    Vinf = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rhoinf = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    muinf = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    asound = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nrotor,)
+    l = lfs(s)
+    Omega = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
 
     # - Induced Velocities on Rotors - #
-    v_rb
-    v_rr
-    v_rw
+    s = (nrotor * nbe, nbn, 2)
+    l = lfs(s)
+    v_rb = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nrotor * nbe, nrotor * nws, 2)
+    l = lfs(s)
+    v_rr = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nrotor * nbe, nwn, 2)
+    l = lfs(s)
+    v_rw = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
 
     # - Induced Velocities on Wakes - #
-    v_wb
-    v_wr
-    v_ww
+    s = (nwp, nbn, 2)
+    l = lfs(s)
+    v_wb = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
 
-    # - Induced Velocities on Bodies - #
-    v_bb
-    v_br
-    v_bw
+    s = (nwp, nrotor * nws, 2)
+    l = lfs(s)
+    v_wr = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nwp, nwn, 2)
+    l = lfs(s)
+    v_ww = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    # # - Induced Velocities on Bodies - #
+    # TODO: move this to the post-processing cache
+    # s = (nbp, nbn, 2)
+    # l = lfs(s)
+    # v_bb = (; index=(total_length + 1):(total_length + l), shape=s)
+    # total_length += l
+
+    # s = (nbp, nrotor * nws, 2)
+    # l = lfs(s)
+    # v_br = (; index=(total_length + 1):(total_length + l), shape=s)
+    # total_length += l
+
+    # s = (nbp, nwn, 2)
+    # l = lfs(s)
+    # v_bw = (; index=(total_length + 1):(total_length + l), shape=s)
+    # total_length += l
 
     # - Linear System - #
-    A_bb
-    A_bb_LU
-    b_bf
-    A_bw
-    A_pw
-    A_br
-    A_pr
+
+    s = (nbn + 2, nbn + 2)
+    l = lfs(s)
+    A_bb = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    A_bb_LU = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbn + 2,)
+    l = lfs(s)
+    b_bf = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp, nwn)
+    l = lfs(s)
+    A_bw = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (2, nwn)
+    l = lfs(s)
+    A_pw = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp, nrotor * nws)
+    l = lfs(s)
+    A_br = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (2, nrotor * nws)
+    l = lfs(s)
+    A_pr = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (1,)
+    l = lfs(s)
+    lu_decomp_flag = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
 
     # - Blade Elements - #
-    B
-    Omega
-    fliplift
-    chords
-    twists
-    stagger
-    solidity
-    rotor_panel_center
-    inner_fraction
+    s = (nrotor,)
+    l = lfs(s)
+    B = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Rtip = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Rhub = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    fliplift = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbe, nrotor)
+    l = lfs(s)
+    chords = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    twists = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    stagger = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    solidity = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_panel_centers = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    inner_fraction = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    # - Wake constants - #
+    s = (nwn,)
+    l = lfs(s)
+    wakeK = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
     # TODO: WHAT TO DO ABOUT AIRFOILS?
+    # NOTE: how to know the size of airfoil objects up front?  if it's a DFDC type, this is pretty simple, but if it's a CCBlade type, then the size could be anything depending on how many data points are used
+    # airfoils = allocate_airfoil_cache(aftype, nrotor, nbe)
 
-    # - Index Maps - #
-    wake_node_ids_along_casing_wake_interface
-    wake_node_ids_along_centerbody_wake_interface
-    rotorwakenodeid
-    wake_nodemap
-    wake_endnodeidxs
-    rotor_indices_in_wake
-    body_totnodes
+    # # - Index Maps - #
+    # # TODO: decide if you actually need these here. these actually won't/can't change at the optimization level, so you could have a different cache for these
+    # # TODO: figure out what you renamed these to.  Also probably need to just call the function to get the sizes and lengths for some of these
+    # wake_node_ids_along_casing_wake_interface
+    # wake_node_ids_along_centerbody_wake_interface
+    # rotorwakenodeid
+    # wake_nodemap
+    # wake_endnodeidxs
+    # rotor_indices_in_wake
+    # body_totnodes
 
-    #TODO; decide if this can be all floats or if you actually need to use the diff cache stuff.
     return (;
-        solve_parameter_cache=PreallocationTools.DiffCache(zeros(total_length)),
+        solve_parameter_cache=PreallocationTools.DiffCache(
+            zeros(total_length), fd_chunk_size; levels=levels
+        ),
         solve_parameter_cache_dims=(;
+            vz_rotor,
+            vtheta_rotor,
+            Cm_wake,
+            operating_point=(; Vinf, rhoinf, muinf, asound, Omega),
             ivr=(; v_rb, v_rr, v_rw),
-            ivw=(;),
-            ivb=(;),
-            linsys=(; A_bb, A_bb_LU, b_bf, A_bw, A_pw, A_br, A_pr),
-            blade_elements=(;),
-            idmaps=(;),
+            ivw=(; v_wb, v_wr, v_ww),
+            # ivb=(; v_bb, v_br, v_bw),
+            linsys=(; A_bb, A_bb_LU, b_bf, A_bw, A_pw, A_br, A_pr, lu_decomp_flag),
+            blade_elements=(;
+                B,
+                fliplift,
+                chords,
+                twists,
+                stagger,
+                solidity,
+                rotor_panel_centers,
+                inner_fraction,
+                Rtip,
+                Rhub,
+            ),
+            wakeK,
+            # idmaps=(;),
         ),
     )
 end
@@ -272,7 +420,9 @@ end
 """
 TODO: add another version of this that sets up cache for DFDC-like CSOR solve
 """
-function allocate_solve_container_cache(solve_type::NewtonSolve, paneling_constants)
+function allocate_solve_container_cache(
+    solve_type::NewtonSolve, paneling_constants; fd_chunk_size=12, levels=1
+)
     pd = get_problem_dimensions(paneling_constants)
 
     (;
@@ -384,7 +534,9 @@ function allocate_solve_container_cache(solve_type::NewtonSolve, paneling_consta
     total_length += l
 
     return (;
-        solve_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
+        solve_container_cache=PreallocationTools.DiffCache(
+            zeros(total_length), fd_chunk_size; levels=levels
+        ),
         solve_container_cache_dims=(;
             gamb,
             rhs,
@@ -468,6 +620,31 @@ end
 """
 """
 function withdraw_solve_parameter_cache(vec, dims)
+
+    # - Initial Guesses - #
+    vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
+    vtheta_rotor = reshape(@view(vec[dims.vtheta_rotor.index]), dims.vtheta_rotor.shape)
+    Cm_wake = reshape(@view(vec[dims.Cm_wake.index]), dims.Cm_wake.shape)
+
+    # - Operating Point - #
+    operating_point = (;
+        Vinf=reshape(
+            @view(vec[dims.operating_point.Vinf.index]), dims.operating_point.Vinf.shape
+        ),
+        rhoinf=reshape(
+            @view(vec[dims.operating_point.rhoinf.index]), dims.operating_point.rhoinf.shape
+        ),
+        muinf=reshape(
+            @view(vec[dims.operating_point.muinf.index]), dims.operating_point.muinf.shape
+        ),
+        asound=reshape(
+            @view(vec[dims.operating_point.asound.index]), dims.operating_point.asound.shape
+        ),
+        Omega=reshape(
+            @view(vec[dims.operating_point.Omega.index]), dims.operating_point.Omega.shape
+        ),
+    )
+
     # - induced velocities on rotor - #
     ivr = (;
         v_rb=reshape(@view(vec[dims.ivr.v_rb.index]), dims.ivr.v_rb.shape),
@@ -477,17 +654,18 @@ function withdraw_solve_parameter_cache(vec, dims)
 
     # - induced velocities on wake - #
     ivw = (;
-        v_wb=reshape(@view(vec[dims.ivr.v_wb.index]), dims.ivr.v_wb.shape),
-        v_wr=reshape(@view(vec[dims.ivr.v_wr.index]), dims.ivr.v_wr.shape),
-        v_ww=reshape(@view(vec[dims.ivr.v_ww.index]), dims.ivr.v_ww.shape),
+        v_wb=reshape(@view(vec[dims.ivw.v_wb.index]), dims.ivw.v_wb.shape),
+        v_wr=reshape(@view(vec[dims.ivw.v_wr.index]), dims.ivw.v_wr.shape),
+        v_ww=reshape(@view(vec[dims.ivw.v_ww.index]), dims.ivw.v_ww.shape),
     )
 
-    # - induced velocities on body - #
-    ivb = (;
-        v_bb=reshape(@view(vec[dims.ivr.v_bb.index]), dims.ivr.v_bb.shape),
-        v_br=reshape(@view(vec[dims.ivr.v_br.index]), dims.ivr.v_br.shape),
-        v_bw=reshape(@view(vec[dims.ivr.v_bw.index]), dims.ivr.v_bw.shape),
-    )
+    # # - induced velocities on body - #
+    # TODO: move to post process withdraw
+    # ivb = (;
+    #     v_bb=reshape(@view(vec[dims.ivr.v_bb.index]), dims.ivr.v_bb.shape),
+    #     v_br=reshape(@view(vec[dims.ivr.v_br.index]), dims.ivr.v_br.shape),
+    #     v_bw=reshape(@view(vec[dims.ivr.v_bw.index]), dims.ivr.v_bw.shape),
+    # )
 
     # - linear system - #
     linsys = (;
@@ -502,11 +680,14 @@ function withdraw_solve_parameter_cache(vec, dims)
         A_pw=reshape(@view(vec[dims.linsys.A_pw.index]), dims.linsys.A_pw.shape),
         A_br=reshape(@view(vec[dims.linsys.A_br.index]), dims.linsys.A_br.shape),
         A_pr=reshape(@view(vec[dims.linsys.A_pr.index]), dims.linsys.A_pr.shape),
+        lu_decomp_flag=reshape(@view(vec[dims.linsys.lu_decomp_flag.index]), dims.linsys.lu_decomp_flag.shape),
     )
 
     # - blade element geometry - #
-    blade_elements(;
+    blade_elements = (;
         B=reshape(@view(vec[dims.blade_elements.B.index]), dims.blade_elements.B.shape),
+        Rtip=reshape(@view(vec[dims.blade_elements.Rtip.index]), dims.blade_elements.Rtip.shape),
+        Rhub=reshape(@view(vec[dims.blade_elements.Rhub.index]), dims.blade_elements.Rhub.shape),
         fliplift=reshape(
             @view(vec[dims.blade_elements.fliplift.index]),
             dims.blade_elements.fliplift.shape,
@@ -524,9 +705,9 @@ function withdraw_solve_parameter_cache(vec, dims)
             @view(vec[dims.blade_elements.solidity.index]),
             dims.blade_elements.solidity.shape,
         ),
-        rotor_panel_center=reshape(
-            @view(vec[dims.blade_elements.rotor_panel_center.index]),
-            dims.blade_elements.rotor_panel_center.shape,
+        rotor_panel_centers=reshape(
+            @view(vec[dims.blade_elements.rotor_panel_centers.index]),
+            dims.blade_elements.rotor_panel_centers.shape,
         ),
         inner_fraction=reshape(
             @view(vec[dims.blade_elements.inner_fraction.index]),
@@ -534,44 +715,56 @@ function withdraw_solve_parameter_cache(vec, dims)
         ),
     )
 
-    # - index maps - #
-    idmaps = (;
-        wake_node_ids_along_casing_wake_interface=reshape(
-            @view(vec[dims.idmaps.wake_node_ids_along_casing_wake_interface.index]),
-            dims.idmaps.wake_node_ids_along_casing_wake_interface.shape,
-        ),
-        wake_node_ids_along_centerbody_wake_interface=reshape(
-            @view(vec[dims.idmaps.wake_node_ids_along_centerbody_wake_interface.index]),
-            dims.idmaps.wake_node_ids_along_centerbody_wake_interface.shape,
-        ),
-        id_of_first_casing_panel_aft_of_each_rotor=reshape(
-            @view(vec[dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.index]),
-            dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.shape,
-        ),
-        id_of_first_centerbody_panel_aft_of_each_rotor=reshape(
-            @view(vec[dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.index]),
-            dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.shape,
-        ),
-        rotorwakenodeid=reshape(
-            @view(vec[dims.idmaps.rotorwakenodeid.index]), dims.idmaps.rotorwakenodeid.shape
-        ),
-        wake_nodemap=reshape(
-            @view(vec[dims.idmaps.wake_nodemap.index]), dims.idmaps.wake_nodemap.shape
-        ),
-        wake_endnodeidxs=reshape(
-            @view(vec[dims.idmaps.wake_endnodeidxs.index]),
-            dims.idmaps.wake_endnodeidxs.shape,
-        ),
-        rotor_indices_in_wake=reshape(
-            @view(vec[dims.idmaps.rotor_indices_in_wake.index]),
-            dims.idmaps.rotor_indices_in_wake.shape,
-        ),
-        body_totnodes=reshape(
-            @view(vec[dims.idmaps.wake_nodemap.index]), dims.idmaps.wake_nodemap.shape
-        ),
-    )
+    wakeK = reshape(@view(vec[dims.wakeK.index]), dims.wakeK.shape)
 
-    return (; ivr, ivw, linsys, blade_elements, idmaps)
+    # # - index maps - #
+    # idmaps = (;
+    #     wake_node_ids_along_casing_wake_interface=reshape(
+    #         @view(vec[dims.idmaps.wake_node_ids_along_casing_wake_interface.index]),
+    #         dims.idmaps.wake_node_ids_along_casing_wake_interface.shape,
+    #     ),
+    #     wake_node_ids_along_centerbody_wake_interface=reshape(
+    #         @view(vec[dims.idmaps.wake_node_ids_along_centerbody_wake_interface.index]),
+    #         dims.idmaps.wake_node_ids_along_centerbody_wake_interface.shape,
+    #     ),
+    #     id_of_first_casing_panel_aft_of_each_rotor=reshape(
+    #         @view(vec[dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.index]),
+    #         dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.shape,
+    #     ),
+    #     id_of_first_centerbody_panel_aft_of_each_rotor=reshape(
+    #         @view(vec[dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.index]),
+    #         dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.shape,
+    #     ),
+    #     rotorwakenodeid=reshape(
+    #         @view(vec[dims.idmaps.rotorwakenodeid.index]), dims.idmaps.rotorwakenodeid.shape
+    #     ),
+    #     wake_nodemap=reshape(
+    #         @view(vec[dims.idmaps.wake_nodemap.index]), dims.idmaps.wake_nodemap.shape
+    #     ),
+    #     wake_endnodeidxs=reshape(
+    #         @view(vec[dims.idmaps.wake_endnodeidxs.index]),
+    #         dims.idmaps.wake_endnodeidxs.shape,
+    #     ),
+    #     rotor_indices_in_wake=reshape(
+    #         @view(vec[dims.idmaps.rotor_indices_in_wake.index]),
+    #         dims.idmaps.rotor_indices_in_wake.shape,
+    #     ),
+    #     body_totnodes=reshape(
+    #         @view(vec[dims.idmaps.wake_nodemap.index]), dims.idmaps.wake_nodemap.shape
+    #     ),
+    # )
+
+    return (;
+        vz_rotor,
+        vtheta_rotor,
+        Cm_wake,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+    )
 end
 
 """

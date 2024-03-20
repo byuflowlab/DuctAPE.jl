@@ -679,7 +679,7 @@ function initialize_linear_system!(
 
     # Add Trailing Edge Gap Panel Influences to internal pseudo control point
     add_te_gap_aic!(
-        @view(AICpcp[:, :]),
+        AICpcp,
         itcontrolpoint,
         itnormal,
         tenode,
@@ -703,38 +703,51 @@ function initialize_linear_system!(
     )
 
     # - LU Decomposition - #
-    A_bb_LU.factors .= lu!(copy(A_bb), NoPivot(); check=false).factors # need to do it this way if A_bb_LU contains a view into a PreallocationTools DiffCache this allocates quite a bit more than just overwriting it though.
+    try
+        # TODO: you aren't going to be able to put the factorization inside the cache. it needs to always be a float.
+#########################################################
+##########################     ##########################
+#####################     LOOK!    ######################
+###########                                   ###########
+#####     -----    TODO: YOU ARE HERE     -----     #####
+###########                                   ###########
+#####################     LOOK!    ######################
+##########################     ##########################
+#########################################################
+        factorize_LHS!(A_bb_LU.factors, A_bb) # need to do it this way if A_bb_LU contains a view into a PreallocationTools DiffCache this allocates quite a bit more than just overwriting it though. note that you need to check in this case, because the initialized A_bb_LU will be a factorization, so even if the current factorization fails, you won't know unless you allow LinearAlgebra to throw an error
+
     # A_bb_LU = lu!(prelhs, NoPivot(); check=false) #this will overwrite A_bb_LU, and not update anything it was previously pointing to
 
     # check if success
-    lu_decomp_flag[1] = eltype(v_bb)(issuccess(LHS))
+        lu_decomp_flag[1] = eltype(v_bb)(1)
+    catch
+        lu_decomp_flag[1] = eltype(v_bb)(0)
+    end
 
     # - Freestream RHS - #
     vinfvec = [Vinf; 0.0]
     vdnb[:] .= [dot(vinfvec, nhat) for nhat in eachcol(normal)]
     vdnpcp[:] .= [dot(vinfvec, nhat) for nhat in eachcol(itnormal)]
     assemble_rhs_matrix!(
-    @view(b_bf[:]), vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+    b_bf, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
     )
 
     ##### ----- Rotor AIC ----- #####
-    calculate_normal_velocity!(@view(A_br[:, :]), v_br, normal)
-    vortex_aic_boundary_on_field!(
-        @view(A_pr[:, :]),
-        itcontrolpoint,
+    calculate_normal_velocity!(A_br, v_br, normal)
+source_aic!(
+    A_pr, itcontrolpoint, itnormal,
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(eltype(b_bf),size(v_br,2)),
     )
 
     ##### ----- Wake AIC ----- #####
     # - wake panels to body panels - #
-    calculate_normal_velocity!(@view(A_bw[:, :]), v_bw, normal)
+    calculate_normal_velocity!(A_bw, v_bw, normal)
 
     # add contributions from wake "trailing edge panels"
     add_te_gap_aic!(
-        @view(A_bw[:, :]),
+        A_bw,
         controlpoint,
         normal,
         wake_vortex_panels.tenode,
@@ -747,17 +760,17 @@ function initialize_linear_system!(
 
     # - wake panels on internal psuedo control point influence coefficients - #
     vortex_aic_boundary_on_field!(
-        @view(A_pw[:, :]),
+        A_pw,
         itcontrolpoint,
+        itnormal,
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(eltype(b_bf),size(v_bw,2)),
     )
 
     # add contributions from wake "trailing edge panels" on pseudo control point
     add_te_gap_aic!(
-        @view(A_pw[:, :]),
+        A_pw,
         itcontrolpoint,
         itnormal,
         wake_vortex_panels.tenode,
@@ -843,6 +856,65 @@ function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
     )
 end
 
+function interpolate_blade_elements!(blade_element_cache, rsp, rotor_panel_centers, nbe)
+
+    nrotor = length(rsp.B)
+    Rtip = blade_element_cache.Rtip
+    Rhub = blade_element_cache.Rhub
+    blade_element_cache.B .= rsp.B
+    blade_element_cache.fliplift .= rsp.fliplift
+    outer_airfoil = similar(rsp.airfoils, nbe,nrotor)
+    inner_airfoil = similar(rsp.airfoils, nbe,nrotor)
+
+    for irotor in 1:nrotor
+        rpcs = rotor_panel_centers[(nbe * (irotor - 1) + 1):(nbe * irotor)]
+
+        # dimensionalize the blade element radial positions
+        rblade = FLOWMath.linear([0.0; 1.0], [0.0; Rtip[irotor]], rsp.r[:, irotor])
+
+        # update chord lengths
+        blade_element_cache.chords[:, irotor] .= FLOWMath.akima(rblade, rsp.chords[:,irotor], rpcs)
+
+        # update twists
+        blade_element_cache.twists[:, irotor] .= FLOWMath.akima(rblade, rsp.twists[:,irotor], rpcs)
+
+        # update stagger
+        blade_element_cache.stagger[:, irotor] .= get_stagger(blade_element_cache.twists[:,irotor])
+
+        # update solidity
+        blade_element_cache.solidity[:, irotor] .= get_local_solidity(blade_element_cache.B[irotor], blade_element_cache.chords[:, irotor], rpcs)
+
+        for ir in 1:nbe
+            # outer airfoil
+            io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
+            outer_airfoil[ir,irotor] = rsp.airfoils[io, irotor]
+
+            # inner airfoil
+            ii = max(1, io - 1)
+            inner_airfoil[ir,irotor] = rsp.airfoils[ii, irotor]
+
+            # fraction of inner airfoil's polars to use
+            if rblade[io] == rblade[ii]
+                blade_element_cache.inner_fraction[ir, irotor] = 1.0
+            else
+                blade_element_cache.inner_fraction[ir, irotor] = (rpcs[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
+            end
+
+            # Check incorrect extrapolation
+            if blade_element_cache.inner_fraction[ir,irotor] > 1.0
+                blade_element_cache.inner_fraction[ir,irotor] = 1.0
+            end
+        end
+    end
+
+    blade_element_cache.rotor_panel_centers.=reshape(rotor_panel_centers, (nbe, nrotor))
+
+    return (;
+        outer_airfoil,
+        inner_airfoil,
+    )
+end
+
 function interpolate_blade_elements!(blade_elements, rsp, Rtips, Rhubs, rotor_panel_center)
     # - Extract Blade Elements - #
     (;
@@ -854,8 +926,6 @@ function interpolate_blade_elements!(blade_elements, rsp, Rtips, Rhubs, rotor_pa
         twists,
         stagger,
         solidity,
-        inner_airfoil,
-        outer_airfoil,
         inner_fraction,
         fliplift,
     ) = blade_elements
@@ -912,7 +982,7 @@ function interpolate_blade_elements!(blade_elements, rsp, Rtips, Rhubs, rotor_pa
         end
     end
 
-    return blade_elements
+    return (; inner_airfoil, outer_airfoil)
 end
 
 """
@@ -1222,7 +1292,7 @@ end
 """
 function precompute_parameters_iad(
     propulsor;
-    wake_solve_options,
+    wake_solve_options=NewtonWake(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -1322,7 +1392,7 @@ function precompute_parameters_iad(
     )
 
     # - Get geometry-based constants for wake node strength calculations - #
-    wakeK = get_wake_k(wake_vortex_panels)
+    wakeK = get_wake_k(wake_vortex_panels.node[2,:], problem_dimensions.nwn)
 
     # - Save all the index mapping (bookkeeping) - #
     idmaps = set_index_maps(
@@ -1354,6 +1424,154 @@ end
 """
 """
 function precompute_parameters_iad!(
+        ivr,
+        ivw,
+        blade_element_cache,
+        linsys,
+        wakeK,
+        propulsor;
+        wake_solve_options=options.wake_options,
+        autoshiftduct=options.autoshiftduct,
+        itcpshift=options.itcpshift,
+        axistol=options.axistol,
+        tegaptol=options.tegaptol,
+        finterp=options.finterp,
+        silence_warnings=options.silence_warnings,
+        verbose=options.verbose,
+    )
+
+    # - Extract propulsor - #
+    (;
+        duct_coordinates,       # Matrix
+        centerbody_coordinates, # Matrix
+        rotorstator_parameters, # TODO: make this a named tuple of vectors
+        paneling_constants,     # NamedTuple of scalars and vectors of scalars
+        operating_point,        # NamedTuple of vectors (TODO) of numbers
+        reference_parameters,   # NamedTuple of vectors (TODO) of numbers
+    ) = propulsor
+
+    # - Get Floating Point Type - #
+    TF = promote_type(
+        eltype(propulsor.duct_coordinates),
+        eltype(propulsor.centerbody_coordinates),
+        eltype(propulsor.operating_point.Vinf),
+        eltype(propulsor.operating_point.Omega),
+        eltype(propulsor.operating_point.rhoinf),
+        eltype(propulsor.operating_point.muinf),
+        eltype(propulsor.operating_point.asound),
+        eltype(propulsor.rotorstator_parameters.B),
+        eltype(propulsor.rotorstator_parameters.Rhub),
+        eltype(propulsor.rotorstator_parameters.Rtip),
+        eltype(propulsor.rotorstator_parameters.rotorzloc),
+        eltype(propulsor.rotorstator_parameters.chords),
+        eltype(propulsor.rotorstator_parameters.twists),
+    )
+
+    # - Get Problem Dimensions - #
+    problem_dimensions = get_problem_dimensions(paneling_constants)
+
+    # - Reinterpolate Geometry and Generate Wake Grid - #
+    wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, rotor_indices_in_wake = reinterpolate_geometry(
+        problem_dimensions,
+        duct_coordinates,
+        centerbody_coordinates,
+        rotorstator_parameters,
+        paneling_constants;
+        wake_solve_options=wake_solve_options,
+        # wake_nlsolve_ftol=wake_nlsolve_ftol,
+        # wake_max_iter=wake_max_iter,
+        # max_wake_relax_iter=max_wake_relax_iter,
+        # wake_relax_tol=wake_relax_tol,
+        autoshiftduct=autoshiftduct,
+        finterp=finterp,
+        verbose=verbose,
+        silence_warnings=silence_warnings,
+    )
+
+    # shift duct into position
+    if autoshiftduct
+        place_duct!(
+            rp_duct_coordinates,
+            rotorstator_parameters.Rtip[1],
+            rotorstator_parameters.rotorzloc[1],
+            rotorstator_parameters.tip_gap[1],
+        )
+    end
+
+    # the rotorstator Rtip and Rhub values get overwritten in the reinterpolate_geometry function
+    blade_element_cache.Rtip .= rotorstator_parameters.Rtip
+    blade_element_cache.Rhub .= rotorstator_parameters.Rhub
+
+    # - Panel Everything - #
+    body_vortex_panels, rotor_source_panels, wake_vortex_panels = generate_all_panels(
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        paneling_constants.nwake_sheets,
+        rotor_indices_in_wake,
+        rotorstator_parameters.rotorzloc,
+        wake_grid;
+        itcpshift=itcpshift,
+        axistol=axistol,
+        tegaptol=tegaptol,
+        silence_warnings=silence_warnings,
+    )
+
+    # - Compute Influence Matrices - #
+    # TODO: put ivb in post-process cache eventually
+    ivb = (;
+    v_bb = zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn,2),
+    v_br = zeros(TF, problem_dimensions.nbp, problem_dimensions.nrotor*problem_dimensions.nws,2),
+    v_bw = zeros(TF, problem_dimensions.nbp, problem_dimensions.nwn,2))
+    calculate_unit_induced_velocities!(ivr, ivw, ivb, (;body_vortex_panels, rotor_source_panels, wake_vortex_panels))
+
+    # - Set up Linear System - #
+    # TODO: put these containers in a precomp cache eventually
+    intermediate_containers = (;
+       AICn = zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn),
+        AICpcp = zeros(TF, 2, problem_dimensions.nbn),
+         vdnb = zeros(TF, problem_dimensions.nbp),
+         vdnpcp=zeros(TF,2)
+   )
+
+    # TODO: test this function
+    initialize_linear_system!(
+      linsys, ivb, body_vortex_panels, rotor_source_panels, wake_vortex_panels, operating_point.Vinf[1], intermediate_containers
+   )
+
+    # - Interpolate Blade Elements - #
+    # TODO: test this function
+    airfoils = interpolate_blade_elements!(
+        blade_element_cache,
+        rotorstator_parameters,
+        rotor_source_panels.controlpoint[2, :],
+        problem_dimensions.nbe,
+       )
+
+    # - Get geometry-based constants for wake node strength calculations - #
+    get_wake_k!(wakeK, wake_vortex_panels.node[2,:])
+
+    # - Save all the index mapping (bookkeeping) - #
+    idmaps = set_index_maps(
+        paneling_constants.npanels,
+        paneling_constants.ncenterbody_inlet,
+        paneling_constants.nwake_sheets,
+        paneling_constants.dte_minus_cbte,
+        wake_vortex_panels.nodemap,
+        wake_vortex_panels.endnodeidxs,
+        problem_dimensions.nwp,
+        problem_dimensions.nwsp,
+        problem_dimensions.nbn,
+        problem_dimensions.ndn - 1, #number of duct panels
+        rotor_indices_in_wake,
+        problem_dimensions.nrotor,
+    )
+
+     return ivb, airfoils, idmaps, (;body_vortex_panels,rotor_source_panels, wake_vortex_panels), problem_dimensions
+ end
+
+"""
+"""
+function precompute_parameters_iad!(
     ivr,
     ivw,
     ivb,
@@ -1363,7 +1581,7 @@ function precompute_parameters_iad!(
     panels,
     propulsor,
     precomp_containers; # contains wake_grid and repaneled duct and centerbody coordinates
-    wake_solve_options=wake_solve_options,
+    wake_solve_options=NewtonWake(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -1442,7 +1660,7 @@ function precompute_parameters_iad!(
 
     # - Get geometry-based constants for wake node strength calculations - #
     # TODO: write in-place version of this function
-    get_wake_k!(wakeK, wake_vortex_panels)
+    get_wake_k!(wakeK, wake_vortex_panels.node[2, :])
 
     return ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels
 end
@@ -1450,7 +1668,13 @@ end
 """
 """
 function initialize_velocities(
-    operating_point, blade_elements, linsys, ivr, ivw, body_totnodes, wake_panel_sheet_be_map
+    operating_point,
+    blade_elements,
+    linsys,
+    ivr,
+    ivw,
+    body_totnodes,
+    wake_panel_sheet_be_map,
 )
 
     ##### ----- Initialize ----- #####
@@ -1459,14 +1683,18 @@ function initialize_velocities(
       NOTE: use anything in the operating point, the wake on body AIC should cover any body and wake geometry changes, and the rotor-on-rotor velocity should cover any rotor changes.
     =#
     TF = promote_type(
-          eltype(operating_point.Omega),
-          eltype(operating_point.Vinf),
-          eltype(operating_point.rhoinf),
-          eltype(operating_point.muinf),
-          eltype(operating_point.asound),
-          eltype(linsys.A_bw),
-          eltype(ivr.v_rr)
-         )
+        eltype(operating_point.Omega),
+        eltype(operating_point.Vinf),
+        eltype(operating_point.rhoinf),
+        eltype(operating_point.muinf),
+        eltype(operating_point.asound),
+        eltype(linsys.A_bw),
+        eltype(ivr.v_rr),
+        eltype(blade_elements.twists),
+        eltype(blade_elements.chords),
+        eltype(blade_elements.Rtip),
+        eltype(blade_elements.Rhub),
+    )
 
     # - Initialize velocity intermediates and outputs - #
     # rename to only compute once
@@ -1474,11 +1702,58 @@ function initialize_velocities(
     nbe_col = size(blade_elements.rotor_panel_centers, 1)
 
     # outputs
-    Cm_wake = zeros(TF, size(ivw.v_ww, 1))
     vz_rotor = zeros(TF, nbe)
     vtheta_rotor = zeros(TF, nbe)
+    Cm_wake = zeros(TF, size(ivw.v_ww, 1))
+
+    return initialize_velocities!(
+        vz_rotor,
+        vtheta_rotor,
+        Cm_wake,
+        operating_point,
+        blade_elements,
+        linsys,
+        ivr,
+        ivw,
+        body_totnodes,
+        wake_panel_sheet_be_map,
+    )
+end
+
+function initialize_velocities!(
+    vz_rotor,
+    vtheta_rotor,
+    Cm_wake,
+    operating_point,
+    blade_elements,
+    linsys,
+    ivr,
+    ivw,
+    body_totnodes,
+    wake_panel_sheet_be_map,
+)
+
+    TF = promote_type(
+        eltype(operating_point.Omega),
+        eltype(operating_point.Vinf),
+        eltype(operating_point.rhoinf),
+        eltype(operating_point.muinf),
+        eltype(operating_point.asound),
+        eltype(linsys.A_bw),
+        eltype(ivr.v_rr),
+        eltype(blade_elements.twists),
+        eltype(blade_elements.chords),
+        eltype(blade_elements.Rtip),
+        eltype(blade_elements.Rhub),
+    )
+
+    # - Initialize intermediates - #
+    # rename to only compute once
+    nbe = size(blade_elements.rotor_panel_centers)
+    nbe_col = size(blade_elements.rotor_panel_centers, 1)
 
     # intermediate values
+    # TODO: put these in a precomp container cache eventually
     sigr = zeros(TF, nbe[1] + 1, nbe[2])
     Cm_wake_vec = zeros(TF, nbe_col + 1)
     vthetaind = zeros(TF, nbe_col)
@@ -1486,15 +1761,22 @@ function initialize_velocities(
     vrind = zeros(TF, nbe_col)
 
     # Solve Linear System for gamb
-    gamb = ImplicitAD.implicit_linear(linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU)
+    println(eltype(linsys.A_bb))
+    println(eltype(linsys.b_bf))
+    println(eltype(linsys.A_bb_LU))
+    println(eltype(linsys.A_bb_LU.factors))
+    gamb = ImplicitAD.implicit_linear(
+        linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU
+    )
+    println(eltype(gamb))
 
     # - Get body-induced velocities on rotors - #
     vzb = zeros(TF, nbe)
     vrb = zeros(TF, nbe)
     for irotor in 1:length(operating_point.Omega)
-        berange = nbe_col*(irotor-1)+1:nbe_col*irotor
-        vzb[:, irotor] = ivr.v_rb[berange,:,1] * gamb[1:body_totnodes]
-        vrb[:, irotor] = ivr.v_rb[berange,:,2] * gamb[1:body_totnodes]
+        berange = (nbe_col * (irotor - 1) + 1):(nbe_col * irotor)
+        vzb[:, irotor] = ivr.v_rb[berange, :, 1] * gamb[1:body_totnodes]
+        vrb[:, irotor] = ivr.v_rb[berange, :, 2] * gamb[1:body_totnodes]
     end
 
     ##### ----- Loop through rotors ----- #####
@@ -1529,7 +1811,7 @@ function initialize_velocities(
         # define operating points using induced velocity from rotors ahead of this one
         c4bop = [
             c4b.OperatingPoint(
-              operating_point.Vinf[1] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
+                operating_point.Vinf[1] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
                 operating_point.Omega[irotor] *
                 blade_elements.rotor_panel_centers[ir, irotor] + vt, # tangential velocity
                 operating_point.rhoinf[1],
@@ -1579,8 +1861,8 @@ function initialize_velocities(
 
         # add influence of rotor radial induced velocity from self and rotors ahead
         for jrotor in 1:irotor
-            berange = nbe_col*(irotor-1)+1:nbe_col*irotor
-            berangej = (nbe_col+1)*(jrotor-1)+1:(nbe_col+1)*jrotor
+            berange = (nbe_col * (irotor - 1) + 1):(nbe_col * irotor)
+            berangej = ((nbe_col + 1) * (jrotor - 1) + 1):((nbe_col + 1) * jrotor)
             vrind .+= ivr.v_rr[berange, berangej, 2] * sigr[:, jrotor]
         end
 
@@ -1592,8 +1874,13 @@ function initialize_velocities(
         Cm_wake_vec[1] = sqrt((operating_point.Vinf[1] + vzind[1])^2 + vrind[1]^2)
         Cm_wake_vec[2:(end - 1)] =
             (
-                sqrt.((operating_point.Vinf[1] .+ vzind[2:end]) .^ 2 .+ vrind[2:end] .^ 2) .+
-                sqrt.((operating_point.Vinf[1] .+ vzind[1:(end - 1)]) .^ 2 .+ vrind[1:(end - 1)] .^ 2)
+                sqrt.(
+                    (operating_point.Vinf[1] .+ vzind[2:end]) .^ 2 .+ vrind[2:end] .^ 2
+                ) .+
+                sqrt.(
+                    (operating_point.Vinf[1] .+ vzind[1:(end - 1)]) .^ 2 .+
+                    vrind[1:(end - 1)] .^ 2
+                )
             ) / 2.0
         Cm_wake_vec[end] = sqrt((operating_point.Vinf[1] + vzind[end])^2 + vrind[end]^2)
 
