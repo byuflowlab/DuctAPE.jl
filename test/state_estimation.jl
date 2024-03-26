@@ -50,13 +50,17 @@ println("\nSTATE ESTIMATION TESTS")
         fliplift=zeros(3, 2),
         chords=ones(3, 2),
         twists=zeros(3, 2),
-        rotor_panel_center=rotor_panel_center,
+        rotor_panel_centers=rotor_panel_center,
     )
 
     # - Test cl and cd calcs - #
     dt.calculate_blade_element_coefficients!(
-        @view(containers.cl[:, :]),
-        @view(containers.cd[:, :]),
+        containers.cl,
+        containers.cd,
+        zeros(3, 2),
+        zeros(3, 2),
+        zeros(3, 2),
+        zeros(3, 2),
         blade_elements,
         ones(3, 2),
         ones(3, 2),
@@ -87,6 +91,7 @@ println("\nSTATE ESTIMATION TESTS")
         2.0 * ones(size(sigr)),
     )
 
+    B=5
     @test all(
         sigr[1, :] .==
         B ./ (4.0 * pi) * containers.Cmag_rotor[1, :] .* blade_elements.chords[1, :] .* 2.0,
@@ -113,7 +118,7 @@ println("\nSTATE ESTIMATION TESTS")
     gamw = zeros(16)
     wake_node_ids_along_casing_wake_interface = nothing
     wake_node_ids_along_centerbody_wake_interface = nothing
-    rotorwakenodeid = [
+    wake_node_sheet_be_map = [
         1 1
         1 1
         1 2
@@ -133,12 +138,16 @@ println("\nSTATE ESTIMATION TESTS")
     ]
     dt.calculate_wake_vortex_strengths!(
         gamw,
-        ones(3, 2),
+        ones(3,2),
+        ones(3,2),
+        ones(4,2),
+        ones(4,2),
+        ones(3,2),
         ones(16),
         blade_elements.B,
         op.Omega,
         wakeK,
-        rotorwakenodeid,
+        wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
         wake_node_ids_along_centerbody_wake_interface;
     )
@@ -156,15 +165,17 @@ println("\nSTATE ESTIMATION TESTS")
     gamb = ones(3)
     ivr = (; v_rb=ones(6, 3, 2), v_rw=ones(6, 16, 2), v_rr=ones(6, 8, 2))
     dt.calculate_induced_velocities_on_rotors!(
-        @view(Vz_est[:, :]),
-        @view(Vtheta_est[:, :]),
+        Vz_est,
+        Vtheta_est,
         Gamr,
         gamw,
         sigr,
         gamb,
-        ivr,
+        @view(ivr.v_rw[:, :, 1]),
+        @view(ivr.v_rr[:, :, 1]),
+        @view(ivr.v_rb[:, :, 1]),
         blade_elements.B,
-        blade_elements.rotor_panel_center,
+        blade_elements.rotor_panel_centers,
     )
 
     @test all(Vz_est .== 27.0)
@@ -177,15 +188,15 @@ println("\nSTATE ESTIMATION TESTS")
     )
 
     vzt, vtt = dt.calculate_induced_velocities_on_rotors(
-        blade_elements.B,
-        blade_elements.rotor_panel_center,
         Gamr,
-        ivr.v_rw[:, :, 1],
         gamw,
-        ivr.v_rr[:, :, 1],
         sigr,
-        ivr.v_rb[:, :, 1],
         gamb,
+        @view(ivr.v_rw[:, :, 1]),
+        @view(ivr.v_rr[:, :, 1]),
+        @view(ivr.v_rb[:, :, 1]),
+        blade_elements.B,
+        blade_elements.rotor_panel_centers,
     )
 
     @test all(vzt .== Vz_est)
