@@ -1,113 +1,149 @@
 """
 """
-function solve!(
-    inputs,
-    Gamr,
-    Gamr_est,
-    sigr,
-    sigr_est,
-    gamw,
-    gamw_est;
-    nosource=true,
-    maxiter=1e2,
-    verbose=false,
-    nrf=0.4,
-    bt1=0.2,
-    bt2=0.6,
-    pf1=0.4,
-    pf2=0.5,
-    btw=0.6,
-    pfw=1.2,
-    f_circ=1e-3, #DFDC values
-    f_dgamw=2e-4, #DFDC Values
-    # f_circ=1e-10, # tighter tolerances don't appear to help much in accuracy
-    # f_dgamw=2e-12,
-    f_sigr=1e-2, # DFDC doesn't converge on sigr
-)
-    freestream = inputs.freestream
+function solve!(state_variables, const_cache; verbose=false)
 
-    # initialize convergence criteria
-    TF = promote_type(eltype(Gamr), eltype(gamw), eltype(sigr))
+    ### --- Unpack contants and caches --- ###
+    (;
+        # solve options
+        solve_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        state_dims,
+        # Cache(s)
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    # - Separate out the state variables - #
+    Gamr, sigr, gamw = extract_state_variables(solve_options, state_variables, state_dims)
+
+    # - separate out solve parameters here as well - #
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+
+    # unpack parameters
+    (;
+        operating_point, # freestream, Omega, etc.
+        ivr,             # induced velocities on rotor panels
+        ivw,             # induced velocities on wake panels
+        linsys,          # includes AIC's for linear system
+        blade_elements,  # includes blade element geometry
+        wakeK,           # geometric "constants" for wake node strength calculation
+    ) = solve_parameter_tuple
+
+    # - Extract and Reset Cache - #
+    # get cache vector of correct types
+    solve_container_cache_vector = @views PreallocationTools.get_tmp(
+        solve_container_cache, eltype(state_variables)(1.0)
+    )
+    # reset cache
+    solve_container_cache_vector .= 0
+    solve_containers = withdraw_solve_container_cache(
+        solve_options, solve_container_cache_vector, solve_container_cache_dims
+    )
+
+    # - initialize convergence criteria - #
+    @. solve_containers.deltaG_prev = solve_containers.Gamr_est - Gamr
+    @. solve_containers.deltaG = 0.0
+    @. solve_containers.deltag_prev = solve_containers.gamw_est - gamw
+    @. solve_containers.deltag = 0.0
+
+    TF = eltype(state_variables)
+
+    #Note, using MVectors here is faster than putting these in a cache
     maxBGamr = MVector{1,TF}(0.0)
     maxdeltaBGamr = MVector{1,TF}(0.0)
     maxsigr = MVector{1,TF}(0.0)
     maxdeltasigr = MVector{1,TF}(0.0)
     maxdeltagamw = MVector{1,TF}(0.0)
-    conv = MVector{1,Bool}(false)
-    # maxBGamr = TF[0.0]
-    # maxdeltaBGamr = TF[0.0]
-    # maxsigr = TF[0.0]
-    # maxdeltasigr = TF[0.0]
-    # maxdeltagamw = TF[0.0]
-    # conv = [false]
+    conv = solve_options.converged
+    # conv = MVector{1,Bool}(false)
     iter = 0
 
-    #TODO: check how DFDC does this part.
-    # initialize differences
-    deltaG_prev = Gamr_est .- Gamr
-    deltaG = similar(deltaG_prev) .= 0.0
-    deltaS_prev = sigr_est .- sigr
-    deltaS = similar(deltaS_prev) .= 0.0
-    deltag_prev = gamw_est .- gamw
-    deltag = similar(deltag_prev) .= 0.0
-
-    # # zero out sigr before first iteration
-    # if nosource
-    #     sigr .= 0.0
-    # end
-
     # loop until converged or max iterations are reached
-    while !conv[] && iter <= maxiter
+    while !conv[] && iter <= solve_options.maxiter
         # update iteration number
         iter += 1
         if verbose
             println("Iteration $(iter):")
         end
 
-        ##### ----- Solve linear system if including ----- #####
-        if !isnothing(inputs.gamb)
-            # in place solve for gamb
-            calculate_body_vortex_strengths!(
-                inputs.gamb,
-                inputs.A_bb,
-                inputs.b_bf,
-                gamw,
-                inputs.A_bw,
-                inputs.A_pw,
-                sigr,
-                inputs.A_br,
-                inputs.A_pr,
-                inputs.LHS;
-                post=false,
-            )
+        # - Solve Linear System - #
+        # in place solve for gamb
+        calculate_body_vortex_strengths!(
+            solve_containers.gamb,
+            A_bb_LU,
+            linsys.b_bf,
+            gamw,
+            linsys.A_bw,
+            linsys.A_pw,
+            sigr,
+            linsys.A_br,
+            linsys.A_pr,
+            linsys.A_bb,
+            solve_containers.rhs;
+            post=false,
+        )
 
-            # Update rotor blade element velocities with body influence
-            # note: only use the values in gamb associated with the node strengths
-            _, _, _, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-                Gamr, gamw, sigr, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
-            )
-        else
+        # - Update rotor blade element velocities with body influence - #
+        calculate_induced_velocities_on_rotors!(
+            solve_containers.vz_rotor,
+            solve_containers.vtheta_rotor,
+            Gamr,
+            gamw,
+            sigr,
+            @view(solve_containers.gamb[1:(idmaps.body_totnodes)]),
+            @view(ivr.v_rw[:, :, 1]),
+            @view(ivr.v_rr[:, :, 1]),
+            @view(ivr.v_rb[:, :, 1]),
+            blade_elements.B,
+            blade_elements.rotor_panel_centers,
+        )
 
-            # Update rotor blade element velocities without body influence
-            _, _, _, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = calculate_rotor_velocities(
-                Gamr, gamw, sigr, inputs
-            )
-        end
+        # - Get Absolute Rotor Velocities - #
+        reframe_rotor_velocities!(
+            solve_containers.Cz_rotor,
+            solve_containers.Ctheta_rotor,
+            solve_containers.Cmag_rotor,
+            solve_containers.vz_rotor,
+            solve_containers.vtheta_rotor,
+            operating_point.Vinf[],
+            operating_point.Omega,
+            blade_elements.rotor_panel_centers,
+        )
 
-        ##### ----- Calculate Blade Element Values ----- #####
-        # calculate lift and drag coefficients along blades
-        cl, cd = calculate_blade_element_coefficients(
-            inputs.blade_elements, Wz_rotor, Wtheta_rotor, Wmag_rotor, inputs.freestream;
+        # - Calculate Blade Element Values - #
+        calculate_blade_element_coefficients!(
+            solve_containers.cl,
+            solve_containers.cd,
+            solve_containers.beta1,
+            solve_containers.alpha,
+            solve_containers.reynolds,
+            solve_containers.mach,
+            (; blade_elements..., airfoils...),
+            solve_containers.Cz_rotor,
+            solve_containers.Ctheta_rotor,
+            solve_containers.Cmag_rotor,
+            operating_point;
+            verbose=verbose,
         )
 
         ##### ----- Estimate and Relax Gamr ----- #####
-        # in-place solve for Gamr, updating Gamr_est
+        # - Calculate Blade Element Circulation - #
         calculate_rotor_circulation_strengths!(
-            Gamr_est, Wmag_rotor, inputs.blade_elements, cl
+            solve_containers.Gamr_est,
+            solve_containers.Cmag_rotor,
+            blade_elements.chords,
+            solve_containers.cl,
         )
 
-        # get difference between estimated Gamr and old Gamr
-        @. deltaG = Gamr_est - Gamr
+        # - get difference between estimated Gamr and old Gamr - #
+        @. solve_containers.deltaG = solve_containers.Gamr_est - Gamr
 
         # Keep for now, used in test development
         # println("BGX = ", inputs.blade_elements[1].B*Gamr_est[:,1])
@@ -116,37 +152,64 @@ function solve!(
         # println("NRC = ", length(Gamr))
         # println("DBGOLD =", deltaG_prev)
 
-        # relax Gamr values
+        # - relax Gamr values - #
         relax_Gamr!(
             Gamr,
-            deltaG_prev,
-            deltaG,
+            solve_containers.deltaG_prev,
+            solve_containers.deltaG,
             maxBGamr,
             maxdeltaBGamr,
-            inputs.blade_elements.B;
-            nrf=nrf,
-            bt1=bt1,
-            bt2=bt2,
-            pf1=pf1,
-            pf2=pf2,
+            blade_elements.B;
+            nrf=solve_options.nrf,
+            bt1=solve_options.bt1,
+            bt2=solve_options.bt2,
+            pf1=solve_options.pf1,
+            pf2=solve_options.pf2,
         )
 
         ##### ----- Estimate and Relax gamw ----- #####
 
-        # Update Vm_avg in wake using new Gamr and sigma
-        if !isnothing(inputs.gamb)
-            Wm_wake = calculate_wake_velocities(
-                gamw, sigr, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
-            )
-        else
-            Wm_wake = calculate_wake_velocities(gamw, sigr, inputs)
-        end
+        # - Calculate Velocities on Wake Panels - #
+        calculate_wake_velocities!(
+            solve_containers.Cm_wake,
+            solve_containers.vz_wake,
+            solve_containers.vr_wake,
+            solve_containers.gamw_est,
+            sigr,
+            @view(solve_containers.gamb[1:(idmaps.body_totnodes)]),
+            ivw,
+            operating_point.Vinf[],
+        )
 
+        # - Get Average Wake Velocities - #
+        # currently has 5 allocations
+        average_wake_velocities!(
+            solve_containers.Cm_avg,
+            solve_containers.Cm_wake,
+            idmaps.wake_nodemap,
+            idmaps.wake_endnodeidxs,
+        )
+
+        # - Estimate wake strengths - #
         # in-place solve for gamw, update gamw_est
-        calculate_wake_vortex_strengths!(gamw_est, Gamr, Wm_wake, inputs)
+        calculate_wake_vortex_strengths!(
+            solve_containers.gamw_est,
+            solve_containers.Gamma_tilde,
+            solve_containers.H_tilde,
+            solve_containers.deltaGamma2,
+            solve_containers.deltaH,
+            Gamr,
+            solve_containers.Cm_avg,
+            blade_elements.B,
+            operating_point.Omega,
+            wakeK,
+            idmaps.wake_node_sheet_be_map,
+            idmaps.wake_node_ids_along_casing_wake_interface,
+            idmaps.wake_node_ids_along_centerbody_wake_interface;
+        )
 
-        # get difference beetween estimated gamw and old gamw
-        @. deltag = gamw_est - gamw
+        # - get difference between estimated gamw and old gamw - #
+        @. solve_containers.deltag = solve_containers.gamw_est - gamw
 
         # Keep for now, used in test development
         # println("GAMTH = ", gamw_est)
@@ -156,72 +219,69 @@ function solve!(
         # println("DGOLD =", deltag_prev)
 
         # relax gamw values
-        relax_gamw!(gamw, deltag_prev, deltag, maxdeltagamw; nrf=nrf, btw=btw, pfw=pfw)
+        relax_gamw!(
+            gamw,
+            solve_containers.deltag_prev,
+            solve_containers.deltag,
+            maxdeltagamw;
+            nrf=solve_options.nrf,
+            btw=solve_options.btw,
+            pfw=solve_options.pfw,
+        )
 
         ##### ----- Update sigr ----- #####
-        if nosource
-            # Update rotor blade element velocities without body influence
-            _, _, _, _, _, _, Wmag_rotor = calculate_rotor_velocities(
-                Gamr, gamw, sigr, inputs
-            )
+        # Update rotor blade element velocities without body influence
+        # - Update rotor blade element velocities with body influence - #
+        calculate_induced_velocities_on_rotors!(
+            solve_containers.vz_rotor,
+            solve_containers.vtheta_rotor,
+            Gamr,
+            gamw,
+            sigr,
+            @view(solve_containers.gamb[1:(idmaps.body_totnodes)]),
+            @view(ivr.v_rw[:, :, 1]),
+            @view(ivr.v_rr[:, :, 1]),
+            @view(ivr.v_rb[:, :, 1]),
+            blade_elements.B,
+            blade_elements.rotor_panel_centers,
+        )
 
-            # update sigr in place
-            calculate_rotor_source_strengths!(
-                sigr, Wmag_rotor, inputs.blade_elements, cd, inputs.freestream.rhoinf
-            )
+        # - Get Absolute Rotor Velocities - #
+        reframe_rotor_velocities!(
+            solve_containers.Cz_rotor,
+            solve_containers.Ctheta_rotor,
+            solve_containers.Cmag_rotor,
+            solve_containers.vz_rotor,
+            solve_containers.vtheta_rotor,
+            operating_point.Vinf[],
+            operating_point.Omega,
+            blade_elements.rotor_panel_centers,
+        )
 
-        else
-            # - Relax Sigr if including in "residual" - #
-            # get difference between estimated Gamr and old Gamr
-            @. deltaS = sigr_est - sigr
-            # relax Gamr values
-            relax_sigr!(
-                sigr,
-                deltaS_prev,
-                deltaS,
-                maxsigr,
-                maxdeltasigr;
-                nrf=nrf,
-                bt1=bt1,
-                bt2=bt2,
-                pf1=pf1,
-                pf2=pf2,
-            )
-        end
+        # - Calculate Rotor Panel Strengths - #
+        calculate_rotor_source_strengths!(
+            sigr,
+            solve_containers.Cmag_rotor,
+            blade_elements.chords,
+            blade_elements.B,
+            solve_containers.cd,
+        )
 
         # converged?
-        if nosource
-            check_convergence!(
-                conv,
-                maxBGamr,
-                maxdeltaBGamr,
-                maxdeltagamw,
-                inputs.Vconv[1];
-                f_circ=f_circ,
-                f_dgamw=f_dgamw,
-                verbose=verbose,
-            )
-        else
-            check_convergence!(
-                conv,
-                maxBGamr,
-                maxdeltaBGamr,
-                maxsigr,
-                maxdeltasigr,
-                maxdeltagamw,
-                inputs.Vconv[1];
-                f_circ=f_circ,
-                f_dgamw=f_dgamw,
-                f_sigr=f_sigr,
-                verbose=verbose,
-            )
-        end
+        check_convergence!(
+            conv,
+            maxBGamr,
+            maxdeltaBGamr,
+            maxdeltagamw;
+            Vconv=solve_options.Vconv[1],
+            use_abstol=solve_options.use_abstol,
+            f_circ=solve_options.f_circ,
+            f_dgamw=solve_options.f_dgamw,
+            verbose=verbose,
+        )
     end
 
-    inputs.converged[1] = conv[1]
-    inputs.iterations[1] = iter
-
-    return Gamr, sigr, gamw
+    return state_variables
 end
 
 """
@@ -250,8 +310,6 @@ function relax_Gamr!(
     pf2=0.5,
     test=false,
 )
-
-    # TODO: separate out relaxation factor computation, convergence factor computation, and actual relaxation
 
     # initilize
     TF = eltype(Gamr)
@@ -345,105 +403,6 @@ end
 
 """
 # Arguments:
-- `sigr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
-- `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
-- `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
-- `B::Vector{Float}` : number of blades on each rotor
-- `nrf::Float=0.4` : nominal relaxation factor
-- `bt1::Float=0.2` : backtrack factor 1
-- `bt2::Float=0.6` : backtrack factor 2
-- `pf1::Float=0.4` : press forward factor 1
-- `pf2::Float=0.5` : press forward factor 2
-"""
-function relax_sigr!(
-    sigr,
-    delta_prev_mat,
-    delta_mat,
-    maxsigr,
-    maxdeltasigr;
-    nrf=0.4,
-    bt1=0.2,
-    bt2=0.6,
-    pf1=0.4,
-    pf2=0.5,
-    test=false,
-)
-
-    # initilize
-    TF = eltype(sigr)
-    bladeomega = nrf .* ones(TF, size(sigr, 2))
-    omega = nrf .* ones(TF, size(sigr, 1))
-    deltahat = zeros(TF, size(sigr, 1))
-
-    for (i, (BS, delta_prev, delta)) in
-        enumerate(zip(eachcol(sigr), eachcol(delta_prev_mat), eachcol(delta_mat)))
-
-        # - Set the normalization value based on the maximum magnitude value of B*sigr
-
-        # find max magnitude
-        maxsigr[i], mi = findmax(abs.(BS))
-
-        # maintain sign of original value
-        maxsigr[i] *= sign(BS[mi])
-
-        # make sure we don't have any weird jumps
-        meang = sum(BS) / length(BS)
-        if meang > 0.0 # if mean is positive, make sure maxsigr[i] is at least 0.1
-            maxsigr[i] = max(maxsigr[i], 0.1)
-        elseif meang < 0.0 # if mean is negative, make sure maxsigr[i] is at most -0.1
-            maxsigr[i] = min(maxsigr[i], -0.1)
-        else # if the average is zero, then set maxsigr[i] to zero
-            maxsigr[i] = 0.0
-        end
-
-        # note: delta = sigr_new .- sigr
-        # note: deltahat here is actually 1/deltahat which is the version needed later
-        for (j, d) in enumerate(eachrow(deltahat))
-            if abs(delta[j]) < eps()
-                d[1] = sign(delta[j]) * sign(maxdBsigr[i]) #avoid division by zero
-            else
-                d[1] = maxsigr[i] ./ delta[j]
-            end
-        end
-
-        # get initial relaxation factor
-        bladeomega[i], oi = findmin(abs.(deltahat))
-
-        # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        if -0.2 > nrf / (deltahat[oi] * maxsigr[i]) > 0.4
-            bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
-        else
-            bladeomega[i] = nrf
-        end
-
-        # scale blade element relaxation factor
-        for (o, d, dp) in zip(eachrow(omega), delta, eachrow(delta_prev))
-            # if differences changed sign, use backtrack factor, if sign is same, use press forward factor
-            o[1] = bladeomega[i] * (sign(d) != sign(dp[1]) ? bt2 : pf2)
-
-            # save current delta into old one for next iteration
-            dp[1] = d
-        end
-
-        # save max difference for convergence criteria
-        # maxdeltasigr[i] = maximum(delta)
-        maxdeltasigr[i], mdi = findmax(abs.(delta))
-        # maintain sign of original value
-        maxdeltasigr[i] *= sign(delta[mdi])
-
-        # relax sigr for this blade
-        BS .+= omega .* delta
-    end
-
-    if test
-        return sigr, bladeomega, omega
-    else
-        return sigr
-    end
-end
-
-"""
-# Arguments:
 - `gamw::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
@@ -490,67 +449,16 @@ function relax_gamw!(
     end
 end
 
-"""
-"""
 function check_convergence!(
     conv,
     maxBGamr,
     maxdeltaBGamr,
-    maxsigr,
-    maxdeltasigr,
-    maxdeltagamw,
-    Vref;
-    f_circ=1e-3,
-    f_dgamw=2e-4,
-    f_sigr=1e-3,
-    verbose=false,
-)
-
-    # find max ratio among blades and use that for convergence
-    _, idG = findmax(maxdeltaBGamr ./ maxBGamr)
-    _, idS = findmax(maxdeltasigr ./ maxsigr)
-
-    # set convergence flag
-    conv[] =
-        abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
-        abs(maxdeltasigr[idS]) < f_sigr * abs(maxsigr[idS]) &&
-        maxdeltagamw[] < f_dgamw * Vref # abs already taken care of
-    # abs(maxdeltagamw[]) < f_dgamw * Vref
-
-    # # set convergence flag, note: this is how dfdc does it, without regard to which rotor for the Gamr values
-    # conv[] =
-    # max(abs.(maxdeltaBGamr)...) < f_circ * max(abs.(maxBGamr)...) &&
-    #     maxdeltagamw[] < f_dgamw * Vref
-
-    if verbose
-        @printf "\t%-16s      %-16s" "maxdBGamr" "fG*maxBGamr"
-        println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ * abs(maxBGamr[idG])
-        println()
-        @printf "\t%-16s      %-16s" "maxdsigr" "fs*maxsigr"
-        println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltasigr[idS]) f_sigr * abs(maxsigr[idS])
-        println()
-        @printf "\t%-16s      %-16s" "maxdgamw" "fg*Vconv"
-        println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vref
-        println()
-        println()
-    end
-
-    return conv
-end
-
-function check_convergence!(
-    conv,
-    maxBGamr,
-    maxdeltaBGamr,
-    maxdeltagamw,
-    Vref;
+    maxdeltagamw;
+    use_abstol=true,
+    Vconv=1.0,
     f_circ=1e-3,
     f_dgamw=2e-4,
     verbose=false,
-    use_abstol=false,
 )
 
     # find max ratio among blades and use that for convergence
@@ -562,24 +470,36 @@ function check_convergence!(
     else
         conv[] =
             abs(maxdeltaBGamr[idG]) < f_circ * abs(maxBGamr[idG]) &&
-            abs(maxdeltagamw[]) < f_dgamw * Vref
+            abs(maxdeltagamw[]) < f_dgamw * Vconv
     end
 
     # # set convergence flag, note: this is how dfdc does it, without regard to which rotor for the Gamr values
     # conv[] =
     # max(abs.(maxdeltaBGamr)...) < f_circ * max(abs.(maxBGamr)...) &&
-    #     maxdeltagamw[] < f_dgamw * Vref
+    #     maxdeltagamw[] < f_dgamw * Vconv
 
     if verbose
-        @printf "\t%-16s      %-16s" "maxdBGamr" "fG*maxBGamr"
-        println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ * abs(maxBGamr[idG])
-        println()
-        @printf "\t%-16s      %-16s" "maxdgamw" "fg*Vconv"
-        println()
-        @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vref
-        println()
-        println()
+        if use_abstol
+            @printf "\t%-16s      %-16s" "maxdBGamr" "fG"
+            println()
+            @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ
+            println()
+            @printf "\t%-16s      %-16s" "maxdgamw" "fg"
+            println()
+            @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw
+            println()
+            println()
+        else
+            @printf "\t%-16s      %-16s" "maxdBGamr" "fG*maxBGamr"
+            println()
+            @printf "\t%1.16f    %1.16f" abs(maxdeltaBGamr[idG]) f_circ * abs(maxBGamr[idG])
+            println()
+            @printf "\t%-16s      %-16s" "maxdgamw" "fg*Vconv"
+            println()
+            @printf "\t%1.16f    %1.16f" abs(maxdeltagamw[]) f_dgamw * Vconv
+            println()
+            println()
+        end
     end
 
     return conv

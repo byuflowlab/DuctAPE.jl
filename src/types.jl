@@ -83,7 +83,9 @@ struct RotorStatorParameters{
     fliplift::Tf
 end
 
-function RotorStatorParameters(B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift)
+function RotorStatorParameters(
+    B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
+)
     return RotorStatorParameters(
         isscalar(B) ? [B] : B,
         isscalar(rotorzloc) ? [rotorzloc] : rotorzloc,
@@ -130,9 +132,8 @@ function verify_input(propulsor)
     # TODO: go find all the various asserts and put them here
 end
 
-@kwdef struct QuickSolve{TF,TB}
+@kwdef struct CSORSolve{TF,TB}
     # Defaults are DFDC hard-coded values
-    nosource::TB = true #TODO: remove this and associated functionality
     verbose::TB = false
     maxiter::TF = 1e2
     nrf::TF = 0.4
@@ -144,11 +145,14 @@ end
     pfw::TF = 1.2
     f_circ::TF = 1e-3
     f_dgamw::TF = 2e-4
+    use_abstol::TB = false
+    Vconv::TF = 1.0
+    converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct QuickWake{TF,TI,TB}
-    wake_nlsolve_ftol::TF = 1e-9
-    wake_max_iter::TI = 100
+@kwdef struct SLORWake{TF,TI,TB}
+    max_wake_relax_iter::TI = 100
+    wake_relax_tol::TF = 1e-9
     converged::AbstractVector{TB} = [false]
 end
 
@@ -178,7 +182,7 @@ end
 end
 
 # struct QuasiNewtonSolve{}
-    # converged::AbstractVector{TB} = [false]
+# converged::AbstractVector{TB} = [false]
 # end
 
 """
@@ -190,6 +194,7 @@ end
     # - Geometry Re-interpolation and generation options - #
     finterp::Tin = FLOWMath.akima
     autoshiftduct::TB = true
+    lu_decomp_flag::TB = false
     # paneling options
     itcpshift::TF = 0.05
     axistol::TF = 1e-15
@@ -212,8 +217,6 @@ end
 
 """
 """
-function quicksolve_options(;
-    wake_options=QuickWake(), solve_options=QuickSolve(), kwargs...
-)
-    return Options(; wake_options=QuickWake(), solve_options=QuickSolve(), kwargs...)
+function quicksolve_options(; wake_options=SLORWake(), solve_options=CSORSolve(), kwargs...)
+    return Options(; wake_options=SLORWake(), solve_options=CSORSolve(), kwargs...)
 end

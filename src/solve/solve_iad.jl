@@ -12,14 +12,10 @@ function solve_iad(sensitivity_parameters, const_cache)
         verbose,
         silence_warnings,
         # nlsolve options
-        nlsolve_method,
-        nlsolve_linesearch_method,
-        nlsolve_linesearch_kwargs,
-        nlsolve_ftol,
-        nlsolve_iteration_limit,
-        converged,
+        solve_options,
         # Constant Parameters
         airfoils,
+        A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
         # Cache(s)
@@ -27,9 +23,18 @@ function solve_iad(sensitivity_parameters, const_cache)
         solve_container_cache_dims,
     ) = const_cache
 
+    (;
+        nlsolve_method,
+        nlsolve_linesearch_method,
+        nlsolve_linesearch_kwargs,
+        nlsolve_ftol,
+        nlsolve_iteration_limit,
+        converged,
+    ) = solve_options
+
     # - Extract Initial Guess Vector for State Variables - #
     # TODO: rename this to vectorize velocities since the state_dims are named tuples of the velocity names
-    initial_guess, state_dims = vectorize_inputs(
+    initial_guess, state_dims = vectorize_velocity_states(
         reshape(
             @view(sensitivity_parameters[solve_parameter_cache_dims.vz_rotor.index]),
             solve_parameter_cache_dims.vz_rotor.shape,
@@ -54,10 +59,12 @@ function solve_iad(sensitivity_parameters, const_cache)
             state_variables,
             sensitivity_parameters,
             (;
+                solve_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                state_dims,                 # dimensions for state variable extraction
                 solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
-                airfoils,
-                idmaps,         # book keeping items
-                state_dims,     # dimensions for state variable extraction
                 solve_container_cache,      # cache for solve_containers used in solve
                 solve_container_cache_dims, # dimensions for shaping the view of the solve cache
             ),
@@ -96,7 +103,7 @@ function solve_iad(sensitivity_parameters, const_cache)
 
     # - SOLVE - #
     if verbose
-        println("  "*"Newton Solve Trace:")
+        println("  " * "Newton Solve Trace:")
     end
     result = NLsolve.nlsolve(
         df,
@@ -111,7 +118,8 @@ function solve_iad(sensitivity_parameters, const_cache)
     )
 
     # update convergence flag
-    converged[1] = NLsolve.converged(result)
+    # note: need to do this complicated check to ensure that we're only checking |f(x)|<ftol rather than claiming convergences when the step size is zero but it's really just stuck.
+    _, converged[1] = NLsolve.assess_convergence(NLsolve.value(df), nlsolve_ftol)
 
     return result.zero
 end
@@ -124,23 +132,30 @@ end
 This is the residual that gets passed into nlsolve, and is just for converging Gamr and gamw.
 """
 function residual!(resid, state_variables, sensitivity_parameters, constants)
+
     # - Extract constants - #
     (;
-        idmaps,                     # book keeping items
-        solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
+        # solve options for dispatch
+        solve_options,
+        # comp,
         airfoils,                   # airfoils
+        A_bb_LU,                    # linear system left hand side LU decomposition
+        idmaps,                     # book keeping items
         state_dims,                 # dimensions for state variable extraction
+        solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
         solve_container_cache,      # cache for solve_containers used in solve
         solve_container_cache_dims, # dimensions for shaping the view of the solve cache
     ) = constants
 
     # - Separate out the state variables - #
     # TODO: test this function
-    vz_rotor, vtheta_rotor, Cm_wake = extract_state_vars(state_variables, state_dims)
+    vz_rotor, vtheta_rotor, Cm_wake = extract_state_variables(
+        solve_options, state_variables, state_dims
+    )
 
     # separate out sensitivity_parameters here as well
-    solve_solve_parameters_tuple = withdraw_solve_parameter_cache(
-        sensitivity_parameters, solve_parameter_cache_dims
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solve_options, sensitivity_parameters, solve_parameter_cache_dims
     )
 
     (;
@@ -150,21 +165,25 @@ function residual!(resid, state_variables, sensitivity_parameters, constants)
         linsys,          # includes AIC's for linear system
         blade_elements,  # includes blade element geometry
         wakeK,           # geometric "constants" for wake node strength calculation
-    ) = solve_solve_parameters_tuple
+    ) = solve_parameter_tuple
+
+    # println(
+    #     "comp: ",
+    #     all(compare_arrays(Cm_wake, comp; verbose=true, parent="Cm_wake", tab="    ")),
+    # )
 
     # - Extract and Reset Cache - #
     # get cache vector of correct types
-    solve_container_cache_vec = @views PreallocationTools.get_tmp(
-        solve_container_cache, state_variables
-    )
-    # TODO: test this function
-    solve_containers = withdraw_solve_container_cache(
-        solve_container_cache_vec, solve_container_cache_dims
+    solve_container_cache_vector = @views PreallocationTools.get_tmp(
+        solve_container_cache,
+        promote_type(eltype(state_variables), eltype(sensitivity_parameters))(1.0),
     )
     # zero out contents of solve_containers to avoid any potential contamination issues
+    solve_container_cache_vector .= 0
     # TODO: test this function
-    # Note: there are 32 allocations for this function, can that be reduced to zero?
-    reset_containers!(solve_containers) #note: also zeros out state estimates
+    solve_containers = withdraw_solve_container_cache(
+        solve_options, solve_container_cache_vector, solve_container_cache_dims
+    )
 
     # - Estimate New States - #
     # TODO: test this function
@@ -176,7 +195,7 @@ function residual!(resid, state_variables, sensitivity_parameters, constants)
         operating_point,
         ivr,
         ivw,
-        linsys,
+        (; linsys..., A_bb_LU),
         (; blade_elements..., airfoils...),
         wakeK,
         idmaps,
@@ -195,6 +214,12 @@ function residual!(resid, state_variables, sensitivity_parameters, constants)
     #resid[1] = solve_containers.vz_est[findmax(abs.(solve_containers.vz_est))[2]]
     #resid[2] = solve_containers.vtheta_est[findmax(abs.(solve_containers.vtheta_est))[2]]
     #resid[3] = solve_containers.Cm_est[findmax(abs.(solve_containers.Cm_est))[2]]
+
+    # if eltype(Cm_wake) != Float64
+    #     comp .= (p->p.value).(Cm_wake)
+    # else
+    #     comp .= Cm_wake
+    # end
 
     return resid
 end
@@ -216,13 +241,16 @@ function estimate_states!(
     verbose=false,
 )
 
-# - Rename for Convenience - #
-vz_est = solve_containers.vz_est
-vtheta_est = solve_containers.vtheta_est
-Cm_est = solve_containers.Cm_est
+    # - Rename for Convenience - #
+    vz_est = solve_containers.vz_est
+    vtheta_est = solve_containers.vtheta_est
+    Cm_est = solve_containers.Cm_est
 
     # - Get Absolute Rotor Velocities - #
     # currently has 9 allocations
+    # println("Cz type: ", eltype(solve_containers.Cz_rotor) != Float64 ? "Dual" : "Float")
+    # println("vz type: ", eltype(vz_rotor) != Float64 ? "Dual" : "Float")
+    # println("Vinf type: ", eltype(operating_point.Vinf) != Float64 ? "Dual" : "Float")
     reframe_rotor_velocities!(
         solve_containers.Cz_rotor,
         solve_containers.Ctheta_rotor,

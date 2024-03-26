@@ -64,10 +64,12 @@ function analyze(
     solve_parameter_cache_vector = @views PreallocationTools.get_tmp(
         solve_parameter_cache, TF(1.0)
     )
+    # reset cache
+    solve_parameter_cache_vector .= 0
 
     # reshape cache
     solve_parameter_tuple = withdraw_solve_parameter_cache(
-        solve_parameter_cache_vector, solve_parameter_cache_dims
+        options.solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
 
     # copy over operating point
@@ -81,7 +83,7 @@ function analyze(
     end
     # out-of-place version currently has 22,292,181 allocations.
     # TODO: do this in place for the solve input cache items. eventually will want to have a post-processing and output cache too.
-    ivb, airfoils, idmaps, panels, problem_dimensions = precompute_parameters_iad!(
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = precompute_parameters_iad!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -102,10 +104,9 @@ function analyze(
     #=
       NOTE: If the linear system or wake did not converge, there is likely a serious problem that would lead to an error in the solve, so we will exit here with a fail flag for an optimizer or user
     =#
-    if iszero(solve_parameter_tuple.linsys.lu_decomp_flag[1]) ||
-        !options.wake_options.converged[1]
+    if iszero(lu_decomp_flag) || !options.wake_options.converged[1]
         if !options.silence_warnings
-            if iszero(solve_parameter_tuple.linsys.lu_decomp_flag[1])
+            if iszero(lu_decomp_flag)
                 @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
             elseif !options.wake_options.converged[1]
                 @warn "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good."
@@ -124,6 +125,7 @@ function analyze(
         solve_parameter_cache_dims,
         airfoils,
         ivb,
+        A_bb_LU,
         panels,
         idmaps,
         problem_dimensions,
@@ -141,6 +143,7 @@ function analyze(
     solve_parameter_cache_dims,
     airfoils,
     ivb,
+    A_bb_LU,
     panels,
     idmaps,
     problem_dimensions,
@@ -165,6 +168,7 @@ function analyze(
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
+        A_bb_LU,
         solve_container_caching,
         idmaps,
         options,
@@ -174,7 +178,7 @@ function analyze(
     # TODO: probably just move this bit inside the post-process to clean up inputs
     # actually probably want to do a second dispatch, one with all the inputs, and one that extracts all the caches and calls the one with all the inputs.
     solve_parameter_tuple = withdraw_solve_parameter_cache(
-        solve_parameter_cache_vector, solve_parameter_cache_dims
+        options.solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
     (; ivr, ivw, linsys, blade_elements, wakeK) = solve_parameter_tuple
 
@@ -184,7 +188,7 @@ function analyze(
         options.solve_options,
         solve_container_caching,
         velocity_states,
-        vectorize_inputs(
+        vectorize_velocity_states(
             solve_parameter_tuple.vz_rotor,
             solve_parameter_tuple.vtheta_rotor,
             solve_parameter_tuple.Cm_wake,
@@ -194,7 +198,7 @@ function analyze(
         ivr,
         ivw,
         ivb,
-        linsys,
+        (; linsys..., A_bb_LU),
         (; blade_elements..., airfoils...),
         wakeK,
         panels.body_vortex_panels,
@@ -220,6 +224,7 @@ function process(
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
+    A_bb_LU,
     solve_container_caching,
     idmaps,
     options,
@@ -231,25 +236,29 @@ function process(
     end
     # view the initial conditions out of the inputs cache
     solve_parameter_tuple = withdraw_solve_parameter_cache(
-        solve_parameter_cache_vector, solve_parameter_cache_dims
+        solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
     (; vz_rotor, vtheta_rotor, Cm_wake, operating_point, linsys, ivr, ivw) =
         solve_parameter_tuple
 
     # initialize velocities
     # TODO; add some sort of unit test for this function
-    # TODO: need to update these in place
     initialize_velocities!(
         vz_rotor,
         vtheta_rotor,
         Cm_wake,
         solve_parameter_tuple.operating_point,
         (; solve_parameter_tuple.blade_elements..., airfoils...),
-        solve_parameter_tuple.linsys,
+        (; solve_parameter_tuple.linsys..., A_bb_LU),
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         idmaps.body_totnodes,
         idmaps.wake_panel_sheet_be_map,
+    )
+
+    # TODO: find a better way to do this so that state_dims is accessible to implicitAD
+    _, state_dims = vectorize_velocity_states(
+        reshape(vz_rotor, :), reshape(vtheta_rotor, :), reshape(Cm_wake, :)
     )
 
     # - combine cache and constants - #
@@ -258,15 +267,12 @@ function process(
         options.verbose,
         options.silence_warnings,
         #nlsolve options
-        solve_options.nlsolve_method,
-        solve_options.nlsolve_linesearch_method,
-        solve_options.nlsolve_linesearch_kwargs,
-        solve_options.nlsolve_ftol,
-        solve_options.nlsolve_iteration_limit,
-        solve_options.converged,
+        solve_options,
         # Constant Parameters
         airfoils,
+        A_bb_LU,
         idmaps,
+        state_dims,
         solve_parameter_cache_dims,
         # Cache(s)
         solve_container_caching...,
@@ -284,46 +290,67 @@ end
 """
 """
 function process(
-    process_type::QuickSolve,
-    propulsor::Propulsor,
-    ivr,
-    ivw,
-    linsys,
-    blade_elements,
-    wakeK,
+    solve_options::CSORSolve,
+    solve_parameter_cache_vector,
+    solve_parameter_cache_dims,
+    airfoils,
+    A_bb_LU,
+    solve_container_caching,
     idmaps,
     options,
-    solve_container_caching,
 )
 
     # - Rename for Convenience - #
     (; verbose, solve_options) = options
+    # view the initial conditions out of the inputs cache
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+    (; Gamr, sigr, gamw, operating_point, blade_elements, linsys, ivr, ivw, wakeK) =
+        solve_parameter_tuple
 
     # - Initialize States - #
-    Gamr, sigr, amw = initialize_rotorwake_aero(inputs)
+    initialize_strengths!(
+        Gamr,
+        sigr,
+        gamw,
+        operating_point,
+        (; blade_elements..., airfoils...),
+        (; linsys..., A_bb_LU),
+        ivr,
+        ivw,
+        wakeK,
+        idmaps.body_totnodes,
+        idmaps.wake_nodemap,
+        idmaps.wake_endnodeidxs,
+        idmaps.wake_panel_sheet_be_map,
+        idmaps.wake_node_sheet_be_map,
+        idmaps.wake_node_ids_along_casing_wake_interface,
+        idmaps.wake_node_ids_along_centerbody_wake_interface,
+    )
 
-    # vectorize inputs
+    state_variables, state_dims = vectorize_strength_states(Gamr, sigr, gamw)
 
-    # - TODO: Set up const_cache for this function - #
+    # - combine cache and constants - #
+    const_cache = (;
+        # - Constants - #
+        options.silence_warnings,
+        #CSOR solve options
+        solve_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        state_dims,
+        # Cache(s)
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        solve_container_caching...,
+    )
 
     #TODO: update this function
     # need to withdraw cache inside this function to have the *_est values, as well as sigr and gamb available.
-    return solve(
-        inputs,
-        const_cache;
-        verbose=verbose,
-        solve_options.nosource,
-        solve_options.maxiter,
-        solve_options.nrf,
-        solve_options.bt1,
-        solve_options.bt2,
-        solve_options.pf1,
-        solve_options.pf2,
-        solve_options.btw,
-        solve_options.pfw,
-        solve_options.f_circ,
-        solve_options.f_dgamw,
-    )
+    return solve!(state_variables, const_cache; verbose=options.verbose)
 end
 
 """
@@ -355,6 +382,7 @@ function post_process(
         println("\nPost-Processing")
     end
     return post_process_iad!(
+        process_type,
         solve_container_caching,
         states,
         state_dims,
@@ -380,7 +408,7 @@ end
 """
 """
 function post_process(
-    process_type::QuickSolve,
+    process_type::CSORSolve,
     solve_container_caching,
     states,
     state_dims,

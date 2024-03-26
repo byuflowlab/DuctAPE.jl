@@ -1,6 +1,6 @@
 """
 """
-function vectorize_inputs(vz_rotor, vtheta_rotor, Cm_wake)
+function vectorize_velocity_states(vz_rotor, vtheta_rotor, Cm_wake)
     total_length = 0
 
     # vz_rotor Dims
@@ -22,6 +22,31 @@ function vectorize_inputs(vz_rotor, vtheta_rotor, Cm_wake)
 
     return [reshape(vz_rotor, lvz); reshape(vtheta_rotor, lvt); Cm_wake],
     (; vz_rotor=Vz, vtheta_rotor=Vtheta, Cm_wake=Cm)
+end
+
+"""
+"""
+function vectorize_strength_states(Gamr, sigr, gamw)
+    total_length = 0
+
+    # Gamr Dims
+    s = size(Gamr)
+    lG = lfs(s)
+    Γr = (; index=(total_length + 1):(total_length + lG), shape=s)
+    total_length += lG
+
+    # sigr Dims
+    s = size(sigr)
+    ls = lfs(s)
+    σr = (; index=(total_length + 1):(total_length + ls), shape=s)
+    total_length += ls
+
+    # gamw Dims
+    s = size(gamw)
+    l = lfs(s)
+    γw = (; index=(total_length + 1):(total_length + l), shape=s)
+
+    return [reshape(Gamr, lG); reshape(sigr, ls); gamw], (; Gamr=Γr, sigr=σr, gamw=γw)
 end
 
 """
@@ -66,7 +91,7 @@ end
 
 """
 """
-function extract_state_vars(vars, dims)
+function extract_state_variables(solve_options::NewtonSolve, vars, dims)
 
     # - Separate out - #
     vz_rotor = @views reshape(vars[dims.vz_rotor.index], dims.vz_rotor.shape)
@@ -74,4 +99,16 @@ function extract_state_vars(vars, dims)
     Cm_wake = @views reshape(vars[dims.Cm_wake.index], dims.Cm_wake.shape)
 
     return vz_rotor, vtheta_rotor, Cm_wake
+end
+
+"""
+"""
+function extract_state_variables(solve_options::CSORSolve, vars, dims)
+
+    # - Separate out - #
+    Gamr = @views reshape(vars[dims.Gamr.index], dims.Gamr.shape)
+    sigr = @views reshape(vars[dims.sigr.index], dims.sigr.shape)
+    gamw = @views reshape(vars[dims.gamw.index], dims.gamw.shape)
+
+    return Gamr, sigr, gamw
 end

@@ -314,14 +314,20 @@ end
 """
 """
 function relax_grid!(
-    wake_solve_options::QuickWake, wake_grid, verbose=false, silence_warnings=true
+    wake_solve_options::SLORWake, wake_grid; verbose=false, silence_warnings=true
 )
+
+    if verbose
+        println("Solving Elliptic Grid System using SLOR")
+    end
     relax_grid!(
         wake_grid;
         max_wake_relax_iter=wake_solve_options.max_wake_relax_iter,
         wake_relax_tol=wake_solve_options.wake_relax_tol,
+        converged=wake_solve_options.converged,
         verbose=verbose,
-        silence_warnings=silence_warnings,
+        tabchar="\t",
+        ntab=1,
     )
     return wake_grid
 end

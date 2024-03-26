@@ -1,6 +1,7 @@
 """
 """
 function post_process_iad!(
+    solve_options,
     solve_container_caching,
     state_variables,
     state_dims,
@@ -39,7 +40,9 @@ function post_process_iad!(
       The solve_containers cache will contain all the intermediate values after running the estimate states function.
     =#
     # - Separate out the state variables - #
-    vz_rotor, vtheta_rotor, Cm_wake = extract_state_vars(state_variables, state_dims)
+    vz_rotor, vtheta_rotor, Cm_wake = extract_state_variables(
+        solve_options, state_variables, state_dims
+    )
 
     # - Extract and Reset Cache - #
     # get cache vector of correct types
@@ -47,7 +50,7 @@ function post_process_iad!(
         solve_container_cache, state_variables
     )
     solve_containers = withdraw_solve_container_cache(
-        solve_container_cache_vec, solve_container_cache_dims
+        solve_options, solve_container_cache_vec, solve_container_cache_dims
     )
     reset_containers!(solve_containers) #note: also zeros out state estimates
 
@@ -387,7 +390,10 @@ function post_process_iad!(
 
     if write_outputs
         write_data(
-            outs, outfile; output_tuple_name=output_tuple_name, checkoutfileexists=checkoutfileexists
+            outs,
+            outfile;
+            output_tuple_name=output_tuple_name,
+            checkoutfileexists=checkoutfileexists,
         )
     end
 
@@ -421,10 +427,10 @@ function get_body_tangential_velocities(
     duct_panel_ids_along_centerbody_wake_interface,
 )
 
-# - setup - #
+    # - setup - #
     nws, nrotor = size(sigr)
     TF = promote_type(eltype(gamb), eltype(gamw), eltype(sigr))
-    (;v_bb, v_br, v_bw ) = ivb
+    (; v_bb, v_br, v_bw) = ivb
 
     # rename for convenience
     hwi = wake_panel_ids_along_centerbody_wake_interface
@@ -455,7 +461,7 @@ function get_body_tangential_velocities(
     # - Velocity Contributions from rotors - #
     vtot_rotors = similar(Vtot) .= 0.0
     for jrotor in 1:nrotor
-        rotorrange = nws*(jrotor-1)+1:nws*jrotor
+        rotorrange = (nws * (jrotor - 1) + 1):(nws * jrotor)
         for (i, vt) in enumerate(eachrow(vtot_rotors))
             vt .+= @views v_br[:, rotorrange, i] * sigr[rotorrange]
         end
@@ -468,18 +474,13 @@ function get_body_tangential_velocities(
 
     # - Add in Jump Term - #
     # duct
-    jumpduct =
-        (gamb[1:(npanel[1])] + gamb[2:(nnode[1])]) / 2
+    jumpduct = (gamb[1:(npanel[1])] + gamb[2:(nnode[1])]) / 2
 
     # wake panels interfacing with duct
     jumpduct[wdi] .+= (gamw[dwi[1]:(dwi[end] - 1)] + gamw[(dwi[1] + 1):dwi[end]]) / 2.0
 
     # center body panels
-    jumphub =
-        (
-            gamb[(nnode[1] + 1):(totnode - 1)] +
-            gamb[(nnode[1] + 2):(totnode)]
-        ) / 2.0
+    jumphub = (gamb[(nnode[1] + 1):(totnode - 1)] + gamb[(nnode[1] + 2):(totnode)]) / 2.0
 
     # wake panels interfacing with center body
     jumphub[whi] .+= (gamw[hwi[1]:(hwi[end] - 1)] + gamw[(hwi[1] + 1):hwi[end]]) / 2.0
@@ -653,12 +654,18 @@ function calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr,
     for irotor in 1:nrotor
 
         # - Get the tangential velocities on the bodies - #
-        v_theta_duct = calculate_vtheta(Gamma_tilde[end, irotor], @view(cpr[1:didr[irotor]]))
+        v_theta_duct = calculate_vtheta(
+            Gamma_tilde[end, irotor], @view(cpr[1:didr[irotor]])
+        )
         v_theta_hub = calculate_vtheta(Gamma_tilde[1, irotor], @view(cpr[hidr[irotor]:end]))
 
         # assemble change in cp due to enthalpy and entropy behind rotor(s)
-        cp[1:didr[irotor]] += delta_cp(Htilde[end, irotor], Stilde[end, irotor], v_theta_duct, Vref)
-        cp[hidr[irotor]:end] += delta_cp(Htilde[1, irotor], Stilde[1, irotor], v_theta_hub, Vref)
+        cp[1:didr[irotor]] += delta_cp(
+            Htilde[end, irotor], Stilde[end, irotor], v_theta_duct, Vref
+        )
+        cp[hidr[irotor]:end] += delta_cp(
+            Htilde[1, irotor], Stilde[1, irotor], v_theta_hub, Vref
+        )
     end
 
     return nothing

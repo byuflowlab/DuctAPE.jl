@@ -456,6 +456,27 @@ function assemble_lhs_matrix!(
 end
 
 """
+    factorize_LHS(A::AbstractMatrix) -> Alu
+
+Returns the LU decomposition of `A`.
+"""
+function factorize_LHS(A::AbstractMatrix{T}) where {T}
+
+    # Allocate memory for pivot
+    if T<:ForwardDiff.Dual #|| T<:RD.TrackedReal  # Automatic differentiation case
+
+        Tprimal = T.parameters[T<:ForwardDiff.Dual ? 2 : 1]
+        Apivot = zeros(Tprimal, size(A))
+
+    else
+        Apivot = zeros(T, size(A))
+    end
+
+    # LU decomposition
+    return factorize_LHS!(Apivot, A)
+end
+
+"""
     factorize_LHS!(Apivot::AbstractMatrix, A::AbstractMatrix) -> Alu
 
 Returns the LU decomposition of `A` using `Apivot` as storage memory to pivot
@@ -467,7 +488,7 @@ function factorize_LHS!(Apivot, A::AbstractMatrix{T}) where {T}
     extract_primals!(Apivot, A)
 
     # LU decomposition
-    Alu = LinearAlgebra.lu!(Apivot, NoPivot())
+    Alu = LinearAlgebra.lu!(Apivot, NoPivot(); check=false)
 
     return Alu
 end
