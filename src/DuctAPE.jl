@@ -107,4 +107,7 @@ include("precomputation/initialize_rotor_only.jl")
 include("solve/solve_rotor_only.jl")
 include("postprocess/post_process_rotor.jl")
 
+##### ----- DEBUGGING ----- #####
+include("../test/test_utils.jl")
+
 end
