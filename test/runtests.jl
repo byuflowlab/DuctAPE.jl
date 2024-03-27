@@ -24,21 +24,27 @@ println("Running Tests...")
 #---------------------------------#
 #            New Tests            #
 #---------------------------------#
-include("state_estimation.jl") #TODO: move to solve related tests
 
 # - Caching Tests - #
 include("iotests.jl")
 
 # - pre-process related tests - #
-include("panel_generation_tests.jl")
 include("afcorrections.jl")
+include("panel_generation_tests.jl")
 include("influence_coefficients.jl")
 include("linear_system_assembly.jl")
+include("pre_processing_tests.jl")
+
+# - solve related tests - #
+include("state_estimation.jl")
+include("relaxation_tests.jl")
+include("wake_aero_tests.jl")
 
 ##########################################################
 #EVERYTHING BELOW THIS POINT NEEDS TO BE UPDATED
 ##########################################################
 
+# - Active Development - #
 #########################################################
 ##########################     ##########################
 #####################     LOOK!    ######################
@@ -48,18 +54,11 @@ include("linear_system_assembly.jl")
 #####################     LOOK!    ######################
 ##########################     ##########################
 #########################################################
-include("test/pre_processing_tests.jl")
-
-# - solve related tests - #
-# include("relaxation_tests.jl")
-# include("wake_aero_tests.jl")
-# include("iteration_step_tests.jl")
+include("iteration_step_tests.jl")
+# include("solve_checks.jl")
 
 # - post process related tests - #
 # include("post_processing_tests.jl")
-
-# - Active Development - #
-# include("solve_checks.jl")
 
 # - Need to update, add, fix, etc. - #
 # include("body_aero_tests.jl")

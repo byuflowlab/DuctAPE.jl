@@ -54,12 +54,27 @@ end
     maxdeltagamw[] = 0.0
     Vref = 1.0
     dt.check_convergence!(
-        conv, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vref; f_circ=1e-3, f_dgamw=2e-4
+        conv,
+        maxBGamr,
+        maxdeltaBGamr,
+        maxdeltagamw;
+        use_abstol=false,
+        Vconv=Vref,
+        f_circ=1e-3,
+        f_dgamw=2e-4,
+        verbose=false,
     )
     @test conv[] == false
 
     dt.check_convergence!(
-        conv, 1e4 * ones(2), maxdeltaBGamr, maxdeltagamw, Vref; f_circ=1e-3, f_dgamw=2e-4
+        conv,
+        1e4 * ones(2),
+        maxdeltaBGamr,
+        maxdeltagamw;
+        use_abstol=false,
+        Vconv=Vref,
+        f_circ=1e-3,
+        f_dgamw=2e-4,
     )
     @test conv[] == true
 end

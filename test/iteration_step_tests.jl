@@ -2,22 +2,8 @@ println("\nITERATION STEP THROUGH TESTS")
 
 @testset "Iteration Steps" begin
     ##### ----- Set up ----- #####
+
     datapath = "data/dfdc_init_iter1/"
-    include(datapath * "ductape_parameters.jl")
-    include(datapath * "ductape_formatted_dfdc_geometry.jl")
-
-    # generate inputs
-    inputs = dt.precomputed_inputs(
-        system_geometry,
-        rotorstator_parameters, #vector of named tuples
-        freestream,
-        reference_parameters;
-        debug=false,
-        finterp=FLOWMath.linear,
-    )
-
-    # - Parameters - #
-    B = 5 #there are 5 blades
 
     # - read in index file - #
     # in the case here, element 1 is the hub, 2 is the duct, 3 is the rotor, 4 is the hub wake, 14 is the duct wake, and the rest are the interior wake sheets.
@@ -32,10 +18,47 @@ println("\nITERATION STEP THROUGH TESTS")
     # - read in geometry file to help find indices - #
     include(datapath * "dfdc_geometry.jl")
 
+    include(datapath * "ductape_parameters.jl")
+
+    include(datapath * "ductape_formatted_dfdc_geometry.jl")
+
+    # generate inputs
+    ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels, problem_dimensions = dt.precompute_parameters_iad(
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        wake_grid,
+        rotor_indices_in_wake,
+        Rtips,
+        Rhubs,
+        rotorstator_parameters,
+        paneling_constants,
+        operating_point,
+        reference_parameters,
+        nothing;
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
+        silence_warnings=true,
+        verbose=false,
+    )
+
+    # inputs = dt.precomputed_inputs(
+    #     system_geometry,
+    #     rotorstator_parameters, #vector of named tuples
+    #     freestream,
+    #     reference_parameters;
+    #     debug=false,
+    #     finterp=FLOWMath.linear,
+    # )
+
+    # - Parameters - #
+    B = 5 #there are 5 blades
+
     # get wake sheet length
     num_wake_z_panels = num_wake_z_nodes - 1
 
     # get number of nodes and panels on bodies interface with wake
+    # TODO: these happen to be wrong, but I think it works out later...
     nhub_interface_nodes = num_wake_z_nodes - nidranges[4]
     nduct_interface_nodes = num_wake_z_nodes - nidranges[end]
     nhub_interface_panels = num_wake_z_panels - pidranges[4]
@@ -56,6 +79,16 @@ println("\nITERATION STEP THROUGH TESTS")
 
     # solve body with those inputs and test body strengths
     ##### ----- Test body strengths ----- #####
+#########################################################
+##########################     ##########################
+#####################     LOOK!    ######################
+###########                                   ###########
+#####     -----    TODO: YOU ARE HERE     -----     #####
+###########                                   ###########
+#####################     LOOK!    ######################
+##########################     ##########################
+#########################################################
+#TODO: update this function to new version/input
     dt.calculate_body_vortex_strengths!(
         inputs.gamb,
         inputs.A_bb,
