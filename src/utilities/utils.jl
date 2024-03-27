@@ -332,3 +332,38 @@ function extract_primals!(Avalue, A::AbstractMatrix{T}) where {T}
 
     return Avalue
 end
+
+"""
+length from size
+move to utilities
+"""
+function lfs(shape)
+    if length(shape) == 1
+        return shape[1]
+    else
+        return *(shape...)
+    end
+end
+
+"""
+note: containers must be Arrays, structs of arrays, or tuples of arrays
+move to utilities
+"""
+function reset_containers!(c)
+    if typeof(c) <: AbstractArray
+        #do nothing if it's a string
+        (eltype(c) == String) || (c .= 0)
+    else
+        for p in propertynames(c)
+            cp = getfield(c, p)
+            if typeof(cp) <: AbstractArray
+                #do nothing if it's a string
+                (eltype(cp) == String) || (cp .= 0)
+            else
+                reset_containers!(cp)
+            end
+        end
+    end
+
+    return c
+end

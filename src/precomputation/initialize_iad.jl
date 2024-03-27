@@ -1276,10 +1276,6 @@ end
 function precompute_parameters_iad(
     propulsor;
     wake_solve_options=NewtonWake(),
-    # wake_nlsolve_ftol=1e-14,
-    # wake_max_iter=100,
-    # max_wake_relax_iter=3,
-    # wake_relax_tol=1e-14,
     autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
@@ -1309,10 +1305,6 @@ function precompute_parameters_iad(
         rotorstator_parameters,
         paneling_constants;
         wake_solve_options=wake_solve_options,
-        # wake_nlsolve_ftol=wake_nlsolve_ftol,
-        # wake_max_iter=wake_max_iter,
-        # max_wake_relax_iter=max_wake_relax_iter,
-        # wake_relax_tol=wake_relax_tol,
         autoshiftduct=autoshiftduct,
         finterp=finterp,
         verbose=verbose,
@@ -1337,6 +1329,49 @@ function precompute_parameters_iad(
         rotorstator_parameters.rotorzloc,
     )
 
+    return precompute_parameters_iad(
+        problem_dimensions,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        wake_grid,
+        rotor_indices_in_wake,
+        Rtips,
+        Rhubs,
+        rotorstator_parameters,
+        paneling_constants,
+        operating_point,
+        reference_parameters;
+        itcpshift=itcpshift,
+        axistol=axistol,
+        tegaptol=tegaptol,
+        finterp=finterp,
+        silence_warnings=silence_warnings,
+        verbose=verbose,
+    )
+end
+
+"""
+"""
+function precompute_parameters_iad(
+    rp_duct_coordinates,
+    rp_centerbody_coordinates,
+    wake_grid,
+    rotor_indices_in_wake,
+    Rtips,
+    Rhubs,
+    rotorstator_parameters,
+    paneling_constants,
+    operating_point,
+    reference_parameters,
+    problem_dimensions=nothing;
+    autoshiftduct=true,
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
+    silence_warnings=true,
+    verbose=false,
+)
+
     # - Panel Everything - #
     body_vortex_panels, rotor_source_panels, wake_vortex_panels = generate_all_panels(
         rp_duct_coordinates,
@@ -1350,6 +1385,13 @@ function precompute_parameters_iad(
         tegaptol=tegaptol,
         silence_warnings=silence_warnings,
     )
+
+    # - Get problem dimensions if not already done - #
+    if isnothing(problem_dimensions)
+        problem_dimensions = get_problem_dimensions(
+            body_vortex_panels, rotor_source_panels, wake_vortex_panels
+        )
+    end
 
     # - Compute Influence Matrices - #
     ivr, ivw, ivb = calculate_unit_induced_velocities(
@@ -1375,7 +1417,7 @@ function precompute_parameters_iad(
     )
 
     # - Get geometry-based constants for wake node strength calculations - #
-    wakeK = get_wake_k(wake_vortex_panels.node[2,:], problem_dimensions.nwn)
+    wakeK = get_wake_k(wake_vortex_panels.node[2, :], problem_dimensions.nwn)
 
     # - Save all the index mapping (bookkeeping) - #
     idmaps = set_index_maps(
@@ -1407,21 +1449,21 @@ end
 """
 """
 function precompute_parameters_iad!(
-        ivr,
-        ivw,
-        blade_element_cache,
-        linsys,
-        wakeK,
-        propulsor;
-        wake_solve_options=options.wake_options,
-        autoshiftduct=options.autoshiftduct,
-        itcpshift=options.itcpshift,
-        axistol=options.axistol,
-        tegaptol=options.tegaptol,
-        finterp=options.finterp,
-        silence_warnings=options.silence_warnings,
-        verbose=options.verbose,
-    )
+    ivr,
+    ivw,
+    blade_element_cache,
+    linsys,
+    wakeK,
+    propulsor;
+    wake_solve_options=options.wake_options,
+    autoshiftduct=options.autoshiftduct,
+    itcpshift=options.itcpshift,
+    axistol=options.axistol,
+    tegaptol=options.tegaptol,
+    finterp=options.finterp,
+    silence_warnings=options.silence_warnings,
+    verbose=options.verbose,
+)
 
     # - Extract propulsor - #
     (;
@@ -1461,10 +1503,6 @@ function precompute_parameters_iad!(
         rotorstator_parameters,
         paneling_constants;
         wake_solve_options=wake_solve_options,
-        # wake_nlsolve_ftol=wake_nlsolve_ftol,
-        # wake_max_iter=wake_max_iter,
-        # max_wake_relax_iter=max_wake_relax_iter,
-        # wake_relax_tol=wake_relax_tol,
         autoshiftduct=autoshiftduct,
         finterp=finterp,
         verbose=verbose,
@@ -1498,24 +1536,38 @@ function precompute_parameters_iad!(
     # - Compute Influence Matrices - #
     # TODO: put ivb in post-process cache eventually
     ivb = (;
-    v_bb = zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn,2),
-    v_br = zeros(TF, problem_dimensions.nbp, problem_dimensions.nrotor*problem_dimensions.nws,2),
-    v_bw = zeros(TF, problem_dimensions.nbp, problem_dimensions.nwn,2))
-    calculate_unit_induced_velocities!(ivr, ivw, ivb, (;body_vortex_panels, rotor_source_panels, wake_vortex_panels))
+        v_bb=zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn, 2),
+        v_br=zeros(
+            TF,
+            problem_dimensions.nbp,
+            problem_dimensions.nrotor * problem_dimensions.nws,
+            2,
+        ),
+        v_bw=zeros(TF, problem_dimensions.nbp, problem_dimensions.nwn, 2),
+    )
+    calculate_unit_induced_velocities!(
+        ivr, ivw, ivb, (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
+    )
 
     # - Set up Linear System - #
     # TODO: put these containers in a precomp cache eventually
     intermediate_containers = (;
-       AICn = zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn),
-        AICpcp = zeros(TF, 2, problem_dimensions.nbn),
-         vdnb = zeros(TF, problem_dimensions.nbp),
-         vdnpcp=zeros(TF,2)
-   )
+        AICn=zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn),
+        AICpcp=zeros(TF, 2, problem_dimensions.nbn),
+        vdnb=zeros(TF, problem_dimensions.nbp),
+        vdnpcp=zeros(TF, 2),
+    )
 
     # TODO: test this function
     A_bb_LU, lu_decomp_flag = initialize_linear_system!(
-      linsys, ivb, body_vortex_panels, rotor_source_panels, wake_vortex_panels, operating_point.Vinf[1], intermediate_containers
-   )
+        linsys,
+        ivb,
+        body_vortex_panels,
+        rotor_source_panels,
+        wake_vortex_panels,
+        operating_point.Vinf[1],
+        intermediate_containers,
+    )
 
     # - Interpolate Blade Elements - #
     # TODO: test this function
@@ -1524,10 +1576,10 @@ function precompute_parameters_iad!(
         rotorstator_parameters,
         rotor_source_panels.controlpoint[2, :],
         problem_dimensions.nbe,
-       )
+    )
 
     # - Get geometry-based constants for wake node strength calculations - #
-    get_wake_k!(wakeK, wake_vortex_panels.node[2,:])
+    get_wake_k!(wakeK, wake_vortex_panels.node[2, :])
 
     # - Save all the index mapping (bookkeeping) - #
     idmaps = set_index_maps(
@@ -1545,8 +1597,14 @@ function precompute_parameters_iad!(
         problem_dimensions.nrotor,
     )
 
-     return ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, (;body_vortex_panels,rotor_source_panels, wake_vortex_panels), problem_dimensions
- end
+    return ivb,
+    A_bb_LU,
+    lu_decomp_flag,
+    airfoils,
+    idmaps,
+    (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
+    problem_dimensions
+end
 
 """
 """
@@ -1561,10 +1619,6 @@ function precompute_parameters_iad!(
     propulsor,
     precomp_containers; # contains wake_grid and repaneled duct and centerbody coordinates
     wake_solve_options=NewtonWake(),
-    # wake_nlsolve_ftol=1e-14,
-    # wake_max_iter=100,
-    # max_wake_relax_iter=3,
-    # wake_relax_tol=1e-14,
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
@@ -1597,10 +1651,6 @@ function precompute_parameters_iad!(
         paneling_constants,
         idmaps.rotor_indices_in_wake;
         wake_solve_options=wake_solve_options,
-        # wake_nlsolve_ftol=wake_nlsolve_ftol,
-        # wake_max_iter=wake_max_iter,
-        # max_wake_relax_iter=max_wake_relax_iter,
-        # wake_relax_tol=wake_relax_tol,
         finterp=finterp,
         silence_warnings=silence_warnings,
     )
@@ -1627,7 +1677,9 @@ function precompute_parameters_iad!(
 
     # - Set up Linear System - #
     # TODO: test this function
-    A_bb_LU, lu_decomp_flag = initialize_linear_system!(linsys, ivb, panels.body_vortex_panels, AICn, AICpcp)
+    A_bb_LU, lu_decomp_flag = initialize_linear_system!(
+        linsys, ivb, panels.body_vortex_panels, AICn, AICpcp
+    )
 
     # - Interpolate Blade Elements - #
     # TODO: test this function
@@ -1643,7 +1695,6 @@ function precompute_parameters_iad!(
 
     return ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels, lu_decomp_flag
 end
-
 """
 """
 function initialize_velocities(
@@ -1893,7 +1944,7 @@ function initialize_strengths!(
     wake_panel_sheet_be_map,
     wake_node_sheet_be_map,
     wake_node_ids_along_casing_wake_interface,
-    wake_node_ids_along_centerbody_wake_interface
+    wake_node_ids_along_centerbody_wake_interface,
 )
 
     # zero outputs:
@@ -1930,7 +1981,7 @@ function initialize_strengths!(
     vz_rotor = zeros(TF, nbe)
     vtheta_rotor = zeros(TF, nbe)
     Cm_wake_vec = zeros(TF, nbe_col + 1)
-    Cm_wake = zeros(TF, size(wake_panel_sheet_be_map,1)).=0
+    Cm_wake = zeros(TF, size(wake_panel_sheet_be_map, 1)) .= 0
     vthetaind = zeros(TF, nbe_col)
     vzind = zeros(TF, nbe_col)
     vrind = zeros(TF, nbe_col)
@@ -1997,7 +2048,7 @@ function initialize_strengths!(
 
         ##### ----- Assign Initial Gamr, sigr, and gamw ----- #####
         # - Get Gamr - #
-        Gamr[:,irotor] .= 0.5 .* out.cl .* out.W .* blade_elements.chords[:,irotor]
+        Gamr[:, irotor] .= 0.5 .* out.cl .* out.W .* blade_elements.chords[:, irotor]
 
         # -  vz_rotor and V_theta rotor - #
         # self influence
@@ -2067,18 +2118,13 @@ function initialize_strengths!(
 
     # - initialize wake strengths - #
     # TODO: these should be in solve_containers, but need to figure out how to organize that as an input in this case
-    Gamma_tilde=zeros(TF,nbe)
-    H_tilde=zeros(TF,nbe)
-    deltaGamma2=zeros(TF,nbe[1] + 1, nbe[2])
-    deltaH=zeros(TF,nbe[1] + 1, nbe[2])
-    Cm_avg = zeros(TF, size(gamw)).=0
+    Gamma_tilde = zeros(TF, nbe)
+    H_tilde = zeros(TF, nbe)
+    deltaGamma2 = zeros(TF, nbe[1] + 1, nbe[2])
+    deltaH = zeros(TF, nbe[1] + 1, nbe[2])
+    Cm_avg = zeros(TF, size(gamw)) .= 0
 
-    average_wake_velocities!(
-        Cm_avg,
-        Cm_wake,
-        wake_nodemap,
-        wake_endnodeidxs,
-    )
+    average_wake_velocities!(Cm_avg, Cm_wake, wake_nodemap, wake_endnodeidxs)
     # - Calculate Wake Panel Strengths - #
     # in-place solve for gamw,
     calculate_wake_vortex_strengths!(

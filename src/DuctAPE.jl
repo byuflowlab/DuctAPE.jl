@@ -38,9 +38,11 @@ include("types.jl")
 
 ##### ----- UTILITIES ----- #####
 # general utility functions
+# TODO: organize utility
 include("utilities/utils.jl")
 include("solve/io.jl") #TODO: move to utilities
 include("solve/cache.jl")
+include("solve/bookkeeping.jl")
 
 ##### ----- Analysis ----- #####
 include("analysis/analyses.jl")
