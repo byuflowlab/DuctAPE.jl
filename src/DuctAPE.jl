@@ -21,6 +21,8 @@ using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in 
 
 using Printf # used when verbose option is selected
 
+using Primes # used in Romberg integration settings
+
 #---------------------------------#
 #            INCLUDES             #
 #---------------------------------#
