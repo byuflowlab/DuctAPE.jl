@@ -30,6 +30,7 @@ using Primes # used in Romberg integration settings
 ##### ----- UTILITIES ----- #####
 # general utility functions
 include("utilities/utils.jl")
+include("types.jl")
 
 ##### ----- PRECOMPUTATION ----- #####
 # Pre-solve initializations
@@ -52,6 +53,8 @@ include("precomputation/velocities.jl")
 include("precomputation/body_aic.jl")
 include("precomputation/induced_velocity_matrices.jl")
 
+include("precomputation/romberg_integrals.jl")
+include("precomputation/integrands.jl")
 ##### ----- SOLVER ----- #####
 
 include("solve/solve.jl")

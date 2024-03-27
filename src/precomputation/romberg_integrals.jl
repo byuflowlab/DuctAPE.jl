@@ -5,6 +5,7 @@
 # DFDC doesn't actually do a true trapezoidal integration, rather it assumes a linear function and does δx*f(midpoint of iterval), this is technically less accurate than the trapezoidal method, but does avoid sampling at the end and midpoints of panels.  Theoretically, the extrapolation will account for the less accurate integration method.
 # perhaps a combo, where you do a DFDC-like integration (not quite trapezoidal), but do the large sample size and early extrapolation termination.
 
+# Current Plan: do romberg for the non-singular ones, and quadgk for the singular ones.
 
 """
     extrapolate!(fh::AbstractVector; power=1, atol=0, rtol=0, maxeval=typemax(Int), breaktol=Inf)
@@ -78,7 +79,7 @@ end
 
 @views function romberg!(fh, step_size, samples, endsum, factors, numfactors; kwargs...)
 
-    # - Do Trapezoidal Integration - #
+    # - Do Trapezoidal Integration with Composite Trapezoidal Rule - #
     b, e = firstindex(samples), lastindex(samples)
     i = numfactors + 1
     fh[i] = (step_size * (sum(samples[(b + 1):(e - 1)]) + endsum), step_size)
@@ -101,10 +102,6 @@ end
     return extrapolate!(fh; power=2, kwargs...)
 end
 
-#---------------------------------#
-#             VORTEX              #
-#---------------------------------#
-
 function allocate_integration_containers(dispatch_type::TF, nsamples, nfactors) where {TF}
     return (;
         err=zeros(TF, 2, 2), #always this size
@@ -113,6 +110,10 @@ function allocate_integration_containers(dispatch_type::TF, nsamples, nfactors) 
         fh=[(TF(1.0), TF(1.0)) for i in 1:(nfactors + 1)],
     )
 end
+
+#---------------------------------#
+#             VORTEX              #
+#---------------------------------#
 
 """
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
@@ -130,14 +131,8 @@ function nominal_vortex_panel_integration!(
 
     # Define function to integrate
     for (s, t) in zip(eachrow(containers.samples), integration_options.samplepoints)
-        s .= nominal_vortex_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            containers.sample_cache;
-            nondimrange=integration_options.nondimrange,
+        nominal_vortex_induced_velocity_sample!(
+            s, t, node1, node2, influence_length, controlpoint, containers.sample_cache
         )
     end
 
@@ -147,8 +142,8 @@ function nominal_vortex_panel_integration!(
             integration_options.stepsize,
             s,
             (s[1] + s[end]) / 2.0,
-            factors,
-            length(factors);
+            integration_options.factors,
+            integration_options.nfactors;
             atol=integration_options.atol,
         )
     end
@@ -162,47 +157,47 @@ function nominal_vortex_panel_integration!(
     end
 end
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
-function self_vortex_panel_integration(
-    node1,
-    node2,
-    influence_length,
-    controlpoint,
-    cache_vec;
-    nondimrange=[0.0; 1.0],
-    debug=false,
-)
+# """
+# `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+# """
+# function self_vortex_panel_integration(
+#     node1,
+#     node2,
+#     influence_length,
+#     controlpoint,
+#     cache_vec;
+#     nondimrange=[0.0; 1.0],
+#     debug=false,
+# )
 
-    # Define function to integrate
-    function fsample(t)
-        return self_vortex_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            cache_vec;
-            nondimrange=nondimrange,
-        )
-    end
+#     # Define function to integrate
+#     function fsample(t)
+#         return self_vortex_induced_velocity_sample(
+#             t,
+#             node1,
+#             node2,
+#             influence_length,
+#             controlpoint,
+#             cache_vec;
+#             nondimrange=nondimrange,
+#         )
+#     end
 
-    V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
+#     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
 
-    cache_vec[1], cache_vec[2] = analytically_integrated_vortex_influence(
-        controlpoint[2], influence_length
-    )
+#     cache_vec[1], cache_vec[2] = analytically_integrated_vortex_influence(
+#         controlpoint[2], influence_length
+#     )
 
-    V .*= influence_length
-    V[1:2] .+= cache_vec[1] / 2.0
+#     V .*= influence_length
+#     V[1:2] .+= cache_vec[1] / 2.0
 
-    if debug
-        return reshape(V, (2, 2)), err
-    else
-        return reshape(V, (2, 2))
-    end
-end
+#     if debug
+#         return reshape(V, (2, 2)), err
+#     else
+#         return reshape(V, (2, 2))
+# end
+# end
 
 #---------------------------------#
 #             SOURCE              #
@@ -211,7 +206,7 @@ end
 """
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
-function nominal_source_panel_integration(
+function nominal_source_panel_integration!(
     node1,
     node2,
     influence_length,
@@ -245,44 +240,44 @@ function nominal_source_panel_integration(
     end
 end
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
-function self_source_panel_integration(
-    node1,
-    node2,
-    influence_length,
-    controlpoint,
-    cache_vec;
-    nondimrange=[0.0; 1.0],
-    debug=false,
-)
+# """
+# `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+# """
+# function self_source_panel_integration(
+#     node1,
+#     node2,
+#     influence_length,
+#     controlpoint,
+#     cache_vec;
+#     nondimrange=[0.0; 1.0],
+#     debug=false,
+# )
 
-    # Define function to integrate
-    function fsample(t)
-        return self_source_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            cache_vec;
-            nondimrange=nondimrange,
-        )
-    end
+#     # Define function to integrate
+#     function fsample(t)
+#         return self_source_induced_velocity_sample(
+#             t,
+#             node1,
+#             node2,
+#             influence_length,
+#             controlpoint,
+#             cache_vec;
+#             nondimrange=nondimrange,
+#         )
+#     end
 
-    V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
+#     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
 
-    cache_vec[1], cache_vec[2] = analytically_integrated_source_influence(
-        controlpoint[2], influence_length
-    )
+#     cache_vec[1], cache_vec[2] = analytically_integrated_source_influence(
+#         controlpoint[2], influence_length
+#     )
 
-    V .*= influence_length
-    V[3:4] .+= cache_vec[2] / 2.0
+#     V .*= influence_length
+#     V[3:4] .+= cache_vec[2] / 2.0
 
-    if debug
-        return reshape(V, (2, 2)), err
-    else
-        return reshape(V, (2, 2))
-    end
-end
+#     if debug
+#         return reshape(V, (2, 2)), err
+#     else
+#         return reshape(V, (2, 2))
+#     end
+# end

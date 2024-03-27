@@ -7,6 +7,48 @@
 #---------------------------------#
 #             Nominal             #
 #---------------------------------#
+"""
+
+# Arguments:
+- `t::Float` : sample point in range (0,1) selected by quadrature.
+"""
+function nominal_vortex_induced_velocity_sample!(
+    V, t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
+)
+
+    # Transform from (0,1) to actual position on panel
+    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t) # z coordinate
+    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t) # r coordinate
+
+    # get relative geometry: xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
+
+    # Get velocity components at sample points
+    cache_vec[7] = vortex_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[6],#rj
+        1.0,
+        view(cache_vec, 11:15),
+    ) #vz
+
+    cache_vec[8] = vortex_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], view(cache_vec, 11:16)
+    ) #vr
+
+    #=
+    assemble output components in the format:
+        [x_j r_j; x_{j+1} r_{j+1}]
+    and scale by influence panel length
+        (due to transformation of integration range to/from range=(0,1))
+     =#
+    V[1] = cache_vec[7] * (1.0 - t) * influence_length
+    V[2] = cache_vec[7] * t * influence_length
+    V[3] = cache_vec[8] * (1.0 - t) * influence_length
+    V[4] = cache_vec[8] * t * influence_length
+    return V
+end
 
 """
 
