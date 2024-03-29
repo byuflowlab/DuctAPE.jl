@@ -209,6 +209,7 @@ function induced_velocities_from_trailing_edge_gap_panel!(
     tendotn,
     tencrossn,
     teadjnodeidxs;
+    wake=false,
     cache_vec=nothing,
 )
 
@@ -254,6 +255,10 @@ function induced_velocities_from_trailing_edge_gap_panel!(
             for k in 1:2
                 # fill the Matrix
                 VEL[i, nmap[k], :] += ndn[k] * vvel[k, :] + ncn[k] * svel[k, :]
+                if wake
+                    # wake "TE Panels" only have the vortex influence
+                    VEL[i, nmap[k], :] += ndn[k] * vvel[k, :]
+                end
             end #for k
         end #for j
     end #for i

@@ -63,11 +63,19 @@ end
 """
 """
 function allocate_solve_parameter_cache(
-    solve_type::CSORSolve, paneling_constants; fd_chunk_size=12, levels=2
+    solve_type::CSORSolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=2
 )
 
     # - Get problem dimensions - #
     pd = get_problem_dimensions(paneling_constants)
+return allocate_solve_parameter_cache(
+    solve_type::CSORSolverOptions, pd; fd_chunk_size=fd_chunk_size, levels=levels
+)
+end
+
+function allocate_solve_parameter_cache(
+    solve_type::CSORSolverOptions, problem_dimensions; fd_chunk_size=12, levels=2
+)
 
     (;
         nrotor,     # number of rotors
@@ -82,7 +90,7 @@ function allocate_solve_parameter_cache(
         nwsn,   # number of nodes per wake sheet
         ndwin,  # number of duct-wake interfacing nodes
         ncbwin, # number of centerbody-wake interfacing nodes
-    ) = pd
+    ) = problem_dimensions
 
     # - initialize - #
     total_length = 0
@@ -298,14 +306,26 @@ function allocate_solve_parameter_cache(
         ),
     )
 end
+
 """
 """
 function allocate_solve_parameter_cache(
-    solve_type::NewtonSolve, paneling_constants; fd_chunk_size=12, levels=2
+    solve_type::SolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=2
 )
 
     # - Get problem dimensions - #
     pd = get_problem_dimensions(paneling_constants)
+return allocate_solve_parameter_cache(
+    solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels
+)
+end
+
+"""
+"""
+function allocate_solve_parameter_cache(
+    solve_type::SolverOptions, problem_dimensions; fd_chunk_size=12, levels=2
+)
+
 
     (;
         nrotor,     # number of rotors
@@ -320,7 +340,7 @@ function allocate_solve_parameter_cache(
         nwsn,   # number of nodes per wake sheet
         ndwin,  # number of duct-wake interfacing nodes
         ncbwin, # number of centerbody-wake interfacing nodes
-    ) = pd
+    ) = problem_dimensions
 
     # - initialize - #
     total_length = 0
@@ -538,10 +558,18 @@ end
 """
 """
 function allocate_solve_container_cache(
-    solve_type::CSORSolve, paneling_constants; fd_chunk_size=12, levels=1
+    solve_type::CSORSolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
 )
     pd = get_problem_dimensions(paneling_constants)
 
+    return allocate_solve_container_cache(solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels)
+end
+
+"""
+"""
+function allocate_solve_container_cache(
+    solve_type::CSORSolverOptions, problem_dimensions; fd_chunk_size=12, levels=1
+)
     (;
         nrotor, # number of rotors
         nwn,    # number of wake nodes
@@ -549,7 +577,7 @@ function allocate_solve_container_cache(
         nbn,    # number of body nodes
         nbe,    # number of blade elements (also rotor panels)
         nws,    # number of wake sheets (also rotor panel edges)
-    ) = pd
+    ) = problem_dimensions
 
     # - initialize - #
     total_length = 0
@@ -701,13 +729,24 @@ function allocate_solve_container_cache(
         ),
     )
 end
+
 """
-TODO: add another version of this that sets up cache for DFDC-like CSOR solve
 """
 function allocate_solve_container_cache(
-    solve_type::NewtonSolve, paneling_constants; fd_chunk_size=12, levels=1
+    solve_type::SolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
 )
     pd = get_problem_dimensions(paneling_constants)
+
+return allocate_solve_container_cache(
+    solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels
+)
+end
+
+"""
+"""
+function allocate_solve_container_cache(
+    solve_type::SolverOptions, problem_dimensions; fd_chunk_size=12, levels=1
+)
 
     (;
         nrotor,     # number of rotors
@@ -715,7 +754,7 @@ function allocate_solve_container_cache(
         nwp,    # number of wake panels
         nbn,    # number of body nodes
         nbe,    # number of blade elements (also rotor panels)
-    ) = pd
+    ) = problem_dimensions
 
     # - initialize - #
     total_length = 0
@@ -903,7 +942,7 @@ end
 
 """
 """
-function withdraw_solve_parameter_cache(solve_options::CSORSolve, vec, dims)
+function withdraw_solve_parameter_cache(solve_options::CSORSolverOptions, vec, dims)
 
     # - Initial Guesses - #
     Gamr = reshape(@view(vec[dims.Gamr.index]), dims.Gamr.shape)
@@ -1052,7 +1091,7 @@ function withdraw_solve_parameter_cache(solve_options::CSORSolve, vec, dims)
 end
 """
 """
-function withdraw_solve_parameter_cache(solve_options::NewtonSolve,vec, dims)
+function withdraw_solve_parameter_cache(solve_options::SolverOptions,vec, dims)
 
     # - Initial Guesses - #
     vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
@@ -1202,7 +1241,7 @@ end
 
 """
 """
-function withdraw_solve_container_cache(solve_options::CSORSolve, vec, dims)
+function withdraw_solve_container_cache(solve_options::CSORSolverOptions, vec, dims)
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),
@@ -1245,7 +1284,7 @@ function withdraw_solve_container_cache(solve_options::CSORSolve, vec, dims)
 end
 """
 """
-function withdraw_solve_container_cache(solve_options::NewtonSolve, vec, dims)
+function withdraw_solve_container_cache(solve_options::SolverOptions, vec, dims)
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),

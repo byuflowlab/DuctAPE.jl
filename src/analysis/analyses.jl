@@ -220,7 +220,7 @@ end
 """
 """
 function process(
-    solve_options::NewtonSolve,
+    solve_options::SolverOptions,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
@@ -290,7 +290,7 @@ end
 """
 """
 function process(
-    solve_options::CSORSolve,
+    solve_options::CSORSolverOptions,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
@@ -356,7 +356,7 @@ end
 """
 """
 function post_process(
-    process_type::NewtonSolve,
+    process_type::SolverOptions,
     solve_container_caching,
     states,
     state_dims,
@@ -408,7 +408,7 @@ end
 """
 """
 function post_process(
-    process_type::CSORSolve,
+    process_type::CSORSolverOptions,
     solve_container_caching,
     states,
     state_dims,

@@ -91,7 +91,7 @@ end
 
 """
 """
-function extract_state_variables(solve_options::NewtonSolve, vars, dims)
+function extract_state_variables(solve_options::SolverOptions, vars, dims)
 
     # - Separate out - #
     vz_rotor = @views reshape(vars[dims.vz_rotor.index], dims.vz_rotor.shape)
@@ -103,7 +103,7 @@ end
 
 """
 """
-function extract_state_variables(solve_options::CSORSolve, vars, dims)
+function extract_state_variables(solve_options::CSORSolverOptions, vars, dims)
 
     # - Separate out - #
     Gamr = @views reshape(vars[dims.Gamr.index], dims.Gamr.shape)

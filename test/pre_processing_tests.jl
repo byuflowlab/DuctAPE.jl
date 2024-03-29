@@ -153,7 +153,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     )
 
     # just make sure it converges
-    dt.relax_grid!(dt.SLORWake(), grid; verbose=false, silence_warnings=true)
+    dt.relax_grid!(dt.SLORWakeSolverOptions(), grid; verbose=false, silence_warnings=true)
 
     # Check grid initialization
     # re-set up initial grid for easier testing
@@ -275,7 +275,7 @@ end
     # TODO: need to add a better test with more realistic geometry that you can draw more conclusions from
 
     # CSOR Solve initialization
-    options = dt.set_options(; solve_options=dt.CSORSolve(), wake_options=dt.SLORWake())
+    options = dt.set_options(; solve_options=dt.CSORSolverOptions(), wake_options=dt.SLORWakeSolverOptions())
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(

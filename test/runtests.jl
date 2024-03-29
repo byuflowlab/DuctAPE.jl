@@ -10,6 +10,8 @@ const fm = FLOWMath
 using StaticArrays
 const sa = StaticArrays
 
+using PreallocationTools
+
 using ForwardDiff
 const frd = ForwardDiff
 # using ReverseDiff

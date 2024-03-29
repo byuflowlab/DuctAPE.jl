@@ -67,6 +67,7 @@ include("precomputation/wake_geometry_residual.jl")
 include("precomputation/integrals.jl")
 include("precomputation/velocities.jl")
 include("precomputation/body_aic.jl")
+include("precomputation/body_aic_OLD.jl")
 include("precomputation/induced_velocity_matrices.jl")
 
 ##### ----- SOLVER ----- #####

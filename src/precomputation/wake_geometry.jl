@@ -189,7 +189,7 @@ function generate_wake_grid(
     Rtip1,
     tip_gap1,
     zwake;
-    wake_solve_options=NewtonWake(),
+    wake_solve_options=WakeSolverOptions(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -268,7 +268,7 @@ end
 """
 """
 function relax_grid!(
-    wake_solve_options::NewtonWake,
+    wake_solve_options::WakeSolverOptions,
     wake_grid;
     verbose=false,
     silence_warnings=true,
@@ -314,7 +314,7 @@ end
 """
 """
 function relax_grid!(
-    wake_solve_options::SLORWake, wake_grid; verbose=false, silence_warnings=true
+    wake_solve_options::SLORWakeSolverOptions, wake_grid; verbose=false, silence_warnings=true
 )
 
     if verbose

@@ -132,7 +132,9 @@ function verify_input(propulsor)
     # TODO: go find all the various asserts and put them here
 end
 
-@kwdef struct CSORSolve{TF,TB}
+abstract type SolverOptionsType end
+
+@kwdef struct CSORSolverOptions{TF,TB} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
     maxiter::TF = 1e2
@@ -150,28 +152,12 @@ end
     converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct SLORWake{TF,TI,TB}
-    max_wake_relax_iter::TI = 100
-    wake_relax_tol::TF = 1e-9
-    converged::AbstractVector{TB} = [false]
-end
-
-@kwdef struct NewtonWake{TSym,TF,TI,TB}
-    # elliptic grid solve options
-    wake_nlsolve_method::TSym = :newton
-    wake_nlsolve_autodiff::TSym = :forward
-    wake_nlsolve_ftol::TF = 1e-14
-    wake_max_iter::TI = 100
-    converged::AbstractVector{TB} = [false]
-    max_wake_relax_iter::TI = 20
-    wake_relax_tol::TF = 1e-9
-end
-
-@kwdef struct NewtonSolve{TSym,TF,TI,TB,Tls,Tlsk}
+@kwdef struct SolverOptions{TSym,TF,TI,TB,Tls,Tlsk} <: SolverOptionsType
     # - Options for overall solve - #
+    # TODO: generalize the newton part of this to use NonlinearSolve.jl framework.
+    # TODO: consider a tighter default convergence tolerance.
     # nlsolve parameters
     nlsolve_method::TSym = :newton
-    # nlsolve_autodiff::TSym = :forward
     nlsolve_ftol::TF = 1e-8 #1e-8 is nlsolve default
     nlsolve_iteration_limit::TI = 20 #1000 is nlsolve default
     nlsolve_show_trace::TB = false
@@ -181,13 +167,29 @@ end
     converged::AbstractVector{TB} = [false]
 end
 
-# struct QuasiNewtonSolve{}
-# converged::AbstractVector{TB} = [false]
-# end
+abstract type WakeSolverOptionsType end
+
+@kwdef struct SLORWakeSolverOptions{TF,TI,TB} <: WakeSolverOptionsType
+    max_wake_relax_iter::TI = 100
+    wake_relax_tol::TF = 1e-9
+    converged::AbstractVector{TB} = [false]
+end
+
+@kwdef struct WakeSolverOptions{TSym,TF,TI,TB} <: WakeSolverOptionsType
+    # elliptic grid solve options
+    # TODO: generalize the newton part of this to use NonlinearSolve.jl framework.
+    wake_nlsolve_method::TSym = :newton
+    wake_nlsolve_autodiff::TSym = :forward
+    wake_nlsolve_ftol::TF = 1e-14
+    wake_max_iter::TI = 100
+    converged::AbstractVector{TB} = [false]
+    max_wake_relax_iter::TI = 20
+    wake_relax_tol::TF = 1e-9
+end
 
 """
 """
-@kwdef struct Options{TB,TF,TS,Tin,TSo,WS}
+@kwdef struct Options{TB,TF,TS,Tin,TSo<:SolverOptionsType,WS<:WakeSolverOptionsType}
     # - General Options - #
     verbose::TB = false
     silence_warnings::TB = true
@@ -205,8 +207,8 @@ end
     checkoutfileexists::TB = false
     output_tuple_name::TS = "outs"
     # - Solving Options - #
-    wake_options::WS = NewtonWake()
-    solve_options::TSo = NewtonSolve()
+    wake_options::WS = WakeSolverOptions()
+    solve_options::TSo = SolverOptions()
 end
 
 """
@@ -217,6 +219,10 @@ end
 
 """
 """
-function quicksolve_options(; wake_options=SLORWake(), solve_options=CSORSolve(), kwargs...)
-    return Options(; wake_options=SLORWake(), solve_options=CSORSolve(), kwargs...)
+function quicksolve_options(;
+    wake_options=SLORWakeSolverOptions(), solve_options=CSORSolverOptions(), kwargs...
+)
+    return Options(;
+        wake_options=SLORWakeSolverOptions(), solve_options=CSORSolverOptions(), kwargs...
+    )
 end

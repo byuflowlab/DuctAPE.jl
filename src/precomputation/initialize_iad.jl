@@ -7,7 +7,7 @@ function reinterpolate_geometry(
     rotorstator_parameters,
     paneling_constants;
     autoshiftduct=true,
-    wake_solve_options=NewtonWake(),
+    wake_solve_options=WakeSolverOptions(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -76,7 +76,7 @@ function reinterpolate_geometry!(
     rotorstator_parameters,
     paneling_constants;
     autoshiftduct=true,
-    wake_solve_options=NewtonWake(),
+    wake_solve_options=WakeSolverOptions(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -351,7 +351,8 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs,
+        wake_vortex_panels.teadjnodeidxs;
+        wake=true
     )
 
     ##### ----- Velocities on Rotors ----- #####
@@ -407,7 +408,8 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs,
+        wake_vortex_panels.teadjnodeidxs;
+        wake=true
     )
 
     ##### ----- Velocities on Wakes ----- #####
@@ -463,7 +465,8 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs,
+        wake_vortex_panels.teadjnodeidxs;
+        wake=true
     )
 
     return ivr, ivw, ivb
@@ -509,17 +512,17 @@ function initialize_linear_system(
         itcontrolpoint, itnormal, node, nodemap, influence_length
     )
 
-    # Add Trailing Edge Gap Panel Influences to panels
-    add_te_gap_aic!(
-        AICn,
-        controlpoint,
-        normal,
-        tenode,
-        teinfluence_length,
-        tendotn,
-        tencrossn,
-        teadjnodeidxs,
-    )
+    # # Add Trailing Edge Gap Panel Influences to panels
+    # add_te_gap_aic!(
+    #     AICn,
+    #     controlpoint,
+    #     normal,
+    #     tenode,
+    #     teinfluence_length,
+    #     tendotn,
+    #     tencrossn,
+    #     teadjnodeidxs,
+    # )
 
     # Add Trailing Edge Gap Panel Influences to internal pseudo control point
     add_te_gap_aic!(
@@ -576,18 +579,18 @@ function initialize_linear_system(
     # - wake panels to body panels - #
     A_bw = calculate_normal_velocity(v_bw, normal)
 
-    # add contributions from wake "trailing edge panels"
-    add_te_gap_aic!(
-        A_bw,
-        controlpoint,
-        normal,
-        wake_vortex_panels.tenode,
-        wake_vortex_panels.teinfluence_length,
-        wake_vortex_panels.tendotn,
-        wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs;
-        wake=true,
-    )
+    # # add contributions from wake "trailing edge panels"
+    # add_te_gap_aic!(
+    #     A_bw,
+    #     controlpoint,
+    #     normal,
+    #     wake_vortex_panels.tenode,
+    #     wake_vortex_panels.teinfluence_length,
+    #     wake_vortex_panels.tendotn,
+    #     wake_vortex_panels.tencrossn,
+    #     wake_vortex_panels.teadjnodeidxs;
+    #     wake=true,
+    # )
 
     # - wake panels on internal psuedo control point influence coefficients - #
     A_pw = vortex_aic_boundary_on_field(
@@ -621,6 +624,11 @@ end
 function initialize_linear_system!(
     linsys, ivb, body_vortex_panels, rotor_source_panels, wake_vortex_panels, Vinf, intermediate_containers
 )
+
+# - Clear Containers - #
+reset_containers!(intermediate_containers)
+reset_containers!(linsys)
+
     # - Extract Tuples - #
 
     # containers for intermediate calcs
@@ -665,18 +673,6 @@ function initialize_linear_system!(
         AICpcp, itcontrolpoint, itnormal, node, nodemap, influence_length
     )
 
-    # Add Trailing Edge Gap Panel Influences to panels
-    add_te_gap_aic!(
-        AICn,
-        controlpoint,
-        normal,
-        tenode,
-        teinfluence_length,
-        tendotn,
-        tencrossn,
-        teadjnodeidxs,
-    )
-
     # Add Trailing Edge Gap Panel Influences to internal pseudo control point
     add_te_gap_aic!(
         AICpcp,
@@ -717,6 +713,7 @@ function initialize_linear_system!(
 
     ##### ----- Rotor AIC ----- #####
     calculate_normal_velocity!(A_br, v_br, normal)
+
 source_aic!(
     A_pr, itcontrolpoint, itnormal,
         rotor_source_panels.node,
@@ -727,19 +724,6 @@ source_aic!(
     ##### ----- Wake AIC ----- #####
     # - wake panels to body panels - #
     calculate_normal_velocity!(A_bw, v_bw, normal)
-
-    # add contributions from wake "trailing edge panels"
-    add_te_gap_aic!(
-        A_bw,
-        controlpoint,
-        normal,
-        wake_vortex_panels.tenode,
-        wake_vortex_panels.teinfluence_length,
-        wake_vortex_panels.tendotn,
-        wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs;
-        wake=true,
-    )
 
     # - wake panels on internal psuedo control point influence coefficients - #
     vortex_aic_boundary_on_field!(
@@ -833,10 +817,11 @@ function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
         twists,
         stagger,
         solidity,
+        inner_fraction,
+    ), (;
         outer_airfoil,
         inner_airfoil,
-        inner_fraction,
-    )
+       )
 end
 
 function interpolate_blade_elements!(blade_element_cache, rsp, rotor_panel_centers, nbe)
@@ -1275,7 +1260,7 @@ end
 """
 function precompute_parameters_iad(
     propulsor;
-    wake_solve_options=NewtonWake(),
+    wake_solve_options=WakeSolverOptions(),
     autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
@@ -1399,7 +1384,7 @@ function precompute_parameters_iad(
     )
 
     # - Set up Linear System - #
-    linsys, lu_decomp_flag = initialize_linear_system(
+    linsys, A_bb_LU, lu_decomp_flag = initialize_linear_system(
         ivb,
         body_vortex_panels,
         rotor_source_panels,
@@ -1408,7 +1393,7 @@ function precompute_parameters_iad(
     )
 
     # - Interpolate Blade Elements - #
-    blade_elements = interpolate_blade_elements(
+    blade_elements, airfoils = interpolate_blade_elements(
         rotorstator_parameters,
         Rtips,
         Rhubs,
@@ -1439,7 +1424,9 @@ function precompute_parameters_iad(
     ivw,
     ivb,
     linsys,
+    A_bb_LU,
     blade_elements,
+    airfoils,
     wakeK,
     idmaps,
     (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
@@ -1455,14 +1442,15 @@ function precompute_parameters_iad!(
     linsys,
     wakeK,
     propulsor;
-    wake_solve_options=options.wake_options,
-    autoshiftduct=options.autoshiftduct,
-    itcpshift=options.itcpshift,
-    axistol=options.axistol,
-    tegaptol=options.tegaptol,
-    finterp=options.finterp,
-    silence_warnings=options.silence_warnings,
-    verbose=options.verbose,
+    #TODO: put in the actual defaults here
+    wake_solve_options=WakeSolverOptions(),
+    autoshiftduct=true,
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
+    finterp=fm.akima,
+    silence_warnings=true,
+    verbose=false,
 )
 
     # - Extract propulsor - #
@@ -1474,23 +1462,6 @@ function precompute_parameters_iad!(
         operating_point,        # NamedTuple of vectors (TODO) of numbers
         reference_parameters,   # NamedTuple of vectors (TODO) of numbers
     ) = propulsor
-
-    # - Get Floating Point Type - #
-    TF = promote_type(
-        eltype(propulsor.duct_coordinates),
-        eltype(propulsor.centerbody_coordinates),
-        eltype(propulsor.operating_point.Vinf),
-        eltype(propulsor.operating_point.Omega),
-        eltype(propulsor.operating_point.rhoinf),
-        eltype(propulsor.operating_point.muinf),
-        eltype(propulsor.operating_point.asound),
-        eltype(propulsor.rotorstator_parameters.B),
-        eltype(propulsor.rotorstator_parameters.Rhub),
-        eltype(propulsor.rotorstator_parameters.Rtip),
-        eltype(propulsor.rotorstator_parameters.rotorzloc),
-        eltype(propulsor.rotorstator_parameters.chords),
-        eltype(propulsor.rotorstator_parameters.twists),
-    )
 
     # - Get Problem Dimensions - #
     problem_dimensions = get_problem_dimensions(paneling_constants)
@@ -1519,6 +1490,79 @@ function precompute_parameters_iad!(
         )
     end
 
+
+    return precompute_parameters_iad!(
+    ivr,
+    ivw,
+    blade_element_cache,
+    linsys,
+    wakeK,
+wake_grid,
+rp_duct_coordinates,
+rp_centerbody_coordinates,
+rotor_indices_in_wake,
+    rotorstator_parameters,
+    paneling_constants,
+    operating_point,
+    reference_parameters,
+problem_dimensions;
+    wake_solve_options=wake_solve_options,
+    autoshiftduct=autoshiftduct,
+    itcpshift=itcpshift,
+    axistol=axistol,
+    tegaptol=tegaptol,
+    finterp=finterp,
+    silence_warnings=silence_warnings,
+    verbose=verbose,
+)
+end
+
+
+
+"""
+"""
+function precompute_parameters_iad!(
+    ivr,
+    ivw,
+    blade_element_cache,
+    linsys,
+    wakeK,
+wake_grid,
+rp_duct_coordinates,
+rp_centerbody_coordinates,
+rotor_indices_in_wake,
+    rotorstator_parameters,
+    paneling_constants,
+    operating_point,
+    reference_parameters,
+problem_dimensions=nothing;
+    wake_solve_options=options.wake_options,
+    autoshiftduct=options.autoshiftduct,
+    itcpshift=options.itcpshift,
+    axistol=options.axistol,
+    tegaptol=options.tegaptol,
+    finterp=options.finterp,
+    silence_warnings=options.silence_warnings,
+    verbose=options.verbose,
+)
+
+    # - Get Floating Point Type - #
+    TF = promote_type(
+        eltype(rp_duct_coordinates),
+        eltype(rp_centerbody_coordinates),
+        eltype(operating_point.Vinf),
+        eltype(operating_point.Omega),
+        eltype(operating_point.rhoinf),
+        eltype(operating_point.muinf),
+        eltype(operating_point.asound),
+        eltype(rotorstator_parameters.B),
+        eltype(rotorstator_parameters.Rhub),
+        eltype(rotorstator_parameters.Rtip),
+        eltype(rotorstator_parameters.rotorzloc),
+        eltype(rotorstator_parameters.chords),
+        eltype(rotorstator_parameters.twists),
+    )
+
     # - Panel Everything - #
     body_vortex_panels, rotor_source_panels, wake_vortex_panels = generate_all_panels(
         rp_duct_coordinates,
@@ -1532,6 +1576,13 @@ function precompute_parameters_iad!(
         tegaptol=tegaptol,
         silence_warnings=silence_warnings,
     )
+
+    # - Get problem dimensions if not already done - #
+    if isnothing(problem_dimensions)
+        problem_dimensions = get_problem_dimensions(
+            body_vortex_panels, rotor_source_panels, wake_vortex_panels
+        )
+    end
 
     # - Compute Influence Matrices - #
     # TODO: put ivb in post-process cache eventually
@@ -1608,7 +1659,7 @@ end
 
 """
 """
-function precompute_parameters_iad!(
+function TODOprecompute_parameters_iad!(
     ivr,
     ivw,
     ivb,
@@ -1618,7 +1669,7 @@ function precompute_parameters_iad!(
     panels,
     propulsor,
     precomp_containers; # contains wake_grid and repaneled duct and centerbody coordinates
-    wake_solve_options=NewtonWake(),
+    wake_solve_options=WakeSolverOptions(),
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
@@ -1695,6 +1746,7 @@ function precompute_parameters_iad!(
 
     return ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels, lu_decomp_flag
 end
+
 """
 """
 function initialize_velocities(

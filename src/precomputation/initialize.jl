@@ -312,7 +312,7 @@ function precomputed_inputs(
 
     # generate wake sheet paneling
     wake_vortex_panels = generate_wake_panels(
-        grid[1, :, 1:length(rpe)], grid[2, :, 1:length(rpe)]
+        grid[:, :, 1:length(rpe)]
     )
 
     # generate body wake panels for convenience (used in getting surface pressure of body wakes in post processing)
@@ -325,9 +325,7 @@ function precomputed_inputs(
 
     # rotor source panel objects
     rotor_source_panels = [
-        generate_rotor_panels(
-            rotorstator_parameters[i].rotorzloc,
-            grid[2, rotor_indices_in_wake[i], 1:length(rpe)],
+                           generate_rotor_panels(rotorstator_parameters[i].rotorzloc, grid[:,:,1:length(rpe)], rotor_indices_in_wake[i], rotorstator_parameters[1].nwake_sheets
         ) for i in 1:num_rotors
     ]
 
@@ -370,7 +368,7 @@ function precomputed_inputs(
     end
 
     # calculate radius dependent "constant" for wake strength calcualtion
-    wakeK = get_wake_k(wake_vortex_panels)
+    wakeK = get_wake_k(wake_vortex_panels.node[2,:],wake_vortex_panels.totnode)
 
     # Go through the wake panels and determine the index of the aftmost rotor infront and the blade node from which the wake strength is defined.
     rotorwakepanelid = ones(Int, wake_vortex_panels.totpanel, 2)
@@ -461,6 +459,7 @@ function precomputed_inputs(
         body_vortex_panels.influence_length,
     )
 
+    AICn_raw = copy(AICn)
     # - Add Trailing Edge Gap Panel Influences - #
     add_te_gap_aic!(
         AICn,
@@ -491,7 +490,7 @@ function precomputed_inputs(
     prelhs = assemble_lhs_matrix(AICn, AICpcp, body_vortex_panels; dummyval=1.0)
 
     # - LU Decomp - #
-    LHS = lu!(prelhs, NoPivot(); check=false)
+    LHS = lu!(copy(prelhs), NoPivot(); check=false)
     # check if success
     lu_decomp_flag = issuccess(LHS)
 
@@ -998,6 +997,9 @@ function precomputed_inputs(
         # - Linear System - #
         # body_system_matrices, # includes the various LHS and RHS matrics and vectors for solving the linear system for the body
         # - Influence Matrices - #
+        AICn_raw, #before adding TE contribution
+        AICn,
+        AICpcp,
         A_bb=LHS, # body to body LU decomposed
         LHS=prelhs, # body to body no factorization
         AICt, #TODO: unused?
