@@ -38,6 +38,7 @@ include("linear_system_assembly.jl")
 include("pre_processing_tests.jl")
 
 # - solve related tests - #
+include("iteration_step_tests.jl")
 include("state_estimation.jl")
 include("relaxation_tests.jl")
 include("wake_aero_tests.jl")
@@ -47,16 +48,6 @@ include("wake_aero_tests.jl")
 ##########################################################
 
 # - Active Development - #
-#########################################################
-##########################     ##########################
-#####################     LOOK!    ######################
-###########                                   ###########
-#####     -----    TODO: YOU ARE HERE     -----     #####
-###########                                   ###########
-#####################     LOOK!    ######################
-##########################     ##########################
-#########################################################
-include("iteration_step_tests.jl")
 # include("solve_checks.jl")
 
 # - post process related tests - #

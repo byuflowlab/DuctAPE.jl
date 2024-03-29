@@ -161,17 +161,15 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
         rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
     )
 
-    num_rotors = length(rotorstator_parameters)
+    num_rotors = length(rotorstator_parameters.B)
 
     # rotor source panel objects
-    # TODO: incorrect function
-
     rotor_source_panels = dt.generate_rotor_panels(
-        rotorzloc, grid, [1, 3], paneling_constants.nwake_sheets
+        rotorstator_parameters.rotorzloc, grid, [1, 3], paneling_constants.nwake_sheets
     )
 
     # rotor blade element objects
-    blade_elements = dt.interpolate_blade_elements(
+    blade_elements, airfoils = dt.interpolate_blade_elements(
         rotorstator_parameters,
         Rtips,
         Rhubs,
@@ -275,7 +273,9 @@ end
     # TODO: need to add a better test with more realistic geometry that you can draw more conclusions from
 
     # CSOR Solve initialization
-    options = dt.set_options(; solve_options=dt.CSORSolverOptions(), wake_options=dt.SLORWakeSolverOptions())
+    options = dt.set_options(;
+        solve_options=dt.CSORSolverOptions(), wake_options=dt.SLORWakeSolverOptions()
+    )
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
@@ -328,8 +328,8 @@ end
         sigr,
         gamw,
         operating_point,
-        (; blade_elements..., airfoils...),
-        (; linsys..., A_bb_LU),
+        (; solve_parameter_tuple.blade_elements..., airfoils...),
+        (; solve_parameter_tuple.linsys..., A_bb_LU),
         ivr,
         ivw,
         wakeK,
