@@ -244,7 +244,7 @@ end
 """
 function calculate_unit_induced_velocities(problem_dimensions, panels)
     (;
-         nrotor,    # number of rotors
+        nrotor,    # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
         nbn,    # number of body nodes
@@ -260,19 +260,19 @@ function calculate_unit_induced_velocities(problem_dimensions, panels)
     )
 
     ivr = (;
-        v_rr=zeros(TF, nbe*nrotor, nws*nrotor, 2),
-        v_rw=zeros(TF, nbe*nrotor, nwn, 2),
-        v_rb=zeros(TF, nbe*nrotor, nbn, 2),
+        v_rr=zeros(TF, nbe * nrotor, nws * nrotor, 2),
+        v_rw=zeros(TF, nbe * nrotor, nwn, 2),
+        v_rb=zeros(TF, nbe * nrotor, nbn, 2),
     )
 
     ivw = (;
-        v_wr=zeros(TF, nwp, nws*nrotor, 2),
+        v_wr=zeros(TF, nwp, nws * nrotor, 2),
         v_ww=zeros(TF, nwp, nwn, 2),
         v_wb=zeros(TF, nwp, nbn, 2),
     )
 
     ivb = (;
-        v_br=zeros(TF, nbp, nws*nrotor, 2),
+        v_br=zeros(TF, nbp, nws * nrotor, 2),
         v_bw=zeros(TF, nbp, nwn, 2),
         v_bb=zeros(TF, nbp, nbn, 2),
     )
@@ -352,7 +352,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
         wake_vortex_panels.teadjnodeidxs;
-        wake=true
+        wake=true,
     )
 
     ##### ----- Velocities on Rotors ----- #####
@@ -409,7 +409,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
         wake_vortex_panels.teadjnodeidxs;
-        wake=true
+        wake=true,
     )
 
     ##### ----- Velocities on Wakes ----- #####
@@ -466,7 +466,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
         wake_vortex_panels.teadjnodeidxs;
-        wake=true
+        wake=true,
     )
 
     return ivr, ivw, ivb
@@ -538,13 +538,7 @@ function initialize_linear_system(
 
     # Assemble Raw LHS Matrix into A_bb
     A_bb = assemble_lhs_matrix(
-        AICn,
-        AICpcp,
-        npanel,
-        nnode,
-        totpanel,
-        totnode,
-        prescribednodeidxs;
+        AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs;
     )
 
     # - LU Decomposition - #
@@ -559,7 +553,7 @@ function initialize_linear_system(
     vdnb = [dot(vinfvec, nhat) for nhat in eachcol(normal)]
     vdnpcp = [dot(vinfvec, nhat) for nhat in eachcol(itnormal)]
     b_bf = assemble_rhs_matrix(
-    vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+        vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
     )
 
     ##### ----- Rotor AIC ----- #####
@@ -622,12 +616,18 @@ end
 """
 """
 function initialize_linear_system!(
-    linsys, ivb, body_vortex_panels, rotor_source_panels, wake_vortex_panels, Vinf, intermediate_containers
+    linsys,
+    ivb,
+    body_vortex_panels,
+    rotor_source_panels,
+    wake_vortex_panels,
+    Vinf,
+    intermediate_containers,
 )
 
-# - Clear Containers - #
-reset_containers!(intermediate_containers)
-reset_containers!(linsys)
+    # - Clear Containers - #
+    reset_containers!(intermediate_containers)
+    reset_containers!(linsys)
 
     # - Extract Tuples - #
 
@@ -636,7 +636,6 @@ reset_containers!(linsys)
 
     # linear system
     (; A_bb, b_bf, A_br, A_pr, A_bw, A_pw) = linsys
-
 
     # velocities on body
     (; v_br, v_bw, v_bb) = ivb
@@ -708,14 +707,16 @@ reset_containers!(linsys)
     vdnb[:] .= [dot(vinfvec, nhat) for nhat in eachcol(normal)]
     vdnpcp[:] .= [dot(vinfvec, nhat) for nhat in eachcol(itnormal)]
     assemble_rhs_matrix!(
-    b_bf, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+        b_bf, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
     )
 
     ##### ----- Rotor AIC ----- #####
     calculate_normal_velocity!(A_br, v_br, normal)
 
-source_aic!(
-    A_pr, itcontrolpoint, itnormal,
+    source_aic!(
+        A_pr,
+        itcontrolpoint,
+        itnormal,
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
@@ -752,19 +753,18 @@ source_aic!(
 end
 
 function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
-
     nrotor = length(rsp.B)
     Rtip = Rtips
     Rhub = Rhubs
     B = rsp.B
     fliplift = rsp.fliplift
-    chords = similar(rsp.chords, nbe,nrotor) .= 0
-    twists = similar(rsp.twists, nbe,nrotor) .= 0
-    stagger = similar(rsp.twists, nbe,nrotor) .= 0
-    solidity = similar(rsp.chords, nbe,nrotor) .= 0
-    outer_airfoil = similar(rsp.airfoils, nbe,nrotor)
-    inner_airfoil = similar(rsp.airfoils, nbe,nrotor)
-    inner_fraction = similar(rsp.r, nbe,nrotor) .= 0
+    chords = similar(rsp.chords, nbe, nrotor) .= 0
+    twists = similar(rsp.twists, nbe, nrotor) .= 0
+    stagger = similar(rsp.twists, nbe, nrotor) .= 0
+    solidity = similar(rsp.chords, nbe, nrotor) .= 0
+    outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
+    inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
+    inner_fraction = similar(rsp.r, nbe, nrotor) .= 0
 
     for irotor in 1:nrotor
         rpcs = rotor_panel_centers[(nbe * (irotor - 1) + 1):(nbe * irotor)]
@@ -773,13 +773,13 @@ function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
         rblade = FLOWMath.linear([0.0; 1.0], [0.0; Rtip[irotor]], rsp.r[:, irotor])
 
         # update chord lengths
-        chords[:, irotor] .= FLOWMath.akima(rblade, rsp.chords[:,irotor], rpcs)
+        chords[:, irotor] .= FLOWMath.akima(rblade, rsp.chords[:, irotor], rpcs)
 
         # update twists
-        twists[:, irotor] .= FLOWMath.akima(rblade, rsp.twists[:,irotor], rpcs)
+        twists[:, irotor] .= FLOWMath.akima(rblade, rsp.twists[:, irotor], rpcs)
 
         # update stagger
-        stagger[:, irotor] .= get_stagger(twists[:,irotor])
+        stagger[:, irotor] .= get_stagger(twists[:, irotor])
 
         # update solidity
         solidity[:, irotor] .= get_local_solidity(B[irotor], chords[:, irotor], rpcs)
@@ -787,22 +787,23 @@ function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
         for ir in 1:nbe
             # outer airfoil
             io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
-            outer_airfoil[ir,irotor] = rsp.airfoils[io, irotor]
+            outer_airfoil[ir, irotor] = rsp.airfoils[io, irotor]
 
             # inner airfoil
             ii = max(1, io - 1)
-            inner_airfoil[ir,irotor] = rsp.airfoils[ii, irotor]
+            inner_airfoil[ir, irotor] = rsp.airfoils[ii, irotor]
 
             # fraction of inner airfoil's polars to use
             if rblade[io] == rblade[ii]
                 inner_fraction[ir, irotor] = 1.0
             else
-                inner_fraction[ir, irotor] = (rpcs[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
+                inner_fraction[ir, irotor] =
+                    (rpcs[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
             end
 
             # Check incorrect extrapolation
-            if inner_fraction[ir,irotor] > 1.0
-                inner_fraction[ir,irotor] = 1.0
+            if inner_fraction[ir, irotor] > 1.0
+                inner_fraction[ir, irotor] = 1.0
             end
         end
     end
@@ -818,21 +819,18 @@ function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
         stagger,
         solidity,
         inner_fraction,
-    ), (;
-        outer_airfoil,
-        inner_airfoil,
-       )
+    ),
+    (; outer_airfoil, inner_airfoil)
 end
 
 function interpolate_blade_elements!(blade_element_cache, rsp, rotor_panel_centers, nbe)
-
     nrotor = length(rsp.B)
     Rtip = blade_element_cache.Rtip .= rsp.Rtip
     Rhub = blade_element_cache.Rhub .= rsp.Rhub
     blade_element_cache.B .= rsp.B
     blade_element_cache.fliplift .= rsp.fliplift
-    outer_airfoil = similar(rsp.airfoils, nbe,nrotor)
-    inner_airfoil = similar(rsp.airfoils, nbe,nrotor)
+    outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
+    inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
 
     for irotor in 1:nrotor
         rpcs = @view(rotor_panel_centers[(nbe * (irotor - 1) + 1):(nbe * irotor)])
@@ -841,46 +839,54 @@ function interpolate_blade_elements!(blade_element_cache, rsp, rotor_panel_cente
         rblade = linear_transform((0.0, 1.0), (0.0, Rtip[irotor]), @view(rsp.r[:, irotor]))
 
         # update chord lengths
-        blade_element_cache.chords[:, irotor] .= FLOWMath.akima(rblade, @view(rsp.chords[:,irotor]), rpcs)
+        blade_element_cache.chords[:, irotor] .= FLOWMath.akima(
+            rblade, @view(rsp.chords[:, irotor]), rpcs
+        )
 
         # update twists
-        blade_element_cache.twists[:, irotor] .= FLOWMath.akima(rblade, @view(rsp.twists[:,irotor]), rpcs)
+        blade_element_cache.twists[:, irotor] .= FLOWMath.akima(
+            rblade, @view(rsp.twists[:, irotor]), rpcs
+        )
 
         # update stagger
-        blade_element_cache.stagger[:, irotor] .= get_stagger(@view(blade_element_cache.twists[:,irotor]))
+        blade_element_cache.stagger[:, irotor] .= get_stagger(
+            @view(blade_element_cache.twists[:, irotor])
+        )
 
         # update solidity
-        blade_element_cache.solidity[:, irotor] .= get_local_solidity(blade_element_cache.B[irotor], @view(blade_element_cache.chords[:, irotor]), rpcs)
+        blade_element_cache.solidity[:, irotor] .= get_local_solidity(
+            blade_element_cache.B[irotor],
+            @view(blade_element_cache.chords[:, irotor]),
+            rpcs,
+        )
 
         for ir in 1:nbe
             # outer airfoil
             io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
-            outer_airfoil[ir,irotor] = rsp.airfoils[io, irotor]
+            outer_airfoil[ir, irotor] = rsp.airfoils[io, irotor]
 
             # inner airfoil
             ii = max(1, io - 1)
-            inner_airfoil[ir,irotor] = rsp.airfoils[ii, irotor]
+            inner_airfoil[ir, irotor] = rsp.airfoils[ii, irotor]
 
             # fraction of inner airfoil's polars to use
             if rblade[io] == rblade[ii]
                 blade_element_cache.inner_fraction[ir, irotor] = 1.0
             else
-                blade_element_cache.inner_fraction[ir, irotor] = (rpcs[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
+                blade_element_cache.inner_fraction[ir, irotor] =
+                    (rpcs[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
             end
 
             # Check incorrect extrapolation
-            if blade_element_cache.inner_fraction[ir,irotor] > 1.0
-                blade_element_cache.inner_fraction[ir,irotor] = 1.0
+            if blade_element_cache.inner_fraction[ir, irotor] > 1.0
+                blade_element_cache.inner_fraction[ir, irotor] = 1.0
             end
         end
     end
 
-    blade_element_cache.rotor_panel_centers.=reshape(rotor_panel_centers, (nbe, nrotor))
+    blade_element_cache.rotor_panel_centers .= reshape(rotor_panel_centers, (nbe, nrotor))
 
-    return (;
-        outer_airfoil,
-        inner_airfoil,
-    )
+    return (; outer_airfoil, inner_airfoil)
 end
 
 # function interpolate_blade_elements!(blade_elements, rsp, Rtips, Rhubs, rotor_panel_center)
@@ -1256,7 +1262,6 @@ function set_index_maps!(
     return idmaps
 end
 
-
 """
 """
 function precompute_parameters_iad(
@@ -1491,34 +1496,31 @@ function precompute_parameters_iad!(
         )
     end
 
-
     return precompute_parameters_iad!(
-    ivr,
-    ivw,
-    blade_element_cache,
-    linsys,
-    wakeK,
-wake_grid,
-rp_duct_coordinates,
-rp_centerbody_coordinates,
-rotor_indices_in_wake,
-    rotorstator_parameters,
-    paneling_constants,
-    operating_point,
-    reference_parameters,
-problem_dimensions;
-    wake_solve_options=wake_solve_options,
-    autoshiftduct=autoshiftduct,
-    itcpshift=itcpshift,
-    axistol=axistol,
-    tegaptol=tegaptol,
-    finterp=finterp,
-    silence_warnings=silence_warnings,
-    verbose=verbose,
-)
+        ivr,
+        ivw,
+        blade_element_cache,
+        linsys,
+        wakeK,
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        rotor_indices_in_wake,
+        rotorstator_parameters,
+        paneling_constants,
+        operating_point,
+        reference_parameters,
+        problem_dimensions;
+        wake_solve_options=wake_solve_options,
+        autoshiftduct=autoshiftduct,
+        itcpshift=itcpshift,
+        axistol=axistol,
+        tegaptol=tegaptol,
+        finterp=finterp,
+        silence_warnings=silence_warnings,
+        verbose=verbose,
+    )
 end
-
-
 
 """
 """
@@ -1528,15 +1530,15 @@ function precompute_parameters_iad!(
     blade_element_cache,
     linsys,
     wakeK,
-wake_grid,
-rp_duct_coordinates,
-rp_centerbody_coordinates,
-rotor_indices_in_wake,
+    wake_grid,
+    rp_duct_coordinates,
+    rp_centerbody_coordinates,
+    rotor_indices_in_wake,
     rotorstator_parameters,
     paneling_constants,
     operating_point,
     reference_parameters,
-problem_dimensions=nothing;
+    problem_dimensions=nothing;
     wake_solve_options=options.wake_options,
     autoshiftduct=options.autoshiftduct,
     itcpshift=options.itcpshift,
@@ -1547,12 +1549,12 @@ problem_dimensions=nothing;
     verbose=options.verbose,
 )
 
-# - Reset Caches - #
-reset_containers!(ivr)
-reset_containers!(ivw)
-reset_containers!(blade_element_cache)
-reset_containers!(linsys)
-reset_containers!(wakeK)
+    # - Reset Caches - #
+    reset_containers!(ivr)
+    reset_containers!(ivw)
+    reset_containers!(blade_element_cache)
+    reset_containers!(linsys)
+    reset_containers!(wakeK)
 
     # - Get Floating Point Type - #
     TF = promote_type(
@@ -2041,7 +2043,7 @@ function initialize_strengths!(
     Cm_wake = zeros(TF, size(wake_panel_sheet_be_map, 1)) .= 0
     vthetaind = zeros(TF, nbe)
     vzind = zeros(TF, nbe)
-  vrind = zeros(TF, nbe)
+    vrind = zeros(TF, nbe)
 
     # Solve Linear System for gamb
     gamb = ImplicitAD.implicit_linear(
