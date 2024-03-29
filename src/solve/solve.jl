@@ -43,7 +43,7 @@ function solve!(state_variables, const_cache; verbose=false)
     )
     # reset cache
     solve_container_cache_vector .= 0
-    solve_containers = withdraw_solve_container_cache(
+    solve_containers = dt.withdraw_solve_container_cache(
         solve_options, solve_container_cache_vector, solve_container_cache_dims
     )
 

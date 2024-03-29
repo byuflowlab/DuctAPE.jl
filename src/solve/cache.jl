@@ -315,6 +315,7 @@ function allocate_solve_parameter_cache(
 
     # - Get problem dimensions - #
     pd = get_problem_dimensions(paneling_constants)
+
 return allocate_solve_parameter_cache(
     solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels
 )

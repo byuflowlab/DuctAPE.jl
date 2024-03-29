@@ -51,6 +51,10 @@ function calculate_induced_velocities_on_rotors!(
     post=false,
 )
 
+    # - Clear out inputs - #
+    vz_rotor .=0
+    vtheta_rotor .=0
+
     # problem dimensions
     nbe, nrotor = size(Gamr) # number of rotors
 

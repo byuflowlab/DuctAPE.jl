@@ -1062,6 +1062,21 @@ function precomputed_inputs(
     )
 end
 
+function initialize_rotorwake_aero(inputs)
+
+    # promoted type
+    TF =  inputs.TF
+
+    # Initialize
+    Gamr = zeros(TF, length(inputs.blade_elements[1].rbe),length(inputs.blade_elements))
+    sigr = zeros(TF, length(inputs.blade_elements[1].rbe)+1,length(inputs.blade_elements))
+    gamw = zeros(TF, inputs.wake_vortex_panels.totnode)
+
+
+ initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
+
+ return Gamr, sigr, gamw
+ end
 
 function initialize_rotorwake_aero(blade_elements, problem_dimensions, inputs)
 
@@ -1081,3 +1096,93 @@ function initialize_rotorwake_aero(blade_elements, problem_dimensions, inputs)
  end
 
 
+
+"""
+"""
+function initialize_rotorwake_aero!(Gamr, sigr, gamw, inputs)
+
+    # - Rename for convenience - #
+    freestream = inputs.freestream
+    rotor_panel_centers = inputs.rotor_panel_centers
+
+    # - inialize for re-use - #
+    Vinf = similar(Gamr) .= freestream.Vinf # if desired, you can add the body induced velocities at each rotor control point to this array.
+    if haskey(inputs, :gamb)
+        vzind, _, _, _, _, _, _ = calculate_rotor_velocities(
+            Gamr, gamw, sigr, inputs.gamb[1:(inputs.body_vortex_panels.totnode)], inputs
+            )
+    else
+        vzind = zeros(eltype(Gamr), size(rotor_panel_centers, 1))
+    end
+    vthetaind = zeros(eltype(Gamr), size(rotor_panel_centers, 1))
+    Wm_dist = similar(Gamr, size(sigr,1)) .= 0
+    Wm_wake = similar(Gamr, inputs.wake_vortex_panels.totpanel) .= 0
+
+    for (irotor, (G, s, rpc, be, V)) in enumerate(
+        zip(
+            eachcol(Gamr),
+            eachcol(sigr),
+            eachcol(rotor_panel_centers),
+            inputs.blade_elements,
+            eachcol(Vinf),
+        ),
+    )
+
+        # - Setup and Run CCBlade - #
+        # define rotor, do not apply any corrections (including a tip correction)
+        rotor = c4b.Rotor(be.Rhub, be.Rtip, be.B; tip=nothing)
+
+        # define rotor sections
+        sections = c4b.Section.(rpc, be.chords, be.twists, be.inner_airfoil)
+
+        # define operating points using induced velocity from rotors ahead of this one
+        op = [
+            c4b.OperatingPoint(
+                V[ir] .+ vz, # axial velocity V is freestream + body induced (maybe), vz is induced by rotor(s) ahead
+                be.Omega * rpc[ir] .- vt, # tangential velocity #TODO: should this be + or - the induced velocity of the rotor ahead?
+                freestream.rhoinf,
+                0.0, #pitch is zero
+                freestream.muinf,
+                freestream.asound,
+               ) for (ir, (vz, vt)) in enumerate(zip(vzind, vthetaind))
+        ]
+
+        # solve CCBlade problem for this rotor
+        out = c4b.solve.(Ref(rotor), sections, op)
+
+        # update induced velocities using far-field velocities
+        vzind .+= out.u * 2.0
+        vthetaind .+= out.v * 2.0
+
+        # Get circulation starting point for this rotor
+        G .= 0.5 .* out.cl .* out.W .* be.chords
+
+        # Get source strength starting point (note we need the values at the nodes not centers, so average the values and use the end values on the end points)
+        s[1] = @. be.B/(4.0*pi)* out.cd[1] * out.W[1] * be.chords[1]
+        @. s[2:(end - 1)] =
+            (be.B/(4.0*pi)* out.cd[2:end] * out.W[2:end] * be.chords[2:end] +
+            be.B/(4.0*pi)* out.cd[1:(end - 1)] * out.W[1:(end - 1)] * be.chords[1:(end - 1)])/2.0
+        s[end] = @. be.B/(4.0*pi)* out.cd[end] * out.W[end] * be.chords[end]
+
+        # Get velocity distribution between this rotor and the next (same deal as with source panels, since wakes extend from source panel endpoints, we need to average velocities and use the ends for endpoints)
+        Wm_dist[1]  =  sqrt((V[1] + vzind[1])^2 + vthetaind[1]^2)
+        Wm_dist[2:(end - 1)] = (sqrt.((V[2:end] .+ vzind[2:end]).^2 .+ vthetaind[2:end].^2)
+       .+sqrt.((V[2:end] .+ vzind[1:(end - 1)]).^2 .+ vthetaind[1:(end - 1)].^2))/2.0
+        Wm_dist[end] = sqrt((V[end] + vzind[end])^2 + vthetaind[end]^2)
+
+        # Change convergence criteria?
+        # inputs.Vconv[1] = sum(Wm_dist)/length(Wm_dist)
+
+        # populate this section of the wake average velocities
+        for (wid, wmap) in enumerate(eachrow(inputs.rotorwakepanelid))
+            if wmap[2] >= irotor && wmap[2] < irotor + 1
+                Wm_wake[wid] = Wm_dist[wmap[1]]
+            end
+        end
+    end
+
+    # - initialize wake strengths - #
+    calculate_wake_vortex_strengths!(gamw, Gamr, Wm_wake, inputs)
+
+    return Gamr, sigr, gamw
+end

@@ -184,6 +184,8 @@ function analyze(
 
     # NOTE: post processing cache doesn't need to be fancy, since it's just here in the analysis and will always be the same type if derivative checks are turned off.
     # update tests for this function
+
+    # TODO: need to figure out how to set this up to work with the various residual options
     outs = post_process(
         options.solve_options,
         solve_container_caching,
