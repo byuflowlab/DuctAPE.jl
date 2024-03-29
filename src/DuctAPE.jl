@@ -10,18 +10,20 @@ include("C4Blade/C4Blade.jl") # augmented CCBlade implementation (cascade compat
 const c4b = C4Blade
 
 using SpecialFunctions # required for elliptic integrals
-using QuadGK # required for integration of linear panels
+using QuadGK # integration
+using FastGaussQuadrature # integration
+using Primes # integration
 using StaticArrays # used in miscellaneous places for code efficiency
 
-using LinearAlgebra
+using LinearAlgebra # linear solve and LU decomposition
 
-using PreallocationTools
+using PreallocationTools # caches
 
 # new solve required pacakges
+using ImplicitAD # used for all solves
 using NLsolve #for newton solver
-using LineSearches
-using ImplicitAD
-using ForwardDiff
+using LineSearches # used in newton solver
+using ForwardDiff # used for jacobian for newton solver
 
 using Printf # used when verbose option is selected
 
