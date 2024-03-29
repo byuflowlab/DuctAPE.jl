@@ -114,7 +114,6 @@ end
 #---------------------------------#
 #             VORTEX              #
 #---------------------------------#
-
 """
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
@@ -130,14 +129,14 @@ function nominal_vortex_panel_integration!(
 )
 
     # Define function to integrate
-    for (s, t) in zip(eachrow(containers.samples), integration_options.samplepoints)
-        nominal_vortex_induced_velocity_sample!(
+    for (s, t) in zip(eachrow(containers.samples), integration_options.sample_points)
+        dt.nominal_vortex_induced_velocity_sample!(
             s, t, node1, node2, influence_length, controlpoint, containers.sample_cache
         )
     end
 
     for (i, s) in enumerate(eachcol(containers.samples))
-        V[i], containers.err[i] = romberg!(
+        V[i], containers.err[i] = dt.romberg!(
             containers.fh,
             integration_options.stepsize,
             s,

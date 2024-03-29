@@ -11,7 +11,8 @@ include("C4Blade/C4Blade.jl") # augmented CCBlade implementation (cascade compat
 const c4b = C4Blade
 
 using SpecialFunctions # required for elliptic integrals
-using QuadGK # required for integration of linear panels
+using QuadGK # integration
+using FastGaussQuadrature # integration
 using StaticArrays # used in miscellaneous places for code efficiency
 
 using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
@@ -54,6 +55,8 @@ include("precomputation/body_aic.jl")
 include("precomputation/induced_velocity_matrices.jl")
 
 include("precomputation/romberg_integrals.jl")
+include("precomputation/gausslegendre_integrals.jl")
+include("precomputation/gausskronrod_integrals.jl")
 include("precomputation/integrands.jl")
 ##### ----- SOLVER ----- #####
 

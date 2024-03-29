@@ -18,14 +18,13 @@ function nominal_vortex_panel_integration(
 
     # Define function to integrate
     function fsample(t)
-        return nominal_vortex_induced_velocity_sample(
+        return dt.nominal_vortex_induced_velocity_sample(
             t,
             node1,
             node2,
             influence_length,
             controlpoint,
-            cache_vec;
-            nondimrange=nondimrange,
+            cache_vec
         )
     end
 

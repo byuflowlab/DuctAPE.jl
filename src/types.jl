@@ -6,7 +6,7 @@ abstract type IntegrationMethod end
     factors::TP = Primes.factor(1024)
     nfactors::TI = 10
     atol::TF = 1e-6
-    samplepoints::TV = collect(range(0, 1, 1025))
+    sample_points::TV = collect(range(0, 1, 1025))
 end
 
 function set_romberg_options(; nsamples=1025, atol=1e-6)
@@ -23,4 +23,14 @@ end
     order::TI = 3
     maxevals::TI = 1e2
     atol::TF = 1e-6
+end
+
+struct GaussLegendre{TN,TW} <: IntegrationMethod
+    sample_points::TN
+    weights::TW
+end
+
+function GaussLegendre(nsamples=20; silence_warnings=true)
+    nodes, weights = FastGaussQuadrature.gausslegendre(nsamples)
+    return GaussLegendre(linear_transform((-1, 1), (0, 1), nodes), weights ./ 2.0)
 end
