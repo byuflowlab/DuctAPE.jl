@@ -1851,7 +1851,7 @@ function initialize_velocities!(
 
     # intermediate values
     # TODO: put these in a precomp container cache eventually
-    sigr = zeros(TF, nbe[1] + 1, nbe[2])
+    sigr = zeros(TF, nbe + 1, nrotor)
     Cm_wake_vec = zeros(TF, nbe + 1)
     vthetaind = zeros(TF, nbe, nrotor)
     vzind = zeros(TF, nbe, nrotor)
@@ -1865,8 +1865,8 @@ function initialize_velocities!(
     )
 
     # - Get body-induced velocities on rotors - #
-    vzb = zeros(TF, nbe)
-    vrb = zeros(TF, nbe)
+    vzb = zeros(TF, nbe, nrotor)
+    vrb = zeros(TF, nbe, nrotor)
     for irotor in 1:length(operating_point.Omega)
         berange = (nbe * (irotor - 1) + 1):(nbe * irotor)
         vzb[:, irotor] = ivr.v_rb[berange, :, 1] * gamb[1:body_totnodes]
@@ -1905,13 +1905,13 @@ function initialize_velocities!(
         # define operating points using induced velocity from rotors ahead of this one
         c4bop = [
             c4b.OperatingPoint(
-                operating_point.Vinf[1] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
+                operating_point.Vinf[] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
                 operating_point.Omega[irotor] *
                 blade_elements.rotor_panel_centers[ir, irotor] + vt, # tangential velocity
-                operating_point.rhoinf[1],
+                operating_point.rhoinf[],
                 0.0, #pitch is zero
-                operating_point.muinf[1],
-                operating_point.asound[1],
+                operating_point.muinf[],
+                operating_point.asound[],
             ) for (ir, (vz, vt)) in enumerate(zip(vzind, vthetaind))
         ]
 
@@ -1922,8 +1922,8 @@ function initialize_velocities!(
 
         # -  vz_rotor and V_theta rotor - #
         # self influence
-        vz_rotor[:, irotor] .+= vzind .+ out.u
-        vtheta_rotor[:, irotor] .+= vthetaind .+ out.v
+        vz_rotor[:, irotor] .+= vzind .+ getfield.(out, :u)
+        vtheta_rotor[:, irotor] .+= vthetaind .+ getfield.(out, :v)
 
         # - Get Cm_wake - #
         #=
@@ -1934,23 +1934,23 @@ function initialize_velocities!(
           NOTE: we need the values at the nodes not centers, so average the values and use the end values on the end points
         =#
         sigr[1] = @. blade_elements.B[irotor] / (4.0 * pi) *
-            out.cd[1] *
-            out.W[1] *
+            getfield.(out, :cd)[1] *
+            getfield.(out, :W)[1] *
             blade_elements.chords[1, irotor]
         @. sigr[2:(end - 1)] =
             (
                 blade_elements.B[irotor] / (4.0 * pi) *
-                out.cd[2:end] *
-                out.W[2:end] *
+                getfield.(out, :cd)[2:end] *
+                getfield.(out, :W)[2:end] *
                 blade_elements.chords[2:end, irotor] +
                 blade_elements.B[irotor] / (4.0 * pi) *
-                out.cd[1:(end - 1)] *
-                out.W[1:(end - 1)] *
+                getfield.(out, :cd)[1:(end - 1)] *
+                getfield.(out, :W)[1:(end - 1)] *
                 blade_elements.chords[1:(end - 1), irotor]
             ) / 2.0
         sigr[end] = @. blade_elements.B[irotor] / (4.0 * pi) *
-            out.cd[end] *
-            out.W[end] *
+            getfield.(out, :cd)[end] *
+            getfield.(out, :W)[end] *
             blade_elements.chords[end, irotor]
 
         # add influence of rotor radial induced velocity from self and rotors ahead
@@ -1961,8 +1961,8 @@ function initialize_velocities!(
         end
 
         # add in axial and tangential influence aft of current rotor
-        vzind .+= 2.0 * out.u
-        vthetaind .-= 2.0 * out.v
+        vzind .+= 2.0 * getfield.(out, :u)
+        vthetaind .-= 2.0 * getfield.(out, :v)
 
         # since wakes extend from source panel endpoints, we need to average velocities and use the ends for endpoints
         Cm_wake_vec[1] = sqrt((operating_point.Vinf[1] + vzind[1])^2 + vrind[1]^2)
@@ -2107,12 +2107,14 @@ function initialize_strengths!(
 
         ##### ----- Assign Initial Gamr, sigr, and gamw ----- #####
         # - Get Gamr - #
-        Gamr[:, irotor] .= 0.5 .* out.cl .* out.W .* blade_elements.chords[:, irotor]
+        Gamr[:, irotor] .=
+            0.5 .* getfield.(out, :cl) .* getfield.(out, :W) .*
+            blade_elements.chords[:, irotor]
 
         # # -  vz_rotor and V_theta rotor - #
         # # self influence
-        # vz_rotor[:, irotor] .+= vzind .+ out.u
-        # vtheta_rotor[:, irotor] .+= vthetaind .+ out.v
+        # vz_rotor[:, irotor] .+= vzind .+ getfield.(out,:u
+        # vtheta_rotor[:, irotor] .+= vthetaind .+ getfield.(out,:v
 
         # - Get Cm_wake - #
         #=
@@ -2123,23 +2125,23 @@ function initialize_strengths!(
           NOTE: we need the values at the nodes not centers, so average the values and use the end values on the end points
         =#
         sigr[1, irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
-            out.cd[1] *
-            out.W[1] *
+            getfield.(out, :cd)[1] *
+            getfield.(out, :W)[1] *
             blade_elements.chords[1, irotor]
         @. sigr[2:(end - 1), irotor] =
             (
                 blade_elements.B[irotor] / (4.0 * pi) *
-                out.cd[2:end] *
-                out.W[2:end] *
+                getfield.(out, :cd)[2:end] *
+                getfield.(out, :W)[2:end] *
                 blade_elements.chords[2:end, irotor] +
                 blade_elements.B[irotor] / (4.0 * pi) *
-                out.cd[1:(end - 1)] *
-                out.W[1:(end - 1)] *
+                getfield.(out, :cd)[1:(end - 1)] *
+                getfield.(out, :W)[1:(end - 1)] *
                 blade_elements.chords[1:(end - 1), irotor]
             ) / 2.0
         sigr[end, irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
-            out.cd[end] *
-            out.W[end] *
+            getfield.(out, :cd)[end] *
+            getfield.(out, :W)[end] *
             blade_elements.chords[end, irotor]
 
         # add influence of rotor radial induced velocity from self and rotors ahead
@@ -2150,8 +2152,8 @@ function initialize_strengths!(
         end
 
         # add in axial and tangential influence aft of current rotor
-        vzind .+= 2.0 * out.u
-        vthetaind .-= 2.0 * out.v
+        vzind .+= 2.0 * getfield.(out, :u)
+        vthetaind .-= 2.0 * getfield.(out, :v)
 
         # since wakes extend from source panel endpoints, we need to average velocities and use the ends for endpoints
         Cm_wake_vec[1] = sqrt((operating_point.Vinf[1] + vzind[1])^2 + vrind[1]^2)

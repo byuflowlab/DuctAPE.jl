@@ -81,9 +81,10 @@ function analyze(
     if options.verbose
         println("Pre-computing Parameters")
     end
+
     # out-of-place version currently has 22,292,181 allocations.
     # TODO: do this in place for the solve input cache items. eventually will want to have a post-processing and output cache too.
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = precompute_parameters_iad!(
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters_iad!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
