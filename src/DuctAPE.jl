@@ -53,7 +53,7 @@ include("analysis/analyses.jl")
 
 ##### ----- PREPROCESS ----- #####
 # Pre-solve initializations
-include("preprocess/initialize_iad.jl")
+include("preprocess/preprocess.jl")
 
 # Geometry Functions
 include("preprocess/geometry/body_geometry.jl")
@@ -83,26 +83,6 @@ include("process/aerodynamics/wake_aerodynamics.jl")
 # include("postprocess/post_process.jl")
 include("postprocess/utils.jl")
 include("postprocess/postprocess.jl")
-
-##### ----- SPECIALTY ----- #####
-
-# Airfoil Parameterizations
-include("airfoil_parameters/naca_65series.jl")
-
-# 1D Models
-include("preliminary_design/1DModel_A.jl")
-include("preliminary_design/1DModel_B.jl")
-
-### TODO Decide what below should be removed and when
-# Additional Influence Coefficient Functions
-# include("coefficient_matrix.jl") #TODO: delete or move this?
-# Kutta Condition Residual
-# include("pressure_residual.jl")
-
-# # -- ROTOR ONLY -- ##
-include("preprocess/initialize_rotor_only.jl")
-include("solve/solve_rotor_only.jl")
-include("postprocess/post_process_rotor.jl")
 
 ##### ----- DEBUGGING ----- #####
 include("../test/test_utils.jl")
