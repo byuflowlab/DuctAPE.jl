@@ -174,7 +174,7 @@ function solve!(state_variables, const_cache; verbose=false)
             solve_containers.Cm_wake,
             solve_containers.vz_wake,
             solve_containers.vr_wake,
-            solve_containers.gamw_est,
+            gamw,
             sigr,
             @view(solve_containers.gamb[1:(idmaps.body_totnodes)]),
             ivw,
@@ -247,6 +247,7 @@ function solve!(state_variables, const_cache; verbose=false)
         )
 
         # - Get Absolute Rotor Velocities - #
+        # TODO: Cmag_rotor doesn't quite match up here with previous version, why?
         reframe_rotor_velocities!(
             solve_containers.Cz_rotor,
             solve_containers.Ctheta_rotor,
