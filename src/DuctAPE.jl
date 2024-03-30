@@ -4,33 +4,51 @@ module DuctAPE
 #          DEPENDENCIES           #
 #---------------------------------#
 
-using FLOWMath # used for various items, mostly interpolation
-
-include("C4Blade/C4Blade.jl") # augmented CCBlade implementation (cascade compatible CCBlade)
+# - augmented CCBlade implementation (cascade compatible CCBlade) - #
+# NOTE: used for robust state initialziation
+include("C4Blade/C4Blade.jl")
 const c4b = C4Blade
 
+# - Packages for Calculating Unit Induced Velocities - #
+# For Kernels
 using SpecialFunctions # required for elliptic integrals
-using QuadGK # integration
-using FastGaussQuadrature # integration
-using Primes # integration
+# For Integration
+using FastGaussQuadrature
+using Primes #TODO: likely not necessary
+using QuadGK
+
+# - Packages for Code Efficiency - #
 using StaticArrays # used in miscellaneous places for code efficiency
-
-using LinearAlgebra # linear solve and LU decomposition
-
 using PreallocationTools # caches
 
-# new solve required pacakges
+# - Packages for Solves - #
 using ImplicitAD # used for all solves
+using LinearAlgebra # linear solve and LU decomposition
+# TODO: determine if these are needed after implementing NonlinearSolve.jl
 using NLsolve #for newton solver
 using LineSearches # used in newton solver
 using ForwardDiff # used for jacobian for newton solver
 
+# - Utility Packages - #
+using FLOWMath # used for various items, mostly interpolation
 using Printf # used when verbose option is selected
 
 #---------------------------------#
 #             EXPORTS             #
 #---------------------------------#
+
+# - Nested Modules - #
 export c4b
+
+# - Types - #
+
+# - Analyses - #
+
+# - Preprocess - #
+
+# - Pocess - #
+
+# - Postprocess - #
 
 #---------------------------------#
 #            INCLUDES             #
