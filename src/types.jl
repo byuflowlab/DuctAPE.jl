@@ -21,7 +21,7 @@ end
 
 @kwdef struct GaussKronrod{TI,TF} <: IntegrationMethod
     order::TI = 3
-    maxevals::TI = 1e2
+    maxevals::TI = 100
     atol::TF = 1e-6
 end
 
@@ -31,6 +31,16 @@ struct GaussLegendre{TN,TW} <: IntegrationMethod
 end
 
 function GaussLegendre(nsamples=20; silence_warnings=true)
+    if silence_warnings && Bool((nsamples) % 2)
+        @warn "Must have an even number of GaussLegendre sample points if using for panel self influence"
+    end
+
     nodes, weights = FastGaussQuadrature.gausslegendre(nsamples)
+
     return GaussLegendre(linear_transform((-1, 1), (0, 1), nodes), weights ./ 2.0)
+end
+
+@kwdef struct IntegrationOptions{TN,TS}
+    nominal::TN = GaussLegendre(20)
+    singular::TS = GaussKronrod(3, 1e2, 1e-6)
 end

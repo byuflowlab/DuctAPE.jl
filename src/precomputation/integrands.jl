@@ -17,8 +17,8 @@ function nominal_vortex_induced_velocity_sample!(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t) # z coordinate
-    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t) # r coordinate
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t) # z coordinate
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t) # r coordinate
 
     # get relative geometry: xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
     calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
@@ -60,8 +60,8 @@ function nominal_vortex_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t) # z coordinate
-    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t) # r coordinate
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t) # z coordinate
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t) # r coordinate
 
     # get relative geometry: xi, rho, m, r0 = calculate_xrm(controlpoint, [z; r])
     calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
@@ -154,6 +154,14 @@ end
 
 """
 """
+function analytically_integrated_vortex_influence!(V, r, influence_length)
+    V[1] = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
+    V[2] = 0.0
+    return V
+end
+
+"""
+"""
 function analytically_integrated_vortex_influence(r, influence_length)
     axial = (influence_length / (4.0 * pi * r)) * (1.0 + log(16.0 * r / influence_length))
     radial = 0.0
@@ -161,7 +169,52 @@ function analytically_integrated_vortex_influence(r, influence_length)
 end
 
 """
+# Arguments:
+- `t::Float` : sample point in range (0,1) selected by quadrature.
+"""
+function self_vortex_induced_velocity_sample!(
+    V, t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
+)
 
+    # Transform from (0,1) to actual position on panel
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t)
+
+    # get relative geometry
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
+
+    # Get velocity components at sample points
+    cache_vec[7] = vortex_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[2],#rj
+        1.0,
+        view(cache_vec, 11:15),
+    ) #vz
+    cache_vec[8] = vortex_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[2], view(cache_vec, 11:16)
+    ) #vr
+
+    # Get singular piece to subtract
+    cache_vec[9], cache_vec[10] = subtracted_singular_vortex_influence!(
+        (cache_vec[1], cache_vec[2]), controlpoint, view(cache_vec, 11:15)
+    )
+
+    #=
+    assemble output components in the format:
+        [x_j r_j; x_{j+1} r_{j+1}]
+    and scale by influence panel length
+        (due to transformation of integration range to/from range=(0,1))
+     =#
+    V[1] = cache_vec[7] * (1.0 - t) - cache_vec[9] / 2.0
+    V[2] = cache_vec[7] * t .- cache_vec[9] / 2.0
+    V[3] = cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
+    V[4] = cache_vec[8] * t .- cache_vec[10] / 2.0
+
+    return V
+end
+"""
 # Arguments:
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
@@ -170,8 +223,8 @@ function self_vortex_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t)
-    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t)
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t)
 
     # get relative geometry
     calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
@@ -219,7 +272,46 @@ end
 #---------------------------------#
 
 """
+# Arguments:
+- `t::Float` : sample point in range (0,1) selected by quadrature.
+"""
+function nominal_source_induced_velocity_sample!(
+    V, t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
+)
 
+    # Transform from (0,1) to actual position on panel
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t)
+
+    # get relative geometry
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
+
+    # Get velocity components at sample points
+    cache_vec[7] = source_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[6],#rj
+        view(cache_vec, 11:15),
+    )
+    cache_vec[8] = source_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[6], view(cache_vec, 11:16)
+    )
+
+    #=
+    assemble output components in the format:
+        [x_j r_j; x_{j+1} r_{j+1}]
+    and scale by influence panel length
+        (due to transformation of integration range to/from range=(0,1))
+     =#
+    V[1] = cache_vec[7] * (1.0 - t) * influence_length
+    V[2] = cache_vec[7] * t * influence_length
+    V[3] = cache_vec[8] * (1.0 - t) * influence_length
+    V[4] = cache_vec[8] * t * influence_length
+
+    return V
+end
+"""
 # Arguments:
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
@@ -228,8 +320,8 @@ function nominal_source_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t)
-    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t)
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t)
 
     # get relative geometry
     calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
@@ -303,6 +395,14 @@ end
 
 """
 """
+function analytically_integrated_source_influence!(V, r, influence_length)
+    V[2] = (influence_length / (4.0 * pi * r)) * (1.0 + log(2.0 * r / influence_length))
+    V[1] = 0.0
+    return V
+end
+
+"""
+"""
 function analytically_integrated_source_influence(r, influence_length)
     radial = (influence_length / (4.0 * pi * r)) * (1.0 + log(2.0 * r / influence_length))
     axial = 0.0
@@ -310,7 +410,52 @@ function analytically_integrated_source_influence(r, influence_length)
 end
 
 """
+# Arguments:
+- `t::Float` : sample point in range (0,1) selected by quadrature.
+"""
+function self_source_induced_velocity_sample!(
+    V, t, node1, node2, influence_length, controlpoint, cache_vec; nondimrange=[0.0; 1.0]
+)
 
+    # Transform from (0,1) to actual position on panel
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t)
+
+    # get relative geometry
+    calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))
+
+    # Get velocity components at sample points
+    cache_vec[7] = source_ring_vz!(
+        cache_vec[3],#xi
+        cache_vec[4],#rho
+        cache_vec[5],#m
+        cache_vec[2],#rj
+        view(cache_vec, 11:15),
+    )
+    cache_vec[8] = source_ring_vr!(
+        cache_vec[3], cache_vec[4], cache_vec[5], cache_vec[2], view(cache_vec, 11:16)
+    )
+
+    # Get singular piece to subtract
+    cache_vec[9], cache_vec[10] = subtracted_singular_source_influence!(
+        (cache_vec[1], cache_vec[2]), controlpoint, view(cache_vec, 11:15)
+    )
+
+    #=
+    assemble output components in the format:
+        [x_j r_j; x_{j+1} r_{j+1}]
+    and scale by influence panel length
+        (due to transformation of integration range to/from range=(0,1))
+     =#
+    V[1] = cache_vec[7] * (1.0 - t) .- cache_vec[9] / 2.0
+    V[2] = cache_vec[7] * t .- cache_vec[9] / 2.0
+    V[3] = cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
+    V[4] = cache_vec[8] * t .- cache_vec[10] / 2.0
+
+    return V
+end
+
+"""
 # Arguments:
 - `t::Float` : sample point in range (0,1) selected by quadrature.
 """
@@ -319,8 +464,8 @@ function self_source_induced_velocity_sample(
 )
 
     # Transform from (0,1) to actual position on panel
-    cache_vec[1] = fm.linear(nondimrange, (node1[1], node2[1]), t)
-    cache_vec[2] = fm.linear(nondimrange, (node1[2], node2[2]), t)
+    cache_vec[1] = linear_transform(nondimrange, (node1[1], node2[1]), t)
+    cache_vec[2] = linear_transform(nondimrange, (node1[2], node2[2]), t)
 
     # get relative geometry
     calculate_xrm!(view(cache_vec, 3:6), controlpoint, view(cache_vec, 1:2))

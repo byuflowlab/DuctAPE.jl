@@ -18,7 +18,7 @@ function nominal_vortex_panel_integration(
 
     # Define function to integrate
     function fsample(t)
-        return dt.nominal_vortex_induced_velocity_sample(
+        return nominal_vortex_induced_velocity_sample(
             t,
             node1,
             node2,
