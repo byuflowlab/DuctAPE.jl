@@ -186,6 +186,15 @@ function analyze(
     # update tests for this function
 
     # TODO: need to figure out how to set this up to work with the various residual options
+#########################################################
+##########################     ##########################
+#####################     LOOK!    ######################
+###########                                   ###########
+#####     -----    TODO: YOU ARE HERE     -----     #####
+###########                                   ###########
+#####################     LOOK!    ######################
+##########################     ##########################
+#########################################################
     outs = post_process(
         options.solve_options,
         solve_container_caching,
@@ -330,6 +339,8 @@ function process(
         idmaps.wake_node_ids_along_casing_wake_interface,
         idmaps.wake_node_ids_along_centerbody_wake_interface,
     )
+
+    sigr .= 0
 
     state_variables, state_dims = vectorize_strength_states(Gamr, sigr, gamw)
 
