@@ -35,62 +35,54 @@ export c4b
 #---------------------------------#
 #            INCLUDES             #
 #---------------------------------#
-##### ----- TYPES ----- #####
-include("types.jl")
 
 ##### ----- UTILITIES ----- #####
 # general utility functions
-# TODO: organize utility
 include("utilities/utils.jl")
-include("solve/io.jl") #TODO: move to utilities
-include("solve/cache.jl")
-include("solve/bookkeeping.jl")
+include("utilities/types.jl")
+include("utilities/package_states.jl")
+include("utilities/caches.jl")
+include("utilities/bookkeeping.jl")
+
+# Airfoil utility functions
+include("utilities/airfoils/airfoil_utilities.jl")
+include("utilities/airfoils/naca_65series.jl")
 
 ##### ----- Analysis ----- #####
 include("analysis/analyses.jl")
 
-##### ----- PRECOMPUTATION ----- #####
+##### ----- PREPROCESS ----- #####
 # Pre-solve initializations
-include("precomputation/initialize.jl")
-include("precomputation/initialize_iad.jl")
+include("preprocess/initialize_iad.jl")
 
-# Body Geometry Functions
-include("precomputation/body_geometry.jl")
-include("precomputation/panel.jl")
+# Geometry Functions
+include("preprocess/geometry/body_geometry.jl")
+include("preprocess/geometry/panel_geometry.jl")
+include("preprocess/geometry/rotor_geometry.jl")
+include("preprocess/geoemtry/wake_geometry.jl")
+include("preprocess/geometry/elliptic_grid_residuals.jl")
 
-# Rotor Geometry Functions
-include("precomputation/rotor_geometry.jl")
+# Induced Velocity Functions
+include("preprocess/velocities/unit_induced_velocities.jl")
+include("preprocess/velocities/integrals.jl")
+include("preprocess/velocities/induced_velocity_matrices.jl")
+include("preprocess/velocities/body_aic.jl")
 
-# Wake Geometry Functions
-include("precomputation/wake_geometry.jl")
-include("precomputation/wake_geometry_residual.jl")
+##### ----- PROCESS ----- #####
 
-# Aero Influence Matrices
-include("precomputation/integrals.jl")
-include("precomputation/velocities.jl")
-include("precomputation/body_aic.jl")
-include("precomputation/body_aic_OLD.jl")
-include("precomputation/induced_velocity_matrices.jl")
+include("process/solvers/CSORsolve.jl")
+include("process/solvers/solve.jl")
 
-##### ----- SOLVER ----- #####
-
-include("solve/solve.jl")
-include("solve/solve_iad.jl")
-
-# Rotor Aerodynamic Functions
-include("solve/rotor_aerodynamics.jl")
-
-# Wake Aerodynamic Functions
-include("solve/wake_aerodynamics.jl")
-
-# Body Aerodynamic Functions
-include("solve/body_aerodynamics.jl")
+# Aerodynamics Functions
+include("process/aerodynamics/body_aerodynamics.jl")
+include("process/aerodynamics/rotor_aerodynamics.jl")
+include("process/aerodynamics/wake_aerodynamics.jl")
 
 ##### ----- POST-PROCESSING ----- #####
 
 # include("postprocess/post_process.jl")
 include("postprocess/utils.jl")
-include("postprocess/post_process_iad.jl")
+include("postprocess/postprocess.jl")
 
 ##### ----- SPECIALTY ----- #####
 
@@ -108,7 +100,7 @@ include("preliminary_design/1DModel_B.jl")
 # include("pressure_residual.jl")
 
 # # -- ROTOR ONLY -- ##
-include("precomputation/initialize_rotor_only.jl")
+include("preprocess/initialize_rotor_only.jl")
 include("solve/solve_rotor_only.jl")
 include("postprocess/post_process_rotor.jl")
 
