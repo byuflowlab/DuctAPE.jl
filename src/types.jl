@@ -1,28 +1,18 @@
 abstract type IntegrationMethod end
 
 @kwdef struct Romberg{TI,TF,TP,TV} <: IntegrationMethod
-    nsamples::TI = 1025
-    stepsize::TF = 1.0 / 1024
-    factors::TP = Primes.factor(1024)
-    nfactors::TI = 10
+    max_subdivisions::TI = 10
     atol::TF = 1e-6
-    sample_points::TV = collect(range(0, 1, 1025))
 end
 
-function set_romberg_options(; nsamples=1025, atol=1e-6)
-    stepsize = 1.0 / (nsamples - 1)
-    factors = Primes.factor(nsamples - 1)
-    nfactors = sum(values(factors))
-
-    return Romberg(;
-        atol=atol, nsamples=nsamples, factors=factors, nfactors=nfactors, stepsize=stepsize
-    )
+function set_romberg_options(; max_subdivisions=10, atol=1e-6)
+    return Romberg(; max_subdivisions, atol)
 end
 
 @kwdef struct GaussKronrod{TI,TF} <: IntegrationMethod
-    order::TI = 3
-    maxevals::TI = 100
-    atol::TF = 1e-6
+    order::TI = 5
+    maxevals::TI = 1000
+    atol::TF = 1e-12
 end
 
 struct GaussLegendre{TN,TW} <: IntegrationMethod
@@ -42,5 +32,5 @@ end
 
 @kwdef struct IntegrationOptions{TN,TS}
     nominal::TN = GaussLegendre(20)
-    singular::TS = GaussKronrod(3, 1e2, 1e-6)
+    singular::TS = GaussLegendre(20)
 end

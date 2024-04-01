@@ -1,12 +1,3 @@
-#TODO: decide if dfdc method or julia method is better
-# the DFDC method requires the whole extrapolation, but you can limit the number of intervals to evaluate when the integral is easy.
-# when the integral is hard though, you end up doing 2x more calculations than you would have if you set your sample size larger to begin with.
-# the julia method requires you to evaluate all the sample points up front, but will terminate the extrapolation as soon as you hit your desired tolerance. So you need to have a large number of samples to start with.
-# DFDC doesn't actually do a true trapezoidal integration, rather it assumes a linear function and does δx*f(midpoint of iterval), this is technically less accurate than the trapezoidal method, but does avoid sampling at the end and midpoints of panels.  Theoretically, the extrapolation will account for the less accurate integration method.
-# perhaps a combo, where you do a DFDC-like integration (not quite trapezoidal), but do the large sample size and early extrapolation termination.
-
-# Current Plan: do romberg for the non-singular ones, and quadgk for the singular ones.
-
 """
     extrapolate!(fh::AbstractVector; power=1, atol=0, rtol=0, maxeval=typemax(Int), breaktol=Inf)
 
@@ -19,104 +10,76 @@ the type of `h` and `T` is the type of the extrapolated `f(0)` **result**.  This
 should be a floating-point type, i.e. `fh` should contain `float(f(h))` if the
 function you are extrapolating is not already floating-point-valued.)
 """
-function extrapolate!(
-    fh::AbstractVector{<:Tuple{TF1,TF2}};
-    power::Int=2,
-    atol::Float64=1e-6,
-    rtol::Float64=0.0,
-    breaktol::Float64=Inf,
-    maxeval::Int=typemax(Int),
-) where {TF1,TF2}
-
-    # - Check for Problems - #
-    (rtol >= 0 && atol >= zero(atol)) ||
-        throw(ArgumentError("rtol and atol must be nonnegative"))
-    breaktol > 0 || throw(ArgumentError("breaktol must be positive"))
-    isempty(fh) && throw(ArgumentError("(f,h) array must be non-empty"))
+function extrapolate!(V, err, fh; power=2, atol=1e-6) where {TF1,TF2}
 
     # - rename for convenience - #
     (f0, h) = first(fh)
 
     # - initialize - #
-    err::typeof(float(norm(f0))) = Inf
+    err .= Inf
     numeval = 1
-    maxeval = min(maxeval, length(fh))
+    maxeval = size(fh, 1)
 
     # - Loop - #
     while numeval < maxeval
+
         # - increment - #
         numeval += 1
 
         # - update - #
         (f_prime, h_prime) = fh[numeval + (firstindex(fh) - 1)]
-        abs(h) > abs(h_prime) ||
-            throw(ArgumentError("|$h_prime| >= |$h| is not decreasing"))
         h = h_prime
-        minerr_prime = oftype(err, Inf)
+        minerr_prime = similar(err) .= Inf
         f_ip1 = f_prime
 
         # - Inner Loop - #
         for i in (numeval - 1):-1:1
             f_i, h_i = fh[i + (firstindex(fh) - 1)]
-            c = (h_i / h_prime)^power
-            f_ip1 += (f_ip1 - f_i) / (c - 1)
+            c = (h_i[] / h_prime[])^power
+            println((f_ip1 - f_i))
+            @. f_ip1 += (f_ip1 - f_i) / (c - 1)
             fh[i + (firstindex(fh) - 1)] = (f_ip1, h_i)
-            err_prime = norm(f_ip1 - f_i)
-            minerr_prime = min(minerr_prime, err_prime)
+            err_prime = norm.(f_ip1 - f_i)
+            minerr_prime = min.(minerr_prime, err_prime)
             if err_prime < err
-                f0, err = f_ip1, err_prime
+                V, err = f_ip1, err_prime
             end
         end
-
-        # - stop early if error increases too much - #
-        (minerr_prime > breaktol * err || !isfinite(minerr_prime)) && break
 
         # - converged - #
-        err <= max(rtol * norm(f0), atol) && break
-    end
-    return (f0, err)
-end
-
-@views function romberg!(fh, step_size, samples, endsum, factors, numfactors; kwargs...)
-
-    # - Do Trapezoidal Integration with Composite Trapezoidal Rule - #
-    b, e = firstindex(samples), lastindex(samples)
-    i = numfactors + 1
-    fh[i] = (step_size * (sum(samples[(b + 1):(e - 1)]) + endsum), step_size)
-    nstep = 1
-    for (j, K) in factors
-        @inbounds for k in 1:K
-            nstep *= j
-            sdx = nstep * step_size
-            if i == 2 # last iteration (empty sum)
-                fh[1] = (sdx * endsum, sdx)
-            else
-                fh[i -= 1] = (
-                    sdx * (sum(samples[(b + nstep):nstep:(e - nstep)]) + endsum), sdx
-                )
-            end
-        end
+        all(err .<= atol) && break
     end
 
-    # - Do Richardson Extrapolation until converged - #
-    return extrapolate!(fh; power=2, kwargs...)
+    return V, err
 end
 
-function allocate_integration_containers(dispatch_type::TF, nsamples, nfactors) where {TF}
+function allocate_integration_containers(
+    integration_options::Romberg, dispatch_type::TF; cache_size=20
+) where {TF}
     return (;
-        err=zeros(TF, 2, 2), #always this size
-        sample_cache=zeros(TF, 20), #always this size, this is for the intermediate calcs
-        samples=zeros(TF, nsamples, 4), # always 4 wide
-        fh=[(TF(1.0), TF(1.0)) for i in 1:(nfactors + 1)],
+        sample_cache=zeros(TF, cache_size),
+        samples=[(zeros(TF, 4), TF[0.0]) for i in 1:(integration_options.max_subdivisions)],
     )
+end
+
+function allocate_integration_containers(
+    integration_options::GaussLegendre, dispatch_type::TF; cache_size=20
+) where {TF}
+    return (;
+        sample_cache=zeros(TF, cache_size), samples=zeros(TF, integration_options.nsamples)
+    )
+end
+
+function allocate_integration_containers(
+    integration_options::GaussKronrod, dispatch_type::TF; cache_size=20
+) where {TF}
+    return (; sample_cache=zeros(TF, cache_size))
 end
 
 #---------------------------------#
 #             VORTEX              #
 #---------------------------------#
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
+
 function nominal_vortex_panel_integration!(
     integration_options::Romberg,
     V,
@@ -128,155 +91,248 @@ function nominal_vortex_panel_integration!(
     debug=false,
 )
 
-    # Define function to integrate
-    for (s, t) in zip(eachrow(containers.samples), integration_options.sample_points)
-        dt.nominal_vortex_induced_velocity_sample!(
-            s, t, node1, node2, influence_length, controlpoint, containers.sample_cache
-        )
+    # - Loop through number of subdivisions (start with 2) - #
+    for ii in 1:(integration_options.max_subdivisions)
+        nint = 2^ii
+
+        # - Set step size for integration and extrapolation - #
+        dx = 1.0 / nint
+        containers.samples[ii][2] .= dx
+
+        # - Loop through intervals for current subdivision level - #
+        for i in 1:nint
+            # sample at the interval midpoints
+            t = (i - 0.5) / nint
+
+            # get sample velocity
+            dt.nominal_vortex_induced_velocity_sample!(
+                @view(containers.samples[ii])[1][1],
+                t,
+                node1,
+                node2,
+                influence_length,
+                controlpoint,
+                containers.sample_cache,
+            )
+        end
+
+        # multiply samples by the interval length
+        containers.samples[ii][1] .*= dx
+
+        if ii > 1
+            # extrapolate once you can
+            dt.extrapolate!(
+                V,
+                @view(containers.sample_cache[1:4]),
+                @view(containers.samples[1:ii]);
+                atol=integration_options.atol,
+            )
+
+            # if you have met the convergence requirements, terminate
+            all(@view(containers.sample_cache[1:4]) .<= integration_options.atol) && break
+        end
     end
 
-    for (i, s) in enumerate(eachcol(containers.samples))
-        V[i], containers.err[i] = dt.romberg!(
-            containers.fh,
-            integration_options.stepsize,
-            s,
-            (s[1] + s[end]) / 2.0,
-            integration_options.factors,
-            integration_options.nfactors;
-            atol=integration_options.atol,
+    return V
+end
+
+"""
+`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+"""
+function self_vortex_panel_integration(
+    integration_options::Romberg,
+    node1,
+    node2,
+    influence_length,
+    controlpoint,
+    containers,
+    debug=false,
+)
+
+    # - Loop through number of subdivisions (start with 2) - #
+    for ii in 1:(integration_options.max_subdivisions)
+        nint = 2^ii
+
+        # - Set step size for integration and extrapolation - #
+        dx = 1.0 / nint
+        containers.samples[ii][2] .= dx
+
+        # - Loop through intervals for current subdivision level - #
+        for i in 1:nint
+            # sample at the interval midpoints
+            t = (i - 0.5) / nint
+
+            # get sample velocity
+            dt.self_vortex_induced_velocity_sample!(
+                @view(containers.samples[ii])[1][1],
+                t,
+                node1,
+                node2,
+                influence_length,
+                controlpoint,
+                containers.sample_cache,
+            )
+        end
+
+        # multiply samples by the interval length
+        containers.samples[ii][1] .*= dx
+        # multiply samples by the influence length (not done in self induced unit velocity function)
+        containers.samples[ii][1] .*= influence_length
+
+        # - Add in the analytical bits - #
+        containers.sample_cache[1], containers.sample_cache[2] = analytically_integrated_vortex_influence(
+            controlpoint[2], influence_length
         )
+        containers.samples[ii][1][1:2] .+= containers.sample_cache[1] / 2.0
+
+        if ii > 1
+            # extrapolate once you can
+            dt.extrapolate!(
+                V,
+                @view(containers.sample_cache[1:4]),
+                @view(containers.samples[1:ii]);
+                atol=integration_options.atol,
+            )
+
+            # if you have met the convergence requirements, terminate
+            all(@view(containers.sample_cache[1:4]) .<= integration_options.atol) && break
+        end
     end
 
     if debug
-        # return reshape(V, (2, 2)), err
         return V, err
     else
-        # return reshape(V, (2, 2))
         return V
     end
 end
-
-# """
-# `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-# """
-# function self_vortex_panel_integration(
-#     node1,
-#     node2,
-#     influence_length,
-#     controlpoint,
-#     cache_vec;
-#     nondimrange=[0.0; 1.0],
-#     debug=false,
-# )
-
-#     # Define function to integrate
-#     function fsample(t)
-#         return self_vortex_induced_velocity_sample(
-#             t,
-#             node1,
-#             node2,
-#             influence_length,
-#             controlpoint,
-#             cache_vec;
-#             nondimrange=nondimrange,
-#         )
-#     end
-
-#     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
-
-#     cache_vec[1], cache_vec[2] = analytically_integrated_vortex_influence(
-#         controlpoint[2], influence_length
-#     )
-
-#     V .*= influence_length
-#     V[1:2] .+= cache_vec[1] / 2.0
-
-#     if debug
-#         return reshape(V, (2, 2)), err
-#     else
-#         return reshape(V, (2, 2))
-# end
-# end
 
 #---------------------------------#
 #             SOURCE              #
 #---------------------------------#
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
 function nominal_source_panel_integration!(
+    integration_options::Romberg,
+    V,
     node1,
     node2,
     influence_length,
     controlpoint,
-    cache_vec;
-    nondimrange=[0.0; 1.0],
+    containers;
     debug=false,
 )
 
-    # Define function to integrate
-    function fsample(t)
-        return nominal_source_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            cache_vec;
-            nondimrange=nondimrange,
-        )
+    # - Loop through number of subdivisions (start with 2) - #
+    for ii in 1:(integration_options.max_subdivisions)
+        nint = 2^ii
+
+        # - Set step size for integration and extrapolation - #
+        dx = 1.0 / nint
+        containers.samples[ii][2] .= dx
+
+        # - Loop through intervals for current subdivision level - #
+        for i in 1:nint
+            # sample at the interval midpoints
+            t = (i - 0.5) / nint
+
+            # get sample velocity
+            dt.nominal_source_induced_velocity_sample!(
+                @view(containers.samples[ii])[1][1],
+                t,
+                node1,
+                node2,
+                influence_length,
+                controlpoint,
+                containers.sample_cache,
+            )
+        end
+
+        # multiply samples by the interval length
+        containers.samples[ii][1] .*= dx
+
+        if ii > 1
+            # extrapolate once you can
+            dt.extrapolate!(
+                V,
+                @view(containers.sample_cache[1:4]),
+                @view(containers.samples[1:ii]);
+                atol=integration_options.atol,
+            )
+
+            # if you have met the convergence requirements, terminate
+            all(@view(containers.sample_cache[1:4]) .<= integration_options.atol) && break
+        end
     end
 
-    V, err = quadgk(fsample, 0.0, 1.0; order=3, maxevals=1e2, atol=1e-6)
+    return V
+end
+
+"""
+`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+"""
+function self_source_panel_integration(
+    integration_options::Romberg,
+    node1,
+    node2,
+    influence_length,
+    controlpoint,
+    containers;
+    debug=false,
+)
+
+    # - Loop through number of subdivisions (start with 2) - #
+    for ii in 1:(integration_options.max_subdivisions)
+        nint = 2^ii
+
+        # - Set step size for integration and extrapolation - #
+        dx = 1.0 / nint
+        containers.samples[ii][2] .= dx
+
+        # - Loop through intervals for current subdivision level - #
+        for i in 1:nint
+            # sample at the interval midpoints
+            t = (i - 0.5) / nint
+
+            # get sample velocity
+            dt.self_source_induced_velocity_sample!(
+                @view(containers.samples[ii])[1][1],
+                t,
+                node1,
+                node2,
+                influence_length,
+                controlpoint,
+                containers.sample_cache,
+            )
+        end
+
+        # multiply samples by the interval length
+        containers.samples[ii][1] .*= dx
+        # multiply samples by the influence length (not done in self induced unit velocity function)
+        containers.samples[ii][1] .*= influence_length
+
+        # - Add in the analytical bits - #
+        containers.sample_cache[1], containers.sample_cache[2] = analytically_integrated_source_influence(
+            controlpoint[2], influence_length
+        )
+        containers.samples[ii][1][3:4] .+= containers.sample_cache[2] / 2.0
+
+        if ii > 1
+            # extrapolate once you can
+            dt.extrapolate!(
+                V,
+                @view(containers.sample_cache[1:4]),
+                @view(containers.samples[1:ii]);
+                atol=integration_options.atol,
+            )
+
+            # if you have met the convergence requirements, terminate
+            all(@view(containers.sample_cache[1:4]) .<= integration_options.atol) && break
+        end
+    end
 
     if debug
-        return reshape(V, (2, 2)), err
-        # return V, err
+        return V, err
     else
-        return reshape(V, (2, 2))
-        # return V
+        return V
     end
 end
 
-# """
-# `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-# """
-# function self_source_panel_integration(
-#     node1,
-#     node2,
-#     influence_length,
-#     controlpoint,
-#     cache_vec;
-#     nondimrange=[0.0; 1.0],
-#     debug=false,
-# )
-
-#     # Define function to integrate
-#     function fsample(t)
-#         return self_source_induced_velocity_sample(
-#             t,
-#             node1,
-#             node2,
-#             influence_length,
-#             controlpoint,
-#             cache_vec;
-#             nondimrange=nondimrange,
-#         )
-#     end
-
-#     V, err = quadgk(fsample, 0.0, 0.5, 1.0; order=3, maxevals=1e2, atol=1e-6)
-
-#     cache_vec[1], cache_vec[2] = analytically_integrated_source_influence(
-#         controlpoint[2], influence_length
-#     )
-
-#     V .*= influence_length
-#     V[3:4] .+= cache_vec[2] / 2.0
-
-#     if debug
-#         return reshape(V, (2, 2)), err
-#     else
-#         return reshape(V, (2, 2))
-#     end
-# end

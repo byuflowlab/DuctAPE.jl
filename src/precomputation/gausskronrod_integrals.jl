@@ -12,19 +12,13 @@ function nominal_vortex_panel_integration(
     influence_length,
     controlpoint,
     cache_vec;
-    nondimrange=[0.0; 1.0],
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return nominal_vortex_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            cache_vec
+            t, node1, node2, influence_length, controlpoint, cache_vec
         )
     end
 
@@ -50,25 +44,19 @@ end
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
 function self_vortex_panel_integration(
+    integration_options::GaussKronrod,
     node1,
     node2,
     influence_length,
     controlpoint,
     cache_vec;
-    nondimrange=[0.0; 1.0],
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return self_vortex_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            cache_vec;
-            nondimrange=nondimrange,
+            t, node1, node2, influence_length, controlpoint, cache_vec;
         )
     end
 
@@ -104,25 +92,19 @@ end
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
 function nominal_source_panel_integration(
+    integration_options::GaussKronrod,
     node1,
     node2,
     influence_length,
     controlpoint,
     cache_vec;
-    nondimrange=[0.0; 1.0],
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return nominal_source_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            cache_vec;
-            nondimrange=nondimrange,
+            t, node1, node2, influence_length, controlpoint, cache_vec;
         )
     end
 
@@ -148,25 +130,19 @@ end
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
 function self_source_panel_integration(
+    integration_options::GaussKronrod,
     node1,
     node2,
     influence_length,
     controlpoint,
     cache_vec;
-    nondimrange=[0.0; 1.0],
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return self_source_induced_velocity_sample(
-            t,
-            node1,
-            node2,
-            influence_length,
-            controlpoint,
-            cache_vec;
-            nondimrange=nondimrange,
+            t, node1, node2, influence_length, controlpoint, cache_vec;
         )
     end
 

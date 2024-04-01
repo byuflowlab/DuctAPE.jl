@@ -43,10 +43,10 @@ function nominal_vortex_induced_velocity_sample!(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    V[1] = cache_vec[7] * (1.0 - t) * influence_length
-    V[2] = cache_vec[7] * t * influence_length
-    V[3] = cache_vec[8] * (1.0 - t) * influence_length
-    V[4] = cache_vec[8] * t * influence_length
+    V[1] += cache_vec[7] * (1.0 - t) * influence_length
+    V[2] += cache_vec[7] * t * influence_length
+    V[3] += cache_vec[8] * (1.0 - t) * influence_length
+    V[4] += cache_vec[8] * t * influence_length
     return V
 end
 
@@ -207,10 +207,10 @@ function self_vortex_induced_velocity_sample!(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    V[1] = cache_vec[7] * (1.0 - t) - cache_vec[9] / 2.0
-    V[2] = cache_vec[7] * t .- cache_vec[9] / 2.0
-    V[3] = cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
-    V[4] = cache_vec[8] * t .- cache_vec[10] / 2.0
+    V[1] += cache_vec[7] * (1.0 - t) - cache_vec[9] / 2.0
+    V[2] += cache_vec[7] * t .- cache_vec[9] / 2.0
+    V[3] += cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
+    V[4] += cache_vec[8] * t .- cache_vec[10] / 2.0
 
     return V
 end
@@ -304,10 +304,10 @@ function nominal_source_induced_velocity_sample!(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    V[1] = cache_vec[7] * (1.0 - t) * influence_length
-    V[2] = cache_vec[7] * t * influence_length
-    V[3] = cache_vec[8] * (1.0 - t) * influence_length
-    V[4] = cache_vec[8] * t * influence_length
+    V[1] += cache_vec[7] * (1.0 - t) * influence_length
+    V[2] += cache_vec[7] * t * influence_length
+    V[3] += cache_vec[8] * (1.0 - t) * influence_length
+    V[4] += cache_vec[8] * t * influence_length
 
     return V
 end
@@ -447,10 +447,10 @@ function self_source_induced_velocity_sample!(
     and scale by influence panel length
         (due to transformation of integration range to/from range=(0,1))
      =#
-    V[1] = cache_vec[7] * (1.0 - t) .- cache_vec[9] / 2.0
-    V[2] = cache_vec[7] * t .- cache_vec[9] / 2.0
-    V[3] = cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
-    V[4] = cache_vec[8] * t .- cache_vec[10] / 2.0
+    V[1] += cache_vec[7] * (1.0 - t) .- cache_vec[9] / 2.0
+    V[2] += cache_vec[7] * t .- cache_vec[9] / 2.0
+    V[3] += cache_vec[8] * (1.0 - t) .- cache_vec[10] / 2.0
+    V[4] += cache_vec[8] * t .- cache_vec[10] / 2.0
 
     return V
 end
