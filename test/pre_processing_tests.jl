@@ -153,7 +153,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     )
 
     # just make sure it converges
-    dt.relax_grid!(dt.SLORWakeSolverOptions(), grid; verbose=false, silence_warnings=true)
+    dt.relax_grid!(dt.SLORGridSolverOptions(), grid; verbose=false, silence_warnings=true)
 
     # Check grid initialization
     # re-set up initial grid for easier testing
@@ -204,7 +204,7 @@ end
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solve_options, propulsor.paneling_constants
+        options.solver_options, propulsor.paneling_constants
     )
 
     # separate out caching items
@@ -219,7 +219,7 @@ end
 
     # reshape cache
     solve_parameter_tuple = dt.withdraw_solve_parameter_cache(
-        options.solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
 
     # copy over operating point
@@ -235,7 +235,7 @@ end
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
         propulsor;
-        wake_solve_options=options.wake_options,
+        grid_solver_options=options.grid_solver_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,
@@ -274,12 +274,12 @@ end
 
     # CSOR Solve initialization
     options = dt.set_options(;
-        solve_options=dt.CSORSolverOptions(), wake_options=dt.SLORWakeSolverOptions()
+        solver_options=dt.CSORSolverOptions(), grid_solver_options=dt.SLORGridSolverOptions()
     )
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solve_options, propulsor.paneling_constants
+        options.solver_options, propulsor.paneling_constants
     )
 
     # separate out caching items
@@ -294,7 +294,7 @@ end
 
     # reshape cache
     solve_parameter_tuple = dt.withdraw_solve_parameter_cache(
-        options.solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
 
     # copy over operating point
@@ -310,7 +310,7 @@ end
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
         propulsor;
-        wake_solve_options=options.wake_options,
+        grid_solver_options=options.grid_solver_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,

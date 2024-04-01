@@ -2,6 +2,22 @@
 This file contains types and functions used for running DuctAPE in a gradient-based optimization setting
 =#
 
+#---------------------------------#
+#          ABSTRACT TYPES         #
+#---------------------------------#
+
+# - Types for dispatching CSOR residual and convergence - #
+abstract type ConvergenceType end
+
+# - Solver Options - #
+abstract type SolverOptionsType end
+
+# - Wake Solver Options - #
+abstract type GridSolverOptionsType end
+
+#---------------------------------#
+#           INPUT TYPES           #
+#---------------------------------#
 # - Functions to check if the input is a scalar
 import Base.BroadcastStyle
 isscalar(x::T) where {T} = isscalar(T)
@@ -132,9 +148,16 @@ function verify_input(propulsor)
     # TODO: go find all the various asserts and put them here
 end
 
-abstract type SolverOptionsType end
+#---------------------------------#
+#          OPTION TYPES           #
+#---------------------------------#
 
-@kwdef struct CSORSolverOptions{TF,TB} <: SolverOptionsType
+# - Types for CSOR Convergence dispatch - #
+struct Relative <: ConvergenceType end
+struct Absolute <: ConvergenceType end
+
+# - Solver Options - #
+@kwdef struct CSORSolverOptions{TF,TB,TC<:ConvergenceType} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
     maxiter::TF = 1e2
@@ -147,7 +170,7 @@ abstract type SolverOptionsType end
     pfw::TF = 1.2
     f_circ::TF = 1e-3
     f_dgamw::TF = 2e-4
-    use_abstol::TB = false
+    convergence_type::TC = Relative()
     Vconv::TF = 1.0
     converged::AbstractVector{TB} = [false]
 end
@@ -167,15 +190,14 @@ end
     converged::AbstractVector{TB} = [false]
 end
 
-abstract type WakeSolverOptionsType end
-
-@kwdef struct SLORWakeSolverOptions{TF,TI,TB} <: WakeSolverOptionsType
+# - Elliptic Grid Solver Options - #
+@kwdef struct SLORGridSolverOptions{TF,TI,TB} <: GridSolverOptionsType
     max_wake_relax_iter::TI = 100
     wake_relax_tol::TF = 1e-9
     converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct WakeSolverOptions{TSym,TF,TI,TB} <: WakeSolverOptionsType
+@kwdef struct GridSolverOptions{TSym,TF,TI,TB} <: GridSolverOptionsType
     # elliptic grid solve options
     # TODO: generalize the newton part of this to use NonlinearSolve.jl framework.
     wake_nlsolve_method::TSym = :newton
@@ -187,9 +209,10 @@ end
     wake_relax_tol::TF = 1e-9
 end
 
+# - Full Option Set - #
 """
 """
-@kwdef struct Options{TB,TF,TS,Tin,TSo<:SolverOptionsType,WS<:WakeSolverOptionsType}
+@kwdef struct Options{TB,TF,TS,Tin,TSo<:SolverOptionsType,WS<:GridSolverOptionsType}
     # - General Options - #
     verbose::TB = false
     silence_warnings::TB = true
@@ -207,8 +230,8 @@ end
     checkoutfileexists::TB = false
     output_tuple_name::TS = "outs"
     # - Solving Options - #
-    wake_options::WS = WakeSolverOptions()
-    solve_options::TSo = SolverOptions()
+    grid_solver_options::WS = GridSolverOptions()
+    solver_options::TSo = SolverOptions()
 end
 
 """
@@ -220,9 +243,13 @@ end
 """
 """
 function quicksolve_options(;
-    wake_options=SLORWakeSolverOptions(), solve_options=CSORSolverOptions(), kwargs...
+    grid_solver_options=SLORGridSolverOptions(),
+    solver_options=CSORSolverOptions(),
+    kwargs...,
 )
     return Options(;
-        wake_options=SLORWakeSolverOptions(), solve_options=CSORSolverOptions(), kwargs...
+        grid_solver_options=SLORGridSolverOptions(),
+        solver_options=CSORSolverOptions(),
+        kwargs...,
     )
 end

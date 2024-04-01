@@ -77,7 +77,7 @@ include("preprocess/preprocess.jl")
 include("preprocess/geometry/body_geometry.jl")
 include("preprocess/geometry/panel_geometry.jl")
 include("preprocess/geometry/rotor_geometry.jl")
-include("preprocess/geoemtry/wake_geometry.jl")
+include("preprocess/geometry/wake_geometry.jl")
 include("preprocess/geometry/elliptic_grid_residuals.jl")
 
 # Induced Velocity Functions
@@ -88,8 +88,10 @@ include("preprocess/velocities/body_aic.jl")
 
 ##### ----- PROCESS ----- #####
 
-include("process/solvers/CSORsolve.jl")
-include("process/solvers/solve.jl")
+# Solve and Residual Functions
+include("process/solve.jl")
+include("process/residuals/CSORresidual.jl")
+include("process/residuals/systemresidual.jl")
 
 # Aerodynamics Functions
 include("process/aerodynamics/body_aerodynamics.jl")

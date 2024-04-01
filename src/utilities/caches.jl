@@ -111,6 +111,9 @@ function allocate_solve_parameter_cache(
     gamw = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
+    # save state dimensions
+    state_dims = (; Gamr, sigr, gamw)
+
     # - Operating Point - #
     s = (1,)
     l = lfs(s)
@@ -281,6 +284,7 @@ function allocate_solve_parameter_cache(
             zeros(total_length), fd_chunk_size; levels=levels
         ),
         solve_parameter_cache_dims=(;
+            state_dims ,
             Gamr,
             sigr,
             gamw,
@@ -360,6 +364,9 @@ function allocate_solve_parameter_cache(
     Cm_wake = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
+    # save state dimensions
+     state_dims = (;vz_rotor, vtheta_rotor, Cm_wake)
+
     # - Operating Point - #
     s = (1,)
     l = lfs(s)
@@ -530,6 +537,7 @@ function allocate_solve_parameter_cache(
             zeros(total_length), fd_chunk_size; levels=levels
         ),
         solve_parameter_cache_dims=(;
+            state_dims,
             vz_rotor,
             vtheta_rotor,
             Cm_wake,
@@ -694,6 +702,20 @@ function allocate_solve_container_cache(
     deltag_prev = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
+    # Convergence criteria
+    s = (nrotor,)
+    l = lfs(s)
+    maxBGamr = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    maxdeltaBGamr = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (1,)
+    l = lfs(s)
+    maxdeltagamw = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
     return (;
         solve_container_cache=PreallocationTools.DiffCache(
             zeros(total_length), fd_chunk_size; levels=levels
@@ -727,6 +749,9 @@ function allocate_solve_container_cache(
             deltaG_prev,
             deltag,
             deltag_prev,
+            maxBGamr,
+            maxdeltaBGamr,
+            maxdeltagamw,
         ),
     )
 end
@@ -943,7 +968,7 @@ end
 
 """
 """
-function withdraw_solve_parameter_cache(solve_options::CSORSolverOptions, vec, dims)
+function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, dims)
 
     # - Initial Guesses - #
     Gamr = reshape(@view(vec[dims.Gamr.index]), dims.Gamr.shape)
@@ -1092,7 +1117,7 @@ function withdraw_solve_parameter_cache(solve_options::CSORSolverOptions, vec, d
 end
 """
 """
-function withdraw_solve_parameter_cache(solve_options::SolverOptions,vec, dims)
+function withdraw_solve_parameter_cache(solver_options::SolverOptions,vec, dims)
 
     # - Initial Guesses - #
     vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
@@ -1242,7 +1267,7 @@ end
 
 """
 """
-function withdraw_solve_container_cache(solve_options::CSORSolverOptions, vec, dims)
+function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, dims)
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),
@@ -1281,11 +1306,14 @@ function withdraw_solve_container_cache(solve_options::CSORSolverOptions, vec, d
         deltaG_prev=reshape(@view(vec[dims.deltaG_prev.index]), dims.deltaG_prev.shape),
         deltag=reshape(@view(vec[dims.deltag.index]), dims.deltag.shape),
         deltag_prev=reshape(@view(vec[dims.deltag_prev.index]), dims.deltag_prev.shape),
+        maxBGamr=reshape(@view(vec[dims.maxBGamr.index]), dims.maxBGamr.shape),
+        maxdeltaBGamr=reshape(@view(vec[dims.maxdeltaBGamr.index]), dims.maxdeltaBGamr.shape),
+        maxdeltagamw=reshape(@view(vec[dims.maxdeltagamw.index]), dims.maxdeltagamw.shape),
     )
 end
 """
 """
-function withdraw_solve_container_cache(solve_options::SolverOptions, vec, dims)
+function withdraw_solve_container_cache(solver_options::SolverOptions, vec, dims)
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),

@@ -7,7 +7,7 @@ function reinterpolate_geometry(
     rotorstator_parameters,
     paneling_constants;
     autoshiftduct=true,
-    wake_solve_options=WakeSolverOptions(),
+    grid_solver_options=GridSolverOptions(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -51,7 +51,7 @@ function reinterpolate_geometry(
         rotorstator_parameters,
         paneling_constants;
         autoshiftduct=autoshiftduct,
-        wake_solve_options=wake_solve_options,
+        grid_solver_options=grid_solver_options,
         # wake_nlsolve_ftol=wake_nlsolve_ftol,
         # wake_max_iter=wake_max_iter,
         # max_wake_relax_iter=max_wake_relax_iter,
@@ -76,7 +76,7 @@ function reinterpolate_geometry!(
     rotorstator_parameters,
     paneling_constants;
     autoshiftduct=true,
-    wake_solve_options=WakeSolverOptions(),
+    grid_solver_options=GridSolverOptions(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -155,7 +155,7 @@ function reinterpolate_geometry!(
         Rtip[1],
         tip_gap[1],
         zwake;
-        wake_solve_options=wake_solve_options,
+        grid_solver_options=grid_solver_options,
         # wake_nlsolve_ftol=wake_nlsolve_ftol,
         # wake_max_iter=wake_max_iter,
         # max_wake_relax_iter=max_wake_relax_iter,
@@ -1264,9 +1264,9 @@ end
 
 """
 """
-function precompute_parameters_iad(
+function precompute_parameters(
     propulsor;
-    wake_solve_options=WakeSolverOptions(),
+    grid_solver_options=GridSolverOptions(),
     autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
@@ -1295,7 +1295,7 @@ function precompute_parameters_iad(
         centerbody_coordinates,
         rotorstator_parameters,
         paneling_constants;
-        wake_solve_options=wake_solve_options,
+        grid_solver_options=grid_solver_options,
         autoshiftduct=autoshiftduct,
         finterp=finterp,
         verbose=verbose,
@@ -1320,7 +1320,7 @@ function precompute_parameters_iad(
         rotorstator_parameters.rotorzloc,
     )
 
-    return precompute_parameters_iad(
+    return precompute_parameters(
         problem_dimensions,
         rp_duct_coordinates,
         rp_centerbody_coordinates,
@@ -1343,7 +1343,7 @@ end
 
 """
 """
-function precompute_parameters_iad(
+function precompute_parameters(
     rp_duct_coordinates,
     rp_centerbody_coordinates,
     wake_grid,
@@ -1441,7 +1441,7 @@ end
 
 """
 """
-function precompute_parameters_iad!(
+function precompute_parameters!(
     ivr,
     ivw,
     blade_element_cache,
@@ -1449,7 +1449,7 @@ function precompute_parameters_iad!(
     wakeK,
     propulsor;
     #TODO: put in the actual defaults here
-    wake_solve_options=WakeSolverOptions(),
+    grid_solver_options=GridSolverOptions(),
     autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
@@ -1479,7 +1479,7 @@ function precompute_parameters_iad!(
         centerbody_coordinates,
         rotorstator_parameters,
         paneling_constants;
-        wake_solve_options=wake_solve_options,
+        grid_solver_options=grid_solver_options,
         autoshiftduct=autoshiftduct,
         finterp=finterp,
         verbose=verbose,
@@ -1496,7 +1496,7 @@ function precompute_parameters_iad!(
         )
     end
 
-    return precompute_parameters_iad!(
+    return precompute_parameters!(
         ivr,
         ivw,
         blade_element_cache,
@@ -1511,7 +1511,7 @@ function precompute_parameters_iad!(
         operating_point,
         reference_parameters,
         problem_dimensions;
-        wake_solve_options=wake_solve_options,
+        grid_solver_options=grid_solver_options,
         autoshiftduct=autoshiftduct,
         itcpshift=itcpshift,
         axistol=axistol,
@@ -1524,7 +1524,7 @@ end
 
 """
 """
-function precompute_parameters_iad!(
+function precompute_parameters!(
     ivr,
     ivw,
     blade_element_cache,
@@ -1539,7 +1539,7 @@ function precompute_parameters_iad!(
     operating_point,
     reference_parameters,
     problem_dimensions=nothing;
-    wake_solve_options=options.wake_options,
+    grid_solver_options=options.wake_solver_options,
     autoshiftduct=options.autoshiftduct,
     itcpshift=options.itcpshift,
     axistol=options.axistol,
@@ -1679,7 +1679,7 @@ end
 #     panels,
 #     propulsor,
 #     precomp_containers; # contains wake_grid and repaneled duct and centerbody coordinates
-#     wake_solve_options=WakeSolverOptions(),
+#     grid_solver_options=GridSolverOptions(),
 #     itcpshift=0.05,
 #     axistol=1e-15,
 #     tegaptol=1e1 * eps(),
@@ -1711,7 +1711,7 @@ end
 #         rotorstator_parameters,
 #         paneling_constants,
 #         idmaps.rotor_indices_in_wake;
-#         wake_solve_options=wake_solve_options,
+#         grid_solver_options=grid_solver_options,
 #         finterp=finterp,
 #         silence_warnings=silence_warnings,
 #     )
@@ -1853,9 +1853,9 @@ function initialize_velocities!(
     # TODO: put these in a precomp container cache eventually
     sigr = zeros(TF, nbe + 1, nrotor)
     Cm_wake_vec = zeros(TF, nbe + 1)
-    vthetaind = zeros(TF, nbe, nrotor)
-    vzind = zeros(TF, nbe, nrotor)
-    vrind = zeros(TF, nbe, nrotor)
+    vzind = zeros(TF, nbe)
+    vrind = zeros(TF, nbe)
+    vthetaind = zeros(TF, nbe)
 
     # Solve Linear System for gamb
     # TODO; consider having an option here where you can fill the rhs cache (which should be used here) based on the reference velocity to try and get a better starting point
@@ -2039,21 +2039,21 @@ function initialize_strengths!(
     # TODO: put these in a precomp container cache eventually
     vz_rotor = zeros(TF, nbe, nrotor)
     vtheta_rotor = zeros(TF, nbe, nrotor)
-    Cm_wake_vec = zeros(TF, nbe + 1, nrotor)
+    Cm_wake_vec = zeros(TF, nbe + 1)
     Cm_wake = zeros(TF, size(wake_panel_sheet_be_map, 1)) .= 0
     vthetaind = zeros(TF, nbe)
     vzind = zeros(TF, nbe)
     vrind = zeros(TF, nbe)
 
     # Solve Linear System for gamb
-    gamb = ImplicitAD.implicit_linear(
-        linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU
-    )
-    # gamb = zeros(size(ivr.v_rb,2)+2)
+    # gamb = ImplicitAD.implicit_linear(
+    #     linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU
+    # )
+    gamb = zeros(size(ivr.v_rb,2)+2)
 
     # - Get body-induced velocities on rotors - #
-    vzb = zeros(TF, nbe)
-    vrb = zeros(TF, nbe)
+    vzb = zeros(TF, nbe, nrotor)
+    vrb = zeros(TF, nbe, nrotor)
     for irotor in 1:length(operating_point.Omega)
         berange = (nbe * (irotor - 1) + 1):(nbe * irotor)
         vzb[:, irotor] = ivr.v_rb[berange, :, 1] * gamb[1:body_totnodes]
@@ -2179,13 +2179,14 @@ function initialize_strengths!(
 
     # - initialize wake strengths - #
     # TODO: these should be in solve_containers, but need to figure out how to organize that as an input in this case
-    Gamma_tilde = zeros(TF, nbe)
-    H_tilde = zeros(TF, nbe)
+    Gamma_tilde = zeros(TF, nbe, nrotor)
+    H_tilde = zeros(TF, nbe, nrotor)
     deltaGamma2 = zeros(TF, nbe + 1, nrotor)
     deltaH = zeros(TF, nbe + 1, nrotor)
     Cm_avg = zeros(TF, size(gamw)) .= 0
 
     average_wake_velocities!(Cm_avg, Cm_wake, wake_nodemap, wake_endnodeidxs)
+
     # - Calculate Wake Panel Strengths - #
     # in-place solve for gamw,
     calculate_wake_vortex_strengths!(
@@ -2203,6 +2204,17 @@ function initialize_strengths!(
         wake_node_ids_along_casing_wake_interface,
         wake_node_ids_along_centerbody_wake_interface;
     )
+
+    # Gamr struggles to converge if it's not initially positive...
+    for g in eachindex(Gamr)
+        if Gamr[g]<0
+            Gamr[g] = 0.05
+        end
+    end
+    println("checking initial states:")
+    display(Gamr)
+    display(sigr)
+    println(minimum(gamw), ", ", maximum(gamw))
 
     return Gamr, sigr, gamw
 end

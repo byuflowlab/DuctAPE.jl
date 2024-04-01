@@ -189,7 +189,7 @@ function generate_wake_grid(
     Rtip1,
     tip_gap1,
     zwake;
-    wake_solve_options=WakeSolverOptions(),
+    grid_solver_options=GridSolverOptions(),
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -207,7 +207,7 @@ function generate_wake_grid(
     wake_grid = zeros(TF, 2, problem_dimensions.nwsn, problem_dimensions.nws)
 
     return generate_wake_grid!(
-        wake_solve_options,
+        grid_solver_options,
         wake_grid,
         rp_duct_coordinates,
         rp_centerbody_coordinates,
@@ -232,7 +232,7 @@ function generate_wake_grid!(
     Rtip1,
     tip_gap1,
     zwake;
-    wake_solve_options=wake_solve_options,
+    grid_solver_options=grid_solver_options,
     # wake_nlsolve_ftol=1e-14,
     # wake_max_iter=100,
     # max_wake_relax_iter=3,
@@ -259,7 +259,7 @@ function generate_wake_grid!(
     # - Relax "Grid" - #
 
     relax_grid!(
-        wake_solve_options, wake_grid; verbose=verbose, silence_warnings=silence_warnings
+        grid_solver_options, wake_grid; verbose=verbose, silence_warnings=silence_warnings
     )
 
     return wake_grid
@@ -268,7 +268,7 @@ end
 """
 """
 function relax_grid!(
-    wake_solve_options::WakeSolverOptions,
+    grid_solver_options::GridSolverOptions,
     wake_grid;
     verbose=false,
     silence_warnings=true,
@@ -276,14 +276,14 @@ function relax_grid!(
     ntab=1,
 )
     if verbose
-        println("Preconditioning Elliptic Grid System using SLOR")
+        println(tabchar^ntab * "Preconditioning Elliptic Grid System using SLOR")
     end
     # - Relax grid to allow Newton solve a tractable starting point - #
     relax_grid!(
         wake_grid;
-        max_wake_relax_iter=wake_solve_options.max_wake_relax_iter,
-        wake_relax_tol=wake_solve_options.wake_relax_tol,
-        converged=wake_solve_options.converged,
+        max_wake_relax_iter=grid_solver_options.max_wake_relax_iter,
+        wake_relax_tol=grid_solver_options.wake_relax_tol,
+        converged=grid_solver_options.converged,
         verbose=verbose,
         tabchar="\t",
         ntab=1,
@@ -292,19 +292,19 @@ function relax_grid!(
     # - Converge grid with Newton Solve - #
 
     # reset convergence flag
-    wake_solve_options.converged[1] = false
+    grid_solver_options.converged[1] = false
 
     if verbose
-        println("Solving Elliptic Grid System using Newton Method")
+        println(tabchar^ntab * "Solving Elliptic Grid System using Newton Method")
     end
     # solve
     solve_elliptic_grid!(
         wake_grid;
-        wake_nlsolve_method=wake_solve_options.wake_nlsolve_method,
-        wake_nlsolve_autodiff=wake_solve_options.wake_nlsolve_autodiff,
-        wake_nlsolve_ftol=wake_solve_options.wake_nlsolve_ftol,
-        wake_max_iter=wake_solve_options.wake_max_iter,
-        wake_solve_options.converged,
+        wake_nlsolve_method=grid_solver_options.wake_nlsolve_method,
+        wake_nlsolve_autodiff=grid_solver_options.wake_nlsolve_autodiff,
+        wake_nlsolve_ftol=grid_solver_options.wake_nlsolve_ftol,
+        wake_max_iter=grid_solver_options.wake_max_iter,
+        grid_solver_options.converged,
         verbose=verbose,
     )
 
@@ -314,17 +314,19 @@ end
 """
 """
 function relax_grid!(
-    wake_solve_options::SLORWakeSolverOptions, wake_grid; verbose=false, silence_warnings=true
+    grid_solver_options::SLORGridSolverOptions,
+    wake_grid;
+    verbose=false,
+    silence_warnings=true,
 )
-
     if verbose
         println("Solving Elliptic Grid System using SLOR")
     end
     relax_grid!(
         wake_grid;
-        max_wake_relax_iter=wake_solve_options.max_wake_relax_iter,
-        wake_relax_tol=wake_solve_options.wake_relax_tol,
-        converged=wake_solve_options.converged,
+        max_wake_relax_iter=grid_solver_options.max_wake_relax_iter,
+        wake_relax_tol=grid_solver_options.wake_relax_tol,
+        converged=grid_solver_options.converged,
         verbose=verbose,
         tabchar="\t",
         ntab=1,

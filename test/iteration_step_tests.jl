@@ -44,7 +44,7 @@ println("\nITERATION STEP THROUGH TESTS")
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solve_options, problem_dimensions
+        options.solver_options, problem_dimensions
     )
 
     # separate out caching items
@@ -59,7 +59,7 @@ println("\nITERATION STEP THROUGH TESTS")
 
     # reshape cache
     solve_parameter_tuple = dt.withdraw_solve_parameter_cache(
-        options.solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
 
     # copy over operating point
@@ -83,7 +83,7 @@ println("\nITERATION STEP THROUGH TESTS")
         operating_point,
         reference_parameters,
         nothing; #problem dimensions
-        wake_solve_options=options.wake_options,
+        grid_solver_options=options.grid_solver_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,
@@ -96,7 +96,7 @@ println("\nITERATION STEP THROUGH TESTS")
     (; blade_elements, linsys, operating_point, ivr, ivw, wakeK) = solve_parameter_tuple
 
     solve_container_caching = dt.allocate_solve_container_cache(
-        options.solve_options, problem_dimensions
+        options.solver_options, problem_dimensions
     )
 
     (; solve_container_cache, solve_container_cache_dims) = solve_container_caching
@@ -107,7 +107,7 @@ println("\nITERATION STEP THROUGH TESTS")
     # reset cache
     solve_container_cache_vector .= 0
     solve_containers = dt.withdraw_solve_container_cache(
-        options.solve_options, solve_container_cache_vector, solve_container_cache_dims
+        options.solver_options, solve_container_cache_vector, solve_container_cache_dims
     )
 
     # - Parameters - #

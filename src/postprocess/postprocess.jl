@@ -1,47 +1,27 @@
 """
 """
-function post_process_iad!(
-    solve_options,
-    solve_container_caching,
+function run_residual!(
+    solver_options::SolverOptions,
     state_variables,
     state_dims,
+    solve_container_cache,
+    solve_container_cache_dims,
     operating_point,
-    reference_parameters,
     ivr,
     ivw,
-    ivb,
     linsys,
     blade_elements,
     wakeK,
-    body_vortex_panels,
-    rotor_panel_lengths,
     idmaps,
-    problem_dimensions;
-    write_outputs=false,
-    outfile="outputs.jl",
-    checkoutfileexists=false,
-    output_tuple_name="outs",
 )
 
-    ### --- SETUP --- ###
-
-    # - Extract Parameters - #
-    (; solve_container_cache, solve_container_cache_dims) = solve_container_caching
-
-    # Operating Point
-    (; Vinf, asound, muinf, rhoinf, Omega) = operating_point
-
-    # Reference Parameters
-    (; Vref, Rref) = reference_parameters
-
-    ### --- Run inner residual function --- ###
     #=
       NOTE: we want to get all the intermediate values available to user if desired.
       The solve_containers cache will contain all the intermediate values after running the estimate states function.
     =#
     # - Separate out the state variables - #
     vz_rotor, vtheta_rotor, Cm_wake = extract_state_variables(
-        solve_options, state_variables, state_dims
+        solver_options, state_variables, state_dims
     )
 
     # - Extract and Reset Cache - #
@@ -50,7 +30,7 @@ function post_process_iad!(
         solve_container_cache, state_variables
     )
     solve_containers = withdraw_solve_container_cache(
-        solve_options, solve_container_cache_vec, solve_container_cache_dims
+        solver_options, solve_container_cache_vec, solve_container_cache_dims
     )
     reset_containers!(solve_containers) #note: also zeros out state estimates
 
@@ -70,20 +50,147 @@ function post_process_iad!(
         idmaps,
     )
 
-    # - Extract Solve Containers - #
+    return (; vz_rotor, vtheta_rotor, Cm_wake, solve_containers...)
+end
+
+"""
+"""
+function run_residual!(
+    solver_options::CSORSolverOptions,
+    state_variables,
+    state_dims,
+    solve_container_cache,
+    solve_container_cache_dims,
+    operating_point,
+    ivr,
+    ivw,
+    linsys,
+    blade_elements,
+    wakeK,
+    idmaps,
+)
+
+    #=
+      NOTE: we want to get all the intermediate values available to user if desired.
+      The solve_containers cache will contain all the intermediate values after running the insides of the residual function
+    =#
+    # - Separate out the state variables - #
+    Gamr, sigr, gamw = extract_state_variables(solver_options, state_variables, state_dims)
+
+    # - Extract and Reset Cache - #
+    # get cache vector of correct types
+    solve_container_cache_vec = @views PreallocationTools.get_tmp(
+        solve_container_cache, state_variables
+    )
+    solve_container_cache_vec .= 0
+    solve_containers = withdraw_solve_container_cache(
+        solver_options, solve_container_cache_vec, solve_container_cache_dims
+    )
+
+    # - Run Residual - #
+    compute_CSOR_residual!(
+        zeros(2),
+        solver_options,
+        solve_containers,
+        Gamr,
+        sigr,
+        gamw,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps;
+        verbose=false,
+    )
+
+    return (; Gamr, sigr, gamw, solve_containers...)
+end
+
+"""
+"""
+function post_process(
+    solver_options,
+    solve_container_caching,
+    state_variables,
+    solve_parameter_cache_vector,
+    solve_parameter_cache_dims,
+    operating_point,
+    reference_parameters,
+    ivb,
+    A_bb_LU,
+    airfoils,
+    panels,
+    idmaps,
+    problem_dimensions;
+    write_outputs=false,
+    outfile="outputs.jl",
+    checkoutfileexists=false,
+    output_tuple_name="outs",
+    verbose=false,
+)
+
+    ### --- SETUP --- ###
+
+    # - Extract Operating Point - #
+    (; Vinf, asound, muinf, rhoinf, Omega) = operating_point
+
+    # - Extract Reference Parameters - #
+    (; Vref, Rref) = reference_parameters
+
+    # - Extract Panels - #
+    (; body_vortex_panels, rotor_source_panels, wake_vortex_panels) = panels
+
+    # rename rotor panel lengths
+    rotor_panel_lengths = rotor_source_panels.influence_length
+
+    # - Extract Solve Parameter Cache - #
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+    (; ivr, ivw, linsys, blade_elements, wakeK) = solve_parameter_tuple
+
+    # put airfoils in blade elements and LU decomp into linsys
+    blade_elements = (; blade_elements..., airfoils...)
+    linsys = (; linsys..., A_bb_LU)
+
+    # - Extract Solve Container Cache - #
+    (; solve_container_cache, solve_container_cache_dims) = solve_container_caching
+
+    # - Run Residual to get intermediate values - #
+    res_vals = run_residual!(
+        solver_options,
+        state_variables,
+        solve_parameter_cache_dims.state_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+    )
+
     (;
         Gamr,
         sigr,
         gamw,
         gamb,
+        alpha,
         beta1,
+        vz_rotor,
         Cz_rotor,
+        vtheta_rotor,
         Ctheta_rotor,
         Cmag_rotor,
         cl,
         cd,
         Gamma_tilde,
-    ) = solve_containers
+        Cm_wake,
+    ) = res_vals
 
     ### ----- ROTOR OUTPUTS ----- ###
     # rename for convenience
@@ -284,12 +391,13 @@ function post_process_iad!(
 
     outs = (;
         # - States - #
-        Gamr,
-        gamw,
-        sigr,
-        gamb,
+        # TODO: instead of states, call these something else so that the outputs are generalized
+        # - Wake Values - #
+        wake=(; panel_strengths=gamw),
         # - Body Values - #
         bodies=(;
+            # panel strengths
+            panel_strengths=gamb[1:(idmaps.body_totnodes)],
             # body thrust
             total_thrust=sum(body_thrust),
             thrust_comp=body_thrust,
@@ -325,6 +433,8 @@ function post_process_iad!(
         ),
         # - Rotor Values - #
         rotors=(;
+            circulation=Gamr,
+            panel_strengths=sigr,
             efficiency=rotor_efficiency,
             inviscid_thrust=rotor_inviscid_thrust,
             inviscid_thrust_dist=rotor_inviscid_thrust_dist,
@@ -349,7 +459,7 @@ function post_process_iad!(
             # - Blade Element Values - #
             cl,
             cd,
-            alpha=solve_containers.alpha,
+            alpha,
             beta1,
             blade_normal_force_per_unit_span,
             blade_tangential_force_per_unit_span,
@@ -370,21 +480,18 @@ function post_process_iad!(
             vz_rotor,
             vtheta_rotor,
             Cm_wake,
-            solve_containers.vz_est,
-            solve_containers.vtheta_est,
-            solve_containers.Cm_est,
-            solve_containers.reynolds,
-            solve_containers.mach,
-            solve_containers.Cz_rotor,
-            solve_containers.Ctheta_rotor,
-            solve_containers.Cmag_rotor,
-            solve_containers.Gamma_tilde,
-            solve_containers.H_tilde,
-            solve_containers.deltaGamma2,
-            solve_containers.deltaH,
-            solve_containers.vz_wake,
-            solve_containers.vr_wake,
-            solve_containers.Cm_avg,
+            res_vals.reynolds,
+            res_vals.mach,
+            res_vals.Cz_rotor,
+            res_vals.Ctheta_rotor,
+            res_vals.Cmag_rotor,
+            res_vals.Gamma_tilde,
+            res_vals.H_tilde,
+            res_vals.deltaGamma2,
+            res_vals.deltaH,
+            res_vals.vz_wake,
+            res_vals.vr_wake,
+            res_vals.Cm_avg,
         ),
     )
 

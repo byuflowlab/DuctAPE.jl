@@ -1,5 +1,23 @@
 """
 """
+function extract_initial_guess(
+    solver_options::SolverOptions, sensitivity_parameters, state_dims
+)
+    return view(
+        sensitivity_parameters, state_dims.vz_rotor.index[1]:state_dims.Cm_wake.index[end]
+    )
+end
+
+"""
+"""
+function extract_initial_guess(
+    solver_options::CSORSolverOptions, sensitivity_parameters, state_dims
+)
+    return view(sensitivity_parameters, state_dims.Gamr.index[1]:state_dims.gamw.index[end])
+end
+
+"""
+"""
 function vectorize_velocity_states(vz_rotor, vtheta_rotor, Cm_wake)
     total_length = 0
 
@@ -91,7 +109,7 @@ end
 
 """
 """
-function extract_state_variables(solve_options::SolverOptions, vars, dims)
+function extract_state_variables(solver_options::SolverOptions, vars, dims)
 
     # - Separate out - #
     vz_rotor = @views reshape(vars[dims.vz_rotor.index], dims.vz_rotor.shape)
@@ -103,7 +121,7 @@ end
 
 """
 """
-function extract_state_variables(solve_options::CSORSolverOptions, vars, dims)
+function extract_state_variables(solver_options::CSORSolverOptions, vars, dims)
 
     # - Separate out - #
     Gamr = @views reshape(vars[dims.Gamr.index], dims.Gamr.shape)

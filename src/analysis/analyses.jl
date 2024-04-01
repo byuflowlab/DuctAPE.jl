@@ -53,7 +53,7 @@ function analyze(
     # Allocate Cache
     if isnothing(solve_parameter_caching)
         solve_parameter_caching = allocate_solve_parameter_cache(
-            options.solve_options, propulsor.paneling_constants
+            options.solver_options, propulsor.paneling_constants
         )
     end
 
@@ -69,7 +69,7 @@ function analyze(
 
     # reshape cache
     solve_parameter_tuple = withdraw_solve_parameter_cache(
-        options.solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
 
     # copy over operating point
@@ -84,14 +84,14 @@ function analyze(
 
     # out-of-place version currently has 22,292,181 allocations.
     # TODO: do this in place for the solve input cache items. eventually will want to have a post-processing and output cache too.
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters_iad!(
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = precompute_parameters_iad!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
         propulsor;
-        wake_solve_options=options.wake_options,
+        grid_solver_options=options.wake_solver_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,
@@ -105,11 +105,11 @@ function analyze(
     #=
       NOTE: If the linear system or wake did not converge, there is likely a serious problem that would lead to an error in the solve, so we will exit here with a fail flag for an optimizer or user
     =#
-    if iszero(lu_decomp_flag) || !options.wake_options.converged[1]
+    if iszero(lu_decomp_flag) || !options.wake_solver_options.converged[1]
         if !options.silence_warnings
             if iszero(lu_decomp_flag)
                 @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
-            elseif !options.wake_options.converged[1]
+            elseif !options.wake_solver_options.converged[1]
                 @warn "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good."
             end
         end
@@ -149,6 +149,7 @@ function analyze(
     idmaps,
     problem_dimensions,
     options=set_options();
+    return_inputs=false,
     # precomp_container_caching=nothing,
     solve_container_caching=nothing,
     # post_caching=nothing
@@ -159,13 +160,13 @@ function analyze(
     # Set up Solve Container Cache
     if isnothing(solve_container_caching)
         solve_container_caching = allocate_solve_container_cache(
-            options.solve_options, propulsor.paneling_constants
+            options.solver_options, propulsor.paneling_constants
         )
     end
 
     # - Process - #
-    velocity_states = process(
-        options.solve_options,
+    converged_states = process(
+        options.solver_options,
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
@@ -176,45 +177,18 @@ function analyze(
     )
 
     # - Post-Process - #
-    # TODO: probably just move this bit inside the post-process to clean up inputs
-    # actually probably want to do a second dispatch, one with all the inputs, and one that extracts all the caches and calls the one with all the inputs.
-    solve_parameter_tuple = withdraw_solve_parameter_cache(
-        options.solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
-    )
-    (; ivr, ivw, linsys, blade_elements, wakeK) = solve_parameter_tuple
-
-    # NOTE: post processing cache doesn't need to be fancy, since it's just here in the analysis and will always be the same type if derivative checks are turned off.
-    # update tests for this function
-
-    # TODO: need to figure out how to set this up to work with the various residual options
-#########################################################
-##########################     ##########################
-#####################     LOOK!    ######################
-###########                                   ###########
-#####     -----    TODO: YOU ARE HERE     -----     #####
-###########                                   ###########
-#####################     LOOK!    ######################
-##########################     ##########################
-#########################################################
     outs = post_process(
-        options.solve_options,
+        options.solver_options,
         solve_container_caching,
-        velocity_states,
-        vectorize_velocity_states(
-            solve_parameter_tuple.vz_rotor,
-            solve_parameter_tuple.vtheta_rotor,
-            solve_parameter_tuple.Cm_wake,
-        )[2], # TODO: think of a better way to get the state_dims
+        converged_states,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
         propulsor.operating_point,
         propulsor.reference_parameters,
-        ivr,
-        ivw,
         ivb,
-        (; linsys..., A_bb_LU),
-        (; blade_elements..., airfoils...),
-        wakeK,
-        panels.body_vortex_panels,
-        panels.rotor_source_panels.influence_length,
+        A_bb_LU,
+        airfoils,
+        panels,
         idmaps,
         problem_dimensions;
         write_outputs=options.write_outputs,
@@ -224,15 +198,27 @@ function analyze(
         verbose=options.verbose,
     )
 
-    return outs,
-    (; ivr, ivw, ivb, linsys, blade_elements, wakeK, idmaps, panels),
-    options.solve_options.converged[1]
+    if return_inputs
+        solve_parameter_tuple = withdraw_solve_parameter_cache(
+            solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        )
+
+        return outs,
+        (;
+            solve_parameter_tuple...,
+            blade_elements=(; blade_elements..., airfoils...),
+            linsys=(; linsys..., A_bb_LU),
+        ),
+        options.solver_options.converged[]
+    else
+        return outs, options.solver_options.converged[]
+    end
 end
 
 """
 """
 function process(
-    solve_options::SolverOptions,
+    solver_options::SolverOptions,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
@@ -248,7 +234,7 @@ function process(
     end
     # view the initial conditions out of the inputs cache
     solve_parameter_tuple = withdraw_solve_parameter_cache(
-        solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
     (; vz_rotor, vtheta_rotor, Cm_wake, operating_point, linsys, ivr, ivw) =
         solve_parameter_tuple
@@ -268,23 +254,17 @@ function process(
         idmaps.wake_panel_sheet_be_map,
     )
 
-    # TODO: find a better way to do this so that state_dims is accessible to implicitAD
-    _, state_dims = vectorize_velocity_states(
-        reshape(vz_rotor, :), reshape(vtheta_rotor, :), reshape(Cm_wake, :)
-    )
-
     # - combine cache and constants - #
     const_cache = (;
         # - Constants - #
         options.verbose,
         options.silence_warnings,
         #nlsolve options
-        solve_options,
+        solver_options,
         # Constant Parameters
         airfoils,
         A_bb_LU,
         idmaps,
-        state_dims,
         solve_parameter_cache_dims,
         # Cache(s)
         solve_container_caching...,
@@ -295,14 +275,14 @@ function process(
         println("\nSolving Nonlinear System using Newton Method")
     end
     return ImplicitAD.implicit(
-        solve_iad, residual!, solve_parameter_cache_vector, const_cache
+        solve, system_residual!, solve_parameter_cache_vector, const_cache
     )
 end
 
 """
 """
 function process(
-    solve_options::CSORSolverOptions,
+    solver_options::CSORSolverOptions,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
@@ -312,11 +292,13 @@ function process(
     options,
 )
 
-    # - Rename for Convenience - #
-    (; verbose, solve_options) = options
+    # - Initialize Aero - #
+    if options.verbose
+        println("\nInitializing Velocities")
+    end
     # view the initial conditions out of the inputs cache
     solve_parameter_tuple = withdraw_solve_parameter_cache(
-        solve_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
     )
     (; Gamr, sigr, gamw, operating_point, blade_elements, linsys, ivr, ivw, wakeK) =
         solve_parameter_tuple
@@ -341,108 +323,108 @@ function process(
         idmaps.wake_node_ids_along_centerbody_wake_interface,
     )
 
-    sigr .= 0
-
-    state_variables, state_dims = vectorize_strength_states(Gamr, sigr, gamw)
-
     # - combine cache and constants - #
     const_cache = (;
         # - Constants - #
         options.silence_warnings,
+        options.verbose,
         #CSOR solve options
-        solve_options,
+        solver_options,
         # Constant Parameters
         airfoils,
         A_bb_LU,
         idmaps,
-        state_dims,
         # Cache(s)
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         solve_container_caching...,
     )
 
-    #TODO: update this function
-    # need to withdraw cache inside this function to have the *_est values, as well as sigr and gamb available.
-    return solve!(state_variables, const_cache; verbose=options.verbose)
-end
-
-"""
-"""
-function post_process(
-    process_type::SolverOptions,
-    solve_container_caching,
-    states,
-    state_dims,
-    operating_point,
-    reference_parameters,
-    ivr,
-    ivw,
-    ivb,
-    linsys,
-    blade_elements,
-    wakeK,
-    body_vortex_panels,
-    influence_length,
-    idmaps,
-    problem_dimensions;
-    write_outputs=false,
-    outfile="outputs.jl",
-    checkoutfileexists=false,
-    output_tuple_name="outs",
-    verbose=false,
-)
-    if verbose
-        println("\nPost-Processing")
+    # - Solve with ImplicitAD - #
+    if options.verbose
+        println("\nSolving Nonlinear System using CSOR Method")
     end
-    return post_process_iad!(
-        process_type,
-        solve_container_caching,
-        states,
-        state_dims,
-        operating_point,
-        reference_parameters,
-        ivr,
-        ivw,
-        ivb,
-        linsys,
-        blade_elements,
-        wakeK,
-        body_vortex_panels,
-        influence_length,
-        idmaps,
-        problem_dimensions;
-        write_outputs=write_outputs,
-        outfile=outfile,
-        checkoutfileexists=checkoutfileexists,
-        output_tuple_name=output_tuple_name,
+    return ImplicitAD.implicit(
+        solve, CSOR_residual!, solve_parameter_cache_vector, const_cache
     )
 end
 
-"""
-"""
-function post_process(
-    process_type::CSORSolverOptions,
-    solve_container_caching,
-    states,
-    state_dims,
-    operating_point,
-    reference_parameters,
-    ivr,
-    ivw,
-    ivb,
-    linsys,
-    blade_elements,
-    wakeK,
-    body_vortex_panels,
-    influence_length,
-    idmaps,
-    problem_dimensions;
-    write_outputs=false,
-    outfile="outputs.jl",
-    checkoutfileexists=false,
-    output_tuple_name="outs",
-)
-    #TODO: update this function
-    return post_process()
-end
+#"""
+#"""
+#function post_process(
+#    process_type::SolverOptions,
+#    solve_container_caching,
+#    states,
+#    state_dims,
+#    operating_point,
+#    reference_parameters,
+#    ivr,
+#    ivw,
+#    ivb,
+#    linsys,
+#    blade_elements,
+#    wakeK,
+#    body_vortex_panels,
+#    influence_length,
+#    idmaps,
+#    problem_dimensions;
+#    write_outputs=false,
+#    outfile="outputs.jl",
+#    checkoutfileexists=false,
+#    output_tuple_name="outs",
+#    verbose=false,
+#)
+#    if verbose
+#        println("\nPost-Processing")
+#    end
+#    return post_process_iad!(
+#        process_type,
+#        solve_container_caching,
+#        states,
+#        state_dims,
+#        operating_point,
+#        reference_parameters,
+#        ivr,
+#        ivw,
+#        ivb,
+#        linsys,
+#        blade_elements,
+#        wakeK,
+#        body_vortex_panels,
+#        influence_length,
+#        idmaps,
+#        problem_dimensions;
+#        write_outputs=write_outputs,
+#        outfile=outfile,
+#        checkoutfileexists=checkoutfileexists,
+#        output_tuple_name=output_tuple_name,
+#    )
+#end
+
+#"""
+#"""
+#function post_process(
+#    process_type::CSORSolverOptions,
+#    solve_container_caching,
+#    states,
+#    state_dims,
+#    operating_point,
+#    reference_parameters,
+#    ivr,
+#    ivw,
+#    ivb,
+#    linsys,
+#    blade_elements,
+#    wakeK,
+#    body_vortex_panels,
+#    influence_length,
+#    idmaps,
+#    problem_dimensions;
+#    write_outputs=false,
+#    outfile="outputs.jl",
+#    checkoutfileexists=false,
+#    output_tuple_name="outs",
+#)
+#    #TODO: update this function
+#    return post_process()
+#end
