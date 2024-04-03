@@ -33,9 +33,7 @@ function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, co
 
     (;
         nlsolve_algorithm,
-        # # General Controls
-        nlsolve_alias_initial_guess,
-        # # Iteration Controls
+        # Iteration Controls
         nlsolve_abstol,
         nlsolve_maxiters,
         converged,
@@ -58,7 +56,7 @@ function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, co
     end
 
     # build problem object
-    prob = NonlinearSolve.NonlinearProblem(
+    prob = SimpleNonlinearSolve.NonlinearProblem(
         rwrap!,
         initial_guess,
         (;
@@ -79,7 +77,7 @@ function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, co
     if verbose
         println("  " * "Nonlinear Solve Trace:")
     end
-    sol = NonlinearSolve.solve(
+    sol = SimpleNonlinearSolve.solve(
         prob, # problem
         nlsolve_algorithm();
         abstol=nlsolve_abstol,
