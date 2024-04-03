@@ -196,8 +196,159 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     @test blade_elements.Rtip == rotorstator_parameters.Rtip
 end
 
-# TODO: put together a hole new test here for each initialization function
-# Make sure that the initial conditions make sense
+@testset "Bookkeeping Tests" begin
+
+    # hub is longer than duct
+    npanels = [2, 1, 1] #npanels
+    ncenterbody_inlet = 2 # paneling_constants.ncenterbody_inlet
+    nwake_sheets = 3 # paneling_constants.nwake_sheets
+    dte_minus_cbte = -1 # paneling_constants.dte_minus_cbte
+    wake_nodemap = [
+        1 2 3 4 6 7 8 9 11 12 13 14
+        2 3 4 5 7 8 9 10 12 13 14 15
+    ]# wake_vortex_panels.nodemap
+    wake_endnodeidxs = [1 6 11; 5 10 15] # wake_vortex_panels.endnodeidxs
+    nwp = 12 # pd.nwp
+    nwsp = 4 # pd.nwsp
+    nbn = 12 # pd.nbn
+    ndp = 8 # pd.ndp
+    rotor_indices_in_wake = [1] # rotor_indices_in_wake
+    nrotor = 1 # pd.nrotor
+
+    idmaps = dt.set_index_maps(
+        npanels,
+        ncenterbody_inlet,
+        nwake_sheets,
+        dte_minus_cbte,
+        wake_nodemap,
+        wake_endnodeidxs,
+        nwp,
+        nwsp,
+        nbn,
+        ndp,
+        rotor_indices_in_wake,
+        nrotor,
+    )
+
+    @test idmaps.wake_node_sheet_be_map[:, 1] ==
+        [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3]
+    @test all(idmaps.wake_node_sheet_be_map[:, 2] .== 1)
+    @test idmaps.wake_panel_sheet_be_map[:, 1] == [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]
+    @test all(idmaps.wake_panel_sheet_be_map[:, 2] .== 1)
+
+    @test idmaps.wake_node_ids_along_casing_wake_interface == [11, 12, 13]
+    @test idmaps.wake_node_ids_along_centerbody_wake_interface == [1, 2, 3, 4]
+
+    @test idmaps.wake_panel_ids_along_casing_wake_interface == [9, 10]
+    @test idmaps.wake_panel_ids_along_centerbody_wake_interface == [1, 2, 3]
+
+    @test idmaps.centerbody_panel_ids_along_centerbody_wake_interface == [3, 4, 5]
+    @test idmaps.duct_panel_ids_along_centerbody_wake_interface == [2, 1]
+
+    @test idmaps.id_of_first_casing_panel_aft_of_each_rotor == [2]
+    @test idmaps.id_of_first_centerbody_panel_aft_of_each_rotor == [11]
+
+    # hub is shorter than duct
+    npanels = [2, 1, 1] #npanels
+    ncenterbody_inlet = 2 # paneling_constants.ncenterbody_inlet
+    nwake_sheets = 3 # paneling_constants.nwake_sheets
+    dte_minus_cbte = 1 # paneling_constants.dte_minus_cbte
+    wake_nodemape = [
+        1 2 3 4 6 7 8 9 11 12 13 14
+        2 3 4 5 7 8 9 10 12 13 14 15
+    ]# wake_vortex_panels.nodemap
+    wake_endnodeidxs = [1 6 11; 5 10 15] # wake_vortex_panels.endnodeidxs
+    nwp = 12 # pd.nwp
+    nwsp = 4 # pd.nwsp
+    nbn = 12 # pd.nbn
+    ndp = 8 # pd.ndp
+    rotor_indices_in_wake = [1] # rotor_indices_in_wake
+    nrotor = 1 # pd.nrotor
+
+    idmaps = dt.set_index_maps(
+        npanels,
+        ncenterbody_inlet,
+        nwake_sheets,
+        dte_minus_cbte,
+        wake_nodemap,
+        wake_endnodeidxs,
+        nwp,
+        nwsp,
+        nbn,
+        ndp,
+        rotor_indices_in_wake,
+        nrotor,
+    )
+
+    @test idmaps.wake_node_sheet_be_map[:, 1] ==
+        [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3]
+    @test all(idmaps.wake_node_sheet_be_map[:, 2] .== 1)
+    @test idmaps.wake_panel_sheet_be_map[:, 1] == [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]
+    @test all(idmaps.wake_panel_sheet_be_map[:, 2] .== 1)
+
+    @test idmaps.wake_node_ids_along_casing_wake_interface == [11, 12, 13, 14]
+    @test idmaps.wake_node_ids_along_centerbody_wake_interface == [1, 2, 3]
+
+    @test idmaps.wake_panel_ids_along_casing_wake_interface == [9, 10, 11]
+    @test idmaps.wake_panel_ids_along_centerbody_wake_interface == [1, 2]
+
+    @test idmaps.centerbody_panel_ids_along_centerbody_wake_interface == [3, 4]
+    @test idmaps.duct_panel_ids_along_centerbody_wake_interface == [3, 2, 1]
+
+    @test idmaps.id_of_first_casing_panel_aft_of_each_rotor == [3]
+    @test idmaps.id_of_first_centerbody_panel_aft_of_each_rotor == [11]
+
+    # hub and duct have same TE axial coordinate
+    npanels = [3, 1] #npanels
+    ncenterbody_inlet = 2 # paneling_constants.ncenterbody_inlet
+    nwake_sheets = 3 # paneling_constants.nwake_sheets
+    dte_minus_cbte = 0 # paneling_constants.dte_minus_cbte
+    wake_nodemape = [
+        1 2 3 4 6 7 8 9 11 12 13 14
+        2 3 4 5 7 8 9 10 12 13 14 15
+    ]# wake_vortex_panels.nodemap
+    wake_endnodeidxs = [1 6 11; 5 10 15] # wake_vortex_panels.endnodeidxs
+    nwp = 12 # pd.nwp
+    nwsp = 4 # pd.nwsp
+    nbn = 12 # pd.nbn
+    ndp = 8 # pd.ndp
+    rotor_indices_in_wake = [1] # rotor_indices_in_wake
+    nrotor = 1 # pd.nrotor
+
+    idmaps = dt.set_index_maps(
+        npanels,
+        ncenterbody_inlet,
+        nwake_sheets,
+        dte_minus_cbte,
+        wake_nodemap,
+        wake_endnodeidxs,
+        nwp,
+        nwsp,
+        nbn,
+        ndp,
+        rotor_indices_in_wake,
+        nrotor,
+    )
+
+    @test idmaps.wake_node_sheet_be_map[:, 1] ==
+        [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3]
+    @test all(idmaps.wake_node_sheet_be_map[:, 2] .== 1)
+    @test idmaps.wake_panel_sheet_be_map[:, 1] == [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]
+    @test all(idmaps.wake_panel_sheet_be_map[:, 2] .== 1)
+
+    @test idmaps.wake_node_ids_along_casing_wake_interface == [11, 12, 13, 14]
+    @test idmaps.wake_node_ids_along_centerbody_wake_interface == [1, 2, 3, 4]
+
+    @test idmaps.wake_panel_ids_along_casing_wake_interface == [9, 10, 11]
+    @test idmaps.wake_panel_ids_along_centerbody_wake_interface == [1, 2, 3]
+
+    @test idmaps.centerbody_panel_ids_along_centerbody_wake_interface == [3, 4, 5]
+    @test idmaps.duct_panel_ids_along_centerbody_wake_interface == [3, 2, 1]
+
+    @test idmaps.id_of_first_casing_panel_aft_of_each_rotor == [3]
+    @test idmaps.id_of_first_centerbody_panel_aft_of_each_rotor == [11]
+end
+
 @testset "Rotor/Wake Aero Initialization" begin
     include("data/basic_two_rotor_for_test_NEW.jl")
     options = dt.set_options()
@@ -228,7 +379,7 @@ end
     end
 
     # - Do precomputations - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters_iad!(
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -273,9 +424,7 @@ end
     # TODO: need to add a better test with more realistic geometry that you can draw more conclusions from
 
     # CSOR Solve initialization
-    options = dt.set_options(;
-        solver_options=dt.CSORSolverOptions(), grid_solver_options=dt.SLORGridSolverOptions()
-    )
+    options = dt.quicksolve_options()
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
@@ -303,7 +452,7 @@ end
     end
 
     # - Do precomputations - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters_iad!(
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,

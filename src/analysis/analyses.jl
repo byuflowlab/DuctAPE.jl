@@ -218,7 +218,7 @@ end
 """
 """
 function process(
-    solver_options::SolverOptions,
+    solver_options::TS,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
@@ -226,7 +226,7 @@ function process(
     solve_container_caching,
     idmaps,
     options,
-)
+) where {TS<:ExternalSolverOptions}
 
     # - Initialize Aero - #
     if options.verbose
@@ -352,7 +352,7 @@ end
 #"""
 #"""
 #function post_process(
-#    process_type::SolverOptions,
+#    process_type::TS,
 #    solve_container_caching,
 #    states,
 #    state_dims,
@@ -373,7 +373,7 @@ end
 #    checkoutfileexists=false,
 #    output_tuple_name="outs",
 #    verbose=false,
-#)
+#) where {TS<:ExternalSolverOptions}
 #    if verbose
 #        println("\nPost-Processing")
 #    end

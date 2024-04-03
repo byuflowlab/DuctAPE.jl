@@ -1,8 +1,8 @@
 """
 """
 function extract_initial_guess(
-    solver_options::SolverOptions, sensitivity_parameters, state_dims
-)
+    solver_options::TS, sensitivity_parameters, state_dims
+) where {TS<:ExternalSolverOptions}
     return view(
         sensitivity_parameters, state_dims.vz_rotor.index[1]:state_dims.Cm_wake.index[end]
     )
@@ -109,7 +109,7 @@ end
 
 """
 """
-function extract_state_variables(solver_options::SolverOptions, vars, dims)
+function extract_state_variables(solver_options::TS, vars, dims) where {TS<:ExternalSolverOptions}
 
     # - Separate out - #
     vz_rotor = @views reshape(vars[dims.vz_rotor.index], dims.vz_rotor.shape)

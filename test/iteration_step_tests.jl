@@ -68,7 +68,7 @@ println("\nITERATION STEP THROUGH TESTS")
     end
 
     # generate inputs
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters_iad!(
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,

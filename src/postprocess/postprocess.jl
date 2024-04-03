@@ -1,7 +1,7 @@
 """
 """
 function run_residual!(
-    solver_options::SolverOptions,
+    solver_options::TS,
     state_variables,
     state_dims,
     solve_container_cache,
@@ -13,7 +13,7 @@ function run_residual!(
     blade_elements,
     wakeK,
     idmaps,
-)
+) where {TS<:ExternalSolverOptions}
 
     #=
       NOTE: we want to get all the intermediate values available to user if desired.

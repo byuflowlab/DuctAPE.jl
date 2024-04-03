@@ -11,6 +11,7 @@ abstract type ConvergenceType end
 
 # - Solver Options - #
 abstract type SolverOptionsType end
+abstract type ExternalSolverOptions <: SolverOptionsType end
 
 # - Wake Solver Options - #
 abstract type GridSolverOptionsType end
@@ -179,16 +180,16 @@ struct Absolute <: ConvergenceType end
 end
 
 # @kwdef struct SolverOptions{TA,TB,TF,TI,TN,TTm,TTr} <: SolverOptionsType
-@kwdef struct NonlinearSolveOptions{TA,TB,TF,TI} <: SolverOptionsType
+@kwdef struct NonlinearSolveOptions{TA,TB,TF,TI} <: ExternalSolverOptions
     # Algorithm Options
-    nlsolve_algorithm::TA = NonlinearSolve.SimpleDFSane
+    nlsolve_algorithm::TA = SimpleNonlinearSolve.SimpleDFSane
     # Iteration Controls
     nlsolve_abstol::TF = 1e-10
     nlsolve_maxiters::TI = 100
     converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct NLsolveOptions{TSym,TF,TI,TB,Tls,Tlsk} <: SolverOptionsType
+@kwdef struct NLsolveOptions{TSym,TF,TI,TB,Tls,Tlsk} <: ExternalSolverOptions
     # - Options for overall solve - #
     # TODO: generalize the newton part of this to use NonlinearSolve.jl framework.
     # TODO: consider a tighter default convergence tolerance.
@@ -244,7 +245,7 @@ end
     output_tuple_name::TS = "outs"
     # - Solving Options - #
     grid_solver_options::WS = GridSolverOptions()
-    solver_options::TSo = SolverOptions()
+    solver_options::TSo = NonlinearSolveOptions()
 end
 
 """

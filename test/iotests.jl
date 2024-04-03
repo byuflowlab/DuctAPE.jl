@@ -9,7 +9,7 @@ println("\nI/O TESTS")
 
     @test vars == [i for i in 1:26]
 
-    V1, V2, V3 = dt.extract_state_variables(dt.SolverOptions(), vars, dims)
+    V1, V2, V3 = dt.extract_state_variables(dt.NonlinearSolveOptions(), vars, dims)
 
     @test V1 == v1
     @test V2 == v2

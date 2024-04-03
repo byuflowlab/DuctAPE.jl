@@ -314,24 +314,22 @@ end
 """
 """
 function allocate_solve_parameter_cache(
-    solve_type::SolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=2
-)
+    solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=2
+) where {TS<:ExternalSolverOptions}
 
     # - Get problem dimensions - #
     pd = get_problem_dimensions(paneling_constants)
 
-return allocate_solve_parameter_cache(
-    solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels
-)
+    return allocate_solve_parameter_cache(
+        solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels
+    )
 end
 
 """
 """
 function allocate_solve_parameter_cache(
-    solve_type::SolverOptions, problem_dimensions; fd_chunk_size=12, levels=2
-)
-
-
+    solve_type::TS, problem_dimensions; fd_chunk_size=12, levels=2
+) where {TS<:ExternalSolverOptions}
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -365,7 +363,7 @@ function allocate_solve_parameter_cache(
     total_length += l
 
     # save state dimensions
-     state_dims = (;vz_rotor, vtheta_rotor, Cm_wake)
+    state_dims = (; vz_rotor, vtheta_rotor, Cm_wake)
 
     # - Operating Point - #
     s = (1,)
@@ -759,8 +757,8 @@ end
 """
 """
 function allocate_solve_container_cache(
-    solve_type::SolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
-)
+    solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
+) where {TS<:ExternalSolverOptions}
     pd = get_problem_dimensions(paneling_constants)
 
 return allocate_solve_container_cache(
@@ -771,8 +769,8 @@ end
 """
 """
 function allocate_solve_container_cache(
-    solve_type::SolverOptions, problem_dimensions; fd_chunk_size=12, levels=1
-)
+    solve_type::TS, problem_dimensions; fd_chunk_size=12, levels=1
+) where {TS<:ExternalSolverOptions}
 
     (;
         nrotor,     # number of rotors
@@ -1117,7 +1115,7 @@ function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, 
 end
 """
 """
-function withdraw_solve_parameter_cache(solver_options::SolverOptions,vec, dims)
+function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<:ExternalSolverOptions}
 
     # - Initial Guesses - #
     vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
@@ -1313,7 +1311,7 @@ function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, 
 end
 """
 """
-function withdraw_solve_container_cache(solver_options::SolverOptions, vec, dims)
+function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS<:ExternalSolverOptions}
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),
