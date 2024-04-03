@@ -487,6 +487,8 @@ function calculate_blade_element_coefficients!(
                 be.inner_airfoil[ir, irotor],
                 be.outer_airfoil[ir, irotor],
                 be.inner_fraction[ir, irotor],
+                c,
+                B,
                 Wmag_rotor[ir, irotor],
                 solidity[1],
                 stagger[1],
