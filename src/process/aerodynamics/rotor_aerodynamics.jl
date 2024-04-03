@@ -517,6 +517,8 @@ function lookup_clcd(
     inner_airfoil,
     outer_airfoil,
     inner_fraction,
+    chord,
+    B,
     Wmag,
     solidity,
     stagger,
@@ -570,6 +572,11 @@ function lookup_clcd(
         clin, cdin = search_polars(inner_airfoil, alpha)
         # get outer values
         clout, cdout = search_polars(outer_airfoil, alpha)
+    elseif typeof(inner_airfoil) <: c4b.ADM
+        clin = clfromGamr(inner_airfoil.prescribed_circulation, Wmag, chord)
+        clout = clfromGamr(outer_airfoil.prescribed_circulation, Wmag, chord)
+        cdin = cdfromsigr(inner_airfoil.prescribed_source_strength, Wmag, chord, B)
+        cdout = cdfromsigr(outer_airfoil.prescribed_source_strength, Wmag, chord, B)
     else
         @error "No blade element datatype: $(typeof(inner_airfoil)) defined."
     end
@@ -579,6 +586,14 @@ function lookup_clcd(
     cd = FLOWMath.linear([0.0; 1.0], [cdin, cdout], inner_fraction)
 
     return cl, cd
+end
+
+function clfromGamr(Gamr, Wmag, c)
+    return 2.0 * Gamr / (Wmag * c)
+end
+
+function cdfromsigr(sigr, Wmag, c, B)
+    return sigr * 4.0 * pi / (B * Wmag * c)
 end
 
 """
