@@ -24,6 +24,9 @@ using PreallocationTools # caches
 # - Packages for Solves - #
 using ImplicitAD # used for all solves
 using LinearAlgebra # linear solve and LU decomposition
+using SimpleNonlinearSolve
+# using FixedPointAcceleration
+using SpeedMapping
 # TODO: determine if these are needed after implementing NonlinearSolve.jl
 using NLsolve #for newton solver
 using LineSearches # used in newton solver

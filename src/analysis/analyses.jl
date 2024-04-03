@@ -272,7 +272,7 @@ function process(
 
     # - Solve with ImplicitAD - #
     if options.verbose
-        println("\nSolving Nonlinear System using Newton Method")
+        println("\nSolving Nonlinear System")
     end
     return ImplicitAD.implicit(
         solve, system_residual!, solve_parameter_cache_vector, const_cache

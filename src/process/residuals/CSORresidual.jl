@@ -86,6 +86,11 @@ function compute_CSOR_residual!(
     verbose=false,
 )
 
+    # - Adjust Relaxation Factors (decrease relaxation as solution converges) - #
+    nrf, bt1, bt2, pf1, pf2, nrfw, btw, pfw = apply_relaxation_schedule(
+        resid, solver_options
+    )
+
     # - Rename for Convenience - #
     (; maxBGamr, maxdeltaBGamr, maxdeltagamw) = solve_containers
 
@@ -176,11 +181,11 @@ function compute_CSOR_residual!(
         maxBGamr,
         maxdeltaBGamr,
         blade_elements.B;
-        nrf=solver_options.nrf,
-        bt1=solver_options.bt1,
-        bt2=solver_options.bt2,
-        pf1=solver_options.pf1,
-        pf2=solver_options.pf2,
+        nrf=nrf,
+        bt1=bt1,
+        bt2=bt2,
+        pf1=pf1,
+        pf2=pf2,
     )
 
     ##### ----- Estimate and Relax gamw ----- #####
@@ -240,9 +245,9 @@ function compute_CSOR_residual!(
         solve_containers.deltag_prev,
         solve_containers.deltag,
         maxdeltagamw;
-        nrf=solver_options.nrf,
-        btw=solver_options.btw,
-        pfw=solver_options.pfw,
+        nrf=nrfw,
+        btw=btw,
+        pfw=pfw,
     )
 
     ##### ----- Update sigr ----- #####
@@ -369,12 +374,6 @@ function relax_Gamr!(
         bladeomega[i], oi = findmin(abs.(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
-        # if -bt1 > (nrf / deltahat[oi]) || (nrf / deltahat[oi]) > pf1
-        #     bladeomega[i] *= sign(deltahat[oi]) < 0.0 ? bt1 : pf1
-        # else
-        #     bladeomega[i] = nrf
-        # end
-
         if (nrf / deltahat[oi]) < -bt1
             bladeomega[i] *= bt1
         elseif (nrf / deltahat[oi]) > pf1
@@ -463,10 +462,44 @@ end
 
 """
 """
+function apply_relaxation_schedule(resid::AbstractArray, solver_options::SolverOptionsType)
+    # Apply relaxation schedule to Circulation relaxation factors
+    nrf = apply_relaxation_schedule(
+        resid[1], solver_options.nrf, solver_options.relaxation_schedule
+    )
+
+    bt1 = solver_options.bt1 * nrf / solver_options.nrf
+    bt2 = solver_options.bt2 * nrf / solver_options.nrf
+    pf1 = solver_options.pf1 * nrf / solver_options.nrf
+    pf2 = solver_options.pf2 * nrf / solver_options.nrf
+
+    # Apply relaxation schedule to wake strength relaxation factors
+    nrfw = apply_relaxation_schedule(
+        resid[2], solver_options.nrf, solver_options.relaxation_schedule
+    )
+
+    btw = solver_options.btw * nrf / solver_options.nrf
+    pfw = solver_options.pfw * nrf / solver_options.nrf
+
+    return nrf, bt1, bt2, pf1, pf2, nrfw, btw, pfw
+end
+
+"""
+"""
+function apply_relaxation_schedule(resid, nominal, schedule)
+    rf = linear_transform(
+        (0, 1), (nominal, 1), FLOWMath.linear(schedule[1], schedule[2], resid)
+    )
+
+    return rf
+end
+
+"""
+"""
 function update_CSOR_residual_values!(
     convergence_type::Relative, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
 )
-    resid[1] = maximum(abs.(maxdeltaBGamr ./ maxBGamr))
+    resid[1] = maximum(abs, maxdeltaBGamr ./ maxBGamr)
     resid[2] = abs.(maxdeltagamw[] / Vconv[])
 
     return resid
@@ -477,8 +510,8 @@ end
 function update_CSOR_residual_values!(
     convergence_type::Absolute, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
 )
-    resid[1] = maximum(abs.(maxdeltaBGamr))
-    resid[2] = abs.(maxdeltagamw)
+    resid[1] = maximum(abs, maxdeltaBGamr)
+    resid[2] = abs.(maxdeltagamw[])
 
     return resid
 end

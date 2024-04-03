@@ -2,13 +2,97 @@
 #              SOLVE              #
 #---------------------------------#
 
+# TODO: add dispatches for SpeedMapping and FixedPointAcceleration
+
 """
 """
 function solve(sensitivity_parameters, const_cache)
     return solve(const_cache.solver_options, sensitivity_parameters, const_cache)
 end
 
-function solve(solver_options::SolverOptions, sensitivity_parameters, const_cache)
+"""
+"""
+function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, const_cache)
+
+    # - Extract constants - #
+    (;
+        # General
+        verbose,
+        silence_warnings,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    (;
+        nlsolve_algorithm,
+        # # General Controls
+        nlsolve_alias_initial_guess,
+        # # Iteration Controls
+        nlsolve_abstol,
+        nlsolve_maxiters,
+        converged,
+    ) = solver_options
+
+    # - Extract Initial Guess Vector for State Variables - #
+    initial_guess = extract_initial_guess(
+        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+    )
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual and Jacobian")
+    end
+
+    function rwrap!(resid, state_variables, p)
+        return system_residual!(
+            resid, state_variables, p.sensitivity_parameters, p.constants
+        )
+    end
+
+    # build problem object
+    prob = NonlinearSolve.NonlinearProblem(
+        rwrap!,
+        initial_guess,
+        (;
+            sensitivity_parameters,
+            constants=(;
+                solver_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_container_cache,      # cache for solve_containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+            ),
+        ),
+    )
+
+    # - SOLVE - #
+    if verbose
+        println("  " * "Nonlinear Solve Trace:")
+    end
+    sol = NonlinearSolve.solve(
+        prob, # problem
+        nlsolve_algorithm();
+        abstol=nlsolve_abstol,
+        maxiters=nlsolve_maxiters,
+    )
+
+    # update convergence flag
+    converged[1] = SciMLBase.successful_retcode(sol)
+
+    return sol.u
+end
+
+function solve(solver_options::NLsolveOptions, sensitivity_parameters, const_cache)
 
     # - Extract constants - #
     (;
@@ -163,7 +247,7 @@ function solve(solver_options::CSORSolverOptions, sensitivity_parameters, const_
 
     TF = eltype(state_variables)
 
-    resid = MVector{2,TF}(Inf * ones(TF, 2))
+    resid = MVector{2,TF}(999 * ones(TF, 2))
     conv = solver_options.converged
     iter = 0
 

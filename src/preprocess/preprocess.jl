@@ -2211,10 +2211,6 @@ function initialize_strengths!(
             Gamr[g] = 0.05
         end
     end
-    println("checking initial states:")
-    display(Gamr)
-    display(sigr)
-    println(minimum(gamw), ", ", maximum(gamw))
 
     return Gamr, sigr, gamw
 end

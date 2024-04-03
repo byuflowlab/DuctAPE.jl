@@ -157,7 +157,7 @@ struct Relative <: ConvergenceType end
 struct Absolute <: ConvergenceType end
 
 # - Solver Options - #
-@kwdef struct CSORSolverOptions{TF,TB,TC<:ConvergenceType} <: SolverOptionsType
+@kwdef struct CSORSolverOptions{TF,TS,TB,TC<:ConvergenceType} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
     maxiter::TF = 1e2
@@ -168,6 +168,9 @@ struct Absolute <: ConvergenceType end
     pf2::TF = 0.5
     btw::TF = 0.6
     pfw::TF = 1.2
+    relaxation_schedule::TS = [
+        reverse!([1e10; 1e-13; 1e-13; 0.0]), reverse!([0.0; 0.0; 1.0; 1.0])
+    ]
     f_circ::TF = 1e-3
     f_dgamw::TF = 2e-4
     convergence_type::TC = Relative()
@@ -175,7 +178,17 @@ struct Absolute <: ConvergenceType end
     converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct SolverOptions{TSym,TF,TI,TB,Tls,Tlsk} <: SolverOptionsType
+# @kwdef struct SolverOptions{TA,TB,TF,TI,TN,TTm,TTr} <: SolverOptionsType
+@kwdef struct NonlinearSolveOptions{TA,TB,TF,TI} <: SolverOptionsType
+    # Algorithm Options
+    nlsolve_algorithm::TA = NonlinearSolve.SimpleDFSane
+    # Iteration Controls
+    nlsolve_abstol::TF = 1e-10
+    nlsolve_maxiters::TI = 100
+    converged::AbstractVector{TB} = [false]
+end
+
+@kwdef struct NLsolveOptions{TSym,TF,TI,TB,Tls,Tlsk} <: SolverOptionsType
     # - Options for overall solve - #
     # TODO: generalize the newton part of this to use NonlinearSolve.jl framework.
     # TODO: consider a tighter default convergence tolerance.
@@ -253,3 +266,4 @@ function quicksolve_options(;
         kwargs...,
     )
 end
+
