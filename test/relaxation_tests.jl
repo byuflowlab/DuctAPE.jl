@@ -47,19 +47,29 @@ end
 end
 
 @testset "Convergence Criteria" begin
-    conv = sa.MVector{1,Bool}(false)
+    conv = [false]
     maxBGamr = ones(2)
     maxdeltaBGamr = ones(2)
     maxdeltagamw = Array{Float64,0}(undef)
     maxdeltagamw[] = 0.0
     Vref = 1.0
-    dt.check_convergence!(
-        conv, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vref; f_circ=1e-3, f_dgamw=2e-4
+    dt.check_CSOR_convergence!(
+        conv,
+        [maximum(abs.(maxdeltaBGamr ./ maxBGamr)); maxdeltagamw];
+        f_circ=1e-3,
+        f_dgamw=2e-4,
+        convergence_type=dt.Relative(),
+        verbose=false,
     )
     @test conv[] == false
 
-    dt.check_convergence!(
-        conv, 1e4 * ones(2), maxdeltaBGamr, maxdeltagamw, Vref; f_circ=1e-3, f_dgamw=2e-4
+    dt.check_CSOR_convergence!(
+        conv,
+        1e-4 * ones(2);
+        f_circ=1e-3,
+        f_dgamw=2e-4,
+        convergence_type=dt.Relative(),
+        verbose=false,
     )
     @test conv[] == true
 end

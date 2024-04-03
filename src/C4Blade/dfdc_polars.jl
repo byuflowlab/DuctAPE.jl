@@ -75,7 +75,7 @@ function dfdceval(
     afparams,
     asound;
     verbose=false,
-    fliplift=false,
+    fliplift=0,
 )
 
     #all these come from user defined inputs.
@@ -243,7 +243,7 @@ function dfdceval(
     cd_rey = fac * cd_rey
 
     #jm: if flip lift is true, return negative of clift (for stators)
-    return fliplift ? -clift : clift, cdrag, cmom
+    return !iszero(fliplift) ? -clift : clift, cdrag, cmom
 end
 
 """

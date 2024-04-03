@@ -19,10 +19,9 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
     panels = dt.generate_panels(coordinates)
 
     # Generate LHS matrix and RHS vector
-    AICn, AICt = dt.vortex_aic_boundary_on_boundary(
+    AICn = dt.vortex_aic_boundary_on_boundary(
         panels.controlpoint,
         panels.normal,
-        panels.tangent,
         panels.node,
         panels.nodemap,
         panels.influence_length,
@@ -30,10 +29,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 
     dt.add_te_gap_aic!(
         AICn,
-        AICt,
         panels.controlpoint,
         panels.normal,
-        panels.tangent,
         panels.tenode,
         panels.teinfluence_length,
         panels.tendotn,
@@ -41,10 +38,9 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.teadjnodeidxs,
     )
 
-    AICpcp, unused = dt.vortex_aic_boundary_on_field(
+    AICpcp = dt.vortex_aic_boundary_on_field(
         panels.itcontrolpoint,
         panels.itnormal,
-        panels.ittangent,
         panels.node,
         panels.nodemap,
         panels.influence_length,
@@ -52,10 +48,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 
     dt.add_te_gap_aic!(
         AICpcp,
-        unused,
         panels.itcontrolpoint,
         panels.itnormal,
-        panels.ittangent,
         panels.tenode,
         panels.teinfluence_length,
         panels.tendotn,
@@ -70,8 +64,25 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 2))
     )
 
-    LHS = dt.assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
-    RHS = dt.assemble_rhs_matrix(vdnb, vdnpcp, panels)
+    LHS = dt.assemble_lhs_matrix(
+        AICn,
+        AICpcp,
+        panels.npanel,
+        panels.nnode,
+        panels.totpanel,
+        panels.totnode,
+        panels.prescribednodeidxs;
+        dummyval=1.0,
+    )
+    RHS = dt.assemble_rhs_matrix(
+        vdnb,
+        vdnpcp,
+        panels.npanel,
+        panels.nnode,
+        panels.totpanel,
+        panels.totnode,
+        panels.prescribednodeidxs,
+    )
 
     #check that added columns are correct
     @test LHS[:, 9:10] == [
@@ -112,19 +123,17 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
     panels = dt.generate_panels(coordinates)
 
     # Generate LHS matrix and RHS vector
-    AICn, _ = dt.vortex_aic_boundary_on_boundary(
+    AICn = dt.vortex_aic_boundary_on_boundary(
         panels.controlpoint,
         panels.normal,
-        panels.tangent,
         panels.node,
         panels.nodemap,
         panels.influence_length,
     )
 
-    AICpcp, _ = dt.vortex_aic_boundary_on_field(
+    AICpcp = dt.vortex_aic_boundary_on_field(
         panels.itcontrolpoint,
         panels.itnormal,
-        panels.ittangent,
         panels.node,
         panels.nodemap,
         panels.influence_length,
@@ -137,8 +146,25 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 1))
     )
 
-    LHS = dt.assemble_lhs_matrix(AICn, AICpcp, panels; dummyval=1.0)
-    RHS = dt.assemble_rhs_matrix(vdnb, vdnpcp, panels)
+    LHS = dt.assemble_lhs_matrix(
+        AICn,
+        AICpcp,
+        panels.npanel,
+        panels.nnode,
+        panels.totpanel,
+        panels.totnode,
+        panels.prescribednodeidxs;
+        dummyval=1.0,
+    )
+    RHS = dt.assemble_rhs_matrix(
+        vdnb,
+        vdnpcp,
+        panels.npanel,
+        panels.nnode,
+        panels.totpanel,
+        panels.totnode,
+        panels.prescribednodeidxs,
+    )
 
     #check that added columns are correct
     @test LHS[:, 9:10] == [

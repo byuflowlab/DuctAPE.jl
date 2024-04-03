@@ -610,7 +610,7 @@ function interp5d(
     output = Array{R}(undef, nx1pt, nx2pt, nx3pt, nx4pt, nx5pt)
 
     for i in 1:nd
-        x5interp[i, :, :, :] .= fm.interp4d(
+        x5interp[i, :, :, :] .= FLOWMath.interp4d(
             interp1d,
             x1data,
             x2data,

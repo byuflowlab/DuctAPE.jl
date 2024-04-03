@@ -12,12 +12,12 @@ Writes NamedTuples, specifically for writing out the output of the `post_procces
 - `filename::String` : file name (including full desired path and file type) for file to write
 
 # Keyword Arguments:
-- `tuple_name::String` : desired variable name of written NamedTuple
+- `output_tuple_name::String` : desired variable name of written NamedTuple
 - `checkoutfileexists::Bool=false` : boolean for whether to check if the outfile already exists and whether or not to overwrite it.
 
 """
 function write_data(
-    outs, filename="dfdc_outs.jl"; tuple_name="ductape_data", checkoutfileexists=false
+    outs, filename="dfdc_outs.jl"; output_tuple_name="ductape_data", checkoutfileexists=false
 )
 
     # check if file is present already
@@ -35,16 +35,16 @@ function write_data(
         elseif any(contains.(yn, ["A", "a"]))
             # if append, do so
             f = open(filename, "a")
-            write(f, "$(tuple_name) = (;\n")
+            write(f, "$(output_tuple_name) = (;\n")
         else
             # otherwise overwrite
             f = open(filename, "w")
-            write(f, "$(tuple_name) = (;\n")
+            write(f, "$(output_tuple_name) = (;\n")
         end
     else
         # overwrite if not checking
         f = open(filename, "w")
-        write(f, "$(tuple_name) = (;\n")
+        write(f, "$(output_tuple_name) = (;\n")
     end
 
     # Write data to file

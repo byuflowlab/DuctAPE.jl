@@ -1,24 +1,27 @@
 #=
-This file contains parameters (from the DFDC case file set) in the input format for dt
+This file contains parameters (from the DFDC case file set) in the input format for DuctAPE
 =#
+
+using DuctAPE #for airfoil parameterization
 
 ##### ----- Operation Conditions (OPER) in DFDC Case File ----- #####
 Vref = 50.0 # Vref in DFDC case file
+RPM = 8000.0 # RPM in DFDC case file
 rhoinf = 1.226 # Rho in DFDC case file
 asound = 340.0 # Vso in DFDC case file
 muinf = 1.78e-5 # Rmu in DFDC case file
-RPM = 8000.0 # RPM in DFDC case file
 wake_length = 0.8 # XDwake in DFDC case file
 nwake_sheets = 11 # NRPdef in DFDC case file, also 1 more than the nstations in this case
 
-# - dt additional parameters - #
-Omega = RPM * pi / 30  # convert from RPM to rad/s for dt
-ncenterbody_inlet = 22
-nduct_inlet = 22
-npanels = [30, 1, 19]
+# - DuctAPE additional parameters - #
+Omega = RPM * pi / 30  # convert from RPM to rad/s for DuctAPE
+
+nhub_inlet = 30 # chosen somewhat arbitrarily
+nduct_inlet = 30 # chosen somewhat arbitrarily
+npanels = [30, 1, 30] # chosen somewhat arbitrarily, the 1 is due to the fact that the duct and center body trailing edges are not quite aligned.
 
 ##### ----- Airfoil Parameters (AERO in DFDC case file) ----- #####
-afparams = dt.c4b.DFDCairfoil(;
+afparams = DuctAPE.c4b.DFDCairfoil(;
     alpha0=0.0, # A0deg in DFDC case file
     clmax=1.5, # CLmax in DFDC case file
     clmin=-1.0, # CLmin in DFDC case file
@@ -52,7 +55,7 @@ rct = [
     0.15018 0.38243E-01 29.596
 ] # copied directly from matrix in DFDC case file
 
-# dt specific parameters
+# DuctAPE specific parameters
 # Rtip = 0.15572 # comes from DFDC output file
 # Rhub = 0.0450 # comes from DFDC output file
 Rtip = 0.15572081487373543 # Calculated from Geometry
@@ -64,32 +67,41 @@ twists = rct[:, 3] * pi / 180.0 # convert to radians
 
 airfoils = fill(afparams, length(r)) # specify the airfoil array
 
-##### ----- dt Input Tuples ----- #####
+##### ----- DuctAPE Input Tuples ----- #####
 
 # - Rotor Parameters: Vector of NTuples - #
-rotorstator_parameters = dt.RotorStatorParameters(
-    B, rotorzloc, r, Rhub, Rtip, chords, twists, 0.0, airfoils, false
-)
+rotorstator_parameters = [(;
+    nwake_sheets,
+    rotorzloc,
+    r,
+    chords,
+    twists,
+    airfoils,
+    Rtip,
+    Rhub,
+    tip_gap=0.0, # currently only zero tip gaps work.
+    B,
+    Omega,
+    fliplift=false, # can flip the cl lookups on the fly if desired, say, for stator sections
+)]
 
 # - Paneling Constants - #
-dte_minus_cbte = -1
-paneling_constants = dt.PanelingConstants(
-    nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
-)
-
-# - Reference Parameters used for Post-processing - #
-reference_parameters = dt.ReferenceParameters(Vref, Rtip)
+paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
 
 # - Freestream (will need to update Vinf when running sweep of advance ratios - #
 # this will need to be redefined in the loop
+
 D = 2.0 * Rtip # rotor diameter
 n = RPM / 60.0 # rotation rate in revolutions per second
 Vinf = 1.0 * n * D
-operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+freestream = (; rhoinf, muinf, asound, Vinf)
+
+# - Reference Parameters used for Post-processing - #
+reference_parameters = (; Vref, Rref=Rtip)
 
 # ##### ----- Solid Body Coordinates (GEOM in the DFDC case file) ----- #####
 # # copied from the DFDC case file and put here at end since they're so long
-# # also note that they need to be reversed for dt
+# # also note that they need to be reversed for DuctAPE
 
 # hub_coordinates = reverse(
 #     [
