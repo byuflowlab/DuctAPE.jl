@@ -1,4 +1,3 @@
-<<<<<<< HEAD:src/precomputation/integrals.jl
 #######################################################################
 ##                                                                    #
 ##                 Linear Vortex Panel Integration                    #
