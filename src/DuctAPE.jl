@@ -12,6 +12,7 @@ const c4b = C4Blade
 # - Packages for Calculating Unit Induced Velocities - #
 # For Kernels
 using SpecialFunctions # required for elliptic integrals
+
 # For Integration
 using FastGaussQuadrature
 using QuadGK
@@ -23,11 +24,14 @@ using PreallocationTools # caches
 # - Packages for Solves - #
 using ImplicitAD # used for all solves
 using LinearAlgebra # linear solve and LU decomposition
+
 # General Nonlinear solves
 using SimpleNonlinearSolve
+
 # Fixed-Point Iteration Solvers
 # using FixedPointAcceleration
 using SpeedMapping
+
 # For using NLsolve
 using NLsolve #for newton solver
 using LineSearches # used in newton solver
@@ -88,23 +92,19 @@ include("preprocess/geometry/elliptic_grid_residuals.jl")
 
 # Induced Velocity Functions
 include("preprocess/velocities/unit_induced_velocities.jl")
-include("preprocess/velocities/integrals.jl")
 include("preprocess/velocities/induced_velocity_matrices.jl")
 include("preprocess/velocities/body_aic.jl")
+# Quadrature
+include("preprocess/velocities/integrals.jl")
+include("preprocess/velocities/gausslegendre_integrals.jl")
+include("preprocess/velocities/gausskronrod_integrals.jl")
+include("preprocess/velocities/integrands.jl")
 
 ##### ----- PROCESS ----- #####
-
 # Solve and Residual Functions
 include("process/solve.jl")
 include("process/residuals/CSORresidual.jl")
 include("process/residuals/systemresidual.jl")
-
-include("precomputation/gausslegendre_integrals.jl")
-include("precomputation/gausskronrod_integrals.jl")
-include("precomputation/integrands.jl")
-##### ----- SOLVER ----- #####
-
-include("solve/solve.jl")
 
 # Aerodynamics Functions
 include("process/aerodynamics/body_aerodynamics.jl")
