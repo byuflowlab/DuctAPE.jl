@@ -95,10 +95,11 @@ include("preprocess/velocities/unit_induced_velocities.jl")
 include("preprocess/velocities/induced_velocity_matrices.jl")
 include("preprocess/velocities/body_aic.jl")
 # Quadrature
-include("preprocess/velocities/integrals.jl")
-include("preprocess/velocities/gausslegendre_integrals.jl")
-include("preprocess/velocities/gausskronrod_integrals.jl")
 include("preprocess/velocities/integrands.jl")
+include("preprocess/velocities/out_of_place_integrals.jl")
+include("preprocess/velocities/gausslegendre_integrals.jl")
+include("preprocess/velocities/romberg_integrals.jl")
+include("preprocess/velocities/gausskronrod_integrals.jl")
 
 ##### ----- PROCESS ----- #####
 # Solve and Residual Functions

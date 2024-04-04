@@ -1,8 +1,3 @@
-#=
-Influence matrices for panels on points
-given in terms of raw velocity components
-=#
-
 ######################################################################
 #                                                                    #
 #          Matrix of velocities induced by panels on points          #
@@ -28,7 +23,13 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_vortex_panels_on_points(
-    controlpoints, nodes, nodemap, influence_lengths, strengths; cache_vec=nothing
+    controlpoints,
+    nodes,
+    nodemap,
+    influence_lengths,
+    strengths,
+    integration_options;
+    integration_caches=nothing,
 )
 
     # Initialize
@@ -41,7 +42,8 @@ function induced_velocities_from_vortex_panels_on_points(
         nodes,
         nodemap,
         influence_lengths,
-        strengths;
+        strengths,
+        integration_options;
         cache_vec=cache_vec,
     )
 
@@ -61,11 +63,27 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `gamma::Vector{Float}` : vortex constant circulation values
 """
 function induced_velocities_from_vortex_panels_on_points!(
-    VEL, controlpoint, node, nodemap, influence_length, strength; cache_vec=nothing
+    VEL,
+    controlpoint,
+    node,
+    nodemap,
+    influence_length,
+    strength,
+    integration_options;
+    integration_caches=nothing,
 )
-    # vel = zeros(eltype(VEL), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 20)
+    # vel = zeros(VEL, 2, 2)
+    if isnothing(integration_caches)
+        #integration_cache = zeros(eltype(node), 20)
+        nominal_integration_cache = allocate_integration_containers(
+            integration_options.nominal, VEL
+        )
+        singular_integration_cache = allocate_integration_containers(
+            integration_options.singular, VEL
+        )
+    else
+        nominal_integration_cache = integration_caches.nominal
+        singular_integration_cache = integration_caches.singular
     end
 
     # loop through panels doing the influencing
@@ -81,13 +99,27 @@ function induced_velocities_from_vortex_panels_on_points!(
                 # if so:
                 # vel .= self_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_vortex_panel_integration(
+                        integration_options.singular,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        singular_integration_cache,
+                    ),
                 )
             else
                 # if not:
                 # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_vortex_panel_integration(
+                        integration_options.nominal,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        nominal_integration_cache,
+                    ),
                 )
             end
 
@@ -120,7 +152,13 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_source_panels_on_points(
-    controlpoints, nodes, nodemap, influence_lengths, strengths; cache_vec=nothing
+    controlpoints,
+    nodes,
+    nodemap,
+    influence_lengths,
+    strengths,
+    integration_options;
+    integration_caches=nothing,
 )
 
     # Initialize
@@ -132,9 +170,10 @@ function induced_velocities_from_source_panels_on_points(
         controlpoints,
         nodes,
         nodemap,
-        influence_lengths,
-        strengths;
-        cache_vec=cache_vec,
+        influence_lengthss,
+        strengths,
+        integration_options;
+        integration_caches=integration_caches,
     )
 
     return VEL
@@ -153,14 +192,28 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `gamma::Vector{Float}` : source constant circulation values
 """
 function induced_velocities_from_source_panels_on_points!(
-    VEL, controlpoint, node, nodemap, influence_length, strength; cache_vec=nothing
+    VEL,
+    controlpoint,
+    node,
+    nodemap,
+    influence_length,
+    strength,
+    integration_options;
+    integration_caches=nothing,
 )
-    # vel = zeros(eltype(VEL), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(node), 20)
+    # vel = zeros(VEL, 2, 2)
+    if isnothing(integration_caches)
+        #integration_cache = zeros(eltype(node), 20)
+        nominal_integration_cache = allocate_integration_containers(
+            integration_options.nominal, VEL
+        )
+        singular_integration_cache = allocate_integration_containers(
+            integration_options.singular, VEL
+        )
+    else
+        nominal_integration_cache = integration_caches.nominal
+        singular_integration_cache = integration_caches.singular
     end
-
-    #TODO; for speedups, update panel initialization to flip rows and columns such that these functions use eachcol rather than eachrow
 
     # loop through panels doing the influencing
     for (j, (nmap, lj, sigmaj)) in
@@ -176,13 +229,27 @@ function induced_velocities_from_source_panels_on_points!(
                 # if so:
                 # vel .= self_source_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    self_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_source_panel_integration(
+                        integration_options.singular,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        singular_integration_cache,
+                    ),
                 )
             else
                 # if not:
                 # vel .= nominal_source_panel_integration(n1, n2, lj, cpi)
                 vel = StaticArrays.SMatrix{2,2}(
-                    nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_source_panel_integration(
+                        integration_options.nominal,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        nominal_integration_cache,
+                    ),
                 )
             end
 
@@ -208,15 +275,25 @@ function induced_velocities_from_trailing_edge_gap_panel!(
     teinfluence_length,
     tendotn,
     tencrossn,
-    teadjnodeidxs;
+    teadjnodeidxs,
+    integration_options;
     wake=false,
-    cache_vec=nothing,
+    integration_caches=nothing,
 )
 
     # vvel = zeros(eltype(AICn), 2, 2)
     # svel = zeros(eltype(AICn), 2, 2)
-    if isnothing(cache_vec)
-        cache_vec = zeros(eltype(controlpoint), 20)
+    if isnothing(integration_caches)
+        # integration_cache = zeros(eltype(controlpoint), 20)
+        nominal_integration_cache = allocate_integration_containers(
+            integration_options.nominal, VEL
+        )
+        singular_integration_cache = allocate_integration_containers(
+            integration_options.singular, VEL
+        )
+    else
+        nominal_integration_cache = integration_caches.nominal
+        singular_integration_cache = integration_caches.singular
     end
 
     # Loop through control points being influenced
@@ -237,18 +314,46 @@ function induced_velocities_from_trailing_edge_gap_panel!(
             if isapprox(cpi, 0.5 * (n1 .+ n2))
                 # if so:
                 vvel = StaticArrays.SMatrix{2,2}(
-                    self_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_vortex_panel_integration(
+                        integration_options.singular,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        singular_integration_cache,
+                    ),
                 )
                 svel = StaticArrays.SMatrix{2,2}(
-                    self_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    self_source_panel_integration(
+                        integration_options.singular,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        nominal_integration_cache,
+                    ),
                 )
             else
                 # if not:
                 vvel = StaticArrays.SMatrix{2,2}(
-                    nominal_vortex_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_vortex_panel_integration(
+                        integration_options.nominal,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        singular_integration_cache,
+                    ),
                 )
                 svel = StaticArrays.SMatrix{2,2}(
-                    nominal_source_panel_integration(n1, n2, lj, cpi, cache_vec)
+                    nominal_source_panel_integration(
+                        integration_options.nominal,
+                        n1,
+                        n2,
+                        lj,
+                        cpi,
+                        nominal_integration_cache,
+                    ),
                 )
             end
 

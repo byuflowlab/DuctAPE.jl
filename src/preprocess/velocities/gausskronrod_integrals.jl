@@ -11,14 +11,14 @@ function nominal_vortex_panel_integration(
     node2,
     influence_length,
     controlpoint,
-    cache_vec;
+    sample_cache;
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return nominal_vortex_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint, cache_vec
+            t, node1, node2, influence_length, controlpoint, sample_cache
         )
     end
 
@@ -49,14 +49,14 @@ function self_vortex_panel_integration(
     node2,
     influence_length,
     controlpoint,
-    cache_vec;
+    sample_cache;
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return self_vortex_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint, cache_vec;
+            t, node1, node2, influence_length, controlpoint, sample_cache;
         )
     end
 
@@ -70,12 +70,12 @@ function self_vortex_panel_integration(
         atol=integration_options.atol,
     )
 
-    cache_vec[1], cache_vec[2] = analytically_integrated_vortex_influence(
+    sample_cache[1], sample_cache[2] = analytically_integrated_vortex_influence(
         controlpoint[2], influence_length
     )
 
     V .*= influence_length
-    V[1:2] .+= cache_vec[1] / 2.0
+    V[1:2] .+= sample_cache[1] / 2.0
 
     if debug
         return reshape(V, (2, 2)), err
@@ -97,14 +97,14 @@ function nominal_source_panel_integration(
     node2,
     influence_length,
     controlpoint,
-    cache_vec;
+    sample_cache;
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return nominal_source_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint, cache_vec;
+            t, node1, node2, influence_length, controlpoint, sample_cache;
         )
     end
 
@@ -135,14 +135,14 @@ function self_source_panel_integration(
     node2,
     influence_length,
     controlpoint,
-    cache_vec;
+    sample_cache;
     debug=false,
 )
 
     # Define function to integrate
     function fsample(t)
         return self_source_induced_velocity_sample(
-            t, node1, node2, influence_length, controlpoint, cache_vec;
+            t, node1, node2, influence_length, controlpoint, sample_cache;
         )
     end
 
@@ -156,12 +156,12 @@ function self_source_panel_integration(
         atol=integration_options.atol,
     )
 
-    cache_vec[1], cache_vec[2] = analytically_integrated_source_influence(
+    sample_cache[1], sample_cache[2] = analytically_integrated_source_influence(
         controlpoint[2], influence_length
     )
 
     V .*= influence_length
-    V[3:4] .+= cache_vec[2] / 2.0
+    V[3:4] .+= sample_cache[2] / 2.0
 
     if debug
         return reshape(V, (2, 2)), err

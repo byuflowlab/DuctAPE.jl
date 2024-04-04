@@ -10,7 +10,7 @@ the type of `h` and `T` is the type of the extrapolated `f(0)` **result**.  This
 should be a floating-point type, i.e. `fh` should contain `float(f(h))` if the
 function you are extrapolating is not already floating-point-valued.)
 """
-function extrapolate!(V, err, fh; power=2, atol=1e-6) where {TF1,TF2}
+function extrapolate!(V, err, fh; power=2, atol=1e-6)
 
     # - rename for convenience - #
     (f0, h) = first(fh)
@@ -51,29 +51,6 @@ function extrapolate!(V, err, fh; power=2, atol=1e-6) where {TF1,TF2}
     end
 
     return V, err
-end
-
-function allocate_integration_containers(
-    integration_options::Romberg, dispatch_type::TF; cache_size=20
-) where {TF}
-    return (;
-        sample_cache=zeros(TF, cache_size),
-        samples=[(zeros(TF, 4), TF[0.0]) for i in 1:(integration_options.max_subdivisions)],
-    )
-end
-
-function allocate_integration_containers(
-    integration_options::GaussLegendre, dispatch_type::TF; cache_size=20
-) where {TF}
-    return (;
-        sample_cache=zeros(TF, cache_size), samples=zeros(TF, integration_options.nsamples)
-    )
-end
-
-function allocate_integration_containers(
-    integration_options::GaussKronrod, dispatch_type::TF; cache_size=20
-) where {TF}
-    return (; sample_cache=zeros(TF, cache_size))
 end
 
 #---------------------------------#
@@ -139,8 +116,9 @@ end
 """
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
-function self_vortex_panel_integration(
+function self_vortex_panel_integration!(
     integration_options::Romberg,
+    V,
     node1,
     node2,
     influence_length,
@@ -269,8 +247,9 @@ end
 """
 `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
 """
-function self_source_panel_integration(
+function self_source_panel_integration!(
     integration_options::Romberg,
+    V,
     node1,
     node2,
     influence_length,

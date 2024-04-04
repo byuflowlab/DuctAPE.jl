@@ -84,7 +84,7 @@ function analyze(
 
     # out-of-place version currently has 22,292,181 allocations.
     # TODO: do this in place for the solve input cache items. eventually will want to have a post-processing and output cache too.
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = precompute_parameters_iad!(
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -92,6 +92,7 @@ function analyze(
         solve_parameter_tuple.wakeK,
         propulsor;
         grid_solver_options=options.wake_solver_options,
+        integration_options=options.integration_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,
