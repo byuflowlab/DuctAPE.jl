@@ -156,19 +156,15 @@ end
 #         QUADRATURE TYPES        #
 #---------------------------------#
 
-@kwdef struct Romberg{TI,TF,TP,TV} <: IntegrationMethod
+@kwdef struct Romberg{TI,TF} <: IntegrationMethod
     max_subdivisions::TI = 10
     atol::TF = 1e-6
 end
 
-function set_romberg_options(; max_subdivisions=10, atol=1e-6)
-    return Romberg(; max_subdivisions, atol)
-end
-
 @kwdef struct GaussKronrod{TI,TF} <: IntegrationMethod
-    order::TI = 5
-    maxevals::TI = 1000
-    atol::TF = 1e-12
+    order::TI = 7
+    maxevals::TI = 10^7
+    atol::TF = 0
 end
 
 struct GaussLegendre{TN,TW} <: IntegrationMethod

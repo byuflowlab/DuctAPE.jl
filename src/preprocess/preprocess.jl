@@ -1580,15 +1580,15 @@ function precompute_parameters!(
     operating_point,
     reference_parameters,
     problem_dimensions=nothing;
-    grid_solver_options=options.wake_solver_options,
-    integration_options=options.integration_options,
-    autoshiftduct=options.autoshiftduct,
-    itcpshift=options.itcpshift,
-    axistol=options.axistol,
-    tegaptol=options.tegaptol,
-    finterp=options.finterp,
-    silence_warnings=options.silence_warnings,
-    verbose=options.verbose,
+    grid_solver_options=GridSolverOptions(),
+    integration_options=IntegrationOptions(),
+    autoshiftduct=true,
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
+    finterp=fm.akima,
+    silence_warnings=true,
+    verbose=false,
 )
 
     # - Reset Caches - #

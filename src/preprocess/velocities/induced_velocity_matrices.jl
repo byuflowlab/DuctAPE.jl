@@ -44,7 +44,7 @@ function induced_velocities_from_vortex_panels_on_points(
         influence_lengths,
         strengths,
         integration_options;
-        cache_vec=cache_vec,
+        integration_caches=integration_caches,
     )
 
     return VEL
@@ -170,7 +170,7 @@ function induced_velocities_from_source_panels_on_points(
         controlpoints,
         nodes,
         nodemap,
-        influence_lengthss,
+        influence_lengths,
         strengths,
         integration_options;
         integration_caches=integration_caches,

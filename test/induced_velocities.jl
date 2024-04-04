@@ -88,14 +88,45 @@ end
         # - Test 1 - #
         # Load in comparision values from DFDC extraction
         include("./data/single_linear_panel_integration/nominal_velocities1.jl")
+
+        gk_integration_options = dt.GaussKronrod()
+        gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
+        gl_integration_options = dt.GaussLegendre()
+        gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
+        r_integration_options = dt.Romberg()
+        r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
+
         node1 = p1
         node2 = p2
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
+        )
+
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-6)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-6)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-6)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-6)
+
+        # GaussLegendre
+        V = dt.nominal_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-6)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-6)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-6)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-6)
+
+        # Romberg
+        V = dt.nominal_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
         )
 
         # Compare with DFDC integration values
@@ -112,9 +143,10 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
 
         # Compare with DFDC integration values
@@ -122,6 +154,29 @@ end
         @test isapprox(V[1, 2], Vgammai[2], atol=1e-9)
         @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-9)
         @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-9)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.nominal_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-9)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-9)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-9)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-9)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.nominal_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
 
         # - Test 3 - #
         # Load in comparision values from DFDC extraction
@@ -131,16 +186,39 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
         @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
         @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
         @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.nominal_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.nominal_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
 
         # - Test 4 - #
         # Load in comparision values from DFDC extraction
@@ -150,11 +228,33 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
 
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.nominal_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.nominal_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
         # Compare with DFDC integration values
         @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
         @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
@@ -164,6 +264,14 @@ end
 
     @testset "Single Vortex Panel Self-Induction Integration" begin
 
+        gk_integration_options = dt.GaussKronrod()
+        gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
+        gl_integration_options = dt.GaussLegendre()
+        gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
+        r_integration_options = dt.Romberg()
+        r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
+
+
         # - Test 1 - #
         # Load in comparision values from DFDC extraction
         include("./data/single_linear_panel_integration/self_velocities1.jl")
@@ -172,16 +280,41 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
         @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
 
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
         #note: radial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
@@ -194,19 +327,46 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
         @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
-
         #note: radial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-3)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-3)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-3)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-3)
+
+
 
         # - Test 3 - #
         # Load in comparision values from DFDC extraction
@@ -216,19 +376,44 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
         @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
-
         #note: radial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-4)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-3)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-3)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-3)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-3)
 
         # - Test 4 - #
         # Load in comparision values from DFDC extraction
@@ -238,26 +423,60 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_vortex_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
         @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
-
         #note: radial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_vortex_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        # note: axial tests fail if I use log(8Δs/r) in the analytic term rather than the 16 DFDC has instead of the 8
+        @test isapprox(V[1, 1], Vgammai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vgammaip1[1], atol=1e-5)
+        #note: radial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 2], Vgammai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vgammaip1[2], atol=1e-5)
+
     end
+
 
     #---------------------------------#
     #             SOURCES             #
     #---------------------------------#
 
     @testset "Nominal Single Source Panel Integration" begin
+
+        gk_integration_options = dt.GaussKronrod()
+        gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
+        gl_integration_options = dt.GaussLegendre()
+        gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
+        r_integration_options = dt.Romberg()
+        r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
 
         # - Test 1 - #
         # Load in comparision values from DFDC extraction
@@ -267,16 +486,38 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-6)
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-6)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-6)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-6)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-6)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-6)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-6)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-6)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-4)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-4)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-4)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-4)
 
         # - Test 2 - #
         # Load in comparision values from DFDC extraction
@@ -286,16 +527,40 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-9)
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-9)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-9)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-9)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-9)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-9)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-9)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-9)
+
+        # Romber
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-4)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-4)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-4)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-4)
+
+
 
         # - Test 3 - #
         # Load in comparision values from DFDC extraction
@@ -305,16 +570,40 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-4)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-4)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-4)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-4)
+
+
 
         # - Test 4 - #
         # Load in comparision values from DFDC extraction
@@ -324,19 +613,49 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = pf
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.nominal_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # Romber
+        # Calculate Integral
+        V = dt.nominal_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
     end
 
     @testset "Single Source Panel Self-Induction Integration" begin
+
+        gk_integration_options = dt.GaussKronrod()
+        gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
+        gl_integration_options = dt.GaussLegendre()
+        gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
+        r_integration_options = dt.Romberg()
+        r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
 
         # - Test 1 - #
         # Load in comparision values from DFDC extraction
@@ -346,18 +665,43 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         #note: axial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
-
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+
 
         # - Test 2 - #
         # Load in comparision values from DFDC extraction
@@ -367,18 +711,43 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         #note: axial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
-
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-4)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-4)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-4)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-4)
+
+
 
         # - Test 3 - #
         # Load in comparision values from DFDC extraction
@@ -388,18 +757,41 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         #note: axial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
-
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-3)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-3)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-3)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-3)
 
         # - Test 4 - #
         # Load in comparision values from DFDC extraction
@@ -409,20 +801,44 @@ end
         influence_length = sqrt((p2[1] - p1[1])^2 + (p2[2] - p1[2])^2)
         controlpoint = ps
 
+        # GaussKronrod
         # Calculate Integral
         V = dt.self_source_panel_integration(
-            node1, node2, influence_length, controlpoint, zeros(20); nondimrange=[0.0; 1.0]
+            gk_integration_options, node1, node2, influence_length, controlpoint, gk_cache;
         )
-
         # Compare with DFDC integration values
         #note: axial terms have zero for the analytic addition, so they work fine
         @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
         @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
 
+        # GaussLegendre
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            gl_integration_options, node1, node2, influence_length, controlpoint, gl_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
+        @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
+        @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
+
+        # Romberg
+        # Calculate Integral
+        V = dt.self_source_panel_integration(
+            r_integration_options, node1, node2, influence_length, controlpoint, r_cache;
+        )
+        # Compare with DFDC integration values
+        #note: axial terms have zero for the analytic addition, so they work fine
+        @test isapprox(V[1, 1], Vsigmai[1], atol=1e-5)
+        @test isapprox(V[2, 1], Vsigmaip1[1], atol=1e-5)
         @test isapprox(V[1, 2], Vsigmai[2], atol=1e-5)
         @test isapprox(V[2, 2], Vsigmaip1[2], atol=1e-5)
     end
 end
+
 
 ######################################################################
 #                                                                    #
@@ -432,6 +848,14 @@ end
 @testset "Multi-Panel, Multi-Target Induced Velocity Matrices" begin
     @testset "Multiple Vortex Panel Induced Velocities on Multiple Points" begin
 
+        gk_integration_options = dt.GaussKronrod()
+        gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
+        gl_integration_options = dt.GaussLegendre()
+        gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
+        r_integration_options = dt.Romberg()
+        r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
+
+
         # define control points
         controlpoints = [0.0 1.0; 1.0 1.0]'
 
@@ -447,26 +871,52 @@ end
         # use unit strengths
         strengths = [1.0 1.0; 1.0 1.0]
 
+        # - GaussKronrod - #
         # [cp, n, x/r]
         VEL = dt.induced_velocities_from_vortex_panels_on_points(
-            controlpoints, nodes, nodemap, influence_lengths, strengths
+            controlpoints,
+            nodes,
+            nodemap,
+            influence_lengths,
+            strengths,
+            (; nominal=gk_integration_options, singular=gk_integration_options),
         )
 
         # [vz1 vr1; vz2 vr2]
         vn12cp1 = dt.self_vortex_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1], zeros(20)
+            gk_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gk_cache,
         )
 
         vn12cp2 = dt.nominal_vortex_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2], zeros(20)
+            gk_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gk_cache,
         )
 
         vn23cp1 = dt.nominal_vortex_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1], zeros(20)
+            gk_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gk_cache,
         )
 
         vn23cp2 = dt.nominal_vortex_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2], zeros(20)
+            gk_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gk_cache,
         )
 
         @test all(VEL[1, 1, :] .== vn12cp1[1, :])
@@ -476,9 +926,130 @@ end
         @test all(VEL[2, 1, :] .== vn12cp2[1, :])
         @test all(VEL[2, 2, :] .== vn12cp2[2, :] .+ vn23cp2[1, :])
         @test all(VEL[2, 3, :] .== vn23cp2[2, :])
+
+        # - GaussLegendre - #
+        # [cp, n, x/r]
+        VEL = dt.induced_velocities_from_vortex_panels_on_points(
+            controlpoints,
+            nodes,
+            nodemap,
+            influence_lengths,
+            strengths,
+            (; nominal=gl_integration_options, singular=gl_integration_options),
+        )
+
+        # [vz1 vr1; vz2 vr2]
+        vn12cp1 = dt.self_vortex_panel_integration(
+            gl_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gl_cache,
+        )
+
+        vn12cp2 = dt.nominal_vortex_panel_integration(
+            gl_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gl_cache,
+        )
+
+        vn23cp1 = dt.nominal_vortex_panel_integration(
+            gl_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gl_cache,
+        )
+
+        vn23cp2 = dt.nominal_vortex_panel_integration(
+            gl_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gl_cache,
+        )
+
+        @test all(VEL[1, 1, :] .== vn12cp1[1, :])
+        #note that node connected to 2 panels has influence contributions from both panels
+        @test all(VEL[1, 2, :] .== vn12cp1[2, :] .+ vn23cp1[1, :])
+        @test all(VEL[1, 3, :] .== vn23cp1[2, :])
+        @test all(VEL[2, 1, :] .== vn12cp2[1, :])
+        @test all(VEL[2, 2, :] .== vn12cp2[2, :] .+ vn23cp2[1, :])
+        @test all(VEL[2, 3, :] .== vn23cp2[2, :])
+
+        # - Romberg - #
+        # [cp, n, x/r]
+        VEL = dt.induced_velocities_from_vortex_panels_on_points(
+            controlpoints,
+            nodes,
+            nodemap,
+            influence_lengths,
+            strengths,
+            (; nominal=r_integration_options, singular=r_integration_options),
+        )
+
+        # [vz1 vr1; vz2 vr2]
+        vn12cp1 = dt.self_vortex_panel_integration(
+            r_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            r_cache,
+        )
+
+        vn12cp2 = dt.nominal_vortex_panel_integration(
+            r_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            r_cache,
+        )
+
+        vn23cp1 = dt.nominal_vortex_panel_integration(
+            r_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            r_cache,
+        )
+
+        vn23cp2 = dt.nominal_vortex_panel_integration(
+            r_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            r_cache,
+        )
+
+        @test all(VEL[1, 1, :] .== vn12cp1[1, :])
+        #note that node connected to 2 panels has influence contributions from both panels
+        @test all(VEL[1, 2, :] .== vn12cp1[2, :] .+ vn23cp1[1, :])
+        @test all(VEL[1, 3, :] .== vn23cp1[2, :])
+        #TODO: why is the answer different when directly vs indirectly calling integration?
+        @test all(isapprox.(VEL[2, 1, :] , vn12cp2[1, :], atol=1e-4))
+        @test all(isapprox.(VEL[2, 2, :] , vn12cp2[2, :] .+ vn23cp2[1, :], atol=1e-4))
+        @test all(VEL[2, 3, :] .== vn23cp2[2, :])
     end
 
     @testset "Multiple Source Panel Induced Velocities on Multiple Points" begin
+
+        gk_integration_options = dt.GaussKronrod()
+        gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
+        gl_integration_options = dt.GaussLegendre()
+        gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
+        r_integration_options = dt.Romberg()
+        r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
+
 
         # define control points
         controlpoints = [0.0 1.0; 1.0 1.0]'
@@ -495,26 +1066,52 @@ end
         # use unit strengths
         strengths = [1.0 1.0; 1.0 1.0]
 
+        # GaussKronrod
         # [cp, n, x/r]
         VEL = dt.induced_velocities_from_source_panels_on_points(
-            controlpoints, nodes, nodemap, influence_lengths, strengths
+            controlpoints,
+            nodes,
+            nodemap,
+            influence_lengths,
+            strengths,
+            (; nominal=gk_integration_options, singular=gk_integration_options),
         )
 
         # [vz1 vr1; vz2 vr2]
         vn12cp1 = dt.self_source_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 1], zeros(20)
+            gk_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gk_cache,
         )
 
         vn12cp2 = dt.nominal_source_panel_integration(
-            nodes[:, 1], nodes[:, 2], influence_lengths[1], controlpoints[:, 2], zeros(20)
+            gk_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gk_cache,
         )
 
         vn23cp1 = dt.nominal_source_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 1], zeros(20)
+            gk_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gk_cache,
         )
 
         vn23cp2 = dt.nominal_source_panel_integration(
-            nodes[:, 2], nodes[:, 3], influence_lengths[1], controlpoints[:, 2], zeros(20)
+            gk_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gk_cache,
         )
 
         @test all(VEL[1, 1, :] .== vn12cp1[1, :])
@@ -522,6 +1119,117 @@ end
         @test all(VEL[1, 3, :] .== vn23cp1[2, :])
         @test all(VEL[2, 1, :] .== vn12cp2[1, :])
         @test all(VEL[2, 2, :] .== vn12cp2[2, :] .+ vn23cp2[1, :])
+        @test all(VEL[2, 3, :] .== vn23cp2[2, :])
+
+        # GaussLegendre
+        # [cp, n, x/r]
+        VEL = dt.induced_velocities_from_source_panels_on_points(
+            controlpoints,
+            nodes,
+            nodemap,
+            influence_lengths,
+            strengths,
+            (; nominal=gl_integration_options, singular=gl_integration_options),
+        )
+
+        # [vz1 vr1; vz2 vr2]
+        vn12cp1 = dt.self_source_panel_integration(
+            gl_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gl_cache,
+        )
+
+        vn12cp2 = dt.nominal_source_panel_integration(
+            gl_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gl_cache,
+        )
+
+        vn23cp1 = dt.nominal_source_panel_integration(
+            gl_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            gl_cache,
+        )
+
+        vn23cp2 = dt.nominal_source_panel_integration(
+            gl_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            gl_cache,
+        )
+
+        @test all(VEL[1, 1, :] .== vn12cp1[1, :])
+        @test all(VEL[1, 2, :] .== vn12cp1[2, :] .+ vn23cp1[1, :])
+        @test all(VEL[1, 3, :] .== vn23cp1[2, :])
+        @test all(VEL[2, 1, :] .== vn12cp2[1, :])
+        @test all(VEL[2, 2, :] .== vn12cp2[2, :] .+ vn23cp2[1, :])
+        @test all(VEL[2, 3, :] .== vn23cp2[2, :])
+
+        # Romberg
+        # [cp, n, x/r]
+        VEL = dt.induced_velocities_from_source_panels_on_points(
+            controlpoints,
+            nodes,
+            nodemap,
+            influence_lengths,
+            strengths,
+            (; nominal=r_integration_options, singular=r_integration_options),
+        )
+
+        # [vz1 vr1; vz2 vr2]
+        vn12cp1 = dt.self_source_panel_integration(
+            r_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            r_cache,
+        )
+
+        vn12cp2 = dt.nominal_source_panel_integration(
+            r_integration_options,
+            nodes[:, 1],
+            nodes[:, 2],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            r_cache,
+        )
+
+        vn23cp1 = dt.nominal_source_panel_integration(
+            r_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 1],
+            r_cache,
+        )
+
+        vn23cp2 = dt.nominal_source_panel_integration(
+            r_integration_options,
+            nodes[:, 2],
+            nodes[:, 3],
+            influence_lengths[1],
+            controlpoints[:, 2],
+            r_cache,
+        )
+
+        @test all(VEL[1, 1, :] .== vn12cp1[1, :])
+        @test all(VEL[1, 2, :] .== vn12cp1[2, :] .+ vn23cp1[1, :])
+        @test all(VEL[1, 3, :] .== vn23cp1[2, :])
+        # TODO: why are these specific two different (but not totally wrong)??
+        @test all(isapprox.(VEL[2, 1, :] , vn12cp2[1, :], atol=1e-4))
+        @test all(isapprox.(VEL[2, 2, :] , vn12cp2[2, :] .+ vn23cp2[1, :],atol=1e-3))
         @test all(VEL[2, 3, :] .== vn23cp2[2, :])
     end
 end

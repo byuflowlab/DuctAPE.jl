@@ -41,8 +41,6 @@ using ForwardDiff # used for jacobian for newton solver
 using FLOWMath # used for various items, mostly interpolation
 using Printf # used when verbose option is selected
 
-using Primes # used in Romberg integration settings
-
 #---------------------------------#
 #             EXPORTS             #
 #---------------------------------#

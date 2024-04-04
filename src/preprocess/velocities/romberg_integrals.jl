@@ -36,18 +36,17 @@ function extrapolate!(V, err, fh; power=2, atol=1e-6)
         for i in (numeval - 1):-1:1
             f_i, h_i = fh[i + (firstindex(fh) - 1)]
             c = (h_i[] / h_prime[])^power
-            println((f_ip1 - f_i))
             @. f_ip1 += (f_ip1 - f_i) / (c - 1)
             fh[i + (firstindex(fh) - 1)] = (f_ip1, h_i)
             err_prime = norm.(f_ip1 - f_i)
             minerr_prime = min.(minerr_prime, err_prime)
             if err_prime < err
-                V, err = f_ip1, err_prime
+                V[:], err = f_ip1, err_prime
             end
         end
 
         # - converged - #
-        all(err .<= atol) && break
+        # all(err .<= atol) && break
     end
 
     return V, err
@@ -67,6 +66,7 @@ function nominal_vortex_panel_integration!(
     containers;
     debug=false,
 )
+    reset_containers!(containers)
 
     # - Loop through number of subdivisions (start with 2) - #
     for ii in 1:(integration_options.max_subdivisions)
@@ -82,7 +82,7 @@ function nominal_vortex_panel_integration!(
             t = (i - 0.5) / nint
 
             # get sample velocity
-            dt.nominal_vortex_induced_velocity_sample!(
+            nominal_vortex_induced_velocity_sample!(
                 @view(containers.samples[ii])[1][1],
                 t,
                 node1,
@@ -98,7 +98,7 @@ function nominal_vortex_panel_integration!(
 
         if ii > 1
             # extrapolate once you can
-            dt.extrapolate!(
+            extrapolate!(
                 V,
                 @view(containers.sample_cache[1:4]),
                 @view(containers.samples[1:ii]);
@@ -123,10 +123,10 @@ function self_vortex_panel_integration!(
     node2,
     influence_length,
     controlpoint,
-    containers,
+    containers;
     debug=false,
 )
-
+    reset_containers!(containers)
     # - Loop through number of subdivisions (start with 2) - #
     for ii in 1:(integration_options.max_subdivisions)
         nint = 2^ii
@@ -141,7 +141,7 @@ function self_vortex_panel_integration!(
             t = (i - 0.5) / nint
 
             # get sample velocity
-            dt.self_vortex_induced_velocity_sample!(
+            self_vortex_induced_velocity_sample!(
                 @view(containers.samples[ii])[1][1],
                 t,
                 node1,
@@ -165,7 +165,7 @@ function self_vortex_panel_integration!(
 
         if ii > 1
             # extrapolate once you can
-            dt.extrapolate!(
+            extrapolate!(
                 V,
                 @view(containers.sample_cache[1:4]),
                 @view(containers.samples[1:ii]);
@@ -198,6 +198,7 @@ function nominal_source_panel_integration!(
     containers;
     debug=false,
 )
+    reset_containers!(containers)
 
     # - Loop through number of subdivisions (start with 2) - #
     for ii in 1:(integration_options.max_subdivisions)
@@ -213,7 +214,7 @@ function nominal_source_panel_integration!(
             t = (i - 0.5) / nint
 
             # get sample velocity
-            dt.nominal_source_induced_velocity_sample!(
+            nominal_source_induced_velocity_sample!(
                 @view(containers.samples[ii])[1][1],
                 t,
                 node1,
@@ -229,7 +230,7 @@ function nominal_source_panel_integration!(
 
         if ii > 1
             # extrapolate once you can
-            dt.extrapolate!(
+            extrapolate!(
                 V,
                 @view(containers.sample_cache[1:4]),
                 @view(containers.samples[1:ii]);
@@ -257,7 +258,7 @@ function self_source_panel_integration!(
     containers;
     debug=false,
 )
-
+    reset_containers!(containers)
     # - Loop through number of subdivisions (start with 2) - #
     for ii in 1:(integration_options.max_subdivisions)
         nint = 2^ii
@@ -272,7 +273,7 @@ function self_source_panel_integration!(
             t = (i - 0.5) / nint
 
             # get sample velocity
-            dt.self_source_induced_velocity_sample!(
+            self_source_induced_velocity_sample!(
                 @view(containers.samples[ii])[1][1],
                 t,
                 node1,
@@ -296,7 +297,7 @@ function self_source_panel_integration!(
 
         if ii > 1
             # extrapolate once you can
-            dt.extrapolate!(
+            extrapolate!(
                 V,
                 @view(containers.sample_cache[1:4]),
                 @view(containers.samples[1:ii]);

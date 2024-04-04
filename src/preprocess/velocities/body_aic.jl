@@ -72,10 +72,10 @@ function vortex_aic_boundary_on_boundary!(
     if isnothing(integration_caches)
         # integration_cache = zeros(eltype(controlpoint), 20)
         nominal_integration_cache = allocate_integration_containers(
-            integration_options.nominal, eltype(VEL)
+            integration_options.nominal, eltype(AICn)
         )
         singular_integration_cache = allocate_integration_containers(
-            integration_options.singular, eltype(VEL)
+            integration_options.singular, eltype(AICn)
         )
     else
         nominal_integration_cache = integration_caches.nominal
@@ -164,7 +164,7 @@ function vortex_aic_boundary_on_field(
         nodemap,
         influence_length,
         integration_options;
-        integration_caches=integration_cache,
+        integration_caches=integration_caches,
     )
 
     return AICn

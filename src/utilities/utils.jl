@@ -99,8 +99,16 @@ function reset_containers!(c)
         for p in propertynames(c)
             cp = getfield(c, p)
             if typeof(cp) <: AbstractArray
-                #do nothing if it's a string
-                (eltype(cp) == String) || (cp .= 0)
+                if eltype(cp) <: Tuple
+                    for i in 1:length(cp[1])
+                        for j in 1:length(cp)
+                            cp[j][i] .= 0.0
+                        end
+                    end
+                else
+                    #do nothing if it's a string
+                    (eltype(cp) == String) || (cp .= 0)
+                end
             else
                 reset_containers!(cp)
             end

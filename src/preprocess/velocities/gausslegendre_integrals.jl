@@ -15,6 +15,8 @@ function nominal_vortex_panel_integration!(
     containers;
     debug=false,
 )
+    reset_containers!(containers)
+
     # - Sample Function - #
     for (s, t) in zip(eachrow(containers.samples), integration_options.sample_points)
         # Define function to integrate
@@ -48,6 +50,7 @@ function self_vortex_panel_integration!(
     containers;
     debug=false,
 )
+    reset_containers!(containers)
 
     # - Sample Function - #
     for (s, t) in zip(eachrow(containers.samples), integration_options.sample_points)
@@ -93,6 +96,7 @@ function nominal_source_panel_integration!(
     containers;
     debug=false,
 )
+    reset_containers!(containers)
 
     # - Sample Function - #
     for (s, t) in zip(eachrow(containers.samples), integration_options.sample_points)
@@ -127,6 +131,7 @@ function self_source_panel_integration!(
     containers;
     debug=false,
 )
+    reset_containers!(containers)
 
     # - Sample Function - #
     for (s, t) in zip(eachrow(containers.samples), integration_options.sample_points)
