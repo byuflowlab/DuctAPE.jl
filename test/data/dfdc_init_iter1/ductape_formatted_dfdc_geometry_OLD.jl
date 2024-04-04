@@ -41,46 +41,43 @@ dim 2: axial coordinates for each node
 dim 3: radial coordinates for each node
 =#
 
-# Initialize the wake wake_grid object
-wake_grid = zeros(2, num_wake_z_nodes, num_inner_wake_sheets + 2)
+# Initialize the wake grid object
+grid = zeros(2, num_wake_z_nodes, num_inner_wake_sheets + 2)
 
-# Reshape the inner wake coordinates and fill in the inner wake_grid nodes
-wake_grid[1, :, 2:(end - 1)] .= reshape(
+# Reshape the inner wake coordinates and fill in the inner grid nodes
+grid[1, :, 2:(end - 1)] .= reshape(
     dfdc_wake_coordinates[:, 1], num_wake_z_nodes, num_inner_wake_sheets
 )
-wake_grid[2, :, 2:(end - 1)] .= reshape(
+grid[2, :, 2:(end - 1)] .= reshape(
     dfdc_wake_coordinates[:, 2], num_wake_z_nodes, num_inner_wake_sheets
 )
 
 # Fill in the extended duct and hub wake nodes
-wake_grid[:, :, 1] .= hub_interface_wake'
-wake_grid[:, :, end] .= duct_interface_wake'
+grid[:, :, 1] .= hub_interface_wake'
+grid[:, :, end] .= duct_interface_wake'
 
 # - Flip the Body Coordinates to go clockwise - #
 #= NOTES;
 The DuctAPE Panel Method is formulated with the geometry defined in a clockwise manner
 =#
 
-rp_duct_coordinates = reverse(dfdc_duct_coordinates; dims=1)' .* 1.0
-rp_centerbody_coordinates = reverse(dfdc_hub_coordinates; dims=1)' .* 1.0
+duct_coordinates = reverse(dfdc_duct_coordinates; dims=1)' .* 1.0
+hub_coordinates = reverse(dfdc_hub_coordinates; dims=1)' .* 1.0
 
-Rtips = [dfdc_duct_coordinates[dii, 2]]
-Rhubs = [dfdc_hub_coordinates[hii, 2]]
-
-rpe = dfdc_rotor_coordinates[:, 2]
-
-zwake = wake_grid[1, :, 1]
-rwake = dfdc_rotor_coordinates[:, 2]
-
-# system_geometry = (;
-#     duct_coordinates,
-#     hub_coordinates,
-#     wake_grid,
-#     rotor_indices_in_wake=[1],
-#     ductTE_index,
-#     hubTE_index,
-#     nohub=false,
-#     noduct=false,
-#     rotoronly=false,
-# )
+system_geometry = (;
+    duct_coordinates,
+    hub_coordinates,
+    grid,
+    Rtips=[dfdc_duct_coordinates[dii, 2]],
+    Rhubs=[dfdc_hub_coordinates[hii, 2]],
+    rpe=dfdc_rotor_coordinates[:, 2],
+    zwake=grid[1, :, 1],
+    rwake=dfdc_rotor_coordinates[:, 2],
+    rotor_indices_in_wake=[1],
+    ductTE_index,
+    hubTE_index,
+    nohub=false,
+    noduct=false,
+    rotoronly=false,
+)
 

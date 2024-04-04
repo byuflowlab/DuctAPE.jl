@@ -4,25 +4,57 @@ module DuctAPE
 #          DEPENDENCIES           #
 #---------------------------------#
 
-using FLOWMath # used for various items, mostly interpolation
-const fm = FLOWMath #rename FLOWMath for convenience
-
-include("C4Blade/C4Blade.jl") # augmented CCBlade implementation (cascade compatible CCBlade)
+# - augmented CCBlade implementation (cascade compatible CCBlade) - #
+# NOTE: used for robust state initialziation
+include("C4Blade/C4Blade.jl")
 const c4b = C4Blade
 
+# - Packages for Calculating Unit Induced Velocities - #
+# For Kernels
 using SpecialFunctions # required for elliptic integrals
-using QuadGK # integration
-using FastGaussQuadrature # integration
+# For Integration
+using FastGaussQuadrature
+using QuadGK
+
+# - Packages for Code Efficiency - #
 using StaticArrays # used in miscellaneous places for code efficiency
+using PreallocationTools # caches
 
-using LinearAlgebra: mul!, ldiv!, lu!, NoPivot, issuccess#, factorize # used in linear system assembly and solve
+# - Packages for Solves - #
+using ImplicitAD # used for all solves
+using LinearAlgebra # linear solve and LU decomposition
+# General Nonlinear solves
+using SimpleNonlinearSolve
+# Fixed-Point Iteration Solvers
+# using FixedPointAcceleration
+using SpeedMapping
+# For using NLsolve
+using NLsolve #for newton solver
+using LineSearches # used in newton solver
+using ForwardDiff # used for jacobian for newton solver
 
-# using NLsolve
-# using ImplicitAD
-
+# - Utility Packages - #
+using FLOWMath # used for various items, mostly interpolation
 using Printf # used when verbose option is selected
 
 using Primes # used in Romberg integration settings
+
+#---------------------------------#
+#             EXPORTS             #
+#---------------------------------#
+
+# - Nested Modules - #
+export c4b
+
+# - Types - #
+
+# - Analyses - #
+
+# - Preprocess - #
+
+# - Pocess - #
+
+# - Postprocess - #
 
 #---------------------------------#
 #            INCLUDES             #
@@ -31,30 +63,42 @@ using Primes # used in Romberg integration settings
 ##### ----- UTILITIES ----- #####
 # general utility functions
 include("utilities/utils.jl")
-include("types.jl")
+include("utilities/types.jl")
+include("utilities/package_states.jl")
+include("utilities/caches.jl")
+include("utilities/bookkeeping.jl")
 
-##### ----- PRECOMPUTATION ----- #####
+# Airfoil utility functions
+include("utilities/airfoils/airfoil_utilities.jl")
+include("utilities/airfoils/naca_65series.jl")
+
+##### ----- Analysis ----- #####
+include("analysis/analyses.jl")
+
+##### ----- PREPROCESS ----- #####
 # Pre-solve initializations
-include("precomputation/initialize.jl")
+include("preprocess/preprocess.jl")
 
-# Body Geometry Functions
-include("precomputation/body_geometry.jl")
-include("precomputation/panel.jl")
+# Geometry Functions
+include("preprocess/geometry/body_geometry.jl")
+include("preprocess/geometry/panel_geometry.jl")
+include("preprocess/geometry/rotor_geometry.jl")
+include("preprocess/geometry/wake_geometry.jl")
+include("preprocess/geometry/elliptic_grid_residuals.jl")
 
-# Rotor Geometry Functions
-include("precomputation/rotor_geometry.jl")
+# Induced Velocity Functions
+include("preprocess/velocities/unit_induced_velocities.jl")
+include("preprocess/velocities/integrals.jl")
+include("preprocess/velocities/induced_velocity_matrices.jl")
+include("preprocess/velocities/body_aic.jl")
 
-# Wake Geometry Functions
-include("precomputation/wake_geometry.jl")
-# include("precomputation/wake_geometry_residual.jl")
+##### ----- PROCESS ----- #####
 
-# Aero Influence Matrices
-include("precomputation/integrals.jl")
-include("precomputation/velocities.jl")
-include("precomputation/body_aic.jl")
-include("precomputation/induced_velocity_matrices.jl")
+# Solve and Residual Functions
+include("process/solve.jl")
+include("process/residuals/CSORresidual.jl")
+include("process/residuals/systemresidual.jl")
 
-include("precomputation/romberg_integrals.jl")
 include("precomputation/gausslegendre_integrals.jl")
 include("precomputation/gausskronrod_integrals.jl")
 include("precomputation/integrands.jl")
@@ -62,41 +106,18 @@ include("precomputation/integrands.jl")
 
 include("solve/solve.jl")
 
-# Rotor Aerodynamic Functions
-include("solve/rotor_aerodynamics.jl")
-
-# Wake Aerodynamic Functions
-include("solve/wake_aerodynamics.jl")
-
-# Body Aerodynamic Functions
-include("solve/body_aerodynamics.jl")
+# Aerodynamics Functions
+include("process/aerodynamics/body_aerodynamics.jl")
+include("process/aerodynamics/rotor_aerodynamics.jl")
+include("process/aerodynamics/wake_aerodynamics.jl")
 
 ##### ----- POST-PROCESSING ----- #####
 
-include("postprocess/post_process.jl")
+# include("postprocess/post_process.jl")
 include("postprocess/utils.jl")
+include("postprocess/postprocess.jl")
 
-##### ----- SPECIALTY ----- #####
-
-# Airfoil Parameterizations
-include("airfoil_parameters/naca_65series.jl")
-
-# 1D Models
-include("preliminary_design/1DModel_A.jl")
-include("preliminary_design/1DModel_B.jl")
-
-### TODO Decide what below should be removed and when
-# Additional Influence Coefficient Functions
-# include("coefficient_matrix.jl") #TODO: delete or move this?
-# Kutta Condition Residual
-# include("pressure_residual.jl")
-
-# # -- ROTOR ONLY -- ##
-include("precomputation/initialize_rotor_only.jl")
-include("solve/solve_rotor_only.jl")
-include("postprocess/post_process_rotor.jl")
-
-# # -- Debugging -- ##
-# include("initialize_manual.jl")
+##### ----- DEBUGGING ----- #####
+include("../test/test_utils.jl")
 
 end

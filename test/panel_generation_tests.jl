@@ -98,6 +98,8 @@ println("\nPANEL INITIALIZATION TESTS")
     @test panels.tencrossn[:, 1] == [0.0, 0.0]
     @test all(isapprox.(panels.tencrossn[:, 2], -[sqrt(2) / 2, sqrt(2) / 2]))
     @test all(isapprox.(panels.teinfluence_length, [0.0, 0.0]))
+    @test panels.totnode == 8
+    @test panels.totpanel == 6
 
     # - TE panel specific tests - #
     x1 = [1.0; 0.5; 0.0; 0.5; 1.0]

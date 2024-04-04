@@ -214,8 +214,8 @@ end
 function residual_and_outputs(phi, x, p)  #rotor, section, op)
 
     # unpack inputs
-    r, chord, theta, Rhub, Rtip, Vx, Vy, rho, pitch, mu, asound = x  # variables
-    af, B, turbine, re_corr, mach_corr, rotation_corr, tip_corr = p  # parameters
+    r, chord, theta, Rhub, Rtip, B, Vx, Vy, rho, pitch, mu, asound = x  # variables
+    af, turbine, re_corr, mach_corr, rotation_corr, tip_corr = p  # parameters
 
     # rename for convenience
     taf = typeof(af)
@@ -510,6 +510,7 @@ function solve(rotor, section, op)
         section.theta,
         rotor.Rhub,
         rotor.Rtip,
+        rotor.B,
         op.Vx,
         op.Vy,
         op.rho,
@@ -518,7 +519,7 @@ function solve(rotor, section, op)
         op.asound,
     ]
     pv = (
-        section.af, rotor.B, rotor.turbine, rotor.re, rotor.mach, rotor.rotation, rotor.tip
+        section.af, rotor.turbine, rotor.re, rotor.mach, rotor.rotation, rotor.tip
     )
 
     success = false
