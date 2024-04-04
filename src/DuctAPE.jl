@@ -14,7 +14,6 @@ const c4b = C4Blade
 using SpecialFunctions # required for elliptic integrals
 # For Integration
 using FastGaussQuadrature
-using Primes #TODO: likely not necessary
 using QuadGK
 
 # - Packages for Code Efficiency - #
@@ -24,10 +23,12 @@ using PreallocationTools # caches
 # - Packages for Solves - #
 using ImplicitAD # used for all solves
 using LinearAlgebra # linear solve and LU decomposition
+# General Nonlinear solves
 using SimpleNonlinearSolve
+# Fixed-Point Iteration Solvers
 # using FixedPointAcceleration
 using SpeedMapping
-# TODO: determine if these are needed after implementing NonlinearSolve.jl
+# For using NLsolve
 using NLsolve #for newton solver
 using LineSearches # used in newton solver
 using ForwardDiff # used for jacobian for newton solver
