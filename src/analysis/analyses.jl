@@ -91,7 +91,7 @@ function analyze(
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
         propulsor;
-        grid_solver_options=options.wake_solver_options,
+        grid_solver_options=options.grid_solver_options,
         integration_options=options.integration_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
@@ -106,11 +106,11 @@ function analyze(
     #=
       NOTE: If the linear system or wake did not converge, there is likely a serious problem that would lead to an error in the solve, so we will exit here with a fail flag for an optimizer or user
     =#
-    if iszero(lu_decomp_flag) || !options.wake_solver_options.converged[1]
+    if iszero(lu_decomp_flag) || !options.grid_solver_options.converged[1]
         if !options.silence_warnings
             if iszero(lu_decomp_flag)
                 @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
-            elseif !options.wake_solver_options.converged[1]
+            elseif !options.grid_solver_options.converged[1]
                 @warn "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good."
             end
         end
