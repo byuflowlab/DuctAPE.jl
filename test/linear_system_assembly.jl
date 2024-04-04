@@ -1,5 +1,6 @@
 println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 @testset "Linear System Assembly" begin
+    integration_options = (; nominal=dt.GaussLegendre(), singular=dt.GaussLegendre())
 
     # define coordinates
     x1 = [1.0; 0.5; 0.0; 0.5; 1.0]
@@ -25,6 +26,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.node,
         panels.nodemap,
         panels.influence_length,
+        integration_options,
     )
 
     dt.add_te_gap_aic!(
@@ -36,6 +38,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.tendotn,
         panels.tencrossn,
         panels.teadjnodeidxs,
+        integration_options
     )
 
     AICpcp = dt.vortex_aic_boundary_on_field(
@@ -44,6 +47,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.node,
         panels.nodemap,
         panels.influence_length,
+        integration_options
     )
 
     dt.add_te_gap_aic!(
@@ -55,6 +59,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.tendotn,
         panels.tencrossn,
         panels.teadjnodeidxs,
+        integration_options
     )
 
     Vinf = 1.0 #magnitude doesn't matter yet.
@@ -129,6 +134,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.node,
         panels.nodemap,
         panels.influence_length,
+        integration_options
     )
 
     AICpcp = dt.vortex_aic_boundary_on_field(
@@ -137,6 +143,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         panels.node,
         panels.nodemap,
         panels.influence_length,
+        integration_options
     )
 
     Vinf = 1.0 #magnitude doesn't matter yet.

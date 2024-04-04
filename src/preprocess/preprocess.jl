@@ -242,7 +242,7 @@ end
 
 """
 """
-function calculate_unit_induced_velocities(problem_dimensions, panels)
+function calculate_unit_induced_velocities(problem_dimensions, panels, integration_options)
     (;
         nrotor,    # number of rotors
         nwn,    # number of wake nodes
@@ -277,12 +277,12 @@ function calculate_unit_induced_velocities(problem_dimensions, panels)
         v_bb=zeros(TF, nbp, nbn, 2),
     )
 
-    return calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
+    return calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
 end
 
 """
 """
-function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
+function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
     # - Extract Tuples - #
     # Extract induced velocities on rotor
     (; v_rr, v_rw, v_rb) = ivr
@@ -308,6 +308,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
         ones(TF, 2, body_vortex_panels.totpanel),
+        integration_options,
     )
 
     # Add influence of body trailing edge gap "panels"
@@ -319,6 +320,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         body_vortex_panels.tendotn,
         body_vortex_panels.tencrossn,
         body_vortex_panels.teadjnodeidxs,
+        integration_options,
     )
 
     # - Rotors on Bodies - #
@@ -330,6 +332,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
         ones(TF, 2, rotor_source_panels.totnode),
+        integration_options,
     )
 
     # - Wake on Bodies - #
@@ -341,6 +344,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
         ones(TF, 2, wake_vortex_panels.totpanel),
+        integration_options,
     )
 
     # wake "TE panels" to body panels
@@ -351,7 +355,8 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs;
+        wake_vortex_panels.teadjnodeidxs,
+        integration_options;
         wake=true,
     )
 
@@ -364,6 +369,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
         ones(TF, 2, rotor_source_panels.totnode),
+        integration_options,
     )
 
     # - Bodies on Rotors - #
@@ -375,6 +381,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
         ones(TF, 2, body_vortex_panels.totpanel),
+        integration_options,
     )
 
     # add influence from body trailing edge gap "panels"
@@ -383,10 +390,10 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         rotor_source_panels.controlpoint,
         body_vortex_panels.tenode,
         body_vortex_panels.teinfluence_length,
-        # -body_vortex_panels.teinfluence_length,
         body_vortex_panels.tendotn,
         body_vortex_panels.tencrossn,
         body_vortex_panels.teadjnodeidxs,
+        integration_options,
     )
 
     # - Wake on Rotors - #
@@ -398,6 +405,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
         ones(TF, 2, wake_vortex_panels.totpanel),
+        integration_options,
     )
 
     # add influence from wake "trailing edge panels"
@@ -408,7 +416,8 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs;
+        wake_vortex_panels.teadjnodeidxs,
+        integration_options;
         wake=true,
     )
 
@@ -422,6 +431,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
         ones(TF, 2, body_vortex_panels.totpanel),
+        integration_options,
     )
 
     # add influence from body trailing edge gap "panels"
@@ -434,6 +444,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         body_vortex_panels.tendotn,
         body_vortex_panels.tencrossn,
         body_vortex_panels.teadjnodeidxs,
+        integration_options,
     )
 
     # - Rotors to Wakes - #
@@ -444,6 +455,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
         ones(TF, 2, rotor_source_panels.totpanel),
+        integration_options,
     )
 
     # - Wake on Wake - #
@@ -455,6 +467,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
         ones(TF, 2, wake_vortex_panels.totpanel),
+        integration_options,
     )
 
     # add influence from wake "trailing edge panels"
@@ -465,7 +478,8 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs;
+        wake_vortex_panels.teadjnodeidxs,
+        integration_options;
         wake=true,
     )
 
@@ -475,7 +489,12 @@ end
 """
 """
 function initialize_linear_system(
-    ivb, body_vortex_panels, rotor_source_panels, wake_vortex_panels, Vinf
+    ivb,
+    body_vortex_panels,
+    rotor_source_panels,
+    wake_vortex_panels,
+    Vinf,
+    integration_options,
 )
 
     # velocities on body
@@ -509,7 +528,7 @@ function initialize_linear_system(
 
     # Boundary on internal psuedo control point influence coefficients
     AICpcp = vortex_aic_boundary_on_field(
-        itcontrolpoint, itnormal, node, nodemap, influence_length
+        itcontrolpoint, itnormal, node, nodemap, influence_length, integration_options
     )
 
     # # Add Trailing Edge Gap Panel Influences to panels
@@ -534,6 +553,7 @@ function initialize_linear_system(
         tendotn,
         tencrossn,
         teadjnodeidxs,
+        integration_options,
     )
 
     # Assemble Raw LHS Matrix into A_bb
@@ -565,6 +585,7 @@ function initialize_linear_system(
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
+        integration_options,
     )
 
     # A_pr = calculate_normal_velocity(v_pr, itnormal)
@@ -593,6 +614,7 @@ function initialize_linear_system(
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
+        integration_options,
     )
 
     # A_pw = calculate_normal_velocity(v_pw, itnormal)
@@ -606,7 +628,8 @@ function initialize_linear_system(
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs;
+        wake_vortex_panels.teadjnodeidxs,
+        integration_options;
         wake=true,
     )
 
@@ -623,6 +646,7 @@ function initialize_linear_system!(
     wake_vortex_panels,
     Vinf,
     intermediate_containers,
+    integration_options,
 )
 
     # - Clear Containers - #
@@ -669,7 +693,13 @@ function initialize_linear_system!(
 
     # Boundary on internal psuedo control point influence coefficients
     vortex_aic_boundary_on_field!(
-        AICpcp, itcontrolpoint, itnormal, node, nodemap, influence_length
+        AICpcp,
+        itcontrolpoint,
+        itnormal,
+        node,
+        nodemap,
+        influence_length,
+        integration_options,
     )
 
     # Add Trailing Edge Gap Panel Influences to internal pseudo control point
@@ -682,6 +712,7 @@ function initialize_linear_system!(
         tendotn,
         tencrossn,
         teadjnodeidxs,
+        integration_options,
     )
 
     # Assemble Raw LHS Matrix into A_bb
@@ -720,6 +751,7 @@ function initialize_linear_system!(
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
+        integration_options,
     )
 
     ##### ----- Wake AIC ----- #####
@@ -734,6 +766,7 @@ function initialize_linear_system!(
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
+        integration_options,
     )
 
     # add contributions from wake "trailing edge panels" on pseudo control point
@@ -745,7 +778,8 @@ function initialize_linear_system!(
         wake_vortex_panels.teinfluence_length,
         wake_vortex_panels.tendotn,
         wake_vortex_panels.tencrossn,
-        wake_vortex_panels.teadjnodeidxs;
+        wake_vortex_panels.teadjnodeidxs,
+        integration_options;
         wake=true,
     )
 
@@ -1267,6 +1301,7 @@ end
 function precompute_parameters(
     propulsor;
     grid_solver_options=GridSolverOptions(),
+    integration_options=IntegrationOptions(),
     autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
@@ -1321,7 +1356,6 @@ function precompute_parameters(
     )
 
     return precompute_parameters(
-        problem_dimensions,
         rp_duct_coordinates,
         rp_centerbody_coordinates,
         wake_grid,
@@ -1331,7 +1365,9 @@ function precompute_parameters(
         rotorstator_parameters,
         paneling_constants,
         operating_point,
-        reference_parameters;
+        reference_parameters,
+        integration_options,
+        problem_dimensions;
         itcpshift=itcpshift,
         axistol=axistol,
         tegaptol=tegaptol,
@@ -1354,6 +1390,7 @@ function precompute_parameters(
     paneling_constants,
     operating_point,
     reference_parameters,
+    integration_options,
     problem_dimensions=nothing;
     autoshiftduct=true,
     itcpshift=0.05,
@@ -1386,7 +1423,9 @@ function precompute_parameters(
 
     # - Compute Influence Matrices - #
     ivr, ivw, ivb = calculate_unit_induced_velocities(
-        problem_dimensions, (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
+        problem_dimensions,
+        (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
+        integration_options,
     )
 
     # - Set up Linear System - #
@@ -1396,6 +1435,7 @@ function precompute_parameters(
         rotor_source_panels,
         wake_vortex_panels,
         operating_point.Vinf,
+        integration_options,
     )
 
     # - Interpolate Blade Elements - #
@@ -1448,8 +1488,8 @@ function precompute_parameters!(
     linsys,
     wakeK,
     propulsor;
-    #TODO: put in the actual defaults here
     grid_solver_options=GridSolverOptions(),
+    integration_options=IntegrationOptions(),
     autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
@@ -1512,6 +1552,7 @@ function precompute_parameters!(
         reference_parameters,
         problem_dimensions;
         grid_solver_options=grid_solver_options,
+        integration_options=integration_options,
         autoshiftduct=autoshiftduct,
         itcpshift=itcpshift,
         axistol=axistol,
@@ -1539,14 +1580,15 @@ function precompute_parameters!(
     operating_point,
     reference_parameters,
     problem_dimensions=nothing;
-    grid_solver_options=options.wake_solver_options,
-    autoshiftduct=options.autoshiftduct,
-    itcpshift=options.itcpshift,
-    axistol=options.axistol,
-    tegaptol=options.tegaptol,
-    finterp=options.finterp,
-    silence_warnings=options.silence_warnings,
-    verbose=options.verbose,
+    grid_solver_options=GridSolverOptions(),
+    integration_options=IntegrationOptions(),
+    autoshiftduct=true,
+    itcpshift=0.05,
+    axistol=1e-15,
+    tegaptol=1e1 * eps(),
+    finterp=fm.akima,
+    silence_warnings=true,
+    verbose=false,
 )
 
     # - Reset Caches - #
@@ -1607,7 +1649,11 @@ function precompute_parameters!(
         v_bw=zeros(TF, problem_dimensions.nbp, problem_dimensions.nwn, 2),
     )
     calculate_unit_induced_velocities!(
-        ivr, ivw, ivb, (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
+        ivr,
+        ivw,
+        ivb,
+        (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
+        integration_options,
     )
 
     # - Set up Linear System - #
@@ -1628,6 +1674,7 @@ function precompute_parameters!(
         wake_vortex_panels,
         operating_point.Vinf[1],
         intermediate_containers,
+        integration_options
     )
 
     # - Interpolate Blade Elements - #
@@ -1734,12 +1781,12 @@ end
 
 #     # - Compute Influence Matrices - #
 #     # TODO: test this function
-#     calculate_unit_induced_velocities!(ivr, ivw, ivb, panels)
+#     calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
 
 #     # - Set up Linear System - #
 #     # TODO: test this function
 #     A_bb_LU, lu_decomp_flag = initialize_linear_system!(
-#         linsys, ivb, panels.body_vortex_panels, AICn, AICpcp
+#         linsys, ivb, panels.body_vortex_panels, AICn, AICpcp, integration_options
 #     )
 
 #     # - Interpolate Blade Elements - #
@@ -2049,7 +2096,7 @@ function initialize_strengths!(
     # gamb = ImplicitAD.implicit_linear(
     #     linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU
     # )
-    gamb = zeros(size(ivr.v_rb,2)+2)
+    gamb = zeros(size(ivr.v_rb, 2) + 2)
 
     # - Get body-induced velocities on rotors - #
     vzb = zeros(TF, nbe, nrotor)
@@ -2207,7 +2254,7 @@ function initialize_strengths!(
 
     # Gamr struggles to converge if it's not initially positive...
     for g in eachindex(Gamr)
-        if Gamr[g]<0
+        if Gamr[g] < 0
             Gamr[g] = 0.05
         end
     end
