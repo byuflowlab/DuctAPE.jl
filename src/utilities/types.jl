@@ -12,6 +12,7 @@ abstract type ConvergenceType end
 # - Solver Options - #
 abstract type SolverOptionsType end
 abstract type ExternalSolverOptions <: SolverOptionsType end
+abstract type MultiSolverOptions end
 
 # - Wake Solver Options - #
 abstract type GridSolverOptionsType end
@@ -164,7 +165,7 @@ end
 @kwdef struct GaussKronrod{TI,TF} <: IntegrationMethod
     order::TI = 7
     maxevals::TI = 10^7
-    atol::TF = 0
+    atol::TF = 0.0
 end
 
 struct GaussLegendre{TN,TW} <: IntegrationMethod
@@ -182,13 +183,13 @@ function GaussLegendre(nsamples=20; silence_warnings=true)
     return GaussLegendre(linear_transform((-1, 1), (0, 1), nodes), weights ./ 2.0)
 end
 
-@kwdef struct IntegrationOptions{TN,TS}
+@kwdef struct IntegrationOptions{TN<:IntegrationMethod,TS<:IntegrationMethod}
     nominal::TN = GaussLegendre(20)
     singular::TS = GaussLegendre(20)
 end
 
 #---------------------------------#
-#          OPTION TYPES           #
+#          SOLVER TYPES           #
 #---------------------------------#
 
 # - Types for CSOR Convergence dispatch - #
@@ -199,7 +200,7 @@ struct Absolute <: ConvergenceType end
 @kwdef struct CSORSolverOptions{TF,TS,TB,TC<:ConvergenceType} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
-    maxiter::TF = 1e2
+    iteration_limit::TF = 1e2
     nrf::TF = 0.4
     bt1::TF = 0.2
     bt2::TF = 0.6
@@ -208,7 +209,7 @@ struct Absolute <: ConvergenceType end
     btw::TF = 0.6
     pfw::TF = 1.2
     relaxation_schedule::TS = [
-        reverse!([1e10; 1e-13; 1e-13; 0.0]), reverse!([0.0; 0.0; 1.0; 1.0])
+        reverse!([1e10; 1e-13; 1e-14; 0.0]), reverse!([0.0; 0.0; 1.0; 1.0])
     ]
     f_circ::TF = 1e-3
     f_dgamw::TF = 2e-4
@@ -220,48 +221,105 @@ end
 # @kwdef struct SolverOptions{TA,TB,TF,TI,TN,TTm,TTr} <: SolverOptionsType
 @kwdef struct NonlinearSolveOptions{TA,TB,TF,TI} <: ExternalSolverOptions
     # Algorithm Options
-    nlsolve_algorithm::TA = SimpleNonlinearSolve.SimpleDFSane
+    algorithm::TA = SimpleNonlinearSolve.SimpleDFSane
     # Iteration Controls
-    nlsolve_abstol::TF = 1e-10
-    nlsolve_maxiters::TI = 100
+    atol::TF = 1e-10
+    iteration_limit::TI = 100
     converged::AbstractVector{TB} = [false]
 end
 
 @kwdef struct NLsolveOptions{TSym,TF,TI,TB,Tls,Tlsk} <: ExternalSolverOptions
-    # - Options for overall solve - #
-    # TODO: generalize the newton part of this to use NonlinearSolve.jl framework.
-    # TODO: consider a tighter default convergence tolerance.
-    # nlsolve parameters
-    nlsolve_method::TSym = :newton
-    nlsolve_ftol::TF = 1e-8 #1e-8 is nlsolve default
-    nlsolve_iteration_limit::TI = 20 #1000 is nlsolve default
-    nlsolve_show_trace::TB = false
+    # Options for overall solve
+    algorithm::TSym = :anderson
+    atol::TF = 1e-12
+    iteration_limit::TI = 100
     # line search parameters
-    nlsolve_linesearch_method::Tls = LineSearches.MoreThuente
-    nlsolve_linesearch_kwargs::Tlsk = (;)
+    linesearch_method::Tls = LineSearches.MoreThuente
+    linesearch_kwargs::Tlsk = (;)
     converged::AbstractVector{TB} = [false]
 end
 
-# - Elliptic Grid Solver Options - #
+@kwdef struct FixedPointOptions{TA,TB,TF,TI} <: ExternalSolverOptions
+    iteration_limint::TI = 1000
+    vel::TF = 0.9
+    ep::TF = 0.01
+    atol::TF = 1e-12
+    converged::AbstractVector{TB} = [false]
+end
+
+@kwdef struct SIAMFANLE{TB,TF,TH,TI,TK} <: ExternalSolverOptions
+    # Options for overall solve
+    algorithm::TH = SIAMFANLEquations.nsoli
+    atol::TF = 1e-10
+    rtol::TF = 0.0
+    iteration_limit::TI = 1000
+    linear_iteration_limit::TI = 2
+    additional_kwargs::TK = (;)
+    # additional_kwargs::TK = (; delta0=1e-3)
+    converged::AbstractVector{TB} = [false]
+end
+
+@kwdef struct SpeedMappingOptions{TB,TI,TF,TL,TSm,TU} <: ExternalSolverOptions
+    orders::AbstractVector{TI} = [3, 2]
+    sig_min::TSm = 0 # maybe set to 1?
+    stabilize::TB = false # stabilizes before extrapolation
+    check_obj::TB = false # checks for inf's and nan's and starts from previous finite point
+    atol::TF = 1e-10 # convergence tolerance
+    iteration_limit::TI = 1000 # number of "iterations"
+    time_limit::TF = Inf
+    lower::TL = nothing # box lower bounds
+    upper::TU = nothing # box upper bounds
+    buffer::TF = 0.01 # if using bounds, buffer brings x inside bounds by buffer amountd
+    Lp::TF = Inf # p value for p-norm for convergence criteria
+    converged::AbstractVector{TB} = [false]
+end
+
+@kdwef struct CompositeSolverOptions{TS<:Union{ExternalSolverOptions,MultiSolverOptions}} <:
+              MultiSolverOptions
+    solvers::AbstractVector{TS} = [
+        NonlinearSolveOptions(;
+            algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson, iteration_limit=2
+        ),
+        NonlinearSolveOptions(; algorithm=SimpleNonlinearSolve.SimpleDFSane, atol=1e-10),
+        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
+    ]
+end
+
+@kwdef struct ChainSolverOptions{TS<:Union{ExternalSolverOptions,MultiSolverOptions}} <:
+              MultiSolverOptions
+    solvers::AbstractVector{TS} = [
+        NonlinearSolveOptions(; algorithm=SimpleNonlinearSolve.SimpleDFSane, atol=1e-12),
+        CompositeSolverOptions(),
+        NonlinearSolveOptions(;
+            algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson, atol=1e-12
+        ),
+    ]
+end
+
+#---------------------------------#
+#   ELLIPTIC GRID SOLVER TYPES    #
+#---------------------------------#
 @kwdef struct SLORGridSolverOptions{TF,TI,TB} <: GridSolverOptionsType
-    max_wake_relax_iter::TI = 100
-    wake_relax_tol::TF = 1e-9
+    relaxation_iteration_limit::TI = 100
+    relaxation_atol::TF = 1e-9
     converged::AbstractVector{TB} = [false]
 end
 
+#TODO: the SimpleNewtonRaphson is slightly faster than NLsolve, so swap over to that one.
+#TODO: also, if not already done, make sure that the wake solve is inside an implicitAD call
 @kwdef struct GridSolverOptions{TSym,TF,TI,TB} <: GridSolverOptionsType
-    # elliptic grid solve options
-    # TODO: generalize the newton part of this to use NonlinearSolve.jl framework.
-    wake_nlsolve_method::TSym = :newton
-    wake_nlsolve_autodiff::TSym = :forward
-    wake_nlsolve_ftol::TF = 1e-14
-    wake_max_iter::TI = 100
+    relaxation_iteration_limit::TI = 20
+    relaxation_atol::TF = 1e-9
+    algorithm::TSym = :newton
+    autodiff::TSym = :forward
+    atol::TF = 1e-14
+    iteration_limit::TI = 10
     converged::AbstractVector{TB} = [false]
-    max_wake_relax_iter::TI = 20
-    wake_relax_tol::TF = 1e-9
 end
 
-# - Full Option Set - #
+#---------------------------------#
+#         OPTION SET TYPES        #
+#---------------------------------#
 """
 """
 @kwdef struct Options{
@@ -287,7 +345,7 @@ end
     output_tuple_name::TS = "outs"
     # - Solving Options - #
     grid_solver_options::WS = GridSolverOptions()
-    solver_options::TSo = NonlinearSolveOptions()
+    solver_options::TSo = CompositeSolverOptions()
 end
 
 """

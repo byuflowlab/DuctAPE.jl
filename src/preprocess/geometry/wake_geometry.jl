@@ -190,10 +190,10 @@ function generate_wake_grid(
     tip_gap1,
     zwake;
     grid_solver_options=GridSolverOptions(),
-    # wake_nlsolve_ftol=1e-14,
-    # wake_max_iter=100,
-    # max_wake_relax_iter=3,
-    # wake_relax_tol=1e-14,
+    # atol=1e-14,
+    # iteration_limit=100,
+    # relaxation_iteration_limit=3,
+    # relaxation_atol=1e-14,
     verbose=false,
     silence_warnings=true,
 )
@@ -215,10 +215,10 @@ function generate_wake_grid(
         Rtip1,
         tip_gap1,
         zwake;
-        # wake_nlsolve_ftol=wake_nlsolve_ftol,
-        # wake_max_iter=wake_max_iter,
-        # max_wake_relax_iter=max_wake_relax_iter,
-        # wake_relax_tol=wake_relax_tol,
+        # atol=atol,
+        # iteration_limit=iteration_limit,
+        # relaxation_iteration_limit=relaxation_iteration_limit,
+        # relaxation_atol=relaxation_atol,
         verbose=verbose,
         silence_warnings=silence_warnings,
     )
@@ -233,10 +233,10 @@ function generate_wake_grid!(
     tip_gap1,
     zwake;
     grid_solver_options=grid_solver_options,
-    # wake_nlsolve_ftol=1e-14,
-    # wake_max_iter=100,
-    # max_wake_relax_iter=3,
-    # wake_relax_tol=1e-14,
+    # atol=1e-14,
+    # iteration_limit=100,
+    # relaxation_iteration_limit=3,
+    # relaxation_atol=1e-14,
     verbose=false,
     silence_warnings=true,
 )
@@ -281,8 +281,8 @@ function relax_grid!(
     # - Relax grid to allow Newton solve a tractable starting point - #
     relax_grid!(
         wake_grid;
-        max_wake_relax_iter=grid_solver_options.max_wake_relax_iter,
-        wake_relax_tol=grid_solver_options.wake_relax_tol,
+        relaxation_iteration_limit=grid_solver_options.relaxation_iteration_limit,
+        relaxation_atol=grid_solver_options.relaxation_atol,
         converged=grid_solver_options.converged,
         verbose=verbose,
         tabchar="\t",
@@ -300,10 +300,10 @@ function relax_grid!(
     # solve
     solve_elliptic_grid!(
         wake_grid;
-        wake_nlsolve_method=grid_solver_options.wake_nlsolve_method,
-        wake_nlsolve_autodiff=grid_solver_options.wake_nlsolve_autodiff,
-        wake_nlsolve_ftol=grid_solver_options.wake_nlsolve_ftol,
-        wake_max_iter=grid_solver_options.wake_max_iter,
+        algorithm=grid_solver_options.algorithm,
+        autodiff=grid_solver_options.autodiff,
+        atol=grid_solver_options.atol,
+        iteration_limit=grid_solver_options.iteration_limit,
         grid_solver_options.converged,
         verbose=verbose,
     )
@@ -324,8 +324,8 @@ function relax_grid!(
     end
     relax_grid!(
         wake_grid;
-        max_wake_relax_iter=grid_solver_options.max_wake_relax_iter,
-        wake_relax_tol=grid_solver_options.wake_relax_tol,
+        relaxation_iteration_limit=grid_solver_options.relaxation_iteration_limit,
+        relaxation_atol=grid_solver_options.relaxation_atol,
         converged=grid_solver_options.converged,
         verbose=verbose,
         tabchar="\t",
@@ -344,7 +344,7 @@ Generate paneling for each wake line emanating from the rotor blade elements.
 - `rgrid::Matrix{Float}` : r-location of each wake_grid point
 
 # Keyword Arguments:
-- `method::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+- `algorithm::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
 
 # Returns:
 - `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines

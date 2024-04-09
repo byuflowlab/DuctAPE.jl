@@ -126,7 +126,7 @@
     rs = [0.0; 0.5; 1.0]
     rgridtrivial = repeat(rs'; inner=(3, 1))
     DuctAPE.relax_grid!(
-        xgridtrivial, rgridtrivial; max_iterations=100, tol=1e-9, verbose=false
+        xgridtrivial, rgridtrivial; max_iterations=100, atol=1e-9, verbose=false
     )
 
     #test that nothing changed in the update (chose geometry to do this)

@@ -1,5 +1,12 @@
 """
 """
+function system_residual(state_variables, sensitivity_parameters, constants)
+    resid = similar(state_variables) .= 0
+    return system_residual!(resid, state_variables, sensitivity_parameters, constants)
+end
+
+"""
+"""
 function system_residual!(resid, state_variables, sensitivity_parameters, constants)
 
     # - Extract constants - #
@@ -65,17 +72,63 @@ function system_residual!(resid, state_variables, sensitivity_parameters, consta
     )
 
     # - Get final Residual Values - #
-    solve_containers.vz_est .-= vz_rotor
-    solve_containers.vtheta_est .-= vtheta_rotor
-    solve_containers.Cm_est .-= Cm_wake
+    return update_system_residual!(
+        solver_options,
+        resid,
+        solve_containers.vz_est,
+        vz_rotor,
+        solve_containers.vtheta_est,
+        vtheta_rotor,
+        solve_containers.Cm_est,
+        Cm_wake,
+        solve_parameter_cache_dims,
+    )
+end
 
-    resid[solve_parameter_cache_dims.state_dims.vz_rotor.index] .= reshape(
-        solve_containers.vz_est, :,
-    )
+"""
+"""
+function update_system_residual!(
+    solver_options::Union{NonlinearSolveOptions,NLsolveOptions,SIAMFANLE},
+    resid,
+    vz_est,
+    vz_rotor,
+    vtheta_est,
+    vtheta_rotor,
+    Cm_est,
+    Cm_wake,
+    solve_parameter_cache_dims,
+)
+    vz_est .-= vz_rotor
+    vtheta_est .-= vtheta_rotor
+    Cm_est .-= Cm_wake
+
+    resid[solve_parameter_cache_dims.state_dims.vz_rotor.index] .= reshape(vz_est, :)
     resid[solve_parameter_cache_dims.state_dims.vtheta_rotor.index] .= reshape(
-        solve_containers.vtheta_est, :,
+        vtheta_est, :,
     )
-    resid[solve_parameter_cache_dims.state_dims.Cm_wake.index] .= solve_containers.Cm_est
+    resid[solve_parameter_cache_dims.state_dims.Cm_wake.index] .= Cm_est
+
+    return resid
+end
+
+"""
+"""
+function update_system_residual!(
+    solver_options::Union{SpeedMappingOptions,FixedPointOptions},
+    resid,
+    vz_est,
+    vz_rotor,
+    vtheta_est,
+    vtheta_rotor,
+    Cm_est,
+    Cm_wake,
+    solve_parameter_cache_dims,
+)
+    resid[solve_parameter_cache_dims.state_dims.vz_rotor.index] .= reshape(vz_est, :)
+    resid[solve_parameter_cache_dims.state_dims.vtheta_rotor.index] .= reshape(
+        vtheta_est, :,
+    )
+    resid[solve_parameter_cache_dims.state_dims.Cm_wake.index] .= Cm_est
 
     return resid
 end

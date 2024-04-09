@@ -2,8 +2,6 @@
 #              SOLVE              #
 #---------------------------------#
 
-# TODO: add dispatches for SpeedMapping and FixedPointAcceleration
-
 """
 """
 function solve(sensitivity_parameters, const_cache)
@@ -32,10 +30,10 @@ function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, co
     ) = const_cache
 
     (;
-        nlsolve_algorithm,
+        algorithm,
         # Iteration Controls
-        nlsolve_abstol,
-        nlsolve_maxiters,
+        atol,
+        iteration_limit,
         converged,
     ) = solver_options
 
@@ -46,7 +44,8 @@ function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, co
 
     # - Wrap residual - #
     if verbose
-        println("  " * "Wrapping Residual and Jacobian")
+        println("  " * "Wrapping Residual")
+        # println("  " * "Wrapping Residual and Jacobian")
     end
 
     function rwrap!(resid, state_variables, p)
@@ -79,15 +78,278 @@ function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, co
     end
     sol = SimpleNonlinearSolve.solve(
         prob, # problem
-        nlsolve_algorithm();
-        abstol=nlsolve_abstol,
-        maxiters=nlsolve_maxiters,
+        algorithm();
+        abstol=atol,
+        iteration_limit=iteration_limit,
     )
 
     # update convergence flag
     converged[1] = SciMLBase.successful_retcode(sol)
 
     return sol.u
+end
+
+"""
+"""
+function solve(solver_options::FixedPointOptions, sensitivity_parameters, const_cache)
+
+    # - Extract constants - #
+    (;
+        # General
+        verbose,
+        silence_warnings,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    # - Extract Initial Guess Vector for State Variables - #
+    initial_guess = extract_initial_guess(
+        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+    )
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual")
+    end
+
+    function rwrap!(state_estimates, state_variables)
+        return system_residual!(
+            state_estimates,
+            state_variables,
+            sensitivity_parameters,
+            (;
+                solver_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_container_cache,      # cache for solve_containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+            ),
+        )
+    end
+
+    # - SOLVE - #
+    if verbose
+        println("  " * "FixedPoint Solve:")
+    end
+    sol = FixedPoint.afps!(
+        rwrap!,
+        initial_guess;
+        iters=solver_options.iteration_limint,
+        vel=solver_options.vel,
+        ep=solver_options.ep,
+        tol=solver_options.atol,
+    )
+
+    # update convergence flag
+    solver_options.converged[1] = sol.error <= solver_options.atol
+
+    return sol.x
+end
+
+"""
+"""
+function solve(solver_options::SpeedMappingOptions, sensitivity_parameters, const_cache)
+
+    # - Extract constants - #
+    (;
+        # General
+        verbose,
+        silence_warnings,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    (;
+        orders,
+        sig_min,
+        stabilize,
+        check_obj,
+        atol,
+        iteration_limit,
+        time_limit,
+        lower,
+        upper,
+        buffer,
+        Lp,
+        converged,
+    ) = solver_options
+
+    # - Extract Initial Guess Vector for State Variables - #
+    initial_guess = extract_initial_guess(
+        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+    )
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual")
+    end
+
+    function rwrap!(state_estimates, state_variables)
+        return system_residual!(
+            state_estimates,
+            state_variables,
+            sensitivity_parameters,
+            (;
+                solver_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_container_cache,      # cache for solve_containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+            ),
+        )
+    end
+
+    # - SOLVE - #
+    if verbose
+        println("  " * "SpeedMapping Solve:")
+    end
+    sol = SpeedMapping.speedmapping(
+        initial_guess;
+        (m!)=rwrap!,
+        orders=orders,
+        σ_min=sig_min,
+        stabilize=stabilize,
+        check_obj=check_obj,
+        tol=atol,
+        iteration_limit=iteration_limit,
+        time_limit=time_limit,
+        lower=lower,
+        upper=upper,
+        buffer=buffer,
+        Lp=Lp,
+    )
+
+    # update convergence flag
+    converged[1] = sol.converged
+
+    return sol.minimizer
+end
+
+"""
+"""
+function solve(solver_options::SIAMFANLE, sensitivity_parameters, const_cache)
+
+    # - Extract constants - #
+    (;
+        # General
+        verbose,
+        silence_warnings,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        resid_cache_vec,
+        krylov_cache_vec,
+        jvp_cache_vec,
+        solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    # - Extract Initial Guess Vector for State Variables - #
+    initial_guess = extract_initial_guess(
+        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+    )
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual")
+        # println("  " * "Wrapping Residual and Jacobian")
+    end
+
+    function rwrap!(resid, state_variables, p)
+        return system_residual!(
+            resid, state_variables, p.sensitivity_parameters, p.constants
+        )
+    end
+
+    function rwrap(state_variables, p)
+        return system_residual(state_variables, p.sensitivity_parameters, p.constants)
+    end
+
+    """
+        jvp(v,r,x,p)
+
+    Caculate the Jacobian-Vector Product such that JVP = F'(x)*v, or in other words: the directional derivative of F in the direction of v.
+
+    The JVP is calculated as the directional derivative by:
+
+    `g(t) = F(x + t * v, p)`
+
+    `JVP = ForwardDiff.derivative!(p.jvp_cache_vec, g, 0.0)`
+
+    Note that F is defined in the same scope as this sub-function.
+    Also note that the input structure of this function is that required by SIAMFANLEquations.jl
+
+    # Arguments:
+    - `v::Vector` : the vector v by which F'(x) is multiplied
+    - `r::Vector` : unused, but requried by SIAMFANLEquations.jl, it is the storage vector used for an in-place verson of F
+    - `x::Vector` : the vector x at which F is evaluated
+    - `p::NamedTuple` : the parameters needed by F, as well as a vector storage used in an in-place derivative call from ForwardDiff.derivative!
+    """
+    function jvp(v, r, x, p)
+        g(t) = rwrap(x + t * v, p)
+        return ForwardDiff.derivative!(p.jvp_cache_vec, g, 0.0)
+    end
+
+    # - SOLVE - #
+    if verbose
+        println("  " * "Nonlinear Solve Trace:")
+    end
+    result = solver_options.algorithm(
+        rwrap!,
+        initial_guess,
+        resid_cache_vec,
+        krylov_cache_vec,
+        jvp;
+        atol=solver_options.atol,
+        rtol=0.0,
+        iteration_limit=solver_options.iteration_limit,
+        linear_iteration_limit=solver_options.linear_iteration_limit,
+        pdata=(;
+            sensitivity_parameters,
+            jvp_cache_vec, # TODO: add this to solve_parameter_cache
+            constants=(;
+                solver_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_container_cache,      # cache for solve_containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+            ),
+        ),
+        solver_options.additional_kwargs...,
+    )
+
+    # update convergence flag
+    # errorcode is 0 if everything is good and could be a bunch of other stuff if not.
+    solver_options.converged[1] = Bool(iszero(result.errcode))
+
+    return result.solution
 end
 
 function solve(solver_options::NLsolveOptions, sensitivity_parameters, const_cache)
@@ -110,11 +372,11 @@ function solve(solver_options::NLsolveOptions, sensitivity_parameters, const_cac
     ) = const_cache
 
     (;
-        nlsolve_method,
-        nlsolve_linesearch_method,
-        nlsolve_linesearch_kwargs,
-        nlsolve_ftol,
-        nlsolve_iteration_limit,
+        algorithm,
+        linesearch_method,
+        linesearch_kwargs,
+        atol,
+        iteration_limit,
         converged,
     ) = solver_options
 
@@ -181,18 +443,18 @@ function solve(solver_options::NLsolveOptions, sensitivity_parameters, const_cac
     result = NLsolve.nlsolve(
         df,
         initial_guess; # initial states guess
-        method=nlsolve_method,
-        # autodiff=nlsolve_autodiff,
-        linesearch=nlsolve_linesearch_method(nlsolve_linesearch_kwargs...),
+        method=algorithm,
+        # autodiff=autodiff,
+        linesearch=linesearch_method(linesearch_kwargs...),
         linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
-        ftol=nlsolve_ftol,
-        iterations=nlsolve_iteration_limit,
+        ftol=atol,
+        iterations=iteration_limit,
         show_trace=verbose,
     )
 
     # update convergence flag
-    # note: need to do this complicated check to ensure that we're only checking |f(x)|<ftol rather than claiming convergences when the step size is zero but it's really just stuck.
-    _, converged[1] = NLsolve.assess_convergence(NLsolve.value(df), nlsolve_ftol)
+    # note: need to do this complicated check to ensure that we're only checking |f(x)|<atol rather than claiming convergences when the step size is zero but it's really just stuck.
+    _, converged[1] = NLsolve.assess_convergence(NLsolve.value(df), atol)
 
     return result.zero
 end
@@ -255,7 +517,7 @@ function solve(solver_options::CSORSolverOptions, sensitivity_parameters, const_
     end
 
     # loop until converged or max iterations are reached
-    while !conv[] && iter <= solver_options.maxiter
+    while !conv[] && iter <= solver_options.iteration_limit
         # update iteration number
         iter += 1
         if verbose

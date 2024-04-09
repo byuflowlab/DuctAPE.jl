@@ -129,37 +129,38 @@ function elliptic_grid_residual!(r, y, x, p)
     return r
 end
 
-function solve_elliptic_grid_iad(x, p)
+function solve_elliptic_grid(grid, constants)
 
     # - Wrap residual - #
-    function rwrap!(r, y)
-        return elliptic_grid_residual!(r, y, x, p)
+    function rwrap!(resid, states)
+        return elliptic_grid_residual!(resid, states, constants)
     end
 
-    wake_grid = reshape(x, p.gridshape)
+    wake_grid = reshape(grid, constants.gridshape)
 
-    # - Call NLsolve - #
-    # df = OnceDifferentiable(rwrap!, x, similar(x))
-    result = NLsolve.nlsolve(
-        # df,
-        rwrap!,
-        reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
-        # method=:newton,
-        # autodiff=:forward,
-        method=p.wake_nlsolve_method,
-        autodiff=p.wake_nlsolve_autodiff,
-        linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
-        ftol=p.wake_nlsolve_ftol,
-        iterations=p.wake_max_iter,
-        show_trace=p.verbose,
+    # build problem object
+    prob = SimpleNonlinearSolve.NonlinearProblem(
+        rwrap!, reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
     )
 
-    p.converged[1] = NLsolve.converged(result)
+    # - SOLVE - #
+    if verbose
+        println("  " * "Nonlinear Solve Trace:")
+    end
+    sol = SimpleNonlinearSolve.solve(
+        prob, # problem
+        constants.algorithm();
+        abstol=constants.atol,
+        maxiters=constants.iteration_limit,
+    )
+
+    # update convergence flag
+    constants.converged[1] = SciMLBase.successful_retcode(sol)
 
     # - overwrite output in place - #
-    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(result.zero, p.itshape)
+    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(sol.u, constants.itshape)
 
-    return x
+    return grid
 end
 
 """
@@ -167,10 +168,9 @@ TODO: will want to pass a convergence flag that get's updated so we can break ou
 """
 function solve_elliptic_grid!(
     wake_grid;
-    wake_nlsolve_method=:newton,
-    wake_nlsolve_autodiff=:forward,
-    wake_nlsolve_ftol=1e-14,
-    wake_max_iter=10,
+    algorithm=SimpleNonlinearSolve.SimpleDFSane,
+    atol=1e-14,
+    iteration_limit=10,
     converged=[false],
     verbose=false,
 )
@@ -194,16 +194,15 @@ function solve_elliptic_grid!(
         gridshape,
         proposed_grid_cache=DiffCache(wake_grid),
         itshape=(gridshape[1], gridshape[2] - 1, gridshape[3] - 2),
-        wake_nlsolve_method,
-        wake_nlsolve_autodiff,
-        wake_nlsolve_ftol,
-        wake_max_iter,
+        algorithm,
+        atol,
+        iteration_limit,
         converged,
         verbose,
     )
 
     # - solve - #
-    y = implicit(solve_elliptic_grid_iad, elliptic_grid_residual!, reshape(wake_grid, :), p)
+    y = implicit(solve_elliptic_grid, elliptic_grid_residual!, reshape(wake_grid, :), p)
 
     for g in eachrow(view(y, :))
         if g[1] < eps()
@@ -221,7 +220,7 @@ end
 #    DFDC-like wake relaxation    #
 #---------------------------------#
 """
-    relax_grid!(xg, rg, nxi, neta; max_wake_relax_iter, wake_relax_tol)
+    relax_grid!(xg, rg, nxi, neta; relaxation_iteration_limit, relaxation_atol)
 
 Relax wake_grid using elliptic wake_grid solver.
 
@@ -232,8 +231,8 @@ Relax wake_grid using elliptic wake_grid solver.
  - `neta::Int` : number of eta (r) stations in the wake_grid
 
 # Keyword Arguments:
- - `max_wake_relax_iter::Int` : maximum number of iterations to run, default=100
- - `wake_relax_tol::Float` : convergence tolerance, default = 1e-9
+ - `relaxation_iteration_limit::Int` : maximum number of iterations to run, default=100
+ - `relaxation_atol::Float` : convergence tolerance, default = 1e-9
 
 # Returns:
  - `x_relax_points::Matrix{Float64}` : Relaxed x wake_grid points
@@ -241,8 +240,8 @@ Relax wake_grid using elliptic wake_grid solver.
 """
 function relax_grid!(
     wake_grid;
-    max_wake_relax_iter=100,
-    wake_relax_tol=1e-9,
+    relaxation_iteration_limit=100,
+    relaxation_atol=1e-9,
     converged,
     verbose=false,
     silence_warnings=true,
@@ -263,7 +262,7 @@ function relax_grid!(
 
     #set up relaxation factors
     #TODO: how are these decided?
-    if max_wake_relax_iter > 0
+    if relaxation_iteration_limit > 0
         relaxfactor1 = 1.0
         relaxfactor2 = 1.1
         relaxfactor3 = 1.4
@@ -271,7 +270,7 @@ function relax_grid!(
         relaxfactor1 = 1.0
         relaxfactor2 = 1.0
         relaxfactor3 = 1.0
-        max_wake_relax_iter = 1
+        relaxation_iteration_limit = 1
     end
 
     relaxfactor = relaxfactor1
@@ -307,9 +306,9 @@ function relax_grid!(
     #next dfdc goes to AXELL function
     #skip over most of the stuff since the intlet and walls don't get relaxed
 
-    for iterate in 1:max_wake_relax_iter
+    for iterate in 1:relaxation_iteration_limit
         if verbose
-            println(tabchar^(ntab)*"iteration $iterate")
+            println(tabchar^(ntab) * "iteration $iterate")
         end
 
         #initialize max step
@@ -513,11 +512,11 @@ function relax_grid!(
 
         # -- Update relaxation factors
         #TODO: need to figure out how the dset numbers and relaxation factors are chosen.  Why are they the values that they are? Does it have something to do with the SLOR setup?
-        if dmax < wake_relax_tol * dxy
+        if dmax < relaxation_atol * dxy
             if verbose
-                println(tabchar^(ntab)*"Total iterations: $iterate")
+                println(tabchar^(ntab) * "Total iterations: $iterate")
             end
-            converged[1]=true
+            converged[1] = true
             return wake_grid
         end
 
@@ -533,19 +532,19 @@ function relax_grid!(
 
         if dmax < dset3 * dxy
             if verbose
-                println(tabchar^(ntab)*"Total iterations = $iterate")
+                println(tabchar^(ntab) * "Total iterations = $iterate")
             end
-            converged[1]=true
+            converged[1] = true
             return wake_grid
         end
     end
 
     if verbose
-        println(tabchar^(ntab)*"Total iterations = ", max_wake_relax_iter, "\n")
+        println(tabchar^(ntab) * "Total iterations = ", relaxation_iteration_limit, "\n")
     end
 
     if !silence_warnings
-        @warn "Wake grid relaxation did not converge, iteration limit of $(max_wake_relax_iter) met."
+        @warn "Wake grid relaxation did not converge, iteration limit of $(relaxation_iteration_limit) met."
     end
 
     return wake_grid

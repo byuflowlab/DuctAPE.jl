@@ -73,6 +73,31 @@ return allocate_solve_parameter_cache(
 )
 end
 
+function allocate_solve_container_cache_extras(solver_options::SIAMFANLE, input_length, total_length)
+
+    s = (input_length,)
+    l = lfs(s)
+    resid_cache_vec = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (input_length,)
+    l = lfs(s)
+    jvp_cache_vec = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (input_length,max(2,solver_options.linear_iteration_limit+1))
+    l = lfs(s)
+    krylov_cache_vec = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    return total_length, (; resid_cache_vec, krylov_cache_vec, jvp_cache_vec)
+end
+
+function allocate_solve_container_cache_extras(solver_options, input_length, total_length)
+
+    return total_length, (;)
+end
+
 function allocate_solve_parameter_cache(
     solve_type::CSORSolverOptions, problem_dimensions; fd_chunk_size=12, levels=2
 )
@@ -362,6 +387,9 @@ function allocate_solve_parameter_cache(
     Cm_wake = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
+total_length, SIAMFANLE_cache_vecs =  allocate_solve_container_cache_extras(solve_type, total_length, total_length)
+
+
     # save state dimensions
     state_dims = (; vz_rotor, vtheta_rotor, Cm_wake)
 
@@ -557,6 +585,7 @@ function allocate_solve_parameter_cache(
                 Rhub,
             ),
             wakeK,
+            SIAMFANLE_cache_vecs...,
             # idmaps=(;),
         ),
     )
@@ -1261,6 +1290,19 @@ function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<
         blade_elements,
         wakeK,
     )
+end
+
+"""
+"""
+function withdraw_solve_parameter_cache(solver_options::SIAMFANLE, vec, dims)
+
+    tuple = withdraw_solve_parameter_cache(NonlinearSolveOptions(), vec, dims)
+
+    resid_cache_vec = reshape(@view(vec[dims.resid_cache_vec.index]), dims.resid_cache_vec.shape)
+    krylov_cache_vec = reshape(@view(vec[dims.krylov_cache_vec.index]), dims.krylov_cache_vec.shape)
+    jvp_cache_vec  = reshape(@view(vec[dims.jvp_cache_vec.index]), dims.jvp_cache_vec.shape)
+
+    return (; tuple..., resid_cache_vec, krylov_cache_vec, jvp_cache_vec)
 end
 
 """

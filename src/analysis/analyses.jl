@@ -269,6 +269,7 @@ function process(
         solve_parameter_cache_dims,
         # Cache(s)
         solve_container_caching...,
+        solve_parameter_tuple..., # contains SIAMFANLE containers needed for solver definition
     )
 
     # - Solve with ImplicitAD - #

@@ -462,7 +462,7 @@ end
 
 """
 """
-function apply_relaxation_schedule(resid::AbstractArray, solver_options::TS) where {TS<:ExternalSolverOptions}
+function apply_relaxation_schedule(resid::AbstractArray, solver_options::TS) where {TS<:SolverOptionsType}
     # Apply relaxation schedule to Circulation relaxation factors
     nrf = apply_relaxation_schedule(
         resid[1], solver_options.nrf, solver_options.relaxation_schedule

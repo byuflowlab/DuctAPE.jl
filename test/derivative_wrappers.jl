@@ -223,7 +223,7 @@ function dt_full_wrapper(inputs)
         verbose=false,
         maximum_linesearch_step_size=1e6,
         iteration_limit=25,
-        ftol=1e-12,
+        atol=1e-12,
     )
 
     # - return some representative outputs - #

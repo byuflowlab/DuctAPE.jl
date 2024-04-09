@@ -23,7 +23,7 @@
     LHSraw = copy(LHS)
 
     # kutta LHS
-    dt.body_lhs_kutta!(LHS, panels; tol=1e1 * eps(), verbose=true)
+    dt.body_lhs_kutta!(LHS, panels; atol=1e1 * eps(), verbose=true)
 
     #only the first and last columns should be changed
     @test LHS[:, 2:(end - 1)] == LHSraw[:, 2:(end - 1)]

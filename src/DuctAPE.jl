@@ -26,14 +26,17 @@ using ImplicitAD # used for all solves
 using LinearAlgebra # linear solve and LU decomposition
 
 # General Nonlinear solves
-using SimpleNonlinearSolve
+using SimpleNonlinearSolve # SimpleDFSane and SimpleNewtonRaphson
+
+# Quasi-Newton
+using SIAMFANLEquations
 
 # Fixed-Point Iteration Solvers
-# using FixedPointAcceleration
 using SpeedMapping
+using FixedPoint
 
 # For using NLsolve
-using NLsolve #for newton solver
+using NLsolve #Includes Anderson Solver
 using LineSearches # used in newton solver
 using ForwardDiff # used for jacobian for newton solver
 

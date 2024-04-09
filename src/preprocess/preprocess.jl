@@ -8,10 +8,10 @@ function reinterpolate_geometry(
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
-    # wake_nlsolve_ftol=1e-14,
-    # wake_max_iter=100,
-    # max_wake_relax_iter=3,
-    # wake_relax_tol=1e-14,
+    # atol=1e-14,
+    # iteration_limit=100,
+    # relaxation_iteration_limit=3,
+    # relaxation_atol=1e-14,
     finterp=FLOWMath.akima,
     verbose=false,
     silence_warnings=true,
@@ -52,10 +52,10 @@ function reinterpolate_geometry(
         paneling_constants;
         autoshiftduct=autoshiftduct,
         grid_solver_options=grid_solver_options,
-        # wake_nlsolve_ftol=wake_nlsolve_ftol,
-        # wake_max_iter=wake_max_iter,
-        # max_wake_relax_iter=max_wake_relax_iter,
-        # wake_relax_tol=wake_relax_tol,
+        # atol=atol,
+        # iteration_limit=iteration_limit,
+        # relaxation_iteration_limit=relaxation_iteration_limit,
+        # relaxation_atol=relaxation_atol,
         finterp=finterp,
         verbose=verbose,
         silence_warnings=silence_warnings,
@@ -77,10 +77,10 @@ function reinterpolate_geometry!(
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
-    # wake_nlsolve_ftol=1e-14,
-    # wake_max_iter=100,
-    # max_wake_relax_iter=3,
-    # wake_relax_tol=1e-14,
+    # atol=1e-14,
+    # iteration_limit=100,
+    # relaxation_iteration_limit=3,
+    # relaxation_atol=1e-14,
     finterp=FLOWMath.akima,
     verbose=false,
     silence_warnings=true,
@@ -156,10 +156,10 @@ function reinterpolate_geometry!(
         tip_gap[1],
         zwake;
         grid_solver_options=grid_solver_options,
-        # wake_nlsolve_ftol=wake_nlsolve_ftol,
-        # wake_max_iter=wake_max_iter,
-        # max_wake_relax_iter=max_wake_relax_iter,
-        # wake_relax_tol=wake_relax_tol,
+        # atol=atol,
+        # iteration_limit=iteration_limit,
+        # relaxation_iteration_limit=relaxation_iteration_limit,
+        # relaxation_atol=relaxation_atol,
         verbose=verbose,
         silence_warnings=silence_warnings,
     )
@@ -302,7 +302,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     # - Bodies on Bodies - #
     # body panels on body panels
     induced_velocities_from_vortex_panels_on_points!(
-        view(v_bb, :, :, :),
+        v_bb,
         body_vortex_panels.controlpoint,
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
@@ -313,7 +313,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
 
     # Add influence of body trailing edge gap "panels"
     induced_velocities_from_trailing_edge_gap_panel!(
-        view(v_bb, :, :, :),
+        v_bb,
         body_vortex_panels.controlpoint,
         body_vortex_panels.tenode,
         body_vortex_panels.teinfluence_length,
@@ -326,7 +326,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     # - Rotors on Bodies - #
     # rotor panels to body panels
     induced_velocities_from_source_panels_on_points!(
-        view(v_br, :, :, :),
+        v_br,
         body_vortex_panels.controlpoint,
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
@@ -338,7 +338,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     # - Wake on Bodies - #
     # wake panels to body panels
     induced_velocities_from_vortex_panels_on_points!(
-        view(v_bw, :, :, :),
+        v_bw,
         body_vortex_panels.controlpoint,
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
@@ -349,7 +349,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
 
     # wake "TE panels" to body panels
     induced_velocities_from_trailing_edge_gap_panel!(
-        view(v_bw, :, :, :),
+        v_bw,
         body_vortex_panels.controlpoint,
         wake_vortex_panels.tenode,
         wake_vortex_panels.teinfluence_length,
@@ -363,7 +363,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     ##### ----- Velocities on Rotors ----- #####
     # - Rotors on Rotors - #
     induced_velocities_from_source_panels_on_points!(
-        view(v_rr, :, :, :),
+        v_rr,
         rotor_source_panels.controlpoint,
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
@@ -375,7 +375,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     # - Bodies on Rotors - #
     # body panels on rotor panels
     induced_velocities_from_vortex_panels_on_points!(
-        view(v_rb, :, :, :),
+        v_rb,
         rotor_source_panels.controlpoint,
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
@@ -386,7 +386,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
 
     # add influence from body trailing edge gap "panels"
     induced_velocities_from_trailing_edge_gap_panel!(
-        view(v_rb, :, :, :),
+        v_rb,
         rotor_source_panels.controlpoint,
         body_vortex_panels.tenode,
         body_vortex_panels.teinfluence_length,
@@ -399,7 +399,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     # - Wake on Rotors - #
     # wake panels on rotor panels
     induced_velocities_from_vortex_panels_on_points!(
-        view(v_rw, :, :, :),
+        v_rw,
         rotor_source_panels.controlpoint,
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
@@ -410,7 +410,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
 
     # add influence from wake "trailing edge panels"
     induced_velocities_from_trailing_edge_gap_panel!(
-        view(v_rw, :, :, :),
+        v_rw,
         rotor_source_panels.controlpoint,
         wake_vortex_panels.tenode,
         wake_vortex_panels.teinfluence_length,
@@ -425,7 +425,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     # - Bodies on Wakes - #
     # body panels to wake panels
     induced_velocities_from_vortex_panels_on_points!(
-        view(v_wb, :, :, :),
+        v_wb,
         wake_vortex_panels.controlpoint,
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
@@ -436,7 +436,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
 
     # add influence from body trailing edge gap "panels"
     induced_velocities_from_trailing_edge_gap_panel!(
-        view(v_wb, :, :, :),
+        v_wb,
         wake_vortex_panels.controlpoint,
         body_vortex_panels.tenode,
         body_vortex_panels.teinfluence_length,
@@ -449,7 +449,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
 
     # - Rotors to Wakes - #
     induced_velocities_from_source_panels_on_points!(
-        view(v_wr, :, :, :),
+        v_wr,
         wake_vortex_panels.controlpoint,
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
@@ -461,7 +461,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     # - Wake on Wake - #
     # wake panels on wake panels
     induced_velocities_from_vortex_panels_on_points!(
-        view(v_ww, :, :, :),
+        v_ww,
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
@@ -472,7 +472,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
 
     # add influence from wake "trailing edge panels"
     induced_velocities_from_trailing_edge_gap_panel!(
-        view(v_ww, :, :, :),
+        v_ww,
         wake_vortex_panels.controlpoint,
         wake_vortex_panels.tenode,
         wake_vortex_panels.teinfluence_length,

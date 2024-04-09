@@ -72,6 +72,7 @@ function induced_velocities_from_vortex_panels_on_points!(
     integration_options;
     integration_caches=nothing,
 )
+
     # vel = zeros(VEL, 2, 2)
     if isnothing(integration_caches)
         #integration_cache = zeros(eltype(node), 20)
