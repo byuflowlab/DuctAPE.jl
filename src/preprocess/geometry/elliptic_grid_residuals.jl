@@ -144,8 +144,6 @@ function solve_elliptic_grid_iad(x, p)
         # df,
         rwrap!,
         reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
-        # method=:newton,
-        # autodiff=:forward,
         method=p.algorithm,
         autodiff=p.autodiff,
         linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
