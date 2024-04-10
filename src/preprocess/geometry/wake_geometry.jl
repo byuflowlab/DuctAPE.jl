@@ -301,7 +301,6 @@ function relax_grid!(
     solve_elliptic_grid!(
         wake_grid;
         algorithm=grid_solver_options.algorithm,
-        autodiff=grid_solver_options.autodiff,
         atol=grid_solver_options.atol,
         iteration_limit=grid_solver_options.iteration_limit,
         grid_solver_options.converged,

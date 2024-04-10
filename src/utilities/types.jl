@@ -12,7 +12,7 @@ abstract type ConvergenceType end
 # - Solver Options - #
 abstract type SolverOptionsType end
 abstract type ExternalSolverOptions <: SolverOptionsType end
-abstract type MultiSolverOptions end
+abstract type MultiSolverOptions <: SolverOptionsType end
 
 # - Wake Solver Options - #
 abstract type GridSolverOptionsType end
@@ -28,8 +28,6 @@ import Base.BroadcastStyle
 isscalar(x::T) where {T} = isscalar(T)
 isscalar(::Type{T}) where {T} = BroadcastStyle(T) isa Broadcast.DefaultArrayStyle{0}
 
-"""
-"""
 struct OperatingPoint{
     Tv<:AbstractVector,
     Tr<:AbstractVector,
@@ -54,8 +52,6 @@ function OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
     )
 end
 
-"""
-"""
 struct ReferenceParameters{Tv<:AbstractVector,Tr<:AbstractVector}
     Vref::Tv
     Rref::Tr
@@ -67,8 +63,6 @@ function ReferenceParameters(Vref, Rref)
     )
 end
 
-"""
-"""
 struct PanelingConstants{TI,TF}
     nduct_inlet::TI
     ncenterbody_inlet::TI
@@ -78,8 +72,6 @@ struct PanelingConstants{TI,TF}
     wake_length::TF
 end
 
-"""
-"""
 struct RotorStatorParameters{
     Tb<:AbstractVector,
     TRz<:AbstractVector,
@@ -125,8 +117,6 @@ function RotorStatorParameters(
     )
 end
 
-"""
-"""
 struct Propulsor{
     Td<:AbstractMatrix,
     Tcb<:AbstractMatrix,
@@ -196,7 +186,9 @@ end
 struct Relative <: ConvergenceType end
 struct Absolute <: ConvergenceType end
 
-# - Solver Options - #
+##### ----- Fixed Point Solvers ----- #####
+
+# - CSOR Options - #
 @kwdef struct CSORSolverOptions{TF,TS,TB,TC<:ConvergenceType} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
@@ -218,44 +210,11 @@ struct Absolute <: ConvergenceType end
     converged::AbstractVector{TB} = [false]
 end
 
-# @kwdef struct SolverOptions{TA,TB,TF,TI,TN,TTm,TTr} <: SolverOptionsType
-@kwdef struct NonlinearSolveOptions{TA,TB,TF,TI} <: ExternalSolverOptions
-    # Algorithm Options
-    algorithm::TA = SimpleNonlinearSolve.SimpleDFSane
-    # Iteration Controls
-    atol::TF = 1e-10
-    iteration_limit::TI = 100
-    converged::AbstractVector{TB} = [false]
-end
-
-@kwdef struct NLsolveOptions{TSym,TF,TI,TB,Tls,Tlsk} <: ExternalSolverOptions
-    # Options for overall solve
-    algorithm::TSym = :anderson
-    atol::TF = 1e-12
-    iteration_limit::TI = 100
-    # line search parameters
-    linesearch_method::Tls = LineSearches.MoreThuente
-    linesearch_kwargs::Tlsk = (;)
-    converged::AbstractVector{TB} = [false]
-end
-
-@kwdef struct FixedPointOptions{TA,TB,TF,TI} <: ExternalSolverOptions
-    iteration_limint::TI = 1000
+@kwdef struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
+    iteration_limit::TI = 1000
     vel::TF = 0.9
     ep::TF = 0.01
     atol::TF = 1e-12
-    converged::AbstractVector{TB} = [false]
-end
-
-@kwdef struct SIAMFANLE{TB,TF,TH,TI,TK} <: ExternalSolverOptions
-    # Options for overall solve
-    algorithm::TH = SIAMFANLEquations.nsoli
-    atol::TF = 1e-10
-    rtol::TF = 0.0
-    iteration_limit::TI = 1000
-    linear_iteration_limit::TI = 2
-    additional_kwargs::TK = (;)
-    # additional_kwargs::TK = (; delta0=1e-3)
     converged::AbstractVector{TB} = [false]
 end
 
@@ -274,26 +233,75 @@ end
     converged::AbstractVector{TB} = [false]
 end
 
-@kdwef struct CompositeSolverOptions{TS<:Union{ExternalSolverOptions,MultiSolverOptions}} <:
-              MultiSolverOptions
-    solvers::AbstractVector{TS} = [
-        NonlinearSolveOptions(;
-            algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson, iteration_limit=2
-        ),
-        NonlinearSolveOptions(; algorithm=SimpleNonlinearSolve.SimpleDFSane, atol=1e-10),
-        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
-    ]
+##### ----- Quasi-Newton Solvers ----- #####
+
+@kwdef struct MinpackOptions{TB,TF,TI,TS} <: ExternalSolverOptions
+    algorithm::TS = :hybr
+    atol::TF = 1e-12
+    iteration_limit::TI = 100
+    converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct ChainSolverOptions{TS<:Union{ExternalSolverOptions,MultiSolverOptions}} <:
+@kwdef struct SIAMFANLEOptions{TB,TF,TH,TI,TK} <: ExternalSolverOptions
+    # Options for overall solve
+    algorithm::TH = SIAMFANLEquations.nsoli
+    atol::TF = 1e-10
+    rtol::TF = 0.0
+    iteration_limit::TI = 1000
+    linear_iteration_limit::TI = 2
+    additional_kwargs::TK = (;)
+    # additional_kwargs::TK = (; delta0=1e-3)
+    converged::AbstractVector{TB} = [false]
+end
+
+##### ----- Newton+ Solvers ----- #####
+# NOTE: these also have fixed-point options
+
+@kwdef struct NonlinearSolveOptions{TA,TB,TF,TI,TT} <: ExternalSolverOptions
+    # Algorithm Options
+    algorithm::TA = SimpleNonlinearSolve.SimpleNewtonRaphson
+    additional_kwargs::TT = (;)
+    # Iteration Controls
+    atol::TF = 1e-10
+    iteration_limit::TI = 100
+    converged::AbstractVector{TB} = [false]
+end
+
+@kwdef struct NLsolveOptions{TSym,TF,TI,TB,Tls,Tlsk} <: ExternalSolverOptions
+    # Options for overall solve
+    algorithm::TSym = :anderson
+    atol::TF = 1e-12
+    iteration_limit::TI = 100
+    # line search parameters
+    linesearch_method::Tls = LineSearches.MoreThuente
+    linesearch_kwargs::Tlsk = (;)
+    converged::AbstractVector{TB} = [false]
+end
+
+##### ----- Poly-Algorithm Solvers ----- #####
+
+@kwdef struct CompositeSolverOptions{
+    TB,TS<:Union{ExternalSolverOptions,MultiSolverOptions}
+} <: MultiSolverOptions
+    solvers::AbstractVector{TS} = [
+        NLsolveOptions(; algorithm=:newton, iteration_limit=3),
+        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
+    ]
+    converged::AbstractVector{TB} = [false]
+end
+
+@kwdef struct ChainSolverOptions{TB,TS<:Union{ExternalSolverOptions,MultiSolverOptions}} <:
               MultiSolverOptions
     solvers::AbstractVector{TS} = [
-        NonlinearSolveOptions(; algorithm=SimpleNonlinearSolve.SimpleDFSane, atol=1e-12),
-        CompositeSolverOptions(),
+        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
+        MinpackOptions(; atol=1e-12),
         NonlinearSolveOptions(;
-            algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson, atol=1e-12
+            algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
+            atol=1e-12,
+            additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoPolyesterForwardDiff()),
         ),
     ]
+    converged::AbstractVector{TB} = [false]
 end
 
 #---------------------------------#
@@ -305,9 +313,8 @@ end
     converged::AbstractVector{TB} = [false]
 end
 
-#TODO: the SimpleNewtonRaphson is slightly faster than NLsolve, so swap over to that one.
-#TODO: also, if not already done, make sure that the wake solve is inside an implicitAD call
 @kwdef struct GridSolverOptions{TSym,TF,TI,TB} <: GridSolverOptionsType
+    # elliptic grid solve options
     relaxation_iteration_limit::TI = 20
     relaxation_atol::TF = 1e-9
     algorithm::TSym = :newton
@@ -320,8 +327,6 @@ end
 #---------------------------------#
 #         OPTION SET TYPES        #
 #---------------------------------#
-"""
-"""
 @kwdef struct Options{
     TB,TF,TS,Tin,TIo<:IntegrationOptions,TSo<:SolverOptionsType,WS<:GridSolverOptionsType
 }
@@ -348,14 +353,10 @@ end
     solver_options::TSo = CompositeSolverOptions()
 end
 
-"""
-"""
 function set_options(; kwargs...)
     return Options(; kwargs...)
 end
 
-"""
-"""
 function quicksolve_options(;
     grid_solver_options=SLORGridSolverOptions(),
     solver_options=CSORSolverOptions(),
@@ -367,4 +368,3 @@ function quicksolve_options(;
         kwargs...,
     )
 end
-

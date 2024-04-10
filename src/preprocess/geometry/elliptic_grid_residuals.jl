@@ -129,38 +129,37 @@ function elliptic_grid_residual!(r, y, x, p)
     return r
 end
 
-function solve_elliptic_grid(grid, constants)
+function solve_elliptic_grid_iad(x, p)
 
     # - Wrap residual - #
-    function rwrap!(resid, states)
-        return elliptic_grid_residual!(resid, states, constants)
+    function rwrap!(r, y)
+        return elliptic_grid_residual!(r, y, x, p)
     end
 
-    wake_grid = reshape(grid, constants.gridshape)
+    wake_grid = reshape(x, p.gridshape)
 
-    # build problem object
-    prob = SimpleNonlinearSolve.NonlinearProblem(
-        rwrap!, reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
+    # - Call NLsolve - #
+    # df = OnceDifferentiable(rwrap!, x, similar(x))
+    result = NLsolve.nlsolve(
+        # df,
+        rwrap!,
+        reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
+        # method=:newton,
+        # autodiff=:forward,
+        method=p.algorithm,
+        autodiff=p.autodiff,
+        linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
+        ftol=p.atol,
+        iterations=p.iteration_limit,
+        show_trace=p.verbose,
     )
 
-    # - SOLVE - #
-    if verbose
-        println("  " * "Nonlinear Solve Trace:")
-    end
-    sol = SimpleNonlinearSolve.solve(
-        prob, # problem
-        constants.algorithm();
-        abstol=constants.atol,
-        maxiters=constants.iteration_limit,
-    )
-
-    # update convergence flag
-    constants.converged[1] = SciMLBase.successful_retcode(sol)
+    p.converged[1] = NLsolve.converged(result)
 
     # - overwrite output in place - #
-    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(sol.u, constants.itshape)
+    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(result.zero, p.itshape)
 
-    return grid
+    return x
 end
 
 """
@@ -168,7 +167,8 @@ TODO: will want to pass a convergence flag that get's updated so we can break ou
 """
 function solve_elliptic_grid!(
     wake_grid;
-    algorithm=SimpleNonlinearSolve.SimpleDFSane,
+    algorithm=:newton,
+    autodiff=:forward,
     atol=1e-14,
     iteration_limit=10,
     converged=[false],
@@ -195,6 +195,7 @@ function solve_elliptic_grid!(
         proposed_grid_cache=DiffCache(wake_grid),
         itshape=(gridshape[1], gridshape[2] - 1, gridshape[3] - 2),
         algorithm,
+        autodiff,
         atol,
         iteration_limit,
         converged,
@@ -202,7 +203,7 @@ function solve_elliptic_grid!(
     )
 
     # - solve - #
-    y = implicit(solve_elliptic_grid, elliptic_grid_residual!, reshape(wake_grid, :), p)
+    y = implicit(solve_elliptic_grid_iad, elliptic_grid_residual!, reshape(wake_grid, :), p)
 
     for g in eachrow(view(y, :))
         if g[1] < eps()

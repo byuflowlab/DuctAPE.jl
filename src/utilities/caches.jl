@@ -73,7 +73,7 @@ return allocate_solve_parameter_cache(
 )
 end
 
-function allocate_solve_container_cache_extras(solver_options::SIAMFANLE, input_length, total_length)
+function allocate_solve_container_cache_extras(solver_options::SIAMFANLEOptions, input_length, total_length)
 
     s = (input_length,)
     l = lfs(s)
@@ -340,7 +340,7 @@ end
 """
 function allocate_solve_parameter_cache(
     solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=2
-) where {TS<:ExternalSolverOptions}
+) where {TS<:Union{ExternalSolverOptions, MultiSolverOptions}}
 
     # - Get problem dimensions - #
     pd = get_problem_dimensions(paneling_constants)
@@ -354,7 +354,7 @@ end
 """
 function allocate_solve_parameter_cache(
     solve_type::TS, problem_dimensions; fd_chunk_size=12, levels=2
-) where {TS<:ExternalSolverOptions}
+) where {TS<:Union{ExternalSolverOptions, MultiSolverOptions}}
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -787,7 +787,7 @@ end
 """
 function allocate_solve_container_cache(
     solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
-) where {TS<:ExternalSolverOptions}
+) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
     pd = get_problem_dimensions(paneling_constants)
 
 return allocate_solve_container_cache(
@@ -799,7 +799,7 @@ end
 """
 function allocate_solve_container_cache(
     solve_type::TS, problem_dimensions; fd_chunk_size=12, levels=1
-) where {TS<:ExternalSolverOptions}
+) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
 
     (;
         nrotor,     # number of rotors
@@ -1144,7 +1144,7 @@ function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, 
 end
 """
 """
-function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<:ExternalSolverOptions}
+function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
 
     # - Initial Guesses - #
     vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
@@ -1294,7 +1294,7 @@ end
 
 """
 """
-function withdraw_solve_parameter_cache(solver_options::SIAMFANLE, vec, dims)
+function withdraw_solve_parameter_cache(solver_options::SIAMFANLEOptions, vec, dims)
 
     tuple = withdraw_solve_parameter_cache(NonlinearSolveOptions(), vec, dims)
 
@@ -1353,7 +1353,7 @@ function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, 
 end
 """
 """
-function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS<:ExternalSolverOptions}
+function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),

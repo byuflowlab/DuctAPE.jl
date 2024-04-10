@@ -159,8 +159,20 @@ function post_process(
     (; solve_container_cache, solve_container_cache_dims) = solve_container_caching
 
     # - Run Residual to get intermediate values - #
+
+    # for combination solvers, get solver type that was last run
+    if typeof(solver_options) <: CompositeSolverOptions
+        idx = findlast(x -> x, (p -> p.converged[1]).(solver_options.solvers))
+        sopt = solver_options.solvers[isnothing(idx) ? length(solver_options.solvers) : idx]
+    elseif typeof(solver_options) <: ChainSolverOptions
+        idx = findfirst(x -> x, (p -> p.converged[1]).(solver_options.solvers))
+        sopt = solver_options.solvers[isnothing(idx) ? length(solver_options.solvers) : idx]
+    else
+        sopt = solver_options
+    end
+
     res_vals = run_residual!(
-        solver_options,
+        sopt,
         state_variables,
         solve_parameter_cache_dims.state_dims,
         solve_container_cache,

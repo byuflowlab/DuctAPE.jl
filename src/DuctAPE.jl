@@ -27,9 +27,11 @@ using LinearAlgebra # linear solve and LU decomposition
 
 # General Nonlinear solves
 using SimpleNonlinearSolve # SimpleDFSane and SimpleNewtonRaphson
+# using PolyesterForwardDiff
 
 # Quasi-Newton
 using SIAMFANLEquations
+using MINPACK
 
 # Fixed-Point Iteration Solvers
 using SpeedMapping

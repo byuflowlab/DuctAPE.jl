@@ -1,16 +1,24 @@
-#---------------------------------#
-#              SOLVE              #
-#---------------------------------#
-
 """
 """
-function solve(sensitivity_parameters, const_cache)
-    return solve(const_cache.solver_options, sensitivity_parameters, const_cache)
+function solve(sensitivity_parameters, const_cache; initial_guess=nothing)
+    return solve(
+        const_cache.solver_options,
+        sensitivity_parameters,
+        const_cache;
+        initial_guess=initial_guess,
+    )
 end
 
-"""
-"""
-function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, const_cache)
+#---------------------------------#
+#       FIXED POINT SOLVERS       #
+#---------------------------------#
+
+function solve(
+    solver_options::CSORSolverOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
 
     # - Extract constants - #
     (;
@@ -29,136 +37,94 @@ function solve(solver_options::NonlinearSolveOptions, sensitivity_parameters, co
         solve_container_cache_dims,
     ) = const_cache
 
-    (;
-        algorithm,
-        # Iteration Controls
-        atol,
-        iteration_limit,
-        converged,
-    ) = solver_options
-
     # - Extract Initial Guess Vector for State Variables - #
-    initial_guess = extract_initial_guess(
-        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
-    )
-
-    # - Wrap residual - #
-    if verbose
-        println("  " * "Wrapping Residual")
-        # println("  " * "Wrapping Residual and Jacobian")
-    end
-
-    function rwrap!(resid, state_variables, p)
-        return system_residual!(
-            resid, state_variables, p.sensitivity_parameters, p.constants
+    if isnothing(initial_guess)
+        state_variables = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
         )
+    else
+        state_variables .= initial_guess
     end
 
-    # build problem object
-    prob = SimpleNonlinearSolve.NonlinearProblem(
-        rwrap!,
-        initial_guess,
-        (;
-            sensitivity_parameters,
-            constants=(;
-                solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
-                A_bb_LU,                    # LU decomposition of linear system LHS
-                idmaps,                     # book keeping items
-                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
-                solve_container_cache,      # cache for solve_containers used in solve
-                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
-            ),
-        ),
+    # - Separate out the state variables - #
+    Gamr, sigr, gamw = extract_state_variables(
+        solver_options, state_variables, solve_parameter_cache_dims.state_dims
     )
+
+    # - Extract and Reset Cache - #
+    # get cache vector of correct types
+    solve_container_cache_vector = @views PreallocationTools.get_tmp(
+        solve_container_cache, eltype(state_variables)(1.0)
+    )
+    # reset cache
+    solve_container_cache_vector .= 0
+    solve_containers = withdraw_solve_container_cache(
+        solver_options, solve_container_cache_vector, solve_container_cache_dims
+    )
+
+    # - initialize convergence criteria - #
+    @. solve_containers.deltaG_prev = solve_containers.Gamr_est - Gamr
+    @. solve_containers.deltaG = 0.0
+    @. solve_containers.deltag_prev = solve_containers.gamw_est - gamw
+    @. solve_containers.deltag = 0.0
+
+    TF = eltype(state_variables)
+
+    resid = MVector{2,TF}(999 * ones(TF, 2))
+    conv = solver_options.converged
+    iter = 0
 
     # - SOLVE - #
     if verbose
-        println("  " * "Nonlinear Solve Trace:")
-    end
-    sol = SimpleNonlinearSolve.solve(
-        prob, # problem
-        algorithm();
-        abstol=atol,
-        iteration_limit=iteration_limit,
-    )
-
-    # update convergence flag
-    converged[1] = SciMLBase.successful_retcode(sol)
-
-    return sol.u
-end
-
-"""
-"""
-function solve(solver_options::FixedPointOptions, sensitivity_parameters, const_cache)
-
-    # - Extract constants - #
-    (;
-        # General
-        verbose,
-        silence_warnings,
-        # nlsolve options
-        solver_options,
-        # Constant Parameters
-        airfoils,
-        A_bb_LU,
-        idmaps,
-        solve_parameter_cache_dims,
-        # Cache(s)
-        solve_container_cache,
-        solve_container_cache_dims,
-    ) = const_cache
-
-    # - Extract Initial Guess Vector for State Variables - #
-    initial_guess = extract_initial_guess(
-        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
-    )
-
-    # - Wrap residual - #
-    if verbose
-        println("  " * "Wrapping Residual")
+        println("  " * "CSOR Solve Trace:")
     end
 
-    function rwrap!(state_estimates, state_variables)
-        return system_residual!(
-            state_estimates,
+    # loop until converged or max iterations are reached
+    while !conv[] && iter <= solver_options.iteration_limit
+        # update iteration number
+        iter += 1
+        if verbose
+            println("Iteration $(iter):")
+        end
+
+        # Call residual
+        CSOR_residual!(
+            resid,
             state_variables,
             sensitivity_parameters,
             (;
-                solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
-                A_bb_LU,                    # LU decomposition of linear system LHS
+                # solve options for dispatch
+                solver_options,
+                # comp,
+                airfoils,                   # airfoils
+                A_bb_LU,                    # linear system left hand side LU decomposition
                 idmaps,                     # book keeping items
-                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
                 solve_container_cache,      # cache for solve_containers used in solve
                 solve_container_cache_dims, # dimensions for shaping the view of the solve cache
             ),
         )
+
+        # Check Convergence
+        check_CSOR_convergence!(
+            conv,
+            resid;
+            solver_options.f_circ,
+            solver_options.f_dgamw,
+            convergence_type=typeof(solver_options.convergence_type),
+            verbose=verbose,
+        )
     end
 
-    # - SOLVE - #
-    if verbose
-        println("  " * "FixedPoint Solve:")
-    end
-    sol = FixedPoint.afps!(
-        rwrap!,
-        initial_guess;
-        iters=solver_options.iteration_limint,
-        vel=solver_options.vel,
-        ep=solver_options.ep,
-        tol=solver_options.atol,
-    )
-
-    # update convergence flag
-    solver_options.converged[1] = sol.error <= solver_options.atol
-
-    return sol.x
+    return state_variables
 end
 
-"""
-"""
-function solve(solver_options::SpeedMappingOptions, sensitivity_parameters, const_cache)
+function solve(
+    solver_options::SpeedMappingOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
 
     # - Extract constants - #
     (;
@@ -193,9 +159,11 @@ function solve(solver_options::SpeedMappingOptions, sensitivity_parameters, cons
     ) = solver_options
 
     # - Extract Initial Guess Vector for State Variables - #
-    initial_guess = extract_initial_guess(
-        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
-    )
+    if isnothing(initial_guess)
+        initial_guess = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+        )
+    end
 
     # - Wrap residual - #
     if verbose
@@ -231,7 +199,7 @@ function solve(solver_options::SpeedMappingOptions, sensitivity_parameters, cons
         stabilize=stabilize,
         check_obj=check_obj,
         tol=atol,
-        iteration_limit=iteration_limit,
+        maps_limit=iteration_limit,
         time_limit=time_limit,
         lower=lower,
         upper=upper,
@@ -245,9 +213,187 @@ function solve(solver_options::SpeedMappingOptions, sensitivity_parameters, cons
     return sol.minimizer
 end
 
-"""
-"""
-function solve(solver_options::SIAMFANLE, sensitivity_parameters, const_cache)
+function solve(
+    solver_options::FixedPointOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
+
+    # - Extract constants - #
+    (;
+        # General
+        verbose,
+        silence_warnings,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    # - Extract Initial Guess Vector for State Variables - #
+    if isnothing(initial_guess)
+        initial_guess = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+        )
+    end
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual")
+    end
+
+    function rwrap!(state_estimates, state_variables)
+        return system_residual!(
+            state_estimates,
+            state_variables,
+            sensitivity_parameters,
+            (;
+                solver_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_container_cache,      # cache for solve_containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+            ),
+        )
+    end
+
+    # - SOLVE - #
+    if verbose
+        println("  " * "FixedPoint Solve:")
+    end
+    sol = FixedPoint.afps!(
+        rwrap!,
+        initial_guess;
+        iters=solver_options.iteration_limit,
+        vel=solver_options.vel,
+        ep=solver_options.ep,
+        tol=solver_options.atol,
+    )
+
+    # update convergence flag
+    solver_options.converged[1] = sol.error <= solver_options.atol
+
+    return sol.x
+end
+
+#---------------------------------#
+#      QUASI-NEWTON SOLVERS       #
+#---------------------------------#
+
+function solve(
+    solver_options::MinpackOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
+
+    # - Extract constants - #
+    (;
+        # General
+        verbose,
+        silence_warnings,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    (; algorithm, atol, iteration_limit, converged) = solver_options
+
+    # - Extract Initial Guess Vector for State Variables - #
+    if isnothing(initial_guess)
+        initial_guess = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+        )
+    end
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual and Jacobian")
+    end
+    function rwrap!(resid, state_variables)
+        return system_residual!(
+            resid,
+            state_variables,
+            sensitivity_parameters,
+            (;
+                solver_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_container_cache,      # cache for solve_containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+            ),
+        )
+    end
+
+    # - Wrap Jacobian - #
+    # configure jacobian
+    jconfig = ForwardDiff.JacobianConfig(
+        rwrap!,
+        initial_guess, # object of size of residual vector
+        initial_guess, # object of size of state_variable vector
+        ForwardDiff.Chunk{12}(), #TODO: set the chunk size as an option and make sure the solver cache chunk and this chunk size match. PreallocationTools chooses poorly if not given a chunk size
+    )
+    # get allocated array for jacobian
+    JR = DiffResults.JacobianResult(
+        initial_guess, # object of size of residual vector
+        initial_guess, # object of size of state_variable vector
+    )
+    # store everything in a cache that can be accessed inside the solver
+    jcache = (; rwrap!, JR, config=jconfig, resid=zeros(size(initial_guess)))
+
+    # wrap the jacobian
+    function jwrap!(J, state_variables)
+        ForwardDiff.jacobian!(
+            jcache.JR, jcache.rwrap!, jcache.resid, state_variables, jcache.config
+        )
+        J .= DiffResults.jacobian(jcache.JR)
+        return J
+    end
+
+    # - SOLVE - #
+    if verbose
+        println("  " * "MINPACK Solve Trace:")
+    end
+    result = MINPACK.fsolve(
+        rwrap!,
+        jwrap!,
+        copy(initial_guess);
+        tol=atol,
+        show_trace=verbose,
+        method=algorithm,
+        iterations=iteration_limit,
+    )
+
+    # update convergence flag
+    converged[1] = result.converged
+
+    return result.x
+end
+
+function solve(
+    solver_options::SIAMFANLEOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
 
     # - Extract constants - #
     (;
@@ -270,9 +416,11 @@ function solve(solver_options::SIAMFANLE, sensitivity_parameters, const_cache)
     ) = const_cache
 
     # - Extract Initial Guess Vector for State Variables - #
-    initial_guess = extract_initial_guess(
-        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
-    )
+    if isnothing(initial_guess)
+        initial_guess = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+        )
+    end
 
     # - Wrap residual - #
     if verbose
@@ -352,7 +500,19 @@ function solve(solver_options::SIAMFANLE, sensitivity_parameters, const_cache)
     return result.solution
 end
 
-function solve(solver_options::NLsolveOptions, sensitivity_parameters, const_cache)
+#---------------------------------#
+#         NEWTON+ SOLVERS         #
+#---------------------------------#
+#=
+  NOTE: Both SimpleNonlinearSolve and NLsolve also contain fixed-point solvers that do well
+=#
+
+function solve(
+    solver_options::NonlinearSolveOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
 
     # - Extract constants - #
     (;
@@ -373,17 +533,100 @@ function solve(solver_options::NLsolveOptions, sensitivity_parameters, const_cac
 
     (;
         algorithm,
-        linesearch_method,
-        linesearch_kwargs,
+        additional_kwargs,
+        # Iteration Controls
         atol,
         iteration_limit,
         converged,
     ) = solver_options
 
     # - Extract Initial Guess Vector for State Variables - #
-    initial_guess = extract_initial_guess(
-        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+    if isnothing(initial_guess)
+        initial_guess = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+        )
+    end
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual")
+        # println("  " * "Wrapping Residual and Jacobian")
+    end
+
+    function rwrap!(resid, state_variables, p)
+        return system_residual!(
+            resid, state_variables, p.sensitivity_parameters, p.constants
+        )
+    end
+
+    # build problem object
+    prob = SimpleNonlinearSolve.NonlinearProblem(
+        rwrap!,
+        initial_guess,
+        (;
+            sensitivity_parameters,
+            constants=(;
+                solver_options, # for dispatch
+                airfoils,                   # inner and outer airfoil objects along blades
+                A_bb_LU,                    # LU decomposition of linear system LHS
+                idmaps,                     # book keeping items
+                solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
+                solve_container_cache,      # cache for solve_containers used in solve
+                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+            ),
+        ),
     )
+
+    # - SOLVE - #
+    if verbose
+        println("  " * "Nonlinear Solve Trace:")
+    end
+    sol = SimpleNonlinearSolve.solve(
+        prob, # problem
+        algorithm(additional_kwargs...);
+        abstol=atol,
+        iteration_limit=iteration_limit,
+    )
+
+    # update convergence flag
+    converged[1] = SciMLBase.successful_retcode(sol)
+
+    return sol.u
+end
+
+function solve(
+    solver_options::NLsolveOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
+
+    # - Extract constants - #
+    (;
+        # General
+        verbose,
+        silence_warnings,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
+        solve_container_cache_dims,
+    ) = const_cache
+
+    (; algorithm, linesearch_method, linesearch_kwargs, atol, iteration_limit, converged) =
+        solver_options
+
+    # - Extract Initial Guess Vector for State Variables - #
+    if isnothing(initial_guess)
+        initial_guess = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+        )
+    end
 
     # - Wrap residual - #
     if verbose
@@ -459,100 +702,121 @@ function solve(solver_options::NLsolveOptions, sensitivity_parameters, const_cac
     return result.zero
 end
 
-function solve(solver_options::CSORSolverOptions, sensitivity_parameters, const_cache)
+#---------------------------------#
+#     POLY-ALGORITHM SOLVERS      #
+#---------------------------------#
 
-    # - Extract constants - #
-    (;
-        # General
-        verbose,
-        silence_warnings,
-        # nlsolve options
-        solver_options,
-        # Constant Parameters
-        airfoils,
-        A_bb_LU,
-        idmaps,
-        solve_parameter_cache_dims,
-        # Cache(s)
-        solve_container_cache,
-        solve_container_cache_dims,
-    ) = const_cache
+function solve(
+    solver_options::CompositeSolverOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
 
-    # - Extract Initial Guess Vector for State Variables - #
-    state_variables = extract_initial_guess(
-        solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+    # - Run First Solver - #
+    solution = solve(
+        solver_options.solvers[1],
+        sensitivity_parameters,
+        (; const_cache..., solver_options=solver_options.solvers[1]);
+        initial_guess=initial_guess,
     )
 
-    # - Separate out the state variables - #
-    Gamr, sigr, gamw = extract_state_variables(
-        solver_options, state_variables, solve_parameter_cache_dims.state_dims
-    )
-
-    # - Extract and Reset Cache - #
-    # get cache vector of correct types
-    solve_container_cache_vector = @views PreallocationTools.get_tmp(
-        solve_container_cache, eltype(state_variables)(1.0)
-    )
-    # reset cache
-    solve_container_cache_vector .= 0
-    solve_containers = withdraw_solve_container_cache(
-        solver_options, solve_container_cache_vector, solve_container_cache_dims
-    )
-
-    # - initialize convergence criteria - #
-    @. solve_containers.deltaG_prev = solve_containers.Gamr_est - Gamr
-    @. solve_containers.deltaG = 0.0
-    @. solve_containers.deltag_prev = solve_containers.gamw_est - gamw
-    @. solve_containers.deltag = 0.0
-
-    TF = eltype(state_variables)
-
-    resid = MVector{2,TF}(999 * ones(TF, 2))
-    conv = solver_options.converged
-    iter = 0
-
-    # - SOLVE - #
-    if verbose
-        println("  " * "CSOR Solve Trace:")
+    # If there is only one solver, return the solution
+    if length(solver_options.solvers) == 1
+        return solution
     end
 
-    # loop until converged or max iterations are reached
-    while !conv[] && iter <= solver_options.iteration_limit
-        # update iteration number
-        iter += 1
-        if verbose
-            println("Iteration $(iter):")
+    # - If there are more than 2 solvers, then loop through the middle ones and return the solution from the last one- #
+    if length(solver_options.solvers) > 2
+        for (s, sopt) in enumerate(solver_options.solvers[2:(end - 1)])
+            solution[:] .= solve(
+                sopt,
+                sensitivity_parameters,
+                (; const_cache..., solver_options=sopt);
+                initial_guess=solution,
+            )
         end
 
-        # Call residual
-        CSOR_residual!(
-            resid,
-            state_variables,
+        solution .= solve(
+            solver_options.solvers[end],
             sensitivity_parameters,
-            (;
-                # solve options for dispatch
-                solver_options,
-                # comp,
-                airfoils,                   # airfoils
-                A_bb_LU,                    # linear system left hand side LU decomposition
-                idmaps,                     # book keeping items
-                solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
-                solve_container_cache,      # cache for solve_containers used in solve
-                solve_container_cache_dims, # dimensions for shaping the view of the solve cache
-            ),
+            (; const_cache..., solver_options=solver_options.solvers[end]);
+            initial_guess=solution,
         )
 
-        # Check Convergence
-        check_CSOR_convergence!(
-            conv,
-            resid;
-            solver_options.f_circ,
-            solver_options.f_dgamw,
-            convergence_type=typeof(solver_options.convergence_type),
-            verbose=verbose,
+        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        return solution
+    else
+        # - If there are only 2 solvers, return the solution from the second one - #
+        solution .= solve(
+            solver_options.solvers[end],
+            sensitivity_parameters,
+            (; const_cache..., solver_options=solver_options.solvers[end]);
+            initial_guess=solution,
         )
+
+        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        return solution
     end
-
-    return state_variables
 end
 
+function solve(
+    solver_options::ChainSolverOptions,
+    sensitivity_parameters,
+    const_cache;
+    initial_guess=nothing,
+)
+
+    # - Run First Solver - #
+    solution = solve(
+        solver_options.solvers[1],
+        sensitivity_parameters,
+        (; const_cache..., solver_options=solver_options.solvers[1]);
+        initial_guess=initial_guess,
+    )
+
+    # If there is only one solver, or if the first solver converged, return the solution
+    if length(solver_options.solvers) == 1 || solver_options.solvers[1].converged[1]
+        solver_options.converged[1] = solver_options.solvers[1].converged[1]
+        return solution
+    end
+
+    # - If there are more than 2 solvers, then loop through the middle ones and return the solution from the last one- #
+    if length(solver_options.solvers) > 2
+        for (s, sopt) in enumerate(solver_options.solvers[2:(end - 1)])
+            solution = solve(
+                sopt,
+                sensitivity_parameters,
+                (; const_cache..., solver_options=sopt);
+                initial_guess=initial_guess,
+            )
+
+            if sopt.converged[1]
+                solver_options.converged[1] = sopt.converged[1]
+                return solution
+            end
+        end
+
+        solution = solve(
+            solver_options.solvers[end],
+            sensitivity_parameters,
+            (; const_cache..., solver_options=solver_options.solvers[end]);
+            initial_guess=initial_guess,
+        )
+
+        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        return solution
+    else
+
+        # - If there are only 2 solvers, return the solution from the second one - #
+        solution = solve(
+            solver_options.solvers[end],
+            sensitivity_parameters,
+            (; const_cache..., solver_options=solver_options.solvers[end]);
+            initial_guess=initial_guess,
+        )
+
+        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        return solution
+    end
+end

@@ -227,7 +227,7 @@ function process(
     solve_container_caching,
     idmaps,
     options,
-) where {TS<:ExternalSolverOptions}
+) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
 
     # - Initialize Aero - #
     if options.verbose
@@ -269,7 +269,7 @@ function process(
         solve_parameter_cache_dims,
         # Cache(s)
         solve_container_caching...,
-        solve_parameter_tuple..., # contains SIAMFANLE containers needed for solver definition
+        solve_parameter_tuple..., # contains SIAMFANLEOptions containers needed for solver definition
     )
 
     # - Solve with ImplicitAD - #
@@ -350,83 +350,3 @@ function process(
         solve, CSOR_residual!, solve_parameter_cache_vector, const_cache
     )
 end
-
-#"""
-#"""
-#function post_process(
-#    process_type::TS,
-#    solve_container_caching,
-#    states,
-#    state_dims,
-#    operating_point,
-#    reference_parameters,
-#    ivr,
-#    ivw,
-#    ivb,
-#    linsys,
-#    blade_elements,
-#    wakeK,
-#    body_vortex_panels,
-#    influence_length,
-#    idmaps,
-#    problem_dimensions;
-#    write_outputs=false,
-#    outfile="outputs.jl",
-#    checkoutfileexists=false,
-#    output_tuple_name="outs",
-#    verbose=false,
-#) where {TS<:ExternalSolverOptions}
-#    if verbose
-#        println("\nPost-Processing")
-#    end
-#    return post_process_iad!(
-#        process_type,
-#        solve_container_caching,
-#        states,
-#        state_dims,
-#        operating_point,
-#        reference_parameters,
-#        ivr,
-#        ivw,
-#        ivb,
-#        linsys,
-#        blade_elements,
-#        wakeK,
-#        body_vortex_panels,
-#        influence_length,
-#        idmaps,
-#        problem_dimensions;
-#        write_outputs=write_outputs,
-#        outfile=outfile,
-#        checkoutfileexists=checkoutfileexists,
-#        output_tuple_name=output_tuple_name,
-#    )
-#end
-
-#"""
-#"""
-#function post_process(
-#    process_type::CSORSolverOptions,
-#    solve_container_caching,
-#    states,
-#    state_dims,
-#    operating_point,
-#    reference_parameters,
-#    ivr,
-#    ivw,
-#    ivb,
-#    linsys,
-#    blade_elements,
-#    wakeK,
-#    body_vortex_panels,
-#    influence_length,
-#    idmaps,
-#    problem_dimensions;
-#    write_outputs=false,
-#    outfile="outputs.jl",
-#    checkoutfileexists=false,
-#    output_tuple_name="outs",
-#)
-#    #TODO: update this function
-#    return post_process()
-#end

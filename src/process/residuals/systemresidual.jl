@@ -88,7 +88,7 @@ end
 """
 """
 function update_system_residual!(
-    solver_options::Union{NonlinearSolveOptions,NLsolveOptions,SIAMFANLE},
+    solver_options::Union{NonlinearSolveOptions,NLsolveOptions,SIAMFANLEOptions,MinpackOptions},
     resid,
     vz_est,
     vz_rotor,
