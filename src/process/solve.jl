@@ -425,7 +425,6 @@ function solve(
     # - Wrap residual - #
     if verbose
         println("  " * "Wrapping Residual")
-        # println("  " * "Wrapping Residual and Jacobian")
     end
 
     function rwrap!(resid, state_variables, p)
@@ -550,7 +549,6 @@ function solve(
     # - Wrap residual - #
     if verbose
         println("  " * "Wrapping Residual")
-        # println("  " * "Wrapping Residual and Jacobian")
     end
 
     function rwrap!(resid, state_variables, p)
@@ -681,7 +679,13 @@ function solve(
 
     # - SOLVE - #
     if verbose
-        println("  " * "Newton Solve Trace:")
+        if algorithm == :newton
+            println("  " * "Newton Solve Trace:")
+        elseif algorithm == :anderson
+            println("  " * "Anderson Solve Trace:")
+        else
+            println("  " * "$(algorithm) Solve Trace:")
+        end
     end
     result = NLsolve.nlsolve(
         df,

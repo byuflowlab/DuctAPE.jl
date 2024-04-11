@@ -6,11 +6,11 @@
 """
 avoid issues with single bodies being input not as vectors
 """
-function generate_panels(coordinates::Matrix{TF}; kwargs...) where {TF}
+function generate_panels(coordinates::AbstractMatrix{TF}; kwargs...) where {TF}
     return generate_panels([coordinates]; kwargs...)
 end
 
-function generate_panels!(panels, coordinates::Matrix{TF}; kwargs...) where {TF}
+function generate_panels!(panels, coordinates::AbstractMatrix{TF}; kwargs...) where {TF}
     return generate_panels!(panels, [coordinates]; kwargs...)
 end
 
@@ -33,54 +33,49 @@ function generate_panels(
     # number of panels to generate for each body
     npanel = nnode .- 1
     # number of bodies
-    nbodies = length(npanel)
+    nbodies = [length(npanel)]
     # total number of panels in system
-    totpanel = sum(npanel)
+    totpanel = [sum(npanel)]
     # total number of nodes in system
     totnode = totpanel + nbodies
 
     # - Initialize Outputs - #
     # control points
-    controlpoint = zeros(TF, 2, totpanel) # x-r, panel
+    controlpoint = zeros(TF, 2, totpanel[]) # x-r, panel
     # nodes
-    node = zeros(TF, 2, totnode) # x-r, node
+    node = zeros(TF, 2, totnode[]) # x-r, node
     # node map
-    nodemap = zeros(Int, 2, totpanel) # node, x-r
+    nodemap = zeros(Int, 2, totpanel[]) # node, x-r
     # first and last nodes of bodies, rotor, or wakes
 
     #TODO: check where this is used and update order of indices if needed
-    endnodes = zeros(TF, nbodies, 2, 2) # TE, upper-lower, x-r
+    endnodes = zeros(TF, nbodies[], 2, 2) # TE, upper-lower, x-r
     # indices of endnodess
-    endnodeidxs = ones(Int, 2, nbodies) # lower idx, upper idx, lower or upper
+    endnodeidxs = ones(Int, 2, nbodies[]) # lower idx, upper idx, lower or upper
     # indices of endpanels
-    endpanelidxs = ones(Int, 2, nbodies) # lower idx, upper idx, lower or upper
+    endpanelidxs = ones(Int, 2, nbodies[]) # lower idx, upper idx, lower or upper
     # panel lengths
-    influence_length = zeros(TF, totpanel)
+    influence_length = zeros(TF, totpanel[])
     # panel unit normals
-    normal = zeros(TF, 2, totpanel)
+    normal = zeros(TF, 2, totpanel[])
     # panel unit tangents
-    tangent = zeros(TF, 2, totpanel)
+    tangent = zeros(TF, 2, totpanel[])
 
     # internal control point
-    itcontrolpoint = zeros(TF, 2, nbodies)
-    itnormal = zeros(TF, 2, nbodies)
+    itcontrolpoint = zeros(TF, 2, nbodies[])
+    itnormal = zeros(TF, 2, nbodies[])
     #note: unused, but required input later
-    ittangent = zeros(TF, 2, nbodies)
+    ittangent = zeros(TF, 2, nbodies[])
 
     # trailing edge gap
-    tenode = zeros(TF, nbodies, 2, 2) # body, node1-2, x-r
-    tenormal = zeros(TF, 2, nbodies) #body, x-r
-    teinfluence_length = zeros(TF, nbodies)
+    tenode = zeros(TF, nbodies[], 2, 2) # body, node1-2, x-r
+    tenormal = zeros(TF, 2, nbodies[]) #body, x-r
+    teinfluence_length = zeros(TF, nbodies[])
     teadjnodeidxs = similar(endnodeidxs) .= 1 #can't be the same as endpoints, because we may have repeated values for non-duct bodies
-    tendotn = zeros(TF, 2, nbodies) #bodies, node1,2
-    tencrossn = zeros(TF, 2, nbodies) #bodies, node1,2
+    tendotn = zeros(TF, 2, nbodies[]) #bodies, node1,2
+    tencrossn = zeros(TF, 2, nbodies[]) #bodies, node1,2
 
-    # count number of prescribed nodes
-    npnid = 0
-    for c in coordinates
-        npnid += count(x -> abs(x) <= eps(), c[2, :])
-    end
-    prescribednodeidxs = zeros(Int, npnid)
+    prescribednodeidxs = zeros(Int, nbodies[])
 
     panels = (;
         controlpoint,
@@ -122,7 +117,7 @@ end
 
 function generate_panels!(
     panels,
-    coordinates::Vector{Matrix{TF}};
+    coordinates::AbstractVector{TF};
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
@@ -158,6 +153,20 @@ function generate_panels!(
         totpanel,
     ) = panels
 
+    if iszero(nnode)
+        ## -- SETUP -- ##
+        # number of nodes according to coordinates
+        nnode .= [length(eachcol(c)) for c in coordinates]
+        # number of panels to generate for each body
+        npanel .= nnode .- 1
+        # number of bodies
+        nbodies .= length(npanel)
+        # total number of panels in system
+        totpanel .= sum(npanel)
+        # total number of nodes in system
+        totnode .= totpanel + nbodies
+    end
+
     # initialize index for entire array
     pidx = 1 # panel index
     nidx = 1 # node index (+1 extra after each body)
@@ -174,11 +183,11 @@ function generate_panels!(
         @assert all(r -> r >= 0.0, r) "Some coordinates have negative radial components."
 
         ## -- Loop Through Coordinates -- ##
-        for ip in 1:npanel[ib]
+        for ip in 1:Int(npanel[ib])
 
             # Get nodes (panel edges)
-            node[:, nidx] = [x[ip]; r[ip]]
-            node[:, nidx + 1] = [x[ip + 1]; r[ip + 1]]
+            node[:, nidx] .= [x[ip]; r[ip]]
+            node[:, nidx + 1] .= [x[ip + 1]; r[ip + 1]]
             nodemap[:, pidx] .= [nidx; nidx + 1]
 
             # Calculate control point (panel center)
@@ -199,7 +208,7 @@ function generate_panels!(
                 endnodes[ib, 1, :] = [x[ip] r[ip]]
                 endnodeidxs[1, ib] = nidx
                 endpanelidxs[1, ib] = pidx
-            elseif ip == npanel[ib]
+            elseif ip == Int(npanel[ib])
                 #upper
                 endnodes[ib, 2, :] = [x[ip + 1] r[ip + 1]]
                 endnodeidxs[2, ib] = nidx + 1
@@ -252,7 +261,12 @@ function generate_panels!(
 
     # - Prescribed Nodes - #
     # Save the node index for nodes that are on the axis and need to be prescribed.
-    prescribednodeidxs[:] = findall(x -> abs(x) <= eps(), node[2, :])
+    if isbody
+        prescribednodeidxs[1] = findfirst(x -> abs(x) <= eps(), node[2, :])
+        prescribednodeidxs[2] = node[2, end] <= eps() ? size(node, 2) : 0
+    else
+        prescribednodeidxs .= 0
+    end
 
     return panels
 end
@@ -270,11 +284,11 @@ function def_it_panel!(
 )
 
     #TODO: maybe move this into it's own in-place function
-    for ib in 1:nbodies
+    for ib in 1:Int(nbodies[])
 
         #rename for convenience
-        p1id = endnodeidxs[1, ib]
-        pnid = endnodeidxs[2, ib]
+        p1id = Int(endnodeidxs[1, ib])
+        pnid = Int(endnodeidxs[2, ib])
 
         # get node coordinates
         n1 = node[:, p1id] #first node on panel 1 (of body ib)
@@ -315,9 +329,10 @@ function def_te_panel!(
     endnodes,
     endnodeidxs,
 )
-    for ib in 1:nbodies
+    for ib in 1:Int(nbodies[])
         # check if signs of x-tangents are the same
-        if sign(tangent[1, endpanelidxs[1, ib]]) != sign(tangent[1, endpanelidxs[2, ib]])
+        if sign(tangent[1, Int(endpanelidxs[1, ib])]) !=
+            sign(tangent[1, Int(endpanelidxs[2, ib])])
             # if not: it's a duct
             # set first node to last endnode,
             tenode[ib, 1, :] .= endnodes[ib, 2, :]
@@ -326,13 +341,17 @@ function def_te_panel!(
             # set normal as above
             tenormal[:, ib] = get_panel_normal(get_r(tenode[ib, 1, :], tenode[ib, 2, :])...)
             # set node id's to the endnode ids
-            teadjnodeidxs[1, ib] = endnodeidxs[2, ib]
-            teadjnodeidxs[2, ib] = endnodeidxs[1, ib]
+            teadjnodeidxs[1, ib] = Int(endnodeidxs[2, ib])
+            teadjnodeidxs[2, ib] = Int(endnodeidxs[1, ib])
             # set dots and crosses for each adjacent panel
-            tendotn[1, ib] = dot(tenormal[:, ib], normal[:, endpanelidxs[2, ib]])
-            tendotn[2, ib] = dot(tenormal[:, ib], normal[:, endpanelidxs[1, ib]])
-            tencrossn[1, ib] = cross2mag(normal[:, endpanelidxs[2, ib]], tenormal[:, ib])
-            tencrossn[2, ib] = cross2mag(normal[:, endpanelidxs[1, ib]], tenormal[:, ib])
+            tendotn[1, ib] = dot(tenormal[:, ib], normal[:, Int(endpanelidxs[2, ib])])
+            tendotn[2, ib] = dot(tenormal[:, ib], normal[:, Int(endpanelidxs[1, ib])])
+            tencrossn[1, ib] = cross2mag(
+                normal[:, Int(endpanelidxs[2, ib])], tenormal[:, ib]
+            )
+            tencrossn[2, ib] = cross2mag(
+                normal[:, Int(endpanelidxs[1, ib])], tenormal[:, ib]
+            )
 
         else
             # if so: it's anything else (assuming the hub nose doesn't curve inward...
@@ -343,13 +362,15 @@ function def_te_panel!(
             # set normal to parallel to axis
             tenormal[:, ib] = [1.0, 0.0]
             # set both adjacent node id's to the last endnode id
-            # teadjnodeidxs[ib, :] .= endnodeidxs[2, ib]
-            teadjnodeidxs[:, ib] .= endnodeidxs[2, ib]
+            # teadjnodeidxs[ib, :] .= Int(endnodeidxs[2, ib])
+            teadjnodeidxs[:, ib] .= Int(endnodeidxs[2, ib])
             # teadjnodeidxs[2, ib] = -1
             # set both dots and crosses to the same thing based on the single adjacent node.
-            tendotn[1, ib] = dot(tenormal[:, ib], normal[:, endpanelidxs[2, ib]])
+            tendotn[1, ib] = dot(tenormal[:, ib], normal[:, Int(endpanelidxs[2, ib])])
             tendotn[2, ib] = 0.0 # unnecessary since this value isn't used because the gamma value is prescribed to zero anyway, but just in case initialization changes
-            tencrossn[:, ib] .= cross2mag(normal[:, endpanelidxs[2, ib]], tenormal[:, ib])
+            tencrossn[:, ib] .= cross2mag(
+                normal[:, Int(endpanelidxs[2, ib])], tenormal[:, ib]
+            )
         end
         teinfluence_length[ib] = get_r(tenode[ib, 1, :], tenode[ib, 2, :])[2]
     end

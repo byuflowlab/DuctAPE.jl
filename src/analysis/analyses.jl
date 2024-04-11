@@ -3,10 +3,9 @@
 function analyze(
     propulsor::Propulsor,
     options=set_options();
-    # precomp_container_caching=nothing,
+    prepost_container_caching=nothing,
     solve_parameter_caching=nothing,
     solve_container_caching=nothing,
-    # post_caching=nothing
 )
 
     # - Get type to dispatch caches - #
@@ -26,27 +25,34 @@ function analyze(
         eltype(propulsor.rotorstator_parameters.twists),
     )
 
-    # if isnothing(precomp_container_caching)
-    #     precomp_container_caching = allocate_precomp_container_cache(
-    #         propulsor.paneling_constants
-    #     )
-    # end
+    # - Get Problem Dimensions - #
+    problem_dimensions = get_problem_dimensions(propulsor.paneling_constants)
 
-    # if isnothing(post_caching)
-    #     post_caching = allocate_post_cache(
-    #         propulsor.paneling_constants
-    #     )
-    # end
+    ##### ----- SET UP CACHES AS NEEDED ----- #####
 
-    # - Pull out the Caches - #
-    # (; precomp_container_cache, precomp_container_cache_dims) = precomp_container_caching
-    # (; post_cache, post_cache_dims) = post_caching
+    # - Set up Pre- and Post-process Cache - #
+    # Allocate Cache
+    if isnothing(prepost_container_caching)
+        prepost_container_caching = allocate_prepost_container_cache(
+            propulsor.paneling_constants
+        )
+    end
 
-    # # - Reshape precomp_container_cache - #
-    # precomp_container_cache_vec = @views PreallocationTools.get_tmp(precomp_container_cache, TF(1.0))
-    # precomp_containers = withdraw_precomp_container_cache(
-    #     precomp_container_cache, precomp_container_cache_dims
-    # )
+    # unpack the caching
+    (; prepost_container_cache, prepost_container_cache_dims) = prepost_container_caching
+
+    # Get correct cached types
+    prepost_container_cache_vec = @views PreallocationTools.get_tmp(
+        prepost_container_cache, TF(1.0)
+    )
+
+    # reset cache
+    prepost_container_cache_vec .= 0
+
+    # Reshape Cache
+    prepost_containers = withdraw_prepost_container_cache(
+        prepost_container_cache_vec, prepost_container_cache_dims
+    )
 
     # - Set up Solver Sensitivity Paramter Cache - #
 
@@ -57,7 +63,7 @@ function analyze(
         )
     end
 
-    # separate out caching items
+    # unpack caching
     (; solve_parameter_cache, solve_parameter_cache_dims) = solve_parameter_caching
 
     # get correct cache type
@@ -77,20 +83,23 @@ function analyze(
         solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
     end
 
-    # - Do precomputations - #
+    # - Do preprocessutations - #
     if options.verbose
         println("Pre-computing Parameters")
     end
 
-    # out-of-place version currently has 22,292,181 allocations.
-    # TODO: do this in place for the solve input cache items. eventually will want to have a post-processing and output cache too.
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = precompute_parameters!(
+    ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
+
+    # - Preprocess - #
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
-        propulsor;
+        propulsor,
+        prepost_containers,
+        problem_dimensions;
         grid_solver_options=options.grid_solver_options,
         integration_options=options.integration_options,
         autoshiftduct=options.autoshiftduct,
@@ -115,6 +124,7 @@ function analyze(
             end
         end
         #TODO: write a function that returns the same as outs below, but all zeros
+        #TODO: probably just call  the post-process function directly and return a reset_container! of the output
         return [],#zero_outputs(),
         (; solve_parameter_tuple..., ivb, airfoils, idmaps, panels, problem_dimensions),
         false
@@ -128,7 +138,7 @@ function analyze(
         airfoils,
         ivb,
         A_bb_LU,
-        panels,
+        prepost_containers.panels,
         idmaps,
         problem_dimensions,
         options;
@@ -151,7 +161,7 @@ function analyze(
     problem_dimensions,
     options=set_options();
     return_inputs=false,
-    # precomp_container_caching=nothing,
+    # prepost_container_caching=nothing,
     solve_container_caching=nothing,
     # post_caching=nothing
 )

@@ -292,13 +292,13 @@ function post_process(
         sigr,
         ivb,
         Vinf[1],
-        body_vortex_panels.totnode,
-        body_vortex_panels.totpanel,
-        body_vortex_panels.nnode,
-        body_vortex_panels.npanel,
+        Int(body_vortex_panels.totnode[]),
+        Int(body_vortex_panels.totpanel[]),
+        Int.(body_vortex_panels.nnode),
+        Int.(body_vortex_panels.npanel),
         body_vortex_panels.tangent,
         body_vortex_panels.controlpoint,
-        body_vortex_panels.endpanelidxs,
+        Int.(body_vortex_panels.endpanelidxs),
         idmaps.wake_node_ids_along_centerbody_wake_interface,
         idmaps.wake_node_ids_along_casing_wake_interface,
         idmaps.centerbody_panel_ids_along_centerbody_wake_interface,
@@ -930,12 +930,12 @@ function forces_from_pressure(cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
     ds = panels.influence_length
 
     # - initialize - #
-    cfx = zeros(eltype(cp_out), panels.nbodies) # axial force coefficient (all others are zero for axisymmetric case)
+    cfx = zeros(eltype(cp_out), Int(panels.nbodies[])) # axial force coefficient (all others are zero for axisymmetric case)
 
     # for each body
-    for ib in 1:(panels.nbodies)
+    for ib in 1:(Int(panels.nbodies[]))
         # - rectangular integration due to constant panel strengths. - #
-        for ip in panels.endpanelidxs[1, ib]:panels.endpanelidxs[2, ib]
+        for ip in Int.(panels.endpanelidxs[1, ib]:panels.endpanelidxs[2, ib])
             cfx[ib] += (cp_out[ip] - cp_in[ip]) * ns[ip] * ds[ip] * 2.0 * pi * rs[ip]
         end
     end
@@ -957,18 +957,18 @@ function forces_from_TEpanels!(
     #dimensionalize
     q = 0.5 * rhoinf * Vref^2
 
-    for i in 1:(panels.nbodies)
+    for i in 1:(Int(panels.nbodies[]))
         if panels.tenode[i, 2, 2] <= eps()
             # if it's the hub, don't average the first and last, but rather just the last
-            cpi = cp_in[panels.endpanelidxs[i, 2]]
-            cpo = cp_out[panels.endpanelidxs[i, 2]]
+            cpi = cp_in[Int(panels.endpanelidxs[i, 2])]
+            cpo = cp_out[Int(panels.endpanelidxs[i, 2])]
         else
             # if it's the duct, then average the first and last panel
             cpi =
-                0.5 * (cp_in[panels.endpanelidxs[1, i]] + cp_in[panels.endpanelidxs[2, i]])
+            0.5 * (cp_in[Int(panels.endpanelidxs[1, i])] + cp_in[Int(panels.endpanelidxs[2, i])])
             cpo =
                 0.5 *
-                (cp_out[panels.endpanelidxs[1, i]] + cp_out[panels.endpanelidxs[2, i]])
+                (cp_out[Int(panels.endpanelidxs[1, i])] + cp_out[Int(panels.endpanelidxs[2, i])])
         end
 
         r = 0.5 * sum(panels.tenode[i, :, 2])

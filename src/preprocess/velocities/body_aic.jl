@@ -86,8 +86,8 @@ function vortex_aic_boundary_on_boundary!(
     for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
         # Loop through control points being influenced
         for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
-            n1 = view(node, :, nmap[1])
-            n2 = view(node, :, nmap[2])
+            n1 = view(node, :, Int(nmap[1]))
+            n2 = view(node, :, Int(nmap[2]))
 
             # get unit induced velocity from the panel onto the control point
             if i != j
@@ -118,7 +118,7 @@ function vortex_aic_boundary_on_boundary!(
 
             for k in 1:2
                 # fill the Matrix
-                AICn[i, nmap[k]] += dot(vel[k, :], nhat)
+                AICn[i, Int(nmap[k])] += dot(vel[k, :], nhat)
             end #for k
         end #for i
     end #for j
@@ -209,8 +209,8 @@ function vortex_aic_boundary_on_field!(
     for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
         # loop through panels doing the influencing
         for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
-            n1 = view(node, :, nmap[1])
-            n2 = view(node, :, nmap[2])
+            n1 = view(node, :, Int(nmap[1]))
+            n2 = view(node, :, Int(nmap[2]))
 
             # check of self-induced:
             if isapprox(cpi, 0.5 * (n1 .+ n2))
@@ -249,7 +249,7 @@ function vortex_aic_boundary_on_field!(
 
             for k in 1:2
                 # fill the Matrix
-                AICn[i, nmap[k]] += dot(vel[k, :], nhat)
+                AICn[i, Int(nmap[k])] += dot(vel[k, :], nhat)
             end #for k
         end #for j
     end #for i
@@ -343,11 +343,11 @@ function add_te_gap_aic!(
 
             for k in 1:2
                 # fill the Matrix
-                AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
+                AICn[i, Int(nmap[k])] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
                 #TODO: is this a bug? seems like the above line should be in an else statement
                 if wake
                     # wake "TE Panels" only have the vortex influence
-                    AICn[i, nmap[k]] += dot(ndn[k] * vvel[k, :], nhat)
+                    AICn[i, Int(nmap[k])] += dot(ndn[k] * vvel[k, :], nhat)
                 end
             end #for k
         end #for j
@@ -439,8 +439,8 @@ function source_aic!(
     for (i, (cpi, nhat)) in enumerate(zip(eachcol(controlpoint), eachcol(normal)))
         # loop through panels doing the influencing
         for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
-            n1 = view(node, :, nmap[1])
-            n2 = view(node, :, nmap[2])
+            n1 = view(node, :, Int(nmap[1]))
+            n2 = view(node, :, Int(nmap[2]))
 
             # get unit induced velocity from the panel onto the control point
             # vel .= nominal_vortex_panel_integration(n1, n2, lj, cpi)
@@ -452,7 +452,7 @@ function source_aic!(
 
             for k in 1:2
                 # fill the Matrix
-                AICn[i, nmap[k]] += dot(vel[k, :], nhat)
+                AICn[i, Int(nmap[k])] += dot(vel[k, :], nhat)
             end #for k
         end #for j
     end #for i
@@ -541,30 +541,30 @@ function assemble_lhs_matrix!(
 
     # - Place standard influence coefficients - #
     # 1:totpanel, 1:totnode are standard AIC values
-    LHS[1:totpanel, 1:totnode] .= AICn
+    LHS[1:Int(totpanel[]), 1:Int(totnode[])] .= AICn
 
     # - Place Dummy influences on right-most columns - #
     # Duct Dummy's
-    LHS[1:npanel[1], end - 1] .= dummyval
+    LHS[1:Int(npanel[1]), end - 1] .= dummyval
     # Hub Dummy's
-    LHS[(npanel[1] + 1):totpanel, end] .= dummyval
+    LHS[(Int(npanel[1]) + 1):Int(totpanel[]), end] .= dummyval
 
     # - Place internal duct pseudo control point row - #
-    LHS[totpanel + 1, 1:totnode] .= @view(AICpcp[1, :])
+    LHS[Int(totpanel[]) + 1, 1:Int(totnode[])] .= @view(AICpcp[1, :])
 
     # - Place Kutta condition Row - #
-    LHS[(totpanel + 2), 1] = LHS[totpanel + 2, nnode[1]] = 1.0
+    LHS[(Int(totpanel[]) + 2), 1] = LHS[Int(totpanel[]) + 2, Int(nnode[1])] = 1.0
 
     # - Place hub LE prescribed panel row - #
-    LHS[totpanel + 3, prescribednodeidxs[1]] = 1.0
+    LHS[Int(totpanel[]) + 3, Int(prescribednodeidxs[1])] = 1.0
 
     # - Place hub TE prescribed panel row OR hub internal pseudo control point row - #
-    if length(prescribednodeidxs) > 1
-        # prescribed TE node
-        LHS[totpanel + 4, prescribednodeidxs[2]] = 1.0
-    else
+    if iszero(Int(prescribednodeidxs[2]))
         # internal pseudo control point
-        LHS[totpanel + 4, 1:totnode] .= @view(AICpcp[2, :])
+        LHS[Int(totpanel[]) + 4, 1:Int(totnode[])] .= @view(AICpcp[2, :])
+    else
+        # prescribed TE node
+        LHS[Int(totpanel[]) + 4, Int(prescribednodeidxs[2])] = 1.0
     end
 
     return LHS
@@ -637,14 +637,14 @@ function assemble_rhs_matrix!(
 
     # - Place standard influence coefficients - #
     # 1:totpanel, 1:totnode are standard AIC values
-    RHS[1:totpanel] .= vdnb
+    RHS[1:Int(totpanel[])] .= vdnb
 
     # - Place Duct pseudo control point freestream influence - #
-    RHS[totnode - 1] = vdnpcp[1]
+    RHS[Int(totnode[]) - 1] = vdnpcp[1]
 
     # - Place hub pseudo control point freestream influence - #
-    if length(prescribednodeidxs) == 1
-        RHS[totnode + 2] = vdnpcp[2]
+    if iszero(Int(prescribednodeidxs[2]))
+        RHS[Int(totnode[]) + 2] = vdnpcp[2]
     end
 
     return RHS
@@ -664,7 +664,7 @@ function assemble_rhs_matrix!(
     RHS[totnode - 1] = vdnpcp[1]
 
     # - Place hub pseudo control point freestream influence - #
-    if length(prescribednodeidxs) == 1
+    if iszero(prescribednodeidxs[2])
         RHS[totnode + 2] = vdnpcp[2]
     end
 

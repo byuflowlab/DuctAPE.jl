@@ -92,8 +92,8 @@ function induced_velocities_from_vortex_panels_on_points!(
         enumerate(zip(eachcol(nodemap), influence_length, eachcol(strength)))
         # Loop through control points being influenced
         for (i, cpi) in enumerate(eachcol(controlpoint))
-            n1 = view(node, :, nmap[1])
-            n2 = view(node, :, nmap[2])
+            n1 = view(node, :, Int(nmap[1]))
+            n2 = view(node, :, Int(nmap[2]))
 
             # check of self-induced:
             if isapprox(cpi, 0.5 * (n1 .+ n2))
@@ -126,7 +126,8 @@ function induced_velocities_from_vortex_panels_on_points!(
 
             for k in 1:2
                 # fill the Matrix
-                VEL[i, nmap[k], :] += gammaj[k] * vel[k, :]
+                # TODO: is having this gammaj here even necessary, or is it always just 1? If so, really need to just remove it since we're allocating large arrays every time we call this function.
+                VEL[i, Int(nmap[k]), :] += gammaj[k] * vel[k, :]
             end #for k
         end #for i
     end #for j
@@ -222,8 +223,8 @@ function induced_velocities_from_source_panels_on_points!(
 
         # Loop through control points being influenced
         for (i, cpi) in enumerate(eachcol(controlpoint))
-            n1 = view(node, :, nmap[1])
-            n2 = view(node, :, nmap[2])
+            n1 = view(node, :, Int(nmap[1]))
+            n2 = view(node, :, Int(nmap[2]))
 
             # check of self-induced:
             if isapprox(cpi, 0.5 * (n1 .+ n2))
@@ -256,7 +257,7 @@ function induced_velocities_from_source_panels_on_points!(
 
             for k in 1:2
                 # fill the Matrix
-                VEL[i, nmap[k], :] += sigmaj[k] * vel[k, :]
+                VEL[i, Int(nmap[k]), :] += sigmaj[k] * vel[k, :]
             end #for k
         end #for i
     end #for j
@@ -360,10 +361,10 @@ function induced_velocities_from_trailing_edge_gap_panel!(
 
             for k in 1:2
                 # fill the Matrix
-                VEL[i, nmap[k], :] += ndn[k] * vvel[k, :] + ncn[k] * svel[k, :]
+                VEL[i, Int(nmap[k]), :] += ndn[k] * vvel[k, :] + ncn[k] * svel[k, :]
                 if wake
                     # wake "TE Panels" only have the vortex influence
-                    VEL[i, nmap[k], :] += ndn[k] * vvel[k, :]
+                    VEL[i, Int(nmap[k]), :] += ndn[k] * vvel[k, :]
                 end
             end #for k
         end #for j

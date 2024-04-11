@@ -236,7 +236,7 @@ function generate_rotor_panels!(
     for irotor in 1:length(rotorzloc)
         @views xr[irotor] = [
             fill(rotorzloc[irotor], nwake_sheets)'
-            wake_grid[2, rotor_indices_in_wake[irotor], 1:nwake_sheets]'
+            wake_grid[2, Int(rotor_indices_in_wake[irotor]), 1:nwake_sheets]'
         ]
     end
 

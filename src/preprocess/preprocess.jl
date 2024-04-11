@@ -77,10 +77,6 @@ function reinterpolate_geometry!(
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
-    # atol=1e-14,
-    # iteration_limit=100,
-    # relaxation_iteration_limit=3,
-    # relaxation_atol=1e-14,
     finterp=FLOWMath.akima,
     verbose=false,
     silence_warnings=true,
@@ -156,10 +152,6 @@ function reinterpolate_geometry!(
         tip_gap[1],
         zwake;
         grid_solver_options=grid_solver_options,
-        # atol=atol,
-        # iteration_limit=iteration_limit,
-        # relaxation_iteration_limit=relaxation_iteration_limit,
-        # relaxation_atol=relaxation_atol,
         verbose=verbose,
         silence_warnings=silence_warnings,
     )
@@ -204,12 +196,12 @@ end
 """
 function generate_all_panels!(
     panels,
-    idmaps,
+    wake_grid,
     rp_duct_coordinates,
     rp_centerbody_coordinates,
-    rotorstator_parameters,
-    paneling_constants,
-    wake_grid;
+    rotor_indices_in_wake,
+    rotorzloc,
+    nwake_sheets;
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
@@ -218,8 +210,6 @@ function generate_all_panels!(
 
     # - Extract Tuples - #
     (; body_vortex_panels, rotor_source_panels, wake_vortex_panels) = panels
-    (; npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte) =
-        paneling_constants
 
     ##### ----- Fill Panel Objects ----- #####
     # - Body Panels - #
@@ -307,7 +297,8 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        ones(TF, 2, body_vortex_panels.totpanel),
+        #TODO: set things up differently so that you don't have to provide this allocated vector
+        ones(TF, 2, Int(body_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -331,7 +322,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, rotor_source_panels.totnode),
+        ones(TF, 2, Int(rotor_source_panels.totnode[])),
         integration_options,
     )
 
@@ -343,7 +334,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, wake_vortex_panels.totpanel),
+        ones(TF, 2, Int(wake_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -368,7 +359,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, rotor_source_panels.totnode),
+        ones(TF, 2, Int(rotor_source_panels.totnode[])),
         integration_options,
     )
 
@@ -380,7 +371,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        ones(TF, 2, body_vortex_panels.totpanel),
+        ones(TF, 2, Int(body_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -404,7 +395,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, wake_vortex_panels.totpanel),
+        ones(TF, 2, Int(wake_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -430,7 +421,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        ones(TF, 2, body_vortex_panels.totpanel),
+        ones(TF, 2, Int(body_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -454,7 +445,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, rotor_source_panels.totpanel),
+        ones(TF, 2, Int(rotor_source_panels.totpanel[])),
         integration_options,
     )
 
@@ -466,7 +457,7 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, wake_vortex_panels.totpanel),
+        ones(TF, 2, Int(wake_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -1165,7 +1156,7 @@ function set_index_maps(
 
     # - Map of wake node index to the wake sheet on which it resides and the last rotor ahead of the node - #
     nwsn = nwsp + 1
-    wake_node_sheet_be_map = ones(Int, wenids[end], 2)
+    wake_node_sheet_be_map = ones(Int, Int(wenids[end]), 2)
     for i in 1:nwake_sheets
         wake_node_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), 1] .= i
         for (ir, r) in enumerate(
@@ -1191,109 +1182,6 @@ function set_index_maps(
         rotor_indices_in_wake,
         body_totnodes,
     )
-end
-
-"""
-wnm = wake_vortex_panels.nodemap
-venids = wake_vortex_panels.endnodeidxs
-nbn = body_vortex_panels.totnode
-wpsbm = wake_panel_sheet_be_map
-e_map
-    wake_panel_sheet_be_map = ones(Int, wake_vortex_panels.totnode, 2)
-    num_wake_z_nodes = length(zwake)
-    for i in 1:(rotorstator_parameters[1].nwake_sheets)
-        wake_panel_sheet_be_map[(1 + (i - 1) * num_wake_z_nodes):(i * num_wake_z_nodes), 1] .= i
-    end
-    for (i, wn) in enumerate(eachcol(wake_vortex_panels.node))
-        # TODO: DFDC geometry doesn't line up wake and rotor perfectly, so need a more robust option.
-        # wake_panel_sheet_be_map[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
-        # TODO: current tee_mapsts are passing, but look here if things break in the future.
-        wake_panel_sheet_be_map[i, 2] = findmin(x -> abs(x - wn[1]), rotorstator_parameters.rotorzloc)[2]
-    end
-"""
-function set_index_maps!(
-    idmaps,
-    npanels,
-    nwake_sheets,
-    ncenterbody_inlet,
-    dte_minus_cbte,
-    wnm,
-    wenids,
-    nbn,
-    wpsbm,
-)
-    # - Extract Index Maps - #
-    (;
-        wake_nodemap,
-        wake_endnodeidxs,
-        wake_panel_sheet_be_map,
-        wake_node_ids_along_casing_wake_interface,
-        wake_node_ids_along_centerbody_wake_interface,
-        id_of_first_casing_panel_aft_of_each_rotor,
-        id_of_first_centerbody_panel_aft_of_each_rotor,
-        rotor_indices_in_wake,
-        body_totnodes,
-    ) = idmaps
-
-    wake_nodemap .= wnm
-    wake_endnodeidxs .= wenids
-    body_totnodes .= nbn
-
-    if iszero(dte_minus_cbte) || dte_minus_cbte < 0
-        cb_te_id = sum(npanels[1:(end - 1)]) + 1
-    else
-        cb_te_id = sum(npanels[1:(end - 2)]) + 1
-    end
-    wake_node_ids_along_centerbody_wake_interface .= collect(range(1, cb_te_id; step=1))
-
-    if iszero(dte_minus_cbte) || dte_minus_cbte > 0
-        duct_te_id = sum(npanels[1:(end - 1)]) + 1
-    else
-        duct_te_id = sum(npanels[1:(end - 2)]) + 1
-    end
-
-    ductteinwake = (sum(npanels) + 1) * nwake_sheets - (npanels[end] + 1)
-
-    wake_node_ids_along_casing_wake_interface .= collect(
-        range(ductteinwake - duct_te_id + 1, ductteinwake; step=1)
-    )
-
-    for i in 1:nwake_sheets
-        wake_panel_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), 1] .= i
-        for (ir, r) in enumerate(
-            eachrow(@view(wake_panel_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), :]))
-        )
-            r[2] = min(nrotor, searchsortedlast(rotor_indices_in_wake, ir))
-        end
-    end
-
-    if dte_minus_cbte < 0
-        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
-            npanels[i] for i in (length(npanels) - 1):-1:1
-        ])[2:end]
-    elseif dte_minus_cbte > 0
-        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
-            npanels[i] for i in (length(npanels) - 2):-1:1
-        ])
-    else
-        id_of_first_casing_panel_aft_of_each_rotor = cumsum([
-            npanels[i] for i in (length(npanels) - 1):-1:1
-        ])
-    end
-
-    if iszero(dte_minus_cbte)
-        id_of_first_centerbody_panel_aft_of_each_rotor = [
-            ncenterbody_inlet + 1
-            ncenterbody_inlet .+ [npanels[i] for i in 1:(length(npanels) - 2)]
-        ]
-    else
-        id_of_first_centerbody_panel_aft_of_each_rotor = [
-            ncenterbody_inlet + 1
-            ncenterbody_inlet .+ [npanels[i] for i in 1:(length(npanels) - 3)]
-        ]
-    end
-
-    return idmaps
 end
 
 """
@@ -1487,7 +1375,9 @@ function precompute_parameters!(
     blade_element_cache,
     linsys,
     wakeK,
-    propulsor;
+    propulsor,
+    prepost_containers,
+    problem_dimensions;
     grid_solver_options=GridSolverOptions(),
     integration_options=IntegrationOptions(),
     autoshiftduct=true,
@@ -1499,7 +1389,7 @@ function precompute_parameters!(
     verbose=false,
 )
 
-    # - Extract propulsor - #
+    # - unpack propulsor - #
     (;
         duct_coordinates,       # Matrix
         centerbody_coordinates, # Matrix
@@ -1509,18 +1399,27 @@ function precompute_parameters!(
         reference_parameters,   # NamedTuple of vectors (TODO) of numbers
     ) = propulsor
 
-    # - Get Problem Dimensions - #
-    problem_dimensions = get_problem_dimensions(paneling_constants)
+    # - Unpack preprocess containers - #
+    (;
+     wake_grid,
+     rp_duct_coordinates,
+     rp_centerbody_coordinates,
+     rotor_indices_in_wake,
+    ) = prepost_containers
 
     # - Reinterpolate Geometry and Generate Wake Grid - #
-    wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, rotor_indices_in_wake = reinterpolate_geometry(
-        problem_dimensions,
+    # note: currently has 3526 allocations and takes 103.21 ms
+    reinterpolate_geometry!(
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        rotor_indices_in_wake,
         duct_coordinates,
         centerbody_coordinates,
         rotorstator_parameters,
         paneling_constants;
-        grid_solver_options=grid_solver_options,
         autoshiftduct=autoshiftduct,
+        grid_solver_options=grid_solver_options,
         finterp=finterp,
         verbose=verbose,
         silence_warnings=silence_warnings,
@@ -1550,6 +1449,7 @@ function precompute_parameters!(
         paneling_constants,
         operating_point,
         reference_parameters,
+        prepost_containers,
         problem_dimensions;
         grid_solver_options=grid_solver_options,
         integration_options=integration_options,
@@ -1579,6 +1479,7 @@ function precompute_parameters!(
     paneling_constants,
     operating_point,
     reference_parameters,
+    prepost_containers,
     problem_dimensions=nothing;
     grid_solver_options=GridSolverOptions(),
     integration_options=IntegrationOptions(),
@@ -1615,14 +1516,25 @@ function precompute_parameters!(
         eltype(rotorstator_parameters.twists),
     )
 
+    # - Unpack preprocess containers - #
+    (;
+        panels, #TODO: add panels to cache
+        ivb,
+        AICn,
+        AICpcp,
+        vdnb,
+        vdnpcp,
+    ) = prepost_containers
+
     # - Panel Everything - #
-    body_vortex_panels, rotor_source_panels, wake_vortex_panels = generate_all_panels(
+    generate_all_panels!(
+        panels,
+        wake_grid,
         rp_duct_coordinates,
         rp_centerbody_coordinates,
-        paneling_constants.nwake_sheets,
         rotor_indices_in_wake,
         rotorstator_parameters.rotorzloc,
-        wake_grid;
+        paneling_constants.nwake_sheets;
         itcpshift=itcpshift,
         axistol=axistol,
         tegaptol=tegaptol,
@@ -1632,62 +1544,35 @@ function precompute_parameters!(
     # - Get problem dimensions if not already done - #
     if isnothing(problem_dimensions)
         problem_dimensions = get_problem_dimensions(
-            body_vortex_panels, rotor_source_panels, wake_vortex_panels
+            panels.body_vortex_panels, panels.rotor_source_panels, panels.wake_vortex_panels
         )
     end
 
     # - Compute Influence Matrices - #
-    # TODO: put ivb in post-process cache eventually
-    ivb = (;
-        v_bb=zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn, 2),
-        v_br=zeros(
-            TF,
-            problem_dimensions.nbp,
-            problem_dimensions.nrotor * problem_dimensions.nws,
-            2,
-        ),
-        v_bw=zeros(TF, problem_dimensions.nbp, problem_dimensions.nwn, 2),
-    )
-    calculate_unit_induced_velocities!(
-        ivr,
-        ivw,
-        ivb,
-        (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
-        integration_options,
-    )
+    calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
 
     # - Set up Linear System - #
-    # TODO: put these containers in a precomp cache eventually
-    intermediate_containers = (;
-        AICn=zeros(TF, problem_dimensions.nbp, problem_dimensions.nbn),
-        AICpcp=zeros(TF, 2, problem_dimensions.nbn),
-        vdnb=zeros(TF, problem_dimensions.nbp),
-        vdnpcp=zeros(TF, 2),
-    )
-
-    # TODO: test this function
     A_bb_LU, lu_decomp_flag = initialize_linear_system!(
         linsys,
         ivb,
-        body_vortex_panels,
-        rotor_source_panels,
-        wake_vortex_panels,
+        panels.body_vortex_panels,
+        panels.rotor_source_panels,
+        panels.wake_vortex_panels,
         operating_point.Vinf[1],
-        intermediate_containers,
-        integration_options
+        (; AICn, AICpcp, vdnb, vdnpcp),
+        integration_options,
     )
 
     # - Interpolate Blade Elements - #
-    # TODO: test this function
     airfoils = interpolate_blade_elements!(
         blade_element_cache,
         rotorstator_parameters,
-        rotor_source_panels.controlpoint[2, :],
+        panels.rotor_source_panels.controlpoint[2, :],
         problem_dimensions.nbe,
     )
 
     # - Get geometry-based constants for wake node strength calculations - #
-    get_wake_k!(wakeK, wake_vortex_panels.node[2, :])
+    get_wake_k!(wakeK, panels.wake_vortex_panels.node[2, :])
 
     # - Save all the index mapping (bookkeeping) - #
     idmaps = set_index_maps(
@@ -1695,8 +1580,8 @@ function precompute_parameters!(
         paneling_constants.ncenterbody_inlet,
         paneling_constants.nwake_sheets,
         paneling_constants.dte_minus_cbte,
-        wake_vortex_panels.nodemap,
-        wake_vortex_panels.endnodeidxs,
+        Int.(panels.wake_vortex_panels.nodemap),
+        Int.(panels.wake_vortex_panels.endnodeidxs),
         problem_dimensions.nwp,
         problem_dimensions.nwsp,
         problem_dimensions.nbn,
@@ -1710,7 +1595,6 @@ function precompute_parameters!(
     lu_decomp_flag,
     airfoils,
     idmaps,
-    (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
     problem_dimensions
 end
 

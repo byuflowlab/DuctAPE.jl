@@ -30,7 +30,7 @@ function split_bodies(vec, controlpoint, endpanelidxs; duct=true, hub=true)
         return TF[], TF[], vec, TF[], TF[], controlpoint[:, 1]
     else
         # split duct into inner and outer
-        ndpan = endpanelidxs[2, 1]
+        ndpan = Int(endpanelidxs[2, 1])
         # get duct leading edge index. assumes duct comes first in vector
         _, leidx = findmin(controlpoint[1, 1:ndpan])
         if !hub

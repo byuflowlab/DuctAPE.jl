@@ -350,7 +350,7 @@ end
     output_tuple_name::TS = "outs"
     # - Solving Options - #
     grid_solver_options::WS = GridSolverOptions()
-    solver_options::TSo = CompositeSolverOptions()
+    solver_options::TSo = ChainSolverOptions()
 end
 
 function set_options(; kwargs...)
