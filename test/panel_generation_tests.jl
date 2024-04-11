@@ -10,7 +10,7 @@ println("\nPANEL INITIALIZATION TESTS")
 
     # single panel
     coordinates = [[0.0 1.0; 1.0 1.0]]
-    panels = dt.generate_panels(coordinates)
+    panels = dt.generate_panels(coordinates; isbody=false)
 
     @test panels.controlpoint[:, 1] == [0.5; 1.0]
     @test panels.normal[:, 1] == [0.0; 1.0]
@@ -98,8 +98,13 @@ println("\nPANEL INITIALIZATION TESTS")
     @test panels.tencrossn[:, 1] == [0.0, 0.0]
     @test all(isapprox.(panels.tencrossn[:, 2], -[sqrt(2) / 2, sqrt(2) / 2]))
     @test all(isapprox.(panels.teinfluence_length, [0.0, 0.0]))
-    @test panels.totnode == 8
-    @test panels.totpanel == 6
+    @test panels.totnode == [8]
+    @test panels.totpanel == [6]
+
+    ippanels = deepcopy(panels)
+    dt.reset_containers!(ippanels)
+    dt.generate_panels!(ippanels, coordinates; isbody=true)
+    @test all(dt.compare_namedtuples(ippanels,panels;verbose=true))
 
     # - TE panel specific tests - #
     x1 = [1.0; 0.5; 0.0; 0.5; 1.0]
@@ -122,23 +127,23 @@ println("\nPANEL INITIALIZATION TESTS")
     @test panels.teadjnodeidxs[:, 1] == [5, 1]
     @test panels.teadjnodeidxs[:, 2] == [8, 8]
     @test panels.tendotn[1, 1] ==
-        dt.dot(panels.tenormal[:, 1], panels.normal[:, panels.endpanelidxs[2, 1]])
+        dt.dot(panels.tenormal[:, 1], panels.normal[:, Int(panels.endpanelidxs[2, 1])])
     @test isapprox(
         panels.tendotn[1, 2],
-        dt.dot(panels.tenormal[:, 1], panels.normal[:, panels.endpanelidxs[1, 1]]),
+        dt.dot(panels.tenormal[:, 1], panels.normal[:, Int(panels.endpanelidxs[1, 1])]),
     )
     @test isapprox(
         panels.tendotn[2, 1],
-        dt.dot(panels.tenormal[:, 2], panels.normal[:, panels.endpanelidxs[2, 2]]),
+        dt.dot(panels.tenormal[:, 2], panels.normal[:, Int(panels.endpanelidxs[2, 2])]),
     )
     @test panels.tendotn[2, 2] == 0.0
     @test panels.tencrossn[1, 1] ==
-        -dt.cross2mag(panels.tenormal[:, 1], panels.normal[:, panels.endpanelidxs[2, 1]])
+        -dt.cross2mag(panels.tenormal[:, 1], panels.normal[:, Int(panels.endpanelidxs[2, 1])])
     @test panels.tencrossn[2, 1] ==
-        -dt.cross2mag(panels.tenormal[:, 1], panels.normal[:, panels.endpanelidxs[1, 1]])
+        -dt.cross2mag(panels.tenormal[:, 1], panels.normal[:, Int(panels.endpanelidxs[1, 1])])
     @test panels.tencrossn[1, 2] ==
-        -dt.cross2mag(panels.tenormal[:, 2], panels.normal[:, panels.endpanelidxs[2, 2]])
+        -dt.cross2mag(panels.tenormal[:, 2], panels.normal[:, Int(panels.endpanelidxs[2, 2])])
     @test panels.tencrossn[2, 2] ==
-        -dt.cross2mag(panels.tenormal[:, 2], panels.normal[:, panels.endpanelidxs[2, 2]])
+        -dt.cross2mag(panels.tenormal[:, 2], panels.normal[:, Int(panels.endpanelidxs[2, 2])])
     @test all(isapprox.(panels.teinfluence_length, [0.2, 0.1]))
 end
