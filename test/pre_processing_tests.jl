@@ -353,12 +353,39 @@ end
     include("data/basic_two_rotor_for_test_NEW.jl")
     options = dt.set_options()
 
+    # - Get Problem Dimensions - #
+    problem_dimensions = dt.get_problem_dimensions(propulsor.paneling_constants)
+
+    # - Set up Pre- and Post-process Cache - #
+    # Allocate Cache
+    prepost_container_caching = dt.allocate_prepost_container_cache(
+        propulsor.paneling_constants
+    )
+
+    # unpack the caching
+    (; prepost_container_cache, prepost_container_cache_dims) = prepost_container_caching
+
+    # Get correct cached types
+    prepost_container_cache_vec = @views PreallocationTools.get_tmp(
+        prepost_container_cache, Float64(1.0)
+    )
+
+    # reset cache
+    prepost_container_cache_vec .= 0
+
+    # Reshape Cache
+    prepost_containers = dt.withdraw_prepost_container_cache(
+        prepost_container_cache_vec, prepost_container_cache_dims
+    )
+
+    # - Set up Solver Sensitivity Paramter Cache - #
+
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
         options.solver_options, propulsor.paneling_constants
     )
 
-    # separate out caching items
+    # unpack caching
     (; solve_parameter_cache, solve_parameter_cache_dims) = solve_parameter_caching
 
     # get correct cache type
@@ -378,15 +405,25 @@ end
         solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
     end
 
-    # - Do precomputations - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters!(
+    # - Do preprocessutations - #
+    if options.verbose
+        println("Pre-computing Parameters")
+    end
+
+    ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
+
+    # - Preprocess - #
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
-        propulsor;
+        propulsor,
+        prepost_containers,
+        problem_dimensions;
         grid_solver_options=options.grid_solver_options,
+        integration_options=options.integration_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,
@@ -424,14 +461,41 @@ end
     # TODO: need to add a better test with more realistic geometry that you can draw more conclusions from
 
     # CSOR Solve initialization
-    options = dt.quicksolve_options()
+    options = dt.DFDC_options()
+
+    # - Get Problem Dimensions - #
+    problem_dimensions = dt.get_problem_dimensions(propulsor.paneling_constants)
+
+    # - Set up Pre- and Post-process Cache - #
+    # Allocate Cache
+    prepost_container_caching = dt.allocate_prepost_container_cache(
+        propulsor.paneling_constants
+    )
+
+    # unpack the caching
+    (; prepost_container_cache, prepost_container_cache_dims) = prepost_container_caching
+
+    # Get correct cached types
+    prepost_container_cache_vec = @views PreallocationTools.get_tmp(
+        prepost_container_cache, Float64(1.0)
+    )
+
+    # reset cache
+    prepost_container_cache_vec .= 0
+
+    # Reshape Cache
+    prepost_containers = dt.withdraw_prepost_container_cache(
+        prepost_container_cache_vec, prepost_container_cache_dims
+    )
+
+    # - Set up Solver Sensitivity Paramter Cache - #
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
         options.solver_options, propulsor.paneling_constants
     )
 
-    # separate out caching items
+    # unpack caching
     (; solve_parameter_cache, solve_parameter_cache_dims) = solve_parameter_caching
 
     # get correct cache type
@@ -451,15 +515,25 @@ end
         solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
     end
 
-    # - Do precomputations - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, panels, problem_dimensions = dt.precompute_parameters!(
+    # - Do preprocessutations - #
+    if options.verbose
+        println("Pre-computing Parameters")
+    end
+
+    ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
+
+    # - Preprocess - #
+    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
-        propulsor;
+        propulsor,
+        prepost_containers,
+        problem_dimensions;
         grid_solver_options=options.grid_solver_options,
+        integration_options=options.integration_options,
         autoshiftduct=options.autoshiftduct,
         itcpshift=options.itcpshift,
         axistol=options.axistol,

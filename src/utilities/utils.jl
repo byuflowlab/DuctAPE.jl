@@ -91,26 +91,28 @@ end
 note: containers must be Arrays, structs of arrays, or tuples of arrays
 move to utilities
 """
-function reset_containers!(c)
+function reset_containers!(c; exception_keys=[])
     if typeof(c) <: AbstractArray
         #do nothing if it's a string
         (eltype(c) == String) || (c .= 0)
     else
         for p in propertynames(c)
-            cp = getfield(c, p)
-            if typeof(cp) <: AbstractArray
-                if eltype(cp) <: Tuple
-                    for i in 1:length(cp[1])
-                        for j in 1:length(cp)
-                            cp[j][i] .= 0.0
+            if !(p in exception_keys)
+                cp = getfield(c, p)
+                if typeof(cp) <: AbstractArray
+                    if eltype(cp) <: Tuple
+                        for i in 1:length(cp[1])
+                            for j in 1:length(cp)
+                                cp[j][i] .= 0.0
+                            end
                         end
+                    else
+                        #do nothing if it's a string
+                        (eltype(cp) == String) || (cp .= 0)
                     end
                 else
-                    #do nothing if it's a string
-                    (eltype(cp) == String) || (cp .= 0)
+                    reset_containers!(cp; exception_keys=exception_keys)
                 end
-            else
-                reset_containers!(cp)
             end
         end
     end

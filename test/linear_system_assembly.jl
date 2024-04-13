@@ -17,7 +17,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
     coordinates = [c1, c2]
 
     # generate nominal (wake-like) panels
-    panels = dt.generate_panels(coordinates)
+    panels = dt.generate_panels(coordinates; isbody=true)
 
     # Generate LHS matrix and RHS vector
     AICn = dt.vortex_aic_boundary_on_boundary(
@@ -64,7 +64,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 
     Vinf = 1.0 #magnitude doesn't matter yet.
     Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel)')
+    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel[])')
     vdnpcp = dt.freestream_influence_vector(
         panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 2))
     )
@@ -74,8 +74,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         AICpcp,
         panels.npanel,
         panels.nnode,
-        panels.totpanel,
-        panels.totnode,
+        panels.totpanel[],
+        panels.totnode[],
         panels.prescribednodeidxs;
         dummyval=1.0,
     )
@@ -84,8 +84,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         vdnpcp,
         panels.npanel,
         panels.nnode,
-        panels.totpanel,
-        panels.totnode,
+        panels.totpanel[],
+        panels.totnode[],
         panels.prescribednodeidxs,
     )
 
@@ -148,7 +148,7 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
 
     Vinf = 1.0 #magnitude doesn't matter yet.
     Vs = Vinf * [1.0 0.0] # axisymmetric, so no radial component
-    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel)')
+    vdnb = dt.freestream_influence_vector(panels.normal, repeat(Vs, panels.totpanel[])')
     vdnpcp = dt.freestream_influence_vector(
         panels.itnormal, repeat(Vs, size(panels.itcontrolpoint, 1))
     )
@@ -158,8 +158,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         AICpcp,
         panels.npanel,
         panels.nnode,
-        panels.totpanel,
-        panels.totnode,
+        panels.totpanel[],
+        panels.totnode[],
         panels.prescribednodeidxs;
         dummyval=1.0,
     )
@@ -168,8 +168,8 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
         vdnpcp,
         panels.npanel,
         panels.nnode,
-        panels.totpanel,
-        panels.totnode,
+        panels.totpanel[],
+        panels.totnode[],
         panels.prescribednodeidxs,
     )
 

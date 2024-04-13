@@ -40,6 +40,10 @@ include("state_estimation.jl")
 include("relaxation_tests.jl")
 include("wake_aero_tests.jl")
 
+# - post process related tests - #
+include("post_processing_tests.jl")
+
+
 ##########################################################
 #EVERYTHING BELOW THIS POINT NEEDS TO BE UPDATED
 ##########################################################
@@ -47,8 +51,6 @@ include("wake_aero_tests.jl")
 # - Active Development - #
 # include("solve_checks.jl")
 
-# - post process related tests - #
-# include("post_processing_tests.jl")
 
 # - Need to update, add, fix, etc. - #
 # include("body_aero_tests.jl")

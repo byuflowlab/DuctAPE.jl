@@ -1,27 +1,263 @@
+"""
+"""
+function initialize_all_caches(solver_options, paneling_constants)
+
+    # - Pre/Post Containers Cache - #
+    prepost_container_caching = allocate_prepost_container_cache(paneling_constants)
+
+    # - Solve (Sensitivity) Parameters Cache - #
+    solve_parameter_caching = allocate_solve_parameter_cache(
+        solver_options, paneling_constants
+    )
+
+    # - Solve Intermediate Containers Cache - #
+    solve_container_caching = allocate_solve_container_cache(
+        solver_options, paneling_constants
+    )
+
+    return prepost_container_caching, solve_parameter_caching, solve_container_caching
+end
+
 ######################################################################
 #                                                                    #
 #                         CACHE ALLOCATIONS                          #
 #                                                                    #
 ######################################################################
+"""
+"""
+function allocate_body_panel_container(total_length, problem_dimensions)
+    (;
+        ndn,    # number of duct nodes
+        ncbn,   # number of centerbody nodes
+    ) = problem_dimensions
+
+    nn = [ndn, ncbn]
+    # number of panels to generate for each body
+    np = nn .- 1
+    # number of bodies
+    nb = length(np)
+    # total number of panels in system
+    tp = sum(np)
+    # total number of nodes in system
+    tn = tp + nb
+
+    return allocate_panel_container(total_length, nn, np, tn, tp, nb)
+end
+
+function allocate_rotor_panel_container(total_length, problem_dimensions)
+    (;
+        nrotor,     # number of rotors
+        nws,    # number of wake sheets (also rotor nodes)
+    ) = problem_dimensions
+
+    nn = nws * ones(Int, nrotor)
+    # number of panels to generate for each body
+    np = nn .- 1
+    # number of bodies
+    nb = length(np)
+    # total number of panels in system
+    tp = sum(np)
+    # total number of nodes in system
+    tn = tp + nb
+
+    return allocate_panel_container(total_length, nn, np, tn, tp, nb)
+end
+
+function allocate_wake_panel_container(total_length, problem_dimensions)
+    (;
+        nws,    # number of wake sheets (also rotor nodes)
+        nwsn,   # number of nodes in each wake sheet
+    ) = problem_dimensions
+
+    nn = nwsn * ones(Int, nws)
+    # number of panels to generate for each body
+    np = nn .- 1
+    # number of bodies
+    nb = length(np)
+    # total number of panels in system
+    tp = sum(np)
+    # total number of nodes in system
+    tn = tp + nb
+
+    return allocate_panel_container(total_length, nn, np, tn, tp, nb)
+end
 
 """
 """
-function allocate_precomp_container_cache(paneling_constants)
-    pd = get_problem_dimensions(paneling_constants)
+function allocate_panel_container(total_length, nn, np, tn, tp, nb)
+    s = size(nn)
+    l = lfs(s)
+    nnode = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    # number of panels to generate for each body
+    npanel = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (1,)
+    l = lfs(s)
+    nbodies = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (1,)
+    l = lfs(s)
+    totpanel = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (1,)
+    l = lfs(s)
+    totnode = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (2, tn)
+    l = lfs(s)
+    node = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (2, tp)
+    l = lfs(s)
+    controlpoint = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    normal = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    tangent = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    nodemap = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (tp)
+    l = lfs(s)
+    influence_length = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nb, 2, 2)
+    l = lfs(s)
+    endnodes = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    tenode = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (2, nb)
+    l = lfs(s)
+
+    itcontrolpoint = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    itnormal = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ittangent = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    tenormal = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    tendotn = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    tencrossn = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    endnodeidxs = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    endpanelidxs = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    teadjnodeidxs = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nb,)
+    l = lfs(s)
+    teinfluence_length = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    prescribednodeidxs = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    return (;
+        nnode,
+        npanel,
+        nbodies,
+        totpanel,
+        totnode,
+        node,
+        controlpoint,
+        normal,
+        tangent,
+        nodemap,
+        influence_length,
+        endnodes,
+        tenode,
+        itcontrolpoint,
+        itnormal,
+        ittangent,
+        tenormal,
+        tendotn,
+        tencrossn,
+        endnodeidxs,
+        endpanelidxs,
+        teadjnodeidxs,
+        teinfluence_length,
+        prescribednodeidxs,
+    ),
+    total_length
+end
+
+"""
+"""
+function allocate_panel_containers(problem_dimensions, total_length)
+    body_vortex_panels, total_length = allocate_body_panel_container(
+        total_length, problem_dimensions
+    )
+    rotor_source_panels, total_length = allocate_rotor_panel_container(
+        total_length, problem_dimensions
+    )
+    wake_vortex_panels, total_length = allocate_wake_panel_container(
+        total_length, problem_dimensions
+    )
+
+    return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels), total_length
+end
+
+"""
+"""
+function allocate_prepost_container_cache(paneling_constants::PanelingConstants)
+    problem_dimensions = get_problem_dimensions(paneling_constants)
+
+    return allocate_prepost_container_cache(problem_dimensions)
+end
+
+function allocate_prepost_container_cache(problem_dimensions)
 
     (;
+        nrotor,     # number of rotors
+        nwn,    # number of wake nodes
+        nwp,    # number of wake panels
+        ncp,    # number of casing panels
         ndn,    # number of duct nodes
         ncbn,   # number of centerbody nodes
         nbn,    # number of body nodes
         nbp,    # number of body panels
         nws,    # number of wake sheets (also rotor nodes)
-        nwsn,   # number of nodes per wake sheet
-    ) = pd
+        nbe,    # number of blade elements (also rotor panels)
+        nwsn,   # number of nodes in each wake sheet
+        nwsp,   # number of panels in each wake sheet
+        ndwin,  # number of duct-wake interfacing nodes
+        ncbwin, # number of centerbody-wake interfacing nodes
+        nbodies,
+    ) = problem_dimensions
 
     # - initialize - #
     total_length = 0
 
-    # - Set up Dimensions - #
+    ### --- PRE-PROCESSING --- ###
+
+    # - COORDINATES - #
     dcshape = (2, ndn)
     dclength = lfs(dcshape)
     rp_duct_coordinates = (;
@@ -41,21 +277,362 @@ function allocate_precomp_container_cache(paneling_constants)
     wake_grid = (; index=(total_length + 1):(total_length + wglength), shape=wgshape)
     total_length += wglength
 
-    aicnshape = (nbp, nbn)
-    aicnlength = lfs(aicnshape)
-    AICn = (; index=(total_length + 1):(total_length + aicnlength), shape=aicnshape)
-    total_length += aicnlength
+    rs = (nrotor,)
+    rl = lfs(rs)
+    rotor_indices_in_wake = (; index=(total_length + 1):(total_length + rl), shape=rs)
+    total_length += rl
 
-    aicpcpshape = (nbp, nbn)
-    aicpcplength = lfs(aicpcpshape)
-    AICpcp = (; index=(total_length + 1):(total_length + aicpcplength), shape=aicpcpshape)
-    total_length += aicpcplength
+    # - PANELS - #
+    panels, total_length = allocate_panel_containers(problem_dimensions, total_length)
+
+    # - INDUCED VELS - #
+    s = (nbp, nbn, 2)
+    l = lfs(s)
+    v_bb = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp, nrotor * nws, 2)
+    l = lfs(s)
+    v_br = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp, nwn, 2)
+    l = lfs(s)
+    v_bw = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    # - LINSYS - #
+    s = (nbp, nbn)
+    l = lfs(s)
+    AICn = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (2, nbn)
+    l = lfs(s)
+    AICpcp = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp,)
+    l = lfs(s)
+    vdnb = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (2,)
+    l = lfs(s)
+    vdnpcp = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ##### ----- POST PROCESSING ----- #####
+
+    ### --- ROTOR Post-Processing Cache --- ###
+
+    s = (nrotor,)
+    l = lfs(s)
+    rotor_inviscid_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_CT = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_CQ = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_CP = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    induced_efficiency= (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+
+    s = (nbe, nrotor)
+    l = lfs(s)
+    rotor_inviscid_thrust_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_thrust_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_torque_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_torque_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_power_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_power_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    blade_normal_force_per_unit_span = (;
+        index=(total_length + 1):(total_length + l), shape=s
+    )
+    total_length += l
+
+    blade_tangential_force_per_unit_span = (;
+        index=(total_length + 1):(total_length + l), shape=s
+    )
+    total_length += l
+
+    cn = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ct = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cphi = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    sphi = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+
+    ### --- BODY Post-Processing Cache --- ###
+    s = (2, nbp)
+    l = lfs(s)
+    Vtot_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Vtot_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Vtot_prejump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_body = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_jump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_wake = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_rotors = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp,)
+    l = lfs(s)
+    Vtan_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Vtan_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+    cp_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ncp,)
+    l = lfs(s)
+    vtan_casing_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtan_casing_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    casing_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_casing_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+    cp_casing_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ndn - 1 - ncp,)
+    l = lfs(s)
+    vtan_nacelle_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtan_nacelle_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    nacelle_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_nacelle_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+    cp_nacelle_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ncbn - 1,)
+    l = lfs(s)
+    vtan_centerbody_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtan_centerbody_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    centerbody_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_centerbody_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_centerbody_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ndn - 1,)
+    l = lfs(s)
+    duct_jump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ncbn - 1,)
+    l = lfs(s)
+    centerbody_jump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp,)
+    l = lfs(s)
+    body_jump_term = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbodies,)
+    l = lfs(s)
+    body_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    body_force_coefficient = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ### --- TOTALS Post-Processing Cache --- ###
+    s = (1,)
+    l = lfs(s)
+    total_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_CT = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_CQ = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_CP = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ideal_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
 
     # return tuple of initialized cache and associated dimensions
     return (;
-        precomp_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
-        precomp_container_cache_dims=(;
-            rp_duct_coordinates, rp_centerbody_coordinates, wake_grid, AICn, AICpcp
+        prepost_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
+        prepost_container_cache_dims=(;
+            ### --- PRE --- ###
+            rp_duct_coordinates,
+            rp_centerbody_coordinates,
+            wake_grid,
+            rotor_indices_in_wake,
+            panels,
+            ivb=(; v_bb, v_br, v_bw),
+            AICn,
+            AICpcp,
+            vdnb,
+            vdnpcp,
+            ### --- Post --- ###
+            # - ROTOR - #
+            rotor_inviscid_thrust,
+            rotor_inviscid_thrust_dist,
+            rotor_viscous_thrust,
+            rotor_viscous_thrust_dist,
+            rotor_thrust,
+            rotor_inviscid_torque,
+            rotor_inviscid_torque_dist,
+            rotor_viscous_torque,
+            rotor_viscous_torque_dist,
+            rotor_torque,
+            rotor_inviscid_power,
+            rotor_inviscid_power_dist,
+            rotor_viscous_power,
+            rotor_viscous_power_dist,
+            rotor_power,
+            rotor_CT,
+            rotor_CQ,
+            rotor_CP,
+            rotor_efficiency,
+            induced_efficiency,
+            blade_normal_force_per_unit_span,
+            blade_tangential_force_per_unit_span,
+            blade_loading_intermediate_containers=(; cn, ct, cphi, sphi),
+            # - BODY - #
+            zpts=(; casing_zpts, nacelle_zpts, centerbody_zpts),
+            vtan_tuple=(;
+                Vtot_in,
+                Vtot_out,
+                Vtan_in,
+                Vtan_out,
+                Vtot_prejump,
+                vtot_body,
+                duct_jump,
+                centerbody_jump,
+                body_jump_term,
+                vtot_jump,
+                vtot_wake,
+                vtot_rotors,
+                vtan_casing_in,
+                vtan_casing_out,
+                vtan_nacelle_in,
+                vtan_nacelle_out,
+                vtan_centerbody_in,
+                vtan_centerbody_out,
+            ),
+            cp_tuple=(;
+                cp_in,
+                cp_out,
+                cp_casing_in,
+                cp_casing_out,
+                cp_nacelle_in,
+                cp_nacelle_out,
+                cp_centerbody_in,
+                cp_centerbody_out,
+            ),
+            body_thrust,
+            body_force_coefficient,
+            # - TOTALS - #
+            total_thrust,
+            total_torque,
+            total_power,
+            total_CT,
+            total_CQ,
+            total_CP,
+            total_efficiency,
+            ideal_efficiency,
         ),
     )
 end
@@ -67,13 +644,14 @@ function allocate_solve_parameter_cache(
 )
 
     # - Get problem dimensions - #
-    pd = get_problem_dimensions(paneling_constants)
+    problem_dimensions = get_problem_dimensions(paneling_constants)
+
 return allocate_solve_parameter_cache(
-    solve_type::CSORSolverOptions, pd; fd_chunk_size=fd_chunk_size, levels=levels
+    solve_type::CSORSolverOptions, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
 )
 end
 
-function allocate_solve_container_cache_extras(solver_options::SIAMFANLEOptions, input_length, total_length)
+function allocate_solve_parameter_extras(solver_options::SIAMFANLEOptions, input_length, total_length)
 
     s = (input_length,)
     l = lfs(s)
@@ -93,7 +671,7 @@ function allocate_solve_container_cache_extras(solver_options::SIAMFANLEOptions,
     return total_length, (; resid_cache_vec, krylov_cache_vec, jvp_cache_vec)
 end
 
-function allocate_solve_container_cache_extras(solver_options, input_length, total_length)
+function allocate_solve_parameter_extras(solver_options, input_length, total_length)
 
     return total_length, (;)
 end
@@ -293,16 +871,8 @@ function allocate_solve_parameter_cache(
     # NOTE: how to know the size of airfoil objects up front?  if it's a DFDC type, this is pretty simple, but if it's a CCBlade type, then the size could be anything depending on how many data points are used
     # airfoils = allocate_airfoil_cache(aftype, nrotor, nbe)
 
-    # # - Index Maps - #
-    # # TODO: decide if you actually need these here. these actually won't/can't change at the optimization level, so you could have a different cache for these
-    # # TODO: figure out what you renamed these to.  Also probably need to just call the function to get the sizes and lengths for some of these
-    # wake_node_ids_along_casing_wake_interface
-    # wake_node_ids_along_centerbody_wake_interface
-    # rotorwakenodeid
-    # wake_nodemap
-    # wake_endnodeidxs
-    # rotor_indices_in_wake
-    # body_totnodes
+    # - Index Maps - #
+    # TODO: would need to figure out how to size these beforehand
 
     return (;
         solve_parameter_cache=PreallocationTools.DiffCache(
@@ -343,10 +913,10 @@ function allocate_solve_parameter_cache(
 ) where {TS<:Union{ExternalSolverOptions, MultiSolverOptions}}
 
     # - Get problem dimensions - #
-    pd = get_problem_dimensions(paneling_constants)
+    problem_dimensions = get_problem_dimensions(paneling_constants)
 
     return allocate_solve_parameter_cache(
-        solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels
+        solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
     )
 end
 
@@ -362,9 +932,9 @@ function allocate_solve_parameter_cache(
         ndn,    # number of duct nodes
         ncbn,   # number of centerbody nodes
         nbn,    # number of body nodes
-        nbp,    # number of body panels
-        nws,    # number of wake sheets (also rotor nodes)
+        nbp,    # number of body paneallocate_solve_parameter_extrasheets (also rotor nodes)
         nbe,    # number of blade elements (also rotor panels)
+        nws, #number of wake sheets
         nwsn,   # number of nodes per wake sheet
         ndwin,  # number of duct-wake interfacing nodes
         ncbwin, # number of centerbody-wake interfacing nodes
@@ -387,7 +957,7 @@ function allocate_solve_parameter_cache(
     Cm_wake = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
-total_length, SIAMFANLE_cache_vecs =  allocate_solve_container_cache_extras(solve_type, total_length, total_length)
+total_length, SIAMFANLE_cache_vecs =  allocate_solve_parameter_extras(solve_type, total_length, total_length)
 
 
     # save state dimensions
@@ -570,7 +1140,6 @@ total_length, SIAMFANLE_cache_vecs =  allocate_solve_container_cache_extras(solv
             operating_point=(; Vinf, rhoinf, muinf, asound, Omega),
             ivr=(; v_rb, v_rr, v_rw),
             ivw=(; v_wb, v_wr, v_ww),
-            # ivb=(; v_bb, v_br, v_bw),
             linsys=(; A_bb, b_bf, A_bw, A_pw, A_br, A_pr),
             blade_elements=(;
                 B,
@@ -596,9 +1165,9 @@ end
 function allocate_solve_container_cache(
     solve_type::CSORSolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
 )
-    pd = get_problem_dimensions(paneling_constants)
+    problem_dimensions = get_problem_dimensions(paneling_constants)
 
-    return allocate_solve_container_cache(solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels)
+    return allocate_solve_container_cache(solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels)
 end
 
 """
@@ -788,10 +1357,10 @@ end
 function allocate_solve_container_cache(
     solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
 ) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
-    pd = get_problem_dimensions(paneling_constants)
+    problem_dimensions = get_problem_dimensions(paneling_constants)
 
 return allocate_solve_container_cache(
-    solve_type, pd; fd_chunk_size=fd_chunk_size, levels=levels
+    solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
 )
 end
 
@@ -942,34 +1511,6 @@ function allocate_solve_container_cache(
     )
 end
 
-"""
-"""
-function allocate_post_cache(paneling_constants)
-    pd = get_problem_dimensions(paneling_constants)
-
-    (;
-        nrotor, # number of rotors
-        nwn,    # number of wake nodes
-        nwp,    # number of wake panels
-        ndn,    # number of duct nodes
-        ncbn,   # number of centerbody nodes
-        nbn,    # number of body nodes
-        nbp,    # number of body panels
-        nws,    # number of wake sheets (also rotor nodes)
-        nbe,    # number of blade elements (also rotor panels)
-        nwsn,   # number of nodes per wake sheet
-        ndwin,  # number of duct-wake interfacing nodes
-        ncbwin, # number of centerbody-wake interfacing nodes
-    ) = pd
-
-    # - initialize - #
-    total_length = 0
-
-    return (;
-        post_cache=PreallocationTools.DiffCache(zeros(total_length)), post_cache_dims=(;)
-    )
-end
-
 ######################################################################
 #                                                                    #
 #                          CACHE RESHAPING                           #
@@ -978,7 +1519,12 @@ end
 
 """
 """
-function withdraw_precomp_container_cache(vec, dims)
+function withdraw_prepost_container_cache(vec, dims)
+
+    # panels = (;)
+    #         ivb=(; v_bb, v_br, v_bw),
+
+    wake_grid = reshape(@view(vec[dims.wake_grid.index]), dims.wake_grid.shape)
     rp_duct_coordinates = reshape(
         @view(vec[dims.rp_duct_coordinates.index]), dims.rp_duct_coordinates.shape
     )
@@ -986,11 +1532,601 @@ function withdraw_precomp_container_cache(vec, dims)
         @view(vec[dims.rp_centerbody_coordinates.index]),
         dims.rp_centerbody_coordinates.shape,
     )
-    wake_grid = reshape(@view(vec[dims.wake_grid.index]), dims.wake_grid.shape)
+    rotor_indices_in_wake = reshape(
+        @view(vec[dims.rotor_indices_in_wake.index]), dims.rotor_indices_in_wake.shape
+    )
     AICn = reshape(@view(vec[dims.AICn.index]), dims.AICn.shape)
     AICpcp = reshape(@view(vec[dims.AICpcp.index]), dims.AICpcp.shape)
+    vdnb = reshape(@view(vec[dims.vdnb.index]), dims.vdnb.shape)
+    vdnpcp = reshape(@view(vec[dims.vdnpcp.index]), dims.vdnpcp.shape)
 
-    return (; rp_duct_coordinates, rp_centerbody_coordinates, wake_grid, AICn, AICpcp)
+    ivb = (;
+        v_bb=reshape(@view(vec[dims.ivb.v_bb.index]), dims.ivb.v_bb.shape),
+        v_br=reshape(@view(vec[dims.ivb.v_br.index]), dims.ivb.v_br.shape),
+        v_bw=reshape(@view(vec[dims.ivb.v_bw.index]), dims.ivb.v_bw.shape),
+    )
+
+    panels = (;
+        body_vortex_panels=(;
+            nnode=reshape(
+                @view(vec[dims.panels.body_vortex_panels.nnode.index]),
+                dims.panels.body_vortex_panels.nnode.shape,
+            ),
+            npanel=reshape(
+                @view(vec[dims.panels.body_vortex_panels.npanel.index]),
+                dims.panels.body_vortex_panels.npanel.shape,
+            ),
+            nbodies=reshape(
+                @view(vec[dims.panels.body_vortex_panels.nbodies.index]),
+                dims.panels.body_vortex_panels.nbodies.shape,
+            ),
+            totpanel=reshape(
+                @view(vec[dims.panels.body_vortex_panels.totpanel.index]),
+                dims.panels.body_vortex_panels.totpanel.shape,
+            ),
+            totnode=reshape(
+                @view(vec[dims.panels.body_vortex_panels.totnode.index]),
+                dims.panels.body_vortex_panels.totnode.shape,
+            ),
+            node=reshape(
+                @view(vec[dims.panels.body_vortex_panels.node.index]),
+                dims.panels.body_vortex_panels.node.shape,
+            ),
+            controlpoint=reshape(
+                @view(vec[dims.panels.body_vortex_panels.controlpoint.index]),
+                dims.panels.body_vortex_panels.controlpoint.shape,
+            ),
+            normal=reshape(
+                @view(vec[dims.panels.body_vortex_panels.normal.index]),
+                dims.panels.body_vortex_panels.normal.shape,
+            ),
+            tangent=reshape(
+                @view(vec[dims.panels.body_vortex_panels.tangent.index]),
+                dims.panels.body_vortex_panels.tangent.shape,
+            ),
+            nodemap=reshape(
+                @view(vec[dims.panels.body_vortex_panels.nodemap.index]),
+                dims.panels.body_vortex_panels.nodemap.shape,
+            ),
+            influence_length=reshape(
+                @view(vec[dims.panels.body_vortex_panels.influence_length.index]),
+                dims.panels.body_vortex_panels.influence_length.shape,
+            ),
+            endnodes=reshape(
+                @view(vec[dims.panels.body_vortex_panels.endnodes.index]),
+                dims.panels.body_vortex_panels.endnodes.shape,
+            ),
+            tenode=reshape(
+                @view(vec[dims.panels.body_vortex_panels.tenode.index]),
+                dims.panels.body_vortex_panels.tenode.shape,
+            ),
+            itcontrolpoint=reshape(
+                @view(vec[dims.panels.body_vortex_panels.itcontrolpoint.index]),
+                dims.panels.body_vortex_panels.itcontrolpoint.shape,
+            ),
+            itnormal=reshape(
+                @view(vec[dims.panels.body_vortex_panels.itnormal.index]),
+                dims.panels.body_vortex_panels.itnormal.shape,
+            ),
+            ittangent=reshape(
+                @view(vec[dims.panels.body_vortex_panels.ittangent.index]),
+                dims.panels.body_vortex_panels.ittangent.shape,
+            ),
+            tenormal=reshape(
+                @view(vec[dims.panels.body_vortex_panels.tenormal.index]),
+                dims.panels.body_vortex_panels.tenormal.shape,
+            ),
+            tendotn=reshape(
+                @view(vec[dims.panels.body_vortex_panels.tendotn.index]),
+                dims.panels.body_vortex_panels.tendotn.shape,
+            ),
+            tencrossn=reshape(
+                @view(vec[dims.panels.body_vortex_panels.tencrossn.index]),
+                dims.panels.body_vortex_panels.tencrossn.shape,
+            ),
+            endnodeidxs=reshape(
+                @view(vec[dims.panels.body_vortex_panels.endnodeidxs.index]),
+                dims.panels.body_vortex_panels.endnodeidxs.shape,
+            ),
+            endpanelidxs=reshape(
+                @view(vec[dims.panels.body_vortex_panels.endpanelidxs.index]),
+                dims.panels.body_vortex_panels.endpanelidxs.shape,
+            ),
+            teadjnodeidxs=reshape(
+                @view(vec[dims.panels.body_vortex_panels.teadjnodeidxs.index]),
+                dims.panels.body_vortex_panels.teadjnodeidxs.shape,
+            ),
+            teinfluence_length=reshape(
+                @view(vec[dims.panels.body_vortex_panels.teinfluence_length.index]),
+                dims.panels.body_vortex_panels.teinfluence_length.shape,
+            ),
+            prescribednodeidxs=reshape(
+                @view(vec[dims.panels.body_vortex_panels.prescribednodeidxs.index]),
+                dims.panels.body_vortex_panels.prescribednodeidxs.shape,
+            ),
+        ),
+        rotor_source_panels=(;
+            nnode=reshape(
+                @view(vec[dims.panels.rotor_source_panels.nnode.index]),
+                dims.panels.rotor_source_panels.nnode.shape,
+            ),
+            npanel=reshape(
+                @view(vec[dims.panels.rotor_source_panels.npanel.index]),
+                dims.panels.rotor_source_panels.npanel.shape,
+            ),
+            nbodies=reshape(
+                @view(vec[dims.panels.rotor_source_panels.nbodies.index]),
+                dims.panels.rotor_source_panels.nbodies.shape,
+            ),
+            totpanel=reshape(
+                @view(vec[dims.panels.rotor_source_panels.totpanel.index]),
+                dims.panels.rotor_source_panels.totpanel.shape,
+            ),
+            totnode=reshape(
+                @view(vec[dims.panels.rotor_source_panels.totnode.index]),
+                dims.panels.rotor_source_panels.totnode.shape,
+            ),
+            node=reshape(
+                @view(vec[dims.panels.rotor_source_panels.node.index]),
+                dims.panels.rotor_source_panels.node.shape,
+            ),
+            controlpoint=reshape(
+                @view(vec[dims.panels.rotor_source_panels.controlpoint.index]),
+                dims.panels.rotor_source_panels.controlpoint.shape,
+            ),
+            normal=reshape(
+                @view(vec[dims.panels.rotor_source_panels.normal.index]),
+                dims.panels.rotor_source_panels.normal.shape,
+            ),
+            tangent=reshape(
+                @view(vec[dims.panels.rotor_source_panels.tangent.index]),
+                dims.panels.rotor_source_panels.tangent.shape,
+            ),
+            nodemap=reshape(
+                @view(vec[dims.panels.rotor_source_panels.nodemap.index]),
+                dims.panels.rotor_source_panels.nodemap.shape,
+            ),
+            influence_length=reshape(
+                @view(vec[dims.panels.rotor_source_panels.influence_length.index]),
+                dims.panels.rotor_source_panels.influence_length.shape,
+            ),
+            endnodes=reshape(
+                @view(vec[dims.panels.rotor_source_panels.endnodes.index]),
+                dims.panels.rotor_source_panels.endnodes.shape,
+            ),
+            tenode=reshape(
+                @view(vec[dims.panels.rotor_source_panels.tenode.index]),
+                dims.panels.rotor_source_panels.tenode.shape,
+            ),
+            itcontrolpoint=reshape(
+                @view(vec[dims.panels.rotor_source_panels.itcontrolpoint.index]),
+                dims.panels.rotor_source_panels.itcontrolpoint.shape,
+            ),
+            itnormal=reshape(
+                @view(vec[dims.panels.rotor_source_panels.itnormal.index]),
+                dims.panels.rotor_source_panels.itnormal.shape,
+            ),
+            ittangent=reshape(
+                @view(vec[dims.panels.rotor_source_panels.ittangent.index]),
+                dims.panels.rotor_source_panels.ittangent.shape,
+            ),
+            tenormal=reshape(
+                @view(vec[dims.panels.rotor_source_panels.tenormal.index]),
+                dims.panels.rotor_source_panels.tenormal.shape,
+            ),
+            tendotn=reshape(
+                @view(vec[dims.panels.rotor_source_panels.tendotn.index]),
+                dims.panels.rotor_source_panels.tendotn.shape,
+            ),
+            tencrossn=reshape(
+                @view(vec[dims.panels.rotor_source_panels.tencrossn.index]),
+                dims.panels.rotor_source_panels.tencrossn.shape,
+            ),
+            endnodeidxs=reshape(
+                @view(vec[dims.panels.rotor_source_panels.endnodeidxs.index]),
+                dims.panels.rotor_source_panels.endnodeidxs.shape,
+            ),
+            endpanelidxs=reshape(
+                @view(vec[dims.panels.rotor_source_panels.endpanelidxs.index]),
+                dims.panels.rotor_source_panels.endpanelidxs.shape,
+            ),
+            teadjnodeidxs=reshape(
+                @view(vec[dims.panels.rotor_source_panels.teadjnodeidxs.index]),
+                dims.panels.rotor_source_panels.teadjnodeidxs.shape,
+            ),
+            teinfluence_length=reshape(
+                @view(vec[dims.panels.rotor_source_panels.teinfluence_length.index]),
+                dims.panels.rotor_source_panels.teinfluence_length.shape,
+            ),
+            prescribednodeidxs=reshape(
+                @view(vec[dims.panels.rotor_source_panels.prescribednodeidxs.index]),
+                dims.panels.rotor_source_panels.prescribednodeidxs.shape,
+            ),
+        ),
+        wake_vortex_panels=(;
+            nnode=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.nnode.index]),
+                dims.panels.wake_vortex_panels.nnode.shape,
+            ),
+            npanel=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.npanel.index]),
+                dims.panels.wake_vortex_panels.npanel.shape,
+            ),
+            nbodies=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.nbodies.index]),
+                dims.panels.wake_vortex_panels.nbodies.shape,
+            ),
+            totpanel=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.totpanel.index]),
+                dims.panels.wake_vortex_panels.totpanel.shape,
+            ),
+            totnode=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.totnode.index]),
+                dims.panels.wake_vortex_panels.totnode.shape,
+            ),
+            node=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.node.index]),
+                dims.panels.wake_vortex_panels.node.shape,
+            ),
+            controlpoint=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.controlpoint.index]),
+                dims.panels.wake_vortex_panels.controlpoint.shape,
+            ),
+            normal=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.normal.index]),
+                dims.panels.wake_vortex_panels.normal.shape,
+            ),
+            tangent=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.tangent.index]),
+                dims.panels.wake_vortex_panels.tangent.shape,
+            ),
+            nodemap=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.nodemap.index]),
+                dims.panels.wake_vortex_panels.nodemap.shape,
+            ),
+            influence_length=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.influence_length.index]),
+                dims.panels.wake_vortex_panels.influence_length.shape,
+            ),
+            endnodes=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.endnodes.index]),
+                dims.panels.wake_vortex_panels.endnodes.shape,
+            ),
+            tenode=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.tenode.index]),
+                dims.panels.wake_vortex_panels.tenode.shape,
+            ),
+            itcontrolpoint=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.itcontrolpoint.index]),
+                dims.panels.wake_vortex_panels.itcontrolpoint.shape,
+            ),
+            itnormal=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.itnormal.index]),
+                dims.panels.wake_vortex_panels.itnormal.shape,
+            ),
+            ittangent=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.ittangent.index]),
+                dims.panels.wake_vortex_panels.ittangent.shape,
+            ),
+            tenormal=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.tenormal.index]),
+                dims.panels.wake_vortex_panels.tenormal.shape,
+            ),
+            tendotn=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.tendotn.index]),
+                dims.panels.wake_vortex_panels.tendotn.shape,
+            ),
+            tencrossn=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.tencrossn.index]),
+                dims.panels.wake_vortex_panels.tencrossn.shape,
+            ),
+            endnodeidxs=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.endnodeidxs.index]),
+                dims.panels.wake_vortex_panels.endnodeidxs.shape,
+            ),
+            endpanelidxs=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.endpanelidxs.index]),
+                dims.panels.wake_vortex_panels.endpanelidxs.shape,
+            ),
+            teadjnodeidxs=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.teadjnodeidxs.index]),
+                dims.panels.wake_vortex_panels.teadjnodeidxs.shape,
+            ),
+            teinfluence_length=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.teinfluence_length.index]),
+                dims.panels.wake_vortex_panels.teinfluence_length.shape,
+            ),
+            prescribednodeidxs=reshape(
+                @view(vec[dims.panels.wake_vortex_panels.prescribednodeidxs.index]),
+                dims.panels.wake_vortex_panels.prescribednodeidxs.shape,
+            ),
+        ),
+    )
+
+    # - ROTOR POST CACHE - #
+
+    rotor_inviscid_thrust = reshape(
+        @view(vec[dims.rotor_inviscid_thrust.index]), dims.rotor_inviscid_thrust.shape
+    )
+    rotor_inviscid_thrust_dist = reshape(
+        @view(vec[dims.rotor_inviscid_thrust_dist.index]),
+        dims.rotor_inviscid_thrust_dist.shape,
+    )
+    rotor_viscous_thrust = reshape(
+        @view(vec[dims.rotor_viscous_thrust.index]), dims.rotor_viscous_thrust.shape
+    )
+    rotor_viscous_thrust_dist = reshape(
+        @view(vec[dims.rotor_viscous_thrust_dist.index]),
+        dims.rotor_viscous_thrust_dist.shape,
+    )
+    rotor_thrust = reshape(@view(vec[dims.rotor_thrust.index]), dims.rotor_thrust.shape)
+    rotor_inviscid_torque = reshape(
+        @view(vec[dims.rotor_inviscid_torque.index]), dims.rotor_inviscid_torque.shape
+    )
+    rotor_inviscid_torque_dist = reshape(
+        @view(vec[dims.rotor_inviscid_torque_dist.index]),
+        dims.rotor_inviscid_torque_dist.shape,
+    )
+    rotor_viscous_torque = reshape(
+        @view(vec[dims.rotor_viscous_torque.index]), dims.rotor_viscous_torque.shape
+    )
+    rotor_viscous_torque_dist = reshape(
+        @view(vec[dims.rotor_viscous_torque_dist.index]),
+        dims.rotor_viscous_torque_dist.shape,
+    )
+    rotor_torque = reshape(@view(vec[dims.rotor_torque.index]), dims.rotor_torque.shape)
+    rotor_inviscid_power = reshape(
+        @view(vec[dims.rotor_inviscid_power.index]), dims.rotor_inviscid_power.shape
+    )
+    rotor_inviscid_power_dist = reshape(
+        @view(vec[dims.rotor_inviscid_power_dist.index]),
+        dims.rotor_inviscid_power_dist.shape,
+    )
+    rotor_viscous_power = reshape(
+        @view(vec[dims.rotor_viscous_power.index]), dims.rotor_viscous_power.shape
+    )
+    rotor_viscous_power_dist = reshape(
+        @view(vec[dims.rotor_viscous_power_dist.index]), dims.rotor_viscous_power_dist.shape
+    )
+    rotor_power = reshape(@view(vec[dims.rotor_power.index]), dims.rotor_power.shape)
+    rotor_CT = reshape(@view(vec[dims.rotor_CT.index]), dims.rotor_CT.shape)
+    rotor_CQ = reshape(@view(vec[dims.rotor_CQ.index]), dims.rotor_CQ.shape)
+    rotor_CP = reshape(@view(vec[dims.rotor_CP.index]), dims.rotor_CP.shape)
+    rotor_efficiency = reshape(
+        @view(vec[dims.rotor_efficiency.index]), dims.rotor_efficiency.shape
+    )
+    induced_efficiency=reshape(
+            @view(vec[dims.induced_efficiency.index]),
+            dims.induced_efficiency.shape,
+        )
+    blade_normal_force_per_unit_span = reshape(
+        @view(vec[dims.blade_normal_force_per_unit_span.index]),
+        dims.blade_normal_force_per_unit_span.shape,
+    )
+    blade_tangential_force_per_unit_span = reshape(
+        @view(vec[dims.blade_tangential_force_per_unit_span.index]),
+        dims.blade_tangential_force_per_unit_span.shape,
+    )
+    blade_loading_intermediate_containers = (;
+        cn=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.cn.index]),
+            dims.blade_loading_intermediate_containers.cn.shape,
+        ),
+        ct=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.ct.index]),
+            dims.blade_loading_intermediate_containers.ct.shape,
+        ),
+        cphi=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.cphi.index]),
+            dims.blade_loading_intermediate_containers.cphi.shape,
+        ),
+        sphi=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.sphi.index]),
+            dims.blade_loading_intermediate_containers.sphi.shape,
+        ),
+    )
+
+    # - BODY POST CACHE - #
+    zpts = (;
+        centerbody_zpts=reshape(
+            @view(vec[dims.zpts.centerbody_zpts.index]),
+            dims.zpts.centerbody_zpts.shape,
+        ),
+        casing_zpts=reshape(
+            @view(vec[dims.zpts.casing_zpts.index]),
+            dims.zpts.casing_zpts.shape,
+        ),
+        nacelle_zpts=reshape(
+            @view(vec[dims.zpts.nacelle_zpts.index]),
+            dims.zpts.nacelle_zpts.shape,
+        ),
+       )
+
+        vtan_tuple = (;
+        Vtot_in=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_in.index]),
+            dims.vtan_tuple.Vtot_in.shape,
+        ),
+        Vtot_out=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_out.index]),
+            dims.vtan_tuple.Vtot_out.shape,
+        ),
+        Vtan_in=reshape(
+            @view(vec[dims.vtan_tuple.Vtan_in.index]),
+            dims.vtan_tuple.Vtan_in.shape,
+        ),
+        Vtan_out=reshape(
+            @view(vec[dims.vtan_tuple.Vtan_out.index]),
+            dims.vtan_tuple.Vtan_out.shape,
+        ),
+        Vtot_prejump=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_prejump.index]),
+            dims.vtan_tuple.Vtot_prejump.shape,
+        ),
+        vtot_body=reshape(
+            @view(vec[dims.vtan_tuple.vtot_body.index]),
+            dims.vtan_tuple.vtot_body.shape,
+        ),
+        duct_jump=reshape(
+            @view(vec[dims.vtan_tuple.duct_jump.index]),
+            dims.vtan_tuple.duct_jump.shape,
+        ),
+        centerbody_jump=reshape(
+            @view(vec[dims.vtan_tuple.centerbody_jump.index]),
+            dims.vtan_tuple.centerbody_jump.shape,
+        ),
+        body_jump_term=reshape(
+            @view(vec[dims.vtan_tuple.body_jump_term.index]),
+            dims.vtan_tuple.body_jump_term.shape,
+        ),
+        vtot_jump=reshape(
+            @view(vec[dims.vtan_tuple.vtot_jump.index]),
+            dims.vtan_tuple.vtot_jump.shape,
+        ),
+        vtot_wake=reshape(
+            @view(vec[dims.vtan_tuple.vtot_wake.index]),
+            dims.vtan_tuple.vtot_wake.shape,
+        ),
+        vtot_rotors=reshape(
+            @view(vec[dims.vtan_tuple.vtot_rotors.index]),
+            dims.vtan_tuple.vtot_rotors.shape,
+        ),
+        # Splits:
+        vtan_casing_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_casing_in.index]),
+            dims.vtan_tuple.vtan_casing_in.shape,
+        ),
+        vtan_casing_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_casing_out.index]),
+            dims.vtan_tuple.vtan_casing_out.shape,
+        ),
+        vtan_nacelle_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_nacelle_in.index]),
+            dims.vtan_tuple.vtan_nacelle_in.shape,
+        ),
+        vtan_nacelle_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_nacelle_out.index]),
+            dims.vtan_tuple.vtan_nacelle_out.shape,
+        ),
+        vtan_centerbody_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_centerbody_in.index]),
+            dims.vtan_tuple.vtan_centerbody_in.shape,
+        ),
+        vtan_centerbody_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_centerbody_out.index]),
+            dims.vtan_tuple.vtan_centerbody_out.shape,
+        ),
+)
+
+    cp_tuple = (;
+        cp_in=reshape(@view(vec[dims.cp_tuple.cp_in.index]), dims.cp_tuple.cp_in.shape),
+        cp_out=reshape(@view(vec[dims.cp_tuple.cp_out.index]), dims.cp_tuple.cp_out.shape),
+        cp_casing_in=reshape(
+            @view(vec[dims.cp_tuple.cp_casing_in.index]), dims.cp_tuple.cp_casing_in.shape
+        ),
+        cp_casing_out=reshape(
+            @view(vec[dims.cp_tuple.cp_casing_out.index]), dims.cp_tuple.cp_casing_out.shape
+        ),
+        cp_nacelle_in=reshape(
+            @view(vec[dims.cp_tuple.cp_nacelle_in.index]), dims.cp_tuple.cp_nacelle_in.shape
+        ),
+        cp_nacelle_out=reshape(
+            @view(vec[dims.cp_tuple.cp_nacelle_out.index]), dims.cp_tuple.cp_nacelle_out.shape
+        ),
+        cp_centerbody_in=reshape(
+            @view(vec[dims.cp_tuple.cp_centerbody_in.index]),
+            dims.cp_tuple.cp_centerbody_in.shape,
+        ),
+        cp_centerbody_out=reshape(
+            @view(vec[dims.cp_tuple.cp_centerbody_out.index]),
+            dims.cp_tuple.cp_centerbody_out.shape,
+        ),
+    )
+    body_thrust = reshape(
+        @view(vec[dims.body_thrust.index]), dims.body_thrust.shape
+    )
+    body_force_coefficient = reshape(
+        @view(vec[dims.body_force_coefficient.index]), dims.body_force_coefficient.shape
+    )
+
+    # - TOTALS POST CACHE - #
+    total_thrust = reshape(
+        @view(vec[dims.total_thrust.index]), dims.total_thrust.shape
+    )
+    total_torque = reshape(
+        @view(vec[dims.total_torque.index]), dims.total_torque.shape
+    )
+    total_power = reshape(
+        @view(vec[dims.total_power.index]), dims.total_power.shape
+    )
+    total_CT = reshape(
+        @view(vec[dims.total_CT.index]), dims.total_CT.shape
+    )
+    total_CQ = reshape(
+        @view(vec[dims.total_CQ.index]), dims.total_CQ.shape
+    )
+    total_CP = reshape(
+        @view(vec[dims.total_CP.index]), dims.total_CP.shape
+    )
+    total_efficiency = reshape(
+        @view(vec[dims.total_efficiency.index]), dims.total_efficiency.shape
+    )
+    ideal_efficiency = reshape(
+        @view(vec[dims.ideal_efficiency.index]), dims.ideal_efficiency.shape
+    )
+
+    return (;
+        # pre
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        wake_grid,
+        rotor_indices_in_wake,
+        AICn,
+        AICpcp,
+        vdnb,
+        vdnpcp,
+        panels,
+        ivb,
+        #rotor post
+        rotor_inviscid_thrust,
+        rotor_inviscid_thrust_dist,
+        rotor_viscous_thrust,
+        rotor_viscous_thrust_dist,
+        rotor_thrust,
+        rotor_inviscid_torque,
+        rotor_inviscid_torque_dist,
+        rotor_viscous_torque,
+        rotor_viscous_torque_dist,
+        rotor_torque,
+        rotor_inviscid_power,
+        rotor_inviscid_power_dist,
+        rotor_viscous_power,
+        rotor_viscous_power_dist,
+        rotor_power,
+        rotor_CT,
+        rotor_CQ,
+        rotor_CP,
+        rotor_efficiency,
+        induced_efficiency,
+        blade_normal_force_per_unit_span,
+        blade_tangential_force_per_unit_span,
+        blade_loading_intermediate_containers,
+        # Body Post
+        zpts,
+        vtan_tuple,
+        cp_tuple,
+        body_thrust,
+        body_force_coefficient,
+        # Totals Post
+        total_thrust,
+        total_torque,
+        total_power,
+        total_CT,
+        total_CQ,
+        total_CP,
+        total_efficiency,
+        ideal_efficiency,
+    )
 end
 
 """
@@ -1034,14 +2170,6 @@ function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, 
         v_wr=reshape(@view(vec[dims.ivw.v_wr.index]), dims.ivw.v_wr.shape),
         v_ww=reshape(@view(vec[dims.ivw.v_ww.index]), dims.ivw.v_ww.shape),
     )
-
-    # # - induced velocities on body - #
-    # TODO: move to post process withdraw
-    # ivb = (;
-    #     v_bb=reshape(@view(vec[dims.ivr.v_bb.index]), dims.ivr.v_bb.shape),
-    #     v_br=reshape(@view(vec[dims.ivr.v_br.index]), dims.ivr.v_br.shape),
-    #     v_bw=reshape(@view(vec[dims.ivr.v_bw.index]), dims.ivr.v_bw.shape),
-    # )
 
     # - linear system - #
     linsys = (;
@@ -1387,17 +2515,6 @@ function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS
         vtheta_est=reshape(@view(vec[dims.vtheta_est.index]), dims.vtheta_est.shape),
         Cm_est=reshape(@view(vec[dims.Cm_est.index]), dims.Cm_est.shape),
     )
-end
-
-"""
-"""
-function withdraw_post_parameter_cache(vec, dims)
-    idmaps = (;
-        ductidsaftofrotors=(),
-        wake_panel_ids_along_casing_wake_interface=(),
-        wake_panel_ids_along_centerbody_wake_interface=(),
-    )
-    return (;)
 end
 
 #---------------------------------#
