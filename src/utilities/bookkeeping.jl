@@ -16,24 +16,27 @@ function get_problem_dimensions(paneling_constants)
     nbe = nws - 1
 
     # number of body panels
-    # TODO: need number of duct and centerbody nodes separately as well
-    ndp = nduct_inlet * 2
+    # TODO: need number of casing and centerbody nodes separately as well
+    ncp = nduct_inlet
     ncbp = ncenterbody_inlet
     # add rest of panels mutual between centerbody and duct
     if iszero(dte_minus_cbte)
-        ndp += sum(npanels[1:(end - 1)]) * 2
+        ncp += sum(npanels[1:(end - 1)])
         ncbp += sum(npanels[1:(end - 1)])
     else
-        ndp += sum(npanels[1:(end - 2)]) * 2
+        ncp += sum(npanels[1:(end - 2)])
         ncbp += sum(npanels[1:(end - 2)])
     end
 
     # add additional duct or centerbody panels if one extends further back
     if dte_minus_cbte > 0
-        ndp += npanels[end - 1] * 2
+        ncp += npanels[end - 1]
     elseif dte_minus_cbte < 0
         ncbp += npanels[end - 1]
     end
+
+    # duct panels are 2x the number of nacelle panels
+    ndp = 2 * ncp
 
     # duct and center body nodes are 1 more than number of panels
     ndn = ndp + 1
@@ -71,6 +74,7 @@ function get_problem_dimensions(paneling_constants)
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
+        ncp,    # number of casing panels
         ndn,    # number of duct nodes
         ncbn,   # number of centerbody nodes
         nbn,    # number of body nodes
@@ -81,6 +85,7 @@ function get_problem_dimensions(paneling_constants)
         nwsp,   # number of panels in each wake sheet
         ndwin,  # number of duct-wake interfacing nodes
         ncbwin, # number of centerbody-wake interfacing nodes
+        nbodies=2, #hard code this for now.
     )
 end
 
@@ -96,6 +101,7 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
     nbe = nws - 1
 
     # number of body panels
+    ncp = findmin(@view(body_vortex_panels.node[1, 1:Int(body_vortex_panels.nnode[1])]))[2] - 1 #TODO check this is correct
     ndp = body_vortex_panels.npanel[1]
     ncbp = body_vortex_panels.npanel[2]
 

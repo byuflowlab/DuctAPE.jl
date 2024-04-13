@@ -2,113 +2,20 @@
 """
 function analyze(
     propulsor::Propulsor,
-    options=set_options();
+    options::Options=set_options();
     prepost_container_caching=nothing,
     solve_parameter_caching=nothing,
     solve_container_caching=nothing,
+    return_inputs=false,
 )
 
-    # - Get type to dispatch caches - #
-    TF = promote_type(
-        eltype(propulsor.duct_coordinates),
-        eltype(propulsor.centerbody_coordinates),
-        eltype(propulsor.operating_point.Vinf),
-        eltype(propulsor.operating_point.Omega),
-        eltype(propulsor.operating_point.rhoinf),
-        eltype(propulsor.operating_point.muinf),
-        eltype(propulsor.operating_point.asound),
-        eltype(propulsor.rotorstator_parameters.B),
-        eltype(propulsor.rotorstator_parameters.Rhub),
-        eltype(propulsor.rotorstator_parameters.Rtip),
-        eltype(propulsor.rotorstator_parameters.rotorzloc),
-        eltype(propulsor.rotorstator_parameters.chords),
-        eltype(propulsor.rotorstator_parameters.twists),
-    )
-
-    # - Get Problem Dimensions - #
-    problem_dimensions = get_problem_dimensions(propulsor.paneling_constants)
-
-    ##### ----- SET UP CACHES AS NEEDED ----- #####
-
-    # - Set up Pre- and Post-process Cache - #
-    # Allocate Cache
-    if isnothing(prepost_container_caching)
-        prepost_container_caching = allocate_prepost_container_cache(
-            propulsor.paneling_constants
-        )
-    end
-
-    # unpack the caching
-    (; prepost_container_cache, prepost_container_cache_dims) = prepost_container_caching
-
-    # Get correct cached types
-    prepost_container_cache_vec = @views PreallocationTools.get_tmp(
-        prepost_container_cache, TF(1.0)
-    )
-
-    # reset cache
-    prepost_container_cache_vec .= 0
-
-    # Reshape Cache
-    prepost_containers = withdraw_prepost_container_cache(
-        prepost_container_cache_vec, prepost_container_cache_dims
-    )
-
-    # - Set up Solver Sensitivity Paramter Cache - #
-
-    # Allocate Cache
-    if isnothing(solve_parameter_caching)
-        solve_parameter_caching = allocate_solve_parameter_cache(
-            options.solver_options, propulsor.paneling_constants
-        )
-    end
-
-    # unpack caching
-    (; solve_parameter_cache, solve_parameter_cache_dims) = solve_parameter_caching
-
-    # get correct cache type
-    solve_parameter_cache_vector = @views PreallocationTools.get_tmp(
-        solve_parameter_cache, TF(1.0)
-    )
-    # reset cache
-    solve_parameter_cache_vector .= 0
-
-    # reshape cache
-    solve_parameter_tuple = withdraw_solve_parameter_cache(
-        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
-    )
-
-    # copy over operating point
-    for f in fieldnames(typeof(propulsor.operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
-    end
-
-    # - Do preprocessutations - #
-    if options.verbose
-        println("Pre-computing Parameters")
-    end
-
-    ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
-
-    # - Preprocess - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = precompute_parameters!(
-        solve_parameter_tuple.ivr,
-        solve_parameter_tuple.ivw,
-        solve_parameter_tuple.blade_elements,
-        solve_parameter_tuple.linsys,
-        solve_parameter_tuple.wakeK,
+    # - Set Up - #
+    problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps = setup_analysis(
         propulsor,
-        prepost_containers,
-        problem_dimensions;
-        grid_solver_options=options.grid_solver_options,
-        integration_options=options.integration_options,
-        autoshiftduct=options.autoshiftduct,
-        itcpshift=options.itcpshift,
-        axistol=options.axistol,
-        tegaptol=options.tegaptol,
-        finterp=options.finterp,
-        silence_warnings=options.silence_warnings,
-        verbose=options.verbose,
+        options;
+        prepost_container_caching=prepost_container_caching,
+        solve_parameter_caching=solve_parameter_caching,
+        solve_container_caching=solve_container_caching,
     )
 
     # - Check that the precomputation went well - #
@@ -133,17 +40,17 @@ function analyze(
     # - Continue with Analysis - #
     return analyze(
         propulsor,
+        prepost_containers,
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
         ivb,
         A_bb_LU,
-        prepost_containers.panels,
         idmaps,
         problem_dimensions,
         options;
         solve_container_caching=solve_container_caching,
-        # post_caching=nothing
+        return_inputs=return_inputs,
     )
 end
 
@@ -151,22 +58,18 @@ end
 """
 function analyze(
     propulsor::Propulsor,
+    prepost_containers,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
     ivb,
     A_bb_LU,
-    panels,
     idmaps,
     problem_dimensions,
-    options=set_options();
+    options::Options=set_options();
     return_inputs=false,
-    # prepost_container_caching=nothing,
     solve_container_caching=nothing,
-    # post_caching=nothing
 )
-
-    # - Finish Pre-Processing - #
 
     # Set up Solve Container Cache
     if isnothing(solve_container_caching)
@@ -190,16 +93,15 @@ function analyze(
     # - Post-Process - #
     outs = post_process(
         options.solver_options,
-        solve_container_caching,
         converged_states,
+        prepost_containers,
+        solve_container_caching,
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         propulsor.operating_point,
         propulsor.reference_parameters,
-        ivb,
         A_bb_LU,
         airfoils,
-        panels,
         idmaps,
         problem_dimensions;
         write_outputs=options.write_outputs,
@@ -216,6 +118,8 @@ function analyze(
 
         return outs,
         (;
+            prepost_containers.panels,
+            prepost_containers.ivb,
             solve_parameter_tuple...,
             blade_elements=(; blade_elements..., airfoils...),
             linsys=(; linsys..., A_bb_LU),
@@ -228,135 +132,195 @@ end
 
 """
 """
-function process(
-    solver_options::TS,
-    solve_parameter_cache_vector,
-    solve_parameter_cache_dims,
-    airfoils,
-    A_bb_LU,
-    solve_container_caching,
-    idmaps,
-    options,
-) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
+function analyze(
+    multipoint::AbstractVector{TO},
+    propulsor::Propulsor,
+    options::Options=set_options();
+    prepost_container_caching=nothing,
+    solve_parameter_caching=nothing,
+    solve_container_caching=nothing,
+    return_inputs=false,
+) where {TO<:OperatingPoint}
 
-    # - Initialize Aero - #
-    if options.verbose
-        println("\nInitializing Velocities")
+    # - Set Up - #
+    problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps = setup_analysis(
+        propulsor,
+        options;
+        prepost_container_caching=prepost_container_caching,
+        solve_parameter_caching=solve_parameter_caching,
+        solve_container_caching=solve_container_caching,
+    )
+
+    # - Check that the precomputation went well - #
+    #=
+      NOTE: If the linear system or wake did not converge, there is likely a serious problem that would lead to an error in the solve, so we will exit here with a fail flag for an optimizer or user
+    =#
+    if iszero(lu_decomp_flag) || !options.grid_solver_options.converged[1]
+        if !options.silence_warnings
+            if iszero(lu_decomp_flag)
+                @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
+            elseif !options.grid_solver_options.converged[1]
+                @warn "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good."
+            end
+        end
+        #TODO: write a function that returns the same as outs below, but all zeros
+        #TODO: probably just call  the post-process function directly and return a reset_container! of the output
+        return [],#zero_outputs(),
+        (; solve_parameter_tuple..., ivb, airfoils, idmaps, panels, problem_dimensions),
+        false
     end
-    # view the initial conditions out of the inputs cache
-    solve_parameter_tuple = withdraw_solve_parameter_cache(
-        solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
-    )
-    (; vz_rotor, vtheta_rotor, Cm_wake, operating_point, linsys, ivr, ivw) =
-        solve_parameter_tuple
 
-    # initialize velocities
-    # TODO; add some sort of unit test for this function
-    initialize_velocities!(
-        vz_rotor,
-        vtheta_rotor,
-        Cm_wake,
-        solve_parameter_tuple.operating_point,
-        (; solve_parameter_tuple.blade_elements..., airfoils...),
-        (; solve_parameter_tuple.linsys..., A_bb_LU),
-        solve_parameter_tuple.ivr,
-        solve_parameter_tuple.ivw,
-        idmaps.body_totnodes,
-        idmaps.wake_panel_sheet_be_map,
+    # - initialize converged state multi-point vector - #
+    converged_states = zeros(
+        promote_propulosor_type(propulsor),
+        solve_parameter_cache_dims.state_dims[end].index[end],
+        length(multipoint),
     )
 
-    # - combine cache and constants - #
-    const_cache = (;
-        # - Constants - #
-        options.verbose,
-        options.silence_warnings,
-        #nlsolve options
-        solver_options,
-        # Constant Parameters
-        airfoils,
-        A_bb_LU,
-        idmaps,
-        solve_parameter_cache_dims,
-        # Cache(s)
-        solve_container_caching...,
-        solve_parameter_tuple..., # contains SIAMFANLEOptions containers needed for solver definition
-    )
-
-    # - Solve with ImplicitAD - #
-    if options.verbose
-        println("\nSolving Nonlinear System")
-    end
-    return ImplicitAD.implicit(
-        solve, system_residual!, solve_parameter_cache_vector, const_cache
-    )
-end
-
-"""
-"""
-function process(
-    solver_options::CSORSolverOptions,
-    solve_parameter_cache_vector,
-    solve_parameter_cache_dims,
-    airfoils,
-    A_bb_LU,
-    solve_container_caching,
-    idmaps,
-    options,
-)
-
-    # - Initialize Aero - #
-    if options.verbose
-        println("\nInitializing Velocities")
-    end
-    # view the initial conditions out of the inputs cache
-    solve_parameter_tuple = withdraw_solve_parameter_cache(
-        solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
-    )
-    (; Gamr, sigr, gamw, operating_point, blade_elements, linsys, ivr, ivw, wakeK) =
-        solve_parameter_tuple
-
-    # - Initialize States - #
-    initialize_strengths!(
-        Gamr,
-        sigr,
-        gamw,
-        operating_point,
-        (; blade_elements..., airfoils...),
-        (; linsys..., A_bb_LU),
-        ivr,
-        ivw,
-        wakeK,
-        idmaps.body_totnodes,
-        idmaps.wake_nodemap,
-        idmaps.wake_endnodeidxs,
-        idmaps.wake_panel_sheet_be_map,
-        idmaps.wake_node_sheet_be_map,
-        idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.wake_node_ids_along_centerbody_wake_interface,
-    )
-
-    # - combine cache and constants - #
-    const_cache = (;
-        # - Constants - #
-        options.silence_warnings,
-        options.verbose,
-        #CSOR solve options
-        solver_options,
-        # Constant Parameters
-        airfoils,
-        A_bb_LU,
-        idmaps,
-        # Cache(s)
+    return analyze(
+        multipoint,
+        propulsor,
+        prepost_containers,
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
-        solve_container_caching...,
-    )
-
-    # - Solve with ImplicitAD - #
-    if options.verbose
-        println("\nSolving Nonlinear System using CSOR Method")
-    end
-    return ImplicitAD.implicit(
-        solve, CSOR_residual!, solve_parameter_cache_vector, const_cache
+        airfoils,
+        ivb,
+        A_bb_LU,
+        idmaps,
+        problem_dimensions,
+        options,
+        converged_states;
+        solve_container_caching=solve_container_caching,
+        return_inputs=return_inputs,
     )
 end
+
+function analyze(
+    multipoint::AbstractVector{TO},
+    propulsor::Propulsor,
+    prepost_containers,
+    solve_parameter_cache_vector,
+    solve_parameter_cache_dims,
+    airfoils,
+    ivb,
+    A_bb_LU,
+    idmaps,
+    problem_dimensions,
+    options::Options,
+    converged_states;
+    solve_container_caching=nothing,
+    return_inputs=false,
+) where {TO<:OperatingPoint}
+    if options.verbose
+        println("\nRunning Multipoint Analysis")
+    end
+
+    # Set up Solve Container Cache
+    if isnothing(solve_container_caching)
+        solve_container_caching = allocate_solve_container_cache(
+            options.solver_options, propulsor.paneling_constants
+        )
+    end
+
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+
+    # reset multipoint index
+    options.multipoint_index[] = 0
+
+    # - Loop through Operating Points - #
+    for (iop, op) in enumerate(multipoint)
+
+        # incremenet operating point to keep track of convergence in multipoint solves
+        options.multipoint_index[] += 1
+
+        if options.verbose
+            println("\n  Operating Point:")
+            for fn in fieldnames(typeof(op))
+                println(@sprintf "    %6s = %5.3e" fn getfield(op, fn)[])
+                # println("    ", fn, " = ", getfield(op,fn))
+            end
+        end
+
+        # - copy over operating point - #
+        for f in fieldnames(typeof(op))
+            solve_parameter_tuple.operating_point[f] .= getfield(op, f)
+        end
+
+        # - Set up Body Linear System RHS - #
+        vinfvec = [op.Vinf[]; 0.0]
+        prepost_containers.vdnb .= [
+            dot(vinfvec, nhat) for
+            nhat in eachcol(prepost_containers.panels.body_vortex_panels.normal)
+        ]
+        prepost_containers.vdnpcp .= [
+            dot(vinfvec, nhat) for
+            nhat in eachcol(prepost_containers.panels.body_vortex_panels.itnormal)
+        ]
+        assemble_rhs_matrix!(
+            solve_parameter_tuple.linsys.b_bf,
+            prepost_containers.vdnb,
+            prepost_containers.vdnpcp,
+            prepost_containers.panels.body_vortex_panels.npanel,
+            prepost_containers.panels.body_vortex_panels.nnode,
+            prepost_containers.panels.body_vortex_panels.totpanel,
+            prepost_containers.panels.body_vortex_panels.totnode,
+            prepost_containers.panels.body_vortex_panels.prescribednodeidxs,
+        )
+
+        # - Process - #
+        converged_states[:, iop] .= process(
+            options.solver_options,
+            solve_parameter_cache_vector,
+            solve_parameter_cache_dims,
+            airfoils,
+            A_bb_LU,
+            solve_container_caching,
+            idmaps,
+            options,
+        )
+    end
+
+    # - Post-Process - #
+    outs = [
+        post_process(
+            options.solver_options,
+            cs,
+            prepost_containers,
+            solve_container_caching,
+            solve_parameter_cache_vector,
+            solve_parameter_cache_dims,
+            propulsor.operating_point,
+            propulsor.reference_parameters,
+            A_bb_LU,
+            airfoils,
+            idmaps,
+            problem_dimensions;
+            write_outputs=options.write_outputs[iop],
+            outfile=options.outfile[iop],
+            checkoutfileexists=options.checkoutfileexists,
+            output_tuple_name=options.output_tuple_name[iop],
+            verbose=options.verbose,
+        ) for (iop, cs) in enumerate(eachcol(converged_states))
+    ]
+
+    if return_inputs
+        solve_parameter_tuple = withdraw_solve_parameter_cache(
+            solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+        )
+
+        return outs,
+        (;
+            prepost_containers.panels,
+            prepost_containers.ivb,
+            solve_parameter_tuple...,
+            blade_elements=(; blade_elements..., airfoils...),
+            linsys=(; linsys..., A_bb_LU),
+        ),
+        options.solver_options.converged
+    else
+        return outs, options.solver_options.converged
+    end
+end
+

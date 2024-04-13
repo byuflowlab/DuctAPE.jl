@@ -20,20 +20,51 @@ end
 
 """
 """
-function split_bodies(vec, controlpoint, endpanelidxs; duct=true, hub=true)
+function split_bodies!(
+    casing_vec,
+    nacelle_vec,
+    cb_vec,
+    casing_zpts,
+    nacelle_zpts,
+    cb_zpts,
+    vec,
+    controlpoint,
+    endpanelidxs;
+    duct=true,
+    centerbody=true,
+)
+
+# get dimensions
+casing_ids = 1:size(casing_vec,1)
+nacelle_ids = casing_ids[end]+1:casing_ids[end]+size(nacelle_vec,1)
+cb_ids = nacelle_ids[end]+1:nacelle_ids[end]+ size(cb_vec,1)
+
+    casing_vec .= @view(vec[casing_ids, :])
+    nacelle_vec .= @view(vec[nacelle_ids, :])
+    cb_vec .= @view(vec[cb_ids, :])
+    casing_zpts .= @view(controlpoint[1, casing_ids])
+    nacelle_zpts .= @view(controlpoint[1, nacelle_ids])
+    cb_zpts .= @view(controlpoint[1, cb_ids])
+
+    return casing_vec, nacelle_vec, cb_vec, casing_zpts, nacelle_zpts, cb_zpts
+end
+
+"""
+"""
+function split_bodies(vec, controlpoint, endpanelidxs; duct=true, centerbody=true)
     # get type of vector for consistent outputs
     TF = eltype(vec)
 
     #check if duct is used
     if !duct
-        #hub only
+        #centerbody only
         return TF[], TF[], vec, TF[], TF[], controlpoint[:, 1]
     else
         # split duct into inner and outer
         ndpan = Int(endpanelidxs[2, 1])
         # get duct leading edge index. assumes duct comes first in vector
         _, leidx = findmin(controlpoint[1, 1:ndpan])
-        if !hub
+        if !centerbody
             #duct only
             return vec[1:leidx, :],
             vec[(leidx + 1):ndpan, :],
@@ -42,7 +73,7 @@ function split_bodies(vec, controlpoint, endpanelidxs; duct=true, hub=true)
             controlpoint[1, (leidx + 1):ndpan],
             TF[]
         else
-            #duct and hub
+            #duct and centerbody
             return vec[1:leidx, :],
             vec[(leidx + 1):ndpan, :],
             vec[(ndpan + 1):end, :],

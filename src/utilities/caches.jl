@@ -1,3 +1,23 @@
+"""
+"""
+function initialize_all_caches(solver_options, paneling_constants)
+
+    # - Pre/Post Containers Cache - #
+    prepost_container_caching = allocate_prepost_container_cache(paneling_constants)
+
+    # - Solve (Sensitivity) Parameters Cache - #
+    solve_parameter_caching = allocate_solve_parameter_cache(
+        solver_options, paneling_constants
+    )
+
+    # - Solve Intermediate Containers Cache - #
+    solve_container_caching = allocate_solve_container_cache(
+        solver_options, paneling_constants
+    )
+
+    return prepost_container_caching, solve_parameter_caching, solve_container_caching
+end
+
 ######################################################################
 #                                                                    #
 #                         CACHE ALLOCATIONS                          #
@@ -213,6 +233,7 @@ function allocate_prepost_container_cache(paneling_constants)
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
+        ncp,    # number of casing panels
         ndn,    # number of duct nodes
         ncbn,   # number of centerbody nodes
         nbn,    # number of body nodes
@@ -223,10 +244,13 @@ function allocate_prepost_container_cache(paneling_constants)
         nwsp,   # number of panels in each wake sheet
         ndwin,  # number of duct-wake interfacing nodes
         ncbwin, # number of centerbody-wake interfacing nodes
+        nbodies,
     ) = problem_dimensions
 
     # - initialize - #
     total_length = 0
+
+    ### --- PRE-PROCESSING --- ###
 
     # - COORDINATES - #
     dcshape = (2, ndn)
@@ -293,10 +317,239 @@ function allocate_prepost_container_cache(paneling_constants)
     vdnpcp = (; index=(total_length + 1):(total_length + l), shape=s)
     total_length += l
 
+    ##### ----- POST PROCESSING ----- #####
+
+    ### --- ROTOR Post-Processing Cache --- ###
+
+    s = (nrotor,)
+    l = lfs(s)
+    rotor_inviscid_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_CT = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_CQ = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_CP = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    induced_efficiency= (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+
+    s = (nbe, nrotor)
+    l = lfs(s)
+    rotor_inviscid_thrust_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_thrust_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_torque_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_torque_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_inviscid_power_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    rotor_viscous_power_dist = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    blade_normal_force_per_unit_span = (;
+        index=(total_length + 1):(total_length + l), shape=s
+    )
+    total_length += l
+
+    blade_tangential_force_per_unit_span = (;
+        index=(total_length + 1):(total_length + l), shape=s
+    )
+    total_length += l
+
+    cn = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ct = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cphi = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    sphi = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+
+    ### --- BODY Post-Processing Cache --- ###
+    s = (2, nbp)
+    l = lfs(s)
+    Vtot_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Vtot_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Vtot_prejump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_body = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_jump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_wake = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtot_rotors = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp,)
+    l = lfs(s)
+    Vtan_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    Vtan_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+    cp_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ncp,)
+    l = lfs(s)
+    vtan_casing_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtan_casing_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    casing_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_casing_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+    cp_casing_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ndn - 1 - ncp,)
+    l = lfs(s)
+    vtan_nacelle_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtan_nacelle_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    nacelle_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_nacelle_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+    cp_nacelle_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ncbn - 1,)
+    l = lfs(s)
+    vtan_centerbody_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    vtan_centerbody_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    centerbody_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_centerbody_in = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    cp_centerbody_out = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ndn - 1,)
+    l = lfs(s)
+    duct_jump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (ncbn - 1,)
+    l = lfs(s)
+    centerbody_jump = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbp,)
+    l = lfs(s)
+    body_jump_term = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    s = (nbodies,)
+    l = lfs(s)
+    body_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    body_force_coefficient = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ### --- TOTALS Post-Processing Cache --- ###
+    s = (1,)
+    l = lfs(s)
+    total_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_torque = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_power = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_CT = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_CQ = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_CP = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    total_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
+    ideal_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
+    total_length += l
+
     # return tuple of initialized cache and associated dimensions
     return (;
         prepost_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
         prepost_container_cache_dims=(;
+            ### --- PRE --- ###
             rp_duct_coordinates,
             rp_centerbody_coordinates,
             wake_grid,
@@ -307,6 +560,74 @@ function allocate_prepost_container_cache(paneling_constants)
             AICpcp,
             vdnb,
             vdnpcp,
+            ### --- Post --- ###
+            # - ROTOR - #
+            rotor_inviscid_thrust,
+            rotor_inviscid_thrust_dist,
+            rotor_viscous_thrust,
+            rotor_viscous_thrust_dist,
+            rotor_thrust,
+            rotor_inviscid_torque,
+            rotor_inviscid_torque_dist,
+            rotor_viscous_torque,
+            rotor_viscous_torque_dist,
+            rotor_torque,
+            rotor_inviscid_power,
+            rotor_inviscid_power_dist,
+            rotor_viscous_power,
+            rotor_viscous_power_dist,
+            rotor_power,
+            rotor_CT,
+            rotor_CQ,
+            rotor_CP,
+            rotor_efficiency,
+            induced_efficiency,
+            blade_normal_force_per_unit_span,
+            blade_tangential_force_per_unit_span,
+            blade_loading_intermediate_containers=(; cn, ct, cphi, sphi),
+            # - BODY - #
+            zpts=(; casing_zpts, nacelle_zpts, centerbody_zpts),
+            vtan_tuple=(;
+                Vtot_in,
+                Vtot_out,
+                Vtan_in,
+                Vtan_out,
+                Vtot_prejump,
+                vtot_body,
+                duct_jump,
+                centerbody_jump,
+                body_jump_term,
+                vtot_jump,
+                vtot_wake,
+                vtot_rotors,
+                vtan_casing_in,
+                vtan_casing_out,
+                vtan_nacelle_in,
+                vtan_nacelle_out,
+                vtan_centerbody_in,
+                vtan_centerbody_out,
+            ),
+            cp_tuple=(;
+                cp_in,
+                cp_out,
+                cp_casing_in,
+                cp_casing_out,
+                cp_nacelle_in,
+                cp_nacelle_out,
+                cp_centerbody_in,
+                cp_centerbody_out,
+            ),
+            body_thrust,
+            body_force_coefficient,
+            # - TOTALS - #
+            total_thrust,
+            total_torque,
+            total_power,
+            total_CT,
+            total_CQ,
+            total_CP,
+            total_efficiency,
+            ideal_efficiency,
         ),
     )
 end
@@ -814,7 +1135,6 @@ total_length, SIAMFANLE_cache_vecs =  allocate_solve_parameter_extras(solve_type
             operating_point=(; Vinf, rhoinf, muinf, asound, Omega),
             ivr=(; v_rb, v_rr, v_rw),
             ivw=(; v_wb, v_wr, v_ww),
-            # ivb=(; v_bb, v_br, v_bw),
             linsys=(; A_bb, b_bf, A_bw, A_pw, A_br, A_pr),
             blade_elements=(;
                 B,
@@ -1518,7 +1838,240 @@ function withdraw_prepost_container_cache(vec, dims)
         ),
     )
 
+    # - ROTOR POST CACHE - #
+
+    rotor_inviscid_thrust = reshape(
+        @view(vec[dims.rotor_inviscid_thrust.index]), dims.rotor_inviscid_thrust.shape
+    )
+    rotor_inviscid_thrust_dist = reshape(
+        @view(vec[dims.rotor_inviscid_thrust_dist.index]),
+        dims.rotor_inviscid_thrust_dist.shape,
+    )
+    rotor_viscous_thrust = reshape(
+        @view(vec[dims.rotor_viscous_thrust.index]), dims.rotor_viscous_thrust.shape
+    )
+    rotor_viscous_thrust_dist = reshape(
+        @view(vec[dims.rotor_viscous_thrust_dist.index]),
+        dims.rotor_viscous_thrust_dist.shape,
+    )
+    rotor_thrust = reshape(@view(vec[dims.rotor_thrust.index]), dims.rotor_thrust.shape)
+    rotor_inviscid_torque = reshape(
+        @view(vec[dims.rotor_inviscid_torque.index]), dims.rotor_inviscid_torque.shape
+    )
+    rotor_inviscid_torque_dist = reshape(
+        @view(vec[dims.rotor_inviscid_torque_dist.index]),
+        dims.rotor_inviscid_torque_dist.shape,
+    )
+    rotor_viscous_torque = reshape(
+        @view(vec[dims.rotor_viscous_torque.index]), dims.rotor_viscous_torque.shape
+    )
+    rotor_viscous_torque_dist = reshape(
+        @view(vec[dims.rotor_viscous_torque_dist.index]),
+        dims.rotor_viscous_torque_dist.shape,
+    )
+    rotor_torque = reshape(@view(vec[dims.rotor_torque.index]), dims.rotor_torque.shape)
+    rotor_inviscid_power = reshape(
+        @view(vec[dims.rotor_inviscid_power.index]), dims.rotor_inviscid_power.shape
+    )
+    rotor_inviscid_power_dist = reshape(
+        @view(vec[dims.rotor_inviscid_power_dist.index]),
+        dims.rotor_inviscid_power_dist.shape,
+    )
+    rotor_viscous_power = reshape(
+        @view(vec[dims.rotor_viscous_power.index]), dims.rotor_viscous_power.shape
+    )
+    rotor_viscous_power_dist = reshape(
+        @view(vec[dims.rotor_viscous_power_dist.index]), dims.rotor_viscous_power_dist.shape
+    )
+    rotor_power = reshape(@view(vec[dims.rotor_power.index]), dims.rotor_power.shape)
+    rotor_CT = reshape(@view(vec[dims.rotor_CT.index]), dims.rotor_CT.shape)
+    rotor_CQ = reshape(@view(vec[dims.rotor_CQ.index]), dims.rotor_CQ.shape)
+    rotor_CP = reshape(@view(vec[dims.rotor_CP.index]), dims.rotor_CP.shape)
+    rotor_efficiency = reshape(
+        @view(vec[dims.rotor_efficiency.index]), dims.rotor_efficiency.shape
+    )
+    induced_efficiency=reshape(
+            @view(vec[dims.induced_efficiency.index]),
+            dims.induced_efficiency.shape,
+        )
+    blade_normal_force_per_unit_span = reshape(
+        @view(vec[dims.blade_normal_force_per_unit_span.index]),
+        dims.blade_normal_force_per_unit_span.shape,
+    )
+    blade_tangential_force_per_unit_span = reshape(
+        @view(vec[dims.blade_tangential_force_per_unit_span.index]),
+        dims.blade_tangential_force_per_unit_span.shape,
+    )
+    blade_loading_intermediate_containers = (;
+        cn=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.cn.index]),
+            dims.blade_loading_intermediate_containers.cn.shape,
+        ),
+        ct=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.ct.index]),
+            dims.blade_loading_intermediate_containers.ct.shape,
+        ),
+        cphi=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.cphi.index]),
+            dims.blade_loading_intermediate_containers.cphi.shape,
+        ),
+        sphi=reshape(
+            @view(vec[dims.blade_loading_intermediate_containers.sphi.index]),
+            dims.blade_loading_intermediate_containers.sphi.shape,
+        ),
+    )
+
+    # - BODY POST CACHE - #
+    zpts = (;
+        centerbody_zpts=reshape(
+            @view(vec[dims.zpts.centerbody_zpts.index]),
+            dims.zpts.centerbody_zpts.shape,
+        ),
+        casing_zpts=reshape(
+            @view(vec[dims.zpts.casing_zpts.index]),
+            dims.zpts.casing_zpts.shape,
+        ),
+        nacelle_zpts=reshape(
+            @view(vec[dims.zpts.nacelle_zpts.index]),
+            dims.zpts.nacelle_zpts.shape,
+        ),
+       )
+
+        vtan_tuple = (;
+        Vtot_in=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_in.index]),
+            dims.vtan_tuple.Vtot_in.shape,
+        ),
+        Vtot_out=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_out.index]),
+            dims.vtan_tuple.Vtot_out.shape,
+        ),
+        Vtan_in=reshape(
+            @view(vec[dims.vtan_tuple.Vtan_in.index]),
+            dims.vtan_tuple.Vtan_in.shape,
+        ),
+        Vtan_out=reshape(
+            @view(vec[dims.vtan_tuple.Vtan_out.index]),
+            dims.vtan_tuple.Vtan_out.shape,
+        ),
+        Vtot_prejump=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_prejump.index]),
+            dims.vtan_tuple.Vtot_prejump.shape,
+        ),
+        vtot_body=reshape(
+            @view(vec[dims.vtan_tuple.vtot_body.index]),
+            dims.vtan_tuple.vtot_body.shape,
+        ),
+        duct_jump=reshape(
+            @view(vec[dims.vtan_tuple.duct_jump.index]),
+            dims.vtan_tuple.duct_jump.shape,
+        ),
+        centerbody_jump=reshape(
+            @view(vec[dims.vtan_tuple.centerbody_jump.index]),
+            dims.vtan_tuple.centerbody_jump.shape,
+        ),
+        body_jump_term=reshape(
+            @view(vec[dims.vtan_tuple.body_jump_term.index]),
+            dims.vtan_tuple.body_jump_term.shape,
+        ),
+        vtot_jump=reshape(
+            @view(vec[dims.vtan_tuple.vtot_jump.index]),
+            dims.vtan_tuple.vtot_jump.shape,
+        ),
+        vtot_wake=reshape(
+            @view(vec[dims.vtan_tuple.vtot_wake.index]),
+            dims.vtan_tuple.vtot_wake.shape,
+        ),
+        vtot_rotors=reshape(
+            @view(vec[dims.vtan_tuple.vtot_rotors.index]),
+            dims.vtan_tuple.vtot_rotors.shape,
+        ),
+        # Splits:
+        vtan_casing_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_casing_in.index]),
+            dims.vtan_tuple.vtan_casing_in.shape,
+        ),
+        vtan_casing_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_casing_out.index]),
+            dims.vtan_tuple.vtan_casing_out.shape,
+        ),
+        vtan_nacelle_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_nacelle_in.index]),
+            dims.vtan_tuple.vtan_nacelle_in.shape,
+        ),
+        vtan_nacelle_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_nacelle_out.index]),
+            dims.vtan_tuple.vtan_nacelle_out.shape,
+        ),
+        vtan_centerbody_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_centerbody_in.index]),
+            dims.vtan_tuple.vtan_centerbody_in.shape,
+        ),
+        vtan_centerbody_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_centerbody_out.index]),
+            dims.vtan_tuple.vtan_centerbody_out.shape,
+        ),
+)
+
+    cp_tuple = (;
+        cp_in=reshape(@view(vec[dims.cp_tuple.cp_in.index]), dims.cp_tuple.cp_in.shape),
+        cp_out=reshape(@view(vec[dims.cp_tuple.cp_out.index]), dims.cp_tuple.cp_out.shape),
+        cp_casing_in=reshape(
+            @view(vec[dims.cp_tuple.cp_casing_in.index]), dims.cp_tuple.cp_casing_in.shape
+        ),
+        cp_casing_out=reshape(
+            @view(vec[dims.cp_tuple.cp_casing_out.index]), dims.cp_tuple.cp_casing_out.shape
+        ),
+        cp_nacelle_in=reshape(
+            @view(vec[dims.cp_tuple.cp_nacelle_in.index]), dims.cp_tuple.cp_nacelle_in.shape
+        ),
+        cp_nacelle_out=reshape(
+            @view(vec[dims.cp_tuple.cp_nacelle_out.index]), dims.cp_tuple.cp_nacelle_out.shape
+        ),
+        cp_centerbody_in=reshape(
+            @view(vec[dims.cp_tuple.cp_centerbody_in.index]),
+            dims.cp_tuple.cp_centerbody_in.shape,
+        ),
+        cp_centerbody_out=reshape(
+            @view(vec[dims.cp_tuple.cp_centerbody_out.index]),
+            dims.cp_tuple.cp_centerbody_out.shape,
+        ),
+    )
+    body_thrust = reshape(
+        @view(vec[dims.body_thrust.index]), dims.body_thrust.shape
+    )
+    body_force_coefficient = reshape(
+        @view(vec[dims.body_force_coefficient.index]), dims.body_force_coefficient.shape
+    )
+
+    # - TOTALS POST CACHE - #
+    total_thrust = reshape(
+        @view(vec[dims.total_thrust.index]), dims.total_thrust.shape
+    )
+    total_torque = reshape(
+        @view(vec[dims.total_torque.index]), dims.total_torque.shape
+    )
+    total_power = reshape(
+        @view(vec[dims.total_power.index]), dims.total_power.shape
+    )
+    total_CT = reshape(
+        @view(vec[dims.total_CT.index]), dims.total_CT.shape
+    )
+    total_CQ = reshape(
+        @view(vec[dims.total_CQ.index]), dims.total_CQ.shape
+    )
+    total_CP = reshape(
+        @view(vec[dims.total_CP.index]), dims.total_CP.shape
+    )
+    total_efficiency = reshape(
+        @view(vec[dims.total_efficiency.index]), dims.total_efficiency.shape
+    )
+    ideal_efficiency = reshape(
+        @view(vec[dims.ideal_efficiency.index]), dims.ideal_efficiency.shape
+    )
+
     return (;
+        # pre
         rp_duct_coordinates,
         rp_centerbody_coordinates,
         wake_grid,
@@ -1529,6 +2082,45 @@ function withdraw_prepost_container_cache(vec, dims)
         vdnpcp,
         panels,
         ivb,
+        #rotor post
+        rotor_inviscid_thrust,
+        rotor_inviscid_thrust_dist,
+        rotor_viscous_thrust,
+        rotor_viscous_thrust_dist,
+        rotor_thrust,
+        rotor_inviscid_torque,
+        rotor_inviscid_torque_dist,
+        rotor_viscous_torque,
+        rotor_viscous_torque_dist,
+        rotor_torque,
+        rotor_inviscid_power,
+        rotor_inviscid_power_dist,
+        rotor_viscous_power,
+        rotor_viscous_power_dist,
+        rotor_power,
+        rotor_CT,
+        rotor_CQ,
+        rotor_CP,
+        rotor_efficiency,
+        induced_efficiency,
+        blade_normal_force_per_unit_span,
+        blade_tangential_force_per_unit_span,
+        blade_loading_intermediate_containers,
+        # Body Post
+        zpts,
+        vtan_tuple,
+        cp_tuple,
+        body_thrust,
+        body_force_coefficient,
+        # Totals Post
+        total_thrust,
+        total_torque,
+        total_power,
+        total_CT,
+        total_CQ,
+        total_CP,
+        total_efficiency,
+        ideal_efficiency,
     )
 end
 
@@ -1573,14 +2165,6 @@ function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, 
         v_wr=reshape(@view(vec[dims.ivw.v_wr.index]), dims.ivw.v_wr.shape),
         v_ww=reshape(@view(vec[dims.ivw.v_ww.index]), dims.ivw.v_ww.shape),
     )
-
-    # # - induced velocities on body - #
-    # TODO: move to post process withdraw
-    # ivb = (;
-    #     v_bb=reshape(@view(vec[dims.ivr.v_bb.index]), dims.ivr.v_bb.shape),
-    #     v_br=reshape(@view(vec[dims.ivr.v_br.index]), dims.ivr.v_br.shape),
-    #     v_bw=reshape(@view(vec[dims.ivr.v_bw.index]), dims.ivr.v_bw.shape),
-    # )
 
     # - linear system - #
     linsys = (;

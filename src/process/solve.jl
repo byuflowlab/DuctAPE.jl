@@ -25,6 +25,7 @@ function solve(
         # General
         verbose,
         silence_warnings,
+        multipoint_index,
         # nlsolve options
         solver_options,
         # Constant Parameters
@@ -71,7 +72,7 @@ function solve(
     TF = eltype(state_variables)
 
     resid = MVector{2,TF}(999 * ones(TF, 2))
-    conv = solver_options.converged
+    conv = solver_options.converged[multipoint_index[]]
     iter = 0
 
     # - SOLVE - #
@@ -131,6 +132,7 @@ function solve(
         # General
         verbose,
         silence_warnings,
+        multipoint_index,
         # nlsolve options
         solver_options,
         # Constant Parameters
@@ -208,7 +210,7 @@ function solve(
     )
 
     # update convergence flag
-    converged[1] = sol.converged
+    converged[multipoint_index[]] = sol.converged
 
     return sol.minimizer
 end
@@ -225,6 +227,7 @@ function solve(
         # General
         verbose,
         silence_warnings,
+        multipoint_index,
         # nlsolve options
         solver_options,
         # Constant Parameters
@@ -280,7 +283,7 @@ function solve(
     )
 
     # update convergence flag
-    solver_options.converged[1] = sol.error <= solver_options.atol
+    solver_options.converged[multipoint_index[]] = sol.error <= solver_options.atol
 
     return sol.x
 end
@@ -301,6 +304,7 @@ function solve(
         # General
         verbose,
         silence_warnings,
+        multipoint_index,
         # nlsolve options
         solver_options,
         # Constant Parameters
@@ -383,7 +387,7 @@ function solve(
     )
 
     # update convergence flag
-    converged[1] = result.converged
+    converged[multipoint_index[]] = result.converged
 
     return result.x
 end
@@ -494,7 +498,7 @@ function solve(
 
     # update convergence flag
     # errorcode is 0 if everything is good and could be a bunch of other stuff if not.
-    solver_options.converged[1] = Bool(iszero(result.errcode))
+    solver_options.converged[multipoint_index[]] = Bool(iszero(result.errcode))
 
     return result.solution
 end
@@ -518,6 +522,7 @@ function solve(
         # General
         verbose,
         silence_warnings,
+        multipoint_index,
         # nlsolve options
         solver_options,
         # Constant Parameters
@@ -587,7 +592,7 @@ function solve(
     )
 
     # update convergence flag
-    converged[1] = SciMLBase.successful_retcode(sol)
+    converged[multipoint_index[]] = SciMLBase.successful_retcode(sol)
 
     return sol.u
 end
@@ -604,6 +609,7 @@ function solve(
         # General
         verbose,
         silence_warnings,
+        multipoint_index,
         # nlsolve options
         solver_options,
         # Constant Parameters
@@ -701,7 +707,7 @@ function solve(
 
     # update convergence flag
     # note: need to do this complicated check to ensure that we're only checking |f(x)|<atol rather than claiming convergences when the step size is zero but it's really just stuck.
-    _, converged[1] = NLsolve.assess_convergence(NLsolve.value(df), atol)
+    _, converged[multipoint_index[]] = NLsolve.assess_convergence(NLsolve.value(df), atol)
 
     return result.zero
 end
@@ -727,6 +733,7 @@ function solve(
 
     # If there is only one solver, return the solution
     if length(solver_options.solvers) == 1
+        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[1].converged[const_cache.multipoint_index[]]
         return solution
     end
 
@@ -748,7 +755,7 @@ function solve(
             initial_guess=solution,
         )
 
-        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
         return solution
     else
         # - If there are only 2 solvers, return the solution from the second one - #
@@ -759,7 +766,7 @@ function solve(
             initial_guess=solution,
         )
 
-        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
         return solution
     end
 end
@@ -781,7 +788,7 @@ function solve(
 
     # If there is only one solver, or if the first solver converged, return the solution
     if length(solver_options.solvers) == 1 || solver_options.solvers[1].converged[1]
-        solver_options.converged[1] = solver_options.solvers[1].converged[1]
+        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[1].converged[const_cache.multipoint_index[]]
         return solution
     end
 
@@ -796,7 +803,7 @@ function solve(
             )
 
             if sopt.converged[1]
-                solver_options.converged[1] = sopt.converged[1]
+                solver_options.converged[const_cache.multipoint_index[]] = sopt.converged[const_cache.multipoint_index[]]
                 return solution
             end
         end
@@ -808,7 +815,7 @@ function solve(
             initial_guess=initial_guess,
         )
 
-        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
         return solution
     else
 
@@ -820,7 +827,7 @@ function solve(
             initial_guess=initial_guess,
         )
 
-        solver_options.converged[1] = solver_options.solvers[end].converged[1]
+        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
         return solution
     end
 end

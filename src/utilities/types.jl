@@ -163,7 +163,7 @@ struct GaussLegendre{TN,TW} <: IntegrationMethod
     weights::TW
 end
 
-function GaussLegendre(nsamples=20; silence_warnings=true)
+function GaussLegendre(nsamples=8; silence_warnings=true)
     if silence_warnings && Bool((nsamples) % 2)
         @warn "Must have an even number of GaussLegendre sample points if using for panel self influence"
     end
@@ -174,8 +174,8 @@ function GaussLegendre(nsamples=20; silence_warnings=true)
 end
 
 @kwdef struct IntegrationOptions{TN<:IntegrationMethod,TS<:IntegrationMethod}
-    nominal::TN = GaussLegendre(20)
-    singular::TS = GaussLegendre(20)
+    nominal::TN = GaussLegendre(8)
+    singular::TS = GaussLegendre(8)
 end
 
 #---------------------------------#
@@ -298,10 +298,29 @@ end
         NonlinearSolveOptions(;
             algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
             atol=1e-12,
-            additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoPolyesterForwardDiff()),
+            additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
         ),
     ]
     converged::AbstractVector{TB} = [false]
+end
+
+function ChainSolverOptions(multipoint)
+    lm = length(multipoint)
+    return ChainSolverOptions(;
+        solvers=[
+            NLsolveOptions(; algorithm=:anderson, atol=1e-12, converged=fill(false, lm)),
+            MinpackOptions(; atol=1e-12, converged=fill(false, lm)),
+            NonlinearSolveOptions(;
+                algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
+                atol=1e-12,
+                additional_kwargs=(;
+                    autodiff=SimpleNonlinearSolve.AutoForwardDiff()
+                ),
+                converged=fill(false, lm),
+            ),
+        ],
+        converged=fill(false, lm),
+    )
 end
 
 #---------------------------------#
@@ -328,11 +347,21 @@ end
 #         OPTION SET TYPES        #
 #---------------------------------#
 @kwdef struct Options{
-    TB,TF,TS,Tin,TIo<:IntegrationOptions,TSo<:SolverOptionsType,WS<:GridSolverOptionsType
+    TB,
+    TBwo,
+    TF,
+    TI,
+    TSf,
+    TSt,
+    Tin,
+    TIo<:IntegrationOptions,
+    TSo<:SolverOptionsType,
+    WS<:GridSolverOptionsType,
 }
     # - General Options - #
     verbose::TB = false
     silence_warnings::TB = true
+    multipoint_index::TI = [0]
     # - Geometry Re-interpolation and generation options - #
     finterp::Tin = FLOWMath.akima
     autoshiftduct::TB = true
@@ -344,10 +373,10 @@ end
     # - Integration Options - #
     integration_options::TIo = IntegrationOptions()
     # - Post-processing Options - #
-    write_outputs::TB = false
-    outfile::TS = "outputs.jl"
+    write_outputs::TBwo = false
+    outfile::TSf = ["outputs.jl"]
     checkoutfileexists::TB = false
-    output_tuple_name::TS = "outs"
+    output_tuple_name::TSt = "outs"
     # - Solving Options - #
     grid_solver_options::WS = GridSolverOptions()
     solver_options::TSo = ChainSolverOptions()
@@ -357,14 +386,46 @@ function set_options(; kwargs...)
     return Options(; kwargs...)
 end
 
-function quicksolve_options(;
-    grid_solver_options=SLORGridSolverOptions(),
-    solver_options=CSORSolverOptions(),
-    kwargs...,
-)
-    return Options(;
-        grid_solver_options=SLORGridSolverOptions(),
-        solver_options=CSORSolverOptions(),
+function set_options(multipoint; outfile=nothing, output_tuple_name=nothing, kwargs...)
+    lm = length(multipoint)
+
+    if isnothing(outfile)
+        outfile = ["outputs" * lpad(i, 3, "0") * ".jl" for i in 1:lm]
+    end
+
+    if isnothing(output_tuple_name)
+        output_tuple_name = ["outs" for i in 1:lm]
+    end
+
+    return set_options(;
+        solver_options=ChainSolverOptions(multipoint),
+        outfile=outfile,
+        output_tuple_name=output_tuple_name,
         kwargs...,
+    )
+end
+
+######################################################################
+#                                                                    #
+#                        FUNCTION SET HEADER                         #
+#                                                                    #
+######################################################################
+
+function promote_propulosor_type(p)
+    return promote_type(
+        eltype(p.duct_coordinates),
+        eltype(p.centerbody_coordinates),
+        eltype(p.operating_point.Vinf),
+        eltype(p.operating_point.rhoinf),
+        eltype(p.operating_point.muinf),
+        eltype(p.operating_point.asound),
+        eltype(p.operating_point.Omega),
+        eltype(p.rotorstator_parameters.B),
+        eltype(p.rotorstator_parameters.rotorzloc),
+        eltype(p.rotorstator_parameters.r),
+        eltype(p.rotorstator_parameters.Rhub),
+        eltype(p.rotorstator_parameters.Rtip),
+        eltype(p.rotorstator_parameters.chords),
+        eltype(p.rotorstator_parameters.twists),
     )
 end

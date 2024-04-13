@@ -80,6 +80,7 @@ include("utilities/airfoils/airfoil_utilities.jl")
 include("utilities/airfoils/naca_65series.jl")
 
 ##### ----- Analysis ----- #####
+include("analysis/setup.jl")
 include("analysis/analyses.jl")
 
 ##### ----- PREPROCESS ----- #####
@@ -106,6 +107,7 @@ include("preprocess/velocities/gausskronrod_integrals.jl")
 
 ##### ----- PROCESS ----- #####
 # Solve and Residual Functions
+include("process/process.jl")
 include("process/solve.jl")
 include("process/residuals/CSORresidual.jl")
 include("process/residuals/systemresidual.jl")
