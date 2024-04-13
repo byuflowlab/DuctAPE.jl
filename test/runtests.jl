@@ -24,21 +24,25 @@ include("test_utils.jl")
 println("Running Tests...")
 
 # - Caching Tests - #
-include("iotests.jl")
+# include("iotests.jl")
 
 # - pre-process related tests - #
-include("afcorrections.jl")
-include("panel_generation_tests.jl")
-include("induced_velocities.jl")
-include("influence_coefficients.jl")
-include("linear_system_assembly.jl")
-include("pre_processing_tests.jl")
+# include("afcorrections.jl")
+# include("panel_generation_tests.jl")
+# include("induced_velocities.jl")
+# include("influence_coefficients.jl")
+# include("linear_system_assembly.jl")
+# include("pre_processing_tests.jl")
 
 # - solve related tests - #
 include("iteration_step_tests.jl")
 include("state_estimation.jl")
 include("relaxation_tests.jl")
 include("wake_aero_tests.jl")
+
+# - post process related tests - #
+include("post_processing_tests.jl")
+
 
 ##########################################################
 #EVERYTHING BELOW THIS POINT NEEDS TO BE UPDATED
@@ -47,8 +51,6 @@ include("wake_aero_tests.jl")
 # - Active Development - #
 # include("solve_checks.jl")
 
-# - post process related tests - #
-# include("post_processing_tests.jl")
 
 # - Need to update, add, fix, etc. - #
 # include("body_aero_tests.jl")

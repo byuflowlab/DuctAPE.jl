@@ -405,6 +405,18 @@ function set_options(multipoint; outfile=nothing, output_tuple_name=nothing, kwa
     )
 end
 
+function DFDC_options(;
+    grid_solver_options=SLORGridSolverOptions(),
+    solver_options=CSORSolverOptions(),
+    kwargs...,
+)
+    return Options(;
+        grid_solver_options=SLORGridSolverOptions(),
+        solver_options=CSORSolverOptions(),
+        kwargs...,
+    )
+end
+
 ######################################################################
 #                                                                    #
 #                        FUNCTION SET HEADER                         #

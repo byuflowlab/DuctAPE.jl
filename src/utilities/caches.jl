@@ -226,8 +226,13 @@ end
 
 """
 """
-function allocate_prepost_container_cache(paneling_constants)
+function allocate_prepost_container_cache(paneling_constants::PanelingConstants)
     problem_dimensions = get_problem_dimensions(paneling_constants)
+
+    return allocate_prepost_container_cache(problem_dimensions)
+end
+
+function allocate_prepost_container_cache(problem_dimensions)
 
     (;
         nrotor,     # number of rotors

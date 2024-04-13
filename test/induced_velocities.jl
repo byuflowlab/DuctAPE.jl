@@ -25,7 +25,7 @@ println("\nINDUCED VELOCITY TESTS")
         # influencing panel
         x = [1.0; 2.0]
         r = [9.0; 10.0]
-        ip = dt.generate_panels([x'; r'])
+        ip = dt.generate_panels([x'; r'], isbody=false)
 
         #check self influence
         xi, rho, m, r_influence = dt.calculate_xrm(ip.node, ip.node)
@@ -36,7 +36,7 @@ println("\nINDUCED VELOCITY TESTS")
 
         #check influence on axis should have influence in x, and zero in r
         ra = [0.0; 0.0]
-        ap = dt.generate_panels([x'; ra'])
+        ap = dt.generate_panels([x'; ra']; isbody=false)
         xi, rho, m, r_influence = dt.calculate_xrm(ap.controlpoint[:, 1], ip.node[:, 1])
         @test dt.vortex_ring_vz(xi, rho, m, r_influence, ip.influence_length[1]) != 0.0
         @test dt.vortex_ring_vr(xi, rho, m, r_influence) == 0.0
@@ -52,7 +52,7 @@ println("\nINDUCED VELOCITY TESTS")
         # influencing panel
         x = [1.0; 2.0]
         r = [9.0; 10.0]
-        ip = dt.generate_panels([x'; r'])
+        ip = dt.generate_panels([x'; r']; isbody=false)
 
         #check self influence
         xi, rho, m, r_influence = dt.calculate_xrm(ip.node, ip.node)
@@ -61,7 +61,7 @@ println("\nINDUCED VELOCITY TESTS")
 
         #check influence ON axis should have influence in x, and zero in r
         ra = [0.0; 0.0]
-        ap = dt.generate_panels([x'; ra'])
+        ap = dt.generate_panels([x'; ra']; isbody=false)
         xi, rho, m, r_influence = dt.calculate_xrm(ap.controlpoint[:, 1], ip.node[:, 1])
         @test dt.source_ring_vz(xi, rho, m, r_influence) == 0.0
         @test dt.source_ring_vr(xi, rho, m, r_influence) == 0.0
@@ -91,7 +91,7 @@ end
 
         gk_integration_options = dt.GaussKronrod()
         gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
-        gl_integration_options = dt.GaussLegendre()
+        gl_integration_options = dt.GaussLegendre(20)
         gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
         r_integration_options = dt.Romberg()
         r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
@@ -266,7 +266,7 @@ end
 
         gk_integration_options = dt.GaussKronrod()
         gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
-        gl_integration_options = dt.GaussLegendre()
+        gl_integration_options = dt.GaussLegendre(20)
         gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
         r_integration_options = dt.Romberg()
         r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
@@ -473,7 +473,7 @@ end
 
         gk_integration_options = dt.GaussKronrod()
         gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
-        gl_integration_options = dt.GaussLegendre()
+        gl_integration_options = dt.GaussLegendre(20)
         gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
         r_integration_options = dt.Romberg()
         r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
@@ -652,7 +652,7 @@ end
 
         gk_integration_options = dt.GaussKronrod()
         gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
-        gl_integration_options = dt.GaussLegendre()
+        gl_integration_options = dt.GaussLegendre(20)
         gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
         r_integration_options = dt.Romberg()
         r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
@@ -850,7 +850,7 @@ end
 
         gk_integration_options = dt.GaussKronrod()
         gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
-        gl_integration_options = dt.GaussLegendre()
+        gl_integration_options = dt.GaussLegendre(20)
         gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
         r_integration_options = dt.Romberg()
         r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)
@@ -1045,7 +1045,7 @@ end
 
         gk_integration_options = dt.GaussKronrod()
         gk_cache = dt.allocate_integration_containers(gk_integration_options, 1.0)
-        gl_integration_options = dt.GaussLegendre()
+        gl_integration_options = dt.GaussLegendre(20)
         gl_cache = dt.allocate_integration_containers(gl_integration_options, 1.0)
         r_integration_options = dt.Romberg()
         r_cache = dt.allocate_integration_containers(r_integration_options, 1.0)

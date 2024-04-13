@@ -86,6 +86,7 @@ include("analysis/analyses.jl")
 ##### ----- PREPROCESS ----- #####
 # Pre-solve initializations
 include("preprocess/preprocess.jl")
+include("preprocess/initialize_states.jl")
 
 # Geometry Functions
 include("preprocess/geometry/body_geometry.jl")

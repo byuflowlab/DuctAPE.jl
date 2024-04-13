@@ -23,8 +23,8 @@ println("\nPANEL INITIALIZATION TESTS")
     @test panels.endnodeidxs == [1; 1;;]
     @test panels.endpanelidxs == [1; 1;;]
     @test panels.influence_length == [1.0]
-    @test panels.totpanel == 1
-    @test panels.totnode == 2
+    @test panels.totpanel == [1]
+    @test panels.totnode == [2]
     @test panels.npanel == [1]
     @test panels.nnode == [2]
     @test panels.tenode == [0.0 0.0;;; 0.0 0.0] # this test doesn't make sense in this case, but is present for completeness and to let me know if this behavior of the second index staying zeros changes.
@@ -104,7 +104,7 @@ println("\nPANEL INITIALIZATION TESTS")
     ippanels = deepcopy(panels)
     dt.reset_containers!(ippanels)
     dt.generate_panels!(ippanels, coordinates; isbody=true)
-    @test all(dt.compare_namedtuples(ippanels,panels;verbose=true))
+    @test all(dt.compare_namedtuples(ippanels,panels))
 
     # - TE panel specific tests - #
     x1 = [1.0; 0.5; 0.0; 0.5; 1.0]

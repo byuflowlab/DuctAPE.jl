@@ -93,15 +93,17 @@ end
 """
 function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vortex_panels)
     # number of rotors
-    nrotor = rotor_source_panels.nbodies
+    nrotor = rotor_source_panels.nbodies[]
 
     # number of wake sheets (blade nodes)
-    nws = wake_vortex_panels.nbodies
+    nws = wake_vortex_panels.nbodies[]
     # number of blade elements (panels)
     nbe = nws - 1
 
     # number of body panels
-    ncp = findmin(@view(body_vortex_panels.node[1, 1:Int(body_vortex_panels.nnode[1])]))[2] - 1 #TODO check this is correct
+    ncp =
+        findmin(@view(body_vortex_panels.node[1, 1:Int(body_vortex_panels.nnode[1])]))[2] -
+        1 #TODO check this is correct
     ndp = body_vortex_panels.npanel[1]
     ncbp = body_vortex_panels.npanel[2]
 
@@ -110,9 +112,9 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
     ncbn = body_vortex_panels.nnode[2]
 
     # number of body panels
-    nbp = body_vortex_panels.totpanel
+    nbp = body_vortex_panels.totpanel[]
     # number of body nodes
-    nbn = body_vortex_panels.totnode
+    nbn = body_vortex_panels.totnode[]
 
     # number of panels in each wake sheet
     nwsp = wake_vortex_panels.npanel[1]
@@ -120,9 +122,9 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
     nwsn = wake_vortex_panels.nnode[1]
 
     # number of wake panels total
-    nwp = wake_vortex_panels.totpanel
+    nwp = wake_vortex_panels.totpanel[]
     # number of wake nodes total
-    nwn = wake_vortex_panels.totnode
+    nwn = wake_vortex_panels.totnode[]
 
     # number of duct-wake and centerbody-wake interface nodes
     ndwin = length(
@@ -131,32 +133,32 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
                 in(
                     body_vortex_panels.node[
                         1,
-                        body_vortex_panels.endnodeidxs[1, 1]:body_vortex_panels.endnodeidxs[
-                            2, 1
-                        ],
+                        Int(body_vortex_panels.endnodeidxs[1, 1]):Int(
+                            body_vortex_panels.endnodeidxs[2, 1]
+                        ),
                     ],
                 ),
                 wake_vortex_panels.node[
                     1,
-                    wake_vortex_panels.endnodeidxs[1, end]:wake_vortex_panels.endnodeidxs[
-                        2, end
-                    ],
+                    Int(wake_vortex_panels.endnodeidxs[1, end]):Int(
+                        wake_vortex_panels.endnodeidxs[2, end]
+                    ),
                 ],
             ),
             findall(
                 in(
                     body_vortex_panels.node[
                         2,
-                        body_vortex_panels.endnodeidxs[1, 1]:body_vortex_panels.endnodeidxs[
-                            2, 1
-                        ],
+                        Int(body_vortex_panels.endnodeidxs[1, 1]):Int(
+                            body_vortex_panels.endnodeidxs[2, 1]
+                        ),
                     ],
                 ),
                 wake_vortex_panels.node[
                     2,
-                    wake_vortex_panels.endnodeidxs[1, end]:wake_vortex_panels.endnodeidxs[
-                        2, end
-                    ],
+                    Int(wake_vortex_panels.endnodeidxs[1, end]):Int(
+                        wake_vortex_panels.endnodeidxs[2, end]
+                    ),
                 ],
             ),
         ),
@@ -168,32 +170,32 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
                 in(
                     body_vortex_panels.node[
                         1,
-                        body_vortex_panels.endnodeidxs[1, 2]:body_vortex_panels.endnodeidxs[
-                            2, 2
-                        ],
+                        Int(body_vortex_panels.endnodeidxs[1, 2]):Int(
+                            body_vortex_panels.endnodeidxs[2, 2]
+                        ),
                     ],
                 ),
                 wake_vortex_panels.node[
                     1,
-                    wake_vortex_panels.endnodeidxs[1, 1]:wake_vortex_panels.endnodeidxs[
-                        2, 1
-                    ],
+                    Int(wake_vortex_panels.endnodeidxs[1, 1]):Int(
+                        wake_vortex_panels.endnodeidxs[2, 1]
+                    ),
                 ],
             ),
             findall(
                 in(
                     body_vortex_panels.node[
                         2,
-                        body_vortex_panels.endnodeidxs[1, 2]:body_vortex_panels.endnodeidxs[
-                            2, 2
-                        ],
+                        Int(body_vortex_panels.endnodeidxs[1, 2]):Int(
+                            body_vortex_panels.endnodeidxs[2, 2]
+                        ),
                     ],
                 ),
                 wake_vortex_panels.node[
                     2,
-                    wake_vortex_panels.endnodeidxs[1, 1]:wake_vortex_panels.endnodeidxs[
-                        2, 1
-                    ],
+                    Int(wake_vortex_panels.endnodeidxs[1, 1]):Int(
+                        wake_vortex_panels.endnodeidxs[2, 1]
+                    ),
                 ],
             ),
         ),
@@ -203,6 +205,7 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
         nrotor, # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
+        ncp,    # number of casing panels
         ndn,    # number of duct nodes
         ncbn,   # number of centerbody nodes
         nbn,    # number of body nodes
@@ -213,5 +216,6 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
         nwsp,   # number of panels in each wake sheet
         ndwin,  # number of duct-wake interfacing nodes
         ncbwin, # number of centerbody-wake interfacing nodes
+        nbodies=2, #hardcode for now.
     )
 end
