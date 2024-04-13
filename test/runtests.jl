@@ -24,15 +24,15 @@ include("test_utils.jl")
 println("Running Tests...")
 
 # - Caching Tests - #
-# include("iotests.jl")
+include("iotests.jl")
 
 # - pre-process related tests - #
-# include("afcorrections.jl")
-# include("panel_generation_tests.jl")
-# include("induced_velocities.jl")
-# include("influence_coefficients.jl")
-# include("linear_system_assembly.jl")
-# include("pre_processing_tests.jl")
+include("afcorrections.jl")
+include("panel_generation_tests.jl")
+include("induced_velocities.jl")
+include("influence_coefficients.jl")
+include("linear_system_assembly.jl")
+include("pre_processing_tests.jl")
 
 # - solve related tests - #
 include("iteration_step_tests.jl")

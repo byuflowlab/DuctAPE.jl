@@ -273,6 +273,11 @@ end
 """
 """
 function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
+    # - Reset Tuples - #
+    reset_containers!(ivr)
+    reset_containers!(ivw)
+    reset_containers!(ivb)
+
     # - Extract Tuples - #
     # Extract induced velocities on rotor
     (; v_rr, v_rw, v_rb) = ivr
@@ -1428,6 +1433,10 @@ function precompute_parameters!(
     reset_containers!(blade_element_cache)
     reset_containers!(linsys)
     reset_containers!(wakeK)
+    reset_containers!(prepost_containers; exception_keys=[:wake_grid,
+     :rp_duct_coordinates,
+     :rp_centerbody_coordinates,
+     :rotor_indices_in_wake])
 
     # - Get Floating Point Type - #
     TF = promote_type(

@@ -1209,7 +1209,7 @@ function forces_from_pressure(cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
     cfx = zeros(eltype(cp_out), Int(panels.nbodies[])) # axial force coefficient (all others are zero for axisymmetric case)
     CFx = similar(cfx) .= 0
 
-    return forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
+    return forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=rhoinf, Vref=Vref)
 end
 
 function forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
