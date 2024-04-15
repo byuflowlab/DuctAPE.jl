@@ -1,5 +1,6 @@
-\section{Controlled Successive Over-Relaxation}
+\section{PAPER VERSION}
 
+\subsection{Controlled Successive Over-Relaxation}
 For the actual non-linear solve we employ the controlled successive over-relaxation (CSOR) method taken from DFDC, although somewhat simplified in our implementation:
 
 \begin{algorithm}
@@ -115,3 +116,225 @@ The convergence criteria for the solver is assembled with a combination of the m
 \end{equation}
 
 \where the convergence criteria scaling values can be adjusted as desired.
+
+
+\section{DISSERTATION VERSION}
+
+\subsection{Solving the Rotor/Wake System}
+\label{ssec:rotor_only_solver}
+
+
+In order to solve the non-linear system, we employ a controlled successive under-relaxation (CSUR) fixed-point iteration scheme.
+%
+We first initialize the aerodynamics of each rotor using blade element momentum theory (BEMT), using the freestream velocity for the foremost rotor and the upstream rotor induced velocities for the remaining rotors.
+%
+We take the BEMT solutions and use them to initially populate the wake panel vortex strengths
+%
+We then iterate using a CSUR approach as follows:
+
+\begin{enumerate}
+    \item Solve the linear system for the body panel strengths.
+    \item Calculate the induced velocities on blade elements from the bodies, rotor(s), wake, and freestream.
+    \item Look up the local lift and drag coefficients.
+    \item Calculate new estimates for blade circulation using \cref{eqn:bladeelementcirculationrotor}.
+    \item Select relaxation factors for each blade element circulation values (see \cref{eqn:circulationrelaxation} below).
+    \item Update the blade circulation values (see \cref{eqn:updatecirculation} below).
+    \item Calculate net circulation and enthalpy jumps in wake using \cref{eqn:gamma_tilde,eqn:hjump}.
+    \item Calculate average velocities in wake.
+    \item Calculate new estimates for wake vortex strengths using \cref{eqn:gamma_theta_general}.
+    \item Select relaxation factors for each wake node (see \cref{eqn:gammathetarelaxation} below).
+    \item Update wake vortex strengths (see \cref{eqn:updategammatheta} below).
+    \item Re-calculate the induced velocities on blade elements from the bodies, rotor(s), wake, and freestream using the updated wake panel strengths.
+    \item Look up the updated local lift and drag coefficients.
+    \item Update the blade source panel strengths using \cref{eqn:rotorsourcestrengths}.
+    \item Check for convergence or iteration limit (see \cref{eqn:convergencecrit} below).
+\end{enumerate}
+
+To obtain the relaxation factors for the rotor blade circulation, we look at the difference in the previous circulation values,
+\(B\Gamma\), and the current estimation,
+\((B\Gamma)_\text{est}\), normalized by the previous circulation value with the greatest magnitude for the given rotor, \((B\Gamma)_\text{max}\):
+
+\begin{equation}
+    \hat{\delta} = \frac{\delta_{B\Gamma}}{(B\Gamma)_\text{max}}
+\end{equation}
+
+\where
+
+\begin{equation}
+    \delta_{B\Gamma} = (B\Gamma)_\text{est} - B\Gamma
+\end{equation}
+
+\noindent and \((B\Gamma)_\text{max}\) is required to have a magnitude greater than or equal to 0.1 with the sign being positive if the average \(B\Gamma\) value along the blade is positive and negative if the average along the blade is negative.\sidenote{This increases robustness in the case where the maximum is not the same sign as the rest of the blade.}
+%
+\begin{equation}
+    (B\Gamma)_\text{max} =
+    \begin{cases}
+        \text{max}(B\Gamma,0.1) & \text{if } \overline{B\Gamma} > 0 \\
+        \text{min}(B\Gamma,-0.1) & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\where \(\overline{B\Gamma}\) is the average of \(B\Gamma\) for the given rotor.
+%
+We then take the normalized differences along a blade and set the initial relaxation factor for the whole blade, \(\omega_r\), to be
+
+\begin{equation}
+    \omega_r =
+    \begin{cases}
+        \dfrac{0.2}{|\hat{\delta}|_\text{max}} & \text{if } \frac{\omega_{r_\text{nom}}}{\hat{\delta}_\text{max}} < -0.2
+        \\[10pt]
+        \dfrac{0.4}{|\hat{\delta}|_\text{max}} & \text{if } \frac{\omega_{r_\text{nom}}}{\hat{\delta}_\text{max}} > 0.4 \\[10pt]
+        \omega_{r_\text{nom}} & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\where \(\omega_{r_\text{nom}}=0.4\), the max subscript indicates the maximum magnitude value, and the various scaling factors (here and those described below) may be set as desired by the user.
+
+We then apply an additional scaling factor to the individual blade element relaxation factors \(\omega_{be}\) based on whether the current and previous iteration difference values along the blade (\(\delta_{B\Gamma}\) and \(\delta_{B\Gamma_\text{prev}}\), respectively) are in the same or opposite directions.
+%
+If the current and previous differences for a given blade element are of different signs, meaning the solver has moved the estimated and previous values in opposite directions, we apply an additional scaling factor of 0.6 to the overall relaxation factor to obtain the relaxation factor for that blade element.
+%
+If the current and previous differences are of the same sign (direction), then we apply an additional scaling factor of 0.5.
+
+\begin{equation}
+    \label{eqn:circulationrelaxation}
+    \eqbox{
+    \omega_{be} =
+    \begin{cases}
+        0.6 \omega_r & \text{if } \text{sign}(\delta_{B\Gamma_\text{prev}}) \neq \text{sign}(\delta_{B\Gamma}) \\
+        0.5 \omega_r & \text{otherwise}
+    \end{cases}
+}
+\end{equation}
+
+
+% \begin{algorithm}
+% \caption{Non-linear Solution Method}\label{alg:csor}
+% \begin{algorithmic}
+%     \Require \(\omega=0.5\)
+
+%     \While{unconverged and until max iterations reached:}
+
+%          \State \(\gamma^B \gets\) solve linear system.
+%          \State Update blade element velocities.
+
+%         \LineComment{Initialize:}
+%         \State \(\omega_\gamma \gets 0\)
+%         \State \(\omega_{B\Gamma} \gets 0\)
+%         % \State \((\delta_{B\Gamma})_\text{max} \gets 0\)
+%         \State \((\delta \gamma)_\text{max} \gets 0\)
+
+%         \For{r in rotors}
+%             \State \(\overline{B\Gamma} \gets \text{mean}(B\Gamma)\)
+%             \State \((B\Gamma)_\text{max} \gets  \max(B\Gamma)\)
+%             \State \((B\Gamma)_\text{min} \gets  \min(B\Gamma)\)
+
+%             \For{b in blade elements}
+%             \State \((B\Gamma)_\text{est} \gets f(\Gamma, \sigma, \gamma^w, \gamma^b)\) \Comment{calculate new estimated circulation}
+%             \EndFor
+
+%             \If{\(\overline{B\Gamma} > 0.0 \)}
+%                 \State \((B\Gamma)_\text{mag} \gets \max((B\Gamma)_\text{max},0.1)\)
+%             \ElsIf{\(\overline{B\Gamma} < 0.0 \)}
+%                 \State \((B\Gamma)_\text{mag} \gets \min((B\Gamma)_\text{min},-0.1)\)
+%             \EndIf
+
+%             \LineComment{Obtain relaxation factors based on change in circulation}
+%             \State \(\omega_B \gets \omega\)
+
+%             \For{b in blade elements}
+%                 \State \(\delta_{B\Gamma} \gets (B\Gamma)_\text{est} - B\Gamma\)
+%                 \If{\((B\Gamma)_\text{mag} \neq 0\)}
+%                     \State \(f_{\delta B \Gamma} \gets \delta_{B\Gamma}/ (B\Gamma)_\text{mag}\)
+%                     \If{\(f_{\delta B \Gamma} \omega_B < -0.2\)}
+%                         \State \(\omega_B \gets -0.2/f_{\delta B \Gamma}\)
+%                     \ElsIf{\(f_{\delta B \Gamma} \omega_B > 0.4\)}
+%                         \State \(\omega_B \gets 0.4/f_{\delta B \Gamma}\)
+%                     \EndIf
+%                 \EndIf
+%             \EndFor %blade elements
+
+%             \LineComment{Update circulation}
+%             \For{b in blade elements}
+
+%                 \If{\(\text{sign}(\delta_{B\Gamma}) \neq \text{sign}((\delta_{B\Gamma})_\text{old})\)}
+%                     \State \(\omega_{B\Gamma} \gets 0.6\omega_B\)
+%                 \ElsIf{\(\text{sign}(\delta_{B\Gamma}) = \text{sign}((\delta_{B\Gamma})_\text{old})\)}
+%                     \State \(\omega_{B\Gamma} \gets 0.5\omega_B\)
+%                 \EndIf
+
+%                 \State \((\delta_{B\Gamma})_\text{old} \gets \delta_{B\Gamma}\omega_{B\Gamma} \)
+%                 \State \(B\Gamma \gets B\Gamma + \delta_{B\Gamma}\omega_{B\Gamma} \)
+
+%             \EndFor %blade elements
+
+%             \State Update jumps in circulation and enthalpy
+
+%         \EndFor % rotors
+%     \EndWhile
+
+% \end{algorithmic}
+% \end{algorithm}
+
+The relaxation factor selection is very similar for the wake vortex strengths.
+%
+For each wake panel node, the nominal relaxation factor is set to \(\omega_{\gamma_\text{nom}} = 0.4\).
+%
+If the difference between current and previous iteration's differences in estimated and previous strength (\(\delta_{\gamma_\text{prev}}\) and \(\delta_\gamma\), respectively) are of the same sign, we apply a scaling factor of 1.2, and if not, we apply a scaling factor of 0.6.
+
+\begin{equation}
+    \label{eqn:gammathetarelaxation}
+    \eqbox{
+    \omega_\gamma =
+    \begin{cases}
+        0.6\omega_{\gamma_\text{nom}} &\text{if } \text{sign}(\delta_{\gamma_\text{prev}}) \neq \text{sign}(\delta_{\gamma}) \\
+        1.2\omega_{\gamma_\text{nom}} & \text{otherwise}
+    \end{cases}
+}
+\end{equation}
+
+We choose the new values for circulation and vortex strength to be the previous values plus the relaxation factors multiplied by the differences between the new estimates and old values:
+
+\begin{eqboxed}{\eqbox}{align}
+    \label{eqn:updatecirculation}
+    B\Gamma \stackrel{+}{=}&~ \omega_{be} \delta_{B\Gamma}, \\
+    \label{eqn:updategammatheta}
+    \gamma_\theta \stackrel{+}{=}&~ \omega_\gamma \delta_\gamma.
+\end{eqboxed}
+
+The convergence criteria for the solver is assembled with a combination of the maximum differences used in the relaxation factor selection:
+
+\begin{equation}
+    \label{eqn:convergencecrit}
+    \eqbox{
+    \begin{aligned}
+        \text{converged if } &|\delta_\gamma|_\text{max} < 2\cdot10^{-4} V_\text{ref}, \\
+    &\text{and  } |\delta_{B\Gamma}|_\text{max} < 10^{-3}|B\Gamma|_\text{max};
+    \end{aligned}
+}
+\end{equation}
+
+\where the convergence criteria scaling values can be adjusted as desired.
+
+
+\subsubsection{Initialization of Rotor and Wake Aerodynamics}
+
+As mentioned, we use BEMT to initialize the rotor and wake aerodynamics before proceeding to the non-linear iterative solve.
+%
+The process proceeds simply for the case of a single rotor, but for multiple rotors, including rotor-stator combinations, additional considerations need to be taken into account; namely, the effect of the rotors on rotors aft of themselves.
+%
+We begin by considering the foremost rotor, which is analyzed as though it were the only rotor.
+%
+We input the freestream velocity at each blade element and solve the aerodynamics with BEMT, obtaining the induced axial and tangential velocities, as well as the circulation distribution (and source panel strength distribution if being used).
+%
+With rotor circulation, induced axial velocity, and freestream velocity, we can then initialize the portion of the wake panels aft of the rotor and ahead of the next rotor.
+%
+Since this is the initialization phase, we simply take the induced axial velocity aft of the rotor to be the far-field velocity everywhere behind the rotor.
+%
+We then solve the next rotor using BEMT, but rather than simply using the freestream, we also include the induced velocities from the first rotor on each blade element, mapping the radial distribution non-dimensionally from hub to tip, ignoring any effects of contraction or expansion in the duct for the time being.
+%
+Upon solution of the second rotor, we can populate the wake strengths using the net upstream circulation, the sum of induced axial velocities, and the freestream.
+%
+If there are more than two rotors, the procedure repeats until the last rotor, from which the remainder of the trailing wake is initialized.
+%
+For this initialization phase, we start with the wake strengths at zero and do not take any wake self interactions into account.
