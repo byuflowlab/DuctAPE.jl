@@ -1,0 +1,117 @@
+\section{Controlled Successive Over-Relaxation}
+
+For the actual non-linear solve we employ the controlled successive over-relaxation (CSOR) method taken from DFDC, although somewhat simplified in our implementation:
+
+\begin{algorithm}
+\caption{Solution Method}\label{alg:csor}
+\begin{algorithmic}
+\State Initialize body, rotor, and wake strengths
+\While{unconverged \textbf{and} iterator < iteration limit}
+\begin{itemize}
+    \renewcommand\labelitemi{\(\cdot\)}
+    \setlength{\itemindent}{1em}
+    \item Solve the linear system for the body vortex strengths.
+    \item Calculate new estimates for blade circulation \Comment{using \cref{eqn:bladeelementcirculationrotor}.}
+    \item Select relaxation factors for each blade element circulation values \Comment{see \cref{eqn:circulationrelaxation} below.}
+    \item Update blade circulation values \Comment{see \cref{eqn:updatecirculation} below.}
+    \item Calculate new estimates for wake vortex strengths \Comment{using \cref{eqn:gamma_theta_general}.}
+    \item Select relaxation factors for each wake node \Comment{see \cref{eqn:gammathetarelaxation} below.}
+    \item Update wake vortex strengths \Comment{see \cref{eqn:updategammatheta} below.}
+    \item Update the rotor source panel strengths \Comment{using \cref{eqn:rotorsourcestrengths}.}
+    \item Check for convergence \Comment{see \cref{eqn:convergencecrit} below.}
+\end{itemize}
+\EndWhile
+\State Post-process Solution
+\end{algorithmic}
+\end{algorithm}
+
+To obtain the relaxation factors for the rotor blade circulation, we look at the difference in the previous circulation values,
+\(B\Gamma\), and the current estimation,
+\((B\Gamma)_\text{est}\), normalized by the previous circulation value with the greatest magnitude for the given rotor, \((B\Gamma)_\text{max}\):
+
+\begin{equation}
+    \hat{\delta} = \frac{\delta_{B\Gamma}}{(B\Gamma)_\text{max}}
+\end{equation}
+
+\where
+
+\begin{equation}
+    \delta_{B\Gamma} = (B\Gamma)_\text{est} - B\Gamma
+\end{equation}
+
+\noindent and \((B\Gamma)_\text{max}\) is required to have a magnitude greater than or equal to 0.1 with the sign being positive if the average \(B\Gamma\) value along the blade is positive and negative if the average along the blade is negative.
+%
+\begin{equation}
+    (B\Gamma)_\text{max} =
+    \begin{cases}
+        \text{max}(B\Gamma,0.1) & \text{if } \overline{B\Gamma} > 0 \\
+        \text{min}(B\Gamma,-0.1) & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\where \(\overline{B\Gamma}\) is the average of \(B\Gamma\) for the given rotor.
+%
+We then take the normalized differences along a blade and set the initial relaxation factor for the whole blade, \(\omega_r\), to be
+
+\begin{equation}
+    \omega_r =
+    \begin{cases}
+        \dfrac{0.2}{|\hat{\delta}|_\text{max}} & \text{if } \frac{\omega_{r_\text{nom}}}{\hat{\delta}_\text{max}} < -0.2
+        \\[10pt]
+        \dfrac{0.4}{|\hat{\delta}|_\text{max}} & \text{if } \frac{\omega_{r_\text{nom}}}{\hat{\delta}_\text{max}} > 0.4 \\[10pt]
+        \omega_{r_\text{nom}} & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\where \(\omega_{r_\text{nom}}=0.4\), the max subscript indicates the maximum magnitude value, and the various scaling factors (here and those described below) may be set as desired by the user.
+
+We then apply an additional scaling factor to the individual blade element relaxation factors \(\omega_{be}\) based on whether the current and previous iteration difference values along the blade (\(\delta_{B\Gamma}\) and \(\delta_{B\Gamma_\text{prev}}\), respectively) are in the same or opposite directions.
+%
+If the current and previous differences for a given blade element are of different signs, meaning the solver has moved the estimated and previous values in opposite directions, we apply an additional scaling factor of 0.6 to the overall relaxation factor to obtain the relaxation factor for that blade element.
+%
+If the current and previous differences are of the same sign (direction), then we apply an additional scaling factor of 0.5.
+
+\begin{equation}
+    \label{eqn:circulationrelaxation}
+    \omega_{be} =
+    \begin{cases}
+        0.6 \omega_r & \text{if } \text{sign}(\delta_{B\Gamma_\text{prev}}) \neq \text{sign}(\delta_{B\Gamma}) \\
+        0.5 \omega_r & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+The relaxation factor selection is very similar for the wake vortex strengths.
+%
+For each wake panel node, the nominal relaxation factor is set to \(\omega_{\gamma_\text{nom}} = 0.4\).
+%
+If the difference between current and previous iteration's differences in estimated and previous strength (\(\delta_{\gamma_\text{prev}}\) and \(\delta_\gamma\), respectively) are of the same sign, we apply a scaling factor of 1.2, and if not, we apply a scaling factor of 0.6.
+
+\begin{equation}
+    \label{eqn:gammathetarelaxation}
+    \omega_\gamma =
+    \begin{cases}
+        0.6\omega_{\gamma_\text{nom}} &\text{if } \text{sign}(\delta_{\gamma_\text{prev}}) \neq \text{sign}(\delta_{\gamma}) \\
+        1.2\omega_{\gamma_\text{nom}} & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+We choose the new values for circulation and vortex strength to be the previous values plus the relaxation factors multiplied by the differences between the new estimates and old values:
+
+\begin{align}
+    \label{eqn:updatecirculation}
+    B\Gamma \stackrel{+}{=}&~ \omega_{be} \delta_{B\Gamma}, \\
+    \label{eqn:updategammatheta}
+    \gamma_\theta \stackrel{+}{=}&~ \omega_\gamma \delta_\gamma.
+\end{align}
+
+The convergence criteria for the solver is assembled with a combination of the maximum differences used in the relaxation factor selection:
+
+\begin{equation}
+    \label{eqn:convergencecrit}
+    \begin{aligned}
+        \text{converged if } &|\delta_\gamma|_\text{max} < 2\cdot10^{-4} V_\text{ref}, \\
+    &\text{and  } |\delta_{B\Gamma}|_\text{max} < 10^{-3}|B\Gamma|_\text{max};
+    \end{aligned}
+\end{equation}
+
+\where the convergence criteria scaling values can be adjusted as desired.
