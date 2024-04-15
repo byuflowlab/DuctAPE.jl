@@ -115,11 +115,11 @@ Note that unlike other input structures, this one, in general, does not define f
 - `nwake_sheets::Int` : The number of wake sheets to use. Note this will also be setting the number of blade elements to use.
 - `wake_length::Float=1.0` : Non-dimensional (based on the length from the foremost body leading edge and the aftmost body trailing edge) length of the wake extending behind the aftmost body trailing edge.
 """
-@kwdef struct PanelingConstants{TI,TF}
+@kwdef struct PanelingConstants{TI,TF,TFI}
     nduct_inlet::TI
     ncenterbody_inlet::TI
     npanels::AbstractVector{TI}
-    dte_minus_cbte::TF
+    dte_minus_cbte::TFI
     nwake_sheets::TI
     wake_length::TF = 1.0
 end
