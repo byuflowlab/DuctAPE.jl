@@ -28,6 +28,23 @@ import Base.BroadcastStyle
 isscalar(x::T) where {T} = isscalar(T)
 isscalar(::Type{T}) where {T} = BroadcastStyle(T) isa Broadcast.DefaultArrayStyle{0}
 
+"""
+    OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+
+Propulsor operating point information.
+
+Note that the actual struct requires the inputs to be arrays, but there is a constructor function that will take in scalars and automatically build the array-based struct.
+
+Also note that even though each field is required to be a vector, only `Omega` should have more than one entry, and only then if there are more than one rotor.  The purpose behind having vector rather than constant scalar inputs here is for ease of redefinition in an optimization setting when freestream design variables may be present.
+
+# Arguments
+
+- `Vinf::AbstractVector{Float}` : Freestream velocity magnitude (which is only in the axial direction).
+- `rhoinf::AbstractVector{Float}` : Freestream density
+- `muinf::AbstractVector{Float}` : Freestream viscosity
+- `asound::AbstractVector{Float}` : Freestream speed of sound
+- `Omega::AbstractVector{Float}` : Rotor rototation rate(s)
+"""
 struct OperatingPoint{
     Tv<:AbstractVector,
     Tr<:AbstractVector,
@@ -52,6 +69,18 @@ function OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
     )
 end
 
+"""
+    ReferenceParameters(Vref, Rref)
+
+Reference parameters for post-process non-dimensionalization.
+
+Note that the actual struct requires the inputs to be arrays, but there is a constructor function that will take in scalars and automatically build the array-based struct.
+
+# Arguments
+
+- `Vref::AbstractVector{Float}` : Reference velocity.
+- `Rref::AbstractVector{Float}` : Reference rotor tip radius.
+"""
 struct ReferenceParameters{Tv<:AbstractVector,Tr<:AbstractVector}
     Vref::Tv
     Rref::Tr
@@ -63,15 +92,59 @@ function ReferenceParameters(Vref, Rref)
     )
 end
 
-struct PanelingConstants{TI,TF}
+"""
+    PanelingConstants(
+        nduct_inlet,
+        ncenterbody_inlet,
+        npanels,
+        dte_minus_cbte,
+        nwake_sheets,
+        wake_length=1.0,
+    )
+
+Constants used in re-paneling geometry.
+
+Note that unlike other input structures, this one, in general, does not define fields as vectors.  This is because these values should not change throughout an optimization, even if the geometry may change.  Otherwise, discontinuities could be experienced.
+
+# Arguments
+
+- `nduct_inlet::Int` : The number of panels to use for the duct inlet (this number is used for both the casing and nacelle re-paneling)
+- `ncenterbody_inlet::Int` : The number of panels to use for the centerbody inlet.
+- `npanels::AbstractVector{Int}` : A vector containing the number of panels between discrete locations inside the wake. Specifically, the number of panels between the rotors, between the last rotor and the first body trailing edge, between the body trailing edges (if different), and between the last body trailing edge and the end of the wake.  The length of this vector should be N+1 (where N is the number of rotors) if the duct and centerbody trailing edges are aligned, and N+2 if not.
+- `dte_minus_cbte::Float` : An indicator concerning the hub and duct trailing edge relative locations. Should be set to -1 if the duct trailing edge axial position minus the centerbody trailing edge axial position is negative, +1 if positive (though any positive or negative number will suffice), and zero if the trailing edges are aligned.
+- `nwake_sheets::Int` : The number of wake sheets to use. Note this will also be setting the number of blade elements to use.
+- `wake_length::Float=1.0` : Non-dimensional (based on the length from the foremost body leading edge and the aftmost body trailing edge) length of the wake extending behind the aftmost body trailing edge.
+"""
+@kwdef struct PanelingConstants{TI,TF}
     nduct_inlet::TI
     ncenterbody_inlet::TI
     npanels::AbstractVector{TI}
-    dte_minus_cbte::TI
+    dte_minus_cbte::TF
     nwake_sheets::TI
-    wake_length::TF
+    wake_length::TF = 1.0
 end
 
+"""
+    RotorStatorParameters(
+        B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
+    )
+
+Composite type containing the rotor(s) geometric properties.
+
+Note that the actual struct requires the inputs to be arrays, but there is a constructor function that will take in scalars and automatically build the array-based struct.
+
+# Arguments
+- `B::AbstractVector{Float}` : The number of blades for each rotor. May not be an integer, but usually is.
+- `rotorzloc::AbstractVector{Float}` : Dimensional, axial position of each rotor.
+- `r::AbstractArray{Float}` : Non-dimensional radial locations of each blade element.
+- `Rhub::AbstractVector{Float}` : Dimensional hub radius of rotor. (may be changed if it does not match the radial position of the centerbody geometry at the selected `rotorzloc`.
+- `Rtip::AbstractVector{Float}` : Dimensional tip radius of rotor. Is used to determine the radial position of the duct if the `autoshiftduct` option is selected.
+- `chords::AbstractArray{Float}` : Dimensional chord lengths of the blade elements.
+- `twists::AbstractArray{Float}` : Blade element angles, in radians.
+- `tip_gap::AbstractVector{Float}` : Currently unused, do not set to anything other than zeros.
+- `airfoils::AbstractArray{AFType}` : Airfoil types describing the airfoil polars for each blade element. Currently only fully tested with `C4Blade.DFDCairfoil` types.
+- `fliplift::AbstractVector{Bool}` : flag to indicate if the airfoil lift values should be flipped or not.
+"""
 struct RotorStatorParameters{
     Tb<:AbstractVector,
     TRz<:AbstractVector,
@@ -117,6 +190,18 @@ function RotorStatorParameters(
     )
 end
 
+"""
+    Propulsor(duct_coordinates, centerbody_coordinates, rotorstator_parameters, operating_point, paneling_constants, reference_parameters)
+
+# Arguments
+
+- `duct_coordinates::AbstractMatrix` : The [z, r] coordinates of the duct geometry beginning at the inner (casing) side trailing edge and proceeding clockwise. Note that the duct geometry absolute radial position does not need to be included here if the `autoshiftduct` option is selected.
+- `centerbody_coordinates::AbstractMatrix` : The [z, r] coordinates of the centerbody beginning at the leading edge and ending at the trailing edge. Note that the leading edge is assumed to be placed at a radial distance of 0.0 from the axis of rotation.
+- `rotorstator_parameters::OperatingPoint` : The operating point values.
+- `operating_point::PanelingConstants` : Constants used in re-paneling the geometry.
+- `paneling_constants::RotorStatorParameters` : Rotor (and possibly stator) geometric paramters.
+- `reference_parameters::ReferenceParameters` : Reference Parameters.
+"""
 struct Propulsor{
     Td<:AbstractMatrix,
     Tcb<:AbstractMatrix,
@@ -313,9 +398,7 @@ function ChainSolverOptions(multipoint)
             NonlinearSolveOptions(;
                 algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
                 atol=1e-12,
-                additional_kwargs=(;
-                    autodiff=SimpleNonlinearSolve.AutoForwardDiff()
-                ),
+                additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
                 converged=fill(false, lm),
             ),
         ],
@@ -361,7 +444,7 @@ end
     # - General Options - #
     verbose::TB = false
     silence_warnings::TB = true
-    multipoint_index::TI = [0]
+    multipoint_index::TI = [1]
     # - Geometry Re-interpolation and generation options - #
     finterp::Tin = FLOWMath.akima
     autoshiftduct::TB = true
@@ -382,11 +465,25 @@ end
     solver_options::TSo = ChainSolverOptions()
 end
 
+"""
+    set_options(; kwargs...)
+    set_options(multipoint; kwargs...)
+
+Set the options for DuctAPE to use.
+
+Note that the vast majority of the available options are defined through keyword arguments.  See the documentation for the various option types for more information.
+
+# Arguments
+
+- `multipoint::AbstractVector{OperatingPoint}` : a vector of operating points to use if running a multi-point analysis.
+"""
 function set_options(; kwargs...)
     return Options(; kwargs...)
 end
 
-function set_options(multipoint; outfile=nothing, output_tuple_name=nothing, kwargs...)
+function set_options(
+    multipoint::AbstractVector{TM}; outfile=nothing, output_tuple_name=nothing, kwargs...
+) where {TM<:OperatingPoint}
     lm = length(multipoint)
 
     if isnothing(outfile)
