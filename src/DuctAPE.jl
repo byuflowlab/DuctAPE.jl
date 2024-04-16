@@ -69,10 +69,13 @@ export c4b
 
 ##### ----- UTILITIES ----- #####
 # general utility functions
-include("utilities/utils.jl")
-include("utilities/types.jl")
+include("utilities/misc.jl")
+include("utilities/options.jl")
 include("utilities/package_states.jl")
-include("utilities/caches.jl")
+include("utilities/caching/caches.jl")
+include("utilities/caching/allocate_caches.jl")
+include("utilities/caching/reshape_caches.jl")
+include("utilities/caching/integration_caches.jl")
 include("utilities/bookkeeping.jl")
 
 # Airfoil utility functions
@@ -99,12 +102,13 @@ include("preprocess/geometry/elliptic_grid_residuals.jl")
 include("preprocess/velocities/unit_induced_velocities.jl")
 include("preprocess/velocities/induced_velocity_matrices.jl")
 include("preprocess/velocities/body_aic.jl")
+
 # Quadrature
-include("preprocess/velocities/integrands.jl")
-include("preprocess/velocities/out_of_place_integrals.jl")
-include("preprocess/velocities/gausslegendre_integrals.jl")
-include("preprocess/velocities/romberg_integrals.jl")
-include("preprocess/velocities/gausskronrod_integrals.jl")
+include("preprocess/velocities/quadrature/integrands.jl")
+include("preprocess/velocities/quadrature/out_of_place_integrals.jl")
+include("preprocess/velocities/quadrature/gausslegendre_integrals.jl")
+include("preprocess/velocities/quadrature/romberg_integrals.jl")
+include("preprocess/velocities/quadrature/gausskronrod_integrals.jl")
 
 ##### ----- PROCESS ----- #####
 # Solve and Residual Functions
@@ -125,4 +129,6 @@ include("postprocess/pressures.jl")
 include("postprocess/rotor_performance.jl")
 include("postprocess/utils.jl")
 
+##### ----- DEBUGGING ----- #####
+include("../test/test_utils.jl")
 end

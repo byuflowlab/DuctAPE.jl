@@ -33,6 +33,7 @@ function calculate_induced_velocities_on_rotors(
         post=post,
     )
 end
+
 """
 - `ivr:NamedTuple` : induced velocities on rotor
 """
@@ -122,33 +123,6 @@ end
 
 """
 """
-function reframe_rotor_velocities(
-    vz_rotor, vr_rotor, vtheta_rotor, Vinf, Omega, rotor_panel_centers
-)
-
-    # the axial component also includes the freestream velocity ( see eqn 1.87 in dissertation)
-    Wz_rotor = vz_rotor .+ Vinf
-
-    # the tangential also includes the negative of the rotation rate (see eqn 1.87 in dissertation)
-    Wtheta_rotor = similar(vtheta_rotor) .= vtheta_rotor
-
-    for i in 1:length(Omega)
-        Wtheta_rotor[:, i] .-= Omega[i] .* rotor_panel_centers[:, i]
-    end
-
-    # meridional component
-    Wm_rotor = sqrt.(Wz_rotor .^ 2 .+ vr_rotor .^ 2)
-
-    # Get the inflow magnitude at the rotor as the combination of all the components
-    # TODO: DFDC doesn't use vr_rotor here.  check if it uses Wm_rotor for anything
-    # Wmag_rotor = sqrt.(Wz_rotor .^ 2 .+ vr_rotor .^ 2 .+ Wtheta_rotor .^ 2)
-    Wmag_rotor = sqrt.(Wz_rotor .^ 2 .+ Wtheta_rotor .^ 2)
-
-    return Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
-end
-
-"""
-"""
 function reframe_rotor_velocities!(
     Cz_rotor,
     Ctheta_rotor,
@@ -176,66 +150,6 @@ function reframe_rotor_velocities!(
     return Cz_rotor, Ctheta_rotor, Cmag_rotor
 end
 
-function calculate_rotor_velocities(Gamr, gamw, sigr, inputs)
-    # - Get induced velocities on rotor planes - #
-    vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        inputs.blade_elements.B,
-        reduce(hcat, inputs.blade_elements.rbe),
-        Gamr,
-        inputs.vz_rw,
-        inputs.vr_rw,
-        gamw,
-        inputs.vz_rr,
-        inputs.vr_rr,
-        sigr,
-    )
-
-    # - Reframe rotor velocities into blade element frames
-    Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
-        vz_rotor,
-        vr_rotor,
-        vtheta_rotor,
-        inputs.freestream.Vinf,
-        inputs.blade_elements.Omega,
-        reduce(hcat, inputs.blade_elements.rbe),
-    )
-
-    return vz_rotor, vr_rotor, vtheta_rotor, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
-end
-
-"""
-"""
-function calculate_rotor_velocities(Gamr, gamw, sigr, gamb, inputs)
-
-    # - Get induced velocities on rotor planes - #
-    vz_rotor, vr_rotor, vtheta_rotor = calculate_induced_velocities_on_rotors(
-        inputs.blade_elements.B,
-        reduce(hcat, inputs.blade_elements.rbe),
-        Gamr,
-        inputs.vz_rw,
-        inputs.vr_rw,
-        gamw,
-        inputs.vz_rr,
-        inputs.vr_rr,
-        sigr,
-        inputs.vz_rb,
-        inputs.vr_rb,
-        gamb,
-    )
-
-    # - Reframe rotor velocities into blade element frames
-    Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor = reframe_rotor_velocities(
-        vz_rotor,
-        vr_rotor,
-        vtheta_rotor,
-        inputs.freestream.Vinf,
-        inputs.blade_elements.Omega,
-        reduce(hcat, inputs.blade_elements.rbe),
-    )
-
-    return vz_rotor, vr_rotor, vtheta_rotor, Wz_rotor, Wtheta_rotor, Wm_rotor, Wmag_rotor
-end
-
 """
 """
 function calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, chords, cls)
@@ -252,10 +166,10 @@ end
 function calculate_rotor_source_strengths!(sigr, Wmag_rotor, chords, B, cd)
 
     # Loop through rotors
-    for irotor in 1:length(B)
+    for irotor in eachindex(B)
 
         # Loop through blade panel nodes
-        for inode in 1:size(sigr, 1)
+        for inode in axes(sigr, 1)
 
             # Get average of blade element values at nodes
             if inode == 1
@@ -337,84 +251,6 @@ function calculate_gamma_sigma(
 end
 
 """
-    calculate_gamma_sigma!(Gamr, sigr, blade_elements, Vm, vtheta_rotor)
-
-In-place version of [`calculate_gamma_sigma`](@ref)
-
-Note that circulations and source strengths must be matrices of size number of blade elements by number of rotors. (same dimensions as Vm and vtheta_rotor)
-"""
-function calculate_gamma_sigma!(
-    Gamr,
-    sigr,
-    blade_elements,
-    Wz_rotor,
-    Wtheta_rotor,
-    Wmag_rotor,
-    freestream;
-    post=false,
-    verbose=false,
-)
-
-    #update coeffs
-    if post
-        cl, cd, phidb, alphadb, cldb, cddb = calculate_blade_element_coefficients(
-            blade_elements,
-            Wz_rotor,
-            Wtheta_rotor,
-            Wmag_rotor,
-            freestream;
-            post=post,
-            verbose=verbose,
-        )
-    else
-        cl, cd = calculate_blade_element_coefficients(
-            blade_elements,
-            Wz_rotor,
-            Wtheta_rotor,
-            Wmag_rotor,
-            freestream;
-            post=post,
-            verbose=verbose,
-        )
-    end
-
-    # - get circulation strength - #
-    calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, blade_elements.chords, cl)
-
-    # - get source strength - #
-    calculate_rotor_source_strengths!(
-        sigr, Wmag_rotor, blade_elements.chords, blade_elements.B, cds
-    )
-
-    return Gamr, sigr
-end
-
-function calculate_blade_element_coefficients(
-    blade_elements,
-    Wz_rotor,
-    Wtheta_rotor,
-    Wmag_rotor,
-    freestream;
-    post=false,
-    verbose=false,
-)
-    cl = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
-    cd = zeros(eltype(Wmag_rotor), size(Wmag_rotor))
-
-    return calculate_blade_element_coefficients!(
-        cl,
-        cd,
-        blade_elements,
-        Wz_rotor,
-        Wtheta_rotor,
-        Wmag_rotor,
-        freestream;
-        post=post,
-        verbose=verbose,
-    )
-end
-
-"""
 """
 function calculate_blade_element_coefficients!(
     cl,
@@ -444,20 +280,16 @@ function calculate_blade_element_coefficients!(
     end
 
     # loop through rotors
-    for irotor in 1:length(blade_elements.B)
+    for irotor in 1:nrotor
 
         # loop through radial stations
         for ir in 1:nr
 
             # extract blade element properties
             B = @view(be.B[irotor]) # number of blades
-            omega = @view(operating_point.Omega[irotor]) # rotation rate
             fliplift = @view(be.fliplift[irotor])
-
             c = @view(be.chords[ir, irotor]) # chord length
-            twist = @view(be.twists[ir, irotor]) # twist
             stagger = @view(be.stagger[ir, irotor])
-            r = @view(be.rotor_panel_centers[ir, irotor]) # radius
             solidity = @view(be.solidity[ir, irotor])
 
             # calculate angle of attack
@@ -466,7 +298,7 @@ function calculate_blade_element_coefficients!(
                 # Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
                 Wz_rotor[ir, irotor],
                 Wtheta_rotor[ir, irotor],
-                stagger[1],
+                stagger[],
             )
 
             # get local Reynolds number
@@ -490,13 +322,13 @@ function calculate_blade_element_coefficients!(
                 c,
                 B,
                 Wmag_rotor[ir, irotor],
-                solidity[1],
-                stagger[1],
+                solidity[],
+                stagger[],
                 alpha[ir, irotor],
                 beta1[ir, irotor],
                 reynolds[ir, irotor],
                 mach[ir, irotor],
-                operating_point.asound[1];
+                operating_point.asound[];
                 fliplift=fliplift,
                 verbose=verbose,
             )
@@ -602,11 +434,9 @@ end
 """
 function calculate_inflow_angles(Cz_rotor, Ctheta_rotor, stagger)
     #inflow angle
-    # beta1 = atan.(Cz_rotor, -Ctheta_rotor)
     beta1 = atan.(-Ctheta_rotor, Cz_rotor)
 
     #angle of attack
-    # alpha = twist .- beta1
     alpha = beta1 - stagger
 
     return beta1, alpha

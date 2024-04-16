@@ -8,10 +8,6 @@ function reinterpolate_geometry(
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
-    # atol=1e-14,
-    # iteration_limit=100,
-    # relaxation_iteration_limit=3,
-    # relaxation_atol=1e-14,
     finterp=FLOWMath.akima,
     verbose=false,
     silence_warnings=true,
@@ -52,10 +48,6 @@ function reinterpolate_geometry(
         paneling_constants;
         autoshiftduct=autoshiftduct,
         grid_solver_options=grid_solver_options,
-        # atol=atol,
-        # iteration_limit=iteration_limit,
-        # relaxation_iteration_limit=relaxation_iteration_limit,
-        # relaxation_atol=relaxation_atol,
         finterp=finterp,
         verbose=verbose,
         silence_warnings=silence_warnings,
@@ -234,7 +226,7 @@ end
 """
 function calculate_unit_induced_velocities(problem_dimensions, panels, integration_options)
     (;
-        nrotor,    # number of rotors
+        nrotor, # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
         nbn,    # number of body nodes
@@ -527,18 +519,6 @@ function initialize_linear_system(
         itcontrolpoint, itnormal, node, nodemap, influence_length, integration_options
     )
 
-    # # Add Trailing Edge Gap Panel Influences to panels
-    # add_te_gap_aic!(
-    #     AICn,
-    #     controlpoint,
-    #     normal,
-    #     tenode,
-    #     teinfluence_length,
-    #     tendotn,
-    #     tencrossn,
-    #     teadjnodeidxs,
-    # )
-
     # Add Trailing Edge Gap Panel Influences to internal pseudo control point
     add_te_gap_aic!(
         AICpcp,
@@ -584,24 +564,9 @@ function initialize_linear_system(
         integration_options,
     )
 
-    # A_pr = calculate_normal_velocity(v_pr, itnormal)
-
     ##### ----- Wake AIC ----- #####
     # - wake panels to body panels - #
     A_bw = calculate_normal_velocity(v_bw, normal)
-
-    # # add contributions from wake "trailing edge panels"
-    # add_te_gap_aic!(
-    #     A_bw,
-    #     controlpoint,
-    #     normal,
-    #     wake_vortex_panels.tenode,
-    #     wake_vortex_panels.teinfluence_length,
-    #     wake_vortex_panels.tendotn,
-    #     wake_vortex_panels.tencrossn,
-    #     wake_vortex_panels.teadjnodeidxs;
-    #     wake=true,
-    # )
 
     # - wake panels on internal psuedo control point influence coefficients - #
     A_pw = vortex_aic_boundary_on_field(
@@ -612,8 +577,6 @@ function initialize_linear_system(
         wake_vortex_panels.influence_length,
         integration_options,
     )
-
-    # A_pw = calculate_normal_velocity(v_pw, itnormal)
 
     # add contributions from wake "trailing edge panels" on pseudo control point
     add_te_gap_aic!(
@@ -780,143 +743,6 @@ function initialize_linear_system!(
     )
 
     return A_bb_LU, lu_decomp_flag
-end
-
-function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
-    nrotor = length(rsp.B)
-    Rtip = Rtips
-    Rhub = Rhubs
-    B = rsp.B
-    fliplift = rsp.fliplift
-    chords = similar(rsp.chords, nbe, nrotor) .= 0
-    twists = similar(rsp.twists, nbe, nrotor) .= 0
-    stagger = similar(rsp.twists, nbe, nrotor) .= 0
-    solidity = similar(rsp.chords, nbe, nrotor) .= 0
-    outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
-    inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
-    inner_fraction = similar(rsp.r, nbe, nrotor) .= 0
-
-    for irotor in 1:nrotor
-        rpcs = rotor_panel_centers[(nbe * (irotor - 1) + 1):(nbe * irotor)]
-
-        # dimensionalize the blade element radial positions
-        rblade = FLOWMath.linear([0.0; 1.0], [0.0; Rtip[irotor]], rsp.r[:, irotor])
-
-        # update chord lengths
-        chords[:, irotor] .= FLOWMath.akima(rblade, rsp.chords[:, irotor], rpcs)
-
-        # update twists
-        twists[:, irotor] .= FLOWMath.akima(rblade, rsp.twists[:, irotor], rpcs)
-
-        # update stagger
-        stagger[:, irotor] .= get_stagger(twists[:, irotor])
-
-        # update solidity
-        solidity[:, irotor] .= get_local_solidity(B[irotor], chords[:, irotor], rpcs)
-
-        for ir in 1:nbe
-            # outer airfoil
-            io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
-            outer_airfoil[ir, irotor] = rsp.airfoils[io, irotor]
-
-            # inner airfoil
-            ii = max(1, io - 1)
-            inner_airfoil[ir, irotor] = rsp.airfoils[ii, irotor]
-
-            # fraction of inner airfoil's polars to use
-            if rblade[io] == rblade[ii]
-                inner_fraction[ir, irotor] = 1.0
-            else
-                inner_fraction[ir, irotor] =
-                    (rpcs[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
-            end
-
-            # Check incorrect extrapolation
-            if inner_fraction[ir, irotor] > 1.0
-                inner_fraction[ir, irotor] = 1.0
-            end
-        end
-    end
-
-    return (;
-        Rtip,
-        Rhub,
-        rotor_panel_centers=reshape(rotor_panel_centers, (nbe, nrotor)),
-        B,
-        fliplift,
-        chords,
-        twists,
-        stagger,
-        solidity,
-        inner_fraction,
-    ),
-    (; outer_airfoil, inner_airfoil)
-end
-
-function interpolate_blade_elements!(blade_element_cache, rsp, rotor_panel_centers, nbe)
-    nrotor = length(rsp.B)
-    Rtip = blade_element_cache.Rtip .= rsp.Rtip
-    Rhub = blade_element_cache.Rhub .= rsp.Rhub
-    blade_element_cache.B .= rsp.B
-    blade_element_cache.fliplift .= rsp.fliplift
-    outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
-    inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
-
-    for irotor in 1:nrotor
-        rpcs = @view(rotor_panel_centers[(nbe * (irotor - 1) + 1):(nbe * irotor)])
-
-        # dimensionalize the blade element radial positions
-        rblade = linear_transform((0.0, 1.0), (0.0, Rtip[irotor]), @view(rsp.r[:, irotor]))
-
-        # update chord lengths
-        blade_element_cache.chords[:, irotor] .= FLOWMath.akima(
-            rblade, @view(rsp.chords[:, irotor]), rpcs
-        )
-
-        # update twists
-        blade_element_cache.twists[:, irotor] .= FLOWMath.akima(
-            rblade, @view(rsp.twists[:, irotor]), rpcs
-        )
-
-        # update stagger
-        blade_element_cache.stagger[:, irotor] .= get_stagger(
-            @view(blade_element_cache.twists[:, irotor])
-        )
-
-        # update solidity
-        blade_element_cache.solidity[:, irotor] .= get_local_solidity(
-            blade_element_cache.B[irotor],
-            @view(blade_element_cache.chords[:, irotor]),
-            rpcs,
-        )
-
-        for ir in 1:nbe
-            # outer airfoil
-            io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
-            outer_airfoil[ir, irotor] = rsp.airfoils[io, irotor]
-
-            # inner airfoil
-            ii = max(1, io - 1)
-            inner_airfoil[ir, irotor] = rsp.airfoils[ii, irotor]
-
-            # fraction of inner airfoil's polars to use
-            if rblade[io] == rblade[ii]
-                blade_element_cache.inner_fraction[ir, irotor] = 1.0
-            else
-                blade_element_cache.inner_fraction[ir, irotor] =
-                    (rpcs[ir] - rblade[ii]) / (rblade[io] - rblade[ii])
-            end
-
-            # Check incorrect extrapolation
-            if blade_element_cache.inner_fraction[ir, irotor] > 1.0
-                blade_element_cache.inner_fraction[ir, irotor] = 1.0
-            end
-        end
-    end
-
-    blade_element_cache.rotor_panel_centers .= reshape(rotor_panel_centers, (nbe, nrotor))
-
-    return (; outer_airfoil, inner_airfoil)
 end
 
 """
@@ -1136,12 +962,11 @@ function precompute_parameters(
 
     # - Extract propulsor - #
     (;
-        duct_coordinates,       # Matrix
-        centerbody_coordinates, # Matrix
-        rotorstator_parameters, # TODO: make this a named tuple of vectors
-        paneling_constants,     # NamedTuple of scalars and vectors of scalars
-        operating_point,        # NamedTuple of vectors (TODO) of numbers
-        reference_parameters,   # NamedTuple of vectors (TODO) of numbers
+        duct_coordinates,
+        centerbody_coordinates,
+        rotorstator_parameters,
+        paneling_constants,
+        operating_point,
     ) = propulsor
 
     problem_dimensions = get_problem_dimensions(paneling_constants)
@@ -1188,13 +1013,11 @@ function precompute_parameters(
         rotorstator_parameters,
         paneling_constants,
         operating_point,
-        reference_parameters,
         integration_options,
         problem_dimensions;
         itcpshift=itcpshift,
         axistol=axistol,
         tegaptol=tegaptol,
-        finterp=finterp,
         silence_warnings=silence_warnings,
         verbose=verbose,
     )
@@ -1212,10 +1035,8 @@ function precompute_parameters(
     rotorstator_parameters,
     paneling_constants,
     operating_point,
-    reference_parameters,
     integration_options,
     problem_dimensions=nothing;
-    autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
@@ -1326,12 +1147,11 @@ function precompute_parameters!(
 
     # - unpack propulsor - #
     (;
-        duct_coordinates,       # Matrix
-        centerbody_coordinates, # Matrix
-        rotorstator_parameters, # TODO: make this a named tuple of vectors
-        paneling_constants,     # NamedTuple of scalars and vectors of scalars
-        operating_point,        # NamedTuple of vectors (TODO) of numbers
-        reference_parameters,   # NamedTuple of vectors (TODO) of numbers
+        duct_coordinates,
+        centerbody_coordinates,
+        rotorstator_parameters,
+        paneling_constants,
+        operating_point,
     ) = propulsor
 
     # - Unpack preprocess containers - #
@@ -1383,12 +1203,9 @@ function precompute_parameters!(
         rotorstator_parameters,
         paneling_constants,
         operating_point,
-        reference_parameters,
         prepost_containers,
         problem_dimensions;
-        grid_solver_options=grid_solver_options,
         integration_options=integration_options,
-        autoshiftduct=autoshiftduct,
         itcpshift=itcpshift,
         axistol=axistol,
         tegaptol=tegaptol,
@@ -1413,12 +1230,9 @@ function precompute_parameters!(
     rotorstator_parameters,
     paneling_constants,
     operating_point,
-    reference_parameters,
     prepost_containers,
     problem_dimensions=nothing;
-    grid_solver_options=GridSolverOptions(),
     integration_options=IntegrationOptions(),
-    autoshiftduct=true,
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),

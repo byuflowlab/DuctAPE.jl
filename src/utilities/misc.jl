@@ -8,7 +8,7 @@ end
 # - Function for adding in xlocations - #
 # from https://stackoverflow.com/questions/25678112/insert-item-into-a-sorted-list-with-julia-with-and-without-duplicates
 function insert_and_dedup!(v, x)
-    for i in 1:length(x)
+    for i in eachindex(x)
         # find ranges and replace with discrete values (thus deleting duplicates if present)
         v = (splice!(v, searchsorted(v, x[i]), x[i]); v)
     end
@@ -102,7 +102,7 @@ function reset_containers!(c; exception_keys=[])
                 if typeof(cp) <: AbstractArray
                     if eltype(cp) <: Tuple
                         for i in 1:length(cp[1])
-                            for j in 1:length(cp)
+                            for j in eachindex(cp)
                                 cp[j][i] .= 0.0
                             end
                         end

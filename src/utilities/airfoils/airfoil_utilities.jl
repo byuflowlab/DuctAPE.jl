@@ -29,9 +29,6 @@ function split_bodies!(
     cb_zpts,
     vec,
     controlpoint,
-    endpanelidxs;
-    duct=true,
-    centerbody=true,
 )
 
 # get dimensions

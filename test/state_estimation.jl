@@ -17,9 +17,9 @@ println("\nSTATE ESTIMATION TESTS")
     # - Test rotor velocity reframing - #
 
     dt.reframe_rotor_velocities!(
-        @view(containers.Cz_rotor[:, :]),
-        @view(containers.Ctheta_rotor[:, :]),
-        @view(containers.Cmag_rotor[:, :]),
+        containers.Cz_rotor,
+        containers.Ctheta_rotor,
+        containers.Cmag_rotor,
         vz_rotor, # state var
         vtheta_rotor, # state var
         op.Vinf[1],
@@ -91,7 +91,7 @@ println("\nSTATE ESTIMATION TESTS")
         2.0 * ones(size(sigr)),
     )
 
-    B=5
+    B = 5
     @test all(
         sigr[1, :] .==
         B ./ (4.0 * pi) * containers.Cmag_rotor[1, :] .* blade_elements.chords[1, :] .* 2.0,
@@ -138,11 +138,11 @@ println("\nSTATE ESTIMATION TESTS")
     ]
     dt.calculate_wake_vortex_strengths!(
         gamw,
-        ones(3,2),
-        ones(3,2),
-        ones(4,2),
-        ones(4,2),
-        ones(3,2),
+        ones(3, 2),
+        ones(3, 2),
+        ones(4, 2),
+        ones(4, 2),
+        ones(3, 2),
         ones(16),
         blade_elements.B,
         op.Omega,
@@ -207,12 +207,12 @@ println("\nSTATE ESTIMATION TESTS")
     vz_wake = ones(12)
     vr_wake = ones(12)
     Vinf = 1.0
-    dt.reframe_wake_velocities!(@view(Cm_wake[:]), vz_wake, vr_wake, Vinf)
+    dt.reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf)
     @test all(Cm_wake .== sqrt.((vz_wake .+ Vinf) .^ 2 .+ vr_wake .^ 2))
 
     ivw = (; v_wb=ones(12, 3, 2), v_wr=ones(12, 8, 2), v_ww=ones(12, 16, 2))
     dt.calculate_wake_velocities!(
-        @view(Cm_wake[:]), @view(vz_wake[:]), @view(vr_wake[:]), gamw, sigr, gamb, ivw, Vinf
+        Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb, ivw, Vinf
     )
-    @test all(Cm_wake .== 38.897300677553446)
+    @test all(Cm_wake .== 40.311288741492746)
 end

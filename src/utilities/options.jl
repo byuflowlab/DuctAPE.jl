@@ -1,7 +1,3 @@
-#=
-This file contains types and functions used for running DuctAPE in a gradient-based optimization setting
-=#
-
 #---------------------------------#
 #          ABSTRACT TYPES         #
 #---------------------------------#

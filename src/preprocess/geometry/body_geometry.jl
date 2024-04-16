@@ -1,27 +1,3 @@
-#"""
-#"""
-#function reinterpolate_bodies(
-#    duct_coordinates,
-#    centerbody_coordinates,
-#    zwake,
-#    ncenterbody_inlet,
-#    nduct_inlet;
-#    finterp=FLOWMath.akima,
-#)
-
-##TODO: initialize repaneled coordinates
-
-#return  reinterpolate_bodies!(
-#    duct_coordinates,
-#    centerbody_coordinates,
-#    zwake,
-#    ncenterbody_inlet,
-#    nduct_inlet;
-#    finterp=FLOWMath.akima,
-#)
-
-#end
-
 """
 """
 function reinterpolate_bodies!(
@@ -62,22 +38,12 @@ function reinterpolate_bodies!(
     new_zcenterbody_grid = @view(zwake[1:centerbody_trailing_index])
     new_rcenterbody_grid = finterp(zcenterbody, rcenterbody, new_zcenterbody_grid)
 
-    # - update centerbody geometry between leading edge and rotor - #
-    # interpolate centerbody geometry between leading edge and rotor
-    # new_zcenterbody = range(zcenterbody[1, 1], new_zcenterbody_grid[1], ncenterbody_inlet + 1)
-
     scale = new_zcenterbody_grid[1] - zcenterbody[1]
     transform = zcenterbody[1]
     new_zcenterbody = scaled_cosine_spacing(
         ncenterbody_inlet + 1, 2 * scale, transform; mypi=pi / 2
     )
     new_rcenterbody = finterp(zcenterbody, rcenterbody, new_zcenterbody)
-
-    # - update inner duct geometry between leading edge and rotor - #
-    # interpolate inner duct geometry between leading edge and rotor
-    # new_zduct_inner = range(
-    #     duct_coordinates[dleidx, 1], new_zduct_grid[1], nduct_inlet + 1
-    # )
 
     scale = new_zduct_grid[1] - duct_coordinates[dleidx, 1]
     transform = duct_coordinates[dleidx, 1]

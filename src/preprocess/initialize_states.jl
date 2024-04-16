@@ -352,11 +352,6 @@ function initialize_strengths!(
             0.5 .* getfield.(out, :cl) .* getfield.(out, :W) .*
             blade_elements.chords[:, irotor]
 
-        # # -  vz_rotor and V_theta rotor - #
-        # # self influence
-        # vz_rotor[:, irotor] .+= vzind .+ getfield.(out,:u
-        # vtheta_rotor[:, irotor] .+= vthetaind .+ getfield.(out,:v
-
         # - Get Cm_wake - #
         #=
           NOTE: we are going to estimate this by taking the velocities on the rotors (though using far field z terms) and applying them constantly straight back to the next rotor or end of wake.

@@ -216,7 +216,6 @@ function get_body_tangential_velocities!(
         centerbody_zpts,
         Vtan_out,
         controlpoints,
-        endpanelidxs,
     )
     split_bodies!(
         vtan_casing_in,
@@ -227,7 +226,6 @@ function get_body_tangential_velocities!(
         centerbody_zpts,
         Vtan_in,
         controlpoints,
-        endpanelidxs,
     )
 
     return vtan_tuple

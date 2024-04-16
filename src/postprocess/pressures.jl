@@ -218,7 +218,6 @@ function get_body_cps!(
         centerbody_zpts,
         cp_in,
         controlpoints,
-        endpanelidxs,
     )
     split_bodies!(
         cp_casing_out,
@@ -229,7 +228,6 @@ function get_body_cps!(
         centerbody_zpts,
         cp_out,
         controlpoints,
-        endpanelidxs,
     )
 
     return cp_tuple

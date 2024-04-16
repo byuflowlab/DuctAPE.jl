@@ -1,14 +1,3 @@
-function radially_average_velocity(Vmr, nx)
-    Vmavg = [Vmr[1]; [0.5 * (Vmr[i] + Vmr[i + 1]) for i in 1:(length(Vmr) - 1)]; Vmr[end]]
-
-    if nx > 1
-        Vms = repeat(Vmavg; inner=(1, nx))
-        return Vms
-    else
-        return Vmavg
-    end
-end
-
 """
 """
 function calculate_induced_velocities_on_wakes(
@@ -24,12 +13,43 @@ function calculate_induced_velocities_on_wakes(
     post=false,
 )
 
-    # get number of rotors
-    nbe, nrotor = size(sigr)
-
     # initialize outputs
     vz_wake = similar(gamw, size(vz_ww, 1), 1) .= 0 # axial induced velocity
     vr_wake = similar(gamw, size(vr_ww, 1), 1) .= 0 # axial induced velocity
+
+    return calculate_induced_velocities_on_wakes!(
+        vz_wake,
+        vr_wake,
+        vz_ww,
+        vr_ww,
+        gamw,
+        vz_wr,
+        vr_wr,
+        sigr,
+        vz_wb,
+        vr_wb,
+        gamb;
+        post=post,
+    )
+end
+
+function calculate_induced_velocities_on_wakes!(
+    vz_wake,
+    vr_wake,
+    vz_ww,
+    vr_ww,
+    gamw,
+    vz_wr,
+    vr_wr,
+    sigr,
+    vz_wb=nothing,
+    vr_wb=nothing,
+    gamb=nothing;
+    post=false,
+)
+
+    # get number of rotors
+    nbe, nrotor = size(sigr)
 
     if post
         # initialize outputs
@@ -42,8 +62,7 @@ function calculate_induced_velocities_on_wakes(
     end
 
     # add body induced velocities
-    if gamb != nothing
-        #TODO: look into signs here, may need to flip them
+    if !isnothing(gamb)
         @views vz_wake .+= vz_wb * gamb
         @views vr_wake .+= vr_wb * gamb
 
@@ -76,18 +95,6 @@ function calculate_induced_velocities_on_wakes(
     end
 end
 
-function reframe_wake_velocities(vz_wake, vr_wake, Vinf; post=false)
-    #add freestream to induced axial velocity
-    Wz_wake = vz_wake .+ Vinf
-
-    if post
-        return Wz_wake, sqrt.(Wz_wake .^ 2 .+ vr_wake .^ 2)
-    else
-        # return meridional velocities
-        return sqrt.(Wz_wake .^ 2 .+ vr_wake .^ 2)
-    end
-end
-
 function reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf; post=false)
     Cm_wake .= sqrt.((vz_wake .+ Vinf) .^ 2 .+ vr_wake .^ 2)
 
@@ -101,44 +108,12 @@ end
 
 """
 """
-function calculate_wake_velocities(gamw, sigr, inputs)
-
-    # - Get induced velocities on wake - #
-    vz_wake, vr_wake = calculate_induced_velocities_on_wakes(
-        inputs.vz_ww, inputs.vr_ww, gamw, inputs.vz_wr, inputs.vr_wr, sigr
-    )
-
-    # - Reframe rotor velocities into blade element frames
-    return reframe_wake_velocities(vz_wake, vr_wake, inputs.freestream.Vinf)
-end
-
-"""
-"""
-function calculate_wake_velocities(gamw, sigr, gamb, inputs)
-
-    # - Get induced velocities on wake - #
-    vz_wake, vr_wake = calculate_induced_velocities_on_wakes(
-        inputs.vz_ww,
-        inputs.vr_ww,
-        gamw,
-        inputs.vz_wr,
-        inputs.vr_wr,
-        sigr,
-        inputs.vz_wb,
-        inputs.vr_wb,
-        gamb,
-    )
-
-    # - Reframe rotor velocities into blade element frames
-    return reframe_wake_velocities(vz_wake, vr_wake, inputs.freestream.Vinf)
-end
-
-"""
-"""
 function calculate_wake_velocities!(Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb, ivw, Vinf)
 
     # - Get induced velocities on wake - #
-    vz_wake[:], vr_wake[:] = calculate_induced_velocities_on_wakes(
+    calculate_induced_velocities_on_wakes!(
+        vz_wake,
+        vr_wake,
         @view(ivw.v_ww[:, :, 1]),
         @view(ivw.v_ww[:, :, 2]),
         gamw,
@@ -151,7 +126,7 @@ function calculate_wake_velocities!(Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb,
     )
 
     # - Reframe rotor velocities into blade element frames
-    return reframe_wake_velocities!(@view(Cm_wake[:]), vz_wake, vr_wake, Vinf)
+    return reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf)
 end
 
 function get_sheet_jumps(Gamma_tilde, H_tilde)
@@ -208,7 +183,7 @@ end
 function average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs)
 
     # Loop through each node, averaging velocities from panel centers
-    for iw in 1:length(Cm_avg)
+    for iw in eachindex(Cm_avg)
 
         # Get average meridional velocity at node
         if iw in @view(endnodeidxs[1, :])
@@ -230,7 +205,6 @@ end
 """
 Calculate wake vortex strengths
 """
-# function calculate_wake_vortex_strengths!(gamw, Gamr, Cm_wake, inputs; post=false)
 function calculate_wake_vortex_strengths!(
     gamw,
     Gamma_tilde,
@@ -257,14 +231,12 @@ function calculate_wake_vortex_strengths!(
     # get the circulation squared and enthalpy jumps across the wake sheets
     get_sheet_jumps!(deltaGamma2, deltaH, Gamma_tilde, H_tilde)
 
-    for (iw, (Cm, gw, K, sheetid, rotorid)) in enumerate(
-        zip(
-            Cm_avg,
-            eachrow(gamw),
-            wakeK,
-            @view(wake_node_sheet_be_map[:, 1]),
-            @view(wake_node_sheet_be_map[:, 2]),
-        ),
+    for (Cm, gw, K, sheetid, rotorid) in zip(
+        Cm_avg,
+        eachrow(gamw),
+        wakeK,
+        @view(wake_node_sheet_be_map[:, 1]),
+        @view(wake_node_sheet_be_map[:, 2]),
     )
 
         # calculate the wake vortex strength

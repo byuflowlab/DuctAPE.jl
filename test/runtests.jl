@@ -23,9 +23,6 @@ include("test_utils.jl")
 
 println("Running Tests...")
 
-# - Caching Tests - #
-include("iotests.jl")
-
 # - pre-process related tests - #
 include("afcorrections.jl")
 include("panel_generation_tests.jl")

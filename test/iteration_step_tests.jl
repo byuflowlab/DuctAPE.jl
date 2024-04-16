@@ -115,11 +115,9 @@ println("\nITERATION STEP THROUGH TESTS")
         rotorstator_parameters,
         paneling_constants,
         operating_point,
-        reference_parameters,
         prepost_containers,
         problem_dimensions;
-        grid_solver_options=options.grid_solver_options,
-        autoshiftduct=options.autoshiftduct,
+        integration_options=options.integration_options,
         itcpshift=options.itcpshift,
         axistol=options.axistol,
         tegaptol=options.tegaptol,

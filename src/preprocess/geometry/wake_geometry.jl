@@ -64,12 +64,8 @@ function discretize_wake(
     # get rotor location sectionid
     ridx = findall(x -> x in rotorzloc, zwake)
 
-    # # get sectionid of body trailing edges on wake
-    # ductTE_index = searchsortedfirst(zwake, duct_tez)
-    # centerbodyTE_index = searchsortedfirst(zwake, cb_tez)
-
     # return dimensionalized wake x-coordinates
-    return zwake, ridx#, ductTE_index, centerbodyTE_index
+    return zwake, ridx
 end
 
 """
@@ -207,7 +203,6 @@ function generate_wake_grid(
     wake_grid = zeros(TF, 2, problem_dimensions.nwsn, problem_dimensions.nws)
 
     return generate_wake_grid!(
-        grid_solver_options,
         wake_grid,
         rp_duct_coordinates,
         rp_centerbody_coordinates,
@@ -215,10 +210,7 @@ function generate_wake_grid(
         Rtip1,
         tip_gap1,
         zwake;
-        # atol=atol,
-        # iteration_limit=iteration_limit,
-        # relaxation_iteration_limit=relaxation_iteration_limit,
-        # relaxation_atol=relaxation_atol,
+        grid_solver_options=GridSolverOptions(),
         verbose=verbose,
         silence_warnings=silence_warnings,
     )
@@ -233,10 +225,6 @@ function generate_wake_grid!(
     tip_gap1,
     zwake;
     grid_solver_options=grid_solver_options,
-    # atol=1e-14,
-    # iteration_limit=100,
-    # relaxation_iteration_limit=3,
-    # relaxation_atol=1e-14,
     verbose=false,
     silence_warnings=true,
 )

@@ -25,13 +25,13 @@ function calculate_body_vortex_strengths!(
 
     # add wake influence on psuedo control points
     # TODO: may want to make this not hard coded at some point
-    rhs[nbn + 1] -= @view(A_pw[1, :])' * gamw
-    rhs[nbn + 4] -= @view(A_pw[2, :])' * gamw
+    rhs[nbn + 1] -= view(A_pw, 1, :)' * gamw
+    rhs[nbn + 4] -= view(A_pw, 2, :)' * gamw
 
     if post
         RHSw[1:nbn] .-= A_bw * gamw
-        RHSw[nbn + 1] -= @view(A_pw[1, :])' * gamw
-        RHSw[nbn + 4] -= @view(A_pw[2, :])' * gamw
+        RHSw[nbn + 1] -= view(A_pw, 1, :)' * gamw
+        RHSw[nbn + 4] -= view(A_pw, 2, :)' * gamw
     end
 
     # add rotor source sheet contributions to right hand side
@@ -52,24 +52,10 @@ function calculate_body_vortex_strengths!(
         end
     end
 
-    # if post # return gamb, wake RHS, and first rotor RHS
-    # return ImplicitAD.implicit_linear(A_bb, gamb; lsolve=ldiv!, Af=A_bb_LU), RHSw, RHSr
-    # return ldiv!(gamb, A_bb_LU, RHS), RHSw, RHSr
-    # else
-        # printval("gamb_just_before_iad= ", gamb)
-        # println()
+    # return ImplicitAD.implicit_linear(A_bb, gamb; lsolve=ldiv!, Af=A_bb_LU)
+    gamb .= ImplicitAD.implicit_linear(A_bb, rhs; lsolve=ldiv!, Af=A_bb_LU)
+    return gamb
 
-        # use ImplicitAD overwrite gamb
-        # return ImplicitAD.implicit_linear(A_bb, gamb; lsolve=ldiv!, Af=A_bb_LU)
-        # gamb .= ImplicitAD.implicit_linear(A_bb, rhs; lsolve=ldiv!, Af=A_bb_LU)
-        # return gamb
-
-        # use ldiv! in place for gamb
-        # return ldiv!(gamb, A_bb_LU, RHS)
-
-        # just left divide and overwrite gamb
-        gamb .= A_bb_LU \ rhs
-        return gamb
-
-    # end
+    # gamb .= A_bb_LU \ rhs
+    # return gamb
 end
