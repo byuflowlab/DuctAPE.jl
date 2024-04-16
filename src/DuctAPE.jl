@@ -70,8 +70,8 @@ export c4b
 ##### ----- UTILITIES ----- #####
 # general utility functions
 include("utilities/misc.jl")
-include("utilities/options.jl")
 include("utilities/inputs.jl")
+include("utilities/options.jl")
 include("utilities/update_propulsor.jl")
 include("utilities/package_states.jl")
 include("utilities/bookkeeping.jl")
