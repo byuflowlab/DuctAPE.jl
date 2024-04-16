@@ -104,10 +104,10 @@ function analyze(
         airfoils,
         idmaps,
         problem_dimensions;
-        write_outputs=options.write_outputs,
-        outfile=options.outfile,
+        write_outputs=options.write_outputs[options.multipoint_index[]],
+        outfile=options.outfile[options.multipoint_index[]],
         checkoutfileexists=options.checkoutfileexists,
-        output_tuple_name=options.output_tuple_name,
+        output_tuple_name=options.output_tuple_name[options.multipoint_index[]],
         verbose=options.verbose,
     )
 
@@ -126,7 +126,7 @@ function analyze(
         ),
         options.solver_options.converged[]
     else
-        return outs, options.solver_options.converged[]
+        return outs, options.solver_options.converged[options.multipoint_index[]]
     end
 end
 
@@ -135,7 +135,7 @@ end
 function analyze(
     multipoint::AbstractVector{TO},
     propulsor::Propulsor,
-    options::Options=set_options();
+    options::Options=set_options(multipoint);
     prepost_container_caching=nothing,
     solve_parameter_caching=nothing,
     solve_container_caching=nothing,
@@ -170,13 +170,6 @@ function analyze(
         false
     end
 
-    # - initialize converged state multi-point vector - #
-    converged_states = zeros(
-        promote_propulosor_type(propulsor),
-        solve_parameter_cache_dims.state_dims[end].index[end],
-        length(multipoint),
-    )
-
     return analyze(
         multipoint,
         propulsor,
@@ -188,8 +181,7 @@ function analyze(
         A_bb_LU,
         idmaps,
         problem_dimensions,
-        options,
-        converged_states;
+        options;
         solve_container_caching=solve_container_caching,
         return_inputs=return_inputs,
     )
@@ -206,8 +198,7 @@ function analyze(
     A_bb_LU,
     idmaps,
     problem_dimensions,
-    options::Options,
-    converged_states;
+    options::Options;
     solve_container_caching=nothing,
     return_inputs=false,
 ) where {TO<:OperatingPoint}
@@ -222,87 +213,25 @@ function analyze(
         )
     end
 
-    solve_parameter_tuple = withdraw_solve_parameter_cache(
-        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
-    )
-
     # reset multipoint index
     options.multipoint_index[] = 0
 
-    # - Loop through Operating Points - #
-    for (iop, op) in enumerate(multipoint)
-
-        # incremenet operating point to keep track of convergence in multipoint solves
-        options.multipoint_index[] += 1
-
-        if options.verbose
-            println("\n  Operating Point:")
-            for fn in fieldnames(typeof(op))
-                println(@sprintf "    %6s = %5.3e" fn getfield(op, fn)[])
-                # println("    ", fn, " = ", getfield(op,fn))
-            end
-        end
-
-        # - copy over operating point - #
-        for f in fieldnames(typeof(op))
-            solve_parameter_tuple.operating_point[f] .= getfield(op, f)
-        end
-
-        # - Set up Body Linear System RHS - #
-        vinfvec = [op.Vinf[]; 0.0]
-        prepost_containers.vdnb .= [
-            dot(vinfvec, nhat) for
-            nhat in eachcol(prepost_containers.panels.body_vortex_panels.normal)
-        ]
-        prepost_containers.vdnpcp .= [
-            dot(vinfvec, nhat) for
-            nhat in eachcol(prepost_containers.panels.body_vortex_panels.itnormal)
-        ]
-        assemble_rhs_matrix!(
-            solve_parameter_tuple.linsys.b_bf,
-            prepost_containers.vdnb,
-            prepost_containers.vdnpcp,
-            prepost_containers.panels.body_vortex_panels.npanel,
-            prepost_containers.panels.body_vortex_panels.nnode,
-            prepost_containers.panels.body_vortex_panels.totpanel,
-            prepost_containers.panels.body_vortex_panels.totnode,
-            prepost_containers.panels.body_vortex_panels.prescribednodeidxs,
-        )
-
-        # - Process - #
-        converged_states[:, iop] .= process(
-            options.solver_options,
-            solve_parameter_cache_vector,
-            solve_parameter_cache_dims,
-            airfoils,
-            A_bb_LU,
-            solve_container_caching,
-            idmaps,
-            options,
-        )
-    end
-
-    # - Post-Process - #
     outs = [
-        post_process(
-            options.solver_options,
-            cs,
+        analyze_multipoint(
+            op,
+            propulsor,
             prepost_containers,
-            solve_container_caching,
             solve_parameter_cache_vector,
             solve_parameter_cache_dims,
-            propulsor.operating_point,
-            propulsor.reference_parameters,
-            A_bb_LU,
             airfoils,
+            ivb,
+            A_bb_LU,
             idmaps,
-            problem_dimensions;
-            write_outputs=options.write_outputs[iop],
-            outfile=options.outfile[iop],
-            checkoutfileexists=options.checkoutfileexists,
-            output_tuple_name=options.output_tuple_name[iop],
-            verbose=options.verbose,
-        ) for (iop, cs) in enumerate(eachcol(converged_states))
+            problem_dimensions,
+            options;
+            solve_container_caching=solve_container_caching,
+            return_inputs=false,
+        ) for op in multipoint
     ]
 
     if return_inputs
@@ -324,3 +253,78 @@ function analyze(
     end
 end
 
+function analyze_multipoint(
+    operating_point::TO,
+    propulsor::Propulsor,
+    prepost_containers,
+    solve_parameter_cache_vector,
+    solve_parameter_cache_dims,
+    airfoils,
+    ivb,
+    A_bb_LU,
+    idmaps,
+    problem_dimensions,
+    options::Options;
+    solve_container_caching=nothing,
+    return_inputs=false,
+) where {TO<:OperatingPoint}
+
+    # incremenet operating point to keep track of convergence in multipoint solves
+    options.multipoint_index[] += 1
+
+    if options.verbose
+        println("\n  Operating Point:")
+        for fn in fieldnames(typeof(operating_point))
+            println(@sprintf "    %6s = %5.3e" fn getfield(operating_point, fn)[])
+        end
+    end
+
+    # Reshape solver parameter cache to update multipoint
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+
+    # - copy over operating point - #
+    println(propulsor.operating_point)
+    for f in fieldnames(typeof(operating_point))
+        update_operating_point!(propulsor.operating_point, operating_point)
+        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+    end
+    println(propulsor.operating_point)
+
+    # - Set up Body Linear System RHS - #
+    vinfvec = [operating_point.Vinf[]; 0.0]
+    prepost_containers.vdnb .= [
+        dot(vinfvec, nhat) for
+        nhat in eachcol(prepost_containers.panels.body_vortex_panels.normal)
+    ]
+    prepost_containers.vdnpcp .= [
+        dot(vinfvec, nhat) for
+        nhat in eachcol(prepost_containers.panels.body_vortex_panels.itnormal)
+    ]
+    assemble_rhs_matrix!(
+        solve_parameter_tuple.linsys.b_bf,
+        prepost_containers.vdnb,
+        prepost_containers.vdnpcp,
+        prepost_containers.panels.body_vortex_panels.npanel,
+        prepost_containers.panels.body_vortex_panels.nnode,
+        prepost_containers.panels.body_vortex_panels.totpanel,
+        prepost_containers.panels.body_vortex_panels.totnode,
+        prepost_containers.panels.body_vortex_panels.prescribednodeidxs,
+    )
+
+    return analyze(
+        propulsor,
+        prepost_containers,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        airfoils,
+        ivb,
+        A_bb_LU,
+        idmaps,
+        problem_dimensions,
+        options;
+        return_inputs=return_inputs,
+        solve_container_caching=solve_container_caching,
+    )[1]
+end

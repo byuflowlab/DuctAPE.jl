@@ -452,10 +452,10 @@ end
     # - Integration Options - #
     integration_options::TIo = IntegrationOptions()
     # - Post-processing Options - #
-    write_outputs::TBwo = false
+    write_outputs::TBwo = [false]
     outfile::TSf = ["outputs.jl"]
     checkoutfileexists::TB = false
-    output_tuple_name::TSt = "outs"
+    output_tuple_name::TSt = ["outs"]
     # - Solving Options - #
     grid_solver_options::WS = GridSolverOptions()
     solver_options::TSo = ChainSolverOptions()
@@ -478,7 +478,11 @@ function set_options(; kwargs...)
 end
 
 function set_options(
-    multipoint::AbstractVector{TM}; outfile=nothing, output_tuple_name=nothing, kwargs...
+    multipoint::AbstractVector{TM};
+    write_outputs=nothing,
+    outfile=nothing,
+    output_tuple_name=nothing,
+    kwargs...,
 ) where {TM<:OperatingPoint}
     lm = length(multipoint)
 
@@ -490,8 +494,13 @@ function set_options(
         output_tuple_name = ["outs" for i in 1:lm]
     end
 
+    if isnothing(write_outputs)
+        write_outputs = [false for i in 1:lm]
+    end
+
     return set_options(;
         solver_options=ChainSolverOptions(multipoint),
+        write_outputs=write_outputs,
         outfile=outfile,
         output_tuple_name=output_tuple_name,
         kwargs...,

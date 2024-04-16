@@ -71,12 +71,14 @@ export c4b
 # general utility functions
 include("utilities/misc.jl")
 include("utilities/options.jl")
+include("utilities/inputs.jl")
+include("utilities/update_propulsor.jl")
 include("utilities/package_states.jl")
+include("utilities/bookkeeping.jl")
 include("utilities/caching/caches.jl")
 include("utilities/caching/allocate_caches.jl")
 include("utilities/caching/reshape_caches.jl")
 include("utilities/caching/integration_caches.jl")
-include("utilities/bookkeeping.jl")
 
 # Airfoil utility functions
 include("utilities/airfoils/airfoil_utilities.jl")

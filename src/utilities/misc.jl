@@ -1,9 +1,14 @@
-"""
-allows us to get rotor parameters easier
-"""
-function Base.getproperty(obj::AbstractVector{<:NamedTuple}, sym::Symbol)
-    return getfield.(obj, sym)
-end
+# - Functions to check if the input is a scalar - #
+import Base.BroadcastStyle
+isscalar(x::T) where {T} = isscalar(T)
+isscalar(::Type{T}) where {T} = BroadcastStyle(T) isa Broadcast.DefaultArrayStyle{0}
+
+# """
+# """
+# import Base.getproperty
+# function Base.getproperty(obj::AbstractVector{<:NamedTuple}, sym::Symbol)
+#     return getfield.(obj, sym)
+# end
 
 # - Function for adding in xlocations - #
 # from https://stackoverflow.com/questions/25678112/insert-item-into-a-sorted-list-with-julia-with-and-without-duplicates
@@ -96,9 +101,9 @@ function reset_containers!(c; exception_keys=[])
         #do nothing if it's a string
         (eltype(c) == String) || (c .= 0)
     else
-        for p in propertynames(c)
-            if !(p in exception_keys)
-                cp = getfield(c, p)
+        for f in fieldnames(typeof(c))
+            if !(f in exception_keys)
+                cp = getfield(c, f)
                 if typeof(cp) <: AbstractArray
                     if eltype(cp) <: Tuple
                         for i in 1:length(cp[1])
