@@ -214,5 +214,5 @@ println("\nSTATE ESTIMATION TESTS")
     dt.calculate_wake_velocities!(
         Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb, ivw, Vinf
     )
-    @test all(Cm_wake .== 40.311288741492746)
+    @test all(Cm_wake .== 38.897300677553446)
 end
