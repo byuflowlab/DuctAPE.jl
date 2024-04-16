@@ -21,20 +21,13 @@ end
 """
 """
 function split_bodies!(
-    casing_vec,
-    nacelle_vec,
-    cb_vec,
-    casing_zpts,
-    nacelle_zpts,
-    cb_zpts,
-    vec,
-    controlpoint,
+    casing_vec, nacelle_vec, cb_vec, casing_zpts, nacelle_zpts, cb_zpts, vec, controlpoint
 )
 
-# get dimensions
-casing_ids = 1:size(casing_vec,1)
-nacelle_ids = casing_ids[end]+1:casing_ids[end]+size(nacelle_vec,1)
-cb_ids = nacelle_ids[end]+1:nacelle_ids[end]+ size(cb_vec,1)
+    # get dimensions
+    casing_ids = 1:size(casing_vec, 1)
+    nacelle_ids = (casing_ids[end] + 1):(casing_ids[end] + size(nacelle_vec, 1))
+    cb_ids = (nacelle_ids[end] + 1):(nacelle_ids[end] + size(cb_vec, 1))
 
     casing_vec .= @view(vec[casing_ids, :])
     nacelle_vec .= @view(vec[nacelle_ids, :])

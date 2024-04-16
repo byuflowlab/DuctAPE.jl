@@ -52,10 +52,10 @@ function calculate_body_vortex_strengths!(
         end
     end
 
-    # return ImplicitAD.implicit_linear(A_bb, gamb; lsolve=ldiv!, Af=A_bb_LU)
     gamb .= ImplicitAD.implicit_linear(A_bb, rhs; lsolve=ldiv!, Af=A_bb_LU)
     return gamb
 
     # gamb .= A_bb_LU \ rhs
     # return gamb
+
 end

@@ -186,10 +186,6 @@ function generate_wake_grid(
     tip_gap1,
     zwake;
     grid_solver_options=GridSolverOptions(),
-    # atol=1e-14,
-    # iteration_limit=100,
-    # relaxation_iteration_limit=3,
-    # relaxation_atol=1e-14,
     verbose=false,
     silence_warnings=true,
 )
@@ -210,7 +206,7 @@ function generate_wake_grid(
         Rtip1,
         tip_gap1,
         zwake;
-        grid_solver_options=GridSolverOptions(),
+        grid_solver_options=grid_solver_options,
         verbose=verbose,
         silence_warnings=silence_warnings,
     )

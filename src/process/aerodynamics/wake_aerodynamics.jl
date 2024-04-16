@@ -48,6 +48,10 @@ function calculate_induced_velocities_on_wakes!(
     post=false,
 )
 
+    # reset induced velocities on wake
+    vz_wake .= 0
+    vr_wake .= 0
+
     # get number of rotors
     nbe, nrotor = size(sigr)
 
@@ -109,7 +113,6 @@ end
 """
 """
 function calculate_wake_velocities!(Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb, ivw, Vinf)
-
     # - Get induced velocities on wake - #
     calculate_induced_velocities_on_wakes!(
         vz_wake,

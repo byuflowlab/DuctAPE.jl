@@ -277,7 +277,7 @@ function estimate_states!(
         solve_containers.sigr,
         @view(solve_containers.gamb[1:(idmaps.body_totnodes)]),
         ivw,
-        operating_point.Vinf[1],
+        operating_point.Vinf[],
     )
 
     # return estimated states

@@ -166,7 +166,7 @@ end
 function calculate_rotor_source_strengths!(sigr, Wmag_rotor, chords, B, cd)
 
     # Loop through rotors
-    for irotor in eachindex(B)
+    for irotor in axes(sigr,2)
 
         # Loop through blade panel nodes
         for inode in axes(sigr, 1)
@@ -286,11 +286,12 @@ function calculate_blade_element_coefficients!(
         for ir in 1:nr
 
             # extract blade element properties
-            B = @view(be.B[irotor]) # number of blades
-            fliplift = @view(be.fliplift[irotor])
-            c = @view(be.chords[ir, irotor]) # chord length
-            stagger = @view(be.stagger[ir, irotor])
-            solidity = @view(be.solidity[ir, irotor])
+            # TODO: consider not renaming these to avoid the small allocation
+            B = be.B[irotor] # number of blades
+            fliplift = be.fliplift[irotor]
+            c = be.chords[ir, irotor] # chord length
+            stagger = be.stagger[ir, irotor]
+            solidity = be.solidity[ir, irotor]
 
             # calculate angle of attack
             beta1[ir, irotor], alpha[ir, irotor] = calculate_inflow_angles(
@@ -298,20 +299,20 @@ function calculate_blade_element_coefficients!(
                 # Wm_rotor[ir, irotor], Wtheta_rotor[ir, irotor], stagger
                 Wz_rotor[ir, irotor],
                 Wtheta_rotor[ir, irotor],
-                stagger[],
+                stagger,
             )
 
             # get local Reynolds number
             reynolds[ir, irotor] = calc_reynolds(
                 c,
                 Wmag_rotor[ir, irotor],
-                operating_point.rhoinf[1],
-                operating_point.muinf[1],
+                operating_point.rhoinf[],
+                operating_point.muinf[],
             )
             # c * abs(Wmag_rotor[ir, irotor]) * operating_point.rhoinf / operating_point.muinf
 
             # get local Mach number
-            mach[ir, irotor] = Wmag_rotor[ir, irotor] / operating_point.asound[1]
+            mach[ir, irotor] = Wmag_rotor[ir, irotor] / operating_point.asound[]
 
             # - Update cl and cd values - #
             # be.cl[ir], be.cd[ir] = lookup_clcd(
@@ -322,8 +323,8 @@ function calculate_blade_element_coefficients!(
                 c,
                 B,
                 Wmag_rotor[ir, irotor],
-                solidity[],
-                stagger[],
+                solidity,
+                stagger,
                 alpha[ir, irotor],
                 beta1[ir, irotor],
                 reynolds[ir, irotor],
