@@ -119,12 +119,10 @@ include("process/aerodynamics/rotor_aerodynamics.jl")
 include("process/aerodynamics/wake_aerodynamics.jl")
 
 ##### ----- POST-PROCESSING ----- #####
-
-# include("postprocess/post_process.jl")
-include("postprocess/utils.jl")
 include("postprocess/postprocess.jl")
-
-##### ----- DEBUGGING ----- #####
-include("../test/test_utils.jl")
+include("postprocess/velocities.jl")
+include("postprocess/pressures.jl")
+include("postprocess/rotor_performance.jl")
+include("postprocess/utils.jl")
 
 end
