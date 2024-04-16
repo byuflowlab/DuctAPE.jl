@@ -285,12 +285,10 @@ function analyze_multipoint(
     )
 
     # - copy over operating point - #
-    println(propulsor.operating_point)
     for f in fieldnames(typeof(operating_point))
         update_operating_point!(propulsor.operating_point, operating_point)
         solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
     end
-    println(propulsor.operating_point)
 
     # - Set up Body Linear System RHS - #
     vinfvec = [operating_point.Vinf[]; 0.0]
