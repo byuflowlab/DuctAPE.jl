@@ -1,7 +1,3 @@
-#=
-This version takes a given open rotor geometry and operating point and outputs the required exit velocity to maintain a similar performance.
-=#
-
 """
 
 # Arguments:

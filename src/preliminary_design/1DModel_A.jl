@@ -1,18 +1,4 @@
-#=
-Attempt at a "1D" model in order to provide a reasonable starting point for design/optimization
-
-Goal for option 1: input open rotor design, output duct inlet and outlet areas
-Goal for option 2: input some performance metric (say, thrust), and some sizing guide (say rotor diameter), and some operating conditions (say, Vinf and Omega), and output reasonable duct inlet and outlet as well as some rotor geometry (chord, twist, camber?)
-
-=#
-
 import FLOWMath as fm
-
-######################################################################
-#                                                                    #
-#                         1D Model Option 1                          #
-#                                                                    #
-######################################################################
 
 """
 
