@@ -220,22 +220,22 @@ end
 #    DFDC-like wake relaxation    #
 #---------------------------------#
 """
-    relax_grid!(xg, rg, nxi, neta; relaxation_iteration_limit, relaxation_atol)
+    relax_grid!(xg, rg, nxi, neta; iteration_limit, atol)
 
 Relax wake_grid using elliptic wake_grid solver.
 
 # Arguments:
 
 # Keyword Arguments:
- - `relaxation_iteration_limit::Int` : maximum number of iterations to run, default=100
- - `relaxation_atol::Float` : convergence tolerance, default = 1e-9
+ - `iteration_limit::Int` : maximum number of iterations to run, default=100
+ - `atol::Float` : convergence tolerance, default = 1e-9
 
 # Returns:
 """
 function relax_grid!(
     wake_grid;
-    relaxation_iteration_limit=100,
-    relaxation_atol=1e-9,
+    iteration_limit=100,
+    atol=1e-9,
     converged=[false],
     verbose=false,
     silence_warnings=true,
@@ -255,7 +255,7 @@ function relax_grid!(
     D = zeros(TF, 2, nxi)
 
     #set up relaxation factors
-    if relaxation_iteration_limit > 0
+    if iteration_limit > 0
         relaxfactor1 = 1.0
         relaxfactor2 = 1.1
         relaxfactor3 = 1.4
@@ -263,7 +263,7 @@ function relax_grid!(
         relaxfactor1 = 1.0
         relaxfactor2 = 1.0
         relaxfactor3 = 1.0
-        relaxation_iteration_limit = 1
+        iteration_limit = 1
     end
 
     relaxfactor = relaxfactor1
@@ -298,7 +298,7 @@ function relax_grid!(
     #next dfdc goes to AXELL function
     #skip over most of the stuff since the intlet and walls don't get relaxed
 
-    for iterate in 1:relaxation_iteration_limit
+    for iterate in 1:iteration_limit
         if verbose
             println(tabchar^(ntab) * "iteration $iterate")
         end
@@ -498,7 +498,7 @@ function relax_grid!(
         end #for j (radial stations)
 
         # -- Update relaxation factors
-        if dmax < relaxation_atol * dxy
+        if dmax < atol * dxy
             if verbose
                 println(tabchar^(ntab) * "Total iterations: $iterate")
             end
@@ -526,11 +526,11 @@ function relax_grid!(
     end
 
     if verbose
-        println(tabchar^(ntab) * "Total iterations = ", relaxation_iteration_limit, "\n")
+        println(tabchar^(ntab) * "Total iterations = ", iteration_limit, "\n")
     end
 
     if !silence_warnings
-        @warn "Wake grid relaxation did not converge, iteration limit of $(relaxation_iteration_limit) met."
+        @warn "Wake grid relaxation did not converge, iteration limit of $(iteration_limit) met."
     end
 
     return wake_grid

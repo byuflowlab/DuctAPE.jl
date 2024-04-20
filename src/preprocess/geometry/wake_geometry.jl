@@ -265,8 +265,8 @@ function relax_grid!(
     # - Relax grid to allow Newton solve a tractable starting point - #
     relax_grid!(
         wake_grid;
-        relaxation_iteration_limit=grid_solver_options.relaxation_iteration_limit,
-        relaxation_atol=grid_solver_options.relaxation_atol,
+        iteration_limit=grid_solver_options.iteration_limit,
+        atol=grid_solver_options.atol,
         converged=grid_solver_options.converged,
         verbose=verbose,
         tabchar="\t",
@@ -308,8 +308,8 @@ function relax_grid!(
     end
     relax_grid!(
         wake_grid;
-        relaxation_iteration_limit=grid_solver_options.relaxation_iteration_limit,
-        relaxation_atol=grid_solver_options.relaxation_atol,
+        iteration_limit=grid_solver_options.iteration_limit,
+        atol=grid_solver_options.atol,
         converged=grid_solver_options.converged,
         verbose=verbose,
         tabchar="\t",

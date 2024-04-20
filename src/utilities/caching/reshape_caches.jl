@@ -1,10 +1,16 @@
 """
+    withdraw_prepost_container_cache(vec, dims)
+
+Reshape the prepost cache vector using the saved dimensions tuple.
+
+# Arguments
+- `vec::Vector{Float}` : vector cache of pre- and post-processing intermediate containers.
+- `dims::NamedTuple` : Named tuple containing the indices and shape of the various items stored in the cache vector.
+
+# Returns
+- `prepost_container_caching::NamedTuple` : Named tuple containing reshaped views of sections of the cache vector.
 """
 function withdraw_prepost_container_cache(vec, dims)
-
-    # panels = (;)
-    #         ivb=(; v_bb, v_br, v_bw),
-
     wake_grid = reshape(@view(vec[dims.wake_grid.index]), dims.wake_grid.shape)
     rp_duct_coordinates = reshape(
         @view(vec[dims.rp_duct_coordinates.index]), dims.rp_duct_coordinates.shape
@@ -376,10 +382,9 @@ function withdraw_prepost_container_cache(vec, dims)
     rotor_efficiency = reshape(
         @view(vec[dims.rotor_efficiency.index]), dims.rotor_efficiency.shape
     )
-    induced_efficiency=reshape(
-            @view(vec[dims.induced_efficiency.index]),
-            dims.induced_efficiency.shape,
-        )
+    induced_efficiency = reshape(
+        @view(vec[dims.induced_efficiency.index]), dims.induced_efficiency.shape
+    )
     blade_normal_force_per_unit_span = reshape(
         @view(vec[dims.blade_normal_force_per_unit_span.index]),
         dims.blade_normal_force_per_unit_span.shape,
@@ -410,47 +415,38 @@ function withdraw_prepost_container_cache(vec, dims)
     # - BODY POST CACHE - #
     zpts = (;
         centerbody_zpts=reshape(
-            @view(vec[dims.zpts.centerbody_zpts.index]),
-            dims.zpts.centerbody_zpts.shape,
+            @view(vec[dims.zpts.centerbody_zpts.index]), dims.zpts.centerbody_zpts.shape
         ),
         casing_zpts=reshape(
-            @view(vec[dims.zpts.casing_zpts.index]),
-            dims.zpts.casing_zpts.shape,
+            @view(vec[dims.zpts.casing_zpts.index]), dims.zpts.casing_zpts.shape
         ),
         nacelle_zpts=reshape(
-            @view(vec[dims.zpts.nacelle_zpts.index]),
-            dims.zpts.nacelle_zpts.shape,
+            @view(vec[dims.zpts.nacelle_zpts.index]), dims.zpts.nacelle_zpts.shape
         ),
-       )
+    )
 
-        vtan_tuple = (;
+    vtan_tuple = (;
         Vtot_in=reshape(
-            @view(vec[dims.vtan_tuple.Vtot_in.index]),
-            dims.vtan_tuple.Vtot_in.shape,
+            @view(vec[dims.vtan_tuple.Vtot_in.index]), dims.vtan_tuple.Vtot_in.shape
         ),
         Vtot_out=reshape(
-            @view(vec[dims.vtan_tuple.Vtot_out.index]),
-            dims.vtan_tuple.Vtot_out.shape,
+            @view(vec[dims.vtan_tuple.Vtot_out.index]), dims.vtan_tuple.Vtot_out.shape
         ),
         Vtan_in=reshape(
-            @view(vec[dims.vtan_tuple.Vtan_in.index]),
-            dims.vtan_tuple.Vtan_in.shape,
+            @view(vec[dims.vtan_tuple.Vtan_in.index]), dims.vtan_tuple.Vtan_in.shape
         ),
         Vtan_out=reshape(
-            @view(vec[dims.vtan_tuple.Vtan_out.index]),
-            dims.vtan_tuple.Vtan_out.shape,
+            @view(vec[dims.vtan_tuple.Vtan_out.index]), dims.vtan_tuple.Vtan_out.shape
         ),
         Vtot_prejump=reshape(
             @view(vec[dims.vtan_tuple.Vtot_prejump.index]),
             dims.vtan_tuple.Vtot_prejump.shape,
         ),
         vtot_body=reshape(
-            @view(vec[dims.vtan_tuple.vtot_body.index]),
-            dims.vtan_tuple.vtot_body.shape,
+            @view(vec[dims.vtan_tuple.vtot_body.index]), dims.vtan_tuple.vtot_body.shape
         ),
         duct_jump=reshape(
-            @view(vec[dims.vtan_tuple.duct_jump.index]),
-            dims.vtan_tuple.duct_jump.shape,
+            @view(vec[dims.vtan_tuple.duct_jump.index]), dims.vtan_tuple.duct_jump.shape
         ),
         centerbody_jump=reshape(
             @view(vec[dims.vtan_tuple.centerbody_jump.index]),
@@ -461,16 +457,13 @@ function withdraw_prepost_container_cache(vec, dims)
             dims.vtan_tuple.body_jump_term.shape,
         ),
         vtot_jump=reshape(
-            @view(vec[dims.vtan_tuple.vtot_jump.index]),
-            dims.vtan_tuple.vtot_jump.shape,
+            @view(vec[dims.vtan_tuple.vtot_jump.index]), dims.vtan_tuple.vtot_jump.shape
         ),
         vtot_wake=reshape(
-            @view(vec[dims.vtan_tuple.vtot_wake.index]),
-            dims.vtan_tuple.vtot_wake.shape,
+            @view(vec[dims.vtan_tuple.vtot_wake.index]), dims.vtan_tuple.vtot_wake.shape
         ),
         vtot_rotors=reshape(
-            @view(vec[dims.vtan_tuple.vtot_rotors.index]),
-            dims.vtan_tuple.vtot_rotors.shape,
+            @view(vec[dims.vtan_tuple.vtot_rotors.index]), dims.vtan_tuple.vtot_rotors.shape
         ),
         # Splits:
         vtan_casing_in=reshape(
@@ -497,7 +490,7 @@ function withdraw_prepost_container_cache(vec, dims)
             @view(vec[dims.vtan_tuple.vtan_centerbody_out.index]),
             dims.vtan_tuple.vtan_centerbody_out.shape,
         ),
-)
+    )
 
     cp_tuple = (;
         cp_in=reshape(@view(vec[dims.cp_tuple.cp_in.index]), dims.cp_tuple.cp_in.shape),
@@ -512,7 +505,8 @@ function withdraw_prepost_container_cache(vec, dims)
             @view(vec[dims.cp_tuple.cp_nacelle_in.index]), dims.cp_tuple.cp_nacelle_in.shape
         ),
         cp_nacelle_out=reshape(
-            @view(vec[dims.cp_tuple.cp_nacelle_out.index]), dims.cp_tuple.cp_nacelle_out.shape
+            @view(vec[dims.cp_tuple.cp_nacelle_out.index]),
+            dims.cp_tuple.cp_nacelle_out.shape,
         ),
         cp_centerbody_in=reshape(
             @view(vec[dims.cp_tuple.cp_centerbody_in.index]),
@@ -523,32 +517,18 @@ function withdraw_prepost_container_cache(vec, dims)
             dims.cp_tuple.cp_centerbody_out.shape,
         ),
     )
-    body_thrust = reshape(
-        @view(vec[dims.body_thrust.index]), dims.body_thrust.shape
-    )
+    body_thrust = reshape(@view(vec[dims.body_thrust.index]), dims.body_thrust.shape)
     body_force_coefficient = reshape(
         @view(vec[dims.body_force_coefficient.index]), dims.body_force_coefficient.shape
     )
 
     # - TOTALS POST CACHE - #
-    total_thrust = reshape(
-        @view(vec[dims.total_thrust.index]), dims.total_thrust.shape
-    )
-    total_torque = reshape(
-        @view(vec[dims.total_torque.index]), dims.total_torque.shape
-    )
-    total_power = reshape(
-        @view(vec[dims.total_power.index]), dims.total_power.shape
-    )
-    total_CT = reshape(
-        @view(vec[dims.total_CT.index]), dims.total_CT.shape
-    )
-    total_CQ = reshape(
-        @view(vec[dims.total_CQ.index]), dims.total_CQ.shape
-    )
-    total_CP = reshape(
-        @view(vec[dims.total_CP.index]), dims.total_CP.shape
-    )
+    total_thrust = reshape(@view(vec[dims.total_thrust.index]), dims.total_thrust.shape)
+    total_torque = reshape(@view(vec[dims.total_torque.index]), dims.total_torque.shape)
+    total_power = reshape(@view(vec[dims.total_power.index]), dims.total_power.shape)
+    total_CT = reshape(@view(vec[dims.total_CT.index]), dims.total_CT.shape)
+    total_CQ = reshape(@view(vec[dims.total_CQ.index]), dims.total_CQ.shape)
+    total_CP = reshape(@view(vec[dims.total_CP.index]), dims.total_CP.shape)
     total_efficiency = reshape(
         @view(vec[dims.total_efficiency.index]), dims.total_efficiency.shape
     )
@@ -611,6 +591,17 @@ function withdraw_prepost_container_cache(vec, dims)
 end
 
 """
+    withdraw_solve_parameter_cache(solver_options::SolverOptionsType, vec, dims)
+
+Reshape the solve parameter cache vector using the saved dimensions tuple.
+
+# Arguments
+- `solver_options::SolverOptionsType` : Solver options type for dispatch.
+- `vec::Vector{Float}` : vector cache of pre- and post-processing intermediate containers.
+- `dims::NamedTuple` : Named tuple containing the indices and shape of the various items stored in the cache vector.
+
+# Returns
+- `solve_parameter_caching::NamedTuple` : Named tuple containing reshaped views of sections of the cache vector.
 """
 function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, dims)
 
@@ -671,8 +662,12 @@ function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, 
     # - blade element geometry - #
     blade_elements = (;
         B=reshape(@view(vec[dims.blade_elements.B.index]), dims.blade_elements.B.shape),
-        Rtip=reshape(@view(vec[dims.blade_elements.Rtip.index]), dims.blade_elements.Rtip.shape),
-        Rhub=reshape(@view(vec[dims.blade_elements.Rhub.index]), dims.blade_elements.Rhub.shape),
+        Rtip=reshape(
+            @view(vec[dims.blade_elements.Rtip.index]), dims.blade_elements.Rtip.shape
+        ),
+        Rhub=reshape(
+            @view(vec[dims.blade_elements.Rhub.index]), dims.blade_elements.Rhub.shape
+        ),
         fliplift=reshape(
             @view(vec[dims.blade_elements.fliplift.index]),
             dims.blade_elements.fliplift.shape,
@@ -739,21 +734,12 @@ function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, 
     #     ),
     # )
 
-    return (;
-        Gamr,
-        sigr,
-        gamw,
-        operating_point,
-        ivr,
-        ivw,
-        linsys,
-        blade_elements,
-        wakeK,
-    )
+    return (; Gamr, sigr, gamw, operating_point, ivr, ivw, linsys, blade_elements, wakeK)
 end
-"""
-"""
-function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+
+function withdraw_solve_parameter_cache(
+    solver_options::TS, vec, dims
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
 
     # - Initial Guesses - #
     vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
@@ -806,8 +792,12 @@ function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<
     # - blade element geometry - #
     blade_elements = (;
         B=reshape(@view(vec[dims.blade_elements.B.index]), dims.blade_elements.B.shape),
-        Rtip=reshape(@view(vec[dims.blade_elements.Rtip.index]), dims.blade_elements.Rtip.shape),
-        Rhub=reshape(@view(vec[dims.blade_elements.Rhub.index]), dims.blade_elements.Rhub.shape),
+        Rtip=reshape(
+            @view(vec[dims.blade_elements.Rtip.index]), dims.blade_elements.Rtip.shape
+        ),
+        Rhub=reshape(
+            @view(vec[dims.blade_elements.Rhub.index]), dims.blade_elements.Rhub.shape
+        ),
         fliplift=reshape(
             @view(vec[dims.blade_elements.fliplift.index]),
             dims.blade_elements.fliplift.shape,
@@ -887,20 +877,32 @@ function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<
     )
 end
 
-"""
-"""
 function withdraw_solve_parameter_cache(solver_options::SIAMFANLEOptions, vec, dims)
-
     tuple = withdraw_solve_parameter_cache(NonlinearSolveOptions(), vec, dims)
 
-    resid_cache_vec = reshape(@view(vec[dims.resid_cache_vec.index]), dims.resid_cache_vec.shape)
-    krylov_cache_vec = reshape(@view(vec[dims.krylov_cache_vec.index]), dims.krylov_cache_vec.shape)
-    jvp_cache_vec  = reshape(@view(vec[dims.jvp_cache_vec.index]), dims.jvp_cache_vec.shape)
+    resid_cache_vec = reshape(
+        @view(vec[dims.resid_cache_vec.index]), dims.resid_cache_vec.shape
+    )
+    krylov_cache_vec = reshape(
+        @view(vec[dims.krylov_cache_vec.index]), dims.krylov_cache_vec.shape
+    )
+    jvp_cache_vec = reshape(@view(vec[dims.jvp_cache_vec.index]), dims.jvp_cache_vec.shape)
 
     return (; tuple..., resid_cache_vec, krylov_cache_vec, jvp_cache_vec)
 end
 
 """
+    withdraw_solve_container_cache(solver_options::SolverOptionsType, vec, dims)
+
+Reshape the intermediate solve container cache vector using the saved dimensions tuple.
+
+# Arguments
+- `solver_options::SolverOptionsType` : Solver options type for dispatch.
+- `vec::Vector{Float}` : vector cache of pre- and post-processing intermediate containers.
+- `dims::NamedTuple` : Named tuple containing the indices and shape of the various items stored in the cache vector.
+
+# Returns
+- `solve_container_caching::NamedTuple` : Named tuple containing reshaped views of sections of the cache vector.
 """
 function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, dims)
     return (;
@@ -942,13 +944,16 @@ function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, 
         deltag=reshape(@view(vec[dims.deltag.index]), dims.deltag.shape),
         deltag_prev=reshape(@view(vec[dims.deltag_prev.index]), dims.deltag_prev.shape),
         maxBGamr=reshape(@view(vec[dims.maxBGamr.index]), dims.maxBGamr.shape),
-        maxdeltaBGamr=reshape(@view(vec[dims.maxdeltaBGamr.index]), dims.maxdeltaBGamr.shape),
+        maxdeltaBGamr=reshape(
+            @view(vec[dims.maxdeltaBGamr.index]), dims.maxdeltaBGamr.shape
+        ),
         maxdeltagamw=reshape(@view(vec[dims.maxdeltagamw.index]), dims.maxdeltagamw.shape),
     )
 end
-"""
-"""
-function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+
+function withdraw_solve_container_cache(
+    solver_options::TS, vec, dims
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),

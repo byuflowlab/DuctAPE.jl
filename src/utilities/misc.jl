@@ -124,3 +124,30 @@ function reset_containers!(c; exception_keys=[])
 
     return c
 end
+
+"""
+    promote_propulosor_type(propulsor)
+
+Convenience function for promoting types based on any potential elements of the propulsor object dependent on optimization design variables.
+
+# Arguments
+- `propulsor::Propulsor` : the propulsor input
+"""
+function promote_propulosor_type(p)
+    return promote_type(
+        eltype(p.duct_coordinates),
+        eltype(p.centerbody_coordinates),
+        eltype(p.operating_point.Vinf),
+        eltype(p.operating_point.rhoinf),
+        eltype(p.operating_point.muinf),
+        eltype(p.operating_point.asound),
+        eltype(p.operating_point.Omega),
+        eltype(p.rotorstator_parameters.B),
+        eltype(p.rotorstator_parameters.rotorzloc),
+        eltype(p.rotorstator_parameters.r),
+        eltype(p.rotorstator_parameters.Rhub),
+        eltype(p.rotorstator_parameters.Rtip),
+        eltype(p.rotorstator_parameters.chords),
+        eltype(p.rotorstator_parameters.twists),
+    )
+end
