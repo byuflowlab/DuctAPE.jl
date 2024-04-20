@@ -2,7 +2,7 @@
 
 <!-- Other names to consider -->
 <!-- ADFAN.jl [[A](#)xisymmetric [D](#)ucted [F](#)an [AN](#)alysis] -->
-<!-- (AD)<sup>2</sup>FAN [[A](#)utomatic [D](#)ifferetiable [A](#)xisymmetric [D](#)ucted [F](#)an [AN](#)alysis] (pronounced "A. D. Fan") -->
+<!-- (AD)$^2$FAN [[A](#)utomatic [D](#)ifferetiable [A](#)xisymmetric [D](#)ucted [F](#)an [AN](#)alysis] (pronounced "A. D. Fan") -->
 
 <!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://flow.byu.edu/DuctAPE.jl/stable) -->
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://flow.byu.edu/DuctAPE.jl/dev)
