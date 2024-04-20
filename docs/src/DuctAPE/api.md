@@ -7,15 +7,20 @@ Depth = 5
 
 ## Public API
 
+### Options
+
+```@docs
+DuctAPE.set_options
+DuctAPE.DFDC_options
+```
+
+### Setup
+
 ```@docs
 DuctAPE.setup_analysis
 ```
 
-```@docs
-DuctAPE.DFDC_options
-```
-
-The remainder of the public API elements are found throughout the remainder of this documentation in the context of their usage.  The index at the bottom of this page may be helpful in locating them.
+### Analysis
 
 ## Private API
 

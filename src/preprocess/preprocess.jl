@@ -1,4 +1,39 @@
 """
+    reinterpolate_geometry(
+        problem_dimensions,
+        duct_coordinates,
+        centerbody_coordinates,
+        rotorstator_parameters,
+        paneling_constants;
+        autoshiftduct=true,
+        grid_solver_options=GridSolverOptions(),
+        finterp=FLOWMath.akima,
+        verbose=false,
+        silence_warnings=true,
+    )
+
+Re-interpolate the body geometry and return compatible body and way geometry.
+
+# Arguments
+- `var::type` :
+- `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
+- `duct_coordinates::Matrix{Float}` : [z,r] coordinates of duct geometry
+- `centerbody_coordinates::Matrix{Float}` : [z,r] coordinates of centerbody geometry
+- `rotorstator_parameters::RotorStatorParameters` : A RotorStatorParameters object
+- `paneling_constants::PanelingConstants` : A PanelingConstants object
+
+# Keyword Arguments
+- `autoshiftduct::Bool=true` : flag to shift duct geometry based on rotor tip radius
+- `grid_solver_options::SolverOptionsType=GridSolverOptions()` : options for the wake grid position solver
+- `finterp::Function=FLOWMath.akima` : interpolation method for re-interpolating body coordinates
+- `verbose::Bool=false` : flag to print verbose statements
+- `silence_warnings::Bool=true` : flag to silence warnings
+
+# Returns
+- `wake_grid::Array{Float}` : array containig the z and r elliptic grid points defning the wake geometry.
+- `rp_duct_coordinates::Matrix{Float}` : matrix containing the re-paneled duct coordinates
+- `rp_centerbody_coordinates::Matrix{Float}` : matrix containing the re-paneled centerbody coordinates
+- `rotor_indices_in_wake::Vector{Int}` : vector containing the indices of where in the wake the rotors reside (used later to define the rotor panel edges).
 """
 function reinterpolate_geometry(
     problem_dimensions,
@@ -56,7 +91,27 @@ function reinterpolate_geometry(
     return wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, rotor_indices_in_wake
 end
 
+
+
 """
+    reinterpolate_geometry!(
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        rotor_indices_in_wake,
+        duct_coordinates,
+        centerbody_coordinates,
+        rotorstator_parameters,
+        blade_element_cache,
+        paneling_constants;
+        autoshiftduct=true,
+        grid_solver_options=GridSolverOptions(),
+        finterp=FLOWMath.akima,
+        verbose=false,
+        silence_warnings=true,
+    )
+
+In-place version of reinterpolate_geometry.
 """
 function reinterpolate_geometry!(
     wake_grid,
@@ -158,7 +213,43 @@ function reinterpolate_geometry!(
     return rp_duct_coordinates, rp_centerbody_coordinates, wake_grid, rotor_indices_in_wake
 end
 
+
+
 """
+    generate_all_panels(
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        nwake_sheets,
+        rotor_indices_in_wake,
+        rotorzloc,
+        wake_grid;
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
+        silence_warnings=true,
+    )
+
+Function that calls all of the various panel generation functions are returns a named tuple containing all the panels
+
+# Arguments
+- `rp_duct_coordinates::Matrix{Float}` : matrix containing the re-paneled duct coordinates
+- `rp_centerbody_coordinates::Matrix{Float}` : matrix containing the re-paneled centerbody coordinates
+- `nwake_sheets::Int` : number of wake sheets
+- `rotor_indices_in_wake::Vector{Int}` : vector containing the indices of where in the wake the rotors reside (used later to define the rotor panel edges).
+- `rotorzloc:Vector{Float}` : axial locations of rotor lifting lines (contained in RotorStatorParameters)
+- `wake_grid::Array{Float}` : array containig the z and r elliptic grid points defning the wake geometry.
+
+# Keyword Arguments
+- `itcpshift::Float=0.05` : value used in positioning the internal pseudo control point in the solid bodies. Default is DFDC hard-coded value.
+- `axistol::Float=1e-15` : tolerance for how close to the axis of rotation to be considered on the axis.
+- `tegaptol::Float=1e1 * eps()` : tolerance for how large of a trailing edge gap is considered a gap.
+- `silence_warnings::Bool=true` : flag to silence warnings
+
+# Returns
+- `panels::NamedTuple` : A named tuple of named tuples containing paneling information, including:
+  - `body_vortex_panels::NamedTuple`
+  - `rotor_source_panels::NamedTuple`
+  - `wake_vortex_panels::NamedTuple`
 """
 function generate_all_panels(
     rp_duct_coordinates,
@@ -191,7 +282,24 @@ function generate_all_panels(
     return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
 end
 
+
+
 """
+    generate_all_panels!(
+        panels,
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        rotor_indices_in_wake,
+        rotorzloc,
+        nwake_sheets;
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
+        silence_warnings=true,
+    )
+
+In-place version of generate_all_panels.
 """
 function generate_all_panels!(
     panels,
@@ -229,7 +337,22 @@ function generate_all_panels!(
     return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
 end
 
+
+
 """
+    calculate_unit_induced_velocities(problem_dimensions, panels, integration_options)
+
+Calculate all the unit-induced velocties of all panels on all control points
+
+# Arguments
+- `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
+- `panels::NamedTuple` : A named tuple containing all the paneling information
+- `integration_options::IntegrationOptions` : Options used for integration of velocity kernals across panels
+
+# Returns
+- `ivr::NamedTuple` : A named tuple containing arrays of induced velocities on the rotors
+- `ivw::NamedTuple` : A named tuple containing arrays of induced velocities on the wake
+- `ivb::NamedTuple` : A named tuple containing arrays of induced velocities on the bodies
 """
 function calculate_unit_induced_velocities(problem_dimensions, panels, integration_options)
     (;
@@ -269,7 +392,11 @@ function calculate_unit_induced_velocities(problem_dimensions, panels, integrati
     return calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
 end
 
+
 """
+    calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
+
+In-place version of  calculate_unit_induced_velocities.
 """
 function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
     # - Reset Tuples - #
@@ -481,7 +608,39 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     return ivr, ivw, ivb
 end
 
+
+
 """
+    initialize_linear_system(
+        ivb,
+        body_vortex_panels,
+        rotor_source_panels,
+        wake_vortex_panels,
+        Vinf,
+        integration_options,
+    )
+
+Set up the linear system used in the panel method solve.
+
+# Arguments
+- `ivb::NamedTuple` : the named tuple containing all the unit induced velocities on the bodies
+- `body_vortex_panels::NamedTuple` : the named tuple containing the body vortex panel information
+- `rotor_source_panels::NamedTuple` : the named tuple containing the rotor source panel information
+- `wake_vortex_panels::NamedTuple` : the named tuple containing the wake vortex panel information
+- `Vinf::Vector{Float}` : the one-element vector containing the Freestream velocity magnitude
+- `integration_options::IntegrationOptions` : the integration options used in integrating the panel induced velocities
+
+# Returns
+- `var::type=default` :
+- `linsys::NamedTuple` : A named tuple containing cacheable data for the linear system, including:
+  - `A_bb::Array{Float}` : AIC (LHS) matrix for the panel method system
+  - `b_bf::Array{Float}` : Initial system RHS vector based on freestrem magnitude
+  - `A_br::Array{Float}` : Unit normal velocity from rotors onto body panels
+  - `A_pr::Array{Float}` : Unit normal velocity from rotors onto body internal psuedo control points
+  - `A_bw::Array{Float}` : Unit normal velocity from wake onto body panels
+  - `A_pw::Array{Float}` : Unit normal velocity from wake onto body internal psuedo control points
+- `A_bb_LU::LinearAlgebra.LU` : LinearAlgebra LU factorization of the LHS matrix
+- `lu_decomp_flag::Vector{Bool}` : flag for whether factorization was successful
 """
 function initialize_linear_system(
     ivb,
@@ -602,8 +761,8 @@ function initialize_linear_system(
     return (; A_bb, b_bf, A_br, A_pr, A_bw, A_pw), A_bb_LU, lu_decomp_flag
 end
 
-"""
-"""
+
+
 function initialize_linear_system!(
     linsys,
     ivb,
@@ -753,25 +912,39 @@ function initialize_linear_system!(
 end
 
 """
-wnm = wake_vortex_panels.nodemap
-wenids = wake_vortex_panels.endnodeidxs
-nwn =  problem_dimensions.nwn
-nwsn = problem_dimensions.nwsn
-nbn = problem_dimensions.nbn
-ndp = body_vortex_panels.npanel[1]
-riiw = rotor_indices_in_wake
+    set_index_maps(
+        npanels,
+        ncenterbody_inlet,
+        nwake_sheets,
+        dte_minus_cbte,
+        wnm,
+        wenids,
+        nwp,
+        nwsp,
+        nbn,
+        ndp,
+        riiw,
+        nrotor,
+    )
 
-    wake_panel_sheet_be_map = ones(Int, wake_vortex_panels.totnode, 2)
-    num_wake_z_nodes = length(zwake)
-    for i in 1:(rotorstator_parameters[1].nwake_sheets)
-        wake_panel_sheet_be_map[(1 + (i - 1) * num_wake_z_nodes):(i * num_wake_z_nodes), 1] .= i
-    end
-    for (i, wn) in enumerate(eachcol(wake_vortex_panels.node))
-        # TODO: DFDC geometry doesn't line up wake and rotor perfectly, so need a more robust option.
-        # wake_panel_sheet_be_map[i, 2] = findlast(x -> x <= wn[1], rotorstator_parameters.rotorzloc)
-        # TODO: current tests are passing, but look here if things break in the future.
-        wake_panel_sheet_be_map[i, 2] = findmin(x -> abs(x - wn[1]), rotorstator_parameters.rotorzloc)[2]
-    end
+Set values for index map to be used throughout solve and post-process.
+
+# Arguments
+- `npanels` : paneling_constants.npanels
+- `ncenterbody_inlet` : paneling_constants.ncenterbody_inlet
+- `nwake_sheets` : paneling_constants.nwake_sheets
+- `dte_minus_cbte` : paneling_constants.dte_minus_cbte
+- `wnm` : wake_vortex_panels.nodemap
+- `wenids` : wake_vortex_panels.endnodeidxs
+- `nwp` :  problem_dimensions.nwp
+- `nwsp` : problem_dimensions.nwsp
+- `nbn` : problem_dimensions.nbn
+- `ndp` : body_vortex_panels.npanel[1]
+- `riiw` : rotor_indices_in_wake
+- `nrotor` : problem_dimensions.nrotor
+
+# Returns
+- `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
 """
 function set_index_maps(
     npanels,
@@ -953,6 +1126,57 @@ function set_index_maps(
 end
 
 """
+    precompute_parameters(
+        propulsor;
+        grid_solver_options=GridSolverOptions(),
+        integration_options=IntegrationOptions(),
+        autoshiftduct=true,
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
+        finterp=FLOWMath.akima,
+        silence_warnings=true,
+        verbose=false,
+    )
+
+Out of place main pre-processing function that computes all the required parameters for the solve.
+
+# Arguments
+- `propulsor::Propulsor` : A Propuslor object
+
+# Keyword Arguments
+- `grid_solver_options::GridSolverOptionsType=GridSolverOptions()` : A GridSolverOptionsType object
+- `integration_options::IntegrationMethod=IntegrationOptions()` : An IntegrationMethod object
+- `autoshiftduct::Bool=true` : flag to shift duct geometry based on rotor tip radius
+- `itcpshift::Float=0.05` : value used in positioning the internal pseudo control point in the solid bodies. Default is DFDC hard-coded value.
+- `axistol::Float=1e-15` : tolerance for how close to the axis of rotation to be considered on the axis.
+- `tegaptol::Float=1e1 * eps()` : tolerance for how large of a trailing edge gap is considered a gap.
+- `finterp::Function=FLOWMath.akima` : interpolation method for re-interpolating body coordinates
+- `silence_warnings::Bool=true` : flag to silence warnings
+- `verbose::Bool=false` : flag to print verbose statements
+
+# Returns
+- `ivr::NamedTuple` : A named tuple containing arrays of induced velocities on the rotors
+- `ivw::NamedTuple` : A named tuple containing arrays of induced velocities on the wake
+- `ivb::NamedTuple` : A named tuple containing arrays of induced velocities on the bodies
+- `linsys::NamedTuple` : A named tuple containing cacheable data for the linear system, including:
+  - `A_bb::Array{Float}` : AIC (LHS) matrix for the panel method system
+  - `b_bf::Array{Float}` : Initial system RHS vector based on freestrem magnitude
+  - `A_br::Array{Float}` : Unit normal velocity from rotors onto body panels
+  - `A_pr::Array{Float}` : Unit normal velocity from rotors onto body internal psuedo control points
+  - `A_bw::Array{Float}` : Unit normal velocity from wake onto body panels
+  - `A_pw::Array{Float}` : Unit normal velocity from wake onto body internal psuedo control points
+- `A_bb_LU::LinearAlgebra.LU` : LinearAlgebra LU factorization of the LHS matrix
+- `lu_decomp_flag::Vector{Bool}` : flag for whether factorization was successful
+- `blade_elements::NamedTuple` : A named tuple containing cacheable blade element information (see docs for `interpolate_blade_elements`)
+- `airfoils::Vector{AFType}` : A matrix of airfoil types associated with each of the blade elements
+- `wakeK::Matrix{Float}` : A matrix of precomputed geometric constants used in the calculation of the wake vortex strengths
+- `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
+- `panels::NamedTuple` : A named tuple of panel objects including:
+  - `body_vortex_panels::NamedTuple` : the named tuple containing the body vortex panel information
+  - `rotor_source_panels::NamedTuple` : the named tuple containing the rotor source panel information
+  - `wake_vortex_panels::NamedTuple` : the named tuple containing the wake vortex panel information
+- `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
 """
 function precompute_parameters(
     propulsor;
@@ -1031,6 +1255,28 @@ function precompute_parameters(
 end
 
 """
+    precompute_parameters(
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        wake_grid,
+        rotor_indices_in_wake,
+        Rtips,
+        Rhubs,
+        rotorstator_parameters,
+        paneling_constants,
+        operating_point,
+        integration_options,
+        problem_dimensions=nothing;
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
+        silence_warnings=true,
+        verbose=false,
+    )
+
+An alternate version of precompute_parameters allowing for user defined geometry that does not go through a re-panling step (use with caution).
+
+The first inputs are the outputs of the `reinterpolate_geometry` and `get_blade_ends_from_body_geometry` functions.
 """
 function precompute_parameters(
     rp_duct_coordinates,
@@ -1122,6 +1368,7 @@ function precompute_parameters(
     ivb,
     linsys,
     A_bb_LU,
+    lu_decomp_flag,
     blade_elements,
     airfoils,
     wakeK,
@@ -1130,7 +1377,29 @@ function precompute_parameters(
     problem_dimensions
 end
 
+
 """
+    precompute_parameters!(
+        ivr,
+        ivw,
+        blade_element_cache,
+        linsys,
+        wakeK,
+        propulsor,
+        prepost_containers,
+        problem_dimensions;
+        grid_solver_options=GridSolverOptions(),
+        integration_options=IntegrationOptions(),
+        autoshiftduct=true,
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
+        finterp=fm.akima,
+        silence_warnings=true,
+        verbose=false,
+    )
+
+In-place version of nominal version of precompute_parameters.
 """
 function precompute_parameters!(
     ivr,
@@ -1223,7 +1492,33 @@ function precompute_parameters!(
     )
 end
 
+
 """
+    precompute_parameters!(
+        ivr,
+        ivw,
+        blade_element_cache,
+        linsys,
+        wakeK,
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        rotor_indices_in_wake,
+        rotorstator_parameters,
+        paneling_constants,
+        operating_point,
+        prepost_containers,
+        problem_dimensions=nothing;
+        integration_options=IntegrationOptions(),
+        itcpshift=0.05,
+        axistol=1e-15,
+        tegaptol=1e1 * eps(),
+        finterp=fm.akima,
+        silence_warnings=true,
+        verbose=false,
+    )
+
+In-place version of the precompute_parameters function by-passing the geometry reinterpolateion. (Use with caution)
 """
 function precompute_parameters!(
     ivr,

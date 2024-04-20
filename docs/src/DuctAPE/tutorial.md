@@ -24,7 +24,7 @@ nothing # hide
 
 The next step is to create the input object of type `Propulsor`.
 
-```@docs
+```@docs; canonical=false
 DuctAPE.Propulsor
 ```
 
@@ -149,7 +149,7 @@ plot!(pg, centerbody_coordinates[:,1], centerbody_coordinates[:,2], color=2, lin
 
 The next step is to assemble an object of type `RotorStatorParameters` which contains the geometric information required to define the rotor(s) and their respective blade elements.
 
-```@docs
+```@docs; canonical=false
 DuctAPE.RotorStatorParameters
 ```
 
@@ -251,7 +251,7 @@ plot!(pg, rotorzloc*ones(length(r)), r.*Rtip, seriestype=:scatter, markerstrokew
 
 Next we will assemble the operating point which contains information about the freestream as well as the rotor rotation rate(s).
 
-```@docs
+```@docs; canonical=false
 DuctAPE.OperatingPoint
 ```
 
@@ -278,7 +278,7 @@ The `PanelingConstants` object contains the constants required for DuctAPE to re
 The `PanelingConstants` object is also used to build all of the preallocated caches inside DuctAPE, which can be done up-front if desired.
 Note that there is some functionality in place for cases when the user wants to keep their own specified geometry, but this functionality should be used with caution and only by users who are certain their provided geometry is in the compatible format.  See the [Examples](@ref "Circumventing the Automated Geometry Re-paneling") for an example.
 
-```@docs
+```@docs; canonical=false
 DuctAPE.PanelingConstants
 ```
 
@@ -300,7 +300,7 @@ nothing # hide
 
 The reference parameters are used in the post-processing non-dimensionalizations.
 
-```@docs
+```@docs; canonical=false
 DuctAPE.ReferenceParameters
 ```
 
@@ -332,7 +332,7 @@ nothing # hide
 
 The default options should be sufficient for just starting out and are set through the `set_options` function.
 
-```@docs
+```@docs; canonical=false
 DuctAPE.set_options
 ```
 
@@ -347,7 +347,7 @@ For more advanced option selection, see the examples and API reference.
 With the propulsor input build, and the options selected, we are now ready to run an analysis.
 This is done simply with the `analyze` function which dispatches the appropriate analysis, solve, and post-processing functions based on the selected options.
 
-```@docs
+```@docs; canonical=false
 DuctAPE.analyze(::DuctAPE.Propulsor, ::DuctAPE.Options)
 ```
 
