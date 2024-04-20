@@ -1,6 +1,55 @@
 """
+    ProblemDimensions{Int}
+
+Struct containing dimensions of the problem used throughout the analysis.
+
+- `nrotor`    : number of rotors
+-  nwn`       : number of wake nodes
+-  nwp`       : number of wake panels
+-  ncp`       : number of casing panels
+-  ndn`       : number of duct nodes
+-  ncbn`      : number of centerbody nodes
+-  nbn`       : number of body nodes
+-  nbp`       : number of body panels
+-  nws`       : number of wake sheets (also rotor nodes)
+-  nbe`       : number of blade elements (also rotor panels)
+-  nwsn`      : number of nodes in each wake sheet
+-  nwsp`      : number of panels in each wake sheet
+-  ndwin`     : number of duct-wake interfacing nodes
+-  ncbwin`    : number of centerbody-wake interfacing nodes
+-  nbodies=2` : number of bodies (currently hardcoded to 2)
 """
-function get_problem_dimensions(paneling_constants)
+@kwdef struct ProblemDimensions{TI}
+    nrotor::TI      # number of rotors
+    nwn::TI         # number of wake nodes
+    nwp::TI         # number of wake panels
+    ncp::TI         # number of casing panels
+    ndn::TI         # number of duct nodes
+    ncbn::TI        # number of centerbody nodes
+    nbn::TI         # number of body nodes
+    nbp::TI         # number of body panels
+    nws::TI         # number of wake sheets (also rotor nodes)
+    nbe::TI         # number of blade elements (also rotor panels)
+    nwsn::TI        # number of nodes in each wake sheet
+    nwsp::TI        # number of panels in each wake sheet
+    ndwin::TI       # number of duct-wake interfacing nodes
+    ncbwin::TI      # number of centerbody-wake interfacing nodes
+    nbodies::TI = 2 # hard code this for now.
+end
+
+"""
+    get_problem_dimensions(paneling_constants::PanelingConstants)
+    get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vortex_panels)
+
+Determine all relevant dimensions to the problem based either on the paneling_constants or the panels themselves.
+
+# Arguments
+- `paneling_constants::PanelingConstants` : Rotor (and possibly stator) geometric paramters.
+
+# Returns
+- `problem_dimensions::ProblemDimensions` : ProblemDimensions object.
+"""
+function get_problem_dimensions(paneling_constants::PanelingConstants)
 
     # - Extract Paneling Constants - #
     (; npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte) =
@@ -70,7 +119,7 @@ function get_problem_dimensions(paneling_constants)
         ncbwin = sum(npanels[end - 2]) + 1
     end
 
-    return (;
+    return ProblemDimensions(;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
@@ -201,7 +250,7 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
         ),
     )
 
-    return (;
+    return ProblemDimensions(;
         nrotor, # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels

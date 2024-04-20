@@ -1,6 +1,16 @@
 """
+    allocate_body_panel_containers!(total_length, problem_dimensions::ProblemDimensions)
+
+A helper function is assembling the prepost_container_cache.
+
+# Arguments
+- `total_length::Vector{Int}` : a one-element vector used to store the total length in order to know how large of a cache to allocate.  Is updated in place.
+- `problem_dimensions::ProblemDimensions` : a ProblemDimensions object
+
+# Returns
+- `body_vortex_panels::NamedTuple` : A named tuple containing the dimensions needed to reshape the cache with regards to the body vortex panel object
 """
-function allocate_body_panel_container(total_length, problem_dimensions)
+function allocate_body_panel_container!(total_length, problem_dimensions::ProblemDimensions)
     (;
         ndn,    # number of duct nodes
         ncbn,   # number of centerbody nodes
@@ -16,10 +26,22 @@ function allocate_body_panel_container(total_length, problem_dimensions)
     # total number of nodes in system
     tn = tp + nb
 
-    return allocate_panel_container(total_length, nn, np, tn, tp, nb)
+    return allocate_panel_container!(total_length, nn, np, tn, tp, nb)
 end
 
-function allocate_rotor_panel_container(total_length, problem_dimensions)
+"""
+    allocate_rotor_panel_containers!(total_length, problem_dimensions::ProblemDimensions)
+
+A helper function is assembling the prepost_container_cache.
+
+# Arguments
+- `total_length::Vector{Int}` : a one-element vector used to store the total length in order to know how large of a cache to allocate.  Is updated in place.
+- `problem_dimensions::ProblemDimensions` : a ProblemDimensions object
+
+# Returns
+- `rotor_source_panels::NamedTuple` : A named containing the dimensions needed to reshape the cache with regards to the rotor source panel object
+"""
+function allocate_rotor_panel_container!(total_length, problem_dimensions::ProblemDimensions)
     (;
         nrotor,     # number of rotors
         nws,    # number of wake sheets (also rotor nodes)
@@ -35,10 +57,22 @@ function allocate_rotor_panel_container(total_length, problem_dimensions)
     # total number of nodes in system
     tn = tp + nb
 
-    return allocate_panel_container(total_length, nn, np, tn, tp, nb)
+    return allocate_panel_container!(total_length, nn, np, tn, tp, nb)
 end
 
-function allocate_wake_panel_container(total_length, problem_dimensions)
+"""
+    allocate_wake_panel_containers!(total_length, problem_dimensions::ProblemDimensions)
+
+A helper function is assembling the prepost_container_cache.
+
+# Arguments
+- `total_length::Vector{Int}` : a one-element vector used to store the total length in order to know how large of a cache to allocate.  Is updated in place.
+- `problem_dimensions::ProblemDimensions` : a ProblemDimensions object
+
+# Returns
+- `wake_vortex_panels::NamedTuple` : A named containing the dimensions needed to reshape the cache with regards to the wake vortex panel object
+"""
+function allocate_wake_panel_container!(total_length, problem_dimensions::ProblemDimensions)
     (;
         nws,    # number of wake sheets (also rotor nodes)
         nwsn,   # number of nodes in each wake sheet
@@ -54,105 +88,95 @@ function allocate_wake_panel_container(total_length, problem_dimensions)
     # total number of nodes in system
     tn = tp + nb
 
-    return allocate_panel_container(total_length, nn, np, tn, tp, nb)
+    return allocate_panel_container!(total_length, nn, np, tn, tp, nb)
 end
 
 """
+    allocate_panel_container!(total_length, nn, np, tn, tp, nb)
+
+A helper function is assembling the prepost_container_cache.
+
+# Arguments
+- `total_length::Vector{Int}` : a one-element vector used to store the total length in order to know how large of a cache to allocate.  Is updated in place.
+- `nn::Int` : number of nodes in each body, rotor, or wake sheet
+- `np::Int` : number of panels in each body, rotor, or wake sheet
+- `tn::Int` : number of total nodes among the bodies, rotors, or wake sheets
+- `tp::Int` : number of total panels among the bodies, rotors, or wake sheets
+- `nb::Int` : number of bodies, rotors, or wake sheets
+
+# Returns
+- `panel::NamedTuple` : A named containing the dimensions needed to reshape the cache with regards to an arbitrary panel set
 """
-function allocate_panel_container(total_length, nn, np, tn, tp, nb)
+function allocate_panel_container!(total_length, nn, np, tn, tp, nb)
     s = size(nn)
     l = lfs(s)
-    nnode = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    nnode = cache_dims!(total_length, l, s)
 
     # number of panels to generate for each body
-    npanel = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    npanel = cache_dims!(total_length, l, s)
 
     s = (1,)
     l = lfs(s)
-    nbodies = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    nbodies = cache_dims!(total_length, l, s)
 
     s = (1,)
     l = lfs(s)
-    totpanel = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    totpanel = cache_dims!(total_length, l, s)
 
     s = (1,)
     l = lfs(s)
-    totnode = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    totnode = cache_dims!(total_length, l, s)
 
     s = (2, tn)
     l = lfs(s)
-    node = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    node = cache_dims!(total_length, l, s)
 
     s = (2, tp)
     l = lfs(s)
-    controlpoint = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    controlpoint = cache_dims!(total_length, l, s)
 
-    normal = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    normal = cache_dims!(total_length, l, s)
 
-    tangent = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    tangent = cache_dims!(total_length, l, s)
 
-    nodemap = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    nodemap = cache_dims!(total_length, l, s)
 
     s = (tp)
     l = lfs(s)
-    influence_length = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    influence_length = cache_dims!(total_length, l, s)
 
     s = (nb, 2, 2)
     l = lfs(s)
-    endnodes = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    endnodes = cache_dims!(total_length, l, s)
 
-    tenode = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    tenode = cache_dims!(total_length, l, s)
 
     s = (2, nb)
     l = lfs(s)
 
-    itcontrolpoint = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    itcontrolpoint = cache_dims!(total_length, l, s)
 
-    itnormal = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    itnormal = cache_dims!(total_length, l, s)
 
-    ittangent = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    ittangent = cache_dims!(total_length, l, s)
 
-    tenormal = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    tenormal = cache_dims!(total_length, l, s)
 
-    tendotn = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    tendotn = cache_dims!(total_length, l, s)
 
-    tencrossn = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    tencrossn = cache_dims!(total_length, l, s)
 
-    endnodeidxs = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    endnodeidxs = cache_dims!(total_length, l, s)
 
-    endpanelidxs = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    endpanelidxs = cache_dims!(total_length, l, s)
 
-    teadjnodeidxs = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    teadjnodeidxs = cache_dims!(total_length, l, s)
 
     s = (nb,)
     l = lfs(s)
-    teinfluence_length = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    teinfluence_length = cache_dims!(total_length, l, s)
 
-    prescribednodeidxs = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    prescribednodeidxs = cache_dims!(total_length, l, s)
 
     return (;
         nnode,
@@ -179,27 +203,50 @@ function allocate_panel_container(total_length, nn, np, tn, tp, nb)
         teadjnodeidxs,
         teinfluence_length,
         prescribednodeidxs,
-    ),
-    total_length
+    )
 end
 
 """
+    allocate_panel_containers!(total_length, problem_dimensions::ProblemDimensions)
+
+A helper function is assembling the prepost_container_cache.
+
+# Arguments
+- `total_length::Vector{Int}` : a one-element vector used to store the total length in order to know how large of a cache to allocate.  Is updated in place.
+- `problem_dimensions::ProblemDimensions` : a ProblemDimensions object
+
+# Returns
+- `panels::NamedTuple` : A named tuple of named tuples containing the dimensions needed to reshape the cache with regards to the panel objects
 """
-function allocate_panel_containers(problem_dimensions, total_length)
-    body_vortex_panels, total_length = allocate_body_panel_container(
+function allocate_panel_containers!(total_length, problem_dimensions::ProblemDimensions)
+    body_vortex_panels = allocate_body_panel_container!(
         total_length, problem_dimensions
     )
-    rotor_source_panels, total_length = allocate_rotor_panel_container(
+    rotor_source_panels = allocate_rotor_panel_container!(
         total_length, problem_dimensions
     )
-    wake_vortex_panels, total_length = allocate_wake_panel_container(
+    wake_vortex_panels = allocate_wake_panel_container!(
         total_length, problem_dimensions
     )
 
-    return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels), total_length
+    return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
 end
 
 """
+    allocate_prepost_container_cache(paneling_constants::PanelingConstants)
+    allocate_prepost_container_cache(problem_dimensions::ProblemDimensions)
+
+Allocate the pre- and post-processing cache (used for intermediate calculations) based on paneling constants or problem dimensions.
+
+# Arguments
+- `paneling_constants::PanelingConstants` : a PanelingConstants object
+OR
+- `problem_dimensions::ProblemDimensions` : a ProblemDimensions object
+
+# Returns
+- `prepost_container_caching::NamedTuple` : a Named Tuple containing:
+  - `prepost_container_cache::PreallocationTools.DiffCache` : the cache
+  - `prepost_container_cache_dims::NamedTuple` : a named tuple containing the dimensions used for reshaping the cache when needed.
 """
 function allocate_prepost_container_cache(paneling_constants::PanelingConstants)
     problem_dimensions = get_problem_dimensions(paneling_constants)
@@ -207,8 +254,7 @@ function allocate_prepost_container_cache(paneling_constants::PanelingConstants)
     return allocate_prepost_container_cache(problem_dimensions)
 end
 
-function allocate_prepost_container_cache(problem_dimensions)
-
+function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions)
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -225,74 +271,59 @@ function allocate_prepost_container_cache(problem_dimensions)
     ) = problem_dimensions
 
     # - initialize - #
-    total_length = 0
+    total_length = [0]
 
     ### --- PRE-PROCESSING --- ###
 
     # - COORDINATES - #
-    dcshape = (2, ndn)
-    dclength = lfs(dcshape)
-    rp_duct_coordinates = (;
-        index=(total_length + 1):(total_length + dclength), shape=dcshape
-    )
-    total_length += dclength
+    s = (2, ndn)
+    l = lfs(s)
+    rp_duct_coordinates = cache_dims!(total_length, l, s)
 
-    cbcshape = (2, ncbn)
-    cbclength = lfs(cbcshape)
-    rp_centerbody_coordinates = (;
-        index=(total_length + 1):(total_length + cbclength), shape=cbcshape
-    )
-    total_length += cbclength
+    s = (2, ncbn)
+    l = lfs(s)
+    rp_centerbody_coordinates = cache_dims!(total_length, l, s)
 
-    wgshape = (2, nwsn, nws)
-    wglength = lfs(wgshape)
-    wake_grid = (; index=(total_length + 1):(total_length + wglength), shape=wgshape)
-    total_length += wglength
+    s = (2, nwsn, nws)
+    l = lfs(s)
+    wake_grid = cache_dims!(total_length, l, s)
 
-    rs = (nrotor,)
-    rl = lfs(rs)
-    rotor_indices_in_wake = (; index=(total_length + 1):(total_length + rl), shape=rs)
-    total_length += rl
+    s = (nrotor,)
+    l = lfs(s)
+    rotor_indices_in_wake = cache_dims!(total_length, l, s)
 
     # - PANELS - #
-    panels, total_length = allocate_panel_containers(problem_dimensions, total_length)
+    panels = allocate_panel_containers!(total_length, problem_dimensions)
 
     # - INDUCED VELS - #
     s = (nbp, nbn, 2)
     l = lfs(s)
-    v_bb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_bb = cache_dims!(total_length, l, s)
 
     s = (nbp, nrotor * nws, 2)
     l = lfs(s)
-    v_br = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_br = cache_dims!(total_length, l, s)
 
     s = (nbp, nwn, 2)
     l = lfs(s)
-    v_bw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_bw = cache_dims!(total_length, l, s)
 
     # - LINSYS - #
     s = (nbp, nbn)
     l = lfs(s)
-    AICn = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    AICn = cache_dims!(total_length, l, s)
 
     s = (2, nbn)
     l = lfs(s)
-    AICpcp = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    AICpcp = cache_dims!(total_length, l, s)
 
     s = (nbp,)
     l = lfs(s)
-    vdnb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vdnb = cache_dims!(total_length, l, s)
 
     s = (2,)
     l = lfs(s)
-    vdnpcp = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vdnpcp = cache_dims!(total_length, l, s)
 
     ##### ----- POST PROCESSING ----- #####
 
@@ -300,231 +331,160 @@ function allocate_prepost_container_cache(problem_dimensions)
 
     s = (nrotor,)
     l = lfs(s)
-    rotor_inviscid_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_inviscid_thrust = cache_dims!(total_length, l, s)
 
-    rotor_viscous_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_viscous_thrust = cache_dims!(total_length, l, s)
 
-    rotor_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_thrust = cache_dims!(total_length, l, s)
 
-    rotor_inviscid_torque = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_inviscid_torque = cache_dims!(total_length, l, s)
 
-    rotor_viscous_torque = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_viscous_torque = cache_dims!(total_length, l, s)
 
-    rotor_torque = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_torque = cache_dims!(total_length, l, s)
 
-    rotor_inviscid_power = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_inviscid_power = cache_dims!(total_length, l, s)
 
-    rotor_viscous_power = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_viscous_power = cache_dims!(total_length, l, s)
 
-    rotor_power = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_power = cache_dims!(total_length, l, s)
 
-    rotor_CT = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_CT = cache_dims!(total_length, l, s)
 
-    rotor_CQ = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_CQ = cache_dims!(total_length, l, s)
 
-    rotor_CP = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_CP = cache_dims!(total_length, l, s)
 
-    rotor_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_efficiency = cache_dims!(total_length, l, s)
 
-    induced_efficiency= (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-
+    induced_efficiency = cache_dims!(total_length, l, s)
 
     s = (nbe, nrotor)
     l = lfs(s)
-    rotor_inviscid_thrust_dist = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_inviscid_thrust_dist = cache_dims!(total_length, l, s)
 
-    rotor_viscous_thrust_dist = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_viscous_thrust_dist = cache_dims!(total_length, l, s)
 
-    rotor_inviscid_torque_dist = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_inviscid_torque_dist = cache_dims!(total_length, l, s)
 
-    rotor_viscous_torque_dist = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_viscous_torque_dist = cache_dims!(total_length, l, s)
 
-    rotor_inviscid_power_dist = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_inviscid_power_dist = cache_dims!(total_length, l, s)
 
-    rotor_viscous_power_dist = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_viscous_power_dist = cache_dims!(total_length, l, s)
 
-    blade_normal_force_per_unit_span = (;
-        index=(total_length + 1):(total_length + l), shape=s
-    )
-    total_length += l
+    blade_normal_force_per_unit_span = cache_dims!(total_length, l, s)
 
-    blade_tangential_force_per_unit_span = (;
-        index=(total_length + 1):(total_length + l), shape=s
-    )
-    total_length += l
+    blade_tangential_force_per_unit_span = cache_dims!(total_length, l, s)
 
-    cn = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cn = cache_dims!(total_length, l, s)
 
-    ct = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    ct = cache_dims!(total_length, l, s)
 
-    cphi = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cphi = cache_dims!(total_length, l, s)
 
-    sphi = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-
+    sphi = cache_dims!(total_length, l, s)
 
     ### --- BODY Post-Processing Cache --- ###
     s = (2, nbp)
     l = lfs(s)
-    Vtot_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Vtot_in = cache_dims!(total_length, l, s)
 
-    Vtot_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Vtot_out = cache_dims!(total_length, l, s)
 
-    Vtot_prejump = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Vtot_prejump = cache_dims!(total_length, l, s)
 
-    vtot_body = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtot_body = cache_dims!(total_length, l, s)
 
-    vtot_jump = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtot_jump = cache_dims!(total_length, l, s)
 
-    vtot_wake = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtot_wake = cache_dims!(total_length, l, s)
 
-    vtot_rotors = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtot_rotors = cache_dims!(total_length, l, s)
 
     s = (nbp,)
     l = lfs(s)
-    Vtan_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Vtan_in = cache_dims!(total_length, l, s)
 
-    Vtan_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Vtan_out = cache_dims!(total_length, l, s)
 
-    cp_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-    cp_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cp_in = cache_dims!(total_length, l, s)
+    cp_out = cache_dims!(total_length, l, s)
 
     s = (ncp,)
     l = lfs(s)
-    vtan_casing_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtan_casing_in = cache_dims!(total_length, l, s)
 
-    vtan_casing_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtan_casing_out = cache_dims!(total_length, l, s)
 
-    casing_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    casing_zpts = cache_dims!(total_length, l, s)
 
-    cp_casing_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-    cp_casing_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cp_casing_in = cache_dims!(total_length, l, s)
+    cp_casing_out = cache_dims!(total_length, l, s)
 
     s = (ndn - 1 - ncp,)
     l = lfs(s)
-    vtan_nacelle_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtan_nacelle_in = cache_dims!(total_length, l, s)
 
-    vtan_nacelle_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtan_nacelle_out = cache_dims!(total_length, l, s)
 
-    nacelle_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    nacelle_zpts = cache_dims!(total_length, l, s)
 
-    cp_nacelle_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-    cp_nacelle_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cp_nacelle_in = cache_dims!(total_length, l, s)
+    cp_nacelle_out = cache_dims!(total_length, l, s)
 
     s = (ncbn - 1,)
     l = lfs(s)
-    vtan_centerbody_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtan_centerbody_in = cache_dims!(total_length, l, s)
 
-    vtan_centerbody_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtan_centerbody_out = cache_dims!(total_length, l, s)
 
-    centerbody_zpts = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    centerbody_zpts = cache_dims!(total_length, l, s)
 
-    cp_centerbody_in = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cp_centerbody_in = cache_dims!(total_length, l, s)
 
-    cp_centerbody_out = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cp_centerbody_out = cache_dims!(total_length, l, s)
 
     s = (ndn - 1,)
     l = lfs(s)
-    duct_jump = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    duct_jump = cache_dims!(total_length, l, s)
 
     s = (ncbn - 1,)
     l = lfs(s)
-    centerbody_jump = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    centerbody_jump = cache_dims!(total_length, l, s)
 
     s = (nbp,)
     l = lfs(s)
-    body_jump_term = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    body_jump_term = cache_dims!(total_length, l, s)
 
     s = (nbodies,)
     l = lfs(s)
-    body_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    body_thrust = cache_dims!(total_length, l, s)
 
-    body_force_coefficient = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    body_force_coefficient = cache_dims!(total_length, l, s)
 
     ### --- TOTALS Post-Processing Cache --- ###
     s = (1,)
     l = lfs(s)
-    total_thrust = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    total_thrust = cache_dims!(total_length, l, s)
 
-    total_torque = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    total_torque = cache_dims!(total_length, l, s)
 
-    total_power = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    total_power = cache_dims!(total_length, l, s)
 
-    total_CT = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    total_CT = cache_dims!(total_length, l, s)
 
-    total_CQ = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    total_CQ = cache_dims!(total_length, l, s)
 
-    total_CP = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    total_CP = cache_dims!(total_length, l, s)
 
-    total_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    total_efficiency = cache_dims!(total_length, l, s)
 
-    ideal_efficiency = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    ideal_efficiency = cache_dims!(total_length, l, s)
 
     # return tuple of initialized cache and associated dimensions
     return (;
-        prepost_container_cache=PreallocationTools.DiffCache(zeros(total_length)),
+        prepost_container_cache=PreallocationTools.DiffCache(zeros(total_length[])),
         prepost_container_cache_dims=(;
             ### --- PRE --- ###
             rp_duct_coordinates,
@@ -610,48 +570,96 @@ function allocate_prepost_container_cache(problem_dimensions)
 end
 
 """
+    allocate_solve_parameter_cache(
+        solve_type::SolverOptionsType,
+        paneling_constants::PanelingConstants;
+        fd_chunk_size=12,
+        levels=1,
+    )
+    allocate_solve_parameter_cache(
+        solve_type::SolverOptionsType,
+        problem_dimensions::ProblemDimensions;
+        fd_chunk_size=12,
+        levels=1
+    )
+
+Allocate the solve parameter cache for parameters passed into the solver(s).
+
+# Arguments
+- `solve_type::SolverOptionsType` : Solver options type used for dispatch
+- `paneling_constants::PanelingConstants` : a PanlingConstants object used for sizing
+OR
+- `problem_dimensions::ProblemDimensions` : a ProblemDimensions object used for sizing
+
+# Keyword Arguments
+- `fd_chunk_size::Int=12` : chunk size to use for PreallocationTools caches.  Note that the automated chuck size for DuctAPE will always be the ForwardDiff threshold of 12 due to the size of the system, so it will be best to leave this at the default unless further development allows for chunk size selection for individual solvers.
+- `levels::Int=1` : levels for nested duals.  Note that since ImplicitAD is being used for all solves, there should be no need for more than 1 level.
+
+# Returns
+- `solve_parameter_caching::NamedTuple` : a Named Tuple containing:
+  - `solve_parameter_cache::PreallocationTools.DiffCache` : the cache
+  - `solve_parameter_cache_dims::NamedTuple` : a named tuple containing the dimensions used for reshaping the cache when needed.
 """
 function allocate_solve_parameter_cache(
-    solve_type::CSORSolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=2
+    solve_type::CSORSolverOptions,
+    paneling_constants::PanelingConstants;
+    fd_chunk_size=12,
+    levels=1,
 )
 
     # - Get problem dimensions - #
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
-return allocate_solve_parameter_cache(
-    solve_type::CSORSolverOptions, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
+    return allocate_solve_parameter_cache(
+        solve_type::CSORSolverOptions,
+        problem_dimensions::ProblemDimensions;
+        fd_chunk_size=fd_chunk_size,
+        levels=levels,
+    )
+end
+
+"""
+    allocate_solve_parameter_extras!(
+        solver_options::SolverOptionsType, input_length, total_length
+    )
+
+Includes additional caching for various solvers.  Currently only does anything for SIAMFANLEOptions types.
+
+# Arguments
+- `input_length::Int` : the number of state variables in the solver
+- `total_length::Vector{Int}` : a one-element vector used to store the total length in order to know how large of a cache to allocate.  Is updated in place.
+
+# Returns
+- `solve_parameter_extras::NamedTuple` : A named tuple containing dimensions related to extra caching parameters used in various solvers.
+"""
+function allocate_solve_parameter_extras!(
+    solver_options::SIAMFANLEOptions, input_length, total_length
 )
-end
-
-function allocate_solve_parameter_extras(solver_options::SIAMFANLEOptions, input_length, total_length)
+    s = (input_length,)
+    l = lfs(s)
+    resid_cache_vec = cache_dims!(total_length, l, s)
 
     s = (input_length,)
     l = lfs(s)
-    resid_cache_vec = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    jvp_cache_vec = cache_dims!(total_length, l, s)
 
-    s = (input_length,)
+    s = (input_length, max(2, solver_options.linear_iteration_limit + 1))
     l = lfs(s)
-    jvp_cache_vec = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    krylov_cache_vec = cache_dims!(total_length, l, s)
 
-    s = (input_length,max(2,solver_options.linear_iteration_limit+1))
-    l = lfs(s)
-    krylov_cache_vec = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-
-    return total_length, (; resid_cache_vec, krylov_cache_vec, jvp_cache_vec)
+    return (; resid_cache_vec, krylov_cache_vec, jvp_cache_vec)
 end
 
-function allocate_solve_parameter_extras(solver_options, input_length, total_length)
-
-    return total_length, (;)
+function allocate_solve_parameter_extras!(solver_options::SolverOptionsType, input_length, total_length)
+    return (;)
 end
 
 function allocate_solve_parameter_cache(
-    solve_type::CSORSolverOptions, problem_dimensions; fd_chunk_size=12, levels=2
+    solve_type::CSORSolverOptions,
+    problem_dimensions::ProblemDimensions;
+    fd_chunk_size=12,
+    levels=1,
 )
-
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -663,23 +671,20 @@ function allocate_solve_parameter_cache(
     ) = problem_dimensions
 
     # - initialize - #
-    total_length = 0
+    total_length = [0]
 
     # - Initial Guesses - #
-    s = (nbe,nrotor)
+    s = (nbe, nrotor)
     l = lfs(s)
-    Gamr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Gamr = cache_dims!(total_length, l, s)
 
-    s = (nws,nrotor)
+    s = (nws, nrotor)
     l = lfs(s)
-    sigr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    sigr = cache_dims!(total_length, l, s)
 
     s = (nwn,)
     l = lfs(s)
-    gamw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    gamw = cache_dims!(total_length, l, s)
 
     # save state dimensions
     state_dims = (; Gamr, sigr, gamw)
@@ -687,127 +692,99 @@ function allocate_solve_parameter_cache(
     # - Operating Point - #
     s = (1,)
     l = lfs(s)
-    Vinf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Vinf = cache_dims!(total_length, l, s)
 
-    rhoinf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rhoinf = cache_dims!(total_length, l, s)
 
-    muinf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    muinf = cache_dims!(total_length, l, s)
 
-    asound = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    asound = cache_dims!(total_length, l, s)
 
     s = (nrotor,)
     l = lfs(s)
-    Omega = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Omega = cache_dims!(total_length, l, s)
 
     # - Induced Velocities on Rotors - #
     s = (nrotor * nbe, nbn, 2)
     l = lfs(s)
-    v_rb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_rb = cache_dims!(total_length, l, s)
 
     s = (nrotor * nbe, nrotor * nws, 2)
     l = lfs(s)
-    v_rr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_rr = cache_dims!(total_length, l, s)
 
     s = (nrotor * nbe, nwn, 2)
     l = lfs(s)
-    v_rw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_rw = cache_dims!(total_length, l, s)
 
     # - Induced Velocities on Wakes - #
     s = (nwp, nbn, 2)
     l = lfs(s)
-    v_wb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_wb = cache_dims!(total_length, l, s)
 
     s = (nwp, nrotor * nws, 2)
     l = lfs(s)
-    v_wr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_wr = cache_dims!(total_length, l, s)
 
     s = (nwp, nwn, 2)
     l = lfs(s)
-    v_ww = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_ww = cache_dims!(total_length, l, s)
 
     # - Linear System - #
 
     s = (nbn + 2, nbn + 2)
     l = lfs(s)
-    A_bb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_bb = cache_dims!(total_length, l, s)
 
     s = (nbn + 2,)
     l = lfs(s)
-    b_bf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    b_bf = cache_dims!(total_length, l, s)
 
     s = (nbp, nwn)
     l = lfs(s)
-    A_bw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_bw = cache_dims!(total_length, l, s)
 
     s = (2, nwn)
     l = lfs(s)
-    A_pw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_pw = cache_dims!(total_length, l, s)
 
     s = (nbp, nrotor * nws)
     l = lfs(s)
-    A_br = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_br = cache_dims!(total_length, l, s)
 
     s = (2, nrotor * nws)
     l = lfs(s)
-    A_pr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_pr = cache_dims!(total_length, l, s)
 
     # - Blade Elements - #
     s = (nrotor,)
     l = lfs(s)
-    B = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    B = cache_dims!(total_length, l, s)
 
-    Rtip = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Rtip = cache_dims!(total_length, l, s)
 
-    Rhub = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Rhub = cache_dims!(total_length, l, s)
 
-    fliplift = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    fliplift = cache_dims!(total_length, l, s)
 
     s = (nbe, nrotor)
     l = lfs(s)
-    chords = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    chords = cache_dims!(total_length, l, s)
 
-    twists = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    twists = cache_dims!(total_length, l, s)
 
-    stagger = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    stagger = cache_dims!(total_length, l, s)
 
-    solidity = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    solidity = cache_dims!(total_length, l, s)
 
-    rotor_panel_centers = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_panel_centers = cache_dims!(total_length, l, s)
 
-    inner_fraction = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    inner_fraction = cache_dims!(total_length, l, s)
 
     # - Wake constants - #
     s = (nwn,)
     l = lfs(s)
-    wakeK = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    wakeK = cache_dims!(total_length, l, s)
 
     # TODO: WHAT TO DO ABOUT AIRFOILS?
     # NOTE: how to know the size of airfoil objects up front?  if it's a DFDC type, this is pretty simple, but if it's a CCBlade type, then the size could be anything depending on how many data points are used
@@ -815,10 +792,10 @@ function allocate_solve_parameter_cache(
 
     return (;
         solve_parameter_cache=PreallocationTools.DiffCache(
-            zeros(total_length), fd_chunk_size; levels=levels
+            zeros(total_length[]), fd_chunk_size; levels=levels
         ),
         solve_parameter_cache_dims=(;
-            state_dims ,
+            state_dims,
             Gamr,
             sigr,
             gamw,
@@ -843,11 +820,9 @@ function allocate_solve_parameter_cache(
     )
 end
 
-"""
-"""
 function allocate_solve_parameter_cache(
-    solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=2
-) where {TS<:Union{ExternalSolverOptions, MultiSolverOptions}}
+    solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
 
     # - Get problem dimensions - #
     problem_dimensions = get_problem_dimensions(paneling_constants)
@@ -857,11 +832,9 @@ function allocate_solve_parameter_cache(
     )
 end
 
-"""
-"""
 function allocate_solve_parameter_cache(
-    solve_type::TS, problem_dimensions; fd_chunk_size=12, levels=2
-) where {TS<:Union{ExternalSolverOptions, MultiSolverOptions}}
+    solve_type::TS, problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -873,23 +846,22 @@ function allocate_solve_parameter_cache(
     ) = problem_dimensions
 
     # - initialize - #
-    total_length = 0
+    total_length = [0]
 
     # - Initial Guesses - #
     s = (nbe, nrotor)
     l = lfs(s)
-    vz_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vz_rotor = cache_dims!(total_length, l, s)
 
-    vtheta_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtheta_rotor = cache_dims!(total_length, l, s)
 
     s = (nwp,)
     l = lfs(s)
-    Cm_wake = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cm_wake = cache_dims!(total_length, l, s)
 
-    total_length, SIAMFANLE_cache_vecs =  allocate_solve_parameter_extras(solve_type, total_length, total_length)
+    SIAMFANLE_cache_vecs = allocate_solve_parameter_extras!(
+        solve_type, total_length, total_length
+    )
 
     # save state dimensions
     state_dims = (; vz_rotor, vtheta_rotor, Cm_wake)
@@ -897,127 +869,99 @@ function allocate_solve_parameter_cache(
     # - Operating Point - #
     s = (1,)
     l = lfs(s)
-    Vinf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Vinf = cache_dims!(total_length, l, s)
 
-    rhoinf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rhoinf = cache_dims!(total_length, l, s)
 
-    muinf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    muinf = cache_dims!(total_length, l, s)
 
-    asound = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    asound = cache_dims!(total_length, l, s)
 
     s = (nrotor,)
     l = lfs(s)
-    Omega = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Omega = cache_dims!(total_length, l, s)
 
     # - Induced Velocities on Rotors - #
     s = (nrotor * nbe, nbn, 2)
     l = lfs(s)
-    v_rb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_rb = cache_dims!(total_length, l, s)
 
     s = (nrotor * nbe, nrotor * nws, 2)
     l = lfs(s)
-    v_rr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_rr = cache_dims!(total_length, l, s)
 
     s = (nrotor * nbe, nwn, 2)
     l = lfs(s)
-    v_rw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_rw = cache_dims!(total_length, l, s)
 
     # - Induced Velocities on Wakes - #
     s = (nwp, nbn, 2)
     l = lfs(s)
-    v_wb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_wb = cache_dims!(total_length, l, s)
 
     s = (nwp, nrotor * nws, 2)
     l = lfs(s)
-    v_wr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_wr = cache_dims!(total_length, l, s)
 
     s = (nwp, nwn, 2)
     l = lfs(s)
-    v_ww = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    v_ww = cache_dims!(total_length, l, s)
 
     # - Linear System - #
 
     s = (nbn + 2, nbn + 2)
     l = lfs(s)
-    A_bb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_bb = cache_dims!(total_length, l, s)
 
     s = (nbn + 2,)
     l = lfs(s)
-    b_bf = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    b_bf = cache_dims!(total_length, l, s)
 
     s = (nbp, nwn)
     l = lfs(s)
-    A_bw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_bw = cache_dims!(total_length, l, s)
 
     s = (2, nwn)
     l = lfs(s)
-    A_pw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_pw = cache_dims!(total_length, l, s)
 
     s = (nbp, nrotor * nws)
     l = lfs(s)
-    A_br = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_br = cache_dims!(total_length, l, s)
 
     s = (2, nrotor * nws)
     l = lfs(s)
-    A_pr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    A_pr = cache_dims!(total_length, l, s)
 
     # - Blade Elements - #
     s = (nrotor,)
     l = lfs(s)
-    B = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    B = cache_dims!(total_length, l, s)
 
-    Rtip = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Rtip = cache_dims!(total_length, l, s)
 
-    Rhub = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Rhub = cache_dims!(total_length, l, s)
 
-    fliplift = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    fliplift = cache_dims!(total_length, l, s)
 
     s = (nbe, nrotor)
     l = lfs(s)
-    chords = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    chords = cache_dims!(total_length, l, s)
 
-    twists = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    twists = cache_dims!(total_length, l, s)
 
-    stagger = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    stagger = cache_dims!(total_length, l, s)
 
-    solidity = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    solidity = cache_dims!(total_length, l, s)
 
-    rotor_panel_centers = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    rotor_panel_centers = cache_dims!(total_length, l, s)
 
-    inner_fraction = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    inner_fraction = cache_dims!(total_length, l, s)
 
     # - Wake constants - #
     s = (nwn,)
     l = lfs(s)
-    wakeK = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    wakeK = cache_dims!(total_length, l, s)
 
     # TODO: WHAT TO DO ABOUT AIRFOILS?
     # NOTE: how to know the size of airfoil objects up front?  if it's a DFDC type, this is pretty simple, but if it's a CCBlade type, then the size could be anything depending on how many data points are used
@@ -1025,7 +969,7 @@ function allocate_solve_parameter_cache(
 
     return (;
         solve_parameter_cache=PreallocationTools.DiffCache(
-            zeros(total_length), fd_chunk_size; levels=levels
+            zeros(total_length[]), fd_chunk_size; levels=levels
         ),
         solve_parameter_cache_dims=(;
             state_dims,
@@ -1055,19 +999,53 @@ function allocate_solve_parameter_cache(
 end
 
 """
+    allocate_solve_container_cache(
+        solve_type::SolverOptionsType,
+        paneling_constants::PanelingConstants;
+        fd_chunk_size=12,
+        levels=1,
+    )
+    allocate_solve_container_cache(
+        solve_type::SolverOptionsType,
+        problem_dimensions::ProblemDimensions;
+        fd_chunk_size=12,
+        levels=1,
+    )
+
+Allocate the solve cache (used for intermediate calculations) based on paneling constants or problem dimensions.
+
+# Arguments
+- `paneling_constants::PanelingConstants` : a PanelingConstants object
+OR
+- `problem_dimensions::ProblemDimensions` : a ProblemDimensions object
+
+# Keyword Arguments
+- `fd_chunk_size::Int=12` : chunk size to use for PreallocationTools caches.  Note that the automated chuck size for DuctAPE will always be the ForwardDiff threshold of 12 due to the size of the system, so it will be best to leave this at the default unless further development allows for chunk size selection for individual solvers.
+- `levels::Int=1` : levels for nested duals.  Note that since ImplicitAD is being used for all solves, there should be no need for more than 1 level.
+
+# Returns
+- `solve_container_caching::NamedTuple` : a Named Tuple containing:
+  - `solve_container_cache::PreallocationTools.DiffCache` : the cache
+  - `solve_container_cache_dims::NamedTuple` : a named tuple containing the dimensions used for reshaping the cache when needed.
 """
 function allocate_solve_container_cache(
-    solve_type::CSORSolverOptions, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
+    solve_type::CSORSolverOptions,
+    paneling_constants::PanelingConstants;
+    fd_chunk_size=12,
+    levels=1,
 )
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
-    return allocate_solve_container_cache(solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels)
+    return allocate_solve_container_cache(
+        solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
+    )
 end
 
-"""
-"""
 function allocate_solve_container_cache(
-    solve_type::CSORSolverOptions, problem_dimensions; fd_chunk_size=12, levels=1
+    solve_type::CSORSolverOptions,
+    problem_dimensions::ProblemDimensions;
+    fd_chunk_size=12,
+    levels=1,
 )
     (;
         nrotor,  # number of rotors
@@ -1080,135 +1058,104 @@ function allocate_solve_container_cache(
     ) = problem_dimensions
 
     # - initialize - #
-    total_length = 0
+    total_length = [0]
 
     # Strengths
     s = (nbn + nbodies,)
     l = lfs(s)
-    gamb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-    rhs = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    gamb = cache_dims!(total_length, l, s)
+    rhs = cache_dims!(total_length, l, s)
 
     # Blade Element Values
     s = (nbe, nrotor)
     l = lfs(s)
-    beta1 = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    beta1 = cache_dims!(total_length, l, s)
 
-    Cz_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cz_rotor = cache_dims!(total_length, l, s)
 
-    Ctheta_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Ctheta_rotor = cache_dims!(total_length, l, s)
 
-    Cmag_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cmag_rotor = cache_dims!(total_length, l, s)
 
-    cl = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cl = cache_dims!(total_length, l, s)
 
-    cd = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cd = cache_dims!(total_length, l, s)
 
-    alpha = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    alpha = cache_dims!(total_length, l, s)
 
-    reynolds = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    reynolds = cache_dims!(total_length, l, s)
 
-    mach = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    mach = cache_dims!(total_length, l, s)
 
-    vz_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vz_rotor = cache_dims!(total_length, l, s)
 
-    vtheta_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtheta_rotor = cache_dims!(total_length, l, s)
 
     # Circulation
-    Gamma_tilde = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Gamma_tilde = cache_dims!(total_length, l, s)
 
-    H_tilde = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    H_tilde = cache_dims!(total_length, l, s)
 
     s = (nbe + 1, nrotor)
     l = lfs(s)
-    deltaGamma2 = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltaGamma2 = cache_dims!(total_length, l, s)
 
-    deltaH = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltaH = cache_dims!(total_length, l, s)
 
     # Wake Velocities
     s = (nwp,)
     l = lfs(s)
-    vz_wake = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vz_wake = cache_dims!(total_length, l, s)
 
-    vr_wake = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vr_wake = cache_dims!(total_length, l, s)
 
     # State estimates
     s = (nbe, nrotor)
     l = lfs(s)
-    Gamr_est = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Gamr_est = cache_dims!(total_length, l, s)
 
     s = (nws, nrotor)
     l = lfs(s)
-    sigr_est = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    sigr_est = cache_dims!(total_length, l, s)
 
     s = (nwn,)
     l = lfs(s)
-    gamw_est = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    gamw_est = cache_dims!(total_length, l, s)
 
     s = (nwn,)
     l = lfs(s)
-    Cm_avg = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cm_avg = cache_dims!(total_length, l, s)
 
     s = (nwp,)
     l = lfs(s)
-    Cm_wake = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cm_wake = cache_dims!(total_length, l, s)
 
     s = (nbe, nrotor)
     l = lfs(s)
-    deltaG = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltaG = cache_dims!(total_length, l, s)
 
-    deltaG_prev= (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltaG_prev = cache_dims!(total_length, l, s)
 
     s = (nwn,)
     l = lfs(s)
-    deltag = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltag = cache_dims!(total_length, l, s)
 
-    deltag_prev = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltag_prev = cache_dims!(total_length, l, s)
 
     # Convergence criteria
     s = (nrotor,)
     l = lfs(s)
-    maxBGamr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    maxBGamr = cache_dims!(total_length, l, s)
 
-    maxdeltaBGamr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    maxdeltaBGamr = cache_dims!(total_length, l, s)
 
     s = (1,)
     l = lfs(s)
-    maxdeltagamw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    maxdeltagamw = cache_dims!(total_length, l, s)
 
     return (;
         solve_container_cache=PreallocationTools.DiffCache(
-            zeros(total_length), fd_chunk_size; levels=levels
+            zeros(total_length[]), fd_chunk_size; levels=levels
         ),
         solve_container_cache_dims=(;
             gamb,
@@ -1246,24 +1193,19 @@ function allocate_solve_container_cache(
     )
 end
 
-"""
-"""
 function allocate_solve_container_cache(
     solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
-) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
-return allocate_solve_container_cache(
-    solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
-)
+    return allocate_solve_container_cache(
+        solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
+    )
 end
 
-"""
-"""
 function allocate_solve_container_cache(
-    solve_type::TS, problem_dimensions; fd_chunk_size=12, levels=1
-) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
-
+    solve_type::TS, problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
     (;
         nrotor, # number of rotors
         nwn,    # number of wake nodes
@@ -1273,108 +1215,84 @@ function allocate_solve_container_cache(
     ) = problem_dimensions
 
     # - initialize - #
-    total_length = 0
+    total_length = [0]
 
     # Strengths
     # TODO: is this always going to be 2?, may want to add nb for nbodies to problem dims and then do +nb
     s = (nbn + 2,)
     l = lfs(s)
-    gamb = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
-    rhs = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    gamb = cache_dims!(total_length, l, s)
+    rhs = cache_dims!(total_length, l, s)
 
     s = (nbe, nrotor)
     l = lfs(s)
-    Gamr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Gamr = cache_dims!(total_length, l, s)
 
     s = (nbe + 1, nrotor)
     l = lfs(s)
-    sigr = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    sigr = cache_dims!(total_length, l, s)
 
     s = (nwn,)
     l = lfs(s)
-    gamw = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    gamw = cache_dims!(total_length, l, s)
 
     # Blade Element Values
     s = (nbe, nrotor)
     l = lfs(s)
-    beta1 = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    beta1 = cache_dims!(total_length, l, s)
 
-    Cz_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cz_rotor = cache_dims!(total_length, l, s)
 
-    Ctheta_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Ctheta_rotor = cache_dims!(total_length, l, s)
 
-    Cmag_rotor = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cmag_rotor = cache_dims!(total_length, l, s)
 
-    cl = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cl = cache_dims!(total_length, l, s)
 
-    cd = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    cd = cache_dims!(total_length, l, s)
 
-    alpha = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    alpha = cache_dims!(total_length, l, s)
 
-    reynolds = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    reynolds = cache_dims!(total_length, l, s)
 
-    mach = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    mach = cache_dims!(total_length, l, s)
 
     # Circulation
-    Gamma_tilde = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Gamma_tilde = cache_dims!(total_length, l, s)
 
-    H_tilde = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    H_tilde = cache_dims!(total_length, l, s)
 
     s = (nbe + 1, nrotor)
     l = lfs(s)
-    deltaGamma2 = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltaGamma2 = cache_dims!(total_length, l, s)
 
-    deltaH = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    deltaH = cache_dims!(total_length, l, s)
 
     # Wake Velocities
     s = (nwp,)
     l = lfs(s)
-    vz_wake = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vz_wake = cache_dims!(total_length, l, s)
 
-    vr_wake = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vr_wake = cache_dims!(total_length, l, s)
 
     # State estimates
     s = (nbe, nrotor)
     l = lfs(s)
-    vz_est = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vz_est = cache_dims!(total_length, l, s)
 
-    vtheta_est = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    vtheta_est = cache_dims!(total_length, l, s)
 
     s = (nwp,)
     l = lfs(s)
-    Cm_est = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cm_est = cache_dims!(total_length, l, s)
 
     s = (nwn,)
     l = lfs(s)
-    Cm_avg = (; index=(total_length + 1):(total_length + l), shape=s)
-    total_length += l
+    Cm_avg = cache_dims!(total_length, l, s)
 
     return (;
         solve_container_cache=PreallocationTools.DiffCache(
-            zeros(total_length), fd_chunk_size; levels=levels
+            zeros(total_length[]), fd_chunk_size; levels=levels
         ),
         solve_container_cache_dims=(;
             gamb,

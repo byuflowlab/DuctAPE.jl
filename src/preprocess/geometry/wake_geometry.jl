@@ -281,6 +281,7 @@ function relax_grid!(
     if verbose
         println(tabchar^ntab * "Solving Elliptic Grid System using Newton Method")
     end
+
     # solve
     solve_elliptic_grid!(
         wake_grid;

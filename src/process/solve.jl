@@ -72,13 +72,14 @@ function solve(
     TF = eltype(state_variables)
 
     resid = MVector{2,TF}(999 * ones(TF, 2))
-    conv = solver_options.converged[multipoint_index[]]
+    conv = @view(solver_options.converged[multipoint_index[]])
     iter = 0
 
     # - SOLVE - #
     if verbose
         println("  " * "CSOR Solve Trace:")
     end
+
 
     # loop until converged or max iterations are reached
     while !conv[] && iter <= solver_options.iteration_limit

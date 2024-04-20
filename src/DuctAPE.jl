@@ -79,6 +79,7 @@ include("utilities/caching/caches.jl")
 include("utilities/caching/allocate_caches.jl")
 include("utilities/caching/reshape_caches.jl")
 include("utilities/caching/integration_caches.jl")
+include("utilities/caching/elliptic_grid_parameter_packaging.jl")
 
 # Airfoil utility functions
 include("utilities/airfoils/airfoil_utilities.jl")

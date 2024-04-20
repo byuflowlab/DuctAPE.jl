@@ -8,7 +8,7 @@ abstract type ConvergenceType end
 # - Solver Options - #
 abstract type SolverOptionsType end
 abstract type ExternalSolverOptions <: SolverOptionsType end
-abstract type MultiSolverOptions <: SolverOptionsType end
+abstract type PolyAlgorithmOptions <: SolverOptionsType end
 
 # - Wake Solver Options - #
 abstract type GridSolverOptionsType end
@@ -155,8 +155,8 @@ end
 ##### ----- Poly-Algorithm Solvers ----- #####
 
 @kwdef struct CompositeSolverOptions{
-    TB,TS<:Union{ExternalSolverOptions,MultiSolverOptions}
-} <: MultiSolverOptions
+    TB,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
+} <: PolyAlgorithmOptions
     solvers::AbstractVector{TS} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
@@ -164,8 +164,8 @@ end
     converged::AbstractVector{TB} = [false]
 end
 
-@kwdef struct ChainSolverOptions{TB,TS<:Union{ExternalSolverOptions,MultiSolverOptions}} <:
-              MultiSolverOptions
+@kwdef struct ChainSolverOptions{TB,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}} <:
+              PolyAlgorithmOptions
     solvers::AbstractVector{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
         MinpackOptions(; atol=1e-12),

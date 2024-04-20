@@ -1,17 +1,21 @@
+"""
+"""
 function elliptic_grid_residual!(r, y, x, p)
 
     # - extract parameters - #
-    (; xi, eta, gridshape, itshape, proposed_grid_cache) = p
-    proposed_grid = get_tmp(proposed_grid_cache, y)
-    proposed_grid .= reshape(x, gridshape)
+    (; x_caching, itshape) = p
+    (; x_cache, x_dims) = x_caching
+    x_vec = PreallocationTools.get_tmp(x_cache, promote_type(eltype(y), eltype(x))(1.0))
+    x_vec .= x
+    proposed_grid, xi, eta = withdraw_grid_parameter_cache(x_vec, x_dims)
 
     # dimensions
-    nxi = length(xi)
-    neta = length(eta)
+    nxi = x_dims.xi.shape[1]
+    neta = x_dims.eta.shape[1]
 
     # - Initialize Residual - #
-    # note: the boundary values are kept constant, so want to set those to zero before getting started
-    r .= y .- reshape(proposed_grid[:, 2:end, 2:(end - 1)], :)
+    # r .= y .- reshape(proposed_grid[:, 2:end, 2:(end - 1)], :)
+    r .= 0
 
     # - reshape vector into 3D array - #
     resid = reshape(r, itshape)
@@ -22,10 +26,6 @@ function elliptic_grid_residual!(r, y, x, p)
     # separate x and r components of proposed wake_grid
     xr = view(proposed_grid, 1, :, :)
     rr = view(proposed_grid, 2, :, :)
-
-    # for cache testing
-    # TF = eltype(y)
-    # x_xi = TF[1.0]
 
     # loop over interior streamlines
     for j in 2:(neta - 1)
@@ -57,6 +57,7 @@ function elliptic_grid_residual!(r, y, x, p)
 
         # populate residual vector
         tmp = xhat * x_xi + rhat * r_xi
+
         resid[1, end, j - 1] = xhat * tmp
         resid[2, end, j - 1] = rhat * tmp
 
@@ -129,14 +130,18 @@ function elliptic_grid_residual!(r, y, x, p)
     return r
 end
 
-function solve_elliptic_grid_iad(x, p)
+"""
+"""
+function solve_elliptic_grid(x, p)
 
     # - Wrap residual - #
     function rwrap!(r, y)
         return elliptic_grid_residual!(r, y, x, p)
     end
 
-    wake_grid = reshape(x, p.gridshape)
+    x_vec = PreallocationTools.get_tmp(p.x_caching.x_cache, x)
+    x_vec .= x
+    wake_grid, _, _ = withdraw_grid_parameter_cache(x_vec, p.x_caching.x_dims)
 
     # - Call NLsolve - #
     # df = OnceDifferentiable(rwrap!, x, similar(x))
@@ -146,7 +151,7 @@ function solve_elliptic_grid_iad(x, p)
         reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
         method=p.algorithm,
         autodiff=p.autodiff,
-        linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
+        # linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
         ftol=p.atol,
         iterations=p.iteration_limit,
         show_trace=p.verbose,
@@ -154,14 +159,10 @@ function solve_elliptic_grid_iad(x, p)
 
     p.converged[1] = NLsolve.converged(result)
 
-    # - overwrite output in place - #
-    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(result.zero, p.itshape)
-
-    return x
+    return result.zero
 end
 
 """
-TODO: will want to pass a convergence flag that get's updated so we can break out if the wake geometry did not converge and pass a fail flag to the optimizer
 """
 function solve_elliptic_grid!(
     wake_grid;
@@ -172,6 +173,9 @@ function solve_elliptic_grid!(
     converged=[false],
     verbose=false,
 )
+
+    #For some reason, if the "outlet" z-coordinates are the same, the jacobian of the residual associated with the final z-coordinate on the second wake sheet is zero with respect to all state variables.  Adding a bit of "noise" seems to fix the problem, but too much (even 1e-6) leads to non-convergence.
+    wake_grid[1, end, :] .+= range(1e-16, 2e-16; length=size(wake_grid, 3))
 
     # - dimensions - #
     gridshape = size(wake_grid)
@@ -185,32 +189,29 @@ function solve_elliptic_grid!(
     end
     xi = @view(wake_grid[1, :, 1]) .- @view(wake_grid[1, 1, 1])
 
+    x_caching = allocate_grid_parameter_cache(wake_grid, xi, eta)
+
     # - set up solve - #
-    p = (;
-        eta,
-        xi,
-        gridshape,
-        proposed_grid_cache=DiffCache(wake_grid),
-        itshape=(gridshape[1], gridshape[2] - 1, gridshape[3] - 2),
-        algorithm,
-        autodiff,
-        atol,
-        iteration_limit,
-        converged,
-        verbose,
+    itshape = (gridshape[1], gridshape[2] - 1, gridshape[3] - 2)
+    constants = (;
+        x_caching, itshape, algorithm, autodiff, atol, iteration_limit, converged, verbose
     )
 
     # - solve - #
-    y = implicit(solve_elliptic_grid_iad, elliptic_grid_residual!, reshape(wake_grid, :), p)
+    grid_internals = ImplicitAD.implicit(
+        solve_elliptic_grid,
+        elliptic_grid_residual!,
+        [reshape(wake_grid, :); xi; eta],
+        constants,
+    )
 
-    for g in eachrow(view(y, :))
-        if g[1] < eps()
-            g[1] = 0.0
+    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(grid_internals, itshape)
+
+    for g in eachindex(wake_grid[2, :, :])
+        if wake_grid[g] < eps()
+            wake_grid[g] = 0.0
         end
     end
-
-    # - format outputs - #
-    wake_grid .= reshape(y, gridshape)
 
     return wake_grid
 end
@@ -224,24 +225,18 @@ end
 Relax wake_grid using elliptic wake_grid solver.
 
 # Arguments:
- - `xg::Matrix{Float64}` : Initial x wake_grid points guess
- - `rg::Matrix{Float64}` : Initial r wake_grid points guess
- - `nxi::Int` : number of xi (x) stations in the wake_grid
- - `neta::Int` : number of eta (r) stations in the wake_grid
 
 # Keyword Arguments:
  - `relaxation_iteration_limit::Int` : maximum number of iterations to run, default=100
  - `relaxation_atol::Float` : convergence tolerance, default = 1e-9
 
 # Returns:
- - `x_relax_points::Matrix{Float64}` : Relaxed x wake_grid points
- - `r_relax_points::Matrix{Float64}` : Relaxed r wake_grid points
 """
 function relax_grid!(
     wake_grid;
     relaxation_iteration_limit=100,
     relaxation_atol=1e-9,
-    converged,
+    converged=[false],
     verbose=false,
     silence_warnings=true,
     ntab=1,
@@ -260,7 +255,6 @@ function relax_grid!(
     D = zeros(TF, 2, nxi)
 
     #set up relaxation factors
-    #TODO: how are these decided?
     if relaxation_iteration_limit > 0
         relaxfactor1 = 1.0
         relaxfactor2 = 1.1
@@ -275,7 +269,6 @@ function relax_grid!(
     relaxfactor = relaxfactor1
 
     # convergence tolerances for each phase
-    # #TODO: where do these come from?
     dset1 = 1e-1
     dset2 = 5e-3
     dset3 = 5e-7
@@ -359,7 +352,6 @@ function relax_grid!(
             drem2dxinb = (rem1j - rem2j) / dxem2
 
             #2nd-order 3-point difference to get tangential velocity
-            #TODO: figure out what is happening here.
             rez =
                 xhat * (dxem1dxinb + dxem1 * (dxem1dxinb - dxem2dxinb) / (dxem1 + dxem2)) +
                 rhat * (drem1dxinb + dxem1 * (drem1dxinb - drem2dxinb) / (dxem1 + dxem2))
@@ -377,8 +369,6 @@ function relax_grid!(
             ## -- END Outlet Relaxation -- ##
 
             ## -- Relax points on the jth streamline -- ##
-            #TODO:NEED TO RECONCILE WRITTEN THEORY WITH CODE...
-            #TODO: can all the derivatives be replaced with FLOWMath or similar?
 
             #march down xi direction
             for i in 2:(nxi - 1)
@@ -469,14 +459,12 @@ function relax_grid!(
                     beta * r_xi * r_eta * detaminus * detaplus / ravg
 
                 #SLOR Stuff
-                #TODO: replace with linearsolve package?
-                #TODO: what are A, B, and C?
                 A =
                     alpha * (ximinuscoeff + xipluscoeff) +
                     gamma * (etaminuscoeff + etapluscoeff)
 
                 if i == 2
-                    B = 0 #TODO: Why?
+                    B = 0
                 else
                     B = -alpha * ximinuscoeff
                 end
@@ -510,7 +498,6 @@ function relax_grid!(
         end #for j (radial stations)
 
         # -- Update relaxation factors
-        #TODO: need to figure out how the dset numbers and relaxation factors are chosen.  Why are they the values that they are? Does it have something to do with the SLOR setup?
         if dmax < relaxation_atol * dxy
             if verbose
                 println(tabchar^(ntab) * "Total iterations: $iterate")

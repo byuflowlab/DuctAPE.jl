@@ -9,7 +9,7 @@ function process(
     solve_container_caching,
     idmaps,
     options,
-) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
 
     # - Initialize Aero - #
     if options.verbose
@@ -59,6 +59,7 @@ function process(
     if options.verbose
         println("\nSolving Nonlinear System")
     end
+
     return ImplicitAD.implicit(
         solve, system_residual!, solve_parameter_cache_vector, const_cache
     )

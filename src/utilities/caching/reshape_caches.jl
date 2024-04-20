@@ -753,7 +753,7 @@ function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, 
 end
 """
 """
-function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
+function withdraw_solve_parameter_cache(solver_options::TS,vec, dims) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
 
     # - Initial Guesses - #
     vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
@@ -948,7 +948,7 @@ function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, 
 end
 """
 """
-function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS<:Union{ExternalSolverOptions,MultiSolverOptions}}
+function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),

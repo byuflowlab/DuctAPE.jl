@@ -6,7 +6,7 @@ Pages = ["tutorial.md"]
 Depth = 5
 ```
 
-The following is a basic tutorial on how to set up the inputs to, and run an analysis of a ducted fan in DuctAPE.
+The following is a basic tutorial on how to set up the inputs to, and run, an analysis of a ducted fan in DuctAPE.
 
 ```@setup dfdc
 include("../assets/plots_default.jl")
@@ -17,11 +17,12 @@ We begin by loading the package, and optionally create a shorthand name.
 ```@example dfdc
 using DuctAPE
 const dt = DuctAPE
+nothing # hide
 ```
 
 ## Build Inputs
 
-The next step is to create the input object of type `Propulsor`
+The next step is to create the input object of type `Propulsor`.
 
 ```@docs
 DuctAPE.Propulsor
@@ -29,7 +30,7 @@ DuctAPE.Propulsor
 
 ### Body Geometry
 
-To do so, we begin by defining a matrix of coordinates for the duct and another for the centerbody geometries, for example:
+We begin by defining a matrix of coordinates for the duct and another for the centerbody geometries, for example:
 
 ```@example dfdc
 duct_coordinates = [
@@ -244,6 +245,7 @@ plot!(pg, rotorzloc*ones(length(r)), r.*Rtip, seriestype=:scatter, markerstrokew
     Airfoil types for DuctAPE are currently contained in the C4Blade (Cascade Compatible [CCBlade](https://flow.byu.edu/CCBlade.jl/stable/)) sub-module of DuctAPE which is exported as `c4b` and also contains the various airfoil evaluation functions used for the blade element lookups.
     The available airfoil types include all the airfoil types from CCBlade, as well as `DFDCairfoil` which is an [XROTOR](https://web.mit.edu/drela/Public/web/xrotor/)-like parametric cascade polar used in DFDC.
     In addition there are untested cascade types with similar structure to CCBlades airfoil types called `DTCascade`.
+    Furthermore, there is an experimental actuator disk model implemented via the `ADM` airfoil type in C4Blade.
 
 ### Operating Point
 
@@ -274,7 +276,7 @@ nothing # hide
 
 The `PanelingConstants` object contains the constants required for DuctAPE to re-panel the provided geometry into a format compatible with the solve structure.
 The `PanelingConstants` object is also used to build all of the preallocated caches inside DuctAPE, which can be done up-front if desired.
-Note that there is some functionality in place for cases when the user wants to keep their own specified geometry, but this functionality should be used with caution and only by users who are certain their provided geometry is in the compatible format.  See the examples for an example.
+Note that there is some functionality in place for cases when the user wants to keep their own specified geometry, but this functionality should be used with caution and only by users who are certain their provided geometry is in the compatible format.  See the [Examples](@ref "Circumventing the Automated Geometry Re-paneling") for an example.
 
 ```@docs
 DuctAPE.PanelingConstants
@@ -345,6 +347,10 @@ For more advanced option selection, see the examples and API reference.
 With the propulsor input build, and the options selected, we are now ready to run an analysis.
 This is done simply with the `analyze` function which dispatches the appropriate analysis, solve, and post-processing functions based on the selected options.
 
+```@docs
+DuctAPE.analyze(::DuctAPE.Propulsor, ::DuctAPE.Options)
+```
+
 ```@example dfdc
 outs, success_flag = dt.analyze(propulsor, options)
 nothing # hide
@@ -352,7 +358,7 @@ nothing # hide
 
 ## Outputs
 
-There are many outputs contained in the named tuple output from the `analyze` function (see the examples), but some that may be of immediate interest include:
+There are many outputs contained in the named tuple output from the `analyze` function (see the [post_process() docstring](@ref DuctAPE.post_process)), but some that may be of immediate interest include:
 
 ```@example dfdc
 # Total Thrust Coefficient

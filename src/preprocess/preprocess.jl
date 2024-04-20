@@ -66,6 +66,7 @@ function reinterpolate_geometry!(
     duct_coordinates,
     centerbody_coordinates,
     rotorstator_parameters,
+    blade_element_cache,
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
@@ -75,8 +76,14 @@ function reinterpolate_geometry!(
 )
 
     ##### ----- Extract Tuples ----- #####
-    (; B, Rhub, Rtip, tip_gap, r, chords, twists, rotorzloc, airfoils, fliplift) =
+    (;Rhub, Rtip) = blade_element_cache
+
+    (; B, tip_gap, r, chords, twists, rotorzloc, airfoils, fliplift) =
         rotorstator_parameters
+
+    Rhub .= rotorstator_parameters.Rhub
+    Rtip .= rotorstator_parameters.Rtip
+
     (; npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte) =
         paneling_constants
 
@@ -1172,6 +1179,7 @@ function precompute_parameters!(
         duct_coordinates,
         centerbody_coordinates,
         rotorstator_parameters,
+        blade_element_cache,
         paneling_constants;
         autoshiftduct=autoshiftduct,
         grid_solver_options=grid_solver_options,

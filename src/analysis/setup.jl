@@ -1,4 +1,34 @@
 """
+    setup_analysis(
+        propulsor::Propulsor,
+        options::Options=set_options();
+        prepost_container_caching=nothing,
+        solve_parameter_caching=nothing,
+        solve_container_caching=nothing,
+    )
+
+Perform pre-processing and cache setup (as needed) for propuslor analysis.
+
+# Arguments
+- `propulsor::Propulsor` : Propulsor input object (see docstring for `Propulsor` type)
+- `options::Options=set_options()` : Options object (see `set_options` and related functions)
+
+# Keyword Arguments
+- `prepost_container_caching=nothing` : Output of `allocate_prepost_container_cache`
+- `solve_parameter_caching=nothing` : Output of `allocate_solve_parameter_container_cache`
+- `solve_container_caching=nothing` : Output of `allocate_solve_container_cache`
+
+# Returns
+
+- `problem_dimensions::NamedTuple` : Named Tuple contiaining bookkeeping information (problem dimensions)
+- `prepost_containers::NamedTuple` : Named Tuple containing reshaped views into the prepost cache
+- `solve_parameter_cache_vector::Vector` : Vector containing the relevant typed cache vector of solve parameters
+- `solve_parameter_cache_dims::NamedTuple` : Named Tuple containing dimensions used for reshaping the solve parameter cache
+- `ivb::NamedTuple` : NamedTuple containing the unit induced velocities on the body
+- `A_bb_LU::LinearAlgebra.LU` : The LU factorization of the AIC matrix used in the panel method
+- `lu_decomp_flag::Bool` : flag indicating if the LU decomposition was successful
+- `airfoils::Matrix{AFType}` : Matrix contiaining the blade element airfoil polar objects
+- `idmaps::NamedTuple` : Named Tuple containing bookkeeping information (index mappings)
 """
 function setup_analysis(
     propulsor::Propulsor,

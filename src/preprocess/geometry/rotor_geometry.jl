@@ -1,4 +1,6 @@
-function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
+function interpolate_blade_elements(
+    rsp, Rtips, Rhubs, rotor_panel_centers, nbe; finterp=FLOWMath.linear
+)
     nrotor = length(rsp.B)
     Rtip = Rtips
     Rhub = Rhubs
@@ -16,13 +18,13 @@ function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
         rpcs = rotor_panel_centers[(nbe * (irotor - 1) + 1):(nbe * irotor)]
 
         # dimensionalize the blade element radial positions
-        rblade = FLOWMath.linear([0.0; 1.0], [0.0; Rtip[irotor]], rsp.r[:, irotor])
+        rblade = finterp([0.0; 1.0], [0.0; Rtip[irotor]], rsp.r[:, irotor])
 
         # update chord lengths
-        chords[:, irotor] .= FLOWMath.akima(rblade, rsp.chords[:, irotor], rpcs)
+        chords[:, irotor] .= finterp(rblade, rsp.chords[:, irotor], rpcs)
 
         # update twists
-        twists[:, irotor] .= FLOWMath.akima(rblade, rsp.twists[:, irotor], rpcs)
+        twists[:, irotor] .= finterp(rblade, rsp.twists[:, irotor], rpcs)
 
         # update stagger
         stagger[:, irotor] .= get_stagger(twists[:, irotor])
@@ -69,7 +71,9 @@ function interpolate_blade_elements(rsp, Rtips, Rhubs, rotor_panel_centers, nbe)
     (; outer_airfoil, inner_airfoil)
 end
 
-function interpolate_blade_elements!(blade_element_cache, rsp, rotor_panel_centers, nbe)
+function interpolate_blade_elements!(
+    blade_element_cache, rsp, rotor_panel_centers, nbe; finterp=FLOWMath.linear
+)
     nrotor = length(rsp.B)
     Rtip = blade_element_cache.Rtip .= rsp.Rtip
     Rhub = blade_element_cache.Rhub .= rsp.Rhub
@@ -85,12 +89,12 @@ function interpolate_blade_elements!(blade_element_cache, rsp, rotor_panel_cente
         rblade = linear_transform((0.0, 1.0), (0.0, Rtip[irotor]), @view(rsp.r[:, irotor]))
 
         # update chord lengths
-        blade_element_cache.chords[:, irotor] .= FLOWMath.akima(
+        blade_element_cache.chords[:, irotor] .= finterp(
             rblade, @view(rsp.chords[:, irotor]), rpcs
         )
 
         # update twists
-        blade_element_cache.twists[:, irotor] .= FLOWMath.akima(
+        blade_element_cache.twists[:, irotor] .= finterp(
             rblade, @view(rsp.twists[:, irotor]), rpcs
         )
 

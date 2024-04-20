@@ -101,9 +101,10 @@ function initialize_velocities!(
     # Solve Linear System for gamb
     # TODO; consider having an option here where you can fill the rhs cache (which should be used here) based on the reference velocity to try and get a better starting point
     # #probably set that up in the precompute parameters function as this would be the first place that rhs vector would be seen.
-    gamb = ImplicitAD.implicit_linear(
-        linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU
-    )
+    # gamb = ImplicitAD.implicit_linear(
+    #     linsys.A_bb, copy(linsys.b_bf); lsolve=ldiv!, Af=linsys.A_bb_LU
+    # )
+    gamb = zeros(size(ivr.v_rb, 2) + 2)
 
     # - Get body-induced velocities on rotors - #
     vzb = zeros(TF, nbe, nrotor)

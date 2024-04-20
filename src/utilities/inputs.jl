@@ -167,9 +167,9 @@ end
 
 - `duct_coordinates::AbstractMatrix` : The [z, r] coordinates of the duct geometry beginning at the inner (casing) side trailing edge and proceeding clockwise. Note that the duct geometry absolute radial position does not need to be included here if the `autoshiftduct` option is selected.
 - `centerbody_coordinates::AbstractMatrix` : The [z, r] coordinates of the centerbody beginning at the leading edge and ending at the trailing edge. Note that the leading edge is assumed to be placed at a radial distance of 0.0 from the axis of rotation.
-- `rotorstator_parameters::OperatingPoint` : The operating point values.
-- `operating_point::PanelingConstants` : Constants used in re-paneling the geometry.
-- `paneling_constants::RotorStatorParameters` : Rotor (and possibly stator) geometric paramters.
+- `operating_point::OperatingPoint` : The operating point values.
+- `paneling_constants::PanelingConstants` : Constants used in re-paneling the geometry.
+- `rotorstator_parameters::RotorStatorParameters` : Rotor (and possibly stator) geometric paramters.
 - `reference_parameters::ReferenceParameters` : Reference Parameters.
 """
 struct Propulsor{

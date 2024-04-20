@@ -18,7 +18,9 @@ end
 
 """
 """
-function extract_state_variables(solver_options::TS, vars, dims) where {TS<:ExternalSolverOptions}
+function extract_state_variables(
+    solver_options::TS, vars, dims
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
 
     # - Separate out - #
     vz_rotor = @views reshape(vars[dims.vz_rotor.index], dims.vz_rotor.shape)
