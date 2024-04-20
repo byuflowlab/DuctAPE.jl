@@ -762,7 +762,20 @@ function initialize_linear_system(
 end
 
 
+"""
+    initialize_linear_system!(
+        linsys,
+        ivb,
+        body_vortex_panels,
+        rotor_source_panels,
+        wake_vortex_panels,
+        Vinf,
+        intermediate_containers,
+        integration_options,
+    )
 
+In-place version of initialize_linear_system.
+"""
 function initialize_linear_system!(
     linsys,
     ivb,
@@ -930,18 +943,18 @@ end
 Set values for index map to be used throughout solve and post-process.
 
 # Arguments
-- `npanels` : paneling_constants.npanels
-- `ncenterbody_inlet` : paneling_constants.ncenterbody_inlet
-- `nwake_sheets` : paneling_constants.nwake_sheets
-- `dte_minus_cbte` : paneling_constants.dte_minus_cbte
-- `wnm` : wake_vortex_panels.nodemap
-- `wenids` : wake_vortex_panels.endnodeidxs
-- `nwp` :  problem_dimensions.nwp
-- `nwsp` : problem_dimensions.nwsp
-- `nbn` : problem_dimensions.nbn
-- `ndp` : body_vortex_panels.npanel[1]
-- `riiw` : rotor_indices_in_wake
-- `nrotor` : problem_dimensions.nrotor
+- `npanels : paneling_constants.npanels`
+- `ncenterbody_inlet : paneling_constants.ncenterbody_inlet`
+- `nwake_sheets : paneling_constants.nwake_sheets`
+- `dte_minus_cbte : paneling_constants.dte_minus_cbte`
+- `wnm : wake_vortex_panels.nodemap`
+- `wenids : wake_vortex_panels.endnodeidxs`
+- `nwp :  problem_dimensions.nwp`
+- `nwsp : problem_dimensions.nwsp`
+- `nbn : problem_dimensions.nbn`
+- `ndp : body_vortex_panels.npanel[1]`
+- `riiw : rotor_indices_in_wake`
+- `nrotor : problem_dimensions.nrotor`
 
 # Returns
 - `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process

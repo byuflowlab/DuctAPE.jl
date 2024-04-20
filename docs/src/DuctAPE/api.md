@@ -7,22 +7,87 @@ Depth = 5
 
 ## Public API
 
-### Options
-
+### Input Types
 ```@docs
-DuctAPE.set_options
-DuctAPE.DFDC_options
+DuctAPE.Propulsor
+DuctAPE.RotorStatorParameters
+DuctAPE.OperatingPoint
+DuctAPE.PanelingConstants
+DuctAPE.ReferenceParameters
 ```
 
-### Setup
+### Options
+
+#### General Options
+```@docs
+DuctAPE.Options
+DuctAPE.set_options
+```
+
+#### Integration Options
+```@docs
+DuctAPE.IntegrationOptions
+DuctAPE.GaussLegendre
+DuctAPE.GaussKronrod
+DuctAPE.Romberg
+```
+
+#### Solver Options
+
+##### Elliptic Grid Solve
+```@docs
+DuctAPE.SLORGridSolverOptions
+DuctAPE.GridSolverOptions
+```
+
+##### Aero Solve
+```@docs
+DuctAPE.ChainSolverOptions
+DuctAPE.CompositeSolverOptions
+DuctAPE.NLsolveOptions
+DuctAPE.NonlinearSolveOptions
+DuctAPE.MinpackOptions
+DuctAPE.SIAMFANLEOptions
+DuctAPE.SpeedMappingOptions
+DuctAPE.FixedPointOptions
+DuctAPE.CSORSolverOptions
+```
+
+### Analysis
+```@docs
+DuctAPE.analyze
+```
+
+### Preprocess
 
 ```@docs
 DuctAPE.setup_analysis
 ```
+### Process
 
-### Analysis
+### Postprocess
+
+
+
+
+
+----------------------------------------------------
+
 
 ## Private API
+
+### Option Types
+```@docs
+DuctAPE.DFDC_options
+DuctAPE.ConvergenceType
+DuctAPE.Relative
+DuctAPE.Absolute
+DuctAPE.SolverOptionsType
+DuctAPE.ExternalSolverOptions
+DuctAPE.PolyAlgorithmOptions
+DuctAPE.GridSolverOptionsType
+DuctAPE.IntegrationMethod
+```
 
 ### Bookkeeping
 ```@docs
@@ -54,10 +119,24 @@ DuctAPE.withdraw_solve_parameter_cache
 DuctAPE.withdraw_solve_container_cache
 ```
 
+### Preprocess
+```@docs
+DuctAPE.reinterpolate_geometry
+DuctAPE.reinterpolate_geometry!
+DuctAPE.generate_all_panels
+DuctAPE.generate_all_panels!
+DuctAPE.calculate_unit_induced_velocities
+DuctAPE.calculate_unit_induced_velocities!
+DuctAPE.initialize_linear_system
+DuctAPE.initialize_linear_system!
+DuctAPE.set_index_maps
+DuctAPE.precompute_parameters
+DuctAPE.precompute_parameters!
+```
 
 ### Analysis
 ```@docs
-DuctAPE.analyze
+DuctAPE.analyze_multipoint
 ```
 
 ### Post-process
