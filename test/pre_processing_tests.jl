@@ -120,7 +120,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     # @test wake_vortex_panels.endnodeidxs == [1 9 17; 8 16 24]
 
     # check wakeK calcualtion
-    wakeK = dt.get_wake_k(wake_vortex_panels.node[2, :], problem_dimensions.nwn)
+    wakeK = dt.get_wake_k(wake_vortex_panels.node[2, :])
 
     @test isapprox(
         wakeK,

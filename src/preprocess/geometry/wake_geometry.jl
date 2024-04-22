@@ -1,13 +1,27 @@
 """
-    discretize_wake(duct_coordinates, centerbody_coordinates, rotor_parameters, wake_length, nwake_sheets, dte_minus_cbte)
+    discretize_wake(
+        duct_coordinates,
+        centerbody_coordinates,
+        rotorzloc, # rotor axial locations
+        wake_length,
+        npanels,
+        dte_minus_cbte;
+    )
 
-Calculate wake x-coordinates.
-npanels is a vector of number of panels between each discrete point.  so something like [number of panels between the rotors; number of panels between the stator and the first trailing edge; number of panels between the trailing edges; number of panels between the last trailing edge and the end of the wake]
+Calculate wake sheet panel node z-coordinates.
+
+# Arguments
+- `duct_coordinates::Matrix{Float}` : Array of input duct coordinates
+- `centerbody_coordinates::Matrix{Float}` : Array of input centerbody_coordinates coordinates
+- `rotorzloc ::Vector{Float}` : rotor axial locations
+- `wake_length::Float` : non-dimensional length of wake to extend beyond aft-most body trailing edge.
+- `npanels::Vector{Int}` : A vector of the number of panels between each discrete point.  For example: [number of panels between the rotors; number of panels between the stator and the first trailing edge; number of panels between the trailing edges; number of panels between the last trailing edge and the end of the wake]
+- `dte_minus_cbte::Float` : indicator as to whether the duct trailing edge minus the centerbody trailing edge is positive, zero, or negative.
 """
 function discretize_wake(
     duct_coordinates,
     centerbody_coordinates,
-    rotorzloc, # rotor axial locations
+    rotorzloc,
     wake_length,
     npanels,
     dte_minus_cbte;
@@ -69,21 +83,21 @@ function discretize_wake(
 end
 
 """
-    initialize_wake_grid(body_geometry, rzl, rblade)
+    initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake)
 
-Intialize the wake wake_grid
+Intialize the wake grid.
 
 # Arguments:
-- `body_geometry::DuctAPE.body_geometry` : Duct Geometry Object.
-- `rzl::Vector{Float}` : Vector of x-positions for the rotors
-- `rwake::Vector{Float}` : Vector of r-positions of the blade elements for the foremost rotor
-- `grid_options::DuctAPE.GridOptions` : GridOptions object
+- `rp_duct_coordinates::Matrix{Float}` : The re-paneled duct coordinates
+- `rp_centerbody_coordinates::Matrix{Float}` : The re-paneled centerbody coordinates
+- `zwake::Vector{Float}` : The axial positions of the wake sheet panel nodes
+- `rwake::Vector{Float}` : The radial positions of the blade elements for the foremost rotor
 
 # Returns:
-- `zgrid::Matrix{Float64,2}` : 2D Array of x wake_grid points
-- `rgrid::Matrix{Float64,2}` : 2D Array of r wake_grid points
+- `wake_grid::Array{Float,3}` : 3D Array of axial and radial wake_grid points
 """
 function initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake)
+
     TF = promote_type(
         eltype(rp_duct_coordinates),
         eltype(rp_centerbody_coordinates),
@@ -105,6 +119,13 @@ function initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zw
     )
 end
 
+"""
+    initialize_wake_grid!(
+        wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
+    )
+
+In-place version of initialize_wake_grid.
+"""
 function initialize_wake_grid!(
     wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
 )
@@ -177,6 +198,40 @@ function initialize_wake_grid!(
     return wake_grid
 end
 
+
+"""
+    generate_wake_grid(
+        problem_dimensions,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        Rhub1,
+        Rtip1,
+        tip_gap1,
+        zwake;
+        grid_solver_options=GridSolverOptions(),
+        verbose=false,
+        silence_warnings=true,
+    )
+
+Initialize and solve for elliptic grid on which wake sheets are defined.
+
+# Arguments
+- `problem_dimensions::` : A ProblemDimensions object
+- `rp_duct_coordinates::` : repaneled duct coordinates
+- `rp_centerbody_coordinates::` : repaneled centerbody coordinates
+- `Rhub1::` : Hub radius of first rotor
+- `Rtip1::` : Tip radius of first rotor
+- `tip_gap1::` : Tip gap of first rotor (MUST BE ZERO for now)
+- `zwake::` : axial positions of wake sheet panel nodes
+
+# Keyword Arguments
+- `grid_solver_options::GridSolverOptionsType=GridSolverOptions()` : options for solving the elliptic grid.
+- `verbose::Bool=false` : flag to print verbose statements
+- `silence_warnings::Bool=true` : flag to supress warnings
+
+# Returns
+- `wake_grid::Array{Float,3}` : 3D Array of axial and radial wake_grid points after solution of elliptic system.
+"""
 function generate_wake_grid(
     problem_dimensions,
     rp_duct_coordinates,
@@ -212,6 +267,22 @@ function generate_wake_grid(
     )
 end
 
+"""
+    generate_wake_grid!(
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        Rhub1,
+        Rtip1,
+        tip_gap1,
+        zwake;
+        grid_solver_options=grid_solver_options,
+        verbose=false,
+        silence_warnings=true,
+    )
+
+In-place version of generate_wake_grid.
+"""
 function generate_wake_grid!(
     wake_grid,
     rp_duct_coordinates,
@@ -249,7 +320,28 @@ function generate_wake_grid!(
     return wake_grid
 end
 
+
 """
+    relax_grid!(
+        grid_solver_options::GridSolverOptionsType,
+        wake_grid;
+        verbose=false,
+        silence_warnings=true,
+        tabchar="    ",
+        ntab=1,
+    )
+
+Relax/Solve initial wake grid according to elliptic system of equations.
+
+# Arguments
+- `grid_solver_options::GridSolverOptionsType' : options for elliptic grid solver
+- `wake_grid::Array{Float,3}` : Initialized wake grid
+
+# Keyword Arguments
+- `verbose=false::' : flag for printing verbose statements
+- `silence_warnings=true::' : flag for supressing warnings
+- `tabchar::String="    "::' : string to use for tabbing over verbose statements.
+- `ntab::Int=1' : number of tabs for printing verbose statements
 """
 function relax_grid!(
     grid_solver_options::GridSolverOptions,
@@ -295,8 +387,6 @@ function relax_grid!(
     return wake_grid
 end
 
-"""
-"""
 function relax_grid!(
     grid_solver_options::SLORGridSolverOptions,
     wake_grid;
@@ -319,19 +409,15 @@ function relax_grid!(
 end
 
 """
-    generate_wake_panels(zgrid, rgrid; kwargs...)
+    generate_wake_panels(wake_grid)
 
-Generate paneling for each wake line emanating from the rotor blade elements.
+Generate paneling for each wake sheet emanating from the rotor blade elements.
 
 # Arguments:
-- `zgrid::Matrix{Float}` : x-location of each wake_grid point
-- `rgrid::Matrix{Float}` : r-location of each wake_grid point
-
-# Keyword Arguments:
-- `algorithm::FLOWFoil.AxisymmetricProblem` : default = AxisymmetricProblem(Vortex(Constant()), Dirichlet(), [false, true]),
+- `wake_grid::Array{Float,3}` : axial and radial locations of each wake_grid point (after relaxation/solution)
 
 # Returns:
-- `wake_panels::Vector{FLOWFoil.AxisymmetricPanel}` : vector of panel objects describing the wake lines
+- `wake_vortex_panels::NamedTuple` : A named tuple of panel values describing the wake vortex panels
 """
 function generate_wake_panels(wake_grid)
 
@@ -348,6 +434,9 @@ function generate_wake_panels(wake_grid)
 end
 
 """
+    generate_wake_panels!(wake_panels, wake_grid)
+
+In-place version of generate_wake_panels.
 """
 function generate_wake_panels!(wake_panels, wake_grid)
     # extract wake_grid size
@@ -361,14 +450,28 @@ function generate_wake_panels!(wake_panels, wake_grid)
 end
 
 """
+    get_wake_k(r, nwn)
+
+Calculate geometric constant for use in later calculation of wake panel node strengths.
+
+# Arguments
+- `r::Vector{Float}` : Vector of wake panel node radial positions
+
+# Returns
+- `K::Vector{Float}` : Vector of geometric constants used in calculation of panel node strengths.
 """
-function get_wake_k(r, nwn)
+function get_wake_k(r)
     # initialize output
-    K = zeros(eltype(r), nwn)
+    K = similar(r)
 
     return get_wake_k!(K, r)
 end
 
+"""
+    get_wake_k!(K, r)
+
+In-place version of get_wake_k.
+"""
 function get_wake_k!(K, r)
     # Loop through panels
     for (iw, wnr) in enumerate(r)

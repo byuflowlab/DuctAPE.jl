@@ -15,7 +15,6 @@
 Re-interpolate the body geometry and return compatible body and way geometry.
 
 # Arguments
-- `var::type` :
 - `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
 - `duct_coordinates::Matrix{Float}` : [z,r] coordinates of duct geometry
 - `centerbody_coordinates::Matrix{Float}` : [z,r] coordinates of centerbody geometry
@@ -631,7 +630,6 @@ Set up the linear system used in the panel method solve.
 - `integration_options::IntegrationOptions` : the integration options used in integrating the panel induced velocities
 
 # Returns
-- `var::type=default` :
 - `linsys::NamedTuple` : A named tuple containing cacheable data for the linear system, including:
   - `A_bb::Array{Float}` : AIC (LHS) matrix for the panel method system
   - `b_bf::Array{Float}` : Initial system RHS vector based on freestrem magnitude
@@ -1358,7 +1356,7 @@ function precompute_parameters(
     )
 
     # - Get geometry-based constants for wake node strength calculations - #
-    wakeK = get_wake_k(wake_vortex_panels.node[2, :], problem_dimensions.nwn)
+    wakeK = get_wake_k(wake_vortex_panels.node[2, :])
 
     # - Save all the index mapping (bookkeeping) - #
     idmaps = set_index_maps(

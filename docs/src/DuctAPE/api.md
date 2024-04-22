@@ -120,19 +120,55 @@ DuctAPE.withdraw_solve_container_cache
 ```
 
 ### Preprocess
+
+#### General
+
+```@docs
+DuctAPE.set_index_maps
+DuctAPE.precompute_parameters
+DuctAPE.precompute_parameters!
+```
+
+#### Geometry
 ```@docs
 DuctAPE.reinterpolate_geometry
 DuctAPE.reinterpolate_geometry!
 DuctAPE.generate_all_panels
 DuctAPE.generate_all_panels!
+```
+
+##### Wake
+```@docs
+DuctAPE.discretize_wake
+DuctAPE.generate_wake_grid
+DuctAPE.generate_wake_grid!
+DuctAPE.initialize_wake_grid
+DuctAPE.initialize_wake_grid!
+DuctAPE.relax_grid!
+DuctAPE.generate_wake_panels
+DuctAPE.generate_wake_panels!
+DuctAPE.get_wake_k
+DuctAPE.get_wake_k!
+```
+
+##### Bodies
+
+##### Rotors
+
+
+#### Induced Velocities
+```@docs
 DuctAPE.calculate_unit_induced_velocities
 DuctAPE.calculate_unit_induced_velocities!
 DuctAPE.initialize_linear_system
 DuctAPE.initialize_linear_system!
-DuctAPE.set_index_maps
-DuctAPE.precompute_parameters
-DuctAPE.precompute_parameters!
 ```
+
+#### State Initialization
+
+
+
+TODO: still need to do everything in initializestates as well as everything in the geometry and velocities directories
 
 ### Analysis
 ```@docs
