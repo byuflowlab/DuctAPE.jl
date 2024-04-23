@@ -464,7 +464,6 @@ function analyze_multipoint(
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
-        ivb,
         A_bb_LU,
         idmaps,
         problem_dimensions,
