@@ -152,8 +152,16 @@ DuctAPE.get_wake_k!
 ```
 
 ##### Bodies
+```@docs
+DuctAPE.reinterpolate_bodies!
+DuctAPE.place_duct!
+```
 
 ##### Rotors
+```@docs
+DuctAPE.interpolate_blade_elements
+DuctAPE.interpolate_blade_elements!
+```
 
 
 #### Induced Velocities
