@@ -1657,5 +1657,5 @@ function precompute_parameters!(
         problem_dimensions.nrotor,
     )
 
-    return ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, problem_dimensions
+    return A_bb_LU, lu_decomp_flag, airfoils, idmaps, problem_dimensions
 end

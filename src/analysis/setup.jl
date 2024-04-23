@@ -24,7 +24,6 @@ Perform pre-processing and cache setup (as needed) for propuslor analysis.
 - `prepost_containers::NamedTuple` : Named Tuple containing reshaped views into the prepost cache
 - `solve_parameter_cache_vector::Vector` : Vector containing the relevant typed cache vector of solve parameters
 - `solve_parameter_cache_dims::NamedTuple` : Named Tuple containing dimensions used for reshaping the solve parameter cache
-- `ivb::NamedTuple` : NamedTuple containing the unit induced velocities on the body
 - `A_bb_LU::LinearAlgebra.LU` : The LU factorization of the AIC matrix used in the panel method
 - `lu_decomp_flag::Bool` : flag indicating if the LU decomposition was successful
 - `airfoils::Matrix{AFType}` : Matrix contiaining the blade element airfoil polar objects
@@ -120,7 +119,7 @@ function setup_analysis(
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
 
     # - Preprocess - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = precompute_parameters!(
+    A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -144,7 +143,6 @@ function setup_analysis(
     prepost_containers,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
-    ivb,
     A_bb_LU,
     lu_decomp_flag,
     airfoils,

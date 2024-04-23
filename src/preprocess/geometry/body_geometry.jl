@@ -1,4 +1,28 @@
 """
+    reinterpolate_bodies!(
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        duct_coordinates,
+        centerbody_coordinates,
+        zwake,
+        ncenterbody_inlet,
+        nduct_inlet;
+        finterp=FLOWMath.akima,
+    )
+
+Reinterpolate duct and centerbody coordinates in order to make them compatible with the calculated wake sheet panel axial positions.
+
+# Arguments
+- `rp_duct_coordinates::Matrix{Float}` : the re-paneled duct coordinates
+- `rp_centerbody_coordinates::Matrix{Float}` : the re-paneled centerbody coordinates
+- `duct_coordinates::Matrix{Float}` : the input duct coordinates
+- `centerbody_coordinates::Matrix{Float}` : the input centerbody coordinates
+- `zwake::Matrix{Float}` : the wake sheet panel node axial positions
+- `ncenterbody_inlet::Matrix{Float}` : the number of panels to use for the centerbody inlet
+- `nduct_inlet::Matrix{Float}` : the number of panels to use for the duct inlet
+
+# Keyword Arguments
+- `finterp::Function=FLOWMath.akima` : interpolation method
 """
 function reinterpolate_bodies!(
     rp_duct_coordinates,
@@ -74,9 +98,17 @@ function reinterpolate_bodies!(
 end
 
 """
-transforms duct radial coordinates such that the leading rotor radius touches the duct wall.
-Also finds the various rotor centerbody and tip radii based on the centerbody and duct geometry
+    place_duct!(rp_duct_coordinates, Rtip, rotorzloc, tip_gap)
+
+Transform the duct radial coordinates such that the leading rotor radius touches the duct wall.
+
 Note that this function is called AFTER the repanling function is called, such that the rotorzloc locations should line up directly with the duct and centerbody coordinates.
+
+# Arguments
+- `rp_duct_coordinates::Matrix{Float}` : the re-paneled duct coordinates
+- `Rtip::Vector{Float}` : Tip radii for the rotor(s)
+- `rotorzloc::Vector{Float}` : axial position(s) of the rotor(s)
+- `tip_gap::Vector{Float}` : tip gap for the fore-most rotor (MUST BE ZERO for now)
 """
 function place_duct!(rp_duct_coordinates, Rtip, rotorzloc, tip_gap)
 

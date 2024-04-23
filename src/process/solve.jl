@@ -80,7 +80,6 @@ function solve(
         println("  " * "CSOR Solve Trace:")
     end
 
-
     # loop until converged or max iterations are reached
     while !conv[] && iter <= solver_options.iteration_limit
         # update iteration number
@@ -788,7 +787,8 @@ function solve(
     )
 
     # If there is only one solver, or if the first solver converged, return the solution
-    if length(solver_options.solvers) == 1 || solver_options.solvers[1].converged[1]
+    if length(solver_options.solvers) == 1 ||
+        solver_options.solvers[1].converged[const_cache.multipoint_index[]]
         solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[1].converged[const_cache.multipoint_index[]]
         return solution
     end

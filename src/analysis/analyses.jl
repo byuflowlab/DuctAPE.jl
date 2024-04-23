@@ -35,7 +35,7 @@ function analyze(
 )
 
     # - Set Up - #
-    problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps = setup_analysis(
+    problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, A_bb_LU, lu_decomp_flag, airfoils, idmaps = setup_analysis(
         propulsor,
         options;
         prepost_container_caching=prepost_container_caching,
@@ -59,7 +59,7 @@ function analyze(
         #TODO: probably just call  the post-process function directly and return a reset_container! of the output
         if return_inputs
             return [],#zero_outputs(),
-            (; solve_parameter_tuple..., ivb, airfoils, idmaps, panels, problem_dimensions),
+            (; solve_parameter_tuple..., airfoils, idmaps, panels, problem_dimensions),
             false
         else
             return [],#zero_outputs(),
@@ -74,7 +74,6 @@ function analyze(
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
-        ivb,
         A_bb_LU,
         idmaps,
         problem_dimensions,
@@ -91,7 +90,6 @@ end
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
-        ivb,
         A_bb_LU,
         idmaps,
         problem_dimensions,
@@ -108,7 +106,6 @@ Analyze propulsor, assuming `setup_analysis` has been called and the outputs the
 - `solve_parameter_cache_vector::Vector` : An output from `setup_analysis` containing the relevant typed cache vector of solve parameters
 - `solve_parameter_cache_dims::NamedTuple` : An output from `setup_analysis` containing dimensions used for reshaping the solve parameter cache
 - `airfoils::Vector{AFType}` : An output from `setup_analysis` contiaining the blade element airfoil polar objects
-- `ivb::NamedTuple` : An output from `setup_analysis` containing the unit induced velocities on the body
 - `A_bb_LU::LinearAlgebra.LU` : An output from `setup_analysis` that is the LU decomposition of the AIC matrix used in the panel method
 - `idmaps::NamedTuple` : An output from `setup_analysis` containing bookkeeping information (index mappings)
 - `problem_dimensions::NamedTuple` : An output from `setup_analysis` contiaining bookkeeping information (problem dimensions)
@@ -129,7 +126,6 @@ function analyze(
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
-    ivb,
     A_bb_LU,
     idmaps,
     problem_dimensions,
@@ -180,7 +176,7 @@ function analyze(
 
     if return_inputs
         solve_parameter_tuple = withdraw_solve_parameter_cache(
-            solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+            options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
         )
 
         return outs,
@@ -188,8 +184,10 @@ function analyze(
             prepost_containers.panels,
             prepost_containers.ivb,
             solve_parameter_tuple...,
-            blade_elements=(; blade_elements..., airfoils...),
-            linsys=(; linsys..., A_bb_LU),
+            blade_elements=(; solve_parameter_tuple.blade_elements..., airfoils...),
+            linsys=(; solve_parameter_tuple.linsys..., A_bb_LU),
+            idmaps,
+            problem_dimensions,
         ),
         options.solver_options.converged[]
     else
@@ -237,7 +235,7 @@ function analyze(
 ) where {TO<:OperatingPoint}
 
     # - Set Up - #
-    problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps = setup_analysis(
+    problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, A_bb_LU, lu_decomp_flag, airfoils, idmaps = setup_analysis(
         propulsor,
         options;
         prepost_container_caching=prepost_container_caching,
@@ -271,7 +269,6 @@ function analyze(
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
-        ivb,
         A_bb_LU,
         idmaps,
         problem_dimensions,
@@ -289,7 +286,6 @@ end
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
-        ivb,
         A_bb_LU,
         idmaps,
         problem_dimensions,
@@ -307,7 +303,6 @@ Analyze propulsor, assuming `setup_analysis` has been called and the inputs are 
 - `solve_parameter_cache_vector::Vector` : An output from `setup_analysis` containing the relevant typed cache vector of solve parameters
 - `solve_parameter_cache_dims::NamedTuple` : An output from `setup_analysis` containing dimensions used for reshaping the solve parameter cache
 - `airfoils::Vector{AFType}` : An output from `setup_analysis` contiaining the blade element airfoil polar objects
-- `ivb::NamedTuple` : An output from `setup_analysis` containing the unit induced velocities on the body
 - `A_bb_LU::LinearAlgebra.LU` : An output from `setup_analysis` that is the LU decomposition of the AIC matrix used in the panel method
 - `idmaps::NamedTuple` : An output from `setup_analysis` containing bookkeeping information (index mappings)
 - `problem_dimensions::NamedTuple` : An output from `setup_analysis` contiaining bookkeeping information (problem dimensions)
@@ -329,7 +324,6 @@ function analyze(
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
-    ivb,
     A_bb_LU,
     idmaps,
     problem_dimensions,
@@ -359,7 +353,6 @@ function analyze(
             solve_parameter_cache_vector,
             solve_parameter_cache_dims,
             airfoils,
-            ivb,
             A_bb_LU,
             idmaps,
             problem_dimensions,
@@ -381,6 +374,8 @@ function analyze(
             solve_parameter_tuple...,
             blade_elements=(; blade_elements..., airfoils...),
             linsys=(; linsys..., A_bb_LU),
+            idmaps,
+            problem_dimensions,
         ),
         options.solver_options.converged
     else
@@ -396,7 +391,6 @@ end
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
         airfoils,
-        ivb,
         A_bb_LU,
         idmaps,
         problem_dimensions,
@@ -414,7 +408,6 @@ function analyze_multipoint(
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
     airfoils,
-    ivb,
     A_bb_LU,
     idmaps,
     problem_dimensions,

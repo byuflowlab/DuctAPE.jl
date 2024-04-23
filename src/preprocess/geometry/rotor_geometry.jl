@@ -1,3 +1,24 @@
+"""
+    interpolate_blade_elements(
+        rsp, Rtips, Rhubs, rotor_panel_centers, nbe; finterp=FLOWMath.linear
+    )
+
+Interpolate blade elements based on RotorStatorParameters inputs and number of desired blade elements (from number of wake sheet in PanelingConstants input)
+
+# Arguments
+- `rsp::RotorStatorParameters` : A RotorStatorParameters object
+- `Rtips::Vector{Float}' : Vector of rotor tip radii
+- `Rhubs::Vector{Float}' : Vector of rotor hub radii
+- `rotor_panel_centers::Vector{Float}' : Vector of rotor panel centers
+- `nbe::Int` : number of blade elements per rotor
+
+# Keyword Arguments
+- `finterp::Function=FLOWMath.linear` : interpolation method (note, using Akima splines as is done for the body geometry can lead to negative chord in some cases)
+
+# Returns
+- `blade_element_cache::NamedTuple` : A named tuple containing the cacheable blade element information excluding the airfoil data.
+- `airfoils::NamedTuple` : A named tuple containing vectors of inner and outer airfoil polar data for each blade element, used in interpolating the input data at blade element locations.
+"""
 function interpolate_blade_elements(
     rsp, Rtips, Rhubs, rotor_panel_centers, nbe; finterp=FLOWMath.linear
 )
@@ -71,6 +92,16 @@ function interpolate_blade_elements(
     (; outer_airfoil, inner_airfoil)
 end
 
+"""
+    interpolate_blade_elements!(
+        blade_element_cache, rsp, rotor_panel_centers, nbe; finterp=FLOWMath.linear
+    )
+
+In-place version of interpolate_blade_elements.
+
+# Returns
+- `airfoils::NamedTuple` : A named tuple containing vectors of inner and outer airfoil polar data for each blade element, used in interpolating the input data at blade element locations.
+"""
 function interpolate_blade_elements!(
     blade_element_cache, rsp, rotor_panel_centers, nbe; finterp=FLOWMath.linear
 )
@@ -140,6 +171,16 @@ function interpolate_blade_elements!(
 end
 
 """
+    handle
+
+Description
+
+# Arguments
+- `var::type` :
+
+# Keyword Arguments
+- `var::type=default` :
+
 """
 function get_blade_ends_from_body_geometry(
     duct_coordinates, centerbody_coordinates, tip_gaps, rotorzloc
@@ -159,6 +200,19 @@ function get_blade_ends_from_body_geometry(
     )
 end
 
+"""
+    get_blade_ends_from_body_geometry!(
+        Rtip,
+        Rhub,
+        duct_coordinates,
+        centerbody_coordinates,
+        tip_gaps,
+        rotorzloc;
+        silence_warnings=true,
+    )
+
+In-place version of get_blade_ends_from_body_geometry.
+"""
 function get_blade_ends_from_body_geometry!(
     Rtip,
     Rhub,
