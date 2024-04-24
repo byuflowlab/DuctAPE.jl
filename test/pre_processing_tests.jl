@@ -413,7 +413,7 @@ end
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
 
     # - Preprocess - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
+    A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -523,7 +523,7 @@ end
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
 
     # - Preprocess - #
-    ivb, A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
+    A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
