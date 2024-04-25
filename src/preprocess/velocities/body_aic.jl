@@ -1,26 +1,26 @@
-#=
-Body Linear System vectors and matrices
-Influence matrices are given in terms of normal or tangential velocities at control points.
-=#
-
 #---------------------------------#
 #     Influence Coefficients      #
 #---------------------------------#
 
 ##### ----- Vortex ----- #####
 """
-out of place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric vortex rings (also on body surface)
+    vortex_aic_boundary_on_boundary(
+        controlpoint, normal, node, nodemap, influence_length, integration_options
+    )
 
-Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
+Calculate panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric vortex rings (also on body surface)
 
-# Arguments:
+Can be used for constructing the LHS influence Matrix for the panel method system.
+
+# Arguments
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
 - `nodemap::Matrix{Int}` : [1 2] node indices for each panel
 - `influence_length::Vector{Float}` : lengths of influencing panels
+- `integration_options::IntegrationOptions` : integration options
 
-# Returns:
+# Returns
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 """
 function vortex_aic_boundary_on_boundary(
@@ -41,20 +41,19 @@ end
 
 """
     vortex_aic_boundary_on_boundary!(
-    AICn, controlpoint, normal, node, nodemap, influence_length
-)
+        AICn,
+        controlpoint,
+        normal,
+        node,
+        nodemap,
+        influence_length,
+        integration_options;
+        integration_caches=nothing,
+    )
 
-in place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric vortex rings (also on body surface)
+In-place verion of vortex_aic_boundary_on_boundary.
 
-Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
-
-# Arguments:
-- `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
-- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-- `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
-- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-- `nodemap::Matrix{Int}` : [id1 id2] id numbers for node on panel used for bookkeeping due to integration across panels.
-- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+integration_caches is a named tuple containing caching for intermediate calculation values.
 """
 function vortex_aic_boundary_on_boundary!(
     AICn,
@@ -127,9 +126,19 @@ function vortex_aic_boundary_on_boundary!(
 end
 
 """
-out of place calculation of panel method influence coefficients (V dot nhat) for a set of control points (NOT on panels) due to a set of axisymmetric vortex rings (on body surface)
+    vortex_aic_boundary_on_field(
+        controlpoint,
+        normal,
+        node,
+        nodemap,
+        influence_length,
+        integration_options;
+        integration_caches=nothing,
+    )
 
-Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
+Calculate panel method influence coefficients (V dot nhat) for a set of control points (NOT on panels) due to a set of axisymmetric vortex rings (on body surface)
+
+Used for constructing portions of the panel method LHS matrix related to the pseudo control points in the bodies.
 
 # Arguments:
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
@@ -137,6 +146,10 @@ Used for constructing the LHS influence Matrix for the panel method system, as w
 - `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
 - `nodemap::Matrix{Int}` : [1 2] node indices for each panel
 - `influence_length::Vector{Float}` : lengths of influencing panels
+- `integration_options::IntegrationOptions` : integration options
+
+# Keyword Arguments
+- `integration_caches::NamedTuple=nothing` : caches for intermediate values in integration.
 
 # Returns:
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
@@ -171,16 +184,18 @@ function vortex_aic_boundary_on_field(
 end
 
 """
-in place calculation of panel method influence coefficients (V dot nhat) for a set of control points (NOT on panels) due to a set of axisymmetric vortex rings (on body surface)
+    vortex_aic_boundary_on_field!(
+        AICn,
+        controlpoint,
+        normal,
+        node,
+        nodemap,
+        influence_length,
+        integration_options;
+        integration_caches=nothing,
+    )
 
-Used for constructing the LHS influence Matrix for the panel method system, as well as RHS due to wake influences.
-
-# Arguments:
-- `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
-- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-- `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
-- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+In-place version of vortex_aic_boundary_on_field.
 """
 function vortex_aic_boundary_on_field!(
     AICn,
@@ -192,6 +207,7 @@ function vortex_aic_boundary_on_field!(
     integration_options;
     integration_caches=nothing,
 )
+
     # vel = zeros(eltype(AICn), 2, 2)
     if isnothing(integration_caches)
         # integration_cache = zeros(eltype(controlpoint), 20)
@@ -259,8 +275,12 @@ end
 
 ##### ----- Add Kutta ----- #####
 """
-LHS is pre-allocated (zeros) full size left-hand side matrix
-AICn are computed influence coefficients for panels/nodes
+    add_kutta!(LHS, AICn, kids)
+
+Add Kutta condition (γ_1 + γ_N = 0) to LHS matrix.
+
+- `LHS::Matrix{Float}` : a pre-allocated (zeros) full size left-hand side matrix
+- `AICn::Matrix{Float}` :  influence coefficients for panels/nodes
 - `kids::Vector{Int}` : [1 2] indices of where to put 1's for kutta condition
 """
 function add_kutta!(LHS, AICn, kids)
@@ -284,6 +304,36 @@ end
 
 ##### ----- Trailing Edge Gap Panels ----- #####
 """
+    add_te_gap_aic!(
+        AICn,
+        controlpoint,
+        normal,
+        tenode,
+        teinfluence_length,
+        tendotn,
+        tencrossn,
+        teadjnodeidxs,
+        integration_options;
+        wake=false,
+        integration_caches=nothing,
+    )
+
+Add trailing edge gap aerodynmic influence coefficient contributions to the AIC matrix.
+
+# Arguments
+- `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
+- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
+- `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
+- `tenode::Matrix{Float}` : [z r] coordinates of trailing edge panel nodes (edges)
+- `teinfluence_length::Vector{Float}` : lengths of influencing trailing edge panels
+- `tendotn::Matrix{Float}` : nhat of trailing edge panel dotted with nhat of adjacent panels
+- `tencrossn::Matrix{Float}` : nhat of trailing edge panel crossed with nhat of adjacent panels
+- `teadjnodeidxs::Matrix{Float}` : indices of nodes adjacent to trailing edge panel
+- `integration_options::IntegrationOptions` : integration options
+
+# Keyword Arguments
+- `wake::Bool=false` : flag as to whether this function is being applied to a wake sheet.
+- `integration_caches::NamedTuple=nothing` : caches for intermediate values in integration.
 """
 function add_te_gap_aic!(
     AICn,
@@ -343,7 +393,9 @@ function add_te_gap_aic!(
 
             for k in 1:2
                 # fill the Matrix
-                AICn[i, Int(nmap[k])] += dot(ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat)
+                AICn[i, Int(nmap[k])] += dot(
+                    ndn[k] * vvel[k, :] + ncn[k] * svel[k, :], nhat
+                )
                 #TODO: is this a bug? seems like the above line should be in an else statement
                 if wake
                     # wake "TE Panels" only have the vortex influence
@@ -356,21 +408,34 @@ function add_te_gap_aic!(
     return AICn
 end
 
-# TODO: need to test these
 ##### ----- Source ----- #####
 """
-out of place calculation of panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric source rings not on body surface.
+    source_aic(
+        controlpoint,
+        normal,
+        node,
+        nodemap,
+        influence_length,
+        integration_options;
+        integration_caches=nothing,
+    )
 
-Used for constructing the RHS boundary conditions due to rotor source panels.
+Calculate panel method influence coefficients (V dot nhat) for a set of control points (on panels) due to a set of axisymmetric source rings not on body surface.
 
-# Arguments:
+Can be used for constructing the RHS boundary conditions due to rotor source panels.
+
+# Arguments
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
 - `nodemap::Matrix{Int}` : [1 2] node indices for each panel
 - `influence_length::Vector{Float}` : lengths of influencing panels
+- `integration_options::IntegrationOptions` : integration options
 
-# Returns:
+# Keyword Arguments
+- `integration_caches::NamedTuple=nothing` : caches for intermediate values in integration.
+
+# Returns
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 """
 function source_aic(
@@ -404,16 +469,17 @@ end
 
 """
     source_aic!(
-    AICn, controlpoint, normal, node, nodemap, influence_length
-)
+        AICn,
+        controlpoint,
+        normal,
+        node,
+        nodemap,
+        influence_length,
+        integration_options;
+        integration_caches=nothing,
+    )
 
-# Arguments:
-- `AIC::Matrix{Float}` : N-controlpoint x N-node  array of V dot nhat values for
-- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-- `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
-- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-- `nodemap::Matrix{Int}` : [id1 id2] id numbers for node on panel used for bookkeeping due to integration across panels.
-- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+In-place version of source_aic.
 """
 function source_aic!(
     AICn,
@@ -462,14 +528,17 @@ end
 
 ##### ----- Freestream ----- #####
 """
-out of place calculation of RHS contributions due to freestream.
+    freestream_influence_vector(normals, Vinfmat)
+
+Calculate RHS contributions due to freestream.
+
 Note that the freestream is assumed to have zero radial component in the underlying theory, but here we allow an arbitrary 2D vector for velocity for taking the dot product easier.
 
-# Arguments:
+# Arguments
 - `normals::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `Vinfmat::Matrix{Float}` : [z r] components of freestream velocity (r's should be zero)
 
-# Returns:
+# Returns
 - `RHS::Vector{Float}` : vector of normal components of freestream velocity on input panels
 """
 function freestream_influence_vector(normals, Vinfmat)
@@ -484,13 +553,9 @@ function freestream_influence_vector(normals, Vinfmat)
 end
 
 """
-in place calculation of RHS contributions due to freestream.
-Note that the freestream is assumed to have zero radial component in the underlying theory, but here we allow an arbitrary 2D vector for velocity for taking the dot product easier.
+    freestream_influence_vector!(RHS, normals, Vinfmat)
 
-# Arguments:
-- `RHS::Vector{Float}` : vector of normal components of freestream velocity on input panels
-- `normals::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
-- `Vinfmat::Matrix{Float}` : [z r] components of freestream velocity (r's should be zero)
+In-place version of freestream_influence_vector.
 """
 function freestream_influence_vector!(RHS, normals, Vinfmat)
     for (i, (n, v)) in enumerate(zip(eachcol(normals), eachcol(Vinfmat)))
@@ -503,7 +568,28 @@ end
 #---------------------------------#
 #      LHS Matrix Assembly        #
 #---------------------------------#
+
 """
+    assemble_lhs_matrix(
+        AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
+    )
+
+Assemble the LHS matrix of the panel method.
+
+# Arguments
+- `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
+- `AICpcp::Matrix{Float}` : Nbodies controlpoint x N+1 node  array of V dot nhat values (influence on psuedo control points)
+- `npanel::Vector{Int}` : number of panels comprising each body
+- `nnode::Vector{Int}` : number of nodes comprising each body
+- `totpanel::Int` : total number of panels
+- `totnode::Int` : total number of nodes
+- `prescribednodeidxs::Vector{Int}` : indices of nodes with prescribed strengths (those on the axis of rotation).
+
+# Keyword Arguments
+- `dummyval::Float=1.0` : value for dummy input for prescribed and internal control points in the system. Do not change except for debugging purposes.
+
+# Returns
+- `LHS::Matrix{Float}` : The full LHS matrix for the panel method.
 """
 function assemble_lhs_matrix(
     AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
@@ -531,9 +617,11 @@ function assemble_lhs_matrix(
 end
 
 """
-AICn is nominal v dot n
-AICpcp is v dot n where n is for psuedo control point
-AICg is v dot n where v is from trailing edge gap panels
+    assemble_lhs_matrix!(
+        LHS, AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
+    )
+
+In-place version of assemble_lhs_matrix
 """
 function assemble_lhs_matrix!(
     LHS, AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
@@ -571,7 +659,7 @@ function assemble_lhs_matrix!(
 end
 
 """
-    factorize_LHS(A::AbstractMatrix) -> Alu
+    factorize_LHS(A::AbstractMatrix)
 
 Returns the LU decomposition of `A`.
 """
@@ -591,7 +679,7 @@ function factorize_LHS(A::AbstractMatrix{T}) where {T}
 end
 
 """
-    factorize_LHS!(Apivot::AbstractMatrix, A::AbstractMatrix) -> Alu
+    factorize_LHS!(Apivot::AbstractMatrix, A::AbstractMatrix)
 
 Returns the LU decomposition of `A` using `Apivot` as storage memory to pivot
 leaving `A` unchanged.
@@ -611,6 +699,21 @@ end
 #      RHS Matrix Assembly        #
 #---------------------------------#
 """
+    assemble_rhs_matrix(
+        vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+    )
+
+# Arguments
+- `vdnb::Vector{Float}` : V dot nhat for body panels
+- `vdnpcp::Vector{Float}` : V dot nhat for pseudo control points
+- `npanel::Vector{Int}` : number of panels comprising each body
+- `nnode::Vector{Int}` : number of nodes comprising each body
+- `totpanel::Int` : total number of body panels
+- `totnode::Int` : total number of body nodes
+- `prescribednodeidxs::Vector{Int}` : indices of nodes with prescribed strengths (those on the axis of rotation)
+
+# Returns
+- `RHS::Vector{Float}` : the RHS vector of the panel method.
 """
 function assemble_rhs_matrix(
     vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
@@ -630,6 +733,11 @@ function assemble_rhs_matrix(
 end
 
 """
+    assemble_rhs_matrix!(
+        RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+    )
+
+In-place version of assemble_rhs_matrix.
 """
 function assemble_rhs_matrix!(
     RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
@@ -650,45 +758,37 @@ function assemble_rhs_matrix!(
     return RHS
 end
 
-function assemble_rhs_matrix!(
-    RHS, Vinf, normal, itnormal, totpanel, totnode, prescribednodeidxs
-)
-
-    # - Place standard influence coefficients - #
-    # 1:totpanel, 1:totnode are standard AIC values
-    RHS[1:totpanel] .= vdnb
-    freestream_influence_vector!(view(RHS, 1:totpanel), normal, Vinf)
-
-    # - Place Duct pseudo control point freestream influence - #
-    vdnpcp = freestream_influence_vector(itnormal, Vinf)
-    RHS[totnode - 1] = vdnpcp[1]
-
-    # - Place hub pseudo control point freestream influence - #
-    if iszero(prescribednodeidxs[2])
-        RHS[totnode + 2] = vdnpcp[2]
-    end
-
-    return RHS
-end
-
 """
+    calculate_normal_velocity(velocity_vector, normal)
+
+Calculate normal velocity_vector (V dot nhat).
+
+# Arguments
+- `velocity_vector::Matrix{Float}` : velocity vector [z r] on each panel
+- `normal::Matrix{Float}` : the panel unit normals
+
+# Returns
+- `AIC::Matrix{Float}` : V dot n on each panel
 """
-function calculate_normal_velocity(velocity_arrray, normal)
+function calculate_normal_velocity(velocity_vector, normal)
 
     # initialize
-    AIC = zeros(eltype(velocity_arrray), size(velocity_arrray, 1), size(velocity_arrray, 2))
+    AIC = zeros(eltype(velocity_vector), size(velocity_vector, 1), size(velocity_vector, 2))
 
-    calculate_normal_velocity!(AIC, velocity_arrray, normal)
+    calculate_normal_velocity!(AIC, velocity_vector, normal)
 
     return AIC
 end
 
 """
+    calculate_normal_velocity!(AIC, velocity_vector, normal)
+
+In-place version of calculate_normal_velocity.
 """
-function calculate_normal_velocity!(AIC, velocity_arrray, normal)
+function calculate_normal_velocity!(AIC, velocity_vector, normal)
     for j in 1:size(AIC, 2)
         for i in 1:size(AIC, 1)
-            AIC[i, j] = dot(velocity_arrray[i, j, :], normal[:, i])
+            AIC[i, j] = dot(velocity_vector[i, j, :], normal[:, i])
         end
     end
     return AIC

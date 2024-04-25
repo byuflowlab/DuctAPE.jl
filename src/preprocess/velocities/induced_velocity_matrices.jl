@@ -9,18 +9,33 @@
 #---------------------------------#
 
 """
-out of place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric vortex panels (bands)
+    induced_velocities_from_vortex_panels_on_points(
+        controlpoints,
+        nodes,
+        nodemap,
+        influence_lengths,
+        strengths,
+        integration_options;
+        integration_caches=nothing,
+    )
+
+Calculate axial and radial components of induced velocity for a set of control points due to a set of axisymmetric vortex panels (bands).
 
 Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
 
-# Arguments:
-- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
-- `gamma::Vector{Float}` : vortex constant circulation values
+# Arguments
+- `controlpoints::Matrix{Float}` [z r] coordinates of points being influenced
+- `nodes::Matrix{Float}` : [z r] coordinates of vortex rings
+- `nodemap::Matrix{Int}` : mapping from panel index to associated node indices
+- `influence_lengths::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+- `strengths::Matrix{Float}` : vortex constant circulation values
+- `integration_options::IntegrationOptions` : integration options
 
-# Returns:
-- `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
+# Keyword Arguments
+- `integration_caches::NamedTuple=nothing` : cache used in in-place quadrature functions.
+
+# Returns
+- `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_vortex_panels_on_points(
     controlpoints,
@@ -51,16 +66,18 @@ function induced_velocities_from_vortex_panels_on_points(
 end
 
 """
-in place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric vortex panels (bands)
+    induced_velocities_from_vortex_panels_on_points!(
+        VEL,
+        controlpoint,
+        node,
+        nodemap,
+        influence_length,
+        strength,
+        integration_options;
+        integration_caches=nothing,
+    )
 
-Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
-
-# Arguments:
-- `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
-- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-- `node::Matrix{Float}` : [z r] coordinates of vortex rings
-- `influence_length::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
-- `gamma::Vector{Float}` : vortex constant circulation values
+In-place version of induced_velocities_from_vortex_panels_on_points.
 """
 function induced_velocities_from_vortex_panels_on_points!(
     VEL,
@@ -140,18 +157,31 @@ end
 #---------------------------------#
 
 """
-out of place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric source panels (bands)
+    induced_velocities_from_source_panels_on_points(
+        controlpoints,
+        nodes,
+        nodemap,
+        influence_lengths,
+        strengths,
+        integration_options;
+        integration_caches=nothing,
+    )
+
+
+Calculate axial and radial components of induced velocity for a set of control points due to a set of axisymmetric source panels (bands)
 
 Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
 
-# Arguments:
-- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-- `node::Matrix{Float}` : [z r] coordinates of source rings
-- `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
-- `gamma::Vector{Float}` : source constant circulation values
+# Arguments
+- `controlpoints::Matrix{Float}` [z r] coordinates of points being influenced
+- `nodes::Matrix{Float}` : [z r] coordinates of vortex rings
+- `nodemap::Matrix{Int}` : mapping from panel index to associated node indices
+- `influence_lengths::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+- `strengths::Matrix{Float}` : source constant strength values
+- `integration_options::IntegrationOptions` : integration options
 
 # Returns:
-- `AIC::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
+- `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_source_panels_on_points(
     controlpoints,
@@ -182,16 +212,18 @@ function induced_velocities_from_source_panels_on_points(
 end
 
 """
-in place calculation of axial and radial components of induced velocity for a set of control points due to a set of axisymmetric source panels (bands)
+    induced_velocities_from_source_panels_on_points!(
+        VEL,
+        controlpoint,
+        node,
+        nodemap,
+        influence_length,
+        strength,
+        integration_options;
+        integration_caches=nothing,
+    )
 
-Used for getting the unit induced velocities due to the body panels on the rotor/wake as well as the unit induced velocity due to the wake on the body/rotor.
-
-# Arguments:
-- `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
-- `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
-- `node::Matrix{Float}` : [z r] coordinates of source rings
-- `influence_length::Vector{Float}` : lengths over which source ring influence is applied on the surface.
-- `gamma::Vector{Float}` : source constant circulation values
+In-place version of induced_velocities_from_source_panels_on_points.
 """
 function induced_velocities_from_source_panels_on_points!(
     VEL,
@@ -268,7 +300,40 @@ end
 #---------------------------------#
 #     Trailing Edge Gap Panel     #
 #---------------------------------#
+
 """
+    induced_velocities_from_trailing_edge_gap_panel!(
+        VEL,
+        controlpoint,
+        tenode,
+        teinfluence_length,
+        tendotn,
+        tencrossn,
+        teadjnodeidxs,
+        integration_options;
+        wake=false,
+        integration_caches=nothing,
+    )
+
+
+Calculate axial and radial components of induced velocity for a set of control points due to any trailing edge gap panels.
+
+Used for getting the unit induced velocities due to the body body trailing edge gap panels on the body/rotor/wake.
+
+Note, this function is also used to calculate the influence of the wake ends rather than modeling a semi-infinite fortex sheet.
+
+# Arguments
+- `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components (modified in place)
+- `controlpoints::Matrix{Float}` [z r] coordinates of points being influenced
+- `nodes::Matrix{Float}` : [z r] coordinates of vortex rings
+- `nodemap::Matrix{Int}` : mapping from panel index to associated node indices
+- `influence_lengths::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
+- `strengths::Matrix{Float}` : vortex constant circulation values
+- `integration_options::IntegrationOptions` : integration options
+
+# Keyword Arguments
+- `wake::Bool=false` : flag to indicate if this is being used for a wake sheet.
+- `integration_caches::NamedTuple=nothing` : cache used in in-place quadrature functions.
 """
 function induced_velocities_from_trailing_edge_gap_panel!(
     VEL,

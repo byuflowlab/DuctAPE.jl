@@ -161,6 +161,12 @@ DuctAPE.place_duct!
 ```@docs
 DuctAPE.interpolate_blade_elements
 DuctAPE.interpolate_blade_elements!
+DuctAPE.get_blade_ends_from_body_geometry
+DuctAPE.get_blade_ends_from_body_geometry!
+DuctAPE.get_local_solidity
+DuctAPE.get_stagger
+DuctAPE.generate_rotor_panels
+DuctAPE.generate_rotor_panels!
 ```
 
 
@@ -172,11 +178,63 @@ DuctAPE.initialize_linear_system
 DuctAPE.initialize_linear_system!
 ```
 
+##### Unit Induced Velocities
+```@docs
+DuctAPE.calculate_xrm
+DuctAPE.calculate_xrm!
+DuctAPE.get_elliptics
+DuctAPE.vortex_ring_vz
+DuctAPE.vortex_ring_vz!
+DuctAPE.smoke_ring_vz
+DuctAPE.vortex_ring_vr
+DuctAPE.vortex_ring_vr!
+DuctAPE.source_ring_vz
+DuctAPE.source_ring_vz!
+DuctAPE.source_ring_vr
+DuctAPE.source_ring_vr!
+```
+
+##### Unit Induced Velocity Matrices
+```@docs
+DuctAPE.induced_velocities_from_vortex_panels_on_points
+DuctAPE.induced_velocities_from_vortex_panels_on_points!
+DuctAPE.induced_velocities_from_source_panels_on_points
+DuctAPE.induced_velocities_from_source_panels_on_points!
+DuctAPE.induced_velocities_from_trailing_edge_gap_panel!
+```
+
+##### Panel Method Velocity Functions
+```@docs
+DuctAPE.vortex_aic_boundary_on_boundary
+DuctAPE.vortex_aic_boundary_on_boundary!
+DuctAPE.vortex_aic_boundary_on_field
+DuctAPE.vortex_aic_boundary_on_field!
+DuctAPE.add_kutta!
+DuctAPE.add_te_gap_aic!
+DuctAPE.source_aic
+DuctAPE.source_aic!
+DuctAPE.freestream_influence_vector
+DuctAPE.freestream_influence_vector!
+DuctAPE.assemble_lhs_matrix
+DuctAPE.assemble_lhs_matrix!
+DuctAPE.factorize_LHS
+DuctAPE.factorize_LHS!
+DuctAPE.assemble_rhs_matrix
+DuctAPE.assemble_rhs_matrix!
+DuctAPE.calculate_normal_velocity
+DuctAPE.calculate_normal_velocity!
+```
+
+##### Quadrature
+
+
+
 #### State Initialization
-
-
-
-TODO: still need to do everything in initializestates as well as everything in the geometry and velocities directories
+```@docs
+DuctAPE.initialize_velocities
+DuctAPE.initialize_velocities!
+DuctAPE.initialize_strengths!
+```
 
 ### Analysis
 ```@docs
