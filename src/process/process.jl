@@ -25,6 +25,7 @@ function process(
     # initialize velocities
     # TODO; add some sort of unit test for this function
     initialize_velocities!(
+        solver_options,
         vz_rotor,
         vtheta_rotor,
         Cm_wake,
@@ -89,25 +90,56 @@ function process(
     (; Gamr, sigr, gamw, operating_point, blade_elements, linsys, ivr, ivw, wakeK) =
         solve_parameter_tuple
 
+    # get correct cache type
+    solve_container_cache_vector = @views PreallocationTools.get_tmp(
+        solve_container_caching.solve_container_cache, Gamr
+    )
+    # reset cache
+    solve_container_cache_vector .= 0
+
+    solve_containers = withdraw_solve_container_cache(
+        solver_options,
+        solve_container_cache_vector,
+        solve_container_caching.solve_container_cache_dims,
+    )
+
     # - Initialize States - #
     initialize_strengths!(
+        solver_options,
         Gamr,
         sigr,
         gamw,
+        solve_containers,
         operating_point,
         (; blade_elements..., airfoils...),
-        (; linsys..., A_bb_LU),
-        ivr,
-        ivw,
         wakeK,
-        idmaps.body_totnodes,
         idmaps.wake_nodemap,
         idmaps.wake_endnodeidxs,
         idmaps.wake_panel_sheet_be_map,
         idmaps.wake_node_sheet_be_map,
         idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.wake_node_ids_along_centerbody_wake_interface,
+        idmaps.wake_node_ids_along_centerbody_wake_interface;
     )
+
+    # initialize_strengths!(
+    #     solver_options,
+    #     Gamr,
+    #     sigr,
+    #     gamw,
+    #     operating_point,
+    #     (; blade_elements..., airfoils...),
+    #     (; linsys..., A_bb_LU),
+    #     ivr,
+    #     ivw,
+    #     wakeK,
+    #     idmaps.body_totnodes,
+    #     idmaps.wake_nodemap,
+    #     idmaps.wake_endnodeidxs,
+    #     idmaps.wake_panel_sheet_be_map,
+    #     idmaps.wake_node_sheet_be_map,
+    #     idmaps.wake_node_ids_along_casing_wake_interface,
+    #     idmaps.wake_node_ids_along_centerbody_wake_interface,
+    # )
 
     # - combine cache and constants - #
     const_cache = (;

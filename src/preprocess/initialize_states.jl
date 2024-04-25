@@ -1,6 +1,34 @@
 """
+    initialize_velocities(
+        solver_options::SolverOptionsType,
+        operating_point,
+        blade_elements,
+        linsys,
+        ivr,
+        ivw,
+        body_totnodes,
+        wake_panel_sheet_be_map,
+    )
+
+Initialize velocity state variables.
+
+# Arguments
+- `solver_options::SolverOptionsType` : solver options type for dispatch
+- `operating_point::OperatingPoint` : an OperatingPoint object
+- `blade_elements::NamedTuple` : A named tuple containing the blade element geometry and airfoil information.
+- `linsys::NamedTuple` : A named tuple containing the panel method linear system information.
+- `ivr::NamedTuple` : A named tuple containing the unit induced velocities on the rotors
+- `ivw::NamedTuple` : A named tuple containing the unit induced velocities on the wake
+- `body_totnodes::Int` : the total number of panel nodes comprising the duct and centerbody geometry
+- `wake_panel_sheet_be_map::Matrix{Int}` : An index map from the wake panels to the nearest ahead rotor blade element along the wake sheets
+
+# Returns
+- `vz_rotor::Vector{Float}` : a vector of the velocity state variables associated with the rotor axially induced velocity
+- `vtheta_rotor::Vector{Float}` : a vector of the velocity state variables associated with the rotor tangentially induced velocity
+- `Cm_wake::Vector{Float}` : a vector of the velocity state variables associated with the wake control point meridional velocity
 """
 function initialize_velocities(
+    solver_options::TS,
     operating_point,
     blade_elements,
     linsys,
@@ -8,7 +36,7 @@ function initialize_velocities(
     ivw,
     body_totnodes,
     wake_panel_sheet_be_map,
-)
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
 
     ##### ----- Initialize ----- #####
     # - get type - #
@@ -53,7 +81,9 @@ function initialize_velocities(
     )
 end
 
+"""
 function initialize_velocities!(
+    solver_options::SolverOptionsType,
     vz_rotor,
     vtheta_rotor,
     Cm_wake,
@@ -65,6 +95,22 @@ function initialize_velocities!(
     body_totnodes,
     wake_panel_sheet_be_map,
 )
+
+In-place version of initialize_velocities.
+"""
+function initialize_velocities!(
+    solver_options::TS,
+    vz_rotor,
+    vtheta_rotor,
+    Cm_wake,
+    operating_point,
+    blade_elements,
+    linsys,
+    ivr,
+    ivw,
+    body_totnodes,
+    wake_panel_sheet_be_map,
+) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
 
     # zero outputs:
     vz_rotor .= 0
@@ -149,12 +195,12 @@ function initialize_velocities!(
             c4b.OperatingPoint(
                 operating_point.Vinf[] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
                 operating_point.Omega[irotor] *
-                blade_elements.rotor_panel_centers[ir, irotor] + vt, # tangential velocity
+                blade_elements.rotor_panel_centers[irotor, irotor] + vt, # tangential velocity
                 operating_point.rhoinf[],
                 0.0, #pitch is zero
                 operating_point.muinf[],
                 operating_point.asound[],
-            ) for (ir, (vz, vt)) in enumerate(zip(vzind, vthetaind))
+            ) for (irotor, (vz, vt)) in enumerate(zip(vzind, vthetaind))
         ]
 
         # solve CCBlade problem for this rotor
@@ -231,7 +277,50 @@ function initialize_velocities!(
     return vz_rotor, vtheta_rotor, Cm_wake
 end
 
+"""
+    initialize_strengths!(
+        solver_options::SolverOptionsType,
+        Gamr,
+        sigr,
+        gamw,
+        operating_point,
+        blade_elements,
+        linsys,
+        ivr,
+        ivw,
+        wakeK,
+        body_totnodes,
+        wake_nodemap,
+        wake_endnodeidxs,
+        wake_panel_sheet_be_map,
+        wake_node_sheet_be_map,
+        wake_node_ids_along_casing_wake_interface,
+        wake_node_ids_along_centerbody_wake_interface,
+    )
+
+Initialize strength state variables.
+
+# Arguments
+- `solver_options::SolverOptionsType` : solver options type for dispatch
+- `Gamr::Vector{Float}` : Rotor circulation state variables (modified in place)
+- `sigr::Vector{Float}` : Rotor panel strength state variables (modified in place)
+- `gamw::Vector{Float}` : Wake panel strength state variables (modified in place)
+- `operating_point::OperatingPoint` : an OperatingPoint object
+- `blade_elements::NamedTuple` : A named tuple containing the blade element geometry and airfoil information.
+- `linsys::NamedTuple` : A named tuple containing the panel method linear system information.
+- `ivr::NamedTuple` : A named tuple containing the unit induced velocities on the rotors
+- `ivw::NamedTuple` : A named tuple containing the unit induced velocities on the wake
+- `wakeK::Vector{Float}` : geometric constants of wake nodes used in calculating wake strengths
+- `body_totnodes::Int` : the total number of panel nodes comprising the duct and centerbody geometry
+- `wake_nodemap::Matrix{Int}` : an index map of wake panel to the associated node indices
+- `wake_endnodeidxs::Matrix{Int}` : the node indices of the start and end of the wake sheets.
+- `wake_panel_sheet_be_map::Matrix{Int}` : An index map from the wake panels to the nearest ahead rotor blade element along the wake sheets
+- `wake_node_sheet_be_map::Matrix{Int}` : An index map from the wake nodes to the nearest ahead rotor blade element along the wake sheets
+- `wake_node_ids_along_casing_wake_interface::type` : An index map indicating which wake nodes interface with the duct wall
+- `wake_node_ids_along_centerbody_wake_interface::type` : An index map indicating which wake nodes interface with the centerbody wall
+"""
 function initialize_strengths!(
+    solver_options,
     Gamr,
     sigr,
     gamw,
@@ -336,12 +425,12 @@ function initialize_strengths!(
             c4b.OperatingPoint(
                 operating_point.Vinf[] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
                 operating_point.Omega[irotor] *
-                blade_elements.rotor_panel_centers[ir, irotor] .- vt, # tangential velocity
+                blade_elements.rotor_panel_centers[irotor, irotor] .- vt, # tangential velocity
                 operating_point.rhoinf[],
                 0.0, #pitch is zero
                 operating_point.muinf[],
                 operating_point.asound[],
-            ) for (ir, (vz, vt)) in enumerate(zip(vzind, vthetaind))
+            ) for (irotor, (vz, vt)) in enumerate(zip(vzind, vthetaind))
         ]
 
         # solve CCBlade problem for this rotor
@@ -450,4 +539,209 @@ function initialize_strengths!(
     end
 
     return Gamr, sigr, gamw
+end
+
+"""
+    function initialize_strengths!(
+        solver_options::CSORSolverOptions,
+        Gamr,
+        sigr,
+        gamw,
+        solve_containers,
+        operating_point,
+        blade_elements,
+        wakeK,
+        wake_nodemap,
+        wake_endnodeidxs,
+        wake_panel_sheet_be_map,
+        wake_node_sheet_be_map,
+        wake_node_ids_along_casing_wake_interface,
+        wake_node_ids_along_centerbody_wake_interface;
+        niter=10,
+        rlx=0.5,
+    )
+
+Refactored from DFDC SUBROUTINE ROTINITBLD
+
+From the subroutine notes:
+Sets reasonable initial circulation using current
+rotor blade geometry (chord, beta).
+Initial circulations are set w/o induced effects
+An iteration is done using the self-induced velocity
+from momentum theory to converge an approximate
+induced axial velocity
+
+# Arguments
+- `solver_options::SolverOptionsType` : solver options type for dispatch
+- `Gamr::Vector{Float}` : Rotor circulation state variables (modified in place)
+- `sigr::Vector{Float}` : Rotor panel strength state variables (modified in place)
+- `gamw::Vector{Float}` : Wake panel strength state variables (modified in place)
+- `operating_point::OperatingPoint` : an OperatingPoint object
+- `blade_elements::NamedTuple` : A named tuple containing the blade element geometry and airfoil information.
+- `wakeK::Vector{Float}` : geometric constants of wake nodes used in calculating wake strengths
+- `wake_nodemap::Matrix{Int}` : an index map of wake panel to the associated node indices
+- `wake_endnodeidxs::Matrix{Int}` : the node indices of the start and end of the wake sheets.
+- `wake_panel_sheet_be_map::Matrix{Int}` : An index map from the wake panels to the nearest ahead rotor blade element along the wake sheets
+- `wake_node_sheet_be_map::Matrix{Int}` : An index map from the wake nodes to the nearest ahead rotor blade element along the wake sheets
+- `wake_node_ids_along_casing_wake_interface::type` : An index map indicating which wake nodes interface with the duct wall
+- `wake_node_ids_along_centerbody_wake_interface::type` : An index map indicating which wake nodes interface with the centerbody wall
+
+# Keyword Arguments
+- `rlx::Float=0.5` : factor for under-relaxation to reduce transients in CL
+
+# Returns
+"""
+function initialize_strengths!(
+    solver_options::CSORSolverOptions,
+    Gamr,
+    sigr,
+    gamw,
+    solve_containers,
+    operating_point,
+    blade_elements,
+    wakeK,
+    wake_nodemap,
+    wake_endnodeidxs,
+    wake_panel_sheet_be_map,
+    wake_node_sheet_be_map,
+    wake_node_ids_along_casing_wake_interface,
+    wake_node_ids_along_centerbody_wake_interface;
+    niter=10,
+    rlx=0.5,
+    tip_gap=zeros(10), # just make sure it's long enough to not break stuff for now.
+)
+
+    # - get floating point type - #
+    TF = promote_type(
+        eltype(Gamr),
+        eltype(sigr),
+        eltype(gamw),
+        eltype(operating_point.Omega),
+        eltype(operating_point.Vinf),
+        eltype(operating_point.rhoinf),
+        eltype(operating_point.muinf),
+        eltype(operating_point.asound),
+        eltype(blade_elements.twists),
+        eltype(blade_elements.chords),
+        eltype(blade_elements.Rtip),
+        eltype(blade_elements.Rhub),
+    )
+
+
+    # - Rename for Convenience - #
+    nbe, nrotor = size(Gamr)
+    (; Vinf, rhoinf, muinf, Omega) = operating_point
+    (; rotor_panel_centers, B, chords, Rtip, Rhub) = blade_elements
+
+    reset_containers!(solve_containers)
+
+    vz_rotor=0.0
+
+    # loop through rotors
+    for irotor in 1:nrotor
+
+        segment_length = (Rtip[irotor]-Rhub[irotor])/nbe
+
+        # do niter iterations
+        for iter in 1:niter
+            tsum = 0.0
+
+            # Use upstream circulation to calculate inflow
+            if irotor > 1
+                @views solve_containers.vtheta_rotor[:, irotor] .=
+                    sum(B[1:(irotor - 1)] * Gamr[:, 1:(irotor - 1)]) ./
+                    (2.0 * pi * rotor_panel_centers[:, irotor])
+            end
+
+            @views @. solve_containers.Cz_rotor[:, irotor] =
+                Vinf[] + vz_rotor
+
+            @views @. solve_containers.Ctheta_rotor[:, irotor] .=
+                solve_containers.vtheta_rotor[:, irotor] .-
+                rotor_panel_centers[:, irotor] .* Omega[irotor]
+
+            @. solve_containers.Cmag_rotor = sqrt(
+                solve_containers.Ctheta_rotor^2 + solve_containers.Cz_rotor^2
+            )
+
+            # get cl
+            calculate_blade_element_coefficients!(
+                solve_containers.cl,
+                solve_containers.cd,
+                solve_containers.beta1,
+                solve_containers.alpha,
+                solve_containers.reynolds,
+                solve_containers.mach,
+                blade_elements,
+                solve_containers.Cz_rotor,
+                solve_containers.Ctheta_rotor,
+                solve_containers.Cmag_rotor,
+                operating_point;
+            )
+
+            @views BGamr_est =
+                0.5 * solve_containers.cl[:, irotor] .* solve_containers.Cmag_rotor[:, irotor] .*
+                chords[:, irotor] * B[irotor]
+
+            delta_BGamr = BGamr_est .- B[irotor] * Gamr[:, irotor]
+
+            Gamr[:, irotor] .+= (rlx * delta_BGamr) / B[irotor]
+
+            @views tsum -= sum(
+                B[irotor] .* Gamr[:, irotor] .* rhoinf[] .*
+                solve_containers.Ctheta_rotor[:, irotor] .* segment_length[irotor],
+            )
+
+            # if tip gap, set dummy circulation to zero
+            if tip_gap[irotor] > 0.0
+                Gamr[end, irotor] = 0.0
+            end
+
+            # use momentum theory estimate of duct induced axial velocity to set VA
+            VHSQ = tsum / (rhoinf[] * pi * (Rtip[irotor]^2 - Rhub[irotor]^2))
+            if irotor == 1
+                vz_rotor = -0.5 * Vinf[] + sqrt((0.5 * Vinf[])^2 + VHSQ)
+            end
+        end  # for iter
+
+        # - Initialize Wake Strengths - #
+
+        # Set average velocity in duct
+        for (wid, wmap) in enumerate(eachrow(wake_panel_sheet_be_map))
+            if wmap[2] >= irotor && wmap[2] < irotor + 1
+                solve_containers.Cm_wake[wid] =
+                    vz_rotor + Vinf[]
+            end
+        end
+    end # for irotor
+
+    # - initialize wake strengths - #
+    # TODO: these should be in solve_containers, but need to figure out how to organize that as an input in this case
+    Gamma_tilde = zeros(TF, nbe, nrotor)
+    H_tilde = zeros(TF, nbe, nrotor)
+    deltaGamma2 = zeros(TF, nbe + 1, nrotor)
+    deltaH = zeros(TF, nbe + 1, nrotor)
+    Cm_avg = zeros(TF, size(gamw)) .= 0
+
+    average_wake_velocities!(Cm_avg, solve_containers.Cm_wake, wake_nodemap, wake_endnodeidxs)
+
+    # - Calculate Wake Panel Strengths - #
+    # in-place solve for gamw,
+    calculate_wake_vortex_strengths!(
+        gamw,
+        Gamma_tilde,
+        H_tilde,
+        deltaGamma2,
+        deltaH,
+        Gamr,
+        Cm_avg,
+        blade_elements.B,
+        operating_point.Omega,
+        wakeK,
+        wake_node_sheet_be_map,
+        wake_node_ids_along_casing_wake_interface,
+        wake_node_ids_along_centerbody_wake_interface;
+    )
+
+    return Gamr, gamw, sigr
 end
