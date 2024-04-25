@@ -12,9 +12,9 @@ makedocs(;
         "DuctAPE" => [
             "Getting Started" => "DuctAPE/tutorial.md",
             "Examples" => "DuctAPE/examples.md",
-            "API Reference" => "DuctAPE/public_api.md",
-            "API Reference" => "DuctAPE/private_api.md",
-            "Index" => "DuctAPE/api_index.md",
+            "Public API Reference" => "DuctAPE/public_api.md",
+            "Private API Reference" => "DuctAPE/private_api.md",
+            "API Index" => "DuctAPE/api_index.md",
             "Theory" => "DuctAPE/theory.md",
         ],
         "C\$^4\$Blade" => [
