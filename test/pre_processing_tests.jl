@@ -438,6 +438,7 @@ end
 
     # initialize velocities
     dt.initialize_velocities!(
+        options.solver_options,
         vz_rotor,
         vtheta_rotor,
         Cm_wake,
@@ -547,6 +548,7 @@ end
 
     # initialize velocities
     dt.initialize_strengths!(
+        options.solver_options,
         Gamr,
         sigr,
         gamw,
