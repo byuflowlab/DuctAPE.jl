@@ -171,23 +171,29 @@ function interpolate_blade_elements!(
 end
 
 """
-    handle
+    get_blade_ends_from_body_geometry(
+        rp_duct_coordinates, rp_centerbody_coordinates, tip_gaps, rotorzloc
+    )
 
-Description
+Obtain rotor hub and tip radii based on duct and centerbody geometry.
 
 # Arguments
 - `var::type` :
+- `rp_duct_coordinates::Matrix{Float}` : re-paneled duct coordinates
+- `rp_centerbody_coordinates::Matrix{Float}` : re-paneled centerbody coordinates
+- `tip_gaps::Vector{Float}` : gaps between blade tips and duct surface (MUST BE ZEROS for now)
+- `rotorzloc::Vector{Float}` : rotor lifting line axial positions.
 
-# Keyword Arguments
-- `var::type=default` :
-
+# Returns
+- `Rtips::Vector{Float}` : rotor tip radii
+- `Rhubs::Vector{Float}` : rotor hub radii
 """
 function get_blade_ends_from_body_geometry(
-    duct_coordinates, centerbody_coordinates, tip_gaps, rotorzloc
+    rp_duct_coordinates, rp_centerbody_coordinates, tip_gaps, rotorzloc
 )
     TF = promote_type(
-        eltype(duct_coordinates),
-        eltype(centerbody_coordinates),
+        eltype(rp_duct_coordinates),
+        eltype(rp_centerbody_coordinates),
         eltype(tip_gaps),
         eltype(rotorzloc),
     )
@@ -196,7 +202,7 @@ function get_blade_ends_from_body_geometry(
     Rhub = zeros(TF, length(rotorzloc))
 
     return get_blade_ends_from_body_geometry!(
-        Rtip, Rhub, duct_coordinates, centerbody_coordinates, tip_gaps, rotorzloc
+        Rtip, Rhub, rp_duct_coordinates, rp_centerbody_coordinates, tip_gaps, rotorzloc
     )
 end
 
@@ -204,8 +210,8 @@ end
     get_blade_ends_from_body_geometry!(
         Rtip,
         Rhub,
-        duct_coordinates,
-        centerbody_coordinates,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
         tip_gaps,
         rotorzloc;
         silence_warnings=true,
@@ -216,8 +222,8 @@ In-place version of get_blade_ends_from_body_geometry.
 function get_blade_ends_from_body_geometry!(
     Rtip,
     Rhub,
-    duct_coordinates,
-    centerbody_coordinates,
+    rp_duct_coordinates,
+    rp_centerbody_coordinates,
     tip_gaps,
     rotorzloc;
     silence_warnings=true,
@@ -228,28 +234,28 @@ function get_blade_ends_from_body_geometry!(
     iduct = zeros(Int, length(rotorzloc))
     for i in eachindex(rotorzloc)
         #indices
-        _, ihub[i] = findmin(x -> abs(x - rotorzloc[i]), view(centerbody_coordinates, 1, :))
-        _, iduct[i] = findmin(x -> abs(x - rotorzloc[i]), view(duct_coordinates, 1, :))
+        _, ihub[i] = findmin(x -> abs(x - rotorzloc[i]), view(rp_centerbody_coordinates, 1, :))
+        _, iduct[i] = findmin(x -> abs(x - rotorzloc[i]), view(rp_duct_coordinates, 1, :))
     end
 
     # - Add warnings about over writing Rhub and Rtip
     if !silence_warnings
         for (irotor, (R, r)) in enumerate(zip(Rtip, Rhub))
-            if r !== centerbody_coordinates[2, ihub[irotor]]
-                @warn "Overwriting Rhub for rotor $(irotor) to place it at the centerbody wall.  Moving from $(r) to $(centerbody_coordinates[2, ihub[irotor]])"
+            if r !== rp_centerbody_coordinates[2, ihub[irotor]]
+                @warn "Overwriting Rhub for rotor $(irotor) to place it at the centerbody wall.  Moving from $(r) to $(rp_centerbody_coordinates[2, ihub[irotor]])"
             end
-            if R !== duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor]
-                @warn "Overwriting Rtip for rotor $(irotor) to place it at the correct tip gap relative to the casing wall. Moving from $(R) to $(duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor])"
+            if R !== rp_duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor]
+                @warn "Overwriting Rtip for rotor $(irotor) to place it at the correct tip gap relative to the casing wall. Moving from $(R) to $(rp_duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor])"
             end
         end
     end
 
     # - Get hub and tip radial positions - #
-    Rhub .= centerbody_coordinates[2, ihub]
+    Rhub .= rp_centerbody_coordinates[2, ihub]
 
     #need to shift the tips down by the distance of the tip gaps to get the actual tip radii
     #note that for stators, the tip gap should be zero anyway.
-    Rtip .= duct_coordinates[2, iduct] .- tip_gaps
+    Rtip .= rp_duct_coordinates[2, iduct] .- tip_gaps
 
     # check that the rotor radii aren't messed up
     for (irotor, (R, r)) in enumerate(zip(Rtip, Rhub))
@@ -259,14 +265,46 @@ function get_blade_ends_from_body_geometry!(
     return Rtip, Rhub
 end
 
+"""
+    get_local_solidity(B, chord, r)
+
+Calculate local solidity from local chord, radial position, and number of blades.
+
+# Arguments
+- `B::Float` : number of blades on rotor (usually an integer, but not necessarily).
+- `chord::Vector{Float}` : chord lengths at each radial station.
+- `r::Vector{Float}` : dimensional radial positions.
+
+# Returns
+- `solidity::Vector{Float}` : local solidity at each radial station
+"""
 function get_local_solidity(B, chord, r)
     return B .* chord ./ (2.0 * pi * r)
 end
 
+"""
+    get_stagger(twists)
+
+Convert twist angle to stagger angle
+"""
 function get_stagger(twists)
     return 0.5 * pi .- twists
 end
 
+"""
+    generate_rotor_panels(rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets)
+
+Generate rotor panel objects.
+
+# Arguments
+- `rotorzloc::Vector{Float}` : rotor lifting line axial position
+- `wake_grid::Array{Float,3}` : wake elliptic grid axial and radial locations
+- `rotor_indices_in_wake::Vector{Int}` : indices of where along wake the rotors are placed
+- `nwake_sheets::Int` : number of wake sheets
+
+# Returns
+- `rotor_source_panels::NamedTuple` : A named tuple containing the rotor source panel variables.
+"""
 function generate_rotor_panels(rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets)
     TF = promote_type(eltype(rotorzloc), eltype(wake_grid))
 
@@ -283,7 +321,11 @@ function generate_rotor_panels(rotorzloc, wake_grid, rotor_indices_in_wake, nwak
 end
 
 """
-Needs to be tested
+    generate_rotor_panels!(
+        rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+    )
+
+In-place version of generate_rotor_panels.
 """
 function generate_rotor_panels!(
     rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
