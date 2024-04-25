@@ -97,7 +97,7 @@ end
         blade_element_cache, rsp, rotor_panel_centers, nbe; finterp=FLOWMath.linear
     )
 
-In-place version of interpolate_blade_elements.
+In-place version of `interpolate_blade_elements`.
 
 # Returns
 - `airfoils::NamedTuple` : A named tuple containing vectors of inner and outer airfoil polar data for each blade element, used in interpolating the input data at blade element locations.
@@ -217,7 +217,7 @@ end
         silence_warnings=true,
     )
 
-In-place version of get_blade_ends_from_body_geometry.
+In-place version of `get_blade_ends_from_body_geometry`.
 """
 function get_blade_ends_from_body_geometry!(
     Rtip,
@@ -325,7 +325,7 @@ end
         rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
     )
 
-In-place version of generate_rotor_panels.
+In-place version of `generate_rotor_panels`.
 """
 function generate_rotor_panels!(
     rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets

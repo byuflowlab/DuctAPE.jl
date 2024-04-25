@@ -1,11 +1,9 @@
-# API Reference
+# Public API
 
 ```@contents
-Pages = ["api.md"]
+Pages = ["public_api.md"]
 Depth = 5
 ```
-
-# Public API
 
 ## Input Types
 ```@docs

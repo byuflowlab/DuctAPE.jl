@@ -55,13 +55,33 @@ export c4b
 
 # - Types - #
 
-# - Analyses - #
+# Inputs
+export Propulsor,
+    RotorStatorParameters, OperatingPoint, PanelingConstants, ReferenceParameters
+
+# - Preallocations - #
+export allocate_prepost_container_cache,
+    allocate_solve_parameter_cache, allocate_solve_container_cache
+
+# Options
+export Options, set_options, DFDC_options
+export IntegrationOptions, GaussLegendre, GaussKronrod, Romberg
+export SLORGridSolverOptions, GridSolverOptions
+export ChainSolverOptions,
+    CompositeSolverOptions,
+    NLsolveOptions,
+    NonlinearSolveOptions,
+    MinpackOptions,
+    SIAMFANLEOptions,
+    SpeedMappingOptions,
+    FixedPointOptions,
+    CSORSolverOptions
 
 # - Preprocess - #
+export setup_analysis
 
-# - Pocess - #
-
-# - Postprocess - #
+# - Analyses - #
+export analyze
 
 #---------------------------------#
 #            INCLUDES             #

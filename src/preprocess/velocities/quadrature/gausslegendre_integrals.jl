@@ -3,7 +3,18 @@
 #---------------------------------#
 
 """
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+    nominal_vortex_panel_integration!(
+        integration_options,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    )
+
+In-place version of `nominal_vortex_panel_integration`.
 """
 function nominal_vortex_panel_integration!(
     integration_options::GaussLegendre,
@@ -38,7 +49,18 @@ function nominal_vortex_panel_integration!(
 end
 
 """
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+    self_vortex_panel_integration!(
+        integration_options,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    )
+
+In-place version of `self_vortex_panel_integration`.
 """
 function self_vortex_panel_integration!(
     integration_options::GaussLegendre,
@@ -84,7 +106,18 @@ end
 #---------------------------------#
 
 """
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+    nominal_source_panel_integration!(
+        integration_options,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    )
+
+In-place version of `nominal_source_panel_integration`.
 """
 function nominal_source_panel_integration!(
     integration_options::GaussLegendre,
@@ -119,7 +152,18 @@ function nominal_source_panel_integration!(
 end
 
 """
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
+    self_source_panel_integration!(
+        integration_options,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    )
+
+In-place version of `self_source_panel_integration`.
 """
 function self_source_panel_integration!(
     integration_options::GaussLegendre,

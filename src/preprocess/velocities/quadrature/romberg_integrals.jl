@@ -1,14 +1,13 @@
 """
-    extrapolate!(fh::AbstractVector; power=1, atol=0, rtol=0, maxeval=typemax(Int), breaktol=Inf)
+    extrapolate!(V, err, fh; power=2, atol=1e-6)
 
-Similar to `extrapolate(fh)`, performs Richardson extrapolation on an array `fh`
-of `(f(h), h)` tuples (in order of decreasing `|h|`), but overwrites the array
-`fh` in-place with intermediate calculations.
+Performs Richardson extrapolation on an array `fh` for use in Romberg integration.
 
-(Thus, the array `fh` must be a vector of `Tuple{T,H}` values, where `H<:Number` is
-the type of `h` and `T` is the type of the extrapolated `f(0)` **result**.  This `T`
-should be a floating-point type, i.e. `fh` should contain `float(f(h))` if the
-function you are extrapolating is not already floating-point-valued.)
+# Arguments
+- `V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: `[vz_j vr_j; vz_{j+1} vr_{j+1}]`
+- `err::Vector{Float}` : estimated errors in velocity approximation
+- `fh::Tuple` : `(f(h), h)` tuples (in order of decreasing `|h|`)
+
 """
 function extrapolate!(V, err, fh; power=2, atol=1e-6)
 
@@ -113,9 +112,6 @@ function nominal_vortex_panel_integration!(
     return V
 end
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
 function self_vortex_panel_integration!(
     integration_options::Romberg,
     V,
@@ -245,9 +241,6 @@ function nominal_source_panel_integration!(
     return V
 end
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
 function self_source_panel_integration!(
     integration_options::Romberg,
     V,

@@ -124,7 +124,7 @@ end
         wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
     )
 
-In-place version of initialize_wake_grid.
+In-place version of `initialize_wake_grid`.
 """
 function initialize_wake_grid!(
     wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
@@ -281,7 +281,7 @@ end
         silence_warnings=true,
     )
 
-In-place version of generate_wake_grid.
+In-place version of `generate_wake_grid`.
 """
 function generate_wake_grid!(
     wake_grid,
@@ -436,7 +436,7 @@ end
 """
     generate_wake_panels!(wake_panels, wake_grid)
 
-In-place version of generate_wake_panels.
+In-place version of `generate_wake_panels`.
 """
 function generate_wake_panels!(wake_panels, wake_grid)
     # extract wake_grid size
@@ -470,7 +470,7 @@ end
 """
     get_wake_k!(K, r)
 
-In-place version of get_wake_k.
+In-place version of `get_wake_k`.
 """
 function get_wake_k!(K, r)
     # Loop through panels

@@ -96,7 +96,7 @@ function initialize_velocities!(
     wake_panel_sheet_be_map,
 )
 
-In-place version of initialize_velocities.
+In-place version of `initialize_velocities`.
 """
 function initialize_velocities!(
     solver_options::TS,
@@ -195,12 +195,12 @@ function initialize_velocities!(
             c4b.OperatingPoint(
                 operating_point.Vinf[] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
                 operating_point.Omega[irotor] *
-                blade_elements.rotor_panel_centers[irotor, irotor] + vt, # tangential velocity
+                blade_elements.rotor_panel_centers[ir, irotor] + vt, # tangential velocity
                 operating_point.rhoinf[],
                 0.0, #pitch is zero
                 operating_point.muinf[],
                 operating_point.asound[],
-            ) for (irotor, (vz, vt)) in enumerate(zip(vzind, vthetaind))
+            ) for (ir, (vz, vt)) in enumerate(zip(vzind, vthetaind))
         ]
 
         # solve CCBlade problem for this rotor
@@ -425,12 +425,12 @@ function initialize_strengths!(
             c4b.OperatingPoint(
                 operating_point.Vinf[] + vz, # axial velocity V is freestream, vz is induced by bodies and rotor(s) ahead
                 operating_point.Omega[irotor] *
-                blade_elements.rotor_panel_centers[irotor, irotor] .- vt, # tangential velocity
+                blade_elements.rotor_panel_centers[ir, irotor] .- vt, # tangential velocity
                 operating_point.rhoinf[],
                 0.0, #pitch is zero
                 operating_point.muinf[],
                 operating_point.asound[],
-            ) for (irotor, (vz, vt)) in enumerate(zip(vzind, vthetaind))
+            ) for (ir, (vz, vt)) in enumerate(zip(vzind, vthetaind))
         ]
 
         # solve CCBlade problem for this rotor

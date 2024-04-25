@@ -110,7 +110,7 @@ end
         silence_warnings=true,
     )
 
-In-place version of reinterpolate_geometry.
+In-place version of `reinterpolate_geometry`.
 """
 function reinterpolate_geometry!(
     wake_grid,
@@ -298,7 +298,7 @@ end
         silence_warnings=true,
     )
 
-In-place version of generate_all_panels.
+In-place version of `generate_all_panels`.
 """
 function generate_all_panels!(
     panels,
@@ -395,7 +395,7 @@ end
 """
     calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
 
-In-place version of  calculate_unit_induced_velocities.
+In-place version of `calculate_unit_induced_velocities`.
 """
 function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_options)
     # - Reset Tuples - #
@@ -772,7 +772,7 @@ end
         integration_options,
     )
 
-In-place version of initialize_linear_system.
+In-place version of `initialize_linear_system`.
 """
 function initialize_linear_system!(
     linsys,
@@ -1410,7 +1410,7 @@ end
         verbose=false,
     )
 
-In-place version of nominal version of precompute_parameters.
+In-place version of `precompute_parameters`.
 """
 function precompute_parameters!(
     ivr,
@@ -1529,7 +1529,7 @@ end
         verbose=false,
     )
 
-In-place version of the precompute_parameters function by-passing the geometry reinterpolateion. (Use with caution)
+In-place version of the `precompute_parameters` function by-passing the geometry reinterpolateion. (Use with caution)
 """
 function precompute_parameters!(
     ivr,

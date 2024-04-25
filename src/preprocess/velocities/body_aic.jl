@@ -51,7 +51,7 @@ end
         integration_caches=nothing,
     )
 
-In-place verion of vortex_aic_boundary_on_boundary.
+In-place verion of `vortex_aic_boundary_on_boundary`.
 
 integration_caches is a named tuple containing caching for intermediate calculation values.
 """
@@ -195,7 +195,7 @@ end
         integration_caches=nothing,
     )
 
-In-place version of vortex_aic_boundary_on_field.
+In-place version of `vortex_aic_boundary_on_field`.
 """
 function vortex_aic_boundary_on_field!(
     AICn,
@@ -479,7 +479,7 @@ end
         integration_caches=nothing,
     )
 
-In-place version of source_aic.
+In-place version of `source_aic`.
 """
 function source_aic!(
     AICn,
@@ -555,7 +555,7 @@ end
 """
     freestream_influence_vector!(RHS, normals, Vinfmat)
 
-In-place version of freestream_influence_vector.
+In-place version of `freestream_influence_vector`.
 """
 function freestream_influence_vector!(RHS, normals, Vinfmat)
     for (i, (n, v)) in enumerate(zip(eachcol(normals), eachcol(Vinfmat)))
@@ -621,7 +621,7 @@ end
         LHS, AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
     )
 
-In-place version of assemble_lhs_matrix
+In-place version of `assemble_lhs_matrix`.
 """
 function assemble_lhs_matrix!(
     LHS, AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs; dummyval=1.0
@@ -737,7 +737,7 @@ end
         RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
     )
 
-In-place version of assemble_rhs_matrix.
+In-place version of `assemble_rhs_matrix`.
 """
 function assemble_rhs_matrix!(
     RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
@@ -783,7 +783,7 @@ end
 """
     calculate_normal_velocity!(AIC, velocity_vector, normal)
 
-In-place version of calculate_normal_velocity.
+In-place version of `calculate_normal_velocity`.
 """
 function calculate_normal_velocity!(AIC, velocity_vector, normal)
     for j in 1:size(AIC, 2)

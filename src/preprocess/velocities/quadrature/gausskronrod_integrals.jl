@@ -2,9 +2,6 @@
 #             VORTEX              #
 #---------------------------------#
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
 function nominal_vortex_panel_integration(
     integration_options::GaussKronrod,
     node1,
@@ -40,9 +37,6 @@ function nominal_vortex_panel_integration(
     end
 end
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
 function self_vortex_panel_integration(
     integration_options::GaussKronrod,
     node1,
@@ -88,9 +82,6 @@ end
 #             SOURCE              #
 #---------------------------------#
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
 function nominal_source_panel_integration(
     integration_options::GaussKronrod,
     node1,
@@ -126,9 +117,6 @@ function nominal_source_panel_integration(
     end
 end
 
-"""
-`V::Matrix{Float}` : velocity components due to the jth and j+1th nodes in the format: [vz_j vr_j; vz_{j+1} vr_{j+1}]
-"""
 function self_source_panel_integration(
     integration_options::GaussKronrod,
     node1,

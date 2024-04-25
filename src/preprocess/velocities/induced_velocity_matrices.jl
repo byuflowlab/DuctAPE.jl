@@ -77,7 +77,7 @@ end
         integration_caches=nothing,
     )
 
-In-place version of induced_velocities_from_vortex_panels_on_points.
+In-place version of `induced_velocities_from_vortex_panels_on_points`.
 """
 function induced_velocities_from_vortex_panels_on_points!(
     VEL,
@@ -223,7 +223,7 @@ end
         integration_caches=nothing,
     )
 
-In-place version of induced_velocities_from_source_panels_on_points.
+In-place version of `induced_velocities_from_source_panels_on_points`.
 """
 function induced_velocities_from_source_panels_on_points!(
     VEL,

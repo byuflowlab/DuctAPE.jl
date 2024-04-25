@@ -43,7 +43,7 @@ end
 """
     calculate_xrm!(cache_vec, controlpoint, node)
 
-In-place version of calculate_xrm.
+In-place version of `calculate_xrm`.
 
 Cache_vec is a vector used to hold intermediate values as well as the outputs.
 """
