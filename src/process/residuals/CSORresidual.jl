@@ -533,13 +533,21 @@ end
 
 """
     apply_relaxation_schedule(
-        resid::AbstractArray, solver_options::TS
+        resid::AbstractVector, solver_options::TS
     ) where {TS<:SolverOptionsType}
 
-Apply custom relaxation schedule to all relaxation factor inputs.
+Apply custom relaxation schedule to all relaxation factor inputs based on residual values.
 
 # Arguments
-- `var::type` :
+- `resid::AbstractVector{Float}` : current residual values
+- `solver_options::SolverOptionsType` : SolverOptions containing relaxation schedule
+
+# Returns
+- `nrf::Float` : nominal relaxation factor
+- `bt1::Float` : backtrack factor 1
+- `bt2::Float` : backtrack factor 2
+- `pf1::Float` : press forward factor 1
+- `pf2::Float` : press forward factor 2
 """
 function apply_relaxation_schedule(
     resid::AbstractArray, solver_options::TS
@@ -571,7 +579,12 @@ end
 Apply custom relaxation schedule to a single relaxation factor input.
 
 # Arguments
-- `var::type` :
+- `resid::Float` : residual value
+- `nominal::Float` : nominal relaxation value
+- `schedule::AbstractVector{AbstractVector{Float}}` : values between which to interpolate to scale the nominal relaxation value.
+
+# Returns
+- `rf::Float` : the updated relaxation factor
 """
 function apply_relaxation_schedule(resid, nominal, schedule)
     rf = linear_transform(
@@ -586,14 +599,15 @@ end
         convergence_type::ConvergenceType, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
     )
 
-Description
+Update CSOR residual values in place.
 
 # Arguments
-- `var::type` :
-
-# Keyword Arguments
-- `var::type=default` :
-
+- `convergence_type::ConvergenceType` : used for dispatch of relative or absolute residual values.
+- `resid::Vector{Float}` : residual values modified in place
+- `maxBGamr::Float` : Maximum value of B*Gamr among all blade elements
+- `maxdeltaBGamr::Float` : Maximum change in B*Gamr between iterations among all blade elements
+- `maxdeltagamw::Vector{Float}` : Maximum change in gamw among all wake nodes (one element)
+- `Vconv::Vector{Float}` : Reference velocity upon which the relative convergence criteria is based (one element)
 """
 function update_CSOR_residual_values!(
     convergence_type::Relative, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
@@ -621,11 +635,14 @@ end
 Description
 
 # Arguments
-- `var::type` :
+- `conv::Vector{Float}` : container holding convergence flag
+- `resid::Vector{Float}` : residual vector
 
 # Keyword Arguments
-- `var::type=default` :
-
+- `f_circ::Float=1e-3` : convergence criteria for circulation residual
+- `f_dgamw::Float=2e-4` : convergence criteria for wake strength residual
+- `convergence_type::ConvergenceType=Relative()` : convergence type (absolute or relative) for print statements
+- `verbose::Bool=false` : flag for verbose print statements
 """
 function check_CSOR_convergence!(
     conv, resid; f_circ=1e-3, f_dgamw=2e-4, convergence_type=Relative(), verbose=false

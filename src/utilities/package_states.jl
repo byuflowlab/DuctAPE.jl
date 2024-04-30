@@ -1,4 +1,17 @@
 """
+    extract_initial_guess(
+        solver_options::SolverOptionsType, sensitivity_parameters, state_dims
+    )
+
+Extract initial guess from the solve parameters cache vector.
+
+# Arguments
+- `solver_options::SolverOptionsType` : used for dispatch
+- `sensitivity_parameters::Vector{Float}` : vector form of solve parameter cache passed into the solver.
+- `state_dims::NamedTuple` : dimensions and indices of state variables within the solve parameter cache vector
+
+# Returns
+- initial_guess::Vector{Float}` : a vector of the solver initial guess
 """
 function extract_initial_guess(
     solver_options::TS, sensitivity_parameters, state_dims
@@ -8,8 +21,6 @@ function extract_initial_guess(
     )
 end
 
-"""
-"""
 function extract_initial_guess(
     solver_options::CSORSolverOptions, sensitivity_parameters, state_dims
 )
@@ -17,6 +28,21 @@ function extract_initial_guess(
 end
 
 """
+    extract_state_variables(solver_options::SolverOptionsType, vars, dims)
+
+Reshape the state variables from a single vector, to multiple arrays.
+
+# Arguments
+
+# Returns if solver_options <: CSORSolverOptions
+- `Gamr::type` : Blade element circulation strengths
+- `sigr::type` : Rotor source panel strengths
+- `gamw::type` : Wake vortex panel strengths
+
+# Returns if solver_options <: Union{ExternalSolverOptions, PolyAlgorithmOptions}
+- `vz_rotor::Vector{Float}` : axial induced rotor velocity state container
+- `vtheta_rotor::Vector{Float}` : tangential induced rotor velocity state container
+- `Cm_wake::Vector{Float}` : absolute meridional wake control point velocity state container
 """
 function extract_state_variables(
     solver_options::TS, vars, dims
@@ -30,8 +56,6 @@ function extract_state_variables(
     return vz_rotor, vtheta_rotor, Cm_wake
 end
 
-"""
-"""
 function extract_state_variables(solver_options::CSORSolverOptions, vars, dims)
 
     # - Separate out - #

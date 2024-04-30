@@ -1,4 +1,15 @@
 """
+    system_residual(state_variables, sensitivity_parameters, constants)
+
+The residual function for external solvers.
+
+# Arguments
+- `state_variables::Vector{Float}` : the state variables
+- `sensitivity_parameters::Vector{Float}` : parameters to which the solution derivatives are sensitive
+- `constants::NamedTuple` : parameters to which the solution derivatives are constant
+
+# Returs
+- `resid::Vector{Float}` : residual vector
 """
 function system_residual(state_variables, sensitivity_parameters, constants)
     resid = similar(state_variables) .= 0
@@ -6,6 +17,9 @@ function system_residual(state_variables, sensitivity_parameters, constants)
 end
 
 """
+    system_residual!(resid, state_variables, sensitivity_parameters, constants)
+
+In-place version of system_residual.
 """
 function system_residual!(resid, state_variables, sensitivity_parameters, constants)
 
@@ -86,6 +100,30 @@ function system_residual!(resid, state_variables, sensitivity_parameters, consta
 end
 
 """
+    update_system_residual!(
+        solver_options::SolverOptionsType
+        resid,
+        vz_est,
+        vz_rotor,
+        vtheta_est,
+        vtheta_rotor,
+        Cm_est,
+        Cm_wake,
+        solve_parameter_cache_dims,
+    )
+
+Update the residual for external solvers.
+
+# Arguments
+- `solver_options::SolverOptionsType
+- `resid::Vector{Float}` : residual vector
+- `vz_est::Vector{Float}` : axial induced rotor velocity estimate container
+- `vz_rotor::Vector{Float}` : axial induced rotor velocity state container
+- `vtheta_est::Vector{Float}` : tangential induced rotor velocity estimate container
+- `vtheta_rotor::Vector{Float}` : tangential induced rotor velocity state container
+- `Cm_est::Vector{Float}` : absolute meridional wake control point velocity estimate container
+- `Cm_wake::Vector{Float}` : absolute meridional wake control point velocity state container
+- `solve_parameter_cache_dims::Vector{Float}` : dimensions of state vectors to use in accessing the residual vector
 """
 function update_system_residual!(
     solver_options::Union{NonlinearSolveOptions,NLsolveOptions,SIAMFANLEOptions,MinpackOptions,PolyAlgorithmOptions},
@@ -111,8 +149,6 @@ function update_system_residual!(
     return resid
 end
 
-"""
-"""
 function update_system_residual!(
     solver_options::Union{SpeedMappingOptions,FixedPointOptions},
     resid,
@@ -134,6 +170,38 @@ function update_system_residual!(
 end
 
 """
+    estimate_states!(
+        solve_containers,
+        vz_rotor,
+        vtheta_rotor,
+        Cm_wake,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps;
+        verbose=false,
+    )
+
+Estimate velocity states.
+
+# Arguments
+- `solve_containers::NamedTuple` : cache for intermediate values in solve
+- `vz_rotor::Vector{Float}` : axial induced rotor velocity state container
+- `vtheta_rotor::Vector{Float}` : tangential induced rotor velocity state container
+- `Cm_wake::Vector{Float}` : absolute meridional wake control point velocity state container
+- `operating_point::NamedTuple` : Named tuple containing operating_point information
+- `ivr::NamedTuple` : unit induced velocities on rotor(s)
+- `ivw::NamedTuple` : unit induced velocities on wake
+- `linsys::NamedTuple` : vectors and matricies comprising the panel method linear system
+- `blade_elements::NamedTuple` : blade element geometry and airfoil polar information
+- `wakeK::Vector{Float}` : geometric constants used in caculating wake strengths
+- `idmaps::NamedTuple` : index maps used throughout solve
+
+# Keyword Arguments
+- `verbose::Bool=false` : flag for verbose print statements
 """
 function estimate_states!(
     solve_containers,
