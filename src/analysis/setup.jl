@@ -70,16 +70,16 @@ function setup_analysis(
     (; prepost_container_cache, prepost_container_cache_dims) = prepost_container_caching
 
     # Get correct cached types
-    prepost_container_cache_vec = @views PreallocationTools.get_tmp(
+    prepost_container_cache_vector = @views PreallocationTools.get_tmp(
         prepost_container_cache, TF(1.0)
     )
 
     # reset cache
-    prepost_container_cache_vec .= 0
+    prepost_container_cache_vector .= 0
 
     # Reshape Cache
     prepost_containers = withdraw_prepost_container_cache(
-        prepost_container_cache_vec, prepost_container_cache_dims
+        prepost_container_cache_vector, prepost_container_cache_dims
     )
 
     # - Set up Solver Sensitivity Paramter Cache - #
@@ -111,12 +111,10 @@ function setup_analysis(
         solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
     end
 
-    # - Do preprocessutations - #
+    ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
     if options.verbose
         println("Pre-computing Parameters")
     end
-
-    ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
 
     # - Preprocess - #
     A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = precompute_parameters!(

@@ -1,4 +1,29 @@
 """
+    process(
+        solver_options::SolverOptionsType,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        airfoils,
+        A_bb_LU,
+        solve_container_caching,
+        idmaps,
+        options,
+    )
+
+Process (the step between pre-process and post-process) the solution, in other words: call the solver(s).
+
+# Arguments
+- `solver_options::SolverOptionsType` : the solver options contained in the options object, used for dispatch.
+- `solve_parameter_cache_vector::Vector{Float}` : The vector cache for parameters used in the solve.
+- `solve_parameter_cache_dims::NamedTuple` : A named tuple containing the dimensions of the solve parameters.
+- `airfoils::NamedTuple` : The airfoils to be interpolated that are associated with each blade element
+- `A_bb_LU::LinearAlgebra.LU` : The LU decomposition of the panel method LHS matrix
+- `solve_container_caching::NamedTuple` : A named tuple containing the cache and dimensions for the intermediate solve values.
+- `idmaps::NamedTuple` : The set of index maps used in various solve sub-functions
+- `options::Options` : User options
+
+# Returns
+- `converged_states::Vector{Float}` : The output of a call to `ImplicitAD.implicit`
 """
 function process(
     solver_options::TS,
@@ -66,8 +91,6 @@ function process(
     )
 end
 
-"""
-"""
 function process(
     solver_options::CSORSolverOptions,
     solve_parameter_cache_vector,

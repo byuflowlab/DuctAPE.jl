@@ -181,7 +181,7 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 - `Vconv::TF = 1.0` : velocity used in relative convergence criteria (should be set to Vref).
 - `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
 """
-@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TS} <: SolverOptionsType
+@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
     iteration_limit::TF = 1e2
@@ -193,13 +193,14 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
     btw::TF = 0.6
     pfw::TF = 1.2
     relaxation_schedule::TS = [
-        reverse!([1e10; 1e-13; 1e-14; 0.0]), reverse!([0.0; 0.0; 1.0; 1.0])
+        reverse!([1e10; 1e-16; 1e-17; 0.0]), reverse!([0.0; 0.0; 1.0; 1.0])
     ]
     f_circ::TF = 1e-3
     f_dgamw::TF = 2e-4
     convergence_type::TC = Relative()
-    Vconv::TF = 1.0
+    Vconv::AbstractVector{TF} = [1.0]
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 """
@@ -220,6 +221,7 @@ Options for the FixedPoint.jl package solver
     ep::TF = 0.01
     atol::TF = 1e-12
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 """
@@ -254,6 +256,7 @@ Options for the SpeedMapping.jl package solver
     buffer::TF = 0.01 # if using bounds, buffer brings x inside bounds by buffer amountd
     Lp::TF = Inf # p value for p-norm for convergence criteria
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 ##### ----- Quasi-Newton Solvers ----- #####
@@ -274,6 +277,7 @@ Options for the MINPACK's HYBRJ solver
     atol::TF = 1e-12
     iteration_limit::TI = 100
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 """
@@ -300,6 +304,7 @@ Options for the SIAMFANLEquations pacakge solvers
     additional_kwargs::TK = (;)
     # additional_kwargs::TK = (; delta0=1e-3)
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 ##### ----- Newton+ Solvers ----- #####
@@ -320,11 +325,12 @@ Options for the SimpleNonlinearSolve pacakge solvers
 @kwdef struct NonlinearSolveOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Algorithm Options
     algorithm::TA = SimpleNonlinearSolve.SimpleNewtonRaphson
-    additional_kwargs::TK = (;)
+    additional_kwargs::TK = (; autodiff=AutoforwardDiff())
     # Iteration Controls
     atol::TF = 1e-12
     iteration_limit::TI = 25
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 """
@@ -350,6 +356,7 @@ Options for the NLsolve pacakge solvers
     linesearch_method::Tls = LineSearches.MoreThuente
     linesearch_kwargs::Tlsk = (;)
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 ##### ----- Poly-Algorithm Solvers ----- #####
@@ -369,13 +376,14 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
 - `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct CompositeSolverOptions{
-    TB,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
+    TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
 } <: PolyAlgorithmOptions
     solvers::AbstractVector{TS} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
     ]
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 """
@@ -396,7 +404,7 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 - `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct ChainSolverOptions{
-    TB,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
+    TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
 } <: PolyAlgorithmOptions
     solvers::AbstractVector{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
@@ -408,6 +416,7 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
         ),
     ]
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 """
@@ -455,6 +464,7 @@ Options for SLOR (successive line over relaxation) elliptic grid solver.
     iteration_limit::TI = 100
     atol::TF = 1e-9
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 """
@@ -475,6 +485,7 @@ Options for Newton elliptic grid solver.
     algorithm::TSym = :newton
     autodiff::TSym = :forward
     converged::AbstractVector{TB} = [false]
+    iterations::AbstractVector{TI} = [0]
 end
 
 #---------------------------------#

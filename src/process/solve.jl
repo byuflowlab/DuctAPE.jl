@@ -1,4 +1,7 @@
 """
+    solve(sensitivity_parameters, const_cache; initial_guess=nothing)
+
+A compact dispatch of `solve` that automatically dispatches based on the solver_options contained in const_cache.
 """
 function solve(sensitivity_parameters, const_cache; initial_guess=nothing)
     return solve(
@@ -13,6 +16,27 @@ end
 #       FIXED POINT SOLVERS       #
 #---------------------------------#
 
+"""
+    solve(
+        solver_options::SolverOptionsType,
+        sensitivity_parameters,
+        const_cache;
+        initial_guess=nothing,
+    )
+
+Converge the residual, solving for the state variables that do so.
+
+# Arguments
+- `solver_options::SolverOptionsType` : SolverOptionsType used for dispatch
+- `sensitivity_parameters::Vector{Float}` : Sensitivity parameters for solve (parameters passed in through ImplicitAD)
+- `const_cache::NamedTuple` : A named tuple containing constants and caching helpers.
+
+# Keyword Arguments
+- `initial_guess=nothing::Vector{Float}` : An optional manually provided initial guess (contained in the sensitivity parameters anyway).
+
+# Returns
+- `converged_states::Vector{Float}` : the states for which the residual has converged.
+"""
 function solve(
     solver_options::CSORSolverOptions,
     sensitivity_parameters,
@@ -44,7 +68,7 @@ function solve(
             solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
         )
     else
-        state_variables .= initial_guess
+        state_variables = initial_guess
     end
 
     # - Separate out the state variables - #
@@ -73,7 +97,7 @@ function solve(
 
     resid = MVector{2,TF}(999 * ones(TF, 2))
     conv = @view(solver_options.converged[multipoint_index[]])
-    iter = 0
+    iter = @view(solver_options.iterations[multipoint_index[]]) .= 0
 
     # - SOLVE - #
     if verbose
@@ -81,9 +105,9 @@ function solve(
     end
 
     # loop until converged or max iterations are reached
-    while !conv[] && iter <= solver_options.iteration_limit
+    while !conv[] && iter[] <= solver_options.iteration_limit
         # update iteration number
-        iter += 1
+        iter[] += 1
         if verbose
             println("Iteration $(iter):")
         end
@@ -317,7 +341,7 @@ function solve(
         solve_container_cache_dims,
     ) = const_cache
 
-    (; algorithm, atol, iteration_limit, converged) = solver_options
+    (; algorithm, atol, iteration_limit, converged, iterations) = solver_options
 
     # - Extract Initial Guess Vector for State Variables - #
     if isnothing(initial_guess)
@@ -381,6 +405,7 @@ function solve(
         jwrap!,
         copy(initial_guess);
         tol=atol,
+        tracing=true,
         show_trace=verbose,
         method=algorithm,
         iterations=iteration_limit,
@@ -388,6 +413,7 @@ function solve(
 
     # update convergence flag
     converged[multipoint_index[]] = result.converged
+    iterations[multipoint_index[]] = result.trace.trace[end].iteration
 
     return result.x
 end
@@ -542,6 +568,7 @@ function solve(
         atol,
         iteration_limit,
         converged,
+        iterations,
     ) = solver_options
 
     # - Extract Initial Guess Vector for State Variables - #
@@ -622,8 +649,15 @@ function solve(
         solve_container_cache_dims,
     ) = const_cache
 
-    (; algorithm, linesearch_method, linesearch_kwargs, atol, iteration_limit, converged) =
-        solver_options
+    (;
+        algorithm,
+        linesearch_method,
+        linesearch_kwargs,
+        atol,
+        iteration_limit,
+        converged,
+        iterations,
+    ) = solver_options
 
     # - Extract Initial Guess Vector for State Variables - #
     if isnothing(initial_guess)
@@ -708,6 +742,7 @@ function solve(
     # update convergence flag
     # note: need to do this complicated check to ensure that we're only checking |f(x)|<atol rather than claiming convergences when the step size is zero but it's really just stuck.
     _, converged[multipoint_index[]] = NLsolve.assess_convergence(NLsolve.value(df), atol)
+    iterations[multipoint_index[]] = result.iterations
 
     return result.zero
 end

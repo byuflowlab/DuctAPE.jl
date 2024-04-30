@@ -1,4 +1,16 @@
 """
+    CSOR_residual!(resid, state_variables, sensitivity_parameters, constants)
+
+The in-place residual used for the CSOR solve method.
+
+# Arguments
+- `resid::Vector{Float}` : In-place residual.
+- `state_variables::Vector{Float}` : The state variables
+- `sensitivity_parameters::Vector{Float}` : The parameters to which the solution is sensitive.
+- `constants::NamedTuple` : Various constants required in the solve
+
+# Returns
+- `state_variables::Vector{Float}` : The state variables (modified in place)
 """
 function CSOR_residual!(resid, state_variables, sensitivity_parameters, constants)
 
@@ -68,6 +80,42 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
 end
 
 """
+    compute_CSOR_residual!(
+        resid,
+        solver_options,
+        solve_containers,
+        Gamr,
+        sigr,
+        gamw,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps;
+        verbose=false,
+    )
+
+Description
+
+# Arguments
+- `resid::type` :
+- `solver_options::type` :
+- `solve_containers::type` :
+- `Gamr::type` :
+- `sigr::type` :
+- `gamw::type` :
+- `operating_point::type` :
+- `ivr::type` :
+- `ivw::type` :
+- `linsys::type` :
+- `blade_elements::type` :
+- `wakeK::type` :
+- `idmaps::type` :;
+
+# Keyword Arguments
+- `verbose::Bool=false` : Flag to print verbose statements
 """
 function compute_CSOR_residual!(
     resid,
@@ -302,7 +350,24 @@ function compute_CSOR_residual!(
 end
 
 """
-# Arguments:
+    relax_Gamr!(
+        Gamr,
+        delta_prev_mat,
+        delta_mat,
+        maxBGamr,
+        maxdeltaBGamr,
+        B;
+        nrf=0.4,
+        bt1=0.2,
+        bt2=0.6,
+        pf1=0.4,
+        pf2=0.5,
+        test=false,
+    )
+
+Apply relaxed step to Gamr.
+
+# Arguments
 - `Gamr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
@@ -413,7 +478,13 @@ function relax_Gamr!(
 end
 
 """
-# Arguments:
+    relax_gamw!(
+        gamw, delta_prev, delta, maxdeltagamw; nrf=0.4, btw=0.6, pfw=1.2, test=false
+    )
+
+Apply relaxed step to gamw.
+
+# Arguments
 - `gamw::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
@@ -461,6 +532,14 @@ function relax_gamw!(
 end
 
 """
+    apply_relaxation_schedule(
+        resid::AbstractArray, solver_options::TS
+    ) where {TS<:SolverOptionsType}
+
+Apply custom relaxation schedule to all relaxation factor inputs.
+
+# Arguments
+- `var::type` :
 """
 function apply_relaxation_schedule(
     resid::AbstractArray, solver_options::TS
@@ -487,6 +566,12 @@ function apply_relaxation_schedule(
 end
 
 """
+    apply_relaxation_schedule(resid, nominal, schedule)
+
+Apply custom relaxation schedule to a single relaxation factor input.
+
+# Arguments
+- `var::type` :
 """
 function apply_relaxation_schedule(resid, nominal, schedule)
     rf = linear_transform(
@@ -497,6 +582,18 @@ function apply_relaxation_schedule(resid, nominal, schedule)
 end
 
 """
+    update_CSOR_residual_values!(
+        convergence_type::ConvergenceType, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
+    )
+
+Description
+
+# Arguments
+- `var::type` :
+
+# Keyword Arguments
+- `var::type=default` :
+
 """
 function update_CSOR_residual_values!(
     convergence_type::Relative, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
@@ -507,8 +604,6 @@ function update_CSOR_residual_values!(
     return resid
 end
 
-"""
-"""
 function update_CSOR_residual_values!(
     convergence_type::Absolute, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
 )
@@ -518,6 +613,20 @@ function update_CSOR_residual_values!(
     return resid
 end
 
+"""
+    check_CSOR_convergence!(
+        conv, resid; f_circ=1e-3, f_dgamw=2e-4, convergence_type=Relative(), verbose=false
+    )
+
+Description
+
+# Arguments
+- `var::type` :
+
+# Keyword Arguments
+- `var::type=default` :
+
+"""
 function check_CSOR_convergence!(
     conv, resid; f_circ=1e-3, f_dgamw=2e-4, convergence_type=Relative(), verbose=false
 )
