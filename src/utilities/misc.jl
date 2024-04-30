@@ -1,24 +1,19 @@
 # - Functions to check if the input is a scalar - #
 import Base.BroadcastStyle
+"""
+    isscalar(x::T) where {T} = isscalar(T)
+    isscalar(::Type{T}) where {T} = BroadcastStyle(T) isa Broadcast.DefaultArrayStyle{0}
+
+Determines if the input is a scalar. Note that `Base.BroadcastStyle` is imported.
+"""
 isscalar(x::T) where {T} = isscalar(T)
 isscalar(::Type{T}) where {T} = BroadcastStyle(T) isa Broadcast.DefaultArrayStyle{0}
 
-# """
-# """
-# import Base.getproperty
-# function Base.getproperty(obj::AbstractVector{<:NamedTuple}, sym::Symbol)
-#     return getfield.(obj, sym)
-# end
+"""
+    printval(text, val)
 
-# - Function for adding in xlocations - #
-# from https://stackoverflow.com/questions/25678112/insert-item-into-a-sorted-list-with-julia-with-and-without-duplicates
-function insert_and_dedup!(v, x)
-    for i in eachindex(x)
-        # find ranges and replace with discrete values (thus deleting duplicates if present)
-        v = (splice!(v, searchsorted(v, x[i]), x[i]); v)
-    end
-end
-
+Used for debugging; prints values of `val`, preceeded by `text` for floats, strings, ints and ForwardDiff duals without the user having to know if duals are being used or not.
+"""
 function printval(text, val)
     if eltype(val) == Float64
         println(text, val, " (Float)")
@@ -36,25 +31,39 @@ function printval(text, val)
     return nothing
 end
 
-# dot product
+"""
+    dot(A, B) = sum(a * b for (a, b) in zip(A, B))
+
+A faster dot product.
+"""
 dot(A, B) = sum(a * b for (a, b) in zip(A, B))
-# norm of vector
+
+"""
+    norm(A) = sqrt(mapreduce(x -> x^2, +, A))
+
+A faster 2-norm.
+"""
 norm(A) = sqrt(mapreduce(x -> x^2, +, A))
-# 2D "cross product" magnitude
+
+"""
+    cross2mag(A, B) = A[1] * B[2] - A[2] * B[1]
+
+2D "cross product" magnitude
+"""
 cross2mag(A, B) = A[1] * B[2] - A[2] * B[1]
 
 """
     linear_transform(range1, range2, values)
 
-Linear transfrom of values from range (source_range[1], raend) to (target_range[1], target_range[end])
+Linear transfrom of values from range `(source_range[1], source_range[end])` to `(target_range[1], target_range[end])`
 
-# Arguments:
-- `source_range::Vector{Float{` : range values come from
-- `target_range::Vector{Float}` : range onto which we are transforming
-- `source_values::Array{Float}` : array of source_values to transform
+# Arguments
+- `source_range::Vector{Float}` : range values come from (can also be a Tuple)
+- `target_range::Vector{Float}` : range onto which we are transforming (can also be a Tuple)
+- `source_values::Array{Float}` : array of source values to transform
 
-# Returns:
- - `target_values::Array{Float}` : array of transformed source_values onto target range
+# Returns
+ - `target_values::Array{Float}` : array of transformed sourcevalues onto target range
 """
 function linear_transform(source_range, target_range, source_values)
     return target_range[1] .+
@@ -63,6 +72,9 @@ function linear_transform(source_range, target_range, source_values)
 end
 
 """
+    extract_primals!(Avalue, A::AbstractMatrix{T}) where {T}
+
+Extracts primals of A and places them in Avalue.
 """
 function extract_primals!(Avalue, A::AbstractMatrix{T}) where {T}
     if T <: ForwardDiff.Dual #|| T<:ReverseDiff.TrackedReal  # Automatic differentiation case
@@ -81,8 +93,9 @@ function extract_primals!(Avalue, A::AbstractMatrix{T}) where {T}
 end
 
 """
-length from size
-move to utilities
+    lfs(shape)
+
+Determines length from shape (output of `size` function).
 """
 function lfs(shape)
     if length(shape) == 1
@@ -93,8 +106,9 @@ function lfs(shape)
 end
 
 """
-note: containers must be Arrays, structs of arrays, or tuples of arrays
-move to utilities
+    reset_containers!(containers; exception_keys=[])
+
+Resets all fields (not incluing any contained in exception keys) of containers---which must be arrays, structs of arrays, or tuples of arrays---to zeros.
 """
 function reset_containers!(c; exception_keys=[])
     if typeof(c) <: AbstractArray
@@ -132,6 +146,9 @@ Convenience function for promoting types based on any potential elements of the 
 
 # Arguments
 - `propulsor::Propulsor` : the propulsor input
+
+# Returns
+- `TP::Type` : the promoted type
 """
 function promote_propulosor_type(p)
     return promote_type(

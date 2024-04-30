@@ -241,10 +241,18 @@ DuctAPE.extract_state_variables
 ```@docs
 DuctAPE.post_process
 ```
+TODO: add the rest of the post-process functions
 
 ## Utility Functions
 ```@docs
 DuctAPE.promote_propulosor_type
+DuctAPE.update_operating_point!
+DuctAPE.isscalar
+DuctAPE.dot
+DuctAPE.norm
+DuctAPE.cross2mag
+DuctAPE.linear_transform
+DuctAPE.extract_primals!
+DuctAPE.lfs
+DuctAPE.reset_containers!
 ```
-TODO; add contents of update-propulsor.jl here
-TODO; add contents of misc.jl

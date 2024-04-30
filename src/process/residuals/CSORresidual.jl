@@ -100,19 +100,19 @@ end
 Description
 
 # Arguments
-- `resid::type` :
-- `solver_options::type` :
-- `solve_containers::type` :
-- `Gamr::type` :
-- `sigr::type` :
-- `gamw::type` :
-- `operating_point::type` :
-- `ivr::type` :
-- `ivw::type` :
-- `linsys::type` :
-- `blade_elements::type` :
-- `wakeK::type` :
-- `idmaps::type` :;
+- `resid::Vector{Float}` : the residual vector
+- `solver_options::SolverOptionsType` : solver options (used for convergence criteria)
+- `solve_containers::NamedTuple` : cache for intermediate solve values
+- `Gamr::type` : Blade element circulation strengths
+- `sigr::type` : Rotor source panel strengths
+- `gamw::type` : Wake vortex panel strengths
+- `operating_point::NamedTuple` : Named tuple containing operating_point information
+- `ivr::NamedTuple` : unit induced velocities on rotor(s)
+- `ivw::NamedTuple` : unit induced velocities on wake
+- `linsys::NamedTuple` : vectors and matricies comprising the panel method linear system
+- `blade_elements::NamedTuple` : blade element geometry and airfoil polar information
+- `wakeK::Vector{Float}` : geometric constants used in caculating wake strengths
+- `idmaps::NamedTuple` : index maps used throughout solve
 
 # Keyword Arguments
 - `verbose::Bool=false` : Flag to print verbose statements
