@@ -19,7 +19,6 @@ Perform pre-processing and cache setup (as needed) for propuslor analysis.
 - `solve_container_caching=nothing` : Output of `allocate_solve_container_cache`
 
 # Returns
-
 - `problem_dimensions::NamedTuple` : Named Tuple contiaining bookkeeping information (problem dimensions)
 - `prepost_containers::NamedTuple` : Named Tuple containing reshaped views into the prepost cache
 - `solve_parameter_cache_vector::Vector` : Vector containing the relevant typed cache vector of solve parameters

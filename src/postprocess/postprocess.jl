@@ -45,7 +45,93 @@ Post-process a converged nonlinear solve solution.
 - `verbose::Bool=false` : flag to print verbose statements
 
 # Returns
-- `outs::NamedTuple` : A named tuple containing all the output values.
+- `outs::NamedTuple` : A named tuple containing all the output values including
+  - `wake=(; panel_strengths=gamw)`
+  - `bodies`
+    - `panel_strengths`
+    - `total_thrust`
+    - `thrust_comp`
+    - `induced_efficiency`
+    - `cp_in`
+    - `cp_out`
+    - `cp_casing_in`
+    - `cp_casing_out`
+    - `zpts.casing_zpts`
+    - `cp_nacelle_in`
+    - `cp_nacelle_out`
+    - `zpts.nacelle_zpts`
+    - `cp_centerbody_in`
+    - `cp_centerbody_out`
+    - `zpts.centerbody_zpts`
+    - `Vtot_in`
+    - `Vtot_out`
+    - `Vtot_prejump`
+    - `vtot_body`
+    - `vtot_jump`
+    - `vtot_wake`
+    - `vtot_rotors`
+    - `Vtan_in`
+    - `Vtan_out`
+    - `vtan_casing_in`
+    - `vtan_casing_out`
+    - `vtan_nacelle_in`
+    - `vtan_nacelle_out`
+    - `vtan_centerbody_in`
+    - `vtan_centerbody_out`
+  - `rotors`
+    - `circulation`
+    - `panel_strengths`
+    - `efficiency`
+    - `inviscid_thrust`
+    - `inviscid_thrust_dist`
+    - `viscous_thrust`
+    - `viscous_thrust_dist`
+    - `thrust`
+    - `CT`
+    - `inviscid_torque`
+    - `inviscid_torque_dist`
+    - `viscous_torque`
+    - `viscous_torque_dist`
+    - `torque`
+    - `CQ`
+    - `inviscid_power`
+    - `inviscid_power_dist`
+    - `viscous_power`
+    - `viscous_power_dist`
+    - `power`
+    - `CP`
+    - `cl`
+    - `cd`
+    - `alpha`
+    - `beta1`
+    - `blade_normal_force_per_unit_span`
+    - `blade_tangential_force_per_unit_span`
+  - `totals`
+    - `thrust`
+    - `torque`
+    - `power`
+    - `CT`
+    - `CQ`
+    - `CP`
+    - `total_efficiency`
+    - `ideal_efficiency`
+  - `intermediate_solve_values`
+    - `vz_rotor`
+    - `vtheta_rotor`
+    - `Cm_wake`
+    - `reynolds`
+    - `mach`
+    - `Cz_rotor`
+    - `Ctheta_rotor`
+    - `Cmag_rotor`
+    - `Gamma_tilde`
+    - `H_tilde`
+    - `deltaGamma2`
+    - `deltaH`
+    - `vz_wake`
+    - `vr_wake`
+    - `Cm_avg`
+
 """
 function post_process(
     solver_options,
