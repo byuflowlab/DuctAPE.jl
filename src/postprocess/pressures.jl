@@ -1,14 +1,15 @@
 """
     steady_cp(Vs, Vinf, Vref)
 
-Calculate steady pressure coefficient
+Calculate steady pressure coefficients for a given surface velocity.
 
 # Arguments
-Vs
-Vinf
-Vref
+- `Vs::Vector{Float}` : the surface velocities
+- `Vinf::Vector{Float}` : one element vector with freestream mangnitude
+- `Vref::Vector{Float}` : one element vector with reference velocity used for non-dimensionalization
 
 # Returns
+- `cp::Vector{Float}` : the steady pressure coefficients
 """
 function steady_cp(Vs, Vinf, Vref)
     cp = similar(Vs) .= 0
@@ -18,7 +19,7 @@ end
 """
     steady_cp!(cp, Vs, Vinf, Vref)
 
-In-place verison of steady_cp
+In-place verison of `steady_cp`.
 """
 function steady_cp!(cp, Vs, Vinf, Vref)
     cp .= (Vinf^2 .- Vs .^ 2) / Vref^2
@@ -31,11 +32,11 @@ end
 Calculate jumps in entropy across the disks.
 
 # Arguments
-sigr
-Cz_rotor
+- `sigr::Matrix{Float}` : rotor source panel strengths
+- `Cz_rotor::Vector{Float}` : absolute axial velocity on rotor blade elements
 
 # Returns
-
+- `deltaS::Vector{Float}` : entropy jump across rotor disks
 """
 function calculate_entropy_jumps(sigr, Cz_rotor)
     # average sigr's
@@ -49,23 +50,24 @@ function calculate_entropy_jumps(sigr, Cz_rotor)
 end
 
 """
-    delta_cp(deltaH, deltaS, Vtheta, Vref)
+    delta_cp(deltaH, deltaS, Ctheta, Vref)
 
 Calculate change in pressure coefficient aft of rotor, due to rotor
 
 # Arguments
-deltaH
-deltaS
-Vtheta
-Vref
+- `deltaH::Vector{Float}` : Enthalpy jumps across disks
+- `deltaS::Vector{Float}` : Entropy jumps across disks`
+- `Ctheta::Vector{Float}` : tangenetial velocity
+- `Vref::Vector{Float}` : reference velocity for non-dimensionalization
 
 # Returns
+- `delta_cp::Vector{Float}` : pressure rises due to rotor disks
 """
-function delta_cp(deltaH, deltaS, Vtheta, Vref)
+function delta_cp(deltaH, deltaS, Ctheta, Vref)
     if isapprox(Vref, 0.0)
         return 0.0
     else
-        return (2.0 * (deltaH - deltaS) .- Vtheta .^ 2) / Vref^2
+        return (2.0 * (deltaH - deltaS) .- Ctheta .^ 2) / Vref^2
     end
 end
 
@@ -75,13 +77,16 @@ end
 Calculate net circulation and enthalpy and entropy disk jumps
 
 # Arguments
-Gamr
-Omega
-B
-sigr
-Cz_rotor
+- `Gamr::Matrix{Float}` : Blade element circulation strengths
+- `Omega::Vector{Float}` : rotor rotation rates
+- `B::Vector{Float}` : blade count for each rotor (usually integers but could be a float)
+- `sigr::Matrix{Float}` : rotor source panel strengths
+- `Cz_rotor::Vector{Float}` : absolute axial velocity on rotor blade elements
 
 # Returns
+- `Gamma_tilde::Matrix{Float}` : net upstream circulation
+- `Htilde::Matrix{Float}` : net upstream enthalpy jumps
+- `Stilde::Matrix{Float}` : net upstream entropy jumps
 """
 function calculate_rotor_jumps(Gamr, Omega, B, sigr, Cz_rotor)
 
@@ -98,23 +103,34 @@ function calculate_rotor_jumps(Gamr, Omega, B, sigr, Cz_rotor)
 end
 
 """
-    calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr, didr, hidr)
+    calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr, casing_panel_ids_aft_of_rotors, centerbody_panel_ids_aft_of_rotors)
 
-Calculate change in pressure coefficient due to rotors specifically on the body panels aft of the rotors
+Augment surface pressure by change in pressure coefficient due to rotors specifically on the body panels aft of the rotors.
 
 # Arguments
-cp
-Gamr
-sigr
-Cz_rotor
-Vref
-Omega
-B
-cpr
-didr
-hidr
+- `cp::Vector{Float}` : steady pressure coeffients, modified in-place to include rotor effects.
+- `Gamr::Matrix{Float}` : Blade element circulation strengths
+- `sigr::Matrix{Float}` : rotor source panel strengths
+- `Cz_rotor::Vector{Float}` : absolute axial velocity on rotor blade elements
+- `Vref::Vector{Float}` : one element vector with reference velocity used for non-dimensionalization
+- `Omega::Vector{Float}` : rotor rotation rates
+- `B::Vector{Float}` : blade count for each rotor (usually integers but could be a float)
+- `cpr::Vector{Float}` : control point radial positions of body panels
+- `casing_panel_ids_aft_of_rotors::Vector{Int}` : duct indices of control point radial positions aft of rotors
+- `centerbody_panel_ids_aft_of_rotors::Vector{Int}` : centerbody indices of control point radial positions aft of rotors
 """
-function calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr, didr, hidr)
+function calculate_body_delta_cp!(
+    cp,
+    Gamr,
+    sigr,
+    Cz_rotor,
+    Vref,
+    Omega,
+    B,
+    cpr,
+    casing_panel_ids_aft_of_rotors,
+    centerbody_panel_ids_aft_of_rotors,
+)
 
     ## -- Calculate change in pressure coefficient -- ##
 
@@ -126,15 +142,18 @@ function calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr,
 
         # - Get the tangential velocities on the bodies - #
         v_theta_duct = calculate_vtheta(
-            Gamma_tilde[end, irotor], @view(cpr[1:didr[irotor]])
+            Gamma_tilde[end, irotor], @view(cpr[1:casing_panel_ids_aft_of_rotors[irotor]])
         )
-        v_theta_hub = calculate_vtheta(Gamma_tilde[1, irotor], @view(cpr[hidr[irotor]:end]))
+        v_theta_hub = calculate_vtheta(
+            Gamma_tilde[1, irotor],
+            @view(cpr[centerbody_panel_ids_aft_of_rotors[irotor]:end])
+        )
 
         # assemble change in cp due to enthalpy and entropy behind rotor(s)
-        cp[1:didr[irotor]] += delta_cp(
+        cp[1:casing_panel_ids_aft_of_rotors[irotor]] += delta_cp(
             Htilde[end, irotor], Stilde[end, irotor], v_theta_duct, Vref
         )
-        cp[hidr[irotor]:end] += delta_cp(
+        cp[centerbody_panel_ids_aft_of_rotors[irotor]:end] += delta_cp(
             Htilde[1, irotor], Stilde[1, irotor], v_theta_hub, Vref
         )
     end
@@ -143,23 +162,23 @@ function calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr,
 end
 
 """
-    calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, r; body="duct")
+    calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr; body="duct")
 
 Calculate change in pressure coefficient due to rotors specifically on the body wakes
 
 # Arguments
-Gamr
-sigr
-Cz_rotor
-Vref
-Omega
-B
-r
+- `Gamr::Matrix{Float}` : Blade element circulation strengths
+- `sigr::Matrix{Float}` : rotor source panel strengths
+- `Cz_rotor::Vector{Float}` : absolute axial velocity on rotor blade elements
+- `Vref::Vector{Float}` : one element vector with reference velocity used for non-dimensionalization
+- `Omega::Vector{Float}` : rotor rotation rates
+- `B::Vector{Float}` : blade count for each rotor (usually integers but could be a float)
+- `cpr::Vector{Float}` : control point radial positions of body wake "panels"
 
 # Keyword Arguments
-body="duct"
+- `body::String="duct"` : flag as to whether the body in question is a duct or centerbody.
 """
-function calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, r; body="duct")
+function calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr; body="duct")
 
     ## -- Calculate change in pressure coefficient -- ##
 
@@ -176,7 +195,7 @@ function calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, r; bo
         st = Stilde[1, end]
     end
 
-    v_theta_wake = calculate_vtheta(gt, r)
+    v_theta_wake = calculate_vtheta(gt, cpr)
 
     # assemble change in cp due to enthalpy and entropy behind rotor(s)
     deltacp = delta_cp(ht, st, v_theta_wake, Vref)
@@ -195,8 +214,8 @@ get_body_cps(
     Vref,
     B,
     Omega,
-    didr,
-    hidr,
+    casing_panel_ids_aft_of_rotors,
+    centerbody_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
     zpts,
@@ -205,22 +224,23 @@ get_body_cps(
 Description
 
 # Arguments
-Vtan_in::type` :
-Vtan_out::type` :
-Gamr::type` :
-sigr::type` :
-Cz_rotor::type` :
-Vinf::type` :
-Vref::type` :
-B::type` :
-Omega::type` :
-didr::type` :
-hidr::type` :
-controlpoints::type` :
-endpanelidxs::type` :
-zpts::type` :
+- `Vtan_in::Vector{Float}` : Tangential velocity on the inside of the body panels
+- `Vtan_out::Vector{Float}` : Tangential velocity on the outside of the body panels
+- `Gamr::Matrix{Float}` : Blade element circulation strengths
+- `sigr::Matrix{Float}` : rotor source panel strengths
+- `Cz_rotor::Vector{Float}` : absolute axial velocity on rotor blade elements
+- `Vinf::Vector{Float}` : one element vector with freestream mangnitude
+- `Vref::Vector{Float}` : one element vector with reference velocity used for non-dimensionalization
+- `B::Vector{Float}` : blade count for each rotor (usually integers but could be a float)
+- `Omega::Vector{Float}` : rotor rotation rates
+- `casing_panel_ids_aft_of_rotors::Vector{Int}` : duct indices of control point radial positions aft of rotors
+- `centerbody_panel_ids_aft_of_rotors::Vector{Int}` : centerbody indices of control point radial positions aft of rotors
+- `controlpoints::Matrix{Float}` : control point locations for each panel
+- `endpanelidxs::Matrix{Int}` : the indices of the first and last panels for each body
+- `zpts::NamedTuple` : a named tuple containing the z-coordinates of the control points of the duct casing, duct nacelle, and centerbody.
 
 # Returns
+- `cp_tuple::NamedTuple` : body surface velocities and various useful breakdowns thereof.
 """
 function get_body_cps(
     Vtan_in,
@@ -232,8 +252,8 @@ function get_body_cps(
     Vref,
     B,
     Omega,
-    didr,
-    hidr,
+    casing_panel_ids_aft_of_rotors,
+    centerbody_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
     zpts,
@@ -269,8 +289,8 @@ function get_body_cps(
         Vref,
         B,
         Omega,
-        didr,
-        hidr,
+        duct_panel_ids_aft_of_rotors,
+        centerbody_panel_ids_aft_of_rotors,
         controlpoints,
         endpanelidxs,
         zpts,
@@ -289,14 +309,14 @@ end
         Vref,
         B,
         Omega,
-        didr,
-        hidr,
+        duct_panel_ids_aft_of_rotors,
+        centerbody_panel_ids_aft_of_rotors,
         controlpoints,
         endpanelidxs,
         zpts,
     )
 
-In-place version of get_body_cps.
+In-place version of `get_body_cps`.
 """
 function get_body_cps!(
     cp_tuple,
@@ -309,8 +329,8 @@ function get_body_cps!(
     Vref,
     B,
     Omega,
-    didr,
-    hidr,
+    casing_panel_ids_aft_of_rotors,
+    centerbody_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
     zpts,
@@ -336,7 +356,16 @@ function get_body_cps!(
 
     # - add the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
     calculate_body_delta_cp!(
-        cp_out, Gamr, sigr, Cz_rotor, Vref, Omega, B, @view(controlpoints[2, :]), didr, hidr
+        cp_out,
+        Gamr,
+        sigr,
+        Cz_rotor,
+        Vref,
+        Omega,
+        B,
+        @view(controlpoints[2, :]),
+        casing_panel_ids_aft_of_rotors,
+        centerbody_panel_ids_aft_of_rotors,
     )
 
     # - Split body strengths into inner/outer duct and hub - #
@@ -388,26 +417,25 @@ end
 Calculate the pressure coefficient distributions on one of the body wakes
 
 # Arguments
-Gamr,
-vz_w,
-vr_w,
-gamw,
-vz_r,
-vr_r,
-sigr,
-vz_b,
-vr_b,
-gamb,
-panels,
-Cz_rotor,
-Omega,
-B,
-Vinf,
-Vref
+- `Gamr::Matrix{Float}` : Blade element circulation strengths
+- `vz_w::Matrix{Float}` : unit axial induced velocity of the wake onto the body wake
+- `vr_w::Matrix{Float}` : unit radial induced velocity of the wake onto the body wake
+- `gamw::Vector{Float}` : wake panel strengths
+- `vz_r::Matrix{Float}` : unit axial induced velocity of the rotor onto the body wake
+- `vr_r::Matrix{Float}` : unit radial induced velocity of the rotor onto the body wake
+- `sigr::Vector{Float}` : rotor panel strengths
+- `vz_b::Matrix{Float}` : unit axial induced velocity of the bodies onto the body wake
+- `vr_b::Matrix{Float}` : unit radial induced velocity of the bodies onto the body wake
+- `gamb::Vector{Float}` : body panel strengths
+- `panels::NamedTuple` : A named tuple containing bodywake "panel" geometries
+- `Cz_rotor::Vector{Float}` : absolute axial velocity on rotor blade elements
+- `Omega::Vector{Float}` : rotor rotation rates
+- `B::Vector{Float}` : blade count for each rotor (usually integers but could be a float)
+- `Vinf::Vector{Float}` : one element vector containing the velocity magnitude
+- `Vref::Vector{Float}` : one element vector with reference velocity used for non-dimensionalization
 
 # Keyword Arguments
-body="duct",
-
+- `body::String="duct"` : flag as to whether the body in question is a duct or centerbody.
 """
 function get_bodywake_cps(
     Gamr,
@@ -457,13 +485,17 @@ end
 Calculate dimensional and non-dimensional axial force on a single body
 
 # Arguments
-cp_in
-cp_out
-panels
+- `cp_in::Vector{Float}` : pressure coefficient on inside of body surfaces
+- `cp_out::Vector{Float}` : pressure coefficients on outside of body surfaces
+- `panels::NamedTuple` : A named tuple containing panel geometry information
 
 # Keyword Arguments
-rhoinf=1.225
-Vref=1.0
+- `rhoinf::Float=1.225` : reference density for non-dimensionalization
+- `Vref::Float=1.0` : reference velocity for non-dimensionalization
+
+# Returns
+- `thrust::Vector{Float}` : dimensional axial force
+- `force_coeff::Vector{Float}` : non-dimensional axial force
 """
 function forces_from_pressure(cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
     # - initialize - #
@@ -476,7 +508,7 @@ end
 """
     forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
 
-In-place version of forces_from_pressure.
+In-place version of `forces_from_pressure`.
 """
 function forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
 
@@ -508,18 +540,18 @@ end
         thrust, force_coeff, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0
     )
 
-Calculate dimensional and non-dimensional axial force on a single body
+Add force induced by trailing edge gap panels to total forces.
 
 # Arguments
-thrust
-force_coeff
-cp_in
-cp_out
-panels
+- `thrust::Vector{Float}` : dimensional axial force
+- `force_coeff::Vector{Float}` : non-dimensional axial force
+- `cp_in::Vector{Float}` : pressure coefficient on inside of body surfaces
+- `cp_out::Vector{Float}` : pressure coefficients on outside of body surfaces
+- `panels::NamedTuple` : A named tuple containing panel geometry information
 
 # Keyword Arguments
-rhoinf=1.225
-Vref=1.0
+- `rhoinf::Float=1.225` : reference density for non-dimensionalization
+- `Vref::Float=1.0` : reference velocity for non-dimensionalization
 """
 function forces_from_TEpanels!(
     thrust, force_coeff, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0

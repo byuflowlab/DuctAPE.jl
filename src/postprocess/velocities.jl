@@ -154,7 +154,7 @@ function get_body_tangential_velocities!(
     zpts,
 )
 
-In-place version of get_body_tangential_velocities.
+In-place version of `get_body_tangential_velocities`.
 
 # Additional Arguments
 - `zpts::NamedTuple` : a named tuple containing the z-coordinates of the control points of the duct casing, duct nacelle, and centerbody.
