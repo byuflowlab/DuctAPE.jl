@@ -168,3 +168,24 @@ function promote_propulosor_type(p)
         eltype(p.rotorstator_parameters.twists),
     )
 end
+
+"""
+    cache_dims!(total_length, l, s)
+
+A function that returns a named tuple containing an index range and shape and increases `total_length` by `l`.
+
+This function is used heavily in the cache allocation functions for setting up the dimension maps used to access the vectorized caches.
+
+# Arguments
+- `total_length::Vector{Int}` : single element vector containing the current total length of the eventual cache vector. Modified in place.
+- `l::Int` : total length of the object in question
+- `s::Int` : size of the object in question
+
+# Returns
+- `dims::NamedTuple` : A named tuple containing `index` and `shape` fields
+"""
+function cache_dims!(total_length, l, s)
+    dims = (; index=(total_length[] + 1):(total_length[] + l), shape=s)
+    total_length[] += l
+    return dims
+end

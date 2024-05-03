@@ -635,7 +635,7 @@ function initialize_strengths!(
 
     reset_containers!(solve_containers)
 
-    vz_rotor=0.0
+    vz_rotor=-Vinf[] + 1.0
 
     # loop through rotors
     for irotor in 1:nrotor

@@ -1,4 +1,16 @@
 """
+    initialize_all_caches(solver_options, paneling_constants)
+
+Convenience function to initialize all caches before calling analysis.
+
+# Arguments
+- `solver_options::SolverOptionsType` : solver options used for cache allocation dispatch
+- `paneling_constants::PanelingConstants` : PanelingConstants object upon which all cache sizing depends
+
+# Returns
+- `prepost_container_caching::NamedTuple` : A named tuple containing the PreallocationTools DiffCache and a named tuple with relevant dimensions for accessing the cache.
+- `solve_parameter_caching::NamedTuple` : A named tuple containing the PreallocationTools DiffCache and a named tuple with relevant dimensions for accessing the cache.
+- `solve_container_caching::NamedTuple` : A named tuple containing the PreallocationTools DiffCache and a named tuple with relevant dimensions for accessing the cache.
 """
 function initialize_all_caches(solver_options, paneling_constants)
 
@@ -16,12 +28,4 @@ function initialize_all_caches(solver_options, paneling_constants)
     )
 
     return prepost_container_caching, solve_parameter_caching, solve_container_caching
-end
-
-"""
-"""
-function cache_dims!(total_length, l, s)
-    dims = (; index=(total_length[] + 1):(total_length[] + l), shape=s)
-    total_length[] += l
-    return dims
 end

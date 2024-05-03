@@ -166,7 +166,8 @@ function analyze(
         A_bb_LU,
         airfoils,
         idmaps,
-        problem_dimensions;
+        problem_dimensions,
+        options.multipoint_index;
         write_outputs=options.write_outputs[options.multipoint_index[]],
         outfile=options.outfile[options.multipoint_index[]],
         checkoutfileexists=options.checkoutfileexists,

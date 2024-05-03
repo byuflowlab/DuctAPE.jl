@@ -109,7 +109,7 @@ function solve(
         # update iteration number
         iter[] += 1
         if verbose
-            println("Iteration $(iter):")
+            println("Iteration $(iter[]):")
         end
 
         # Call residual
@@ -127,6 +127,7 @@ function solve(
                 solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
                 solve_container_cache,      # cache for solve_containers used in solve
                 solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+                multipoint_index,
             ),
         )
 

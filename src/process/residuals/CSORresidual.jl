@@ -25,6 +25,7 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
         solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
         solve_container_cache,      # cache for solve_containers used in solve
         solve_container_cache_dims, # dimensions for shaping the view of the solve cache
+        multipoint_index,
     ) = constants
 
     # - Separate out the state variables - #
@@ -72,7 +73,8 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
         (; linsys..., A_bb_LU),
         (; blade_elements..., airfoils...),
         wakeK,
-        idmaps;
+        idmaps,
+        multipoint_index;
         verbose=solver_options.verbose,
     )
 
@@ -130,7 +132,8 @@ function compute_CSOR_residual!(
     linsys,
     blade_elements,
     wakeK,
-    idmaps;
+    idmaps,
+    multipoint_index;
     verbose=false,
 )
 
@@ -343,7 +346,7 @@ function compute_CSOR_residual!(
         maxBGamr,
         maxdeltaBGamr,
         maxdeltagamw,
-        solver_options.Vconv,
+        solver_options.Vconv[multipoint_index[]],
     )
 
     return nothing
@@ -398,6 +401,8 @@ function relax_Gamr!(
     bladeomega = nrf .* ones(TF, size(Gamr, 2))
     omega = nrf .* ones(TF, size(Gamr, 1))
     deltahat = zeros(TF, size(Gamr, 1))
+    minBGamr = zeros(TF, size(Gamr,2))
+
 
     for (i, (BG, b, delta_prev, delta)) in
         enumerate(zip(eachcol(Gamr), B, eachcol(delta_prev_mat), eachcol(delta_mat)))
@@ -410,20 +415,23 @@ function relax_Gamr!(
         # - Set the normalization value based on the maximum magnitude value of B*Gamr
 
         # find max magnitude
-        maxBGamr[i], mi = findmax(abs.(BG))
+        maxBGamr[i], maxi = findmax(BG)
+        minBGamr[i], mini = findmin(BG)
 
-        # maintain sign of original value
-        maxBGamr[i] *= sign(BG[mi])
+        # # maintain sign of original value
+        # maxBGamr[i] *= sign(BG[maxi])
 
         # make sure we don't have any weird jumps
         meang = sum(BG) / length(BG)
+
         if meang > 0.0 # if mean is positive, make sure maxBGamr[i] is at least 0.1
             maxBGamr[i] = max(maxBGamr[i], 0.1)
         elseif meang < 0.0 # if mean is negative, make sure maxBGamr[i] is at most -0.1
-            maxBGamr[i] = min(maxBGamr[i], -0.1)
+            maxBGamr[i] = min(minBGamr[i], -0.1)
         else # if the average is zero, then set maxBGamr[i] to zero
             maxBGamr[i] = 0.0
         end
+
 
         # note: delta = Gamr_new .- Gamr
         # note: deltahat here is actually 1/deltahat which is the version needed later
@@ -607,11 +615,12 @@ Update CSOR residual values in place.
 - `maxBGamr::Float` : Maximum value of B*Gamr among all blade elements
 - `maxdeltaBGamr::Float` : Maximum change in B*Gamr between iterations among all blade elements
 - `maxdeltagamw::Vector{Float}` : Maximum change in gamw among all wake nodes (one element)
-- `Vconv::Vector{Float}` : Reference velocity upon which the relative convergence criteria is based (one element)
+- `Vconv::Float` : Reference velocity upon which the relative convergence criteria is based (one element)
 """
 function update_CSOR_residual_values!(
     convergence_type::Relative, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
 )
+
     resid[1] = maximum(abs, maxdeltaBGamr ./ maxBGamr)
     resid[2] = abs.(maxdeltagamw[] / Vconv[])
 

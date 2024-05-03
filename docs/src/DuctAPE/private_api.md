@@ -24,19 +24,21 @@ DuctAPE.get_problem_dimensions
 ```
 
 ## Caching
-TODO: go through through the rest of the caching directory and add the remaining files' functions
+TODO: finish up the caching docstrings in the integration-caches.jl file
 
 ### Allocation
 
 The following are various helper functions used in preallocating the various caches.
 
 ```@docs
+DuctAPE.initialize_all_caches
 DuctAPE.allocate_wake_panel_container!
 DuctAPE.allocate_panel_containers!
 DuctAPE.allocate_panel_container!
 DuctAPE.allocate_body_panel_container!
 DuctAPE.allocate_rotor_panel_container!
 DuctAPE.allocate_solve_parameter_extras!
+DuctAPE.allocate_grid_parameter_cache
 ```
 
 ### Reshaping
@@ -47,6 +49,7 @@ The following are used internally to reshape the cache vectors into more usable 
 DuctAPE.withdraw_prepost_container_cache
 DuctAPE.withdraw_solve_parameter_cache
 DuctAPE.withdraw_solve_container_cache
+DuctAPE.withdraw_grid_parameter_cache
 ```
 
 ## Preprocess
@@ -255,4 +258,5 @@ DuctAPE.linear_transform
 DuctAPE.extract_primals!
 DuctAPE.lfs
 DuctAPE.reset_containers!
+DuctAPE.cache_dims!
 ```

@@ -178,7 +178,7 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 - `f_circ::TF = 1e-3` : convergence tolerance for rotor circulation
 - `f_dgamw::TF = 2e-4` : convergence tolerance for wake vortex strength
 - `convergence_type::TC = Relative()` : dispatch for relative or absolute convergence criteria.
-- `Vconv::TF = 1.0` : velocity used in relative convergence criteria (should be set to Vref).
+- `Vconv::AbstractVector{TF} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
 - `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: SolverOptionsType
@@ -216,7 +216,7 @@ Options for the FixedPoint.jl package solver
 - `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
-    iteration_limit::TI = 1000
+    iteration_limit::TI = 100
     vel::TF = 0.9
     ep::TF = 0.01
     atol::TF = 1e-12
@@ -325,7 +325,7 @@ Options for the SimpleNonlinearSolve pacakge solvers
 @kwdef struct NonlinearSolveOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Algorithm Options
     algorithm::TA = SimpleNonlinearSolve.SimpleNewtonRaphson
-    additional_kwargs::TK = (; autodiff=AutoforwardDiff())
+    additional_kwargs::TK = (; autodiff=SimpleNonlinearSolve.AutoForwardDiff())
     # Iteration Controls
     atol::TF = 1e-12
     iteration_limit::TI = 25
@@ -434,16 +434,25 @@ function ChainSolverOptions(multipoint)
     lm = length(multipoint)
     return ChainSolverOptions(;
         solvers=[
-            NLsolveOptions(; algorithm=:anderson, atol=1e-12, converged=fill(false, lm)),
-            MinpackOptions(; atol=1e-12, converged=fill(false, lm)),
+            NLsolveOptions(;
+                algorithm=:anderson,
+                atol=1e-12,
+                converged=fill(false, lm),
+                iterations=zeros(Int, lm),
+            ),
+            MinpackOptions(;
+                atol=1e-12, converged=fill(false, lm), iterations=zeros(Int, lm)
+            ),
             NonlinearSolveOptions(;
                 algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
                 atol=1e-12,
                 additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
                 converged=fill(false, lm),
+                iterations=zeros(Int, lm),
             ),
         ],
         converged=fill(false, lm),
+        iterations=zeros(Int, lm),
     )
 end
 
@@ -622,18 +631,55 @@ end
 
 Convenience function to select options used in DFDC.
 
-# Arguments
-- `grid_solver_options=SLORGridSolverOptions()` : elliptic grid solver options
-- `solver_options=CSORSolverOptions()` : solver options
 """
-function DFDC_options(;
-    grid_solver_options=SLORGridSolverOptions(),
-    solver_options=CSORSolverOptions(),
-    kwargs...,
-)
+function DFDC_options(; kwargs...)
     return Options(;
         grid_solver_options=SLORGridSolverOptions(),
         solver_options=CSORSolverOptions(),
+        kwargs...,
+    )
+end
+
+"""
+    function DFDC_options(
+        multipoint;
+        grid_solver_options=SLORGridSolverOptions(),
+        solver_options=CSORSolverOptions(),
+        kwargs...,
+    )
+
+Convenience function to select options used in DFDC and run multipoint analysis.
+
+# Arguments
+- `multipoint::Vector` : doesn't need to be anything but a vector of the length of multipoints.
+"""
+function DFDC_options(
+    multipoint, Vconv; write_outputs=nothing, outfile=nothing, output_tuple_name=nothing, kwargs...
+)
+    lm = length(multipoint)
+
+    if isnothing(outfile)
+        outfile = ["outputs" * lpad(i, 3, "0") * ".jl" for i in 1:lm]
+    end
+
+    if isnothing(output_tuple_name)
+        output_tuple_name = ["outs" for i in 1:lm]
+    end
+
+    if isnothing(write_outputs)
+        write_outputs = [false for i in 1:lm]
+    end
+
+    return Options(;
+        grid_solver_options=SLORGridSolverOptions(),
+        solver_options=CSORSolverOptions(;
+            converged=fill(false, lm),
+            iterations=zeros(Int, lm),
+            Vconv=Vconv,
+        ),
+        write_outputs=write_outputs,
+        outfile=outfile,
+        output_tuple_name=output_tuple_name,
         kwargs...,
     )
 end

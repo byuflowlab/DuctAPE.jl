@@ -70,15 +70,17 @@ function reinterpolate_geometry(
     rp_duct_coordinates = zeros(TF, 2, ndn)
     rp_centerbody_coordinates = zeros(TF, 2, ncbn)
     rotor_indices_in_wake = ones(Int, nrotor)
+    blade_element_cache = (;Rtip=zeros(TF,nrotor), Rhub=zeros(TF,nrotor))
 
     reinterpolate_geometry!(
-        @view(wake_grid[:, :, :]),
-        @view(rp_duct_coordinates[:, :]),
-        @view(rp_centerbody_coordinates[:, :]),
-        @view(rotor_indices_in_wake[:]),
+        wake_grid,
+        rp_duct_coordinates,
+        rp_centerbody_coordinates,
+        rotor_indices_in_wake,
         duct_coordinates,
         centerbody_coordinates,
         rotorstator_parameters,
+        blade_element_cache,
         paneling_constants;
         autoshiftduct=autoshiftduct,
         grid_solver_options=grid_solver_options,

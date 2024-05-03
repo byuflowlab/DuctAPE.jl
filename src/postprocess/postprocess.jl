@@ -12,7 +12,8 @@ function post_process(
     A_bb_LU,
     airfoils,
     idmaps,
-    problem_dimensions;
+    problem_dimensions,
+    multipoint_index;
     write_outputs=options.write_outputs,
     outfile=options.outfile,
     checkoutfileexists=options.checkoutfileexists,
@@ -120,6 +121,7 @@ function post_process(
         blade_elements,
         wakeK,
         idmaps,
+        multipoint_index
     )
 
     (;
@@ -526,6 +528,7 @@ function run_residual!(
     blade_elements,
     wakeK,
     idmaps,
+    multipoint_index
 ) where {TS<:ExternalSolverOptions}
 
     #=
@@ -581,6 +584,7 @@ function run_residual!(
     blade_elements,
     wakeK,
     idmaps,
+    multipoint_index
 )
 
     #=
@@ -614,7 +618,8 @@ function run_residual!(
         linsys,
         blade_elements,
         wakeK,
-        idmaps;
+        idmaps,
+        multipoint_index;
         verbose=false,
     )
 
