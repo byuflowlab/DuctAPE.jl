@@ -24,7 +24,6 @@ DuctAPE.get_problem_dimensions
 ```
 
 ## Caching
-TODO: finish up the caching docstrings in the integration-caches.jl file
 
 ### Allocation
 
@@ -39,6 +38,7 @@ DuctAPE.allocate_body_panel_container!
 DuctAPE.allocate_rotor_panel_container!
 DuctAPE.allocate_solve_parameter_extras!
 DuctAPE.allocate_grid_parameter_cache
+DuctAPE.allocate_integration_containers
 ```
 
 ### Reshaping
@@ -241,10 +241,25 @@ DuctAPE.extract_state_variables
 ```
 
 ## Post-process
+
+TODO: add the rest of the post-process functions
+
 ```@docs
 DuctAPE.post_process
 ```
-TODO: add the rest of the post-process functions
+
+### Velocities
+```@docs
+DuctAPE.get_body_tangential_velocities
+DuctAPE.get_body_tangential_velocities!
+DuctAPE.calculate_vtheta
+DuctAPE.calculate_induced_velocities_on_bodywake
+```
+
+### Pressures
+
+### Rotor Performance
+
 
 ## Utility Functions
 ```@docs
@@ -259,4 +274,5 @@ DuctAPE.extract_primals!
 DuctAPE.lfs
 DuctAPE.reset_containers!
 DuctAPE.cache_dims!
+DuctAPE.write_data
 ```

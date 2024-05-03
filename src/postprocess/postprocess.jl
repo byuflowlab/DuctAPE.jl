@@ -1,4 +1,51 @@
 """
+    post_process(
+        solver_options,
+        converged_states,
+        prepost_containers,
+        solve_container_caching,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        operating_point,
+        reference_parameters,
+        A_bb_LU,
+        airfoils,
+        idmaps,
+        problem_dimensions,
+        multipoint_index;
+        write_outputs=options.write_outputs,
+        outfile=options.outfile,
+        checkoutfileexists=options.checkoutfileexists,
+        output_tuple_name=options.output_tuple_name,
+        verbose=options.verbose,
+    )
+
+Post-process a converged nonlinear solve solution.
+
+# Arguments
+- `solver_options::SolverOptionsType` : A SolverOptionsType object (also used for dispatch)
+- `converged_states::Vector{Float}` : the converged state variables
+- `prepost_containers::NamedTuple` : the named tuple containing pre-allocated containers for the pre- and post-processing intermediate calculations
+- `solve_container_cache::NamedTuple` : the cache and dimensions for intermediate values in the residual calculation
+- `solve_parameter_cache_vector::Vector{Float}` : the applicably typed cache vector for the solve parameters
+- `solve_parameter_cache_dims::NamedTuple` : the dimensions of the solver parameters
+- `operating_point::OperatingPoint` : the operating point being analyzed
+- `reference_parameters::ReferenceParameters` : a ReferenceParameters object
+- `A_bb_LU::LinearAlgebra.LU` : LinearAlgebra LU factorization of the LHS matrix
+- `airfoils::Vector{AFType}` : A matrix of airfoil types associated with each of the blade elements
+- `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
+- `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
+
+# Keyword Arguments
+- `multipoint_index::Vector{Int}` : a one-dimensional vector containing the index of which multipoint analysis operating point is being analyzed.
+- `write_outputs=options.write_outputs::Vector{Bool}` : a vector with the same length as number of multipoints indicating if the outputs should be saved.
+- `outfile=options.outfile::Vector{String}` : a vector of file paths/names for where outputs should be written
+- `checkoutfileexists=options.checkoutfileexists::Bool` : a flag for whether existing files should be checked for or if blind overwriting is okay.
+- `output_tuple_name=options.output_tuple_name::Vector{String}` : the variable name(s) of the named tuple of outputs to be written.
+- `verbose::Bool=false` : flag to print verbose statements
+
+# Returns
+- `outs::NamedTuple` : A named tuple containing all the output values.
 """
 function post_process(
     solver_options,
@@ -514,49 +561,12 @@ end
 ######################################################################
 
 """
-"""
-function run_residual!(
-    solver_options::TS,
-    converged_states,
-    state_dims,
-    solve_container_cache,
-    solve_container_cache_dims,
-    operating_point,
-    ivr,
-    ivw,
-    linsys,
-    blade_elements,
-    wakeK,
-    idmaps,
-    multipoint_index
-) where {TS<:ExternalSolverOptions}
-
-    #=
-      NOTE: we want to get all the intermediate values available to user if desired.
-      The solve_containers cache will contain all the intermediate values after running the estimate states function.
-    =#
-    # - Separate out the state variables - #
-    vz_rotor, vtheta_rotor, Cm_wake = extract_state_variables(
-        solver_options, converged_states, state_dims
-    )
-
-    # - Extract and Reset Cache - #
-    # get cache vector of correct types
-    solve_container_cache_vec = @views PreallocationTools.get_tmp(
-        solve_container_cache, converged_states
-    )
-    solve_containers = withdraw_solve_container_cache(
-        solver_options, solve_container_cache_vec, solve_container_cache_dims
-    )
-    reset_containers!(solve_containers) #note: also zeros out state estimates
-
-    # - Estimate New States - #
-    # currently has 280 allocations
-    estimate_states!(
-        solve_containers,
-        vz_rotor,
-        vtheta_rotor,
-        Cm_wake,
+    run_residual!(
+        solver_options::SolverOptionsType,
+        converged_states,
+        state_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
         operating_point,
         ivr,
         ivw,
@@ -564,19 +574,133 @@ function run_residual!(
         blade_elements,
         wakeK,
         idmaps,
+        multipoint_index
     )
 
-    return (; vz_rotor, vtheta_rotor, Cm_wake, solve_containers...)
+Run through the residual function post-convergence to save needed intermediate values for the rest of post-processing.
+
+# Arguments
+- `solver_options::SolverOptionsType` : A SolverOptionsType object (also used for dispatch)
+- `converged_states::Vector{Float}` : the converged state variables
+- `state_dims::NamedTuple` : a named tuple containing the sizes of the state variables
+- `solve_container_cache::PreallocationTools.DiffCache` : the cache for intermediate values in the residual calculation
+- `solve_container_cache_dims::NamedTuple` : the dimensions of the solve container cache
+- `operating_point::OperatingPoint` : the operating point being analyzed
+- `ivr::NamedTuple` : A named tuple containing arrays of induced velocities on the rotors
+- `ivw::NamedTuple` : A named tuple containing arrays of induced velocities on the wake
+- `linsys::NamedTuple` : A named tuple containing cacheable data for the linear system, including:
+  - `A_bb::Array{Float}` : AIC (LHS) matrix for the panel method system
+  - `b_bf::Array{Float}` : Initial system RHS vector based on freestrem magnitude
+  - `A_br::Array{Float}` : Unit normal velocity from rotors onto body panels
+  - `A_pr::Array{Float}` : Unit normal velocity from rotors onto body internal psuedo control points
+  - `A_bw::Array{Float}` : Unit normal velocity from wake onto body panels
+  - `A_pw::Array{Float}` : Unit normal velocity from wake onto body internal psuedo control points
+  - `A_bb_LU::LinearAlgebra.LU` : LinearAlgebra LU factorization of the LHS matrix
+- `blade_elements::NamedTuple` : A named tuple containing blade element information
+- `wakeK::Matrix{Float}` : A matrix of precomputed geometric constants used in the calculation of the wake vortex strengths
+- `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
+- `multipoint_index::Vector{Int}` : a one-dimensional vector containing the index of which multipoint analysis operating point is being analyzed.
+
+# Returns
+- `res_vals::NamedTuple` : A named tuple containing the state variables and populated solve containers.
+"""
+function run_residual!(
+solver_options::TS,
+converged_states,
+state_dims,
+solve_container_cache,
+solve_container_cache_dims,
+operating_point,
+ivr,
+ivw,
+linsys,
+blade_elements,
+wakeK,
+idmaps,
+multipoint_index
+) where {TS<:ExternalSolverOptions}
+
+#=
+  NOTE: we want to get all the intermediate values available to user if desired.
+  The solve_containers cache will contain all the intermediate values after running the estimate states function.
+=#
+# - Separate out the state variables - #
+vz_rotor, vtheta_rotor, Cm_wake = extract_state_variables(
+    solver_options, converged_states, state_dims
+)
+
+# - Extract and Reset Cache - #
+# get cache vector of correct types
+solve_container_cache_vec = @views PreallocationTools.get_tmp(
+    solve_container_cache, converged_states
+)
+solve_containers = withdraw_solve_container_cache(
+    solver_options, solve_container_cache_vec, solve_container_cache_dims
+)
+reset_containers!(solve_containers) #note: also zeros out state estimates
+
+# - Estimate New States - #
+# currently has 280 allocations
+estimate_states!(
+    solve_containers,
+    vz_rotor,
+    vtheta_rotor,
+    Cm_wake,
+    operating_point,
+    ivr,
+    ivw,
+    linsys,
+    blade_elements,
+    wakeK,
+    idmaps,
+)
+
+return (; vz_rotor, vtheta_rotor, Cm_wake, solve_containers...)
 end
 
 """
 """
 function run_residual!(
-    solver_options::CSORSolverOptions,
-    converged_states,
-    state_dims,
-    solve_container_cache,
-    solve_container_cache_dims,
+solver_options::CSORSolverOptions,
+converged_states,
+state_dims,
+solve_container_cache,
+solve_container_cache_dims,
+operating_point,
+ivr,
+ivw,
+linsys,
+blade_elements,
+wakeK,
+idmaps,
+multipoint_index
+)
+
+#=
+  NOTE: we want to get all the intermediate values available to user if desired.
+  The solve_containers cache will contain all the intermediate values after running the insides of the residual function
+=#
+# - Separate out the state variables - #
+Gamr, sigr, gamw = extract_state_variables(solver_options, converged_states, state_dims)
+
+# - Extract and Reset Cache - #
+# get cache vector of correct types
+solve_container_cache_vec = @views PreallocationTools.get_tmp(
+    solve_container_cache, converged_states
+)
+solve_container_cache_vec .= 0
+solve_containers = withdraw_solve_container_cache(
+    solver_options, solve_container_cache_vec, solve_container_cache_dims
+)
+
+# - Run Residual - #
+compute_CSOR_residual!(
+    zeros(2),
+    solver_options,
+    solve_containers,
+    Gamr,
+    sigr,
+    gamw,
     operating_point,
     ivr,
     ivw,
@@ -584,43 +708,8 @@ function run_residual!(
     blade_elements,
     wakeK,
     idmaps,
-    multipoint_index
-)
-
-    #=
-      NOTE: we want to get all the intermediate values available to user if desired.
-      The solve_containers cache will contain all the intermediate values after running the insides of the residual function
-    =#
-    # - Separate out the state variables - #
-    Gamr, sigr, gamw = extract_state_variables(solver_options, converged_states, state_dims)
-
-    # - Extract and Reset Cache - #
-    # get cache vector of correct types
-    solve_container_cache_vec = @views PreallocationTools.get_tmp(
-        solve_container_cache, converged_states
-    )
-    solve_container_cache_vec .= 0
-    solve_containers = withdraw_solve_container_cache(
-        solver_options, solve_container_cache_vec, solve_container_cache_dims
-    )
-
-    # - Run Residual - #
-    compute_CSOR_residual!(
-        zeros(2),
-        solver_options,
-        solve_containers,
-        Gamr,
-        sigr,
-        gamw,
-        operating_point,
-        ivr,
-        ivw,
-        linsys,
-        blade_elements,
-        wakeK,
-        idmaps,
-        multipoint_index;
-        verbose=false,
+    multipoint_index;
+    verbose=false,
     )
 
     return (; Gamr, sigr, gamw, solve_containers...)

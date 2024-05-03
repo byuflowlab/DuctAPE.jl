@@ -1,7 +1,3 @@
-#=
-Utility functions for post-processing
-=#
-
 """
     write_data(outs, filename; checkoutfileexists=false)
 

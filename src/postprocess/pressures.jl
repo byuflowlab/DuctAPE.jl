@@ -1,18 +1,41 @@
 """
+    steady_cp(Vs, Vinf, Vref)
+
 Calculate steady pressure coefficient
+
+# Arguments
+Vs
+Vinf
+Vref
+
+# Returns
 """
 function steady_cp(Vs, Vinf, Vref)
     cp = similar(Vs) .= 0
     return steady_cp!(cp, Vs, Vinf, Vref)
 end
 
+"""
+    steady_cp!(cp, Vs, Vinf, Vref)
+
+In-place verison of steady_cp
+"""
 function steady_cp!(cp, Vs, Vinf, Vref)
     cp .= (Vinf^2 .- Vs .^ 2) / Vref^2
     return cp
 end
+
 """
-only used in post-process for cp.
-expression not in dfdc theory, comes from source code.
+    calculate_entropy_jumps(sigr, Cz_rotor)
+
+Calculate jumps in entropy across the disks.
+
+# Arguments
+sigr
+Cz_rotor
+
+# Returns
+
 """
 function calculate_entropy_jumps(sigr, Cz_rotor)
     # average sigr's
@@ -26,7 +49,17 @@ function calculate_entropy_jumps(sigr, Cz_rotor)
 end
 
 """
+    delta_cp(deltaH, deltaS, Vtheta, Vref)
+
 Calculate change in pressure coefficient aft of rotor, due to rotor
+
+# Arguments
+deltaH
+deltaS
+Vtheta
+Vref
+
+# Returns
 """
 function delta_cp(deltaH, deltaS, Vtheta, Vref)
     if isapprox(Vref, 0.0)
@@ -37,7 +70,18 @@ function delta_cp(deltaH, deltaS, Vtheta, Vref)
 end
 
 """
+    calculate_rotor_jumps(Gamr, Omega, B, sigr, Cz_rotor)
+
 Calculate net circulation and enthalpy and entropy disk jumps
+
+# Arguments
+Gamr
+Omega
+B
+sigr
+Cz_rotor
+
+# Returns
 """
 function calculate_rotor_jumps(Gamr, Omega, B, sigr, Cz_rotor)
 
@@ -54,7 +98,21 @@ function calculate_rotor_jumps(Gamr, Omega, B, sigr, Cz_rotor)
 end
 
 """
+    calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr, didr, hidr)
+
 Calculate change in pressure coefficient due to rotors specifically on the body panels aft of the rotors
+
+# Arguments
+cp
+Gamr
+sigr
+Cz_rotor
+Vref
+Omega
+B
+cpr
+didr
+hidr
 """
 function calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr, didr, hidr)
 
@@ -85,7 +143,21 @@ function calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr,
 end
 
 """
+    calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, r; body="duct")
+
 Calculate change in pressure coefficient due to rotors specifically on the body wakes
+
+# Arguments
+Gamr
+sigr
+Cz_rotor
+Vref
+Omega
+B
+r
+
+# Keyword Arguments
+body="duct"
 """
 function calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, r; body="duct")
 
@@ -112,6 +184,44 @@ function calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, r; bo
     return deltacp
 end
 
+"""
+get_body_cps(
+    Vtan_in,
+    Vtan_out,
+    Gamr,
+    sigr,
+    Cz_rotor,
+    Vinf,
+    Vref,
+    B,
+    Omega,
+    didr,
+    hidr,
+    controlpoints,
+    endpanelidxs,
+    zpts,
+)
+
+Description
+
+# Arguments
+Vtan_in::type` :
+Vtan_out::type` :
+Gamr::type` :
+sigr::type` :
+Cz_rotor::type` :
+Vinf::type` :
+Vref::type` :
+B::type` :
+Omega::type` :
+didr::type` :
+hidr::type` :
+controlpoints::type` :
+endpanelidxs::type` :
+zpts::type` :
+
+# Returns
+"""
 function get_body_cps(
     Vtan_in,
     Vtan_out,
@@ -167,6 +277,27 @@ function get_body_cps(
     )
 end
 
+"""
+    get_body_cps!(
+        cp_tuple,
+        Vtan_in,
+        Vtan_out,
+        Gamr,
+        sigr,
+        Cz_rotor,
+        Vinf,
+        Vref,
+        B,
+        Omega,
+        didr,
+        hidr,
+        controlpoints,
+        endpanelidxs,
+        zpts,
+    )
+
+In-place version of get_body_cps.
+"""
 function get_body_cps!(
     cp_tuple,
     Vtan_in,
@@ -234,7 +365,49 @@ function get_body_cps!(
 end
 
 """
+    get_bodywake_cps(
+        Gamr,
+        vz_w,
+        vr_w,
+        gamw,
+        vz_r,
+        vr_r,
+        sigr,
+        vz_b,
+        vr_b,
+        gamb,
+        panels,
+        Cz_rotor,
+        Omega,
+        B,
+        Vinf,
+        Vref;
+        body="duct",
+    )
+
 Calculate the pressure coefficient distributions on one of the body wakes
+
+# Arguments
+Gamr,
+vz_w,
+vr_w,
+gamw,
+vz_r,
+vr_r,
+sigr,
+vz_b,
+vr_b,
+gamb,
+panels,
+Cz_rotor,
+Omega,
+B,
+Vinf,
+Vref
+
+# Keyword Arguments
+body="duct",
+
 """
 function get_bodywake_cps(
     Gamr,
@@ -279,7 +452,18 @@ function get_bodywake_cps(
 end
 
 """
+    forces_from_pressure(cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
+
 Calculate dimensional and non-dimensional axial force on a single body
+
+# Arguments
+cp_in
+cp_out
+panels
+
+# Keyword Arguments
+rhoinf=1.225
+Vref=1.0
 """
 function forces_from_pressure(cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
     # - initialize - #
@@ -289,6 +473,11 @@ function forces_from_pressure(cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
     return forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=rhoinf, Vref=Vref)
 end
 
+"""
+    forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
+
+In-place version of forces_from_pressure.
+"""
 function forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
 
     # - rename for convenience - #
@@ -315,7 +504,22 @@ function forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vr
 end
 
 """
+    forces_from_TEpanels!(
+        thrust, force_coeff, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0
+    )
+
 Calculate dimensional and non-dimensional axial force on a single body
+
+# Arguments
+thrust
+force_coeff
+cp_in
+cp_out
+panels
+
+# Keyword Arguments
+rhoinf=1.225
+Vref=1.0
 """
 function forces_from_TEpanels!(
     thrust, force_coeff, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0

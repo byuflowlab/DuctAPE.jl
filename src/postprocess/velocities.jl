@@ -1,3 +1,48 @@
+"""
+    get_body_tangential_velocities(
+        gamb,
+        gamw,
+        sigr,
+        ivb,
+        Vinf,
+        totnode,
+        totpanel,
+        nnode,
+        npanel,
+        tangent,
+        controlpoints,
+        endpanelidxs,
+        wake_panel_ids_along_centerbody_wake_interface,
+        wake_panel_ids_along_casing_wake_interface,
+        centerbody_panel_ids_along_centerbody_wake_interface,
+        duct_panel_ids_along_casing_wake_interface,
+        num_casing_panels,
+    )
+
+Get the tangential velocities along the body surfaces.
+
+# Arguments
+- `gamb::Vector{Float}` : the body panel strengths
+- `gamw::Vector{Float}` : the wake panel strengths
+- `sigr::Vector{Float}` : the rotor panel strengths
+- `ivb::NamedTuple` : the unit induced velocities on the bodies
+- `Vinf::Vector{Float}` : one element vector containing the freestream magnitude
+- `totnode::Int` : total number of nodes between all bodies
+- `totpanel::Int` : total number of panels between all bodies
+- `nnode::Vector{Int}` : number of nodes in each body
+- `npanel::Vector{Int}` : number of panels in each body.
+- `tangent::Matrix{Float}` : unit tangent vectors for each panel
+- `controlpoints::Matrix{Float}` : control point locations for each panel
+- `endpanelidxs::Matrix{Int}` : the indices of the first and last panels for each body
+- `wake_panel_ids_along_centerbody_wake_interface::Vector{Int}` : the indices of the wake panels coincident with the centerbody panels
+- `wake_panel_ids_along_casing_wake_interface::Vector{Int}` : the indices of the wake panels coincident with the duct casing (inner surface) panels
+- `centerbody_panel_ids_along_centerbody_wake_interface::Vector{Int}` : the indices of the centerbody panels coincident with the wake panels
+- `duct_panel_ids_along_casing_wake_interface::Vector{Int}` : the indices of the duct panels coincident with the wake panels
+- `num_casing_panels::Int` : the number of panels between the leading and trailing edge of the duct on the duct inner side (casing)
+
+# Returns
+- `vtan_tuple::NamedTuple` : a named tuple containing the body tangential surface velocities and various useful breakdowns thereof.
+"""
 function get_body_tangential_velocities(
     gamb,
     gamw,
@@ -14,7 +59,7 @@ function get_body_tangential_velocities(
     wake_panel_ids_along_centerbody_wake_interface,
     wake_panel_ids_along_casing_wake_interface,
     centerbody_panel_ids_along_centerbody_wake_interface,
-    duct_panel_ids_along_centerbody_wake_interface,
+    duct_panel_ids_along_casing_wake_interface,
     num_casing_panels,
 )
     TF = promote_type(eltype(gamb), eltype(gamw), eltype(sigr))
@@ -82,12 +127,11 @@ function get_body_tangential_velocities(
         wake_panel_ids_along_centerbody_wake_interface,
         wake_panel_ids_along_casing_wake_interface,
         centerbody_panel_ids_along_centerbody_wake_interface,
-        duct_panel_ids_along_centerbody_wake_interface,
+        duct_panel_ids_along_casing_wake_interface,
         (; casing_zpts, nacelle_zpts, centerbody_zpts),
     )
 end
 
-"""
 """
 function get_body_tangential_velocities!(
     vtan_tuple,
@@ -106,7 +150,33 @@ function get_body_tangential_velocities!(
     wake_panel_ids_along_centerbody_wake_interface,
     wake_panel_ids_along_casing_wake_interface,
     centerbody_panel_ids_along_centerbody_wake_interface,
-    duct_panel_ids_along_centerbody_wake_interface,
+    duct_panel_ids_along_casing_wake_interface,
+    zpts,
+)
+
+In-place version of get_body_tangential_velocities.
+
+# Additional Arguments
+- `zpts::NamedTuple` : a named tuple containing the z-coordinates of the control points of the duct casing, duct nacelle, and centerbody.
+"""
+function get_body_tangential_velocities!(
+    vtan_tuple,
+    gamb,
+    gamw,
+    sigr,
+    ivb,
+    Vinf,
+    totnode,
+    totpanel,
+    nnode,
+    npanel,
+    tangent,
+    controlpoints,
+    endpanelidxs,
+    wake_panel_ids_along_centerbody_wake_interface,
+    wake_panel_ids_along_casing_wake_interface,
+    centerbody_panel_ids_along_centerbody_wake_interface,
+    duct_panel_ids_along_casing_wake_interface,
     zpts,
 )
 
@@ -118,7 +188,7 @@ function get_body_tangential_velocities!(
     hwi = wake_panel_ids_along_centerbody_wake_interface
     dwi = wake_panel_ids_along_casing_wake_interface
     whi = centerbody_panel_ids_along_centerbody_wake_interface
-    wdi = duct_panel_ids_along_centerbody_wake_interface
+    wdi = duct_panel_ids_along_casing_wake_interface
 
     (;
         # Totals and Components:
@@ -232,7 +302,13 @@ function get_body_tangential_velocities!(
 end
 
 """
+    calculate_vtheta(Gamma_tilde, r)
+
 Calculate tangential velocity for a given net circulation and radial location
+
+# Arguments
+- `Gamma_tilde::Matrix{Float}` : Sum of upstream circulation values
+- `r::Matrix{Float}` : blade element radial positions
 """
 function calculate_vtheta(Gamma_tilde, r)
     TF = promote_type(eltype(Gamma_tilde), eltype(r))
@@ -250,7 +326,23 @@ function calculate_vtheta(Gamma_tilde, r)
 end
 
 """
+    calculate_induced_velocities_on_bodywake(
+        vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, gamb, Vinf
+    )
+
 Calculate the induced velocities on one of the body wakes (unit velocity inputs determine which one)
+
+# Arguments
+- `vz_w::Matrix{Float}` : unit axial induced velocity of the wake onto the body wake
+- `vr_w::Matrix{Float}` : unit radial induced velocity of the wake onto the body wake
+- `gamw::Vector{Float}` : wake panel strengths
+- `vz_r::Matrix{Float}` : unit axial induced velocity of the rotor onto the body wake
+- `vr_r::Matrix{Float}` : unit radial induced velocity of the rotor onto the body wake
+- `sigr::Vector{Float}` : rotor panel strengths
+- `vz_b::Matrix{Float}` : unit axial induced velocity of the bodies onto the body wake
+- `vr_b::Matrix{Float}` : unit radial induced velocity of the bodies onto the body wake
+- `gamb::Vector{Float}` : body panel strengths
+- `Vinf::Vector{Float}` : one element vector containing the velocity magnitude
 """
 function calculate_induced_velocities_on_bodywake(
     vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, gamb, Vinf
