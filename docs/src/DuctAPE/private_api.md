@@ -242,8 +242,6 @@ DuctAPE.extract_state_variables
 
 ## Post-process
 
-TODO: add the rest of the post-process functions
-
 ```@docs
 DuctAPE.post_process
 ```
