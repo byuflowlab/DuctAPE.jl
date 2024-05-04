@@ -184,7 +184,7 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 @kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
-    iteration_limit::TF = 1e2
+    iteration_limit::TF = 1000
     nrf::TF = 0.4
     bt1::TF = 0.2
     bt2::TF = 0.6
@@ -216,7 +216,7 @@ Options for the FixedPoint.jl package solver
 - `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
-    iteration_limit::TI = 100
+    iteration_limit::TI = 1000
     vel::TF = 0.9
     ep::TF = 0.01
     atol::TF = 1e-12
@@ -248,7 +248,7 @@ Options for the SpeedMapping.jl package solver
     sig_min::TSm = 0 # maybe set to 1?
     stabilize::TB = false # stabilizes before extrapolation
     check_obj::TB = false # checks for inf's and nan's and starts from previous finite point
-    atol::TF = 1e-10 # convergence tolerance
+    atol::TF = 1e-12 # convergence tolerance
     iteration_limit::TI = 1000 # number of "iterations"
     time_limit::TF = Inf
     lower::TL = nothing # box lower bounds

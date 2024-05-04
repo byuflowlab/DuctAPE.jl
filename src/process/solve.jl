@@ -183,6 +183,7 @@ function solve(
         buffer,
         Lp,
         converged,
+        iterations,
     ) = solver_options
 
     # - Extract Initial Guess Vector for State Variables - #
@@ -236,6 +237,7 @@ function solve(
 
     # update convergence flag
     converged[multipoint_index[]] = sol.converged
+    iterations[multipoint_index[]] = sol.maps
 
     return sol.minimizer
 end
@@ -309,6 +311,8 @@ function solve(
 
     # update convergence flag
     solver_options.converged[multipoint_index[]] = sol.error <= solver_options.atol
+    println(sol.iters)
+    solver_options.iterations[multipoint_index[]] = sol.iters
 
     return sol.x
 end
