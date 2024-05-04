@@ -311,7 +311,6 @@ function solve(
 
     # update convergence flag
     solver_options.converged[multipoint_index[]] = sol.error <= solver_options.atol
-    println(sol.iters)
     solver_options.iterations[multipoint_index[]] = sol.iters
 
     return sol.x
