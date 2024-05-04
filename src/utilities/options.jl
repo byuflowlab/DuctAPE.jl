@@ -184,7 +184,7 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 @kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
     verbose::TB = false
-    iteration_limit::TF = 1000
+    iteration_limit::TI = 1000
     nrf::TF = 0.4
     bt1::TF = 0.2
     bt2::TF = 0.6
