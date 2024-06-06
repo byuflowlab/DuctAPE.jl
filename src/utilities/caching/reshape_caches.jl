@@ -943,6 +943,7 @@ function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, 
         deltaG_prev=reshape(@view(vec[dims.deltaG_prev.index]), dims.deltaG_prev.shape),
         deltag=reshape(@view(vec[dims.deltag.index]), dims.deltag.shape),
         deltag_prev=reshape(@view(vec[dims.deltag_prev.index]), dims.deltag_prev.shape),
+        deltas=reshape(@view(vec[dims.deltas.index]), dims.deltas.shape),
         maxBGamr=reshape(@view(vec[dims.maxBGamr.index]), dims.maxBGamr.shape),
         maxdeltaBGamr=reshape(
             @view(vec[dims.maxdeltaBGamr.index]), dims.maxdeltaBGamr.shape

@@ -41,11 +41,7 @@ function nominal_vortex_panel_integration!(
         V[i] = dot(integration_options.weights, s)
     end
 
-    if debug
-        return V, err
-    else
-        return V
-    end
+    return V
 end
 
 """
@@ -94,11 +90,7 @@ function self_vortex_panel_integration!(
     V .*= influence_length
     V[1:2] .+= containers.sample_cache[1] / 2.0
 
-    if debug
-        return reshape(V, (2, 2)), err
-    else
-        return reshape(V, (2, 2))
-    end
+    return reshape(V, (2, 2))
 end
 
 #---------------------------------#
@@ -144,11 +136,7 @@ function nominal_source_panel_integration!(
         V[i] = dot(integration_options.weights, s)
     end
 
-    if debug
-        return V, err
-    else
-        return V
-    end
+    return V
 end
 
 """
@@ -197,9 +185,5 @@ function self_source_panel_integration!(
     V .*= influence_length
     V[3:4] .+= containers.sample_cache[2] / 2.0
 
-    if debug
-        return reshape(V, (2, 2)), err
-    else
-        return reshape(V, (2, 2))
-    end
+    return reshape(V, (2, 2))
 end

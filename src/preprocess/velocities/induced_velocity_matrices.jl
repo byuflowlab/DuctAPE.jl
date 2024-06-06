@@ -14,7 +14,6 @@
         nodes,
         nodemap,
         influence_lengths,
-        strengths,
         integration_options;
         integration_caches=nothing,
     )
@@ -28,7 +27,6 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `nodes::Matrix{Float}` : [z r] coordinates of vortex rings
 - `nodemap::Matrix{Int}` : mapping from panel index to associated node indices
 - `influence_lengths::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
-- `strengths::Matrix{Float}` : vortex constant circulation values
 - `integration_options::IntegrationOptions` : integration options
 
 # Keyword Arguments
@@ -42,13 +40,12 @@ function induced_velocities_from_vortex_panels_on_points(
     nodes,
     nodemap,
     influence_lengths,
-    strengths,
     integration_options;
     integration_caches=nothing,
 )
 
     # Initialize
-    T = promote_type(eltype(controlpoints), eltype(nodes), eltype(strengths))
+    T = promote_type(eltype(controlpoints), eltype(nodes))
     VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_vortex_panels_on_points!(
@@ -57,7 +54,6 @@ function induced_velocities_from_vortex_panels_on_points(
         nodes,
         nodemap,
         influence_lengths,
-        strengths,
         integration_options;
         integration_caches=integration_caches,
     )
@@ -72,7 +68,6 @@ end
         node,
         nodemap,
         influence_length,
-        strength,
         integration_options;
         integration_caches=nothing,
     )
@@ -85,7 +80,6 @@ function induced_velocities_from_vortex_panels_on_points!(
     node,
     nodemap,
     influence_length,
-    strength,
     integration_options;
     integration_caches=nothing,
 )
@@ -105,8 +99,7 @@ function induced_velocities_from_vortex_panels_on_points!(
     end
 
     # loop through panels doing the influencing
-    for (j, (nmap, lj, gammaj)) in
-        enumerate(zip(eachcol(nodemap), influence_length, eachcol(strength)))
+    for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
         # Loop through control points being influenced
         for (i, cpi) in enumerate(eachcol(controlpoint))
             n1 = view(node, :, Int(nmap[1]))
@@ -144,7 +137,7 @@ function induced_velocities_from_vortex_panels_on_points!(
             for k in 1:2
                 # fill the Matrix
                 # TODO: is having this gammaj here even necessary, or is it always just 1? If so, really need to just remove it since we're allocating large arrays every time we call this function.
-                VEL[i, Int(nmap[k]), :] += gammaj[k] * vel[k, :]
+                VEL[i, Int(nmap[k]), :] += vel[k, :]
             end #for k
         end #for i
     end #for j
@@ -162,7 +155,6 @@ end
         nodes,
         nodemap,
         influence_lengths,
-        strengths,
         integration_options;
         integration_caches=nothing,
     )
@@ -177,7 +169,6 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `nodes::Matrix{Float}` : [z r] coordinates of vortex rings
 - `nodemap::Matrix{Int}` : mapping from panel index to associated node indices
 - `influence_lengths::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
-- `strengths::Matrix{Float}` : source constant strength values
 - `integration_options::IntegrationOptions` : integration options
 
 # Returns:
@@ -188,13 +179,12 @@ function induced_velocities_from_source_panels_on_points(
     nodes,
     nodemap,
     influence_lengths,
-    strengths,
     integration_options;
     integration_caches=nothing,
 )
 
     # Initialize
-    T = promote_type(eltype(controlpoints), eltype(nodes), eltype(strengths))
+    T = promote_type(eltype(controlpoints), eltype(nodes))
     VEL = zeros(T, size(controlpoints, 2), size(nodes, 2), 2)
 
     induced_velocities_from_source_panels_on_points!(
@@ -203,7 +193,6 @@ function induced_velocities_from_source_panels_on_points(
         nodes,
         nodemap,
         influence_lengths,
-        strengths,
         integration_options;
         integration_caches=integration_caches,
     )
@@ -218,7 +207,6 @@ end
         node,
         nodemap,
         influence_length,
-        strength,
         integration_options;
         integration_caches=nothing,
     )
@@ -231,7 +219,6 @@ function induced_velocities_from_source_panels_on_points!(
     node,
     nodemap,
     influence_length,
-    strength,
     integration_options;
     integration_caches=nothing,
 )
@@ -250,8 +237,7 @@ function induced_velocities_from_source_panels_on_points!(
     end
 
     # loop through panels doing the influencing
-    for (j, (nmap, lj, sigmaj)) in
-        enumerate(zip(eachcol(nodemap), influence_length, eachcol(strength)))
+    for (j, (nmap, lj)) in enumerate(zip(eachcol(nodemap), influence_length))
 
         # Loop through control points being influenced
         for (i, cpi) in enumerate(eachcol(controlpoint))
@@ -289,7 +275,7 @@ function induced_velocities_from_source_panels_on_points!(
 
             for k in 1:2
                 # fill the Matrix
-                VEL[i, Int(nmap[k]), :] += sigmaj[k] * vel[k, :]
+                VEL[i, Int(nmap[k]), :] += vel[k, :]
             end #for k
         end #for i
     end #for j
@@ -397,7 +383,7 @@ function induced_velocities_from_trailing_edge_gap_panel!(
                         n2,
                         lj,
                         cpi,
-                        nominal_integration_cache,
+                        singular_integration_cache,
                     ),
                 )
             else
@@ -409,7 +395,7 @@ function induced_velocities_from_trailing_edge_gap_panel!(
                         n2,
                         lj,
                         cpi,
-                        singular_integration_cache,
+                        nominal_integration_cache,
                     ),
                 )
                 svel = StaticArrays.SMatrix{2,2}(

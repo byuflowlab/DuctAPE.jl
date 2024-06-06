@@ -243,18 +243,34 @@ Allocate the pre- and post-processing cache (used for intermediate calculations)
 OR
 - `problem_dimensions::ProblemDimensions` : a ProblemDimensions object
 
+# Keyword Arguments
+- `fd_chunk_size::Int=12` : chunk size to use for PreallocationTools caches.  Note that the automated chuck size for DuctAPE will always be the ForwardDiff threshold of 12 due to the size of the system, so it will be best to leave this at the default unless further development allows for chunk size selection for individual solvers.
+- `levels::Int=1` : levels for nested duals.  Note that since ImplicitAD is being used for all solves, there should be no need for more than 1 level.
+
+
 # Returns
 - `prepost_container_caching::NamedTuple` : a Named Tuple containing:
   - `prepost_container_cache::PreallocationTools.DiffCache` : the cache
   - `prepost_container_cache_dims::NamedTuple` : a named tuple containing the dimensions used for reshaping the cache when needed.
 """
-function allocate_prepost_container_cache(paneling_constants::PanelingConstants)
+function allocate_prepost_container_cache(paneling_constants::PanelingConstants;
+    fd_chunk_size=12,
+    levels=1,
+    )
+
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
-    return allocate_prepost_container_cache(problem_dimensions)
+    return allocate_prepost_container_cache(problem_dimensions;
+    fd_chunk_size=fd_chunk_size,
+    levels=levels,
+                                           )
 end
 
-function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions)
+function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions;
+    fd_chunk_size=12,
+    levels=1,
+    )
+
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -484,7 +500,9 @@ function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions)
 
     # return tuple of initialized cache and associated dimensions
     return (;
-        prepost_container_cache=PreallocationTools.DiffCache(zeros(total_length[])),
+            prepost_container_cache=PreallocationTools.DiffCache(zeros(total_length[]),
+                fd_chunk_size; levels=levels
+                                                                  ),
         prepost_container_cache_dims=(;
             ### --- PRE --- ###
             rp_duct_coordinates,
@@ -1136,6 +1154,10 @@ function allocate_solve_container_cache(
 
     deltaG_prev = cache_dims!(total_length, l, s)
 
+    s = (nbe+1, nrotor)
+    l = lfs(s)
+    deltas = cache_dims!(total_length, l, s)
+
     s = (nwn,)
     l = lfs(s)
     deltag = cache_dims!(total_length, l, s)
@@ -1186,6 +1208,7 @@ function allocate_solve_container_cache(
             deltaG_prev,
             deltag,
             deltag_prev,
+            deltas,
             maxBGamr,
             maxdeltaBGamr,
             maxdeltagamw,

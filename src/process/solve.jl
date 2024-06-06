@@ -71,9 +71,11 @@ function solve(
         state_variables = initial_guess
     end
 
+    copy_state_variables = deepcopy(state_variables)
+
     # - Separate out the state variables - #
     Gamr, sigr, gamw = extract_state_variables(
-        solver_options, state_variables, solve_parameter_cache_dims.state_dims
+        solver_options, copy_state_variables, solve_parameter_cache_dims.state_dims
     )
 
     # - Extract and Reset Cache - #
@@ -93,9 +95,9 @@ function solve(
     @. solve_containers.deltag_prev = solve_containers.gamw_est - gamw
     @. solve_containers.deltag = 0.0
 
-    TF = eltype(state_variables)
+    TF = eltype(sensitivity_parameters)
 
-    resid = MVector{2,TF}(999 * ones(TF, 2))
+    resid = 999 * ones(TF, length(state_variables))
     conv = @view(solver_options.converged[multipoint_index[]])
     iter = @view(solver_options.iterations[multipoint_index[]]) .= 0
 
@@ -113,9 +115,9 @@ function solve(
         end
 
         # Call residual
-        CSOR_residual!(
+        CSOR_residual_iad!(
             resid,
-            state_variables,
+            copy_state_variables,
             sensitivity_parameters,
             (;
                 # solve options for dispatch
@@ -132,9 +134,10 @@ function solve(
         )
 
         # Check Convergence
-        check_CSOR_convergence!(
+        check_CSOR_convergence_iad!(
             conv,
-            resid;
+            resid,
+            solve_parameter_cache_dims.state_dims;
             solver_options.f_circ,
             solver_options.f_dgamw,
             convergence_type=typeof(solver_options.convergence_type),
@@ -142,7 +145,7 @@ function solve(
         )
     end
 
-    return state_variables
+    return copy_state_variables
 end
 
 function solve(
@@ -674,6 +677,7 @@ function solve(
     if verbose
         println("  " * "Wrapping Residual and Jacobian")
     end
+
     function rwrap!(resid, state_variables)
         return system_residual!(
             resid,
@@ -731,6 +735,7 @@ function solve(
             println("  " * "$(algorithm) Solve Trace:")
         end
     end
+
     result = NLsolve.nlsolve(
         df,
         initial_guess; # initial states guess
@@ -829,6 +834,7 @@ function solve(
     if length(solver_options.solvers) == 1 ||
         solver_options.solvers[1].converged[const_cache.multipoint_index[]]
         solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[1].converged[const_cache.multipoint_index[]]
+        solver_options.iterations[const_cache.multipoint_index[]] = solver_options.solvers[1].iterations[const_cache.multipoint_index[]]
         return solution
     end
 
@@ -842,9 +848,13 @@ function solve(
                 initial_guess=initial_guess,
             )
 
-            if sopt.converged[1]
-                solver_options.converged[const_cache.multipoint_index[]] = sopt.converged[const_cache.multipoint_index[]]
+            if sopt.converged[const_cache.multipoint_index[]]
+                solver_options.converged[s + 1, const_cache.multipoint_index[]] = sopt.converged[const_cache.multipoint_index[]]
+                solver_options.iterations[s + 1, const_cache.multipoint_index[]] = sopt.iterations[const_cache.multipoint_index[]]
                 return solution
+            else
+                solver_options.converged[s + 1, const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
+                solver_options.iterations[s + 1, const_cache.multipoint_index[]] = solver_options.solvers[end].iterations[const_cache.multipoint_index[]]
             end
         end
 
@@ -855,7 +865,8 @@ function solve(
             initial_guess=initial_guess,
         )
 
-        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
+        solver_options.converged[end, const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
+        solver_options.iterations[end, const_cache.multipoint_index[]] = solver_options.solvers[end].iterations[const_cache.multipoint_index[]]
         return solution
     else
 
@@ -867,7 +878,8 @@ function solve(
             initial_guess=initial_guess,
         )
 
-        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
+        solver_options.converged[end, const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
+        solver_options.iterations[end, const_cache.multipoint_index[]] = solver_options.solvers[end].iterations[const_cache.multipoint_index[]]
         return solution
     end
 end

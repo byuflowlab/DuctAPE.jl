@@ -7,7 +7,7 @@
         paneling_constants;
         autoshiftduct=true,
         grid_solver_options=GridSolverOptions(),
-        finterp=FLOWMath.akima,
+        finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
         verbose=false,
         silence_warnings=true,
     )
@@ -42,7 +42,7 @@ function reinterpolate_geometry(
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
-    finterp=FLOWMath.akima,
+    finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
     verbose=false,
     silence_warnings=true,
 )
@@ -107,7 +107,7 @@ end
         paneling_constants;
         autoshiftduct=true,
         grid_solver_options=GridSolverOptions(),
-        finterp=FLOWMath.akima,
+        finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
         verbose=false,
         silence_warnings=true,
     )
@@ -126,7 +126,7 @@ function reinterpolate_geometry!(
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
-    finterp=FLOWMath.akima,
+    finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
     verbose=false,
     silence_warnings=true,
 )
@@ -429,8 +429,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        #TODO: set things up differently so that you don't have to provide this allocated vector
-        ones(TF, 2, Int(body_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -454,7 +452,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, Int(rotor_source_panels.totnode[])),
         integration_options,
     )
 
@@ -466,7 +463,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, Int(wake_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -491,7 +487,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, Int(rotor_source_panels.totnode[])),
         integration_options,
     )
 
@@ -503,7 +498,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        ones(TF, 2, Int(body_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -527,7 +521,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, Int(wake_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -553,7 +546,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         body_vortex_panels.node,
         body_vortex_panels.nodemap,
         body_vortex_panels.influence_length,
-        ones(TF, 2, Int(body_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -563,7 +555,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         wake_vortex_panels.controlpoint,
         body_vortex_panels.tenode,
         body_vortex_panels.teinfluence_length,
-        # -body_vortex_panels.teinfluence_length,
         body_vortex_panels.tendotn,
         body_vortex_panels.tencrossn,
         body_vortex_panels.teadjnodeidxs,
@@ -577,7 +568,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         rotor_source_panels.node,
         rotor_source_panels.nodemap,
         rotor_source_panels.influence_length,
-        ones(TF, 2, Int(rotor_source_panels.totpanel[])),
         integration_options,
     )
 
@@ -589,7 +579,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
         wake_vortex_panels.node,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.influence_length,
-        ones(TF, 2, Int(wake_vortex_panels.totpanel[])),
         integration_options,
     )
 
@@ -700,7 +689,7 @@ function initialize_linear_system(
 
     # Assemble Raw LHS Matrix into A_bb
     A_bb = assemble_lhs_matrix(
-        AICn, AICpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs;
+       AICn, AICpcp, npanel, nnode, totpanel[], totnode[], prescribednodeidxs
     )
 
     # - LU Decomposition - #
@@ -715,7 +704,7 @@ function initialize_linear_system(
     vdnb = [dot(vinfvec, nhat) for nhat in eachcol(normal)]
     vdnpcp = [dot(vinfvec, nhat) for nhat in eachcol(itnormal)]
     b_bf = assemble_rhs_matrix(
-        vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+       vdnb, vdnpcp, npanel, nnode, totpanel[], totnode[], prescribednodeidxs
     )
 
     ##### ----- Rotor AIC ----- #####
@@ -1147,7 +1136,7 @@ end
         itcpshift=0.05,
         axistol=1e-15,
         tegaptol=1e1 * eps(),
-        finterp=FLOWMath.akima,
+        finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
         silence_warnings=true,
         verbose=false,
     )
@@ -1199,7 +1188,7 @@ function precompute_parameters(
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
-    finterp=FLOWMath.akima,
+    finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
     silence_warnings=true,
     verbose=false,
 )
@@ -1344,7 +1333,7 @@ function precompute_parameters(
         body_vortex_panels,
         rotor_source_panels,
         wake_vortex_panels,
-        operating_point.Vinf,
+        operating_point.Vinf[],
         integration_options,
     )
 
@@ -1407,7 +1396,7 @@ end
         itcpshift=0.05,
         axistol=1e-15,
         tegaptol=1e1 * eps(),
-        finterp=fm.akima,
+        finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
         silence_warnings=true,
         verbose=false,
     )
@@ -1429,7 +1418,7 @@ function precompute_parameters!(
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
-    finterp=fm.akima,
+    finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
     silence_warnings=true,
     verbose=false,
 )
@@ -1526,7 +1515,7 @@ end
         itcpshift=0.05,
         axistol=1e-15,
         tegaptol=1e1 * eps(),
-        finterp=fm.akima,
+        finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
         silence_warnings=true,
         verbose=false,
     )
@@ -1552,7 +1541,7 @@ function precompute_parameters!(
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
-    finterp=fm.akima,
+    finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
     silence_warnings=true,
     verbose=false,
 )

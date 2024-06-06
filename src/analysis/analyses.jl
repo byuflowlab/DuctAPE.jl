@@ -139,6 +139,10 @@ function analyze(
         solve_container_caching = allocate_solve_container_cache(
             options.solver_options, propulsor.paneling_constants
         )
+    else
+        # reset cache
+        solve_container_caching.solve_container_cache.du .= 0
+        solve_container_caching.solve_container_cache.dual_du .= 0
     end
 
     # - Process - #
@@ -152,6 +156,9 @@ function analyze(
         idmaps,
         options,
     )
+
+    # return converged_states,
+    # any(options.solver_options.converged[:, options.multipoint_index[]])
 
     # - Post-Process - #
     outs = post_process(
@@ -190,9 +197,9 @@ function analyze(
             idmaps,
             problem_dimensions,
         ),
-        options.solver_options.converged[]
+        any(options.solver_options.converged)
     else
-        return outs, options.solver_options.converged[options.multipoint_index[]]
+        return outs, any(options.solver_options.converged[:, options.multipoint_index[]])
     end
 end
 
@@ -365,7 +372,7 @@ function analyze(
 
     if return_inputs
         solve_parameter_tuple = withdraw_solve_parameter_cache(
-            solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+            options.solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
         )
 
         return outs,
@@ -373,8 +380,8 @@ function analyze(
             prepost_containers.panels,
             prepost_containers.ivb,
             solve_parameter_tuple...,
-            blade_elements=(; blade_elements..., airfoils...),
-            linsys=(; linsys..., A_bb_LU),
+            blade_elements=(; solve_parameter_tuple.blade_elements..., airfoils...),
+            linsys=(; solve_parameter_tuple.linsys..., A_bb_LU),
             idmaps,
             problem_dimensions,
         ),

@@ -199,8 +199,30 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
     f_dgamw::TF = 2e-4
     convergence_type::TC = Relative()
     Vconv::AbstractVector{TF} = [1.0]
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
+end
+
+"""
+    CSORSolverOptions(multipoint; kwargs...)
+
+Convenience function that sets up CSOR solver options from defaults for a given number of multi-points.
+
+# Arguments
+- `multipoint::Vector` : doesn't need to be anything but a vector of the length of multipoints.
+
+# Returns
+- `solver_options::CSORSolverOptions` : A CSORSolverOptions object with arrays for the convergence flags in the overall type as well as inside each of the solver options.
+"""
+function CSORSolverOptions(multipoint; kwargs...)
+
+    lm = length(multipoint)
+
+    return CSORSolverOptions(;
+        converged=fill(false, (1, lm)),
+        iterations=zeros(Int, (1, lm)),
+        kwargs...
+    )
 end
 
 """
@@ -407,16 +429,12 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
     TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
 } <: PolyAlgorithmOptions
     solvers::AbstractVector{TS} = [
-        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
-        MinpackOptions(; atol=1e-12),
-        NonlinearSolveOptions(;
-            algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
-            atol=1e-12,
-            additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
-        ),
+        NLsolveOptions(; algorithm=:anderson, atol=1e-12, iteration_limit=200),
+        MinpackOptions(; atol=1e-12, iteration_limit=100),
+        NLsolveOptions(; algorithm=:newton, atol=1e-12, iteration_limit=20),
     ]
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false, false, false]
+    iterations::AbstractArray{TI} = [0, 0, 0]
 end
 
 """
@@ -430,29 +448,33 @@ Convenience function that set's up chain solver options from defaults for a give
 # Returns
 - `solver_options::ChainSolverOptions` : A ChainSolverOptions object with arrays for the convergence flags in the overall type as well as inside each of the solver options.
 """
-function ChainSolverOptions(multipoint)
+function ChainSolverOptions(multipoint; solvers=nothing)
+
     lm = length(multipoint)
-    return ChainSolverOptions(;
-        solvers=[
+
+    if isnothing(solvers)
+        solvers = [
             NLsolveOptions(;
                 algorithm=:anderson,
                 atol=1e-12,
                 converged=fill(false, lm),
                 iterations=zeros(Int, lm),
             ),
-            MinpackOptions(;
-                atol=1e-12, converged=fill(false, lm), iterations=zeros(Int, lm)
-            ),
-            NonlinearSolveOptions(;
-                algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
-                atol=1e-12,
-                additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
-                converged=fill(false, lm),
-                iterations=zeros(Int, lm),
-            ),
-        ],
-        converged=fill(false, lm),
-        iterations=zeros(Int, lm),
+            MinpackOptions(; atol=1e-12, converged=fill(false, lm), iterations=zeros(Int, lm)),
+            # NonlinearSolveOptions(;
+            #     algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
+            #     atol=1e-12,
+            #     additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
+            #     converged=fill(false, lm),
+            #     iterations=zeros(Int, lm),
+            # ),
+        ]
+    end
+
+    return ChainSolverOptions(;
+        solvers=solvers,
+        converged=fill(false, (length(solvers), lm)),
+        iterations=zeros(Int, (length(solvers), lm)),
     )
 end
 
@@ -470,8 +492,8 @@ Options for SLOR (successive line over relaxation) elliptic grid solver.
 - `converged::AbstractVector{TB} = [false]
 """
 @kwdef struct SLORGridSolverOptions{TB,TF,TI} <: GridSolverOptionsType
-    iteration_limit::TI = 100
-    atol::TF = 1e-9
+    iteration_limit::TI = 200
+    atol::TF = eps()
     converged::AbstractVector{TB} = [false]
     iterations::AbstractVector{TI} = [0]
 end
@@ -558,7 +580,7 @@ Type containing (nearly) all the available user options.
     silence_warnings::TB = true
     multipoint_index::TI = [1]
     # - Geometry Re-interpolation and generation options - #
-    finterp::Tin = FLOWMath.akima
+    finterp::Tin = (x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps())
     autoshiftduct::TB = true
     lu_decomp_flag::TB = false
     # paneling options
@@ -573,7 +595,7 @@ Type containing (nearly) all the available user options.
     checkoutfileexists::TB = false
     output_tuple_name::TSt = ["outs"]
     # - Solving Options - #
-    grid_solver_options::WS = GridSolverOptions()
+    grid_solver_options::WS = SLORGridSolverOptions()
     solver_options::TSo = ChainSolverOptions()
 end
 
@@ -654,7 +676,12 @@ Convenience function to select options used in DFDC and run multipoint analysis.
 - `multipoint::Vector` : doesn't need to be anything but a vector of the length of multipoints.
 """
 function DFDC_options(
-    multipoint, Vconv; write_outputs=nothing, outfile=nothing, output_tuple_name=nothing, kwargs...
+    multipoint,
+    Vconv;
+    write_outputs=nothing,
+    outfile=nothing,
+    output_tuple_name=nothing,
+    kwargs...,
 )
     lm = length(multipoint)
 
@@ -672,11 +699,7 @@ function DFDC_options(
 
     return Options(;
         grid_solver_options=SLORGridSolverOptions(),
-        solver_options=CSORSolverOptions(;
-            converged=fill(false, lm),
-            iterations=zeros(Int, lm),
-            Vconv=Vconv,
-        ),
+        solver_options=CSORSolverOptions(multipoint; Vconv=Vconv),
         write_outputs=write_outputs,
         outfile=outfile,
         output_tuple_name=output_tuple_name,

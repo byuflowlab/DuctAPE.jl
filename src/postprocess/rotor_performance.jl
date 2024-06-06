@@ -222,8 +222,7 @@ function viscous_rotor_torque(
         rotor_panel_center,
         rotor_panel_length,
         cd,
-        rhoinf;
-        TF=nothing,
+        rhoinf
     )
 end
 

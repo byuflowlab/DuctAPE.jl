@@ -5,9 +5,11 @@ function elliptic_grid_residual!(r, y, x, p)
     # - extract parameters - #
     (; x_caching, itshape) = p
     (; x_cache, x_dims) = x_caching
-    x_vec = PreallocationTools.get_tmp(x_cache, promote_type(eltype(y), eltype(x))(1.0))
-    x_vec .= x
-    proposed_grid, xi, eta = withdraw_grid_parameter_cache(x_vec, x_dims)
+    # x_vec = PreallocationTools.get_tmp(x_cache, x)
+    # x_vec .= x
+    const_grid, xi, eta = withdraw_grid_parameter_cache(x, x_dims)
+    proposed_grid = zeros(promote_type(eltype(x), eltype(y)), size(const_grid))
+    proposed_grid .= const_grid
 
     # dimensions
     nxi = x_dims.xi.shape[1]
@@ -197,7 +199,6 @@ function solve_elliptic_grid!(
         x_caching, itshape, algorithm, autodiff, atol, iteration_limit, converged, verbose
     )
 
-    # - solve - #
     grid_internals = ImplicitAD.implicit(
         solve_elliptic_grid,
         elliptic_grid_residual!,
@@ -498,7 +499,7 @@ function relax_grid!(
         end #for j (radial stations)
 
         # -- Update relaxation factors
-        if dmax < atol * dxy
+        if dmax < atol #* dxy
             if verbose
                 println(tabchar^(ntab) * "Total iterations: $iterate")
             end
@@ -516,7 +517,7 @@ function relax_grid!(
             relaxfactor = relaxfactor3
         end
 
-        if dmax < dset3 * dxy
+        if dmax < atol #* dxy
             if verbose
                 println(tabchar^(ntab) * "Total iterations = $iterate")
             end

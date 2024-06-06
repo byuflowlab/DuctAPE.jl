@@ -63,6 +63,10 @@ function setup_analysis(
         prepost_container_caching = allocate_prepost_container_cache(
             propulsor.paneling_constants
         )
+    else
+        # reset cache
+        prepost_container_caching.prepost_container_cache.du .= 0
+        prepost_container_caching.prepost_container_cache.dual_du .= 0
     end
 
     # unpack the caching
@@ -88,6 +92,10 @@ function setup_analysis(
         solve_parameter_caching = allocate_solve_parameter_cache(
             options.solver_options, propulsor.paneling_constants
         )
+    else
+        # reset cache
+        solve_parameter_caching.solve_parameter_cache.du .= 0
+        solve_parameter_caching.solve_parameter_cache.dual_du .= 0
     end
 
     # unpack caching

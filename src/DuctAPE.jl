@@ -138,6 +138,7 @@ include("preprocess/velocities/quadrature/gausskronrod_integrals.jl")
 include("process/process.jl")
 include("process/solve.jl")
 include("process/residuals/CSORresidual.jl")
+include("process/residuals/CSORresidual_iad.jl")
 include("process/residuals/systemresidual.jl")
 
 # Aerodynamics Functions

@@ -29,9 +29,34 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
     ) = constants
 
     # - Separate out the state variables - #
-    Gamr, sigr, gamw = extract_state_variables(
-        solver_options, state_variables, solve_parameter_cache_dims.state_dims
-    )
+    if eltype(sensitivity_parameters) != eltype(state_variables) &&
+        eltype(state_variables) <: Float64
+        for k in propertynames(solve_parameter_cache_dims)
+            println(k, ": ", getfield(solve_parameter_cache_dims, k))
+        end
+        println("state var type: ", eltype(state_variables))
+        println("param type: ", eltype(sensitivity_parameters))
+
+        svar = extract_initial_guess(
+            solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
+        )
+        csvar = copy(svar)
+        Gamr, sigr, gamw = extract_state_variables(
+            solver_options, svar, solve_parameter_cache_dims.state_dims
+        )
+        Gamrval, sigrval, gamwval = extract_state_variables(
+            solver_options, state_variables, solve_parameter_cache_dims.state_dims
+        )
+
+        Gamr .= Gamrval
+        sigr .= sigrval
+        gamw .= gamwval
+
+    else
+        Gamr, sigr, gamw = extract_state_variables(
+            solver_options, state_variables, solve_parameter_cache_dims.state_dims
+        )
+    end
 
     # separate out sensitivity_parameters here as well
     solve_parameter_tuple = withdraw_solve_parameter_cache(
@@ -78,7 +103,13 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
         verbose=solver_options.verbose,
     )
 
-    return state_variables
+    if eltype(sensitivity_parameters) != eltype(state_variables) &&
+        eltype(state_variables) <: Float64
+        state_variables .= ForwardDiff.value.(svar)
+        svar .= csvar
+    end
+
+    return resid
 end
 
 """
@@ -138,9 +169,12 @@ function compute_CSOR_residual!(
 )
 
     # - Adjust Relaxation Factors (decrease relaxation as solution converges) - #
-    nrf, bt1, bt2, pf1, pf2, nrfw, btw, pfw = apply_relaxation_schedule(
-        resid, solver_options
-    )
+    # nrf, bt1, bt2, pf1, pf2, nrfw, btw, pfw = apply_relaxation_schedule(
+    #     resid, solver_options
+    # )
+
+    (;nrf, bt1, bt2, pf1, pf2, btw, pfw) = solver_options
+    nrfw = nrf
 
     # - Rename for Convenience - #
     (; maxBGamr, maxdeltaBGamr, maxdeltagamw) = solve_containers
@@ -401,8 +435,7 @@ function relax_Gamr!(
     bladeomega = nrf .* ones(TF, size(Gamr, 2))
     omega = nrf .* ones(TF, size(Gamr, 1))
     deltahat = zeros(TF, size(Gamr, 1))
-    minBGamr = zeros(TF, size(Gamr,2))
-
+    minBGamr = zeros(TF, size(Gamr, 2))
 
     for (i, (BG, b, delta_prev, delta)) in
         enumerate(zip(eachcol(Gamr), B, eachcol(delta_prev_mat), eachcol(delta_mat)))
@@ -431,7 +464,6 @@ function relax_Gamr!(
         else # if the average is zero, then set maxBGamr[i] to zero
             maxBGamr[i] = 0.0
         end
-
 
         # note: delta = Gamr_new .- Gamr
         # note: deltahat here is actually 1/deltahat which is the version needed later
@@ -620,7 +652,6 @@ Update CSOR residual values in place.
 function update_CSOR_residual_values!(
     convergence_type::Relative, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
 )
-
     resid[1] = maximum(abs, maxdeltaBGamr ./ maxBGamr)
     resid[2] = abs.(maxdeltagamw[] / Vconv[])
 

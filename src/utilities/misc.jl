@@ -140,7 +140,7 @@ function reset_containers!(c; exception_keys=[])
 end
 
 """
-    promote_propulosor_type(propulsor)
+    promote_propulsor_type(propulsor)
 
 Convenience function for promoting types based on any potential elements of the propulsor object dependent on optimization design variables.
 
@@ -150,7 +150,7 @@ Convenience function for promoting types based on any potential elements of the 
 # Returns
 - `TP::Type` : the promoted type
 """
-function promote_propulosor_type(p)
+function promote_propulsor_type(p)
     return promote_type(
         eltype(p.duct_coordinates),
         eltype(p.centerbody_coordinates),
