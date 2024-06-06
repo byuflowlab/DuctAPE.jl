@@ -868,9 +868,6 @@ end
         # define influence lengths
         influence_lengths = [1.0; 1.0]
 
-        # use unit strengths
-        strengths = [1.0 1.0; 1.0 1.0]
-
         # - GaussKronrod - #
         # [cp, n, x/r]
         VEL = dt.induced_velocities_from_vortex_panels_on_points(
@@ -878,7 +875,6 @@ end
             nodes,
             nodemap,
             influence_lengths,
-            strengths,
             (; nominal=gk_integration_options, singular=gk_integration_options),
         )
 
@@ -934,7 +930,6 @@ end
             nodes,
             nodemap,
             influence_lengths,
-            strengths,
             (; nominal=gl_integration_options, singular=gl_integration_options),
         )
 
@@ -990,7 +985,6 @@ end
             nodes,
             nodemap,
             influence_lengths,
-            strengths,
             (; nominal=r_integration_options, singular=r_integration_options),
         )
 
@@ -1063,9 +1057,6 @@ end
         # define influence lengths
         influence_lengths = [1.0; 1.0]
 
-        # use unit strengths
-        strengths = [1.0 1.0; 1.0 1.0]
-
         # GaussKronrod
         # [cp, n, x/r]
         VEL = dt.induced_velocities_from_source_panels_on_points(
@@ -1073,7 +1064,6 @@ end
             nodes,
             nodemap,
             influence_lengths,
-            strengths,
             (; nominal=gk_integration_options, singular=gk_integration_options),
         )
 
@@ -1128,7 +1118,6 @@ end
             nodes,
             nodemap,
             influence_lengths,
-            strengths,
             (; nominal=gl_integration_options, singular=gl_integration_options),
         )
 
@@ -1183,7 +1172,6 @@ end
             nodes,
             nodemap,
             influence_lengths,
-            strengths,
             (; nominal=r_integration_options, singular=r_integration_options),
         )
 
