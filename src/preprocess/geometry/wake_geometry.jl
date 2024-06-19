@@ -85,7 +85,7 @@ end
 """
     initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake)
 
-Intialize the wake grid.
+Initialize the wake grid.
 
 # Arguments:
 - `rp_duct_coordinates::Matrix{Float}` : The re-paneled duct coordinates

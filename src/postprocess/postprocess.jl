@@ -606,7 +606,7 @@ function post_process(
             CT=total_CT[1],
             CQ=total_CQ[1],
             CP=total_CP[1],
-            total_efficiency=total_efficiency[1],
+            total_efficiency=total_efficiency,
             ideal_efficiency,
         ),
         # - Intermediate Values from Residual - #
@@ -642,7 +642,7 @@ function post_process(
         )
     end
 
-    return outs
+    return deepcopy(outs)
 end
 
 ######################################################################
