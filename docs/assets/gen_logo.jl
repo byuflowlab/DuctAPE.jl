@@ -149,4 +149,5 @@ plot!(wg[1, end - 5, 1] * ones(2), [-0.05, 0.05]; color=:black, label="")
 plot!(wg[1, end - 5, 1] * ones(2) .- 0.03, [-0.05, 0.05]; color=:black, label="")
 
 ##### ----- SAVE ----- #####
+plot!(;grid=false, background_color=nothing)
 savefig("assets/logo.svg")

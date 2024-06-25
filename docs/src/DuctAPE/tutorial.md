@@ -10,6 +10,7 @@ The following is a basic tutorial on how to set up the inputs to, and run, an an
 
 ```@setup dfdc
 include("../../assets/plots_default.jl")
+gr()
 ```
 
 We begin by loading the package, and optionally create a shorthand name.
