@@ -41,7 +41,7 @@ plot!(
     r;
     label="",
     color=julia_blue,
-    # linewidth=lw,
+    linewidth=1.5,
     fillrange=Rhub * ones(11),
     fillcolor=julia_blue,
     fillalpha=fa,
@@ -51,7 +51,7 @@ plot!(
     r;
     label="",
     color=julia_blue,
-    # linewidth=lw,
+    linewidth=1.5,
     fillrange=Rhub * ones(11),
     fillcolor=julia_blue,
     fillalpha=fa,
