@@ -24,7 +24,7 @@ wedge_angle = 10.0
 # - Plotting Options - #
 plot(; axis=false)
 lw = 5
-ms = 5
+ms = 4
 fa = 1 / 3
 
 # blue rotor
