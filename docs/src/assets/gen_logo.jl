@@ -1,8 +1,8 @@
-using Plots
 using FLOWMath
 using DuctAPE
 const dt = DuctAPE
 
+include("plots_default.jl")
 include("geometry.jl")
 
 ##### ----- COLORS ----- #####
@@ -14,7 +14,7 @@ julia_red = RGB(0.796, 0.235, 0.2)
 
 ##### ----- GEOMETRY ----- #####
 
-Rtip = 0.75
+Rtip = 1.25
 Rhub = 0.25
 duct_chord = 2.0
 duct_le_radius = 0.025
@@ -23,13 +23,14 @@ wedge_angle = 10.0
 
 # - Plotting Options - #
 plot(; axis=false)
-lw = 3
+lw = 5
+ms = 5
 fa = 1 / 3
 
 # blue rotor
 rotorzloc = 0.35 * duct_chord
 r = range(Rhub + 0.01, Rtip - 0.025, 11)
-c = range(0.25, 0.2, 11) .* Rtip
+c = range(0.35, 0.25, 11) .* Rtip
 t = range(70.0, 30.0, 11)
 
 lez = rotorzloc .- c .* 0.25 .* sind.(t)
@@ -114,7 +115,6 @@ plot!(
 cbr[end] = 0.0
 
 # purple wake
-# TODO: need to load DuctAPE and run the wake generation functions
 
 # assemble propulsor
 include("define_propulsor.jl")
@@ -125,7 +125,7 @@ problem_dimensions, prepost_containers, _, _, _, _, _, _ = dt.setup_analysis(
 )
 wg = prepost_containers.wake_grid
 for i in 2:2:size(wg, 3)
-    plot!(wg[1, :, i], wg[2, :, i]; color=julia_purple, label="", linewidth=lw / 2)
+    plot!(wg[1, :, i], wg[2, :, i]; color=julia_purple, label="", linewidth=lw - 1)
 end
 
 # finish rotor bits
@@ -136,18 +136,9 @@ plot!(
     color=julia_blue,
     markerstrokecolor=julia_blue,
     # markershape=:hline,
-    markersize=3,
-    linewidth=3,
+    markersize=ms,
+    markershape=:rect,
+    linewidth=lw,
     seriestype=:scatter,
 )
 
-# axis of rotation
-plot!([nz[1], wg[1, end, 1]], -0.001 * ones(2); color=:black, label="", lw=1)
-plot!(nz[13] * ones(2), [-0.05, 0.05]; color=:black, label="")
-plot!(nz[13] * ones(2) .+ 0.03, [-0.05, 0.05]; color=:black, label="")
-plot!(wg[1, end - 5, 1] * ones(2), [-0.05, 0.05]; color=:black, label="")
-plot!(wg[1, end - 5, 1] * ones(2) .- 0.03, [-0.05, 0.05]; color=:black, label="")
-
-##### ----- SAVE ----- #####
-plot!(;grid=false, background_color=nothing)
-savefig("assets/logo.svg")

@@ -9,7 +9,7 @@ Depth = 5
 The following is a basic tutorial on how to set up the inputs to, and run, an analysis of a ducted fan in DuctAPE.
 
 ```@setup dfdc
-include("../../assets/plots_default.jl")
+include("../assets/plots_default.jl")
 gr()
 ```
 
