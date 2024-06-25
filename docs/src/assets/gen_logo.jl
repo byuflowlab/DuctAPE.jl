@@ -157,4 +157,5 @@ plot!(
 
 ##### ----- SAVE ----- #####
 plot!(; grid=false, background_color=nothing)
-savefig("logo.svg")
+# savefig("logo.svg")
+savefig("logo.png")

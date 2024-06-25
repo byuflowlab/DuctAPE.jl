@@ -1,2 +1,2 @@
 julia --project=../../ gen_logo.jl
-mogrify -trim logo.svg
+magick mogrify -trim logo.png

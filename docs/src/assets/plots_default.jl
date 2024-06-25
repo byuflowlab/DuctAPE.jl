@@ -14,7 +14,7 @@ function plots_default(;
     background_color=nothing,
     # background_color_outside = nothing,
     #     display_type,
-    #     dpi,
+    dpi=300,
     #     extra_kwargs,
     #     extra_plot_kwargs,
     fontfamily="cmunrm",
@@ -241,7 +241,7 @@ function plots_default(;
         #     #:Plot
         background_color=background_color,
         #     display_type,
-        #     dpi,
+        dpi=dpi,
         # extra_kwargs=extra_kwargs,
         # extra_plot_kwargs=extra_plot_kwargs,
         fontfamily=fontfamily,
