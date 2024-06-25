@@ -46,8 +46,6 @@ Post-process a converged nonlinear solve solution.
 
 # Returns
 `outs::NamedTuple` : A named tuple containing all the output values including
-- `wake
-  -`panel_strengths'
 - `bodies`
   - `panel_strengths`
   - `total_thrust`
@@ -107,6 +105,8 @@ Post-process a converged nonlinear solve solution.
   - `beta1`
   - `blade_normal_force_per_unit_span`
   - `blade_tangential_force_per_unit_span`
+- `wake`
+  - `panel_strengths`
 - `totals`
   - `thrust`
   - `torque`

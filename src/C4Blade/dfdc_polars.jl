@@ -7,10 +7,10 @@
 - `dcl_stall::Float` : cl increment from initial to total stall.
 - `cdmin::Float` : minimum cd
 - `cldmin::Float` : cl at cdmin
-- `dcddcl2::Float` : quadratic curve factor for cd curve (d(cd)/d(cl^2))
+- `dcddcl2::Float` : quadratic curve factor for cd curve \$\\left(\\frac{d(c_d)}{d(c_l^2)}\\right)\$
 - `cmcon::Float` : pitching moment constant
 - `Re_ref::Float` : reference Reynolds number at which cd values apply
-- `Re_exp::Float` : Reynolds number exponent scaling (cd = cd*(Re/Re_ref)^Re_exp)
+- `Re_exp::Float` : Reynolds number exponent scaling \$\\left( c_d = c_d(Re/Re_{ref})^{Re_{exp}}\\right)\$
 - `mcrit::Float` : critical Mach number
 """
 struct DFDCairfoil{TF}
