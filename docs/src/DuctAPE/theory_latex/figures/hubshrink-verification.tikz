@@ -1,0 +1,17 @@
+\begin{tikzpicture}[scale=2]
+        %Airfoil
+\definecolor{tempcolor}{rgb}{0.7529411764705882,0.3254901960784314,0.403921568627451};
+        \draw[thick,tempcolor] plot[smooth] file{figures/shrinkhub-coordinates-scale-3.0.dat};
+    \definecolor{tempcolor}{rgb}{0.6137254901960785,0.24411764705882352,0.32745098039215687};
+        \draw[thick,tempcolor] plot[smooth] file{figures/shrinkhub-coordinates-scale-2.275.dat};
+    \definecolor{tempcolor}{rgb}{0.4745098039215686,0.1627450980392157,0.25098039215686274};
+        \draw[thick,tempcolor] plot[smooth] file{figures/shrinkhub-coordinates-scale-1.55.dat};
+    \definecolor{tempcolor}{rgb}{0.3352941176470588,0.08137254901960785,0.17450980392156862};
+        \draw[thick,tempcolor] plot[smooth] file{figures/shrinkhub-coordinates-scale-0.825.dat};
+    \definecolor{tempcolor}{rgb}{0.19607843137254902,0.0,0.09803921568627451};
+        \draw[thick,tempcolor] plot[smooth] file{figures/shrinkhub-coordinates-scale-0.1.dat};
+
+        \draw[ultra thick,primary] plot[smooth] file{figures/isolated_duct_coordinates.dat};
+        \draw[dash pattern=on 6pt off 2pt on 1pt off 2pt on 2.5cm] (-0.2,0) -- (0.65,0);
+        \draw[dash pattern=on 6pt off 2pt on 1pt off 2pt on 2.5cm ] (1.5,0) -- (0.65,0);
+\end{tikzpicture}

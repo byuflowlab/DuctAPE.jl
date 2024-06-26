@@ -1,22 +1,33 @@
 using Documenter
 using DuctAPE
 
+# - LaTeX Stuff - #
+mathengine = Documenter.MathJax(
+    Dict(:TeX => Dict(
+        :equationNumbers => Dict(:autoNumber => "AMS"),
+        # :Macros => Dict(:ket => ["|#1\\rangle", 1], :bra => ["\\langle#1|", 1]),
+    ))
+)
+
+# - Make the Docs - #
 makedocs(;
     modules=[DuctAPE, DuctAPE.C4Blade],
     format=Documenter.HTML(;
         repolink="https://github.com/byuflowlab/DuctAPE.jl/blob/{commit}{path}#L{line}",
         edit_link="main",
+        mathengine=mathengine,
     ),
     pages=[
         "Home" => "index.md",
         "DuctAPE" => [
             "Getting Started" => "DuctAPE/tutorial.md",
-            "Examples" => [
-                "Options" => "DuctAPE/examples/option.md",
-                "Outputs" => "DuctAPE/examples/outputs.md",
-                "Multi-Point Analysis" => "DuctAPE/examples/multi_point.md",
-                "Preallocation" => "DuctAPE/examples/precompilation.md",
-                "Manual Geometry" => "DuctAPE/examples/manual_repaneling.md",
+            "Advanced Usage" => [
+                "Options" => "DuctAPE/advanced_usage/option.md",
+                "Preallocation" => "DuctAPE/advanced_usage/precompilation.md",
+                "Multi-Point Analysis" => "DuctAPE/advanced_usage/multi_point.md",
+                # "Multi-Rotor Analysis" => "DuctAPE/advanced_usage/multi_rotor.md",
+                "Outputs" => "DuctAPE/advanced_usage/outputs.md",
+                # "Manual Geometry" => "DuctAPE/advanced_usage/manual_repaneling.md",
             ],
             "API" => [
                 "Public API Reference" => "DuctAPE/api/public_api.md",
@@ -33,13 +44,13 @@ makedocs(;
         ],
         "C\$^4\$Blade" => [
             "Intro" => "C4Blade/intro.md",
-            "Examples" => [
-                           "C4Blade/examples/DFDC.md",
-                           "C4Blade/examples/CCBlade.md",
-                           "C4Blade/examples/actuator_disk.md",
-                           "C4Blade/examples/cascade.md",
-                           "C4Blade/examples/corrections.md",
-                          ],
+            "Blade Element Types" => [
+                "C4Blade/airfoil_types/DFDC.md",
+                "C4Blade/airfoil_types/CCBlade.md",
+                "C4Blade/airfoil_types/actuator_disk.md",
+                "C4Blade/airfoil_types/cascade.md",
+            ],
+            "Polar Modification" => "C4Blade/corrections.md",
             "API Reference" => "C4Blade/api.md",
         ],
     ],

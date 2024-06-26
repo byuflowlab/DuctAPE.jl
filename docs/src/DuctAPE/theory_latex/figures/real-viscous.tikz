@@ -1,0 +1,62 @@
+\begin{tikzpicture}[scale=1.0]
+
+    % coordinate system
+    \coordinate (O) at (-1,-1);
+    \coordinate (er) at ($(O) +(0,1)$);
+    \coordinate (ez) at ($(O) +(1,0)$);
+    \draw[-Stealth,] (O) -- (er);
+    \draw[-Stealth,] (O) -- (ez);
+    \node[anchor=west,outer sep=0] at (er) {$\hat{\vect{e}}_r$};
+    \node[anchor=south,outer sep=0] at (ez) {$\hat{\vect{e}}_z$};
+
+    % filament line
+    \draw[]  (3,0) -- ++(-3,0) node[pos=0.5,below, secondary, shift={(0.0,-0.2)}] {\(\gamma_\mathrm{visc}\)};
+    \draw[densely dotted]  (0,0) -- ++(0,2.5) node[pos=0.5,right,shift={(0,0)}, primary] {\(\sigma=0\)};
+    \draw[] (0,2.5) -- ++(3,0) node[pos=0.5,above, secondary, shift={(0.0,0.2)}] {\(\gamma_\mathrm{visc}\)};
+
+    \draw[dashed] (2.25,-0.5) -- +(0,3.5);
+    \draw[dashed] (2.75,-0.5) -- +(0,0.5);
+    \draw[dashed] (2.5,0) -- +(0,2.5) node[pos=0.5,right] {RVF};
+    \draw[dashed] (2.75,2.5) -- +(0,0.5);
+
+    % vm arrows
+    \foreach \z in {-0.5,-0.3,-0.1}
+        \draw[-{Stealth[length=4pt, width=3pt]}] (2.25,\z) -- (2.75,\z);
+
+    % vm arrows
+    \foreach \z in {0.1,0.3,...,2.4}
+        \draw[-{Stealth[length=4pt, width=3pt]}] (2.25,\z) -- (2.5,\z);
+
+    % vm arrows
+    \node[above] at (2.5,3) {\(C_m\)};
+    \foreach \z in {2.6,2.8,3.0}
+        \draw[-{Stealth[length=4pt, width=3pt]}] (2.25,\z) -- (2.75,\z);
+
+    % entropy jump
+     \draw[] (-0.25, 2.25) -- ++(0.0,0.5)  -- node[above, pos=0.5] {\(\Delta S\)} ++(0.5,0) -- ++(0,-0.5);
+     \filldraw[] (-0.25,2.25) circle(1pt);
+     \filldraw[] (0.25,2.25) circle(1pt);
+
+    % static pressure jump
+     \draw[] (2.95, 2.4) -- ++(0.2,0)  -- node[right, pos=0.5] {\(\Delta p_s=0\)} ++(0,0.2) -- ++(-0.2,0);
+     \filldraw[] (2.95,2.4) circle(1pt);
+     \filldraw[] (2.95,2.6) circle(1pt);
+
+    % Cf (needed?)
+
+    % gamma_v's
+     \coordinate (g1) at (0.75,0);
+     \coordinate (g2) at (1.25,0);
+     \coordinate (g3) at (1.75,0);
+    \draw[-{Stealth[length=4,width=3,bend]},secondary] (g1) [partial ellipse =200:510:0.15 and 0.15];
+    \draw[-{Stealth[length=4,width=3,bend]},secondary] (g2) [partial ellipse =200:510:0.15 and 0.15];
+    \draw[-{Stealth[length=4,width=3,bend]},secondary] (g3) [partial ellipse =200:510:0.15 and 0.15];
+     \coordinate (g1) at (0.75,2.5);
+     \coordinate (g2) at (1.25,2.5);
+     \coordinate (g3) at (1.75,2.5);
+    \draw[{Stealth[length=4,width=3,bend]}-,secondary] (g1) [partial ellipse =200:510:0.15 and 0.15];
+    \draw[{Stealth[length=4,width=3,bend]}-,secondary] (g2) [partial ellipse =200:510:0.15 and 0.15];
+    \draw[{Stealth[length=4,width=3,bend]}-,secondary] (g3) [partial ellipse =200:510:0.15 and 0.15];
+
+
+\end{tikzpicture}

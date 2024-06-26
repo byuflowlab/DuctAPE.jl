@@ -1,0 +1,604 @@
+% ------------- sidenotes ---------------
+% create a new footnote series for sidenotes
+%Note: alph here is lowercase letters. the alphalph package goes to aa, ab, ac, ... after z
+\usepackage{alphalph}
+\newcounter{snote}[chapter]
+\newcommand\sidenote[1]{\stepcounter{snote}\textsuperscript{%
+    \itshape\alphalph{\value{snote}}}\marginpar{\scriptsize\textsuperscript{%
+    \scriptsize\itshape\alphalph{\value{snote}}} #1}}
+% ---------------------------------------
+
+% ------------------ tikz ------------
+%%tikz
+\RequirePackage{pgf,tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{arrows}
+\usetikzlibrary{shapes.geometric}
+\usetikzlibrary{shapes.misc}
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{bending}
+\usetikzlibrary{shadows}
+\usetikzlibrary{patterns}
+\usetikzlibrary{patterns.meta}
+\usetikzlibrary{intersections}
+\usepgfplotslibrary{patchplots}
+\usepgfplotslibrary{fillbetween}
+\usepgfplotslibrary{groupplots}
+\usepgfplotslibrary{polar}
+\usepgfplotslibrary{smithchart}
+\usepgfplotslibrary{statistics}
+\usepgfplotslibrary{dateplot}
+\usepgfplotslibrary{ternary}
+\pgfplotsset{%
+	layers/standard/.define layer set={%
+		background,axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground%
+	}{grid style= {/pgfplots/on layer=axis grid},%
+		tick style= {/pgfplots/on layer=axis ticks},%
+		axis line style= {/pgfplots/on layer=axis lines},%
+		label style= {/pgfplots/on layer=axis descriptions},%
+		legend style= {/pgfplots/on layer=axis descriptions},%
+		title style= {/pgfplots/on layer=axis descriptions},%
+		colorbar style= {/pgfplots/on layer=axis descriptions},%
+		ticklabel style= {/pgfplots/on layer=axis tick labels},%
+		axis background@ style={/pgfplots/on layer=axis background},%
+		3d box foreground style={/pgfplots/on layer=axis foreground},%
+	},
+}
+% new style at automates partial ellipse
+\tikzset{
+    partial ellipse/.style args={#1:#2:#3}{
+        insert path={+ (#1:#3) arc (#1:#2:#3)}
+    }
+}
+
+\RequirePackage{nicefrac}
+\RequirePackage{cancel}
+
+
+%\RequirePackage{marginfix}
+%\let\evensidemargin\oddsidemargin
+%\reversemarginpar
+% ----------------------------------------
+
+
+
+% -------- custom title page -------------
+% This title page follows immediately after the title page required by BYU Grad Studies.
+% This title page can be customized as the student desires, but should include the title,
+% student name, department, degree, and the BYU Engineering logo.
+\RequirePackage{pagecolor}
+\RequirePackage{afterpage}
+\newcommand{\mycustomtitlepage}{%
+	\pagestyle{empty}
+	\newgeometry{margin=.5in}
+	\newpagecolor{navy}\afterpage{\restorepagecolor}
+	\begin{Spacing}{2.2}
+		\noindent\raggedleft
+		{\color{white}\Huge\sffamily\itshape\@customtitle} \\
+%		\vspace{\fill}
+	\end{Spacing}
+	\begin{Spacing}{1.4}
+		{\color{white}\bfseries\Large
+		\noindent
+		\@author \\
+		\@department \\
+		\@degree} \\
+		\vspace{\fill}
+		\begin{figure}[htbp]
+			\includegraphics[width=3.5in]{frontmatter/figures/college_logo}
+		\end{figure}
+	\end{Spacing}
+\restoregeometry
+}
+% ----------------------------------------
+
+
+
+% --------------- Part Page Format ---------------
+\renewcommand*\part{%
+	\cleardoublepage
+	\thispagestyle{empty}
+		\setlrmarginsandblock{1.75in}{1.75in}{*}
+		\checkandfixthelayout
+	\if@twocolumn
+	\onecolumn
+	\@tempswatrue
+	\else
+	\@tempswafalse
+	\fi
+	\null\vfil
+	\secdef\@part\@spart
+}
+\newcommand{\resetpageformat}{%
+    \setlrmarginsandblock{1.0in}{2.75in}{*}
+    \checkandfixthelayout
+    \setmarginnotes{0.125in}{2.0in}{\onelineskip}
+}
+\renewcommand*{\thepart}{\Roman{part}}
+% \renewcommand*{\thepart}{}
+\renewcommand*{\partnamefont}{\normalfont\LARGE\sffamily\bfseries\colorchaptitle}
+\renewcommand*{\partnumfont}{\normalfont\LARGE\sffamily\bfseries\colorchaptitle}
+\renewcommand*{\parttitlefont}{\normalfont\LARGE\sffamily\itshape\colorchaptitle}
+% don't print the part number or word part
+\renewcommand*{\printpartname}{}
+\renewcommand*{\printpartnum}{}
+% \renewcommand*{\cftpartfont}{\cftchapterfont}
+% \renewcommand*{\cftpartpagefont}{\cftchapterpagefont}
+\renewcommand{\cftpartpresnum}{Part }
+\renewcommand{\cftpartnumwidth}{4em}
+
+
+\newcommand{\sectionquote}{\@empty}
+\newcommand*{\@printsectionquote}[1]{{\color{mediumgray}#1}}
+
+\renewcommand*{\afterpartskip}{\vskip 20pt plus 0.7fil \@printsectionquote{\sectionquote}  \newpage}
+% ----------------------------------------
+
+
+
+% ---------------- Assumption Box --------------------
+% Limits and Justification formats
+\newcommand{\limit}[1]{\smallskip \noindent {\bfseries\color{primary}Limitations: }#1 \smallskip}
+\newcommand{\why}[1]{\smallskip \noindent {\bfseries\color{primary}Justification: }#1}
+\newcommand{\asm}[1]{\noindent \textit{\color{primary}#1}}
+
+
+% Box frames
+\RequirePackage[framemethod=TikZ]{mdframed}
+\mdfsetup{}%skipabove=\topskip,skipbelow=\topskip}
+
+\newcounter{assumption}[chapter]
+\setcounter{assumption}{0}
+\makeatletter
+\newenvironment{assumption}%
+{%
+	\refstepcounter{assumption}
+	\renewcommand{\label}[1]{\ltx@label{{##1}}}
+	\mdfsetup{%
+		frametitle={%
+			\tikz[
+				baseline=(current bounding box.east),
+				outer sep=0pt,
+				inner sep=5pt,
+			]
+			\node[
+				anchor=east,
+				rectangle,
+				rounded corners=0.1cm,
+				fill=primary,
+				text=white,
+                font=\normalfont\sffamily
+			]
+			{Assumption~\thechapter.\theassumption};
+		}
+	}
+%
+	\mdfsetup{
+		roundcorner=5pt,
+		innertopmargin=1pt,
+		innerbottommargin=10pt,
+		linecolor=primary,%
+		linewidth=0.75pt,%
+		topline=true,%
+		frametitleaboveskip=\dimexpr-\ht\strutbox\relax,%
+   }
+ \goodbreak
+   \begin{mdframed}[]\relax%
+   }%
+   {\end{mdframed}}
+ \makeatother
+
+\crefname{assumption}{assumption}{assumptions}
+\Crefname{assumption}{Assumption}{Assumptions}
+\labelformat{assumption}{\color{primary}\thechapter.#1}
+
+% ----------------------------------------------------
+
+
+% % ------- Other option for Assumptions --------------
+% \RequirePackage{placeins}
+
+% \newcounter{assumptioninternal}[chapter]
+
+% \DeclareCaptionType{assumptioninternal}[Example]
+% \DeclareCaptionType{tipinternal}[Tip]
+% \DeclareCaptionType{algointernal}[Algorithm]
+% \crefname{assumptioninternal}{assumption}{assumptions}  % name for cref
+% \Crefname{assumptioninternal}{Assumption}{Assumptions}
+
+% \RequirePackage{stackengine}
+
+% \newenvironment{assumption}[1]
+% {
+% % \FloatBarrier
+% %\refstepcounter{tipinternal}\refstepcounter{algointernal} % JM: don't increment the others
+% \refstepcounter{assumptioninternal}
+% \vspace{\baselineskip}
+% \goodbreak
+% \noindent\def\stackalignment{l}\stackon[-0.1pt]{\hspace*{-3px}
+%   \colorbox{primary}{\textcolor{white}{\sffamily Assumption
+%   \thechapter.\arabic{assumptioninternal}}} {\begin{minipage}[t]{3.1in}\sffamily #1\end{minipage}}
+% }{
+%   \hspace*{-3px}\textcolor{primary}{\rule{\linewidth}{3px}}
+% }
+
+% \medskip\small
+% }
+% {
+
+% \noindent\textcolor{primary}{\rule{\linewidth}{2px}}
+
+% \bigskip
+% }
+
+% ---------------- summary Box --------------------
+
+\newcounter{summary}[chapter]
+\setcounter{summary}{0}
+\makeatletter
+\newenvironment{summary}%
+{%
+	\refstepcounter{summary}
+	\renewcommand{\label}[1]{\ltx@label{{##1}}}
+	\mdfsetup{%
+		frametitle={%
+			\tikz[
+				baseline=(current bounding box.east),
+				outer sep=0pt,
+				inner sep=5pt,
+			]
+			\node[
+				anchor=east,
+				rectangle,
+				rounded corners=0.1cm,
+				fill=byutan,
+				text=black,
+                font=\normalfont\sffamily
+			]
+			{Summary~\thechapter.\theassumption};
+		}
+	}
+%
+	\mdfsetup{
+		roundcorner=5pt,
+		innertopmargin=1pt,
+		innerbottommargin=10pt,
+		linecolor=byutan,%
+		linewidth=0.75pt,%
+		topline=true,%
+		frametitleaboveskip=\dimexpr-\ht\strutbox\relax,%
+	}
+	\begin{mdframed}[]\relax%
+	}%
+	{\end{mdframed}}
+\makeatother
+
+\crefname{summary}{summary}{summaries}
+\Crefname{Summary}{Summary}{Summaries}
+\labelformat{summary}{\color{primary}\thechapter.#1}
+
+% % ---------------- Summary Box --------------------
+% \newcounter{summary}[chapter]
+% \newenvironment{summary}[1]%
+% {%
+% 	\refstepcounter{summary}
+% 	\ifstrempty{#1}%
+% 	{%
+% 		\mdfsetup{%
+% 			frametitle={%
+% 				\tikz[baseline=(current bounding box.east),outer sep=0pt]
+% 				\node[anchor=east,rectangle,rounded corners=0.1cm,fill=byutan]
+% 				{\strut \textcolor{white}{Summary~\thechapter.\thesummary} };}}
+% 	}%
+% 	{%
+% 		\mdfsetup{%
+% 			frametitle={%
+% 				\tikz[baseline=(current bounding box.east),outer sep=0pt]
+% 				\node[anchor=east,rectangle,rounded corners=0.1cm,fill=byutan]
+% 				{\strut \color{white}{Summary~\thechapter.\thesummary: #1} };}}%
+% 	}%
+% 	\mdfsetup{
+% 		roundcorner=5pt,
+% 		innertopmargin=1pt,
+% 		innerbottommargin=10pt,
+% 		linecolor=byutan,%
+% 		linewidth=0.5pt,
+% 		topline=true,
+% 		frametitleaboveskip=\dimexpr-\ht\strutbox\relax,}
+% 	\begin{mdframed}[]\relax%
+% 	}%
+% 	{\end{mdframed}}
+
+% \crefname{summary}{Summary}{Summaries}
+% \Crefname{summary}{Summary}{Summaries}
+% \labelformat{summary}{\thechapter.#1}
+
+% ----------------------------------------------------
+
+
+
+% -------------------- Equation Box --------------------
+
+\usepackage{empheq}
+\usepackage[most]{tcolorbox}
+
+\newtcbox{\eqbox}[1][]{%
+	nobeforeafter, math upper, tcbox raise base,
+	enhanced, colframe=primary,
+	colback=navy!3,
+	boxrule=0.5pt,
+	#1}
+
+\newtcbox{\stepbox}[1][]{%
+	nobeforeafter, math upper, tcbox raise base,
+	enhanced, colframe=gray,
+    standard jigsaw,
+    opacityback=0,
+	boxrule=0.5pt,
+	#1}
+
+% eqbox, but goes on the outside and you give it the environment to use, thus works with aligned as in
+%\begin{eqboxed}{\eqbox}{align} blah blah \end{eqboxed}
+\newenvironment{eqboxed}[2]{%
+    \empheq[box={#1}]{#2}}{\endempheq}
+
+
+% ---- equation number formatting -----
+
+\makeatletter
+\renewcommand\tagform@[1]{\maketag@@@{\color{primary}\ignorespaces(#1)\unskip\@@italiccorr}}
+\makeatother
+
+% ------------- Misc Cleveref Formatting ----------------
+\crefname{figure}{figure}{figures}
+\Crefname{figure}{Figure}{Figures}
+\renewcommand{\thefigure}{\arabic{chapter}.\arabic{figure}}
+\labelformat{figure}{\color{primary}\normalfont#1}
+
+
+% try getting subfigs reference color
+% \newcommand{\thesubfigure}{\thefigure(\alph{subfigure})}
+\crefname{subfigure}{figure}{figures}
+\Crefname{subfigure}{Figure}{Figures}
+\labelformat{subfigure}{\color{primary}\normalfont\thefigure#1}
+
+\crefname{section}{section}{sections}
+\Crefname{section}{Section}{Sections}
+\labelformat{section}{\color{primary}\sffamily#1}
+\labelformat{subsection}{\color{primary}\sffamily#1}
+\labelformat{subsubsection}{\color{primary}\sffamily#1}
+
+\crefname{equation}{equation}{equations}
+\Crefname{equation}{Equation}{Equations}
+\makeatletter
+\creflabelformat{equation}{%
+  \textup{%
+      \color{primary}
+    (#2#1#3)%
+  }%
+}
+\makeatother
+% \labelformat{equation}{\color{primary}#1}
+
+% -------------------------------------------------------
+
+% ---------- Additional Colors -------------------------
+% \definecolor{lightblue}{HTML}{64AFFA}
+% % \definecolor{navyred}{HTML}{9b0000}
+% % \definecolor{royalred}{HTML}{B82B00}
+% % \definecolor{lightred}{HTML}{FA4B4B}
+
+\definecolor{byutan}{HTML}{C5AF7D}
+% \definecolor{plotsblue}{HTML}{002E5D}
+% \definecolor{plotsred}{HTML}{9b0000}
+% \definecolor{plotsgreen}{HTML}{A2E3A2}
+% \definecolor{secondary}{HTML}{c05367}
+% \definecolor{tertiary}{HTML}{8fa651}
+\definecolor{secondary}{HTML}{be4c4d}
+\definecolor{tertiary}{HTML}{69ae5f}
+\definecolor{quaternary}{HTML}{a754a4}
+\definecolor{quinary}{HTML}{be933d}
+\definecolor{plotsgray}{HTML}{808080}
+
+
+% -------------- easy coloring of things ----------------
+\newcommand{\navy}[1]{{\color{navy}#1}}
+\newcommand{\primary}[1]{{\color{primary}#1}}
+\newcommand{\secondary}[1]{{\color{secondary}#1}}
+\newcommand{\tertiary}[1]{{\color{tertiary}#1}}
+\newcommand{\gray}[1]{{\color{gray}#1}}
+
+
+% ------------- part page formatting help -------------
+\newenvironment{fullwidth}{%
+  \clearpage
+    \setlrmarginsandblock{1.75in}{1.75in}{*}
+  \checkandfixthelayout
+}{%
+  \clearpage
+    \setlrmarginsandblock{1.75in}{1.75in}{*}
+  \checkandfixthelayout
+   }
+
+
+% --------  Stuff from macros.tex ------- %
+
+%%Potetially useful macros.
+%\def\proof{\noindent{\it Proof: }}
+%\def\QED{\mbox{\rule[0pt]{1.5ex}{1.5ex}}}
+%\def\endproof{\hspace*{\fill}~\QED\par\endtrivlist\unskip}
+
+%\newcommand{\abs}[1]{\left|#1\right|}
+%\newcommand{\defeq}{\stackrel{\triangle}{=}}
+%\newcommand{\re}{\mathbb{R}}
+% real numbers
+%\newcommand{\OMIT}[1]{{}}
+% omit sections of text
+
+%\newcommand{\superscript}[1]{\ensuremath{^\textrm{#1}}}
+%\newcommand{\subscript}[1]{\ensuremath{_\textrm{#1}}}
+%
+
+%partial derivatives
+\newcommand{\pd}[2]{\ensuremath{\frac{\partial #1}{\partial #2}}} % partial derivative
+\newcommand{\pdd}[2]{\ensuremath{\frac{\partial^2 #1}{\partial #2^2}}} % partial derivative
+\newcommand{\pdpd}[3]{\ensuremath{\frac{\partial^2 #1}{\partial #2 \partial #3}}} % partial derivative
+
+%non-italic math letters
+\renewcommand{\d}{\mathrm{d}}
+\newcommand{\e}{\mathrm{e}}
+%\newcommand{\i}{\mathrm{i}}
+
+%decrease overset height
+\makeatletter
+\newcommand{\oset}[3][0ex]{%
+	\mathrel{\mathop{#3}\limits^{
+			\vbox to#1{\kern-0.5\ex@
+				\hbox{$\scriptstyle#2$}\vss}}}}
+\makeatother
+
+%%Vector arrow over variable
+%\newcommand{\vect}[1]{%
+%	\oset{\rightharpoonup}{#1}}
+\RequirePackage{bm}
+\newcommand{\vect}[1]{\bm{#1}}
+
+%expand fractions to full display size
+\newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+
+
+%Norm
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+%Bezier word formatting
+\newcommand{\beziername}{B\'{e}zier }
+
+\let\underbrace\LaTeXunderbrace
+\let\overbrace\LaTeXoverbrace
+
+
+%Cauchy Integral
+\def\Xint#1{\mathchoice
+	{\XXint\displaystyle\textstyle{#1}}%
+	{\XXint\textstyle\scriptstyle{#1}}%
+	{\XXint\scriptstyle\scriptscriptstyle{#1}}%
+	{\XXint\scriptscriptstyle\scriptscriptstyle{#1}}%
+	\!\int}
+\def\XXint#1#2#3{{\setbox0=\hbox{$#1{#2#3}{\int}$}
+		\vcenter{\hbox{$#2#3$}}\kern-.5\wd0}}
+\def\ddashint{\Xint=}
+\def\dashint{\Xint-}
+
+
+%Multi-row in matricies
+\usepackage{multirow}
+
+
+%-TODO notes
+\definecolor{notesblue}{HTML}{6A7AB8}
+\definecolor{notesorange}{HTML}{B8946A}
+\definecolor{notesred}{HTML}{B86A6A}
+\definecolor{notesgreen}{HTML}{72B86A}
+\definecolor{notespurple}{HTML}{A36AB8}
+
+\usepackage{xargs}
+\usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
+
+\newcommandx{\question}[2][1=]{\todo[linecolor=notesblue,backgroundcolor=notesblue!25,bordercolor=notesblue,#1]{{\bfseries Question:} #2}}
+\newcommandx{\change}[2][1=]{\todo[linecolor=notesorange,backgroundcolor=notesorange!25,bordercolor=notesorange,#1]{{\bfseries Change:} #2}}
+\newcommandx{\note}[2][1=]{\todo[linecolor=notesgreen,backgroundcolor=notesgreen!25,bordercolor=notesgreen,#1]{{\bfseries NOTE:} #2}}
+\newcommandx{\toadd}[2][1=]{\todo[linecolor=notespurple,backgroundcolor=notespurple!25,bordercolor=notespurple,#1]{{\bfseries Add:} #2}}
+\newcommandx{\toremove}[2][1=]{\todo[linecolor=notesred,backgroundcolor=notesred!25,bordercolor=notesred,#1]{{\bfseries Remove:} #2}}
+\newcommandx{\format}[2][1=]{\todo[linecolor=plotsgray,backgroundcolor=plotsgray!25,bordercolor=notesred,#1]{{\bfseries Format:} #2}}
+\newcommandx{\thiswillnotshow}[2][1=]{\todo[disable,#1]{#2}}
+
+
+%cutom title page
+\usepackage{pdfpages}
+
+
+%paper 1 packages
+
+\RequirePackage{subcaption}
+% \captionsetup[sub]{font=normalsize,labelfont={bf,sf}}
+\captionsetup[subfigure]{subrefformat=simple,labelformat=simple}
+    \renewcommand\thesubfigure{(\alph{subfigure})}
+\newdimen\figrasterwd
+\figrasterwd\textwidth
+\usepackage{placeins}
+\usepackage{overpic}
+
+
+% add a command so you don't have to write noident all over the place
+\newcommand{\where}{\noindent where }
+
+%%%%%%%
+% sub appendix stuff
+\AtBeginEnvironment{subappendices}{%
+\section*{Chapter~\thechapter~Appendices}
+\addtocontents{toc}{\vspace{0.33em}}
+\addcontentsline{toc}{section}{\numberline{}Chapter~\thechapter~Appendices}
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
+}
+
+%%%%%%%%%%%%%%%
+% index stuff from https://tex.stackexchange.com/questions/249128/makeindex-style
+\RequirePackage{filecontents}
+\begin{filecontents*}{\jobname.mst}
+delim_0 "\\IndexDotfill "
+delim_1 "\\IndexDotfill "
+headings_flag 1
+heading_prefix "  \\IndexHeading{"
+heading_suffix "}\n"
+\end{filecontents*}
+
+\newcommand*{\IndexDotfill}{%
+  \nobreak\hfill\ \nobreak
+}
+% \renewcommand*{\indexspace}{%
+%   \par
+%   \vspace{25pt plus 6pt minus 4pt}%
+% }
+\newcommand*{\IndexHeading}[1]{%
+  \tikz\node[
+    rounded corners=5pt,
+    draw=primary,
+    fill=navy!3,
+    line width=1pt,
+    inner sep=5pt,
+    align=center,
+    font=\sffamily\large,
+    text=navy,
+    minimum width=\linewidth-\pgflinewidth,
+  ] {#1};%
+  \nopagebreak
+  \par
+  \vspace{2mm}%
+}
+
+%\usepackage{imakeidx} % have to load before hyperref, so this is now in the .cls file
+\makeindex
+
+
+%%%%%%%%%%% set table of contents dept %%%%%%%%%%%%%%
+\setcounter{tocdepth}{2}
+
+%%%%% ------  add some breathing room between entries and brackets of matrices
+\makeatletter
+\renewenvironment{bmatrix}
+{\left[\mkern3.5mu\env@matrix}
+{\endmatrix\mkern3.5mu\right]}
+
+\renewenvironment{vmatrix}
+{\left\lvert\mkern5mu\env@matrix}
+{\endmatrix\mkern5mu\right\rvert}
+\makeatother
+
+%%%%%%%%%%%% ------------  add room between figure numbers and descriptions in LoF -------
+\renewcommand{\cftfigurenumwidth}{3em}
+
+%%%%% ------ allow newlines inside table cells with the \makecell{} environment
+\usepackage{makecell}

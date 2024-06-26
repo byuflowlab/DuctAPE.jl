@@ -1,0 +1,1455 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                           NO ROTOR SOLUTION
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{No-rotor Solution: Axisymmetric Panel Method}
+\label{sec:axisymmetricpanelmethod}
+
+One of the major pieces of the DuctAPE solver is an axisymmetric panel method.
+The implementation for an axisymmetric panel method is similar to the implementation of typical planar panel methods, but there are a few differences.
+We include here details for the axisymmetric panel method used.
+
+%---------------------------------#
+%      Potential Flow Theory      #
+%---------------------------------#
+\subsection{Potential Flow Theory}
+\label{ssec:potentialflow}
+
+Potential flow theory deals with the analysis of flow fields that can be modeled as the gradient of scalar functions.
+%
+In our case, we are specifically interested in the scalar function called the velocity potential\sidenote{Thus the name potential flow theory}, \(\vect{\phi}\), and its gradient: velocity, \(\vect{V}=\nabla\vect{\phi}\).
+%
+Potential flows conform to \cref{asm:irrotational} by definition\sidenote{Due to the vector identity that for any vector, \(\vect{\phi}\), the curl of the gradient of the vector is zero: \(\nabla \times \nabla\vect{\phi}=0\)}.
+
+\begin{assumption}{}
+    \label{asm:irrotational}
+
+    \asm{The velocity field is irrotational, such that \[\vect{\omega} = \nabla \times \vect{V} = 0 \] everywhere in the field except for the axes of free vortices.}
+
+    \limit{We cannot directly model viscous effects in the flow, and later (in our wake model) we lose some fidelity by forcing an irrotational interpretation of inherently rotational phenomena.}
+
+    \why{We will see shortly that this allows us to greatly simplify the analysis to a linear system of equations, greatly reducing the computational expense.  At high enough Reynolds numbers, the flow appears to be inviscid for large portions of the flow field as well.}
+
+\end{assumption}
+
+For our application, we also assume
+
+\begin{assumption}{}
+    \label{asm:incompressible}
+
+    \asm{The velocity field is incompressible, such that
+    \[\nabla \cdot \vect{V} = 0. \]}
+    \vspace*{-\baselineskip}
+
+    \limit{We cannot model highly compressible flows.}
+
+    \why{For our application, we should not need to model highly compressible flows,
+    but we can later apply some compressibility corrections (assuming that the flow is reasonably close to incompressible).}
+
+\end{assumption}
+%
+From \cref{asm:incompressible} we see that
+
+\begin{equation}
+    \label{eqn:laplace}
+    \nabla \cdot \nabla \vect{\phi} = \nabla^2 \vect{\phi} = 0,
+\end{equation}
+%
+which is the Laplace equation.
+%
+Along with the implication of \cref{asm:irrotational} that our flow is inviscid\sidenote{An irrotational flow is always inviscid, but an inviscid flow is not necessarily irrotational}, the fact that the Laplace equation is a linear operator is a major key to the reduction in required computational expense for potential flow methods.
+%
+Because the Laplace equation is a linear operator, we can model relatively complicated flow features (such as a duct and center body) using a superposition of elementary flows, each satisfying the Laplace equation (for example point sources and free vortices).
+%
+The superposition of any number of elementary flows of unknown strength can be assimilated into a single linear system of equations and solved directly.
+%
+In our application, we are mostly concerned with determining the strengths of elementary flows distributed along imaginary boundaries we define based on useful shapes (such as the surfaces of ducts and center bodies) that induce a potential flow field that matches what we would see for an actual solid body in reality.\sidenote{In reality, flow is neither irrotational, nor incompressible, but we find that in many cases it is close enough that potential flow theory provides a good approximation.}
+%
+We call problems dealing with values on boundaries: boundary value problems (for obvious reasons).
+%
+A common way to approach the solution of boundary value problem is with a boundary integral equation.
+
+
+
+%---------------------------------#
+%   Boundary Integral Equations   #
+%---------------------------------#
+\subsubsection{Boundary Integral Equation}
+
+For a given aerodynamic body, representable by a simply connected contour (for example, \(\mathcal{S}\) as shown in \cref{fig:simplyconnectedairfoil}) we want to be able to find the velocity (and thereby pressure) distribution on that body surface as well as its influence on the remainder of the flow field.
+%
+One way to find the surface velocity distribution is to leverage potential flow theory.
+%
+Using potential flow theory, we can construct a boundary integral equation describing the influence of distributions of elementary flow distributions along a give boundary.
+%
+We can then use this boundary integral equation to solve the boundary value problem for the unknown surface velocity distribution.
+%
+Fortunately, Erik Ivar Fredholm developed a set of integral equations for application to boundary value problems\scite{Fredholm_1903}.
+%
+For our application, we will use a Fredholm integral equation of the second kind:
+
+\begin{equation}
+    \label{eqn:fredholm1}
+    % f(t) = \varphi(t) + \lambda \oint_\mathcal{S} K(s,t) \varphi(s) \d s.
+    f(t) = \vartheta(t) + \oint_\mathcal{S} K(s,t) \varphi(s) \d s.
+\end{equation}
+
+\begin{figure}[h!]
+    \centering
+        \input{figures/simply_connected_airfoil.tikz}
+        \caption{An example of a simply connected contour, \(\mathcal{S}\), representing, in this case, an airfoil. The dashed arrow represent the direction about which the contour is traversed, with \(\hat{\vect{n}}\) being the unit surface normal associated with the direction of travel.}
+    \label{fig:simplyconnectedairfoil}
+\end{figure}
+
+
+
+
+To understand what each term in \cref{eqn:fredholm1} represents, we really need to start with an understanding of the problem we are trying to solve.
+%
+As mentioned, we would like to solve for the strengths associated with elementary flow field distributions that induce a potential flow field which matches our chosen geometry for a set of external flow conditions.
+%
+There are several ways to go about setting up a boundary value problem, and we are going to choose to apply what is often termed the no flow through condition.
+%
+In other words, we are going to apply the boundary condition that the velocity normal\sidenote{Using the normal directed out of the body, or into the space \(\mathcal{V}\) as depicted in \cref{fig:simplyconnectedairfoil}.} to the body is zero.
+%
+Because we are applying a boundary condition on velocity, which is the gradient of the velocity potential, we are applying what is called the Neumann boundary condition.\sidenote{As opposed to a Dirichlet boundary condition, which is typically applied directly to the value of the potential on the boundary.}
+%
+We are now ready to start defining the terms in \cref{eqn:fredholm1}.
+
+Starting with the integral term, which represents the influence of a distribution of elementary flows along the boundary, we have the kernel \(K\) which in our case will be the expression for the unit induced velocities of the surface segment, \(\d s\), acting normal to the surface at point \(t\).
+%
+Mathematically, we can state this as
+
+\begin{equation}
+    \begin{aligned}
+        K(s,t) &= \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}_t} \\
+               &= \nabla \hat{\vect{\phi}}(s,t) \cdot \hat{\vect{n}}(t) \\
+               &= \hat{\vect{V}}(s,t) \cdot \hat{\vect{n}}(t).
+    \end{aligned}
+\end{equation}
+
+\where \(\hat{\vect{\phi}}\) is the unit velocity potential, \(\hat{\vect{V}}\) is the unit velocity, and \(\hat{\vect{n}}\) is the unit normal to the surface.
+%
+The other term in the integrand, \(\varphi(s)\) is the distribution of strengths of elementary flows along the boundary.
+%
+We will choose to use free vortices as our elementary flows and we represent their strengths with the symbol \(\gamma\).
+%
+%The \(\lambda\) in front of the integral determines where we are applying our conditions.
+%%
+%In our case, we want to apply things external to the body, or inside the volume, \(\mathcal{V}\) as shown in \cref{fig:simplyconnectedairfoil}.
+%%
+%Therefore \(\lambda = +1\).\scite{Kellogg_1929}
+
+The other term on the right hand side, \(\vartheta(t)\) represents the jump in velocity across the boundary.
+%
+It can be shown that the jump in tangential velocity associated with a vortex distribution along the boundary is \(\vartheta(t) = -\gamma/2\).\scite{Lewis_1991, Martensen_1971, Courant_1962}
+%
+And for the orthogonal case of the normal velocity (which we are concerned with at this point), the jump term is zero.%\toadd{probably need to find a source supporting this. it's intuitive since it's just the reverse of sources, but some explanation or citation should be added.}%\scite{cite}
+%
+
+Lastly, the term on the left hand side, \(f(t)\) represents any externally induced velocity in the negative normal direction\sidenote{Remember that we want the total normal velocity at the boundary to be zero, so adding this term to both sides should give us zero.} on the boundary at point \(t\).
+%
+The typical externally induced velocity is due to (but not limited to) a uniform free stream.\sidenote{Note that a uniform flow is another of the elementary flows satisfying the Laplace equation.}
+%
+Mathematically we state the externally induced velocity as
+
+\begin{equation}
+    \begin{aligned}
+    \varphi(t) &= \pd{\vect{\phi}_\infty}{\hat{\vect{n}}_t} \\
+               &= \nabla \vect{\phi}_\infty \cdot \hat{\vect{n}}(t) \\
+               &= \vect{V}_\infty \cdot \hat{\vect{n}}(t).
+    \end{aligned}
+\end{equation}
+
+All together our Fredholm integral equation of the second kind, applied to the Neumann problem for an unknown distribution of free vortices along a chosen boundary is
+
+\begin{subequations}
+    \label{eqn:fredholm2}
+    \begin{align}
+        \oint_\mathcal{S} \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}} \d s  &= -\pd{\vect{\phi}_\infty}{\hat{\vect{n}}} \\
+        \text{-- or --} \notag\\
+        \oint_\mathcal{S} \gamma(s) \hat{\vect{V}}(s,t)\cdot\hat{\vect{n}} \d s  &= -\vect{V}_\infty\cdot\hat{\vect{n}}.
+    \end{align}
+\end{subequations}
+
+We now have a boundary integral equation that we want to use to solve for the unknown distribution of vortex strengths, \(\gamma(s)\).
+%
+As we will see, we will apply this equation at various points, \(t\), along the boundary simultaneously to form a system of equations for which to solve for \(\gamma(s)\).
+
+
+%---------------------------------#
+%          Panel Method         #
+%---------------------------------#
+\subsection{The Panel Method: A Numerical Approach to Solving Boundary Integral Equations}
+\label{ssec:panelmethodology}
+
+Solving the boundary integral equation over an entire boundary all at once is not, in general, a tractable approach.
+%
+Instead, we approximate the boundary as a series of segments and sum the integrals over those individual segments.
+%
+We often approximate the boundary as a polygon, discretizing the boundary using flat segments over which the surface integral is simplified.
+%
+For two- and general three-dimensional geometries, these flat segments are often referred to as panels, thus the name ``panel method.''
+
+In panel methods, we also do not apply the no through flow condition everywhere in the boundary, but rather at a set of control points along the boundary.
+%
+We choose to place one control point at the center of each panel.
+%
+We can therefore assemble a system of integral equations for each of the control points, summing the integral of the influence of all the panels on each control point and use that system of equations to solve for the unknown vortex strength distribution required to match the flow field to our prescribed geometry.
+%
+In order to set up a system of equations, we first need to discretize the boundary into panels.
+
+\subsubsection{Discretizing bodies into panels}
+
+\begin{assumption}{}
+    \label{asm:panels}
+
+    \asm{Smooth bodies can be reasonably represented by a discrete number of flat panels.}
+
+    \limit{By approximating the geometry as a polygon, rather than a single continuous curve, we lose some accuracy in our computation.}
+
+    \why{As mentioned, it is much easier to solve the problem through the sum of individual components of the boundary, and especially if we simplify those sections into pieces over which the integral is simpler to solve. In addition, with a sufficient number of panels, we obtain a close approximation of the body curvature and therefore the solution of the continuous integral over the entire boundary.}
+
+\end{assumption}
+
+The bodies which we would like to model in our application are axisymmetric bodies of revolution (such as the center body) and annular airfoils (such as the duct comprised of a casing and nacelle) of an electric ducted fan.
+%
+According to \cref{asm:axisymmetric,asm:panels} we can model the geometry as axisymmetric bands, as shown in \cref{fig:flatbandgeometry}.
+%
+Furthermore, as shown in \cref{ssec:ringvortices}, we may reduce the geometry for analysis to two dimensions without loss of generality after applying axisymmetry, modeling the geometry with representative cross sections in the \(r\)-\(z\) plane in cylindrical coordinates.%\toadd{create a figure showing the 3D geometry faded with a solid cross-sectional slice on the r-z plane}
+%
+The discretized boundary in our implementation then takes the form of 2D panels (representing the axisymmetric bands).
+%
+\Cref{fig:flatbandgeometry} shows what is intended by a flat, axisymmetric band, and \cref{fig:flatpanelgeometry} shows the panel representation of said band.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{figures/flatbandgeometry.tikz}
+        \caption{Axisymmetric Band Coordinate System.}
+        \label{fig:flatbandgeometry}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+         \raisebox{2em}{\input{figures/flatpanelgeometry.tikz}}
+        \caption{Panel representing axisymmetric band; \(\hat{\vect{e}}_\theta\) out of the page.}
+        \label{fig:flatpanelgeometry}
+     \end{subfigure}
+    \caption{Axisymmetric band and panel geometry definitions.}
+    \label{fig:axisymmetricbandpanelgeometry}
+\end{figure}
+
+One of the convenient traits of a panel method is that we simply need to know the geometry and relative position of each of the panels to calculate the unit induced velocities presented in \cref{ssec:ringvortices}.
+%
+As an overview of the panel geometry we need to know, we refer to \cref{fig:axisymmetricbandpanelgeometry} in which we see a panel defined from the point, {\(\vect{p}_j\)}, to the point, {\(\vect{p}_{j+1}\)}.
+%
+We take the midpoint of the panel to be \({\overline{\vect{p}}_j}={(\vect{p}_{j}+\vect{p}_{j+1})}/2\); and we define the unit normal, {\(\hat{\vect{n}}_j\)}, as shown in \cref{fig:flatpanelgeometry},
+such that \(\hat{\vect{n}}_j=\hat{\vect{e}}_\theta\times\hat{\vect{t}}_j\),
+where \(\hat{\vect{e}}_\theta\) is the unit vector tangent to the vortex band in the positive \(\theta\)-direction according to the right hand rule,
+and {\(\hat{\vect{t}}_j\)} is the unit tangent to the panel from {\(\vect{p}_j\)} to {\(\vect{p}_{j+1}\)}
+such that \(\hat{\vect{t}}_j = (\vect{p}_{j+1}-\vect{p}_j)/||\vect{p}_{j+1}-\vect{p}_j||\).
+%
+In other words, we will assume that the discretized panels are defined such that increasing panel indices lead to the curve being traversed in a clockwise direction.
+
+%---------------------------------#
+%       Boundary Conditions       #
+%---------------------------------#
+\subsubsection{Applying boundary conditions}
+
+As discussed in \cref{ssec:potentialflow}, we are trying to solve the boundary value problem using the Neumann boundary conditions.
+%
+As mentioned, we will apply this boundary condition at the control points placed at the center of each panel (\(\overline{\vect{p}}\) in \cref{fig:flatpanelgeometry}).
+%
+Since the boundary condition states that the normal velocity, due to all contributions, is zero at the control points, we also need to include the freestream contribution to our boundary condition.
+%
+Putting the surface influence and freestream influences together, we can, for the \(i\)th control point, state our approximate boundary integral equation as
+
+\begin{equation}
+    \label{eqn:neumanndiscrete}
+    \sum_{j=1}^N \left[\vect{K}_{ij} \cdot \hat{\vect{n}}_i \right] + \vect{V}_\infty \cdot \hat{\vect{n}}_i = 0,
+\end{equation}
+
+\noindent Though we often put the freestream component on the right hand side for convenience, leaving us with
+
+\begin{equation}
+    \label{eqn:neumann2}
+    \eqbox{
+    \sum_{j=1}^N \vect{K}_{ij}\cdot \hat{\vect{n}}_i  = -\vect{V}_\infty \cdot \hat{\vect{n}}_i
+}
+\end{equation}
+
+\where \(\vect{K}\) is comprised of what the induced velocity on the \(i\)th control point\sidenote{Note that the \(i\)th control point here is synonymous with the point represented by the variable \(t\) in \cref{eqn:fredholm2}.} due to the \(j\)th segment of the surface (the \(j\)th panel in our case), calculated from the integral term found in our boundary integral equation, \cref{eqn:fredholm2}.%\todo{Find the bug causing blue side notes when an environement gets placed at the end of a section. there's probably a missing explicit color definitions in the side note environment definition.}
+%
+It is the set of \cref{eqn:neumann2} for each of the control points that will comprise the bulk of our system of equations.
+
+% \begin{equation}
+%     \vect{K}_{ij} =||\vect{p}_{j+1} - \vect{p}_j|| \frac{\gamma_j\hat{\vect{V}}(\vect{p}_j, \overline{\vect{p}}_i) + \gamma_{j+1}\hat{\vect{V}}(\vect{p}_{j+1}, \overline{\vect{p}}_i)}{2}.
+% \end{equation}
+%
+% \Cref{eqn:neumanndiscrete} states that at the \(i\)th control point we add together the panel induced velocities normal to the surface as well as the freestream velocity normal to the surface; according to our boundary condition, that summation comes to zero.
+%
+
+
+%------------------------------------#
+% Calculating Influence Coefficients #
+%------------------------------------#
+\subsubsection{Calculating Panel Induced Velocities}
+
+
+In order to calculate the panel induced velocities, we want to discretize the vortex distribution along the boundary in a similar fashion to our discretization of the geometry above.
+%
+In fact, as mentioned, we will split the integral of our boundary integral equation into segments---integrating over each panel.
+%
+Along each panel then, we need to define a distribution of vortex strengths.
+%
+There are several options for how we might choose to discretize the vortex distributions along each panel.
+%
+For example, we may choose to not distribute the strengths and simply use discrete ring vortices along the boundary.
+%
+Alternatively, we may select the strength of the distribution to be constant along each panel.
+%
+We may instead select the strength of the distribution to vary linearly along each panel.
+%
+We could even choose a higher order distribution.
+%
+For our use case, we will select a linear distribution scheme along each panel, with the panel end points acting as ``nodes'' between which we will integrate.
+%
+Discretizing the vorticity distribution along the surface into linear segments then gives us an unknown vorticity magnitude, \(\gamma_j\), at each panel endpoint (node).
+
+We choose a linear distribution along each panel primarily because discrete distributions and constant distributions have or introduce issues\sidenote{Specifically, as mentioned by Katz and Plotkin, discrete distributions are ``inadequate near the stagnation points of a thick airfoil,'' and in practice are used for zero thickness airfoils rather than for closed surfaces. Additionally, constant vortex distributions introduce several issues also discussed by Katz and Plotkin that are solved by moving to a linear distribution scheme.} that are solved by moving to a linear distribution\scite{Katz_2001}.
+%
+An added benefit is that a linear distribution allows a more accurate solution for a coarser discretization of the geometry than constant strength panels do.
+%
+We choose not to utilize a higher order method mainly due to the difficulty of integrating our axisymmetric kernel (presented in \cref{sec:ringvortices}).
+
+Because the surface integrals of velocities induced by axisymmetric vortex rings are exceptionally difficult to solve analytically, we will take a numerical approach.
+%
+Specifically, we will utilize Gauss-Kronrod quadrature via the QuadGK.jl\sidenote{\url{https://juliamath.github.io/QuadGK.jl/stable/gauss-kronrod/}}
+package in the Julia\scite{Julia_2017} language.
+%
+In general, quadrature is the process of approximating an integral of a function using a sum of weighted samples of the function:
+
+\begin{equation}
+    \int_a^b f(x) \d x \approx \sum_k^N w_k f(x_k),
+\end{equation}
+
+\where the main task of the setup is to decide where along the integration interval to place the sample points, \(x_k\), and what weights, \(w_k\), to apply to those samples.
+%
+Gauss-Kronrod quadrature is based on Gauss-Legendre quadrature, which uses orthogonal polynomial theory to select sample points and weights that allow for exact integration of polynomials up to degree \(2N-1\) (where \(N\) is the number of sample points), and other sufficiently smooth functions remarkably well.
+%
+Despite being based on Gauss-Legendre quadrature, however, Gauss-Kronrod quadrature is not quite as accurate as pure Gauss-Legendre quadrature in a one-to-one comparison.
+%
+Gauss-Kronrod quadrature can exactly integrate polynomials up to \(3N+1\) for \(2N+1\) sample points.
+%
+The decrease in accuracy for the same conditions is the trade off required to be able to both calculate the integral approximation and the error in the integral approximation.
+%
+The ability to quickly estimate error directly leads to capabilities for \(h\)-adaptive quadrature, which is an adaptive method that refines the integration range along portions that require further refinement for accuracy (such as sharp peaks, or perhaps discontinuities).
+%
+So although not as accurate out of the box, obtaining more accurate integrals over domains that would be difficult for pure Gauss-Legendre quadrature becomes relatively simple, and a worthwhile trade.
+
+In the nominal case when a panel induces velocity on the surface, but not on itself, we set things up as follows for a given panel and surface point, \(t\):
+%
+We start with the portion of the surface integral associated with the \(j\)th panel
+
+\begin{equation}
+    \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}_t} \d s.
+\end{equation}
+
+Because the unit normal applies at \(t\), it is a constant in this integral.
+%
+As such, we can express the integral in terms of the integration of velocities only, which are then multiplied by the components of the normal vector after integration.
+
+\begin{equation}
+    \begin{aligned}
+        \vect{v}_{tj} =&\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}_t} \d s \\
+        =\bigg(&\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \nabla \hat{\vect{\phi}}(s,t) \d s\bigg)\cdot \hat{\vect{n}}_t \\
+        =\bigg(&\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \hat{\vect{V}}(s,t) \d s\bigg)\cdot \hat{\vect{n}}_t.
+    \end{aligned}
+\end{equation}
+
+%
+To get the integral in terms of components of velocity, we can split up the integral into its components
+
+\begin{subequations}
+    \begin{align}
+        v_{z_{tj}} &=\left(\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) v_z(s,t) \d s \right)n_{i_z},\\
+        v_{r_{tj}} &=\left(\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) v_r(s,t) \d s\right)n_{i_r}.
+    \end{align}
+\end{subequations}
+
+Since we are working toward assembling a system of equations, and we have introduced the unknown vortex magnitudes, \(\gamma_j\), which define the vorticity distribution along the boundary, we need to obtain the integrals over the panels in terms of each of the panel node strengths (\(\gamma_j\)).
+%
+As we perform our numerical integration, the quadrature procedure selects sample points along the range of integration as already mentioned.
+%
+To make things easier to implement, we will transform our integrals such that the integrator will integrate on the range (0,1) and we will introduce the transformed variable \(\zeta\) as the variable of integration.
+
+\begin{subequations}
+    \begin{align}
+        v_{z_{tj}} &=\left(\Delta s \int_{0}^{1}\gamma(s(\zeta)) v_z(s(\zeta),t) \d \zeta \right)n_{i_z},\\
+        v_{r_{tj}} &=\left(\Delta s \int_{0}^{1}\gamma(s(\zeta)) v_r(s(\zeta),t) \d \zeta \right)n_{i_r}.
+    \end{align}
+\end{subequations}
+
+\where \(\Delta s\) is the length of the range of integration, or panel length.
+%
+Referencing \cref{fig:integrationsplitmargin}, we see that the quadrature function samples can be split into the influences of each of the panel nodes by a simple geometric weighting:\sidenote{This is made possible due to the linear vortex distribution along a flat panel.}
+
+\begin{subequations}
+    \label{eqn:integrationpieces}
+    \begin{align}
+        f_j(x_k) &= w_k f(s(\zeta_k),t)&(1-\zeta_k) && \text{due to } \gamma_j \\
+        f_{j+1}(x_k) &= w_k f(s(\zeta_k),t)&\zeta_k && \text{due to } \gamma_{j+1}.
+    \end{align}
+\end{subequations}
+
+\begin{marginfigure}
+	\input{figures/integration-split-margin.tikz}
+	\caption{Visual representation of splitting the integral into the portions for each panel node.}
+	\label{fig:integrationsplitmargin}
+\end{marginfigure}
+
+\noindent In other words, we return a piece of the integral weighted according to the sample point location along the range of integration.
+%
+Because we transformed the range of integration to (0,1), we can simply take these geometrically proportional weights to be \(1-\zeta\) and \(\zeta\) where \(\zeta\in (0,1)\) for the \(j\)th and \((j+1)\)th nodes, respectively.
+%
+Note that the \(\gamma_j\) values are also constant relative to \(\zeta\) and are therefore not included in the integrand expressions of \cref{eqn:integrationpieces}.
+%
+This allows us to pull out all of the \(\gamma_j\) terms which are the unknowns for which we want to solve using the system of equations we are assembling.
+%
+All together, the unit velocities normal to the \(i\)th panel, induced by the \(j\)th panel (defined by the \(j\)th and \((j+1)\)th nodes), or what we term the influence coefficients, \(IC\), are
+
+\begin{equation}
+    \label{eqn:nominalic}
+    \eqbox{
+    \begin{alignedat}{2}
+        IC_{ij} &= \left(\Delta s_j\sum_k^N  w_k v_z(s(\zeta_k),t) (1-\zeta_k)\right) n_{i_z} &&+ \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) (1-\zeta_k)\right) n_{i_r}\\
+        IC_{i(j+1)} &=  \left(\Delta s_j\sum_k^N w_k v_z(s(\zeta_k),t) \zeta_k\right) n_{i_z} &&+  \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) \zeta_k\right) n_{i_r},\\
+    \end{alignedat}
+}
+\end{equation}
+%
+for the \(j\)th and \((j+1)\)th nodes, respectively.
+
+
+In the singular case, where the panel induces velocity on itself, more consideration is required.
+%
+We first need to remember that we chose the midpoint of each panel to be the control point.
+%
+Because the expression for induced velocity is singular when the distance between the point of influence and the point being influenced is zero, there is a singularity at the panel midpoint of a panel inducing velocity on its own control point.
+%
+Knowing beforehand exactly where the singularity lies makes things somewhat easier to approach, but we still need to address the singularity.
+%
+We will take a separation of singularity approach to calculate the self-induced case.
+%
+The separation of singularity method is, in brief, to subtract out the singular piece of the integral while solving the integral, then afterward adding back in the singular piece solved analytically to avoid the computational issues associated with the computer attempting to divide by zero.
+%
+Basically, as the integral tends to positive and negative infinity on either side of the singular point, we cancel out the non-convergent values on either side of the singular point and replace them with an analytic approximation.
+%
+Mathematically we have the integral
+
+\begin{equation}
+    \vect{v}_{jj} = \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) I(s) \d s,
+\end{equation}
+
+\where \[I(s)  = \pd{\hat{\vect{\phi}}(s,\overline{\vect{p}}_j)}{\hat{\vect{n}}_j}\]
+%
+We need to subtract off the singular part, \(S\), (inside the integral), and then add back an analytical expression, \(A\), for the integral of subtracted singular part (outside the integral).
+%
+The other thing we need to do is to tell the quadrature package where the singular point is so that it can avoid placing sample points right on the singularity.
+%
+Under the hood, the quadrature package actually splits the integral into two, integrating from the start of the integration range to the singular point, then from the singular point to the end of the integration range.\sidenote{Note that the sample points associated with the Gauss-Legendre polynomials do not actually sample the integration range at its endpoints.}
+
+\begin{equation}
+    \vect{v}_{jj} = \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(\zeta)(\left(I(s(\zeta),\overline{\vect{p}}_j) - S(s(\zeta),\overline{\vect{p}}_j) \right)\d \zeta + \gamma A(\overline{\vect{p}}_j).
+\end{equation}
+%
+% In practice, we actually want to account for the analytic approximation in the error estimate when using our quadrature approach.
+%
+% In order to do so, we actually add the analytic part to the integrand, but divide the analytic part by the range of integration in order to not double count it:
+
+% \begin{equation}
+%     \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(\zeta) \left(I(s(\zeta),\overline{\vect{p}}_j) - S(s(\zeta),\overline{\vect{p}}_j) + \frac{A(\overline{\vect{p}}_j)}{\Delta s}\right) \d \zeta.
+% \end{equation}
+
+\noindent After these modifications to account for the singularity, the procedure for applying the quadrature is the same as before giving us the influence coefficients for the panel on itself to be
+
+\begin{equation}
+    \label{eqn:panelselfic}
+    \eqbox{
+    \begin{aligned}
+    IC_{ii} =& \Delta s_i\left(\sum_k^N  w_k \left[\left(v_z(s(\zeta_k),\overline{\vect{p}}_i)\right)(1-\zeta_k)-\frac{1}{2}S_z(s(\zeta_k),\overline{\vect{p}}_i)\right]+\frac{1}{2}A_z(\overline{\vect{p}}_i) \right) n_{i_z} \\
+     &+ \Delta s_i\left(\sum_k^N  w_k \left[\left(v_r(s(\zeta_k),\overline{\vect{p}}_i)\right)(1-\zeta_k)-\frac{1}{2}S_r(s(\zeta_k),\overline{\vect{p}}_i)\right] +\frac{1}{2}A_r(\overline{\vect{p}}_i) \right) n_{i_r} \\
+    IC_{i(i+1)} =& \Delta s_i\left(\sum_k^N  w_k \left[\left(v_z(s(\zeta_k),\overline{\vect{p}}_i)\right)\zeta-\frac{1}{2}S_z(s(\zeta_k),\overline{\vect{p}}_i)\right]+\frac{1}{2}A_z(\overline{\vect{p}}_i) \right) n_{i_z} \\
+     &+ \Delta s_i\left(\sum_k^N  w_k \left[\left(v_r(s(\zeta_k),\overline{\vect{p}}_i)\right)\zeta-\frac{1}{2}S_r(s(\zeta_k),\overline{\vect{p}}_i)\right]+\frac{1}{2}A_r(\overline{\vect{p}}_i)  \right) n_{i_r} \\
+    \end{aligned}
+}
+\end{equation}
+
+\where\sidenote{Details for how the singular and analytic expressions are derived are provided in \ref{app:separationofsingularity}.}
+
+\begin{equation}
+    \begin{aligned}
+    S_z(\vect{p}_o,\vect{p}) =& \frac{r_o-r}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right] }
+    -\frac{1}{8\pi r_o} \left[\ln\left(\frac{\left(z-z_o\right)^2 + \left(r-r_o\right)^2}{64r_o^2}\right)\right] \\
+    S_r(\vect{p}_o,\vect{p}) =& \frac{z-z_o}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right]},
+    \end{aligned}
+\end{equation}
+
+\noindent and
+
+\begin{equation}
+    \begin{aligned}
+    A_z(\vect{p}) =& \frac{1}{4\pi r} \left( 1 + \ln\frac{8 r}{\Delta s}\right) \\
+    A_r(\vect{p}) =& 0;
+    \end{aligned}
+\end{equation}
+
+\noindent and the multiplication by \(1/2\) on the singular and analytic terms is due to the fact that the singular point is half way between the nodes, so each node is responsible for exactly half of the influence.
+
+
+
+%---------------------------------#
+%    Assemble and Solve System    #
+%---------------------------------#
+% \subsection{Assembling and solving a linear system}
+\subsubsection{Assembling the linear system}
+
+To find the strengths of each vortex node that result in a vortex distribution inducing a flow field matching our prescribed body geometry, we need to assemble a system composed of \cref{eqn:neumann2} for each panel.
+%
+Note, however, that currently our expression for \(\vect{K}\) is indexed according to panel, and contains information about more than one panel node, which we need to remedy in order to get expressions for the individual strengths at each node.
+%
+This is precisely why we separated out the node influences in the previous subsection.
+%
+Thus each node has a component of influences associated with each panel to which it is an edge point.
+%
+For the \(j\)th node then, we can add the contributions due to the \((j-1)\)th and \(j\)th panels for which it is an edge point.
+%
+This allows us to assemble the influence coefficient matrix based on a node-control point scheme rather than a panel-control point scheme:
+
+\begin{equation}
+\vect{G}_{ij} =
+    \begin{cases}
+        IC_{ij}        \hfill & \text{for }j=1,N+1 \\
+        IC_{ij} + IC_{i(j-1)} & \text{for }2 \leq j \leq N \\
+           % \hfill IC_{i(j-1)} & \text{for }j = N+1. \\
+    \end{cases}
+\end{equation}
+
+\where \(\vect{G}\) is the \(N \times N+1\) matrix whose elements, \(\vect{G}_{ij}\), are the influence coefficients of the \(j\)th node (\(N+1\) total) on the \(i\)th control point (\(N\) total); and the influence components, \(IC\), are defined in \cref{eqn:nominalic,eqn:panelselfic} for the nominal and self-induced cases, respectively.
+%
+Since \(\vect{G}\) is not square, as it has one more unknown than boundary conditions, we cannot solve the system directly as is.
+%
+Fortunately, we also require an additional condition to make things work.
+
+%---------------------------------#
+%         Kutta Condition         #
+%---------------------------------#
+\subsubsection{The Kutta Condition}
+
+One of the shortcomings of using potential flow theory is that by itself, it lacks inherent mechanisms for ensuring the flow leaves the surface of lifting bodies at the correct location and in the correct direction.
+%
+One solution to this problem is known as the Kutta condition, which can be stated in several equivalent ways.
+%
+However it is be stated, the Kutta condition requires the flow over a lifting body with a sharp trailing edge to leave the body at the trailing edge in a manner roughly tangent to the trailing edge.
+%
+Therefore we can artificially enforce conditions that are observed in real, viscous flows at relatively low angles of attack.
+%
+Just as there are several equivalent ways to state the Kutta condition, there are several ways that the Kutta condition may be implemented.
+%
+One method is to require zero circulation at the trailing edge.
+%
+We can enforce this by setting the strengths of the first and last panel nodes to be equal\sidenote{Note that for a sharp trailing edge, where the nodes are coincident, they really should be equal anyway since they occupy the same point in space.} and opposite such that
+
+\begin{equation}
+    \gamma_1 + \gamma_N = 0.
+\end{equation}
+%
+In order to make our system square, we simply add the Kutta condition as the \(N+1\)th equation.
+
+By itself, this version of the Kutta condition can lead to spurious spikes in surface velocity near the trailing edge.
+%
+In order increase the numerical robustness of the panel method, we apply an additional, indirect Kutta condition by placing an additional control point just inside the interior of the duct trailing edge and define an associated unit normal oriented such that the unit normal is effectively in the direction of the bisection angle of the trailing edge panels.
+%
+We also place an additional control point inside the center body if it has a blunt trailing edge.\sidenote{We will discuss shortly the case where the center body has a sharp trailing edge.}
+
+ We apply the same boundary condition on these control point as the other control points in that we set the normal velocity induced by the freestream to be equal and opposite to the tangential velocity induced by the body boundaries on the control point.
+
+\begin{equation}
+    \sum_{j=1}^{N+1} \gamma_j\vect{G}^\multimapinv_{kj} = - \vect{V}_\infty \cdot \hat{\vect{n}}_k.
+\end{equation}
+
+\where the elements of \(\vect{G}^\multimapinv\) are the expressions defined in \cref{eqn:nominalic}.
+
+Upon the addition of this equation, however, we find ourselves with insufficient unknowns (one for each body being modeled).
+%
+To remedy this insufficiency, we simply apply a dummy strength, \(\tau_k\), for the \(k\)th body and set all of its associated influence coefficients, \(\mathcal{T}\), to 1 for the panels of the body it is applied to and zero elsewhere (including itself).
+
+\begin{equation}
+    \mathcal{T}_{ik} =
+        \begin{cases}
+            1 & \text{if}~i=k\\
+            0 & \text{otherwise}
+        \end{cases}
+\end{equation}
+
+We mentioned placing the additional control point just inside the trailing edge.
+%
+This is done (rather than right at the middle of the trailing edge gap between the trailing edge nodes) to avoid numerical issues if the trailing edge is indeed sharp.
+%
+We specifically place the node along the line bisecting the trailing edge angle and passing through the point halfway between the trailing edge nodes.
+%
+The position is calculated as follows
+
+\begin{subequations}
+    \begin{align}
+        z_{cp} = \overline{z}_{TE} - \epsilon \overline{\Delta s}_{TE} \frac{z_\text{diff}}{s_\text{diff}} \\
+        r_{cp} = \overline{r}_{TE} - \epsilon \overline{\Delta s}_{TE} \frac{r_\text{diff}}{s_\text{diff}} \\
+        \hat{n}_{z_{cp}} = \frac{z_\text{diff}}{s_\text{diff}} \\
+        \hat{n}_{r_{cp}} = \frac{r_\text{diff}}{s_\text{diff}}
+    \end{align}
+\end{subequations}
+
+\where
+
+\begin{align}
+    \epsilon &= 0.05 \\
+    \overline{z}_{TE} &= \frac{z_1+z_{N+1}}{2}\\
+    \overline{r}_{TE} &= \frac{r_1+r_{N+1}}{2}\\
+    \overline{\Delta s}_{TE} &= \frac{\Delta s_1+\Delta s_{N}}{2}\\
+    z_\text{diff} &= \Delta z_{N} - \Delta z_{1} \\
+    r_\text{diff} &= \Delta r_{N} - \Delta r_{1} \\
+    s_\text{diff} &= \left[ z_\text{diff}^2 + r_\text{diff}^2\right]^{1/2}
+\end{align}
+
+\where the \(\Delta (\cdot)\) lengths are calculated in the clockwise direction as before, and \(\epsilon\) is chosen for generally good numerical behavior.
+
+\begin{figure}
+    \centering
+    % \includegraphics[width=3in]{/figures/internal-panel-placement}
+    \input{figures/internal-controlpoint-placement.tikz}
+    \caption{Geometric explanation of internal control point placement.}
+    \label{fig:pseudocplocation}
+\end{figure}
+
+\subsubsection{Additional Considerations for Open Bodies}
+
+The Kutta condition we have applied assumes that the trailing edge is both sharp and thin.
+%
+This approximation tends to be relatively good for a large variety of geometries, and is well behaved numerically, but eventually breaks down.
+%
+Specifically in the case of blunt trailing edges, when the trailing edge panel nodes are not coincident, the flow field can tend to flow into the inside of the body through the open trailing edge.
+%
+To prevent this, we will add a trailing edge panel with distribution strengths determined from the adjacent panels, similar to the method used by XFOIL\scite{Xfoil,mfoil} for blunt trailing edges.
+
+For any trailing edge panel, we will set a vortex and source distribution along the panel based on its orientation to the adjacent panels and the distribution strengths at the shared node locations:
+
+\begin{align}
+    \gamma_{TE_j} &= \left(\hat{\vect{n}}_{TE_j} \cdot \hat{\vect{n}}_{\text{adj}_j}\right)\gamma_{\text{adj}_j} \\ %- \left|\hat{\vect{n}}_{TE} \times \hat{\vect{n}}_{\text{adj}_j}\right|\sigma_{\text{adj}_j} \\
+    \sigma_{TE_j} &= -\left|\hat{\vect{n}}_{TE_j} \times \hat{\vect{n}}_{\text{adj}_j}\right|\gamma_{\text{adj}_j}. %+ \left(\hat{\vect{n}}_{TE} \cdot \hat{\vect{n}}_{\text{adj}_j}\right)\sigma_{\text{adj}_j}
+\end{align}
+
+\where the ``adj'' subscript indicates the adjacent panel.
+%
+Based on these definitions of strength distributions across the trailing edge panels, we can take the unit strengths (relative to the unknown distribution strengths on the shared nodes) to be
+
+\begin{align}
+        % \pd{\gamma_{TE_j}}{\sigma} &= - \left|\hat{\vect{n}}_{TE} \times \hat{\vect{n}}_{\text{adj}_j}\right| \\
+        \hat{\gamma}_{TE_j} &= \hat{\vect{n}}_{TE_j} \cdot \hat{\vect{n}}_{\text{adj}_j} \\
+        % \pd{\sigma_{TE_j}}{\sigma} &=  \left(\hat{\vect{n}}_{TE} \cdot \hat{\vect{n}}_{\text{adj}_j}\right) \\
+        \hat{\sigma}_{TE_j} &= -\left|\hat{\vect{n}}_{TE_j} \times \hat{\vect{n}}_{\text{adj}_j}\right|.
+\end{align}
+
+For trailing edge panels which have a node on the axis of rotation, for example, in the case of a center body with a blunt trailing edge, we set the strength (\(\gamma_{TE_j}\)) and derivative (\(\partial \gamma_{TE_j}/\partial \gamma\)) of the vortex distribution at the axis to zero.
+%
+Since we do not have an adjacent panel on the axis side of such a trailing edge panel, we will simply use the same adjacent panel to calculate values for both source nodes of the trailing edge panel.\sidenote{We are effectively defining a constant strength source panel in this case.}
+
+To add the trailing edge panels to the linear system we do not want to add any more equations, because we have defined the trailing edge panel strengths according to unknowns we already have in the system.
+%
+As such, we simply need to augment the influence coefficients for the panels adjacent to the trailing edge panels, since all the trailing edge panel information comes directly from those adjacent panels.
+%
+For each panel with a node bordering a trailing edge panel, we add the following to the unit induced velocity on every control point
+
+\begin{equation}
+    \hat{\vect{V}}^\gamma_{i{TE}_j} \stackrel{+}{=} \hat{\vect{V}}^\gamma_{iTE_j}\hat{\gamma}_{TE_j} + \hat{\vect{V}}^\sigma_{iTE_j}\hat{\sigma}_{TE_j}.
+\end{equation}
+%
+In other words, we add the unit induced velocity associated with the trailing edge node to the panel sharing that node scaled by how aligned the trailing edge and adjacent panel are.
+%
+As an example, if the duct had a blunt trailing edge, we would define a trailing edge panel spanning the gap from the first to the last node in the airfoil geoemetry.
+%
+We would then define the strengths and changes in strength relative to the first and last panels of the geometry (those at the trailing edge).
+%
+Finally, we would augment the unit induced velocity due to the first and last nodes by the above expressions for the trailing edge gap panel we defined.
+%
+We can apply this to the velocity directly, or we can simply add the velocities dotted with the control point normal vectors to the influence coefficient matrix after the fact.
+
+\begin{equation}
+    \label{eqn:teaicaugment}
+    \eqbox{
+    \vect{G}_{ij} \stackrel{+}{=}  \left[\hat{\vect{V}}^\gamma_{iTE_j}\hat{\gamma}_{TE_j} + \hat{\vect{V}}^\sigma_{iTE_j}\hat{\sigma}_{TE_j}\right]\cdot\hat{\vect{n}}_i,
+}
+\end{equation}
+
+\where the \(j\)th components of unit induced velocity, \(\hat{\vect{V}}\), are calculated from \cref{eqn:nominalic}.\sidenote{Exchanging the vortex ring induced unit velocities for those induced by source rings for the source terms in \cref{eqn:teaicaugment}.}
+
+
+
+%-----------------------------------------#
+%            Prescribed Nodes             #
+%-----------------------------------------#
+\subsubsection{Additional Considerations for Nodes on the Axis of Revolution}
+
+As we have already discussed, annular airfoils with non-zero cambered cross-sections require the addition of a Kutta condition.
+%
+Bodies of revolution do not require such a condition in an axisymmetric scheme, but rather have other unique features to consider.
+%
+Specifically, bodies of revolution will have a panel node on the axis of revolution (at the leading edge).
+%
+As we will see in the definition of unit induced velocity (\cref{eqn:ringvortexinducedvelocity}), if an influence point lies on the axis, that is if \(r_o = 0\), then the induced velocity becomes infinite.
+%
+In reality, the induced velocity from such a point is zero.
+%
+Therefore in our system, we will need to prescribe the strengths of panel nodes on the axis of rotation to be zero strength.
+%
+In order to achieve this, we take an approach similar to applying the Kutta condition: we simply add the equation
+
+\begin{equation}
+    \gamma_{LE}^{cb} = 0
+\end{equation}
+%
+to the system, where \(\gamma_{LE}^{cb}\) is the prescribed node strength for the center body leading edge.
+%
+This additional equation also solves the issue of the matrix not being square due to there still being \(N+1\) nodes and only \(N\) panels for a body of revolution.
+%
+If the center body trailing edge is sharp, then we have an additional node on the axis of rotation and also need to prescribe its strength to zero.
+%
+As it turns out, we do not actually need the additional internal control point for bodies of revolution, but it doesn't hurt us to have it implemented.
+%
+In the case of a closed trailing edge, we will effectively remove the internal control point and substitute its equation with an equation prescribing the trailing edge node strength to be zero like the leading edge node:
+
+\begin{equation}
+    \gamma_{TE}^{cb} = 0.
+\end{equation}
+
+\noindent Since we still have an additional equation, we will keep the dummy variable in place simply to keep the system square.
+
+
+%---------------------------------#
+%              SOLVE              #
+%---------------------------------#
+\subsubsection{Solving the linear system}
+
+To avoid confusion, we will let \(\vect{G}^*\) represent the influence matrix augmented by the Kutta condition, additional trailing edge control point equations, and any prescribed node equations.
+%
+Because the overall coupled solver in DuctAPE will need to solve the linear system for the panel method many times, it is advantageous to do as much precomputation as possible for the panel method.
+%
+The first thing that we will note is that the body geometry will not change throughout the coupled solve.
+%
+This means that the influence matrix \(\vect{G}^*\) can be fully precomputed and stored.
+%
+Due to this fact, we can also speed up the multiple linear solves by performing a Lower-Upper (LU) decomposition of \(\vect{G}^*\) such that
+
+\begin{equation}
+    \vect{G}^* = \vect{LU}
+\end{equation}
+
+\where \(\vect{L}\) and \(\vect{U}\) are the lower and upper triangular matrices of the LU decomposition.
+%
+By precomputing the LU decomposition, we can speed up the solution process of the linear system, which can now be expressed as
+
+\begin{equation}
+    \vect{LU}\vect{\gamma} = \vect{b}
+\end{equation}
+
+\where \(\vect{b}=\left(-\vect{V}_\infty \cdot \hat{n}\right)\).
+%
+We can solve this system through the forward and backward substitution in two steps:
+\begin{enumerate}
+    \item Solve \(\vect{L}\vect{y} = \vect{b}\) for \(\vect{y}\).
+    \item Solve \(\vect{U}\vect{\gamma} = \vect{y}\) for \(\vect{\gamma}\).
+\end{enumerate}
+%
+Although this is a two-step process, it ends up being numerically more efficient than a more direct system solve method, and again has the benefit of being able to be precomputed and used repeatedly.
+
+
+
+%---------------------------------#
+%     Body Induced Velocities     #
+%---------------------------------#
+\subsection{Obtaining Body-induced Velocities}
+
+\subsubsection{Velocity Tangent to the Body Surface}
+\label{sssec:vtanbody}
+
+After we have solved for the node strengths, \(\vect{\gamma}\), that coincide with our selected body geometry, we desire to use those strengths to find the velocity somewhere in the field.
+%
+We are especially interested in finding the surface velocity on the body and using it to determine the pressure distribution on the body surface.
+%
+In order to obtain the surface velocity, we need to find the velocity induced tangent to the panels.
+%
+We can do so by applying the same kind of Fredholm integral expression, but this time taking the tangential derivative, and remembering that the jump term across the boundary for the tangential velocity is \(-\gamma/2\) outward and \(\gamma/2\) inward\scite{Martensen_1971}:
+
+\begin{subequations}
+    \label{eqn:fredholmtan}
+    \begin{align}
+        v_\text{tan}(t) = \pm \frac{\gamma(t)}{2} + \oint_\mathcal{S}& \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{t}}_t} \d s  +\pd{\vect{\phi}_\infty}{\hat{\vect{t}}_t} \\
+                                               & \text{-- or --} \notag\\
+        v_\text{tan}(t) = \pm \frac{\gamma(t)}{2} + \oint_\mathcal{S} &\gamma(s) \hat{\vect{V}}(s,t)\cdot\hat{\vect{t}}(t) \d s + \vect{V}_\infty\cdot\hat{\vect{t}}(t).
+   \end{align}
+\end{subequations}
+
+We can therefore use the same discretization scheme and induced velocity expressions as we did to create our linear system.
+%
+To simplify things further, we can also simply take the sum of the full induced velocities on the control points and the magnitude will be the surface velocity.
+%
+This is due to the fact that we solved for the vortex strengths based on the boundary condition of zero flow normal to the control points; therefore when all the velocity components are summed, all that is left is the velocity tangent to the surface.\sidenote{Remember that the jump term is a jump in tangential velocity and the linear system solution only gave us a magnitude, so before adding the jump term in, we need to make sure to separate it into components tangent to the panel.}
+
+\begin{equation}
+    v_{\text{tan}_i} = \left| \pm\frac{\overline{\gamma}_i}{2}\hat{\vect{t}}_i + \sum_{j=1}^{N+1} \left[\gamma_j\vect{M}_{ij}\right]  + \vect{V}_\infty \right|,
+\end{equation}
+
+\where
+
+\begin{equation}
+    \overline{\gamma}_i = \frac{\gamma_i + \gamma_{i+1}}{2},
+\end{equation}
+%
+and
+
+\begin{equation}
+\vect{M}_{ij}=
+    \begin{cases}
+        IC^t_{ij}        \hfill & \text{for }j=1,N+1 \\
+        IC^t_{ij} + IC^t_{i(j-1)} & \text{for }2 \leq j \leq N,
+           % \hfill IC_{i(j-1)} & \text{for }j = N+1. \\
+    \end{cases}
+\end{equation}
+
+\where for the nominal case, the components of the influence coefficients are defined identically to \cref{eqn:nominalic}, but we keep them in vector format for simplicity:
+
+\begin{equation}
+    \begin{alignedat}{2}
+        IC^t_{ij} &= \left(\Delta s_j\sum_k^N  w_k v_z(s(\zeta_k),t) (1-\zeta_k)\right)  &&+ \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) (1-\zeta_k)\right) \\
+        IC^t_{i(j+1)} &=  \left(\Delta s_j\sum_k^N w_k v_z(s(\zeta_k),t) \zeta_k\right)  &&+  \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) \zeta_k\right) .
+    \end{alignedat}
+\end{equation}
+
+\noindent For the self-induced case, again, the expressions are identical to \cref{eqn:panelselfic},  but again we keep things in vector format rather than dotting with the normal:
+
+\begin{equation}
+    \begin{aligned}
+        IC^t_{ii} =& \left(\Delta s_i\sum_k^N  w_k \left[v_z(s(\zeta_k),\overline{\vect{p}}_i)-S_z(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_z(\overline{\vect{p}}_i)}{\Delta s_i}\right] (1-\zeta_k)\right)  \\
+            &+ \left(\Delta s_i\sum_k^N  w_k \left[v_r(s(\zeta_k),\overline{\vect{p}}_i)-S_r(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_r(\overline{\vect{p}}_i)}{\Delta s_i}\right] (1-\zeta_k) \right)  \\
+        IC^t_{i(i+1)} =& \left(\Delta s_i\sum_k^N  w_k \left[v_z(s(\zeta_k),\overline{\vect{p}}_i)-S_z(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_z(\overline{\vect{p}}_i)}{\Delta s_i}\right] \zeta_k \right)  \\
+            &+ \left(\Delta s_i\sum_k^N  w_k \left[v_r(s(\zeta_k),\overline{\vect{p}}_i)-S_r(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_r(\overline{\vect{p}}_i)}{\Delta s_i}\right] \zeta_k \right) .
+    \end{aligned}
+\end{equation}
+%
+Note that the coefficients, \(\vect{M}\), along with the system influence coefficients, \(\vect{G}^*\), can be precomputed and stored, although there is really no need for an LU-decomposition for \(\vect{M}\) as there is no linear solve, but rather a direct matrix-vector multiplication to calculate the tangential velocity.
+%
+In addition, the procedure in the presence of a trailing edge gap panel is identical to that presented for the normal induced velocities, with the exception already discussed here: that no dot product need be taken.
+
+\subsubsection{Velocity at Arbitrary Points in Space}
+
+For arbitrary points in space, the procedure for obtaining velocities is nearly identical, with the exceptions that there will be no self-induced or jump terms off the body surface, and we need not dot the components with any unit vector, as we typically want to know the velocity components in the global reference frame.
+
+\begin{subequations}
+    \label{eqn:fredholmarbitrary}
+    \begin{align}
+        \vect{V}_\text{field}(\vect{q}) = \oint_\mathcal{S}& \gamma(s) \nabla \vect{\phi}(s,\vect{q}) \d s  + \nabla \vect{\phi}_\infty \\
+                                               & \text{-- or --} \notag\\
+        \vect{V}_\text{field}(\vect{q}) = \oint_\mathcal{S} &\gamma(s) \vect{V}(s,\vect{q}) \d s + \vect{V}_\infty.
+   \end{align}
+\end{subequations}
+
+We can still use the same discretization scheme and induced velocity expressions as we did to create our linear system, and body surface velocity calculations, but this time, instead of dotting the velocity vector with some vector, we will keep things in a vector format.
+%
+In other words, we will keep the axial and radial components of induced velocity separate:
+
+\begin{equation}
+    \vect{V}_\text{field}(\vect{q}) = \vect{M}\vect{\gamma}  + \vect{V}_\infty.
+\end{equation}
+
+\where
+
+\begin{equation}
+\vect{M}_{j}=
+    \begin{cases}
+        IC^f_{j}        \hfill & \text{for }j=1,N+1 \\
+        IC^f_{j} + IC^f_{j-1} & \text{for }2 \leq j \leq N,
+    \end{cases}
+\end{equation}
+
+\where
+
+\begin{equation}
+    \begin{aligned}
+        IC^f_{j} &= \left[\Delta s_j\sum_k^N  w_k v_z(s(\zeta_k),\vect{q}) (1-\zeta_k),   \Delta s_j\sum_k^N w_k v_r(s(\zeta_k),\vect{q}) (1-\zeta_k)\right] \\
+    IC^f_{j+1} &=\left[ \Delta s_j\sum_k^N w_k v_z(s(\zeta_k),\vect{q}) \zeta_k,  \Delta s_j\sum_k^N w_k v_r(s(\zeta_k),\vect{q}) \zeta_k\right].
+    \end{aligned}
+\end{equation}
+
+%---------------------------------#
+%     Vortex Induced Velocity     #
+%---------------------------------#
+\subsection{Ring Vortex Induced Velocities}
+\label{ssec:ringvortices}
+
+We still have not defined the expression for the unit induced velocity due to a free vortex, \(\hat{\vect{V}}(s,t)\).
+%
+This section covers the derivation of the induced velocity due to ring vortices, or in other words, axisymmetric free vortices.
+%
+To derive an expression for the unit induced velocity due to a ring vortex, let us begin by defining some vector potential, \(\vect{\psi}\), such that\sidenote{remembering the vector identity \(\nabla \cdot \nabla \times \vect{\psi} = 0\).}
+
+\begin{equation}
+    \vect{V} = \nabla \times \vect{\psi},
+\end{equation}
+%
+and
+
+\begin{equation}
+    \nabla \cdot \vect{\psi} = 0,
+\end{equation}
+%
+or in other words, \(\vect{\psi}\) is a divergence free vector field.\sidenote{Therefore automatically satisfying continuity.}
+
+Next we take the definition of vorticity (vorticity is the curl of the velocity) and plug in our expression for \(\vect{\psi}\):
+
+\begin{equation}
+    \begin{aligned}
+        \vect{\omega} &= \nabla \times \vect{V} \\
+         &= \nabla \times \left( \nabla \times \vect{\psi} \right) \\
+         &= \nabla \left(\nabla \cdot \vect{\psi} \right) - \nabla^2 \vect{\psi} && \text{(vector identity)}.
+    \end{aligned}
+\end{equation}
+%
+Since we defined \(\vect{\psi}\) to be divergence free, our expression for vorticity simplifies to the Poisson equation
+
+\begin{equation}
+    \vect{\omega} = - \nabla^2 \vect{\psi}.
+\end{equation}
+
+We can apply a Green's function in order to solve for \(\vect{\psi}\) in three dimensions, where the known Green's function\sidenote{See nearly any math text covering partial differential equation solution methods.} takes the form of
+
+\begin{equation}
+    \mathcal{G} = \frac{-1}{4\pi |\vect{r}|},
+\end{equation}
+
+\where \(|\vect{r}|\) is the Euclidean distance from the point of influence and the point of interest.
+%
+Applying this Green's function to the solution of \(\vect{\psi}\) yields
+
+\begin{equation}
+    \label{eqn:psi1}
+    \vect{\psi} = \frac{1}{4\pi} \int_{\mathcal{V}} \frac{\vect{\omega}(\vect{q})}{|\vect{r}|} \d^3s.
+\end{equation}
+
+
+Now that we have a fundamental expression for \(\vect{\psi}\), let us look at the case for a vortex ring.
+%
+We begin with some assumptions about the vortex ring that follow from \cref{asm:axisymmetric}.
+
+% \newpage % weird split
+\begin{assumption}{}
+    \asm{The vortex ring is circular, such that the ring radius is constant.
+    \[r_o = \text{constant}\]}
+    \vspace*{-\baselineskip}
+\end{assumption}
+
+\begin{assumption}{}
+    \asm{The vortex ring circulation is constant and in the tangential direction
+    \[\vect{\Gamma} = \gamma \hat{\vect{e}}_\theta\]}
+    \vspace*{-\baselineskip}
+\end{assumption}
+%
+These assumptions formalize our axisymmetric assumption somewhat, and from them we can conclude that the vortex ring has no influence in the tangential direction, \(\hat{\vect{e}}_\theta\).
+
+\begin{figure}[h!]
+    \centering
+        \input{figures/vortexringcoordinatesystem.tikz}
+        \caption{Coordinate system for vortex ring induced velocity.}
+    \label{fig:vortexringgeom}
+\end{figure}
+
+In \cref{fig:vortexringgeom} we see the coordinate system we will be using going forward.
+%
+Without loss of generality, we will set the field point, \(\vect{p}\), to be on the \(\theta = 0\) plane.
+%
+
+Putting the solution to Poisson's equation in terms of our coordinate system gives
+
+\begin{equation}
+    \label{eqn:psi2}
+    \vect{\psi} = \frac{1}{4\pi} \int_{\mathcal{V}} \frac{\vect{\omega}(\vect{x}')}{|\vect{p}-\vect{p}'|} r_o \d\theta' \d{r'} \d{z'}.
+\end{equation}
+
+For a vortex ring, which is infinitesimally thin in the \(\hat{\vect{e}}_r\) and \(\hat{\vect{e}}_z\) directions, we can define the vorticity of the ring to be
+
+\begin{equation}
+    \vect{\omega}(\vect{p}) = \gamma \delta(z-z_o) \delta(r-r_o) \hat{\vect{e}}_\theta.
+\end{equation}
+
+\where \(\delta\) is the Dirac delta function.
+%
+Plugging this expression in for vorticity, gives
+
+\begin{equation}
+    \label{eqn:psi3}
+    \begin{aligned}
+        \vect{\psi} &= \frac{1}{4\pi} \int_{\mathcal{V}} \frac{\gamma \delta(z-z_o) \delta(r-r_o) \hat{\vect{e}}_\theta(\theta')}{|\vect{p}-\vect{p}'|} r_o \d\theta' \d{r'} \d{z'} \\
+        \vect{\psi} &= \frac{1}{4\pi} \int_{-\pi}^{\pi} \frac{\gamma \hat{\vect{e}}_\theta(\theta')}{|\vect{p}-\vect{p}'|}r_o \d\theta',
+    \end{aligned}
+\end{equation}
+%
+which we can simplify by taking the constants out of the integral:
+
+\begin{equation}
+    \label{eqn:psi4}
+    \vect{\psi} = \frac{\gamma r_o}{4\pi} \int_{-\pi}^{\pi} \frac{ \hat{\vect{e}}_\theta(\theta')}{|\vect{p}-\vect{p}'|} \d\theta'.
+\end{equation}
+
+Next, let us tackle the denominator of the integrand, which is the Euclidean distance between a point on the vortex ring and a point we have chosen to be on the \(\theta=0\) plane.
+%
+We apply the distance formula, for which we need to find the individual differences in each coordinate position.
+%
+To obtain the Euclidean distance, it may be easier to momentarily think in terms of Cartesian coordinates, keeping the \(z\)-direction the same.
+%
+Thus the length in the \(z\)-direction is simply the difference in the \(z\)-coordinates, \(z-z_o\).
+%
+To get the \(x\) and \(y\) distances, we require slightly more consideration.
+%
+If we let the \(y\)-direction be normal to the \(x-z\) plane (the \(\theta = 0\) plane) on which the field point is defined,
+then we let the \(y\) component of the field point be \(y = 0\),
+which means the distance in the \(y\)-direction is simply the position of the point on the ring, \(y_o\).
+%
+At a given \(\theta_o\), the distance in the \(y\)-direction will be \(y_o = r_o \sin\theta_o\); \(\theta\) being right hand positive taken about the \(z\)-axis.
+%
+In the \(x\)-direction, we see that at the field point, the \(x\)-position is simply \(r\), since the point lies on the \(x-z\) plane.
+%
+For the point on the vortex ring, we see that similar to the \(y\)-direction, the \(x\)-position is \(x_o = r_o \cos\theta_o\).
+%
+Before putting everything together, let us apply a normalization that will prove to be convenient in our notation later.
+%
+We will normalize the positions of the points by the vortex ring radius.
+%
+We do this by multiplying by \(\nicefrac{r_o}{r_o}=1\) giving the points in Cartesian coordinates as
+
+\begin{align}
+    \vect{p} &= r_o\left[\frac{z}{r_o} \hat{\vect{e}}_z,~ 0 \hat{\vect{e}}_y,~ \frac{r}{r_o}\hat{\vect{e}}_x\right] \\
+    \vect{p}_o &= r_o\left[\frac{z_o}{r_o} \hat{\vect{e}}_z,~ \sin\theta_o \hat{\vect{e}}_y,~ \cos\theta_o\hat{\vect{e}}_x\right]
+\end{align}
+
+Putting all of these together we have
+
+\begin{equation}
+    \label{eqn:euclideandistance1}
+    |\vect{p}-\vect{p}_o| = r_o \left[\left(\frac{z-z_o}{r_o}\right)^2 + (\sin\theta_o)^2 + \left(\frac{r}{r_o}-\cos\theta_o\right)^2 \right]^{1/2}.
+\end{equation}
+
+To help clean up the notation, we will introduce the following normalized variables.
+
+\begin{align}
+    \xi &= \frac{z - z_o}{r_o} \\
+    \rho &= \frac{r}{r_o}.
+\end{align}
+%
+In addition, we can simplify the radicand of our Euclidean distance expression by expanding the last term and applying the trigonometric identity \(\sin^2\theta + \cos^2\theta =1\):
+
+\begin{equation}
+    \begin{aligned}
+        \xi^2  &+ \sin^2\theta_o + \left(\rho-\cos\theta_o\right)^2 \\
+        \xi^2  &+ \sin^2\theta_o + \rho^2+\cos^2\theta_o-2\rho\cos\theta_o \\
+        \xi^2  &+ \cancelto{1}{\left(\sin^2\theta_o + \cos^2\theta_o\right)} + \rho^2-2\rho\cos\theta_o && (\text{trig identity}) \\
+        \xi^2  &+ \rho^2 + 1 -2\rho\cos\theta_o \\
+    \end{aligned}
+\end{equation}
+%
+With this simplified radicand, \cref{eqn:euclideandistance1} becomes
+
+\begin{equation}
+    \label{eqn:euclideandistance2}
+    |\vect{p}-\vect{p}_o| = r_o \left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta_o \right]^{1/2},
+\end{equation}
+%
+which if we plug back in to our full expression for \(\vect{\psi}\) (\cref{eqn:psi4}) we have
+
+\begin{equation}
+    \label{eqn:psi5}
+    \vect{\psi} = \frac{\gamma}{4\pi} \int_{-\pi}^{\pi} \frac{ \hat{\vect{e}}_\theta(\theta')}{\left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta' \right]^{1/2}} \d\theta'.
+\end{equation}
+
+We now will apply one more advantage of our axisymmetric assumption, which is that both the potential and velocity fields are axisymmetric.
+%
+Because the field point is set, without loss of generality, on the \(x-z\) (or \(\theta=0\)) plane, we can take the radially induced velocity at the field point to be only in the \(x\)-direction, and the tangential component to be only in the \(y\)-direction.
+%
+Therefore we make take \(\hat{\vect{e}}_\theta\) to be its \(y\) component: \(\cos\theta\hat{\vect{e}}_y\).
+%
+Likewise, \(\hat{\vect{e}}_r\) can be replaced with its \(x\)-component: \(\cos\theta\hat{\vect{e}}_x\).
+%
+Conveniently, this allows us to perform one integration over \(\theta\) as the single variable rather than having to perform a double integration of \(x\) and \(y\) thereby reducing our expression for \(\vect{\psi}\) to only the tangential component, \(\psi_\theta\).
+%
+Therefore we replace the \(\hat{\vect{e}}_\theta(\theta')\) in the numerator of \cref{eqn:psi5} with \(\cos(\theta')\) to arrive at the expression for the tangential component of \(\vect{\psi}\),
+
+\begin{equation}
+    \psi_\theta(\vect{x},\vect{x}_o) = \frac{\gamma}{4\pi} \int_{-\pi}^{\pi} \frac{ \cos(\theta')}{\left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta' \right]^{1/2}} \d\theta'.
+\end{equation}
+
+We are now left with a simplified expression for \(\psi\), but that is still a relatively difficult integral to implement numerically, and perhaps more difficult to approach analytically.
+%
+To make our lives easier, we are going to get our expression in terms of elliptic integrals, which are far simpler to implement numerically.
+%
+We can make this transformation by first making a slight change to the bounds of integration, taking advantage of the fact that the integrand is an even function.
+
+\begin{equation}
+    \psi_\theta(\vect{x},\vect{x}_o) = \frac{\gamma}{2\pi} \int_{0}^{\pi} \frac{ \cos(\theta')}{\left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta' \right]^{1/2}} \d\theta'.
+\end{equation}
+%
+Next, we will apply the substitution
+
+\begin{align}
+    \label{eqn:sub1}
+    \theta' &= 2\varphi \\
+    \d\theta' &= 2\d\varphi,
+\end{align}
+%
+noting the bounds of integration need to be divided by 2 as well, and changed to \([0,~\pi/2]\).
+%
+Applying \cref{eqn:sub1} and the trigonometric identity \(\cos(2\varphi) = 2\cos^2(\varphi)-1\) gives
+
+\begin{equation}
+    \begin{aligned}
+        \psi_\theta(\vect{x},\vect{x}_o) &= \frac{\gamma}{\pi} \int_{0}^{\frac{\pi}{2}} \frac{ 2\cos^2(\varphi)-1}{\left[ \xi^2  + \rho^2 + 1 - 4\rho\cos^2\varphi + 2\rho\right]^{1/2}} \d\varphi \\
+         &= \frac{\gamma}{\pi} \int_{0}^{\frac{\pi}{2}} \frac{ 2\cos^2(\varphi)-1}{\left[ \xi^2  + (\rho + 1)^2 - 4\rho\cos^2\varphi \right]^{1/2}} \d\varphi.
+    \end{aligned}
+\end{equation}
+%
+We will immediately apply another substitution
+
+\begin{equation}
+    \cos\varphi = t
+\end{equation}
+
+\begin{equation}
+    \label{eqn:sub2}
+\begin{aligned}
+    \d\varphi &= \frac{\d{t}}{-\sin{\varphi}} \\
+              &= -\frac{\d{t}}{\sqrt{1-\cos^2{\varphi}}} \\
+              &= -\frac{\d{t}}{\sqrt{1-t^2}},
+\end{aligned}
+\end{equation}
+%
+where \(\cos{(\pi/2)}=0\) and \(\cos(0) = 1\) so we will flip the bounds and cancel out the negative in \cref{eqn:sub2}:
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = \frac{\gamma}{\pi} \int_{0}^{1} \frac{ 2t^2 -1}{\left[ \xi^2  + (\rho + 1)^2 - 4\rho t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+Next we multiply by the top and bottom of the integrand by \(\left[(\rho+1)^2 + \xi^2\right]^{-1/2}\), noting that this term is constant relative to the integral and can therefore be brought outside.
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = \frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \int_{0}^{1} \frac{ 2t^2 -1}{\left[1 - \frac{4\rho t^2}{(\rho+1)^2 + \xi^2} \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+we now let
+
+\begin{equation}
+    \label{eqn:mdef}
+    m = \frac{4\rho}{(\rho+1)^2 + \xi^2}
+\end{equation}
+%
+which cleans things up to be
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = \frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \int_{0}^{1} \frac{ 2t^2 -1}{\left[1 - m t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+Our integrand is now almost matching to elliptic integrals.
+%
+We just need to apply some algebraic manipulations to the numerator to match elliptic integral expressions of the form
+
+\begin{align}
+    \mathcal{K}(m) &= \int_0^1 \frac{\d{t}}{\sqrt{(1-t^2)(1-mt^2)}} \\
+    \mathcal{E}(m) &= \int_0^1 \frac{\sqrt{1-mt^2}}{\sqrt{(1-t^2)}}\d{t}
+\end{align}
+
+\where \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) are elliptic integrals of the first and second kind, respectively.
+%
+Making the required algebraic manipulations yields
+
+\begin{equation}
+\psi_\theta(\vect{p},\vect{p}_o) = -\frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \int_{0}^{1} \frac{ 1 - \frac{2}{m} + \frac{2}{m} (1 - mt^2) }{\left[1 - m t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+Splitting the integrand up we have
+
+\begin{equation}
+    \begin{split}
+        \psi_\theta(\vect{p},\vect{p}_o) = -\frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \bigg[
+        & \left(1-\frac{2}{m}\right) \int_{0}^{1} \frac{\d{t} }{\left[1 - m t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \\
+        & +\frac{2}{m} \int_{0}^{1} \frac{ [1 - mt^2]^{1/2} }{\left[1-t^2\right]^{1/2}} \d{t}\bigg].
+    \end{split}
+\end{equation}
+%
+Each of the integrals is now in the form of an elliptic integral.
+%
+Making the substitution for elliptic integrals gives
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = -\frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \left[  \frac{2}{m} \mathcal{E}(m) -\left(\frac{2}{m}-1\right)\mathcal{K}(m)  \right].
+\end{equation}
+
+\subsubsection{General Form of Induced Velocities}
+
+The next step is to obtain the induced velocity from the vector potential, \(\psi_\theta(\vect{p},\vect{p}_o)\).
+%
+Remember that \(\vect{V} = \nabla \times \vect{\psi}\), which expands in cylindrical coordinates to
+
+\begin{equation}
+    \label{eqn:delxpsicyl}
+    \begin{split}
+        \vect{V} &= \left(\frac{1}{r}\pd{\psi_z}{\theta} - \pd{\psi_\theta}{z}\right)\hat{\vect{e}}_r \\
+                 &+ \left(\pd{\psi_r}{z} - \pd{\psi_z}{r}\right)\hat{\vect{e}}_\theta \\
+                 &+\frac{1}{r} \left(\pd{(r \psi_\theta)}{r} - \frac{\psi_r}{\theta}\right)\hat{\vect{e}}_z.
+    \end{split}
+\end{equation}
+%
+Since our axisymmetric assumption allowed us to eliminate all but the tangential component of the vector potential, all but the \(\psi_\theta\) components in \cref{eqn:delxpsicyl} disappear, leaving us with the following induced velocities in the \(r\)- and \(z\)-directions.
+
+\begin{subequations}
+\begin{align}
+    v_z &= \frac{1}{r}\pd{(r\psi_\theta)}{r}, \\
+    v_r &= -\pd{\psi_\theta}{z}.
+\end{align}
+\end{subequations}
+
+After some tedious algebra (see \cref{app:ringvortexinducedvelocities}),
+we arrive at the following expressions for the unit\sidenote{In other words, we have set \(\gamma=1\)} induced velocity due to a vortex ring.
+\begin{subequations}
+    \label{eqn:ringvortexinducedvelocity}
+\begin{eqboxed}{\eqbox}{align}
+    \label{eqn:ringvortexinducedvelocityaxial}
+        v_{z}^\gamma &=  \frac{1}{2 \pi r_o} \frac{1}{D_1} \left[ \mathcal{K}(m) - \left( 1 + \frac{2(\rho-1)}{D_2} \right) \mathcal{E}(m) \right] \\
+    \label{eqn:ringvortexinducedvelocityradial}
+        v_{r}^\gamma &= -\frac{1}{2 \pi r_o} \frac{\xi/\rho}{D_1}  \left[ \mathcal{K}(m) - \left( 1 + \frac{2\rho}{D_2} \right) \mathcal{E}(m) \right]
+\end{eqboxed}
+\end{subequations}
+
+\where the superscript, \(\gamma\), indicates a unit vortex induced velocity.
+%
+In addition, \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) are complete elliptic integrals of the first and second kind, respectively, and
+
+\begin{eqboxed}{\eqbox}{align}
+% \begin{equation}
+    % \label{eqn:normalizedgeom}
+    % \begin{aligned}
+        m &= \left( \frac{4\rho}{\xi^2 + (\rho+1)^2} \right) \\% = k^2 = \sin^2(\phi)\\
+        \xi &= \frac{z - z_o}{r_o} \\
+        \rho &= \frac{r}{r_o} \\
+        D_1 &= \left[\xi^2 + (\rho+1)^2\right]^{1/2} \\
+        D_2 &= \xi^2 + (\rho - 1)^2.
+    % \end{aligned}
+% \end{equation}
+\end{eqboxed}
+
+%---------------------------------#
+%     Source Induced Velocity     #
+%---------------------------------#
+\subsection{Ring Source Induced Velocities}
+\label{ssec:ringsources}
+
+Although our method for modeling the body aerodynamics primarily uses vortex ring distributions, we will find later that we will want to know the expressions for source ring induced velocities as well.
+%
+We include those expressions here for easy reference.
+%
+Note that a similar process to the derivation of the vortex ring induced velocities can be used to develop expressions for the induced velocity due to a ring source.
+%
+Here we simply state the expressions from Ryall and Collins\scite{Ryall_1967}, noting that the expressions for vortex induced velocity we have derived here also match the expressions they give.
+
+\begin{subequations}
+    \label{eqn:ringsourceinducedvelocity}
+\begin{eqboxed}{\eqbox}{align}
+    \label{eqn:ringsourceinducedvelocityaxial}
+        v_{z}^\sigma &= \frac{1}{2 \pi r_o}\frac{\xi}{ D_1} \left(\frac{2 }{D_2} \mathcal{E}(m)\right) \\
+        % v_{z}^\sigma &=  \frac{1}{2 \pi r_o} \frac{1}{D_1} \left[ \mathcal{K}(m) - \left( 1 + \frac{2(\rho-1)}{D_2} \right) \mathcal{E}(m) \right] \\
+    \label{eqn:ringsourceinducedvelocityradial}
+        v_{r}^\sigma &= \frac{1}{2 \pi r_o}\frac{1/\rho}{ D_1}  \left[ \mathcal{K}(m) -   \left( 1 - \frac{2\rho(\rho-1)}{D_2} \right) \mathcal{E}(m)  \right],
+        % v_{r}^\sigma &= -\frac{1}{2 \pi r_o} \frac{\xi/\rho}{D_1}  \left[ \mathcal{K}(m) - \left( 1 + \frac{2\rho}{D_2} \right) \mathcal{E}(m) \right]
+\end{eqboxed}
+\end{subequations}
+
+\where the superscript, \(\sigma\), indicates a unit source induced velocity.
+%
+The other variables in \cref{eqn:ringsourceinducedvelocity} are as defined for the vortex ring expressions.
+
+%#####################################################################
+%                                                                    #
+%                            Validation                             #
+%                                                                    #
+%#####################################################################
+\subsection{Validation of Isolated Body Aerodynamics}
+
+%---------------------------------#
+% Isolated Center Body Validation #
+%---------------------------------#
+\subsubsection{Isolated Duct}
+
+\begin{figure}[h!]
+    \centering
+        \input{figures/duct-validation-geometry.tikz}
+        \caption{Isolated annular airfoil cross section used for validation for a duct with length/diameter of 0.5988.}
+    \label{fig:ductgeom}
+\end{figure}
+
+For the isolated duct, we compare with data provided by Lewis for an annular airfoil using the NACA \(66_2\)-\(015\) geometry and with a length to diameter ratio of 0.5988\scite{Lewis_1991}.
+%
+We generated smooth NACA 66-015 geometry using the airfoil tools within Open Vehicle Sketch Pad (OpenVSP)\scite{McDonald_2022}, and for the geometry producing \cref{fig:isolatedductvalidation}, we interpolated the OpenVSP coordinates using a cosine spacing resulting in a total of 161 coordinate points, and thus 160 panels.
+%
+See \cref{fig:ductgeom} for the cross sectional geometry we used.
+%
+\Cref{fig:isolatedductvalidation} shows a comparison of the experimental data provided by Lewis and the computation output from DuctAPE.
+%
+Observing \cref{fig:isolatedductvalidation}, we see very good agreement with the experimental data, with minor discrepancies on the aft portion of the duct, due to viscous effects being ignored in the present methodology.
+
+\begin{figure}[h!]
+    \centering
+        \input{figures/duct-pressure-comp-160-panels.tikz}%
+        \caption{Comparison of experimental data with DuctAPE for an isolated duct shows very good agreement despite the inviscid approximation in DuctAPE's development.}
+    \label{fig:isolatedductvalidation}
+\end{figure}
+
+\Cref{fig:isolatedductgridconv} shows a refinement convergence for the aforementioned geometry.
+%
+We start with a very coarse refinement of 20 panels, and increase by 100 panels until reaching 700.\sidenote{Note that after 700 panels, the numerical integration scheme had trouble converging due to the proximity of the singularities for extremely small panels.}
+%
+Comparing the value of the sum of the local surface pressure coefficients multiplied by the associated panel length, we see that for 160 panels, a typical number in general use cases, we have only a 0.93\% difference from the value computed with 700 panels.
+
+\begin{figure}[h!]
+    \centering
+        \input{figures/duct-grid-refinement.tikz}%
+        \caption{Between 100 and 200 panels is generally a sufficient refinement for our use case.}
+    \label{fig:isolatedductgridconv}
+\end{figure}
+
+
+%---------------------------------#
+% Isolated Center Body Validation #
+%---------------------------------#
+\subsubsection{Isolated Center Body}
+
+\begin{figure}[hb!]
+    \centering
+        \input{figures/cb-validation-geom.tikz}
+        \caption{Isolated center body geometry used for validation; note the trailing edge does not extend all the way to zero radius.}
+    \label{fig:cbgeom}
+\end{figure}
+
+For the isolated center body, we again compare with data provided by Lewis as shown in \cref{fig:cbgeom}.
+%
+\Cref{fig:isolatedductvalidation} shows a comparison of the experimental data provided by Lewis and the computation output from DuctAPE.
+%
+We used the coordinates provided by Lewis to obtain the leading edge circular radius, the length of the flat portion, and the total length of the cross section to generate our own smooth geometry manually
+%
+For the geometry producing \cref{fig:isolatedhubvalidation}, we interpolated the coordinates using a cosine spacing resulting in a total of 81 coordinate points, and thus 80 panels.
+%
+Observing \cref{fig:isolatedhubvalidation}, we see good agreement with the experimental data, with discrepancies near the trailing edge which are, again, a result of the inviscid assumption in DuctAPE, as well as the small radial dimensions at the trailing edge, as discussed in \cref{ssec:panelmethodology}.
+
+\begin{figure}[h!]
+    \centering
+        \input{figures/hub-velocity-comp-80-panels.tikz}
+        \caption{Comparison of experimental data with DuctAPE for an isolated hub shows good agreement despite the inviscid approximation in DuctAPE's development.}
+    \label{fig:isolatedhubvalidation}
+\end{figure}
+
+\begin{figure}[hb!]
+    \centering
+        \input{figures/hub-grid-refinement.tikz}%
+        \caption{Between 70 and 100 panels is generally a sufficient refinement for our use case.}
+    \label{fig:isolatedhubgridconv}
+\end{figure}
+
+
+\Cref{fig:isolatedhubgridconv} shows a refinement convergence for the aforementioned geometry.
+%
+We start with a very coarse refinement of 20 panels, increasing by 10s until reaching 100 panels, after which we increase by 100 panels until reaching 350 (half of what was used in the duct validation).
+%
+Comparing the value of the sum of the local surface pressure coefficients multiplied by the associated panel length, we see that for 80 panels, a typical number in general use cases, we have 14.7\% difference from the value computed with 350 panels; though the absolute magnitudes are very small in the first place.
+
+
+%---------------------------------#
+%     Multi-Body Verification     #
+%---------------------------------#
+\subsubsection{Multi-body System Verification}
+
+If we now combine these two geometries together, we can check that a multi-body system analysis works as expected.
+%
+Unfortunately, we do not have any experimental data at the time for an isolated duct and center body, but we can compare with Ducted Fan Design Code, from which we have developed most of our methodology, for verification.
+%
+\Cref{fig:ducthubvalgeom} shows the geometry of the duct and center body we have been using thus far for reference.
+%
+We now place both in a single system in order to verify that multi-body systems work properly.
+
+\begin{figure}[hb!]
+    \centering
+        \input{figures/duct-and-hub-validation-geom.tikz}%
+        \caption{Isolated duct and center body geometry together.}
+    \label{fig:ducthubvalgeom}
+\end{figure}
+%
+As can be seen in \cref{fig:dfdclewiscomp}, the surface velocity on the hub and pressure on the duct match very well to DFDC, lending confidence in DuctAPE's ability to model both a duct and hub together.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{figures/dfdclewis-velocity-comp-107-duct-panels-78-hub-panels.tikz}%
+         \caption{Comparison of the surface velocity on the center body with sharp trailing edge calculated by DFDC and calculated by DuctAPE.}
+        \label{fig:dfdclewisvel}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{figures/dfdclewis-pressure-comp-107-duct-panels-78-hub-panels.tikz}%
+         \caption{Comparison of the surface pressure on the duct with sharp trailing edge calculated by DFDC and calculated by DuctAPE.}
+         \label{fig:dfdclewiscp}
+     \end{subfigure}
+     \caption{\primary{DuctAPE (blue)} matches very well to \secondary{DFDC (red dash)} for the multi-body, no rotor case, with sharp trailing edges.}
+     \label{fig:dfdclewiscomp}
+\end{figure}
+
+
+As a second check, we use geometry provided in the DFDC example files that contain blunt trailing edges on the duct and center body.
+%
+In this case, we need to apply the augmentations to the system for trailing edge gap panels.
+%
+\begin{figure}[hb!]
+    \centering
+        \input{figures/duct-and-hub-dfdc-example-verification-geometry.tikz}
+        \caption{Duct and center body geometry provided in DFDC examples.}
+    \label{fig:ducthubvalgeom}
+\end{figure}
+%
+We see in \cref{fig:dfdcexamplecomp} that DuctAPE also matches well with DFDC in this case.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{figures/dfdcexample-velocity-comp-106-duct-panels-61-hub-panels.tikz}%
+         \caption{Comparison of the surface velocity on the center body with blunt trailing edge calculated by DFDC and calculated by DuctAPE.}
+        \label{fig:dfdcexamplevel}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{figures/dfdcexample-pressure-comp-106-duct-panels-61-hub-panels.tikz}%
+         \caption{Comparison of the surface pressure on the duct with blunt trailing edge calculated by DFDC and calculated by DuctAPE.}
+         \label{fig:dfdcexamplecp}
+     \end{subfigure}
+     \caption{\primary{DuctAPE (blue)} matches very well to \secondary{DFDC (red dash)} for the multi-body, no rotor case with blunt trailing edges.}
+     \label{fig:dfdcexamplecomp}
+\end{figure}

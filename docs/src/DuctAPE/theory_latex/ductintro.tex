@@ -1,0 +1,36 @@
+\section{Introduction}
+\label{sec:ductintro}
+
+In the preliminary and conceptual stages of design, it is often helpful to have tools that make some sacrifices in fidelity in favor of computational efficiency.
+%
+It may also be desirable to sacrifice some flexibility to further decrease computation time costs in the beginning stages of design.
+%
+To this end, a low-fidelity tool for the evaluation of ducted propulsors, catered specifically to electric ducted fans, is described in this chapter.
+%
+One of the major limitations in flexibility is that we require that:
+
+\begin{assumption}
+    \label{asm:axisymmetric}
+
+    \asm{The system is modeled axisymmetrically.}
+
+    \limit{There are two major limitations to the axisymmetric assumption: the first is that we can no longer model non-symmetric inflow conditions.
+    %
+    The second is that the internal flow, specifically aft of the rotor(s) is assumed to be uniform in the tangential direction (axisymmetric), removing any modeling of unsteady wake conditions.
+    %
+    An additional limitation comes in modeling flow near the center line, where we will see that division by numbers approaching zero can cause numerical issues.}
+
+    \why{By making the axisymmetric assumption, we are able to utilize much faster computation methods, or at least faster versions of already relatively fast methods. Specifically in our case, we can use axisymmetric panel methods employing far less elements than would be required for a three-dimensional method. Although our operational cases are limited to axial inflow, there are still many uses in that limited design space.}
+
+\end{assumption}
+
+\noindent Therefore, we call our tool Ducted Axisymmetric Propulsor Evaluation, or DuctAPE for short.
+%
+As alluded to, the overall goal of DuctAPE is to provide a computationally inexpensive tool to be used in a multidisciplinary design and optimization setting for preliminary and conceptual design.
+
+In this chapter we cover the methodology derivation required for DuctAPE as well as some implementation details and various verification and validation along the way.
+%
+The solver is comprised of two major components, which will be first presented in isolation before the full coupling is considered.
+%
+The first that will be covered is the analysis of the duct and center body (see \cref{sec:axisymmetricpanelmethod}), and the second is the analysis of the rotor and wake (see \cref{sec:rotorwakemethods}).
+

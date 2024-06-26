@@ -1,0 +1,462 @@
+\section{Transformation of Poisson Equations}
+\label{app:poissontransform}
+
+In order to interchange the dependent and independent variables of
+
+\begin{subequations}
+	\begin{align}
+		\xi(z,r) &\equiv \xi_{zz} + \xi_{rr} = 0\\
+		\label{eqn:nzr}
+		\eta(z,r) &\equiv \eta_{zz} + \eta_{rr} = \frac{\psi_r}{r},
+	\end{align}
+\end{subequations}
+
+\noindent where \(\eta = \psi =\) constant along streamlines (thus \(\eta\) coordinates correspond to the physical location of streamlines) and \(\xi\) is constant along radial lines and can be arbitrarily chosen,
+we apply the derivative transformations:
+
+\begin{subequations}
+	\begin{align}
+		\label{eqn:fztransform}
+		f_z &= \frac{r_\eta f_\xi - r_\xi f_\eta}{J} \\
+		\label{eqn:fytransform}
+		f_r &= \frac{- z_\eta f_\xi + z_\xi f_\eta}{J},
+	\end{align}
+\end{subequations}
+
+\where \(J = z_\xi r_\eta - z_\eta r_\xi\).
+
+Let's look first at the \(\xi_{zz}\) term.
+%
+We will begin by applying \cref{eqn:fztransform}:
+
+\begin{align}
+	\xi_z &= \frac{r_\eta \xi_\xi - r_\xi \xi_\eta}{J} \\
+	\xi_{zz} &= \frac{r_\eta \left(\frac{r_\eta \xi_\xi - r_\xi \xi_\eta}{J}\right)_\xi - r_\xi \left(\frac{r_\eta \xi_\xi - r_\xi \xi_\eta}{J}\right)_\eta}{J}.
+\end{align}
+
+\noindent Recognizing that \(\xi_\xi = 1\), and \(\xi_\eta = 0\) (by orthogonality), we can simplify.
+
+\[
+\xi_{zz} = \frac{r_\eta \left(\frac{r_\eta }{J}\right)_\xi - r_\xi \left(\frac{r_\eta}{J}\right)_\eta}{J}.
+\]
+
+\noindent Applying the quotient rule:
+
+\[
+\begin{aligned}
+	\xi_{zz} &= \frac{r_\eta \left(\frac{r_{\eta\xi} J - r_\eta J_\xi}{J^2}\right) - r_\xi \left(\frac{r_{\eta\eta}J - r_\eta J_\eta}{J^2}\right)}{J} \\
+	&=  \frac{r_\eta \left(r_{\eta\xi} J - r_\eta J_\xi\right) - r_\xi \left(r_{\eta\eta}J - r_\eta J_\eta\right)}{J^3}.
+\end{aligned}
+\]
+
+\noindent Expanding:
+
+\begin{equation}
+	\label{eqn:xiz.zpause1}
+	\xi_{zz} =  \frac{r_\eta r_{\eta\xi} J -  r_\eta^2 J_\xi -  r_\xi r_{\eta\eta}J + r_\xi r_\eta J_\eta}{J^3}.
+\end{equation}
+
+\noindent We'll leave \(\xi_{zz}\) here for now and follow the same procedure for \(\xi_{rr}\)---beginning by applying \cref{eqn:fytransform}:
+
+\begin{align}
+	\xi_r &= \frac{-z_\eta \xi_\xi + z_\xi \xi_\eta}{J} \\
+	\xi_{rr} &= \frac{-z_\eta \left(\frac{-z_\eta \xi_\xi + z_\xi \xi_\eta}{J}\right)_\xi + z_\xi \left(\frac{-z_\eta \xi_\xi + z_\xi \xi_\eta}{J}\right)_\eta}{J}.
+\end{align}
+
+\noindent Again recognizing that \(\xi_\xi = 1\), and \(\xi_\eta = 0\) (by orthogonality), we can simplify:
+
+\begin{equation}
+	\xi_{rr} = \frac{-z_\eta \left(\frac{-z_\eta }{J}\right)_\xi + z_\xi \left(\frac{-z_\eta}{J}\right)_\eta}{J}.
+\end{equation}
+
+\noindent Applying the quotient rule:
+
+
+\begin{equation}
+	\xi_{rr} = \frac{-z_\eta \left(\frac{-z_{\eta\xi} J + z_\eta J_\xi}{J^2}\right) + z_\xi \left(\frac{-z_{\eta\eta}J + z_\eta J_\eta}{J^2}\right)}{J}.
+\end{equation}
+
+
+\noindent Expanding:
+
+\begin{equation}
+	\label{eqn:xirrpause1}
+	\xi_{rr} =  \frac{z_\eta z_{\eta\xi} J - z_\eta^2 J_\xi - z_\xi z_{\eta\eta}J + z_\xi z_\eta J_\eta}{J^3}.
+\end{equation}
+
+
+Now that we have both \(\xi_{zz}\) and \(\xi_{rr}\), let us perform similar transformations for \(\eta_{zz}\) and \(\eta_{rr}\).
+%
+Let us begin with \cref{eqn:fztransform}:
+\begin{align}
+	\eta_z &= \frac{r_\eta \eta_\xi - r_\xi \eta_\eta}{J} \\
+	\eta_{zz} &= \frac{r_\eta \left(\frac{r_\eta \eta_\xi - r_\xi \eta_\eta}{J}\right)_\xi - r_\xi \left(\frac{r_\eta \eta_\xi - r_\xi \eta_\eta}{J}\right)_\eta}{J}.
+\end{align}
+
+\noindent Here, \(\eta_\xi = 0\) (by orthogonality), and \(\eta_\eta = 1\).
+%
+So we simplify as follows
+\begin{equation}
+	\eta_{zz} = \frac{r_\eta \left(\frac{- r_\xi}{J}\right)_\xi - r_\xi \left(\frac{- r_\xi}{J}\right)_\eta}{J}.
+\end{equation}
+
+\noindent Applying the quotient rule:
+
+\begin{equation}
+	\eta_{zz} = \frac{r_\eta \left(\frac{- r_{\xi\xi}J + r_\xi J_\xi}{J^2}\right) - r_\xi \left(\frac{- r_{\xi\eta} J + r_\xi J_\eta}{J^2}\right)}{J}.
+\end{equation}
+
+\noindent Expanding:
+
+\begin{equation}
+	\eta_{zz} = \frac{-r_\eta r_{\xi\xi}J + r_\eta r_\xi J_\xi + r_\xi r_{\xi\eta} J - r_\xi^2 J_\eta}{J^3}.
+\end{equation}
+
+\noindent As we saw above, the expression for \(\eta_{rr}\) will be nearly identical to that for \(\eta_{zz}\)
+
+\begin{align}
+	\eta_r &= \frac{-z_\eta \eta_\xi + z_\xi \eta_\eta}{J} \\
+	\eta_{rr} &= \frac{-z_\eta \left(\frac{-z_\eta \eta_\xi + z_\xi \eta_\eta}{J}\right)_\xi + z_\xi \left(\frac{-z_\eta \eta_\xi + z_\xi \eta_\eta}{J}\right)_\eta}{J}.
+\end{align}
+
+\noindent Again recognizing that \(\eta_\xi = 0\), and \(\eta_\eta = 1\), we simplify:
+
+\begin{equation}
+	\eta_{rr} = \frac{-z_\eta \left(\frac{z_\xi }{J}\right)_\xi + z_\xi \left(\frac{z_\xi}{J}\right)_\eta}{J}.
+\end{equation}
+
+\noindent Applying the quotient rule:
+
+\begin{equation}
+	\eta_{rr} = \frac{-z_\eta \left(\frac{z_{\xi\xi} J - z_\xi J_\xi}{J^2}\right) + z_\xi \left(\frac{z_{\xi\eta}J - z_\xi J_\eta}{J^2}\right)}{J}.
+\end{equation}
+
+\noindent Expanding:
+
+\begin{equation}
+	\label{eqn:etarrpause1}
+	\eta_{rr} =  \frac{-z_\eta z_{\xi\xi} J + z_\eta z_\xi J_\xi + z_\xi z_{\xi\eta}J - z_\xi^2 J_\eta}{J^3}.
+\end{equation}
+
+
+Before putting everything together, we also need to transform the right hand side of \cref{eqn:nzr} using \cref{eqn:fytransform} as we have done, noting in this case that we only have a single, rather than a double, derivative.
+
+\begin{equation}
+	\frac{1}{r} \psi_r = \frac{-z_\eta \psi_\xi + z_\xi \psi_\eta}{r J}.
+\end{equation}
+
+\noindent Remembering that we have chosen \(\psi = \eta\), and making similar simplifications with the derivitives we have thus far (\(\eta_\eta = 1,~\eta_\xi=0\)), we are left with
+
+\begin{equation}
+	\frac{1}{r} \psi_r = \frac{z_\xi}{r J}.
+\end{equation}
+
+Let's now bring it all together in the Poisson equations to see where we are, multiplying everything by \(J^3\) to remove all the fractions.
+%
+For convenience and clarity, we'll also note that \((\cdot)_{\xi\eta} = (\cdot)_{\eta\xi}\) and put every instance in the \(\xi\eta\) order.
+
+\begin{subequations}
+	\begin{align}
+        \label{eqn:poissontrans2a}
+		\left[r_\eta r_{\xi\eta}J - r_\eta^2 J_\xi -  r_\xi r_{\eta\eta}J + r_\xi r_\eta J_\eta\right] + \left[z_\eta z_{\xi\eta}J - z_\eta^2 J_\xi -  z_\xi z_{\eta\eta}J + z_\xi z_\eta J_\eta \right] &= 0 \\
+        \label{eqn:poissontrans2b}
+		\left[-r_\eta r_{\xi\xi}J + r_\eta r_\xi J_\xi + r_\xi r_{\xi\eta}J - r_\xi^2 J_\eta\right] + \left[-z_\eta z_{\xi\xi}J + z_\eta z_\xi J_\xi + z_\xi z_{\xi\eta} J - z_\xi^2 J_\eta\right] &= \frac{z_\xi J^2}{r}.
+	\end{align}
+\end{subequations}
+
+In order to get the final \(z(\xi,\eta)\) and \(r(\xi,\eta)\) relations, we'll first need to do some more expanding, specifically of the jacobian (and its derivatives, applying the product rule):
+
+\begin{subequations}
+	\begin{align}
+		J &= z_\xi r_\eta - z_\eta r_\xi \\
+		J_\xi &= z_{\xi\xi} r_\eta + z_\xi r_{\xi\eta} - z_{\xi\eta} r_\xi - z_\eta r_{\xi\xi} \\
+		J_\eta &= z_{\xi\eta} r_\eta + z_\xi r_{\eta\eta} - z_{\eta\eta} r_\xi - z_\eta r_{\xi\eta}.
+	\end{align}
+\end{subequations}
+
+
+Now we just need to expand everything out.
+%
+Let's start with the transformation of the \(\xi_{zz}\) term (first term on the left hand side of \cref{eqn:poissontrans2a}).
+%
+As we expand things out, we'll also rearrange terms to facilitate easier comparison.
+\begin{equation}
+\begin{aligned}
+		\xi_{zz} =& r_\eta r_{\xi\eta}(z_\xi r_\eta - z_\eta r_\xi) \\
+		&- r_\eta^2 (z_{\xi\xi} r_\eta + z_\xi r_{\xi\eta} - z_{\xi\eta} r_\xi - z_\eta r_{\xi\xi}) \\
+		&-  r_\xi r_{\eta\eta}(z_\xi r_\eta - z_\eta r_\xi) \\
+		&+ r_\xi r_\eta (z_{\xi\eta} r_\eta + z_\xi r_{\eta\eta} - z_{\eta\eta} r_\xi - z_\eta r_{\xi\eta}) \\
+        %
+		=& \cancel{z_\xi r_{\xi\eta} r_\eta^2} - z_\eta  r_\xi r_{\xi\eta} r_\eta   \\
+		&- z_{\xi\xi} r_\eta^3 - \cancel{z_\xi r_{\xi\eta} r_\eta^2} + z_{\xi\eta} r_\xi r_\eta^2  + z_\eta r_{\xi\xi} r_\eta^2   \\
+		&- \cancel{z_\xi r_\xi r_{\eta\eta}  r_\eta} +  z_\eta r_\xi^2 r_{\eta\eta} \\
+		&+ z_{\xi\eta} r_\xi r_\eta^2 + \cancel{z_\xi r_\xi r_{\eta\eta}  r_\eta} - z_{\eta\eta} r_\xi^2 r_\eta - z_\eta r_\xi r_{\xi\eta}  r_\eta \\
+        %
+		=&- z_{\xi\xi} r_\eta^3 - z_{\eta\eta} r_\xi^2 r_\eta    \\
+		& - 2 z_\eta  r_\xi r_{\xi\eta} r_\eta  + 2z_{\xi\eta} r_\xi r_\eta^2     \\
+		& + z_\eta r_{\xi\xi} r_\eta^2 +  z_\eta r_\xi^2 r_{\eta\eta}. \\
+\end{aligned}
+\end{equation}
+%
+Now \(\xi_{rr}\) (second term in \cref{eqn:poissontrans2a}):
+%
+\begin{equation}
+\begin{aligned}
+		\xi_{rr} =& z_\eta z_{\xi\eta}(z_\xi r_\eta - z_\eta r_\xi) \\
+		%
+		&- z_\eta^2 (z_{\xi\xi} r_\eta + z_\xi r_{\xi\eta} - z_{\xi\eta} r_\xi - z_\eta r_{\xi\xi}) \\
+		%
+		&-  z_\xi z_{\eta\eta}(z_\xi r_\eta - z_\eta r_\xi) \\
+		%
+		&+ z_\xi z_\eta ( z_{\xi\eta} r_\eta + z_\xi r_{\eta\eta} - z_{\eta\eta} r_\xi - z_\eta r_{\xi\eta})\\
+	%
+		=& z_\xi z_{\xi\eta} z_\eta  r_\eta -  \cancel{z_{\xi\eta} z_\eta^2 r_\xi} \\
+		%
+		&- z_{\xi\xi} z_\eta^2  r_\eta - z_\xi z_\eta^2 r_{\xi\eta} + \cancel{z_{\xi\eta} z_\eta^2 r_\xi} + z_\eta^3 r_{\xi\xi} \\
+		%
+		&- z_\xi^2 z_{\eta\eta} r_\eta + \cancel{z_\xi z_{\eta\eta} z_\eta r_\xi} \\
+		%
+		&+ z_\xi z_{\xi\eta} z_\eta  r_\eta + z_\xi^2 z_\eta r_{\eta\eta} -  \cancel{z_\xi z_{\eta\eta} z_\eta r_\xi} - z_\xi z_\eta^2 r_{\xi\eta}\\
+	%
+		=& - z_{\xi\xi} z_\eta^2  r_\eta - z_\xi^2 z_{\eta\eta} r_\eta  \\
+		%
+		&+ 2z_\xi z_{\xi\eta} z_\eta  r_\eta - 2z_\xi z_\eta^2 r_{\xi\eta} \\
+		%
+		&+ z_\eta^3 r_{\xi\xi} + z_\xi^2 z_\eta r_{\eta\eta}.
+\end{aligned}
+\end{equation}
+%
+Next \(\eta_{zz}\) (first term in \cref{eqn:poissontrans2b}):
+%
+\begin{equation}
+\begin{aligned}
+		\eta_{zz} =& -r_\eta r_{\xi\xi}(z_\xi r_\eta - z_\eta r_\xi) \\
+		&+ r_\eta r_\xi (z_{\xi\xi} r_\eta + z_\xi r_{\xi\eta} - z_{\xi\eta} r_\xi - z_\eta r_{\xi\xi}) \\
+		&+ r_\xi r_{\xi\eta}(z_\xi r_\eta - z_\eta r_\xi) \\
+		&- r_\xi^2 (z_{\xi\eta} r_\eta + z_\xi r_{\eta\eta} - z_{\eta\eta} r_\xi - z_\eta r_{\xi\eta})\\
+	%
+		=& - z_\xi r_{\xi\xi} r_\eta^2 + \cancel{z_\eta r_{\xi\xi} r_\xi r_\eta}  \\
+		&+ z_{\xi\xi} r_\xi r_\eta^2 + z_\xi  r_\xi  r_{\xi\eta} r_\eta - z_{\xi\eta} r_\xi^2 r_\eta  - \cancel{z_\eta r_{\xi\xi} r_\xi r_\eta}  \\
+		&+ z_\xi r_\xi r_{\xi\eta}  r_\eta - \cancel{z_\eta r_\xi^2  r_{\xi\eta}} \\
+		&- z_{\xi\eta} r_\xi^2  r_\eta - z_\xi r_\xi^2  r_{\eta\eta} + z_{\eta\eta} r_\xi^3 + \cancel{z_\eta r_\xi^2  r_{\xi\eta}}\\
+	%
+		=& z_{\xi\xi} r_\xi r_\eta^2  + z_{\eta\eta} r_\xi^3\\
+		& + 2z_\xi  r_\xi  r_{\xi\eta} r_\eta - 2z_{\xi\eta} r_\xi^2 r_\eta   \\
+		& - z_\xi r_{\xi\xi} r_\eta^2 - z_\xi r_\xi^2  r_{\eta\eta}.
+\end{aligned}
+\end{equation}
+%
+Then \(\eta_{rr}\) (second term in \cref{eqn:poissontrans2b}):
+%
+\begin{equation}
+\begin{aligned}
+		\eta_{rr} =& -z_\eta z_{\xi\xi}(z_\xi r_\eta - z_\eta r_\xi) \\
+		&+ z_\eta z_\xi (z_{\xi\xi} r_\eta + z_\xi r_{\xi\eta} - z_{\xi\eta} r_\xi - z_\eta r_{\xi\xi} ) \\
+		&+ z_\xi z_{\xi\eta}(z_\xi r_\eta - z_\eta r_\xi) \\
+		&- z_\xi^2 (z_{\xi\eta} r_\eta + z_\xi r_{\eta\eta} - z_{\eta\eta} r_\xi - z_\eta r_{\xi\eta})\\
+	%
+		=&- \cancel{z_{\xi\xi} z_\xi z_\eta  r_\eta} + z_{\xi\xi} z_\eta^2 r_\xi \\
+		&+  \cancel{z_{\xi\xi} z_\xi z_\eta  r_\eta} + z_\xi^2 z_\eta  r_{\xi\eta} - z_\xi z_{\xi\eta} z_\eta r_\xi - z_\xi z_\eta^2 r_{\xi\xi}  \\
+		&+ \cancel{z_\xi^2 z_{\xi\eta} r_\eta} - z_\xi z_{\xi\eta} z_\eta r_\xi \\
+		&- \cancel{z_\xi^2 z_{\xi\eta} r_\eta} - z_\xi^3 r_{\eta\eta} + z_\xi^2 z_{\eta\eta} r_\xi + z_\xi^2 z_\eta r_{\xi\eta}\\
+	%
+		=& z_{\xi\xi} z_\eta^2 r_\xi + z_\xi^2 z_{\eta\eta} r_\xi  \\
+		&+ 2z_\xi^2 z_\eta  r_{\xi\eta} - 2z_\xi z_{\xi\eta} z_\eta r_\xi  \\
+		&- z_\xi z_\eta^2 r_{\xi\xi} - z_\xi^3 r_{\eta\eta}.
+\end{aligned}
+\end{equation}
+
+Finally, we'll partially expand the right hand side term of \cref{eqn:poissontrans2b}:
+
+\begin{equation}
+\frac{z_\xi J^2}{r} = \frac{J}{r}z_\xi(z_\xi r_\eta - z_\eta r_\xi).
+\end{equation}
+
+Let's first look at the case where both parametric expressions are Laplace equations, that is to say, if the right hand side of \cref{eqn:nzr} was zero.
+We can put our expanded expressions back together, gathering like terms.
+
+\begin{subequations}
+\begin{align}
+	&\begin{split}
+		\xi_{zz} + \xi_{rr} =&- z_{\xi\xi} ( z_\eta^2 + r_\eta^2)  r_\eta\\
+		&- z_{\eta\eta} (z_\xi^2 + r_\xi^2)  r_\eta  \\
+		%
+		&+ 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta)  r_\eta   \\
+		&- 2r_{\xi\eta} (z_\xi z_\eta + r_\xi  r_\eta)  z_\eta \\
+		%
+		&+ r_{\xi\xi} ( z_\eta^2 + r_\eta^2)  z_\eta \\
+		&+ r_{\eta\eta} (  z_\xi^2  + r_\xi^2) z_\eta  \\
+	\end{split} \\[1em]
+	&\begin{split}
+		\eta_{zz} + \eta_{rr} =& z_{\xi\xi} (z_\eta^2 +  r_\eta^2)  r_\xi \\
+		&+ z_{\eta\eta} (z_\xi^2 + r_\xi^2 )  r_\xi \\
+		%
+		&- 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta ) r_\xi  \\
+		&+ 2 r_{\xi\eta} ( z_\xi z_\eta +  r_\xi  r_\eta)  z_\xi \\
+		%
+		&- r_{\xi\xi} ( z_\eta^2 + r_\eta^2 ) z_\xi \\
+		&- r_{\eta\eta} (z_\xi^2 + r_\xi^2 ) z_\xi.
+	\end{split}
+\end{align}
+\end{subequations}
+
+
+\noindent What we actually need from the above equations is \(z(\xi,\eta)\) and \(r(\xi,\eta)\), so we'll equate the two expressions and put the \(z\) terms together, and the \(r\) terms together.
+
+\begin{subequations}
+\begin{align}
+	&\begin{split}
+		0=& z_{\xi\xi} ( z_\eta^2 + r_\eta^2) (r_\xi - r_\eta)\\
+		&- 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta)  (r_\xi - r_\eta)   \\
+		&+ z_{\eta\eta} (z_\xi^2 + r_\xi^2)  (r_\xi - r_\eta)
+	\end{split} \\[1em]
+	&\begin{split}
+		0=& r_{\xi\xi} ( z_\eta^2 + r_\eta^2 )  (z_\xi - z_\eta) \\
+		&- 2r_{\xi\eta} (z_\xi z_\eta + r_\xi  r_\eta) (z_\xi - z_\eta) \\
+		&+ r_{\eta\eta} (z_\xi^2 + r_\xi^2 )  (z_\xi - z_\eta).
+	\end{split}
+\end{align}
+\end{subequations}
+
+Since both of the expressions equal zero, we can divide out the common terms and we are left with
+
+\begin{subequations}
+	\begin{align}
+        z(\xi,\eta)	&\equiv \alpha z_{\xi\xi} - 2\beta z_{\xi\eta} + \gamma z_{\eta\eta} = 0 \\
+        r(\xi,\eta)	&\equiv \alpha r_{\xi\xi} - 2\beta r_{\xi\eta} + \gamma r_{\eta\eta} = 0.
+	\end{align}
+\end{subequations}
+
+\noindent where
+
+\begin{subequations}
+	\begin{align}
+		\alpha &= z_\eta^2 + r_\eta^2 \\
+		\beta &= z_\xi z_\eta + r_\xi r_\eta \\
+		\gamma &= z_\xi^2 + r_\xi^2.
+	\end{align}
+\end{subequations}
+
+Now in the case where the right hand side of \cref{eqn:nzr} is not zero, we need to apply some more considerations rather than simply equating things and dividing out terms.
+%
+Putting things together with the full Poisson equations we have
+
+\begin{subequations}
+\begin{align}
+	&\begin{split}
+		\xi_{zz} + \xi_{rr} =&- z_{\xi\xi} ( z_\eta^2 + r_\eta^2)  r_\eta\\
+		&- z_{\eta\eta} (z_\xi^2 + r_\xi^2)  r_\eta  \\
+		%
+		&+ 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta)  r_\eta   \\
+		&- 2r_{\xi\eta} (z_\xi z_\eta + r_\xi  r_\eta)  z_\eta \\
+		%
+		&+ r_{\xi\xi} ( z_\eta^2 + r_\eta^2)  z_\eta \\
+		&+ r_{\eta\eta} (  z_\xi^2  + r_\xi^2) z_\eta  \\
+	\end{split} \\[1em]
+    \label{eqn:etaetapoisson}
+	&\begin{split}
+		\eta_{zz} + \eta_{rr} - \frac{\eta_r}{r}=& z_{\xi\xi} (z_\eta^2 +  r_\eta^2)  r_\xi \\
+		&+ z_{\eta\eta} (z_\xi^2 + r_\xi^2 )  r_\xi \\
+		%
+		&- 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta ) r_\xi  \\
+		&+ 2 r_{\xi\eta} ( z_\xi z_\eta +  r_\xi  r_\eta)  z_\xi \\
+		%
+		&- r_{\xi\xi} ( z_\eta^2 + r_\eta^2 ) z_\xi \\
+		&- r_{\eta\eta} (z_\xi^2 + r_\xi^2 ) z_\xi \\
+		%
+		&- \frac{J}{r}z_\xi( r_\eta ) z_\xi\\
+		&+ \frac{J}{r}z_\xi(z_\eta) r_\xi.
+	\end{split}
+\end{align}
+\end{subequations}
+%
+To help combine things, we'll add and subtract the same expression from \cref{eqn:xixipoisson}.
+%
+\begin{equation}
+    \label{eqn:xixipoisson}
+    \begin{aligned}
+		\xi_{zz} + \xi_{rr} =&- z_{\xi\xi} ( z_\eta^2 + r_\eta^2)  r_\eta\\
+		&- z_{\eta\eta} (z_\xi^2 + r_\xi^2)  r_\eta  \\
+		%
+		&+ 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta)  r_\eta   \\
+		&- 2r_{\xi\eta} (z_\xi z_\eta + r_\xi  r_\eta)  z_\eta \\
+		%
+		&+ r_{\xi\xi} ( z_\eta^2 + r_\eta^2)  z_\eta \\
+		&+ r_{\eta\eta} (  z_\xi^2  + r_\xi^2) z_\eta  \\
+        & + \frac{J}{r}z_\xi r_\eta z_\eta \\
+        & - \frac{J}{r}z_\xi r_\eta z_\eta.
+    \end{aligned}
+\end{equation}
+%
+Now adding \cref{eqn:xixipoisson} to \cref{eqn:etaetapoisson} gives
+%
+\begin{equation}
+    \begin{aligned}
+       0= &z_{\xi\xi} ( z_\eta^2 + r_\eta^2) (r_\xi - r_\eta)\\
+		&- 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta)  (r_\xi - r_\eta)   \\
+        &+ z_{\eta\eta} (z_\xi^2 + r_\xi^2)  (r_\xi - r_\eta) \\
+        &- \frac{J}{r}z_\xi (z_\eta) (r_\xi - r_\eta) \\
+        &-r_{\xi\xi} ( z_\eta^2 + r_\eta^2 )  (z_\xi - z_\eta) \\
+		&+ 2r_{\xi\eta} (z_\xi z_\eta + r_\xi  r_\eta) (z_\xi - z_\eta) \\
+		&- r_{\eta\eta} (z_\xi^2 + r_\xi^2 )  (z_\xi - z_\eta) \\
+        &+ \frac{J}{r}z_\xi (r_\eta) (z_\xi - z_\eta). \\
+	\end{aligned}
+\end{equation}
+%
+Separating out expressions for \(z\) and \(r\) gives
+%
+\begin{subequations}
+\begin{align}
+    &\begin{split}
+       0= &z_{\xi\xi} ( z_\eta^2 + r_\eta^2) (r_\xi - r_\eta)\\
+		&- 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta)  (r_\xi - r_\eta)   \\
+        &+ z_{\eta\eta} (z_\xi^2 + r_\xi^2)  (r_\xi - r_\eta) \\
+        &- \frac{J}{r}z_\xi (z_\eta) (r_\xi - r_\eta) \\
+   \end{split} \\[1em]
+    &\begin{split}
+        0=&-r_{\xi\xi} ( z_\eta^2 + r_\eta^2 )  (z_\xi - z_\eta) \\
+		&+ 2r_{\xi\eta} (z_\xi z_\eta + r_\xi  r_\eta) (z_\xi - z_\eta) \\
+		&- r_{\eta\eta} (z_\xi^2 + r_\xi^2 )  (z_\xi - z_\eta) \\
+        &+ \frac{J}{r}z_\xi (r_\eta) (z_\xi - z_\eta). \\
+    \end{split}
+\end{align}
+\end{subequations}
+
+Dividing out common terms leaves
+
+\begin{subequations}
+\begin{align}
+    &\begin{split}
+       0= &z_{\xi\xi} ( z_\eta^2 + r_\eta^2) \\
+		&- 2z_{\xi\eta} (z_\xi z_\eta + r_\xi r_\eta)     \\
+        &+ z_{\eta\eta} (z_\xi^2 + r_\xi^2)   \\
+        &- \frac{J}{r}z_\xi (z_\eta)  \\
+   \end{split} \\[1em]
+    &\begin{split}
+       0= &-r_{\xi\xi} ( z_\eta^2 + r_\eta^2 )   \\
+		&+ 2r_{\xi\eta} (z_\xi z_\eta + r_\xi  r_\eta)  \\
+		&- r_{\eta\eta} (z_\xi^2 + r_\xi^2 )   \\
+        &+ \frac{J}{r}z_\xi (r_\eta).  \\
+    \end{split}
+\end{align}
+\end{subequations}
+
+\noindent After final rearranging, we are left with
+
+\begin{subequations}
+    \begin{eqboxed}{\eqbox}{align}
+        z(\xi,\eta)	&\equiv \alpha z_{\xi\xi} - 2\beta z_{\xi\eta} + \gamma z_{\eta\eta} = \frac{J}{r}z_\xi z_\eta \\
+        r(\xi,\eta)	&\equiv \alpha r_{\xi\xi} - 2\beta r_{\xi\eta} + \gamma r_{\eta\eta} =  \frac{J}{r}z_\xi r_\eta,
+	\end{eqboxed}
+\end{subequations}
+
+\noindent where again (repeated for convenience),
+
+\begin{subequations}
+	\begin{align}
+		\alpha &= z_\eta^2 + r_\eta^2 \\
+		\beta &= z_\xi z_\eta + r_\xi r_\eta \\
+		\gamma &= z_\xi^2 + r_\xi^2 \\
+        J &= z_\xi r_\eta - z_\eta r_\xi.
+	\end{align}
+\end{subequations}

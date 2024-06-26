@@ -1,0 +1,35 @@
+\begin{tikzpicture}
+
+\coordinate (tem) at (0,0);
+\coordinate (te1) at (250:0.5);
+\coordinate (te2) at (70:0.5);
+
+% te gap line
+\draw[densely dotted] (te1) -- (te2)node[pos=0.5, anchor=west,shift={(0.0,0.2)}]{\((\overline{z},\overline{r})_{TE}\)};
+
+% bottom line
+\draw[] (te1) -- (190:5);
+\draw[|-|, secondary] ($(te1)+(270:0.2)$) -- ($(190:5)+(270:0.2)$)node[pos=0.5, secondary, anchor=north] {\(\Delta s_1\)};
+
+% middle line
+\draw[tertiary, dashed] (tem) -- (170:4.5);
+\draw[|-|, primary] ($(tem)+(80:-0.2)$) -- ($(170:1)+(80:-0.2)$);
+\draw[primary, line width=0.2pt] (-0.5,-0.1) to [out =270, in =90] (1,-0.5)node[anchor=north,shift={(0,0)}, primary] {\(\epsilon \overline{\Delta s}_{TE}\)};
+\draw[tertiary] ($(tem)+(170:4.3155)$) -- (-4.25,0.35)node[pos=0.5,anchor=east,tertiary]{\(r_\text{diff}\)};
+\draw[tertiary] (-4.25,0.35) -- (-2.1,0.35)node[pos=0.5, anchor=north, shift={(0,0)}, tertiary]{\(z_\text{diff}\)};
+% \draw[thick, tertiary] (tem) [partial ellipse = 170:180:2.25 and 2.25];
+
+% upper line
+\draw[] (te2) -- (150:4);
+\draw[|-|, secondary] ($(te2)+(70:0.2)$) -- ($(150:4)+(70:0.2)$)node[pos=0.5, secondary, anchor=south, shift={(0.1,0)}] {\(\Delta s_N\)};
+
+% te gap midpoint
+% \node[fill=black, minimum size=2pt] (tem) {};
+\filldraw[] (tem) circle (2pt);
+
+% internal control point
+% \filldraw[outer sep=0, inner sep=0, primary] (170:1) circle (3pt);
+\node[fill=primary, minimum size=4pt, inner sep=2pt] (itcp) at (170:1) {};
+\node[anchor=south, primary, shift={(-0.05,-0.05)}] (itcp) at (170:1) {\((z,r)_{cp}\)};
+
+\end{tikzpicture}

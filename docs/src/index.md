@@ -5,20 +5,24 @@ Authors: Judd Mehr,
 Contributers: Taylor McDonnell,
 
 DuctAPE is a code for the aerodynamic evaluation of axisymmetric ducted propulsors designed for incompressible (low mach) applications.
-It is strongly influenced by the underlying [theory](https://web.mit.edu/drela/Public/web/dfdc/DFDCtheory12-31.pdf) of Ducted Fan Design Code [(DFDC)](https://web.mit.edu/drela/Public/web/dfdc/), utilizing a linear axisymmetric vortex panel method for duct and center body, blade element lifting line rotor representation, and psuedo wake-screw wake model axisymmetrically smeared onto an elliptic grid for efficient computation.
-
+It is strongly influenced by the underlying [theory](https://web.mit.edu/drela/Public/web/dfdc/DFDCtheory12-31.pdf) of Ducted Fan Design Code [(DFDC)](https://web.mit.edu/drela/Public/web/dfdc/), utilizing a linear axisymmetric vortex panel method for duct and center body, blade element lifting line rotor representation, and wake model axisymmetrically smeared onto an elliptic grid for efficient computation.
 DuctAPE has been developed specifically for applications in gradient-based optimization settings.
-The selected solver methods have been chosen to balance code efficiency as well as robustness while simultaneously allowing for efficient automatic differentiation through DuctAPE employing [ImplicitAD.jl](https://flow.byu.edu/ImplicitAD.jl/dev/).
-At the same time, the basic functionality of a DFDC-like solve approach has been maintained for the interested user.
 
-## Package Features
 
--
-
-## Installation
-
-As DuctAPE is not yet a registered package, if you have access to the development repository at this time you can add the package through Julia's package manager as:
+### Installation
 
 ```julia
-pkg> add "https://github.com/byuflowlab/DuctAPE.jl"
+pkg> add DuctAPE
 ```
+
+### Documentation
+
+- Start with [Getting Started](@ref) to get up and running.
+- The Advanced Usage tab includes several pages of additional information for customizing your usage.
+- The API tab contains public and private method descriptions.
+- The Theory tab contain several pages on the underlying theory of DuctAPE.
+- The C$^4$Blade tab contains documentation for the C$^4$Blade submodule used for airfoil/cascade management within DuctAPE as well as state initialization.
+
+### Citing
+
+Mehr, J. and Ning, A., "DuctAPE: A steady-state, axisymmetric ducted fan analysis code designed for gradient-based optimization.," AIAA Aviation Forum, July 2024.
