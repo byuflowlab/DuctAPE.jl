@@ -26,3 +26,13 @@ You may run all these simultaneously using the `initialize_all_caches` function.
 ```@docs; canonical=false
 DuctAPE.initialize_all_caches
 ```
+
+## How to pass the caches into an analysis
+
+The precompiled caches can be passed in via keyword arguments to the analysis functions. If they are not, they are generated as the first step in the analysis.
+
+```@docs; canonical=false
+DuctAPE.analyze(
+    propulsor::Propulsor,
+    options::Options=set_options())
+```
