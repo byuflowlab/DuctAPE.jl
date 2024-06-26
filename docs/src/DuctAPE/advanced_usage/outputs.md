@@ -1,7 +1,11 @@
 ## Available Outputs
 
 The output tuple contains many items.
-The [`post_process`](@ref "DuctAPE.post_process") function docstring lists them.
+The [`post_process`](@ref "DuctAPE.post_process") function docstring lists them:
+
+```@docs; canonical=false
+DuctAPE.post_process
+```
 
 ### Returning the Pre-process Objects
 

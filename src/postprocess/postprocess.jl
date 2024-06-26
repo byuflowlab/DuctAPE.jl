@@ -55,13 +55,13 @@ Post-process a converged nonlinear solve solution.
   - `cp_out`
   - `cp_casing_in`
   - `cp_casing_out`
-  - `zpts.casing_zpts`
+  - `casing_zpts`
   - `cp_nacelle_in`
   - `cp_nacelle_out`
-  - `zpts.nacelle_zpts`
+  - `nacelle_zpts`
   - `cp_centerbody_in`
   - `cp_centerbody_out`
-  - `zpts.centerbody_zpts`
+  - `centerbody_zpts`
   - `Vtot_in`
   - `Vtot_out`
   - `Vtot_prejump`
