@@ -501,14 +501,14 @@ end
 """
     struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
 
-Options for Newton elliptic grid solver.
+Options for SLOR + Newton elliptic grid solver.
 
 # Fields
 - `iteration_limit::TI = 10` : maximum number of iterations
 - `atol::TF = 1e-14` : absolute convergence tolerance
 - `algorithm::TSym = :newton` : algorithm to use in NLsolve.jl
 - `autodiff::TSym = :forward` : differentiation method to use in NLsolve.jl
-- `converged::AbstractVector{TB} = [false]
+- `converged::AbstractVector{TB}` = [false]
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
     iteration_limit::TI = 20
@@ -544,7 +544,8 @@ Type containing (nearly) all the available user options.
 - `verbose::TB = false` : flag to print verbose statements
 - `silence_warnings::TB = true` : flag to silence warnings
 - `multipoint_index::TI = [1]` : holds current index of multi-point solver (no need for user to change this usually)
-## Geometry Re-interpolation and generation options` :
+## Pre-processing Options
+### Geometry ee-interpolation and generation options :
 - `finterp::Tin = FLOWMath.akima` : interpolation method used for re-paneling bodies
 - `autoshiftduct::TB = true` : flag as to whether duct geometry should be shifted based on rotor tip location
 - `lu_decomp_flag::TB = false` : flag indicating if panel method LHS matrix factorization was successful
