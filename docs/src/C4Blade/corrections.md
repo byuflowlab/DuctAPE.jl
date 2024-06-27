@@ -6,7 +6,7 @@ Thus far, DuctAPE is much more robust if the post-stall behavior in the lift pol
 Therefore a function is provided to help modify polars as needed:
 
 ```@docs
-DuctAPE.C4Blade.stalllimiters
+DuctAPE.C4Blade.stall_limiters
 ```
 
 Various other correction methods are available, including the cascade corrections inherent in the [DuctAPE.C4Blade.DFDCairfoil](@ref) type.
