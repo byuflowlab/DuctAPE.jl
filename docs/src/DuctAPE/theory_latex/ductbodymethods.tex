@@ -225,7 +225,7 @@ The discretized boundary in our implementation then takes the form of 2D panels 
 %
 \Cref{fig:flatbandgeometry} shows what is intended by a flat, axisymmetric band, and \cref{fig:flatpanelgeometry} shows the panel representation of said band.
 
-\begin{figure}[htb]
+\begin{figure}[h!]
      \centering
      \begin{subfigure}[t]{0.45\textwidth}
          \centering
@@ -329,9 +329,6 @@ We choose not to utilize a higher order method mainly due to the difficulty of i
 
 Because the surface integrals of velocities induced by axisymmetric vortex rings are exceptionally difficult to solve analytically, we will take a numerical approach.
 %
-Specifically, we will utilize Gauss-Kronrod quadrature via the QuadGK.jl\sidenote{\url{https://juliamath.github.io/QuadGK.jl/stable/gauss-kronrod/}}
-package in the Julia\scite{Julia_2017} language.
-%
 In general, quadrature is the process of approximating an integral of a function using a sum of weighted samples of the function:
 
 \begin{equation}
@@ -339,18 +336,6 @@ In general, quadrature is the process of approximating an integral of a function
 \end{equation}
 
 \where the main task of the setup is to decide where along the integration interval to place the sample points, \(x_k\), and what weights, \(w_k\), to apply to those samples.
-%
-Gauss-Kronrod quadrature is based on Gauss-Legendre quadrature, which uses orthogonal polynomial theory to select sample points and weights that allow for exact integration of polynomials up to degree \(2N-1\) (where \(N\) is the number of sample points), and other sufficiently smooth functions remarkably well.
-%
-Despite being based on Gauss-Legendre quadrature, however, Gauss-Kronrod quadrature is not quite as accurate as pure Gauss-Legendre quadrature in a one-to-one comparison.
-%
-Gauss-Kronrod quadrature can exactly integrate polynomials up to \(3N+1\) for \(2N+1\) sample points.
-%
-The decrease in accuracy for the same conditions is the trade off required to be able to both calculate the integral approximation and the error in the integral approximation.
-%
-The ability to quickly estimate error directly leads to capabilities for \(h\)-adaptive quadrature, which is an adaptive method that refines the integration range along portions that require further refinement for accuracy (such as sharp peaks, or perhaps discontinuities).
-%
-So although not as accurate out of the box, obtaining more accurate integrals over domains that would be difficult for pure Gauss-Legendre quadrature becomes relatively simple, and a worthwhile trade.
 
 In the nominal case when a panel induces velocity on the surface, but not on itself, we set things up as follows for a given panel and surface point, \(t\):
 %
@@ -1393,7 +1378,7 @@ Unfortunately, we do not have any experimental data at the time for an isolated 
 %
 We now place both in a single system in order to verify that multi-body systems work properly.
 
-\begin{figure}[hb!]
+\begin{figure}[h!]
     \centering
         \input{figures/duct-and-hub-validation-geom.tikz}%
         \caption{Isolated duct and center body geometry together.}
@@ -1402,7 +1387,7 @@ We now place both in a single system in order to verify that multi-body systems 
 %
 As can be seen in \cref{fig:dfdclewiscomp}, the surface velocity on the hub and pressure on the duct match very well to DFDC, lending confidence in DuctAPE's ability to model both a duct and hub together.
 
-\begin{figure}[htb]
+\begin{figure}[h!]
      \centering
      \begin{subfigure}[b]{0.45\textwidth}
          \raggedright
@@ -1435,7 +1420,7 @@ In this case, we need to apply the augmentations to the system for trailing edge
 %
 We see in \cref{fig:dfdcexamplecomp} that DuctAPE also matches well with DFDC in this case.
 
-\begin{figure}[htb]
+\begin{figure}[h!]
      \centering
      \begin{subfigure}[b]{0.45\textwidth}
          \raggedright

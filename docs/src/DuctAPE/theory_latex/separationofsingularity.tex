@@ -335,7 +335,45 @@ This just leaves the logarithmic terms which we integrate as follows:\sidenote{N
 
 
 
-\subsection{Unit Axial Velocity Induced by a Source Ring}\toadd{add in the source ring derivations at some point}
+\subsection{Unit Axial Velocity Induced by a Source Ring}%\toadd{add in the source ring derivations at some point}
+
+The unit induced velocity per unit length of the ring sources is
+
+\begin{subequations}
+    \label{eqn:ringsourceinducedvelocity}
+    \begin{align}
+    \label{eqn:ringsourceinducedvelocityaxial}
+        v_{z}^\sigma &= \frac{1}{2 \pi r_o}\frac{\xi}{ D_1} \left(\frac{2 }{D_2} \mathcal{E}(m)\right) \\
+    \label{eqn:ringsourceinducedvelocityradial}
+        v_{r}^\sigma &= \frac{1}{2 \pi r_o}\frac{1/\rho}{ D_1}  \left[ \mathcal{K}(m) -   \left( 1 - \frac{2\rho(\rho-1)}{D_2} \right) \mathcal{E}(m)  \right],
+    \end{align}
+\end{subequations}
+
+\where the superscript, \(\sigma\), indicates a unit source induced velocity.
+
+
+The singular portions of \cref{eqn:ringsourceinducedvelocity} to be subtracted during the numerical integration of a vortex panel influencing itself are
+
+\begin{subequations}
+    \label{eqn:ringsourcesingular}
+    \begin{align}
+        v_{z_s}^\sigma &= \frac{z-z_o}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right] }, \\
+        v_{r_s}^\sigma &= \frac{r-r_o}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right] }
+    %
+    -\frac{1}{8\pi r} \left[\ln\left(\frac{\left(z-z_o\right)^2 + \left(r-r_o\right)^2}{r^2}\right)\right].
+    \end{align}
+\end{subequations}
+
+\noindent The analytic approximations of these singular portions to be added back in as part of the numerical integration are
+
+\begin{subequations}
+    \label{eqn:ringsourceanalytic}
+    \begin{align}
+        v_{z_a}^\sigma &= 0.0, \\
+        v_{r_a}^\sigma &=\frac{\Delta s}{4\pi r} \left( 1 + \ln\frac{2 r}{\Delta s}\right).
+    \end{align}
+\end{subequations}
+
 
 %Since we've already determined the singular parts we'll encounter here, we won't expand everything out completely. Especially since this induced velocity expression does not include an elliptic integral of the first kind, things will proceed smoothly.
 

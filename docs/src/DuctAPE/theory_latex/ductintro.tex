@@ -5,7 +5,7 @@ In the preliminary and conceptual stages of design, it is often helpful to have 
 %
 It may also be desirable to sacrifice some flexibility to further decrease computation time costs in the beginning stages of design.
 %
-To this end, a low-fidelity tool for the evaluation of ducted propulsors, catered specifically to electric ducted fans, is described in this chapter.
+To this end, a low-fidelity tool for the evaluation of ducted propulsors, catered specifically to electric ducted fans, is described in this document.
 %
 One of the major limitations in flexibility is that we require that:
 
@@ -24,11 +24,13 @@ One of the major limitations in flexibility is that we require that:
 
 \end{assumption}
 
-\noindent Therefore, we call our tool Ducted Axisymmetric Propulsor Evaluation, or DuctAPE for short.
+\noindent Therefore, we call our tool \textbf{Duct}ed \textbf{A}xisymmetric \textbf{P}ropulsor \textbf{E}valuation, or DuctAPE for short.
+%
+We also required a steady-state assumption, meaning the solution is stationary in time.
 %
 As alluded to, the overall goal of DuctAPE is to provide a computationally inexpensive tool to be used in a multidisciplinary design and optimization setting for preliminary and conceptual design.
 
-In this chapter we cover the methodology derivation required for DuctAPE as well as some implementation details and various verification and validation along the way.
+In this document we cover the methodology derivation required for DuctAPE as well as some implementation details and various verification and validation along the way.
 %
 The solver is comprised of two major components, which will be first presented in isolation before the full coupling is considered.
 %
