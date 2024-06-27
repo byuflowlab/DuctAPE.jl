@@ -34,3 +34,10 @@ Manifest.toml
 # dfdc
 /dev_debug_archive/*/fort*
 
+# latex
+**.bcf
+**.idx
+**.log
+**.mst
+**.nlo
+**.out
