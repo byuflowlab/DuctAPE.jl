@@ -16,6 +16,7 @@ makedocs(;
         repolink="https://github.com/byuflowlab/DuctAPE.jl/blob/{commit}{path}#L{line}",
         edit_link="main",
         mathengine=mathengine,
+        size_threshold_ignore=["DuctAPE/tutorial.md"],
     ),
     pages=[
         "Home" => "index.md",
@@ -24,7 +25,6 @@ makedocs(;
             "Advanced Usage" => [
                 "Options" => "DuctAPE/advanced_usage/option.md",
                 "Preallocation" => "DuctAPE/advanced_usage/precompilation.md",
-                "Multi-Point Analysis" => "DuctAPE/advanced_usage/multi_point.md",
                 # "Multi-Rotor Analysis" => "DuctAPE/advanced_usage/multi_rotor.md",
                 "Outputs" => "DuctAPE/advanced_usage/outputs.md",
                 # "Manual Geometry" => "DuctAPE/advanced_usage/manual_repaneling.md",

@@ -8,6 +8,24 @@ using LaTeXStrings
 using Measures
 using Printf
 
+# - COLORS - #
+byublue = RGB(0.0, 46.0 / 255, 93.0 / 255) #BYU Navy Blue
+darkblue = RGB(0 / 255, 25 / 255, 50 / 255)
+byured = RGB(155.0 / 255, 0, 0) #"BYU" Red
+darkred = RGB(50 / 255, 0 / 255, 25 / 255)
+# middlegray = RGB(128.0 / 255, 128.0 / 255, 128.0 / 255) #Middle Gray
+# myblue = RGB(0.0 / 255, 92.0 / 255, 171.0 / 255) # royal blue
+# myred = RGB(192.0 / 255, 83.0 / 255, 103.0 / 255) # royal red
+# mygreen = RGB(143.0 / 255, 166.0 / 255, 81.0 / 255) # royal green
+# mygray = RGB(130.0 / 255, 130.0 / 255, 130.0 / 255) # royal gray
+
+primary = RGB(0, 92 / 255, 171 / 255) #blue
+secondary = RGB(190 / 255, 76 / 255, 77 / 255) #red
+tertiary = RGB(105 / 255, 174 / 255, 95 / 255) #green
+quternary = RGB(167 / 255, 84 / 255, 164 / 255) #purple
+quinary = RGB(190 / 255, 147 / 255, 61 / 255) #yellow
+plotsgray = RGB(128 / 255, 128 / 255, 128 / 255) #gray
+
 function plots_default(;
     #     #:Plot
     # background_color=RGBA(1, 1, 1, 0),
@@ -19,7 +37,7 @@ function plots_default(;
     #     extra_plot_kwargs,
     fontfamily="cmunrm",
     # fontfamily="Palatino Roman",
-    #     foreground_color,
+    foreground_color=RGB(128 / 255, 128 / 255, 128 / 255), #gray, plotsgray,
     #     html_output_format,
     #     inset_subplots,
     #     layout,
@@ -245,7 +263,7 @@ function plots_default(;
         # extra_kwargs=extra_kwargs,
         # extra_plot_kwargs=extra_plot_kwargs,
         fontfamily=fontfamily,
-        #     foreground_color,
+        foreground_color=foreground_color,
         #     html_output_format,
         #     inset_subplots,
         #     layout,
@@ -449,23 +467,6 @@ function plots_default(;
 end
 
 plots_default()
-
-byublue = RGB(0.0, 46.0 / 255, 93.0 / 255) #BYU Navy Blue
-darkblue = RGB(0 / 255, 25 / 255, 50 / 255)
-byured = RGB(155.0 / 255, 0, 0) #"BYU" Red
-darkred = RGB(50 / 255, 0 / 255, 25 / 255)
-# middlegray = RGB(128.0 / 255, 128.0 / 255, 128.0 / 255) #Middle Gray
-# myblue = RGB(0.0 / 255, 92.0 / 255, 171.0 / 255) # royal blue
-# myred = RGB(192.0 / 255, 83.0 / 255, 103.0 / 255) # royal red
-# mygreen = RGB(143.0 / 255, 166.0 / 255, 81.0 / 255) # royal green
-# mygray = RGB(130.0 / 255, 130.0 / 255, 130.0 / 255) # royal gray
-
-primary = RGB(0, 92 / 255, 171 / 255) #blue
-secondary = RGB(190 / 255, 76 / 255, 77 / 255) #red
-tertiary = RGB(105 / 255, 174 / 255, 95 / 255) #green
-quternary = RGB(167 / 255, 84 / 255, 164 / 255) #purple
-quinary = RGB(190 / 255, 147 / 255, 61 / 255) #yellow
-plotsgray = RGB(128 / 255, 128 / 255, 128 / 255) #gray
 
 function latexsize(x, y)
     return (x * 96, y * 96)

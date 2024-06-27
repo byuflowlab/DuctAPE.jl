@@ -8,20 +8,20 @@ Depth = 5
 
 The following is a basic tutorial on how to set up the inputs to, and run, an analysis of a ducted fan in DuctAPE.
 
-```@setup dfdc
+```@setup tutorial
 include("../assets/plots_default.jl")
 gr()
 ```
 
 We begin by loading the package, and optionally create a shorthand name.
 
-```@example dfdc
+```@example tutorial
 using DuctAPE
 const dt = DuctAPE
 nothing # hide
 ```
 
-## Build Inputs
+## Assemble Inputs
 
 The next step is to create the input object of type `Propulsor`.
 
@@ -33,7 +33,7 @@ DuctAPE.Propulsor
 
 We begin by defining a matrix of coordinates for the duct and another for the centerbody geometries, for example:
 
-```@example dfdc
+```@example tutorial
 duct_coordinates = [
     0.304466  0.158439
     0.294972  0.158441
@@ -100,7 +100,7 @@ duct_coordinates = [
 nothing # hide
 ```
 
-```@example dfdc
+```@example tutorial
 centerbody_coordinates = [
     0.0       0.0
     0.000586  0.005293
@@ -138,7 +138,7 @@ centerbody_coordinates = [
 nothing # hide
 ```
 
-```@example dfdc
+```@example tutorial
 pg = plot(duct_coordinates[:,1], duct_coordinates[:,2], aspectratio=1, color=1, linewidth=2, label="Duct", xlabel="z", ylabel="r", legend=:left) # hide
 plot!(pg, centerbody_coordinates[:,1], centerbody_coordinates[:,2], color=2, linewidth=2, label="Center Body") # hide
 ```
@@ -156,7 +156,7 @@ DuctAPE.RotorStatorParameters
 
 In this example, we have a single rotor defined as follows.
 
-```@example dfdc
+```@example tutorial
 B = 5
 
 rotorzloc = 0.12
@@ -238,8 +238,8 @@ rotorstator_parameters = dt.RotorStatorParameters(
 nothing # hide
 ```
 
-```@example dfdc
-plot!(pg, rotorzloc*ones(length(r)), r.*Rtip, seriestype=:scatter, markerstrokewidth=0, label="Blade Elements") # hide
+```@example tutorial
+plot!(pg, rotorzloc*ones(length(r)), r.*Rtip, seriestype=:scatter, markersize=3, markerstrokewidth=0, label="Blade Elements") # hide
 ```
 
 !!! note "Airfoils"
@@ -256,7 +256,7 @@ Next we will assemble the operating point which contains information about the f
 DuctAPE.OperatingPoint
 ```
 
-```@example dfdc
+```@example tutorial
 # Freestream
 Vinf = 0.0 # hover condition
 rhoinf = 1.226
@@ -283,7 +283,7 @@ Note that there is some functionality in place for cases when the user wants to 
 DuctAPE.PanelingConstants
 ```
 
-```@example dfdc
+```@example tutorial
 nduct_inlet = 30
 ncenterbody_inlet = 30
 npanels = [30, 1, 30] # the 1 is due to the fact that the duct and center body trailing edges are not quite aligned.
@@ -305,7 +305,7 @@ The reference parameters are used in the post-processing non-dimensionalizations
 DuctAPE.ReferenceParameters
 ```
 
-```@example dfdc
+```@example tutorial
 Vref = 50.0 #this turns out to be close to the average axial velocity at the rotor in our case
 Rref = Rtip
 
@@ -317,7 +317,7 @@ nothing # hide
 
 We are now posed to construct the `Propulsor` input type.
 
-```@example dfdc
+```@example tutorial
 propulsor = dt.Propulsor(
     duct_coordinates,
     centerbody_coordinates,
@@ -337,13 +337,13 @@ The default options should be sufficient for just starting out and are set throu
 DuctAPE.set_options
 ```
 
-```@example dfdc
+```@example tutorial
 options = dt.set_options()
 ```
 
 For more advanced option selection, see the examples and API reference.
 
-## Run Analysis
+## Run a Single Analysis
 
 With the propulsor input build, and the options selected, we are now ready to run an analysis.
 This is done simply with the `analyze` function which dispatches the appropriate analysis, solve, and post-processing functions based on the selected options.
@@ -352,20 +352,178 @@ This is done simply with the `analyze` function which dispatches the appropriate
 DuctAPE.analyze(::DuctAPE.Propulsor, ::DuctAPE.Options)
 ```
 
-```@example dfdc
+```@example tutorial
 outs, success_flag = dt.analyze(propulsor, options)
 nothing # hide
 ```
 
-## Outputs
+### Single Run Outputs
 
 There are many outputs contained in the named tuple output from the `analyze` function (see the [post_process() docstring](@ref DuctAPE.post_process)), but some that may be of immediate interest include:
 
-```@example dfdc
+```@example tutorial
 # Total Thrust Coefficient
 outs.totals.CT
 ```
-```@example dfdc
+```@example tutorial
 # Total Torque Coefficient
 outs.totals.CQ
+```
+
+## Run a Multi-Point Analysis
+
+In the case that one wants to run the same geometry at several different operating points, for example: for a range of advance ratios, there is another dispatch of the `analyze` function that takes in an input, `multipoint`, that is a vector of operating points.
+
+```@docs; canonical=false
+DuctAPE.analyze(multipoint::AbstractVector{TO},propulsor::Propulsor,options::Options) where TO<:OperatingPoint
+```
+
+Running a multi-point analysis on the example geometry given there, it might look something like this:
+
+```@example tutorial
+# - Advance Ratio Range - #
+Js = range(0.0, 2.0; step=0.01)
+
+# - Calculate Vinfs - #
+D = 2.0 * rotorstator_parameters.Rtip[1] # rotor diameter
+n = RPM / 60.0 # rotation rate in revolutions per second
+Vinfs = Js * n * D
+
+# - Set Operating Points - #
+ops = [deepcopy(operating_point) for i in 1:length(Vinfs)]
+for (iv, v) in enumerate(Vinfs)
+    ops[iv].Vinf[] = v
+end
+
+# - Run Multi-point Analysis - #
+outs_vec, success_flags = DuctAPE.analyze(ops, propulsor, DuctAPE.set_options(ops))
+```
+
+There are a few things to note here.
+1. We want to make sure that the operating point objects we put into the input vector are unique instances.
+2. We need to use the dispatch of `set_options` that takes in the operating point vector to set up the right number of things in the background (like convergence flags for each operating point).
+3. The outputs of the analysis are vectors of the same outputs for a single analysis.
+
+### Multi-point Outputs
+
+For multi-point analysis outputs, which are given as a vector of output objects, we might access and plot things as follows.
+We also take the opportunity to present some verification against DFDC, showing that DuctAPE matches remarkably well (within 0.5%) of DFDC.
+We therefore first provide data from DFDC analyses of the above example geometry at various advance ratios.
+
+```@example tutorial
+# Verification Data From DFDC
+
+dfdc_jept = [
+    0.0 0.0 0.64763 0.96692
+    0.1 0.1366 0.64716 0.88394
+    0.2 0.2506 0.6448 0.80785
+    0.3 0.3457 0.64044 0.73801
+    0.4 0.4251 0.63401 0.67382
+    0.5 0.4915 0.62534 0.61468
+    0.6 0.547 0.61428 0.56001
+    0.7 0.5935 0.6006 0.50925
+    0.8 0.6326 0.58411 0.46187
+    0.9 0.6654 0.56452 0.41738
+    1.0 0.693 0.54158 0.37531
+    1.1 0.716 0.51499 0.33522
+    1.2 0.7349 0.48446 0.2967
+    1.3 0.7499 0.44966 0.25937
+    1.4 0.7606 0.41031 0.2229
+    1.5 0.7661 0.36604 0.18694
+    1.6 0.7643 0.31654 0.15121
+    1.7 0.7506 0.26153 0.11547
+    1.8 0.7126 0.20061 0.07941
+    1.9 0.61 0.13355 0.04287
+    2.0 0.1861 0.05993 0.00558
+]
+
+dfdc_J = dfdc_jept[:,1]
+dfdc_eta = dfdc_jept[:,2]
+dfdc_cp = dfdc_jept[:,3]
+dfdc_ct = dfdc_jept[:,4]
+nothing #hide
+```
+
+We can then access the various multi-point analysis outputs however is convenient, we choose a broadcasting approach here:
+
+```@example tutorial
+
+# - extract efficiency, power, and thrust coefficients - #
+# efficiency
+eta = (p->p.totals.total_efficiency[1]).(outs_vec)
+# power
+cp = (p->p.totals.CP[1]).(outs_vec)
+# thrust
+ct = (p->p.totals.CT[1]).(outs_vec)
+nothing #hide
+```
+
+And then we can plot the data to compare DFDC and DuctAPE.
+
+```@example tutorial
+
+# set up efficiency plot
+pe = plot(; xlabel="Advance Ratio", ylabel="Efficiency")
+
+# plot DFDC data
+plot!(
+    pe,
+    dfdc_J,
+    dfdc_eta;
+    seriestype=:scatter,
+    markersize=5,
+    markercolor=plotsgray,
+    markerstrokecolor=plotsgray,
+    label="DFDC"
+)
+
+# Plot DuctAPE outputs
+plot!(pe, Js, eta; linewidth=2, color=primary, label = "DuctAPE")
+
+# setup cp/ct plot
+ppt = plot(; xlabel="Advance Ratio")
+
+# plot DFDC data
+plot!(
+    ppt,
+    dfdc_J,
+    dfdc_cp;
+    seriestype=:scatter,
+    markersize=5,
+    markercolor=plotsgray,
+    markerstrokecolor=primary,
+    markerstrokewidth=2,
+    label="DFDC Cp"
+)
+plot!(
+    ppt,
+    dfdc_J,
+    dfdc_ct;
+    seriestype=:scatter,
+    markersize=5,
+    markercolor=plotsgray,
+    markerstrokecolor=secondary,
+    markerstrokewidth=2,
+    label="DFDC Ct"
+)
+
+# plot DuctAPE outputs
+plot!(
+    ppt,
+    Js,
+    cp;
+    linewidth=1.5,
+    color=primary,
+    label="DuctAPE Cp"
+)
+plot!(
+    ppt,
+    Js,
+    ct;
+    linewidth=1.5,
+    color=secondary,
+    label="DuctAPE Ct"
+)
+
+plot(pe, ppt; size=(700,350), layout=(1,2), margin=2mm)
 ```
