@@ -1,0 +1,35 @@
+\begin{tikzpicture}
+    \coordinate (O) at (0,0);
+    \coordinate (xo) at ($(O) + (160 : 0.5 and 2)$);
+    \coordinate (g) at ($(O) + (120 : 0.5 and 2)$);
+    \coordinate (x) at ($(O) + (4,2)$);
+
+    %vortex ring
+    % \draw[] (O) ellipse (0.5 and 2);
+    \draw[] (O) [partial ellipse =2:27:0.5 and 2];
+    \draw[] (O) [partial ellipse =30:100:0.5 and 2];
+    \draw[] (O) [partial ellipse =107:358:0.5 and 2];
+
+    %z-axis
+    \draw[thick] (-2,0) -- (-0.6,0);
+    \draw[-Stealth,thick] (-0.45,0) -- (5,0);
+    \node[anchor=south west,outer sep=1] at (5,0) {$\hat{\vect{e}}_z$};
+
+    %x_o
+    \filldraw[] (xo) circle (0.05);
+
+    %x
+    \filldraw[] (x) circle (0.05);
+
+    % arrow and labels
+    \draw[-Stealth, thick, dashed, shorten >=2.5pt] (xo)node[anchor=east]{$\vect{p}_o = (r_o, \theta_o, z_o)$} -- (x)node[anchor=west]{$\vect{p} = (r,\theta=0,z)$};
+
+    %radial direction arrow
+    \draw[-Stealth, thick, shorten >=2] (O) -- (xo)node[anchor=north west, shift={(0.25,-0.05)}]{$\hat{\vect{e}}_r$};
+
+    %tangential direction arrow
+    \draw[-Stealth, thick] (xo) -- (-0.6,-1)node[anchor=east]{$\hat{\vect{e}}_\theta$};
+
+    % Gamma circle
+    \draw[-{Stealth[bend]}, thick] (g) [partial ellipse = -30:230:0.25 and 0.25]node[anchor=south east,outer sep=1]{$\vect{\Gamma}$};
+\end{tikzpicture}
