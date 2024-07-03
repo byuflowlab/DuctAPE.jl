@@ -139,8 +139,25 @@ nothing # hide
 ```
 
 ```@example tutorial
-pg = plot(duct_coordinates[:,1], duct_coordinates[:,2], aspectratio=1, color=1, linewidth=2, label="Duct", xlabel="z", ylabel="r", legend=:left) # hide
-plot!(pg, centerbody_coordinates[:,1], centerbody_coordinates[:,2], color=2, linewidth=2, label="Center Body") # hide
+pg = plot(
+    duct_coordinates[:, 1],
+    duct_coordinates[:, 2];
+    aspectratio=1,
+    color=1,
+    linewidth=2,
+    label="Duct",
+    xlabel="z",
+    ylabel="r",
+    legend=:left,
+) # hide
+plot!(
+    pg,
+    centerbody_coordinates[:, 1],
+    centerbody_coordinates[:, 2];
+    color=2,
+    linewidth=2,
+    label="Center Body",
+) # hide
 ```
 
 !!! note
@@ -157,14 +174,19 @@ DuctAPE.RotorStatorParameters
 In this example, we have a single rotor defined as follows.
 
 ```@example tutorial
+# number of rotors
 B = 5
 
+# rotor axial location
 rotorzloc = 0.12
 
+# rotor tip radius
 Rtip = 0.15572081487373543
 
+# rotor hub radius
 Rhub = 0.04495252299071941
 
+# non-dimensional blade element radial stations
 r = [
     0.050491
     0.061567
@@ -176,8 +198,9 @@ r = [
     0.12803
     0.13911
     0.15018
-]./Rtip
+] ./ Rtip
 
+# dimensional chord lengths
 chords = [
     0.089142
     0.079785
@@ -191,6 +214,7 @@ chords = [
     0.038243
 ]
 
+# twist angles (from plane of rotation) in radians
 twists = [
     69.012
     59.142
@@ -202,9 +226,9 @@ twists = [
     33.354
     31.349
     29.596
-].*pi/180.0
+] .* pi / 180.0
 
-
+# DFDC-type airfoil object
 afparams = DuctAPE.c4b.DFDCairfoil(;
     alpha0=0.0,
     clmax=1.5,
@@ -221,8 +245,10 @@ afparams = DuctAPE.c4b.DFDCairfoil(;
     mcrit=0.7,
 )
 
+# all airfoils are the same
 airfoils = fill(afparams, length(r)) # specify the airfoil array
 
+# assemble rotor parameters
 rotorstator_parameters = dt.RotorStatorParameters(
     [B],
     [rotorzloc],
@@ -239,7 +265,15 @@ nothing # hide
 ```
 
 ```@example tutorial
-plot!(pg, rotorzloc*ones(length(r)), r.*Rtip, seriestype=:scatter, markersize=3, markerstrokewidth=0, label="Blade Elements") # hide
+plot!(
+    pg,
+    rotorzloc * ones(length(r)),
+    r .* Rtip;
+    seriestype=:scatter,
+    markersize=3,
+    markerstrokewidth=0,
+    label="Blade Elements",
+) # hide
 ```
 
 !!! note "Airfoils"
@@ -269,7 +303,6 @@ Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
 
 # utilizing the constructor function to put things in vector types
 operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
-
 nothing # hide
 ```
 
@@ -284,13 +317,28 @@ DuctAPE.PanelingConstants
 ```
 
 ```@example tutorial
+# number of panels for the duct inlet
 nduct_inlet = 30
+
+# number of panels for the center body inlet
 ncenterbody_inlet = 30
-npanels = [30, 1, 30] # the 1 is due to the fact that the duct and center body trailing edges are not quite aligned.
-dte_minus_cbte = -1.0 # the duct trailing edge is ahead of the centerbody trailing edge.
+
+# number of panels from:
+#  - rotor to duct trailing edge
+#  - duct trailing edge to center body trailing edge
+#  - center body trailing edge to end of wake
+npanels = [30, 1, 30]
+
+# the duct trailing edge is ahead of the centerbody trailing edge.
+dte_minus_cbte = -1.0
+
+# number of wake sheets (one more than blade elements to use)
 nwake_sheets = 11
+
+# non-dimensional wake length aft of rear-most trailing edge
 wake_length = 0.8
 
+# assemble paneling constants
 paneling_constants = dt.PanelingConstants(
     nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
 )
@@ -306,9 +354,13 @@ DuctAPE.ReferenceParameters
 ```
 
 ```@example tutorial
-Vref = 50.0 #this turns out to be close to the average axial velocity at the rotor in our case
+# reference velocity (close to average axial velocity at rotor in this case)
+Vref = 50.0
+
+# reference radius (usually tip radius of rotor)
 Rref = Rtip
 
+# assemble reference parameters
 reference_parameters = dt.ReferenceParameters([Vref], [Rref])
 nothing # hide
 ```
@@ -318,6 +370,7 @@ nothing # hide
 We are now posed to construct the `Propulsor` input type.
 
 ```@example tutorial
+# assemble propulsor object
 propulsor = dt.Propulsor(
     duct_coordinates,
     centerbody_coordinates,
@@ -397,6 +450,7 @@ end
 
 # - Run Multi-point Analysis - #
 outs_vec, success_flags = DuctAPE.analyze(ops, propulsor, DuctAPE.set_options(ops))
+nothing #hide
 ```
 
 There are a few things to note here.

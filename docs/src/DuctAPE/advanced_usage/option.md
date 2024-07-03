@@ -136,8 +136,8 @@ aero_solver_options = DuctAPE.NLsolveOptions(;
 # set all the options
 DuctAPE.set_options(;
     integration_options=integration_options,
-    grid_solver_options=wake_solve_options
-    solver_options = aero_solver_options
+    grid_solver_options=wake_solve_options,
+    solver_options=aero_solver_options,
 )
 ```
 
@@ -154,7 +154,7 @@ Here is an example for setting options with the CSOR solver.
 nop = 3
 
 options = DuctAPE.set_options(;
-    solver_options=DuctAPE.CSORSolverOptions(
+    solver_options=DuctAPE.CSORSolverOptions(;
         converged=fill(false, (1, nop)), # need a convergence flag for each operating point
         iterations=zeros(Int, (1, nop)), # need a iteration count for each operating point
         Vconv=ones(nop), # in this case, we need a reference velocity for each operating point
@@ -174,18 +174,19 @@ options = DuctAPE.set_options(;
             DuctAPE.NLsolveOptions(;
                 algorithm=:anderson,
                 atol=1e-12,
-                iteration_limit=200
-                converged=fill(false, (1,nop)), # flags for each operating point
-                iterations=zeros(Int, (1,nop)), # counters for each operating point
+                iteration_limit=200,
+                converged=fill(false, (1, nop)), # flags for each operating point
+                iterations=zeros(Int, (1, nop)), # counters for each operating point
             ),
             DuctAPE.MinpackOptions(;
                 atol=1e-12,
                 iteration_limit=100,
-                converged=fill(false, (1,nop)),
-                iterations=zeros(Int, (1,nop)),
+                converged=fill(false, (1, nop)),
+                iterations=zeros(Int, (1, nop)),
+            ),
         ],
-        converged=fill(false, (2,nop)), # flags for each solver and each operating point
-        iterations=fill(0, (2,nop)), # counts for each solver and each operating point
+        converged=fill(false, (2, nop)), # flags for each solver and each operating point
+        iterations=zeros(Int, (2, nop)), # counts for each solver and each operating point
     ),
 )
 ```
