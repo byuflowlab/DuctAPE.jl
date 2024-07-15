@@ -5,7 +5,7 @@
 ######################################################################
 
 """
-    stalllimiters(
+    stall_limiters(
         aoa,
         cl,
         cd;
@@ -19,7 +19,7 @@
 Cuts off coefficient vs alpha curve at min and max coefficient and places rest of curve from -pi to min coeff and max coeff to pi according to user defined cutoff_slope (default 0.1)
 
 # Arguments:
-- `aoa::AbstractVector{Float}` : input angles of attack
+- `aoa::AbstractVector{Float}` : input angles of attack, in radians
 - `cl::AbstractVector{Float}` : input lift coefficients
 - `cd::AbstractVector{Float}` : input drag coefficients
 
@@ -30,7 +30,7 @@ Cuts off coefficient vs alpha curve at min and max coefficient and places rest o
 - `blend_hardness::Float=50` : hardenss of blend between nominal polar and post-stall modifications.
 
 # Returns:
-- `aoa_ext::AbstractVector{Float}` : angles of attack for modified polar
+- `aoa_ext::AbstractVector{Float}` : angles of attack for modified polar, in radians
 - `cl_ext::AbstractVector{Float}` : modified lift coefficients
 - `cd_ext::AbstractVector{Float}` : modified drag coefficients
 """
@@ -75,16 +75,16 @@ function stall_limiters(
     fillcl = [
         # cl_ns[1:(N - 1)]
         cl_ns[1:N]
-        cl[clminid+1:clmaxid-1]
-        cl_ps[end-N+1:end]
+        cl[(clminid + 1):(clmaxid - 1)]
+        cl_ps[(end - N + 1):end]
         # cl_ps[(end - N + 2):end]
     ]
     # fill nominal cds
     fillcd = [
         # cd_ns[1:(N - 1)]
         cd_ns[1:N]
-        cd[clminid+1:clmaxid-1]
-        cd_ps[end-N+1:end]
+        cd[(clminid + 1):(clmaxid - 1)]
+        cd_ps[(end - N + 1):end]
         # cd_ps[(end - N + 2):end]
     ]
 
@@ -94,9 +94,31 @@ function stall_limiters(
     cdblend1 = FLOWMath.sigmoid_blend.(cd_ns, fillcd, aoaext, aoamin, blend_hardness)
     cdblend2 = FLOWMath.sigmoid_blend.(cdblend1, cd_ps, aoaext, aoamax, blend_hardness)
 
-    return collect(range(-pi, pi, 361)),
-    FLOWMath.akima(aoaext, clblend2, range(-pi, pi, 361)),
-    FLOWMath.akima(aoaext, cdblend2, range(-pi, pi, 361))
+    aoa_ret = collect(range(-pi, pi, 361))
+    cl_ret = FLOWMath.akima(aoaext, clblend2, range(-pi, pi, 361))
+    cd_ret = FLOWMath.akima(aoaext, cdblend2, range(-pi, pi, 361))
+
+    nanid = findfirst(x -> !isnan(x), cl_ret)
+    if nanid > 1
+        cl_ret[1:nanid] .= cl_ret[nanid]
+    end
+
+    nanid = findfirst(x -> !isnan(x), cd_ret)
+    if nanid > 1
+        cd_ret[1:nanid] .= cd_ret[nanid]
+    end
+
+    nanid = findlast(x -> !isnan(x), cl_ret)
+    if nanid < length(cl_ret)
+        cl_ret[nanid:end] .= cl_ret[nanid]
+    end
+
+    nanid = findlast(x -> !isnan(x), cd_ret)
+    if nanid < length(cd_ret)
+        cd_ret[nanid:end] .= cd_ret[nanid]
+    end
+
+    return aoa_ret, cl_ret, cd_ret
 end
 
 ######################################################################
@@ -320,8 +342,9 @@ Apply smoothed Wallis' cascade correction (see `solidity_and_stagger_factor_smoo
 - `cl_corr::AbstractVector{Float}` : corrected lift coefficients.
 """
 function solidity_and_stagger(cl, solidity, stagger; blend_hardness=100)
-    return cl .*
-           solidity_and_stagger_factor_smooth(solidity, stagger; blend_hardness=blend_hardness)
+    return cl .* solidity_and_stagger_factor_smooth(
+        solidity, stagger; blend_hardness=blend_hardness
+    )
 end
 
 """
@@ -330,7 +353,9 @@ end
 In-place version of `solidity_and_stagger`.
 """
 function solidity_and_stagger!(cl, solidity, stagger; blend_hardness=100)
-    cl .*= solidity_and_stagger_factor_smooth(solidity, stagger; blend_hardness=blend_hardness)
+    cl .*= solidity_and_stagger_factor_smooth(
+        solidity, stagger; blend_hardness=blend_hardness
+    )
     return cl
 end
 

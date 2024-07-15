@@ -68,7 +68,7 @@ function writefile(filename, info, Re, Mach, alpha, cl, cd, radians)
 
         factor = 1.0
         if !radians
-            factor = 180/pi
+            factor = pi/180
         end
 
         for i = 1:length(alpha)

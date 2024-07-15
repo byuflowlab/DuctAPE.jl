@@ -178,8 +178,8 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 - `f_circ::TF = 1e-3` : convergence tolerance for rotor circulation
 - `f_dgamw::TF = 2e-4` : convergence tolerance for wake vortex strength
 - `convergence_type::TC = Relative()` : dispatch for relative or absolute convergence criteria.
-- `Vconv::AbstractVector{TF} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `Vconv::AbstractArray{TF} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
@@ -198,7 +198,7 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
     f_circ::TF = 1e-3
     f_dgamw::TF = 2e-4
     convergence_type::TC = Relative()
-    Vconv::AbstractVector{TF} = [1.0]
+    Vconv::AbstractArray{TF} = [1.0]
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
 end
@@ -235,15 +235,15 @@ Options for the FixedPoint.jl package solver
 - `vel::TF = 0.9` : vel keyword argument, default is package default
 - `ep::TF = 0.01` : ep keyword argument, default is package default
 - `atol::TF = 1e-12` : absolute convergence tolerance
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
     iteration_limit::TI = 1000
     vel::TF = 0.9
     ep::TF = 0.01
     atol::TF = 1e-12
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 """
@@ -252,7 +252,7 @@ end
 Options for the SpeedMapping.jl package solver
 
 # Fields
-- `orders::AbstractVector{TI} = [3, 2]
+- `orders::AbstractArray{TI} = [3, 2]
 - `sig_min::TSm = 0` : maybe set to 1?
 - `stabilize::TB = false` : stabilizes before extrapolation
 - `check_obj::TB = false` : checks for inf's and nan's and starts from previous finite point
@@ -263,10 +263,10 @@ Options for the SpeedMapping.jl package solver
 - `upper::TU = nothing` : box upper bounds
 - `buffer::TF = 0.01` : if using bounds, buffer brings x inside bounds by buffer amountd
 - `Lp::TF = Inf` : p value for p-norm for convergence criteria
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct SpeedMappingOptions{TB,TF,TI,TL,TSm,TU} <: ExternalSolverOptions
-    orders::AbstractVector{TI} = [3, 2]
+    orders::AbstractArray{TI} = [3, 2]
     sig_min::TSm = 0 # maybe set to 1?
     stabilize::TB = false # stabilizes before extrapolation
     check_obj::TB = false # checks for inf's and nan's and starts from previous finite point
@@ -277,8 +277,8 @@ Options for the SpeedMapping.jl package solver
     upper::TU = nothing # box upper bounds
     buffer::TF = 0.01 # if using bounds, buffer brings x inside bounds by buffer amountd
     Lp::TF = Inf # p value for p-norm for convergence criteria
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 ##### ----- Quasi-Newton Solvers ----- #####
@@ -292,14 +292,14 @@ Options for the MINPACK's HYBRJ solver
 - `algorithm::TSym = :hybr` : algorithm to use in MINPACK.jl (hybr is HYBRJ when the jacobian is provided)
 - `atol::TF = 1e-12` : absolute convergence tolerance
 - `iteration_limit::TF = 100` : maximum number of iterations
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct MinpackOptions{TB,TF,TI,TSym} <: ExternalSolverOptions
     algorithm::TSym = :hybr
     atol::TF = 1e-12
     iteration_limit::TI = 100
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 """
@@ -314,7 +314,7 @@ Options for the SIAMFANLEquations pacakge solvers
 - `iteration_limit::TF = 1000` : maximum number of iterations
 - `linear_iteration_limit::TF = 5` : maximum number of linear solve iterations (GMRES)
 - `additional_kwargs::TK = (;)` : any additional keyword arguments for the solver
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct SIAMFANLEOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Options for overall solve
@@ -325,8 +325,8 @@ Options for the SIAMFANLEquations pacakge solvers
     linear_iteration_limit::TI = 5
     additional_kwargs::TK = (;)
     # additional_kwargs::TK = (; delta0=1e-3)
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 ##### ----- Newton+ Solvers ----- #####
@@ -342,7 +342,7 @@ Options for the SimpleNonlinearSolve pacakge solvers
 - `additional_kwargs::TK = (;)` : any additional keyword arguments for the solver
 - `atol::TF = 1e-12` : absolute convergence tolerance
 - `iteration_limit::TF = 25` : maximum number of iterations
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct NonlinearSolveOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Algorithm Options
@@ -351,8 +351,8 @@ Options for the SimpleNonlinearSolve pacakge solvers
     # Iteration Controls
     atol::TF = 1e-12
     iteration_limit::TI = 25
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 """
@@ -367,7 +367,7 @@ Options for the NLsolve pacakge solvers
 - `iteration_limit::TF = 25` : maximum number of iterations
 - `linesearch_method::Tls = LineSearches.MoreThuente` : line search method to use
 - `linesearch_kwargs::Tlsk = (;)` : any additional lineseach keyword arguments
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct NLsolveOptions{TB,TF,TI,Tls,Tlsk,TSym} <: ExternalSolverOptions
     # Options for overall solve
@@ -377,8 +377,8 @@ Options for the NLsolve pacakge solvers
     # line search parameters
     linesearch_method::Tls = LineSearches.MoreThuente
     linesearch_kwargs::Tlsk = (;)
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 ##### ----- Poly-Algorithm Solvers ----- #####
@@ -391,21 +391,21 @@ end
 Options for Composite Solvers (start with a partial solve of one solve, then finish with another starting where the first left off).
 
 # Fields
-- `solvers::AbstractVector{TS} = [
+- `solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
     ]' : Vector of solver options to use.
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct CompositeSolverOptions{
     TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
 } <: PolyAlgorithmOptions
-    solvers::AbstractVector{TS} = [
+    solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
     ]
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 """
@@ -414,7 +414,7 @@ end
 Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 
 # Fields
-- `solvers::AbstractVector{TS} = [
+- `solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
         MinpackOptions(; atol=1e-12),
         NonlinearSolveOptions(;
@@ -423,12 +423,12 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
             additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
         ),
     ] : Vector of solver options to use.
-- `converged::AbstractVector{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct ChainSolverOptions{
     TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
 } <: PolyAlgorithmOptions
-    solvers::AbstractVector{TS} = [
+    solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-12, iteration_limit=200),
         MinpackOptions(; atol=1e-12, iteration_limit=100),
         NLsolveOptions(; algorithm=:newton, atol=1e-12, iteration_limit=20),
@@ -489,13 +489,13 @@ Options for SLOR (successive line over relaxation) elliptic grid solver.
 # Fields
 - `iteration_limit::TI = 100` : maximum number of iterations
 - `atol::TF = 1e-9` : absolute convergence tolerance
-- `converged::AbstractVector{TB} = [false]
+- `converged::AbstractArray{TB} = [false]
 """
 @kwdef struct SLORGridSolverOptions{TB,TF,TI} <: GridSolverOptionsType
     iteration_limit::TI = 200
     atol::TF = eps()
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 """
@@ -508,15 +508,15 @@ Options for SLOR + Newton elliptic grid solver.
 - `atol::TF = 1e-14` : absolute convergence tolerance
 - `algorithm::TSym = :newton` : algorithm to use in NLsolve.jl
 - `autodiff::TSym = :forward` : differentiation method to use in NLsolve.jl
-- `converged::AbstractVector{TB}` = [false]
+- `converged::AbstractArray{TB}` = [false]
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
     iteration_limit::TI = 20
     atol::TF = 1e-14
     algorithm::TSym = :newton
     autodiff::TSym = :forward
-    converged::AbstractVector{TB} = [false]
-    iterations::AbstractVector{TI} = [0]
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
 end
 
 #---------------------------------#
@@ -609,14 +609,14 @@ Set the options for DuctAPE to use.
 Note that the vast majority of the available options are defined through keyword arguments.  See the documentation for the various option types for more information.
 
 # Arguments
-- `multipoint::AbstractVector{OperatingPoint}` : a vector of operating points to use if running a multi-point analysis.
+- `multipoint::AbstractArray{OperatingPoint}` : a vector of operating points to use if running a multi-point analysis.
 """
 function set_options(; kwargs...)
     return Options(; kwargs...)
 end
 
 function set_options(
-    multipoint::AbstractVector{TM};
+    multipoint::AbstractArray{TM};
     write_outputs=nothing,
     outfile=nothing,
     output_tuple_name=nothing,
