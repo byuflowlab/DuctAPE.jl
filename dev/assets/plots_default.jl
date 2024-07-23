@@ -35,7 +35,7 @@ function plots_default(;
     dpi=300,
     #     extra_kwargs,
     #     extra_plot_kwargs,
-    fontfamily="cmunrm",
+    fontfamily="Palatino_Roman",
     # fontfamily="Palatino Roman",
     foreground_color=RGB(128 / 255, 128 / 255, 128 / 255), #gray, plotsgray,
     #     html_output_format,
@@ -121,7 +121,7 @@ function plots_default(;
     #      :Subplot
     #######################
     #     annotationcolor,
-    annotationfontfamily="cmunrm",
+    annotationfontfamily="Palatino_Roman",
     annotationfontsize=10,
     #     annotationhalign,
     #     annotationrotation,
