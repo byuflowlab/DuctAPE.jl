@@ -392,7 +392,6 @@ function post_process(
 
     ### --- BODY OUTPUTS --- ###
     # - Surface Velocity on Bodies - #
-    # TODO: update any tests for this function
     get_body_tangential_velocities!(
         vtan_tuple,
         gamb,

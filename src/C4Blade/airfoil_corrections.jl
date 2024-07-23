@@ -11,12 +11,13 @@
         cd;
         clminid=nothing,
         clmaxid=nothing,
-        cutoff_slope=0.1,
+        cl_cutoff_slope=0.1,
+        cd_cutoff_slope=0.9,
         N=20,
         blend_hardness=50
     )
 
-Cuts off coefficient vs alpha curve at min and max coefficient and places rest of curve from -pi to min coeff and max coeff to pi according to user defined cutoff_slope (default 0.1)
+Cuts off coefficient vs alpha curve at min and max coefficient and places rest of curve from -pi to min coeff and max coeff to pi according to user defined cl_cutoff_slope (default 0.1)
 
 # Arguments:
 - `aoa::AbstractVector{Float}` : input angles of attack, in radians
@@ -26,7 +27,8 @@ Cuts off coefficient vs alpha curve at min and max coefficient and places rest o
 # Keyword Arguments:
 - `clminid::Float=nothing` : manually set index for minimum cl
 - `clmaxid::Float=nothing` : manually set index for maximum cl
-- `cutoff_slope::Float=0.1` : "post-stall" slope
+- `cl_cutoff_slope::Float=0.1` : "post-stall" slope for cl
+- `cd_cutoff_slope::Float=0.1` : "post-stall" slope for cd
 - `blend_hardness::Float=50` : hardenss of blend between nominal polar and post-stall modifications.
 
 # Returns:
@@ -35,7 +37,15 @@ Cuts off coefficient vs alpha curve at min and max coefficient and places rest o
 - `cd_ext::AbstractVector{Float}` : modified drag coefficients
 """
 function stall_limiters(
-    aoa, cl, cd; clminid=nothing, clmaxid=nothing, cutoff_slope=0.1, N=20, blend_hardness=50
+    aoa,
+    cl,
+    cd;
+    clminid=nothing,
+    clmaxid=nothing,
+    cl_cutoff_slope=0.1,
+    cd_cutoff_slope=0.9,
+    N=20,
+    blend_hardness=50,
 )
 
     # find cl min, associated index, and angle of attack
@@ -64,12 +74,12 @@ function stall_limiters(
     ]
 
     #get function for positive stall region.
-    cl_ps = @. cutoff_slope * (aoaext - aoamax) + clmax
-    cd_ps = @. cutoff_slope * (aoaext - aoamax) + cdmax
+    cl_ps = @. cl_cutoff_slope * (aoaext - aoamax) + clmax
+    cd_ps = @. cd_cutoff_slope * (aoaext - aoamax) + cdmax
 
     #get function for negative stall region flip slope sign if applied to drag curve
-    cl_ns = @. cutoff_slope * (aoaext - aoamin) + clmin
-    cd_ns = @. -1.0 * cutoff_slope * (aoaext - aoamin) + cdmin
+    cl_ns = @. cl_cutoff_slope * (aoaext - aoamin) + clmin
+    cd_ns = @. -1.0 * cd_cutoff_slope * (aoaext - aoamin) + cdmin
 
     # fill nominal cls
     fillcl = [

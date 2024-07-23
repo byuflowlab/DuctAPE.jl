@@ -1,4 +1,5 @@
 """
+# Fields:
 - `alpha0::Float` : zero lift angle of attack
 - `clmax::Float` : maximum cl
 - `clmin::Float` : minimum cl
@@ -7,10 +8,10 @@
 - `dcl_stall::Float` : cl increment from initial to total stall.
 - `cdmin::Float` : minimum cd
 - `cldmin::Float` : cl at cdmin
-- `dcddcl2::Float` : quadratic curve factor for cd curve \$\\left(\\frac{d(c_d)}{d(c_l^2)}\\right)\$
-- `cmcon::Float` : pitching moment constant
+- `dcddcl2::Float` : quadratic curve factor for cl vs cd curve \$\\left(\\frac{d(c_d)}{d(c_l^2)}\\right)\$
+- `cmcon::Float` : pitching moment constant (unused right now)
 - `Re_ref::Float` : reference Reynolds number at which cd values apply
-- `Re_exp::Float` : Reynolds number exponent scaling \$\\left( c_d = c_d(Re/Re_{ref})^{Re_{exp}}\\right)\$
+- `Re_exp::Float` : Reynolds number exponent scaling \$\\left( c_d = c_d(Re/Re_{ref})^{Re_{exp}}\\right)\$ should be 0.2 for fully laminar and 0.5 for fully turbulent
 - `mcrit::Float` : critical Mach number
 """
 struct DFDCairfoil{TF}
@@ -62,9 +63,37 @@ function DFDCairfoil(;
 end
 
 """
-DFDC-like polar function. copied from dfdc and adjusted for julia
-TODO: add dfdc polar parameters object compatibility for airfoil field in blade elements objects
-TODO: this is only for a single airfoil definition.  need to rememember to interpolate between sections if there are more than one (this happens near where this function is called, rather than in this function itself)
+    dfdceval(
+        inflow_magnitude,
+        local_reynolds,
+        local_solidity,
+        local_stagger,
+        alpha,
+        afparams,
+        asound;
+        verbose=false,
+        fliplift=0,
+    )
+
+DFDC-like polar function.
+
+# Arguments:
+- `inflow_magnitude::Float` : Velocity magnitude of inflow
+- `local_reynolds::Float` : local Reynolds number
+- `local_solidity::Float` : local Solidity
+- `local_stagger::Float` : local Stagger angle (radians)
+- `alpha::Float` : local angle of attack (radians)
+- `afparams::C4Blade.DFDCairfoil` : DFDCairfoil object
+- `asound::Float` : speed of sound
+
+# Keyword Arguments:
+- `verbose::Bool=false::` : print verbose statements
+- `fliplift::Int=0` : flag to flip lift values (e.g. for stators)
+
+# Returns:
+- `cl::Float` : lift coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
+- `cd::Float` : lift coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
+- `cmom::Float` : returned from input
 """
 function dfdceval(
     inflow_magnitude,
@@ -247,11 +276,15 @@ function dfdceval(
 end
 
 """
-dfdc function copied and adjusted for julia
-calculates multi-plane cascade effects on lift slope as a function of solidity and stagger angle
-solidty: b*c/(2*pi*r)
-stagger angle is from axis (not plane of rotation), in radians
-originally from a table-drive quadratic fit to a figure 6-29 in wallis, axial flow fans and ducts.
+    getclfactor(solidity, stagger)
+
+Calculates multi-plane cascade effects on lift slope as a function of solidity and stagger angle.
+
+Comes from a table-driven quadratic fit to a figure 6-29 in Wallis, "Axial Flow Fans and Ducts."
+
+# Arguments:
+- `solidty::Float` : local solidity: \$\\frac{bc}{2*\\pi*r}\$
+- `stagger::Float` : local stagger angle is from axis (not plane of rotation), in radians
 """
 function getclfactor(solidity, stagger)
 

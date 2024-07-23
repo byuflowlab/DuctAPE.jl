@@ -1,3 +1,116 @@
+function withdraw_prepost_body_container_cache(vec, dims)
+    zpts = (;
+        centerbody_zpts=reshape(
+            @view(vec[dims.zpts.centerbody_zpts.index]), dims.zpts.centerbody_zpts.shape
+        ),
+        casing_zpts=reshape(
+            @view(vec[dims.zpts.casing_zpts.index]), dims.zpts.casing_zpts.shape
+        ),
+        nacelle_zpts=reshape(
+            @view(vec[dims.zpts.nacelle_zpts.index]), dims.zpts.nacelle_zpts.shape
+        ),
+    )
+
+    vtan_tuple = (;
+        Vtot_in=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_in.index]), dims.vtan_tuple.Vtot_in.shape
+        ),
+        Vtot_out=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_out.index]), dims.vtan_tuple.Vtot_out.shape
+        ),
+        Vtan_in=reshape(
+            @view(vec[dims.vtan_tuple.Vtan_in.index]), dims.vtan_tuple.Vtan_in.shape
+        ),
+        Vtan_out=reshape(
+            @view(vec[dims.vtan_tuple.Vtan_out.index]), dims.vtan_tuple.Vtan_out.shape
+        ),
+        Vtot_prejump=reshape(
+            @view(vec[dims.vtan_tuple.Vtot_prejump.index]),
+            dims.vtan_tuple.Vtot_prejump.shape,
+        ),
+        vtot_body=reshape(
+            @view(vec[dims.vtan_tuple.vtot_body.index]), dims.vtan_tuple.vtot_body.shape
+        ),
+        duct_jump=reshape(
+            @view(vec[dims.vtan_tuple.duct_jump.index]), dims.vtan_tuple.duct_jump.shape
+        ),
+        centerbody_jump=reshape(
+            @view(vec[dims.vtan_tuple.centerbody_jump.index]),
+            dims.vtan_tuple.centerbody_jump.shape,
+        ),
+        body_jump_term=reshape(
+            @view(vec[dims.vtan_tuple.body_jump_term.index]),
+            dims.vtan_tuple.body_jump_term.shape,
+        ),
+        vtot_jump=reshape(
+            @view(vec[dims.vtan_tuple.vtot_jump.index]), dims.vtan_tuple.vtot_jump.shape
+        ),
+        vtot_wake=reshape(
+            @view(vec[dims.vtan_tuple.vtot_wake.index]), dims.vtan_tuple.vtot_wake.shape
+        ),
+        vtot_rotors=reshape(
+            @view(vec[dims.vtan_tuple.vtot_rotors.index]), dims.vtan_tuple.vtot_rotors.shape
+        ),
+        # Splits:
+        vtan_casing_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_casing_in.index]),
+            dims.vtan_tuple.vtan_casing_in.shape,
+        ),
+        vtan_casing_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_casing_out.index]),
+            dims.vtan_tuple.vtan_casing_out.shape,
+        ),
+        vtan_nacelle_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_nacelle_in.index]),
+            dims.vtan_tuple.vtan_nacelle_in.shape,
+        ),
+        vtan_nacelle_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_nacelle_out.index]),
+            dims.vtan_tuple.vtan_nacelle_out.shape,
+        ),
+        vtan_centerbody_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_centerbody_in.index]),
+            dims.vtan_tuple.vtan_centerbody_in.shape,
+        ),
+        vtan_centerbody_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_centerbody_out.index]),
+            dims.vtan_tuple.vtan_centerbody_out.shape,
+        ),
+    )
+
+    cp_tuple = (;
+        cp_in=reshape(@view(vec[dims.cp_tuple.cp_in.index]), dims.cp_tuple.cp_in.shape),
+        cp_out=reshape(@view(vec[dims.cp_tuple.cp_out.index]), dims.cp_tuple.cp_out.shape),
+        cp_casing_in=reshape(
+            @view(vec[dims.cp_tuple.cp_casing_in.index]), dims.cp_tuple.cp_casing_in.shape
+        ),
+        cp_casing_out=reshape(
+            @view(vec[dims.cp_tuple.cp_casing_out.index]), dims.cp_tuple.cp_casing_out.shape
+        ),
+        cp_nacelle_in=reshape(
+            @view(vec[dims.cp_tuple.cp_nacelle_in.index]), dims.cp_tuple.cp_nacelle_in.shape
+        ),
+        cp_nacelle_out=reshape(
+            @view(vec[dims.cp_tuple.cp_nacelle_out.index]),
+            dims.cp_tuple.cp_nacelle_out.shape,
+        ),
+        cp_centerbody_in=reshape(
+            @view(vec[dims.cp_tuple.cp_centerbody_in.index]),
+            dims.cp_tuple.cp_centerbody_in.shape,
+        ),
+        cp_centerbody_out=reshape(
+            @view(vec[dims.cp_tuple.cp_centerbody_out.index]),
+            dims.cp_tuple.cp_centerbody_out.shape,
+        ),
+    )
+    body_thrust = reshape(@view(vec[dims.body_thrust.index]), dims.body_thrust.shape)
+    body_force_coefficient = reshape(
+        @view(vec[dims.body_force_coefficient.index]), dims.body_force_coefficient.shape
+    )
+
+    return zpts, vtan_tuple, cp_tuple, body_thrust, body_force_coefficient
+end
+
 """
     withdraw_prepost_container_cache(vec, dims)
 
@@ -413,113 +526,8 @@ function withdraw_prepost_container_cache(vec, dims)
     )
 
     # - BODY POST CACHE - #
-    zpts = (;
-        centerbody_zpts=reshape(
-            @view(vec[dims.zpts.centerbody_zpts.index]), dims.zpts.centerbody_zpts.shape
-        ),
-        casing_zpts=reshape(
-            @view(vec[dims.zpts.casing_zpts.index]), dims.zpts.casing_zpts.shape
-        ),
-        nacelle_zpts=reshape(
-            @view(vec[dims.zpts.nacelle_zpts.index]), dims.zpts.nacelle_zpts.shape
-        ),
-    )
-
-    vtan_tuple = (;
-        Vtot_in=reshape(
-            @view(vec[dims.vtan_tuple.Vtot_in.index]), dims.vtan_tuple.Vtot_in.shape
-        ),
-        Vtot_out=reshape(
-            @view(vec[dims.vtan_tuple.Vtot_out.index]), dims.vtan_tuple.Vtot_out.shape
-        ),
-        Vtan_in=reshape(
-            @view(vec[dims.vtan_tuple.Vtan_in.index]), dims.vtan_tuple.Vtan_in.shape
-        ),
-        Vtan_out=reshape(
-            @view(vec[dims.vtan_tuple.Vtan_out.index]), dims.vtan_tuple.Vtan_out.shape
-        ),
-        Vtot_prejump=reshape(
-            @view(vec[dims.vtan_tuple.Vtot_prejump.index]),
-            dims.vtan_tuple.Vtot_prejump.shape,
-        ),
-        vtot_body=reshape(
-            @view(vec[dims.vtan_tuple.vtot_body.index]), dims.vtan_tuple.vtot_body.shape
-        ),
-        duct_jump=reshape(
-            @view(vec[dims.vtan_tuple.duct_jump.index]), dims.vtan_tuple.duct_jump.shape
-        ),
-        centerbody_jump=reshape(
-            @view(vec[dims.vtan_tuple.centerbody_jump.index]),
-            dims.vtan_tuple.centerbody_jump.shape,
-        ),
-        body_jump_term=reshape(
-            @view(vec[dims.vtan_tuple.body_jump_term.index]),
-            dims.vtan_tuple.body_jump_term.shape,
-        ),
-        vtot_jump=reshape(
-            @view(vec[dims.vtan_tuple.vtot_jump.index]), dims.vtan_tuple.vtot_jump.shape
-        ),
-        vtot_wake=reshape(
-            @view(vec[dims.vtan_tuple.vtot_wake.index]), dims.vtan_tuple.vtot_wake.shape
-        ),
-        vtot_rotors=reshape(
-            @view(vec[dims.vtan_tuple.vtot_rotors.index]), dims.vtan_tuple.vtot_rotors.shape
-        ),
-        # Splits:
-        vtan_casing_in=reshape(
-            @view(vec[dims.vtan_tuple.vtan_casing_in.index]),
-            dims.vtan_tuple.vtan_casing_in.shape,
-        ),
-        vtan_casing_out=reshape(
-            @view(vec[dims.vtan_tuple.vtan_casing_out.index]),
-            dims.vtan_tuple.vtan_casing_out.shape,
-        ),
-        vtan_nacelle_in=reshape(
-            @view(vec[dims.vtan_tuple.vtan_nacelle_in.index]),
-            dims.vtan_tuple.vtan_nacelle_in.shape,
-        ),
-        vtan_nacelle_out=reshape(
-            @view(vec[dims.vtan_tuple.vtan_nacelle_out.index]),
-            dims.vtan_tuple.vtan_nacelle_out.shape,
-        ),
-        vtan_centerbody_in=reshape(
-            @view(vec[dims.vtan_tuple.vtan_centerbody_in.index]),
-            dims.vtan_tuple.vtan_centerbody_in.shape,
-        ),
-        vtan_centerbody_out=reshape(
-            @view(vec[dims.vtan_tuple.vtan_centerbody_out.index]),
-            dims.vtan_tuple.vtan_centerbody_out.shape,
-        ),
-    )
-
-    cp_tuple = (;
-        cp_in=reshape(@view(vec[dims.cp_tuple.cp_in.index]), dims.cp_tuple.cp_in.shape),
-        cp_out=reshape(@view(vec[dims.cp_tuple.cp_out.index]), dims.cp_tuple.cp_out.shape),
-        cp_casing_in=reshape(
-            @view(vec[dims.cp_tuple.cp_casing_in.index]), dims.cp_tuple.cp_casing_in.shape
-        ),
-        cp_casing_out=reshape(
-            @view(vec[dims.cp_tuple.cp_casing_out.index]), dims.cp_tuple.cp_casing_out.shape
-        ),
-        cp_nacelle_in=reshape(
-            @view(vec[dims.cp_tuple.cp_nacelle_in.index]), dims.cp_tuple.cp_nacelle_in.shape
-        ),
-        cp_nacelle_out=reshape(
-            @view(vec[dims.cp_tuple.cp_nacelle_out.index]),
-            dims.cp_tuple.cp_nacelle_out.shape,
-        ),
-        cp_centerbody_in=reshape(
-            @view(vec[dims.cp_tuple.cp_centerbody_in.index]),
-            dims.cp_tuple.cp_centerbody_in.shape,
-        ),
-        cp_centerbody_out=reshape(
-            @view(vec[dims.cp_tuple.cp_centerbody_out.index]),
-            dims.cp_tuple.cp_centerbody_out.shape,
-        ),
-    )
-    body_thrust = reshape(@view(vec[dims.body_thrust.index]), dims.body_thrust.shape)
-    body_force_coefficient = reshape(
-        @view(vec[dims.body_force_coefficient.index]), dims.body_force_coefficient.shape
+    zpts, vtan_tuple, cp_tuple, body_thrust, body_force_coefficient = withdraw_prepost_body_container_cache(
+        vec, dims
     )
 
     # - TOTALS POST CACHE - #

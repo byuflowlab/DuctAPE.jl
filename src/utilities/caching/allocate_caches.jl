@@ -266,11 +266,122 @@ function allocate_prepost_container_cache(paneling_constants::PanelingConstants;
                                            )
 end
 
-function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions;
-    fd_chunk_size=12,
-    levels=1,
-    )
+function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nbodies)
+    s = (2, nbp)
+    l = lfs(s)
+    Vtot_in = cache_dims!(total_length, l, s)
 
+    Vtot_out = cache_dims!(total_length, l, s)
+
+    Vtot_prejump = cache_dims!(total_length, l, s)
+
+    vtot_body = cache_dims!(total_length, l, s)
+
+    vtot_jump = cache_dims!(total_length, l, s)
+
+    vtot_wake = cache_dims!(total_length, l, s)
+
+    vtot_rotors = cache_dims!(total_length, l, s)
+
+    s = (nbp,)
+    l = lfs(s)
+    Vtan_in = cache_dims!(total_length, l, s)
+
+    Vtan_out = cache_dims!(total_length, l, s)
+
+    cp_in = cache_dims!(total_length, l, s)
+    cp_out = cache_dims!(total_length, l, s)
+
+    s = (ncp,)
+    l = lfs(s)
+    vtan_casing_in = cache_dims!(total_length, l, s)
+
+    vtan_casing_out = cache_dims!(total_length, l, s)
+
+    casing_zpts = cache_dims!(total_length, l, s)
+
+    cp_casing_in = cache_dims!(total_length, l, s)
+    cp_casing_out = cache_dims!(total_length, l, s)
+
+    s = (ndn - 1 - ncp,)
+    l = lfs(s)
+    vtan_nacelle_in = cache_dims!(total_length, l, s)
+
+    vtan_nacelle_out = cache_dims!(total_length, l, s)
+
+    nacelle_zpts = cache_dims!(total_length, l, s)
+
+    cp_nacelle_in = cache_dims!(total_length, l, s)
+    cp_nacelle_out = cache_dims!(total_length, l, s)
+
+    s = (ncbn - 1,)
+    l = lfs(s)
+    vtan_centerbody_in = cache_dims!(total_length, l, s)
+
+    vtan_centerbody_out = cache_dims!(total_length, l, s)
+
+    centerbody_zpts = cache_dims!(total_length, l, s)
+
+    cp_centerbody_in = cache_dims!(total_length, l, s)
+
+    cp_centerbody_out = cache_dims!(total_length, l, s)
+
+    s = (ndn - 1,)
+    l = lfs(s)
+    duct_jump = cache_dims!(total_length, l, s)
+
+    s = (ncbn - 1,)
+    l = lfs(s)
+    centerbody_jump = cache_dims!(total_length, l, s)
+
+    s = (nbp,)
+    l = lfs(s)
+    body_jump_term = cache_dims!(total_length, l, s)
+
+    s = (nbodies,)
+    l = lfs(s)
+    body_thrust = cache_dims!(total_length, l, s)
+
+    body_force_coefficient = cache_dims!(total_length, l, s)
+
+    return (; casing_zpts, nacelle_zpts, centerbody_zpts), #zpts
+    (;
+        Vtot_in,
+        Vtot_out,
+        Vtan_in,
+        Vtan_out,
+        Vtot_prejump,
+        vtot_body,
+        duct_jump,
+        centerbody_jump,
+        body_jump_term,
+        vtot_jump,
+        vtot_wake,
+        vtot_rotors,
+        vtan_casing_in,
+        vtan_casing_out,
+        vtan_nacelle_in,
+        vtan_nacelle_out,
+        vtan_centerbody_in,
+        vtan_centerbody_out,
+    ), # vtan_tuple
+    (;
+        cp_in,
+        cp_out,
+        cp_casing_in,
+        cp_casing_out,
+        cp_nacelle_in,
+        cp_nacelle_out,
+        cp_centerbody_in,
+        cp_centerbody_out,
+    ), # cp_tuple
+    body_thrust,
+    body_force_coefficient
+end
+
+function allocate_prepost_container_cache(
+    problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
+)
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -402,82 +513,9 @@ function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions;
     sphi = cache_dims!(total_length, l, s)
 
     ### --- BODY Post-Processing Cache --- ###
-    s = (2, nbp)
-    l = lfs(s)
-    Vtot_in = cache_dims!(total_length, l, s)
-
-    Vtot_out = cache_dims!(total_length, l, s)
-
-    Vtot_prejump = cache_dims!(total_length, l, s)
-
-    vtot_body = cache_dims!(total_length, l, s)
-
-    vtot_jump = cache_dims!(total_length, l, s)
-
-    vtot_wake = cache_dims!(total_length, l, s)
-
-    vtot_rotors = cache_dims!(total_length, l, s)
-
-    s = (nbp,)
-    l = lfs(s)
-    Vtan_in = cache_dims!(total_length, l, s)
-
-    Vtan_out = cache_dims!(total_length, l, s)
-
-    cp_in = cache_dims!(total_length, l, s)
-    cp_out = cache_dims!(total_length, l, s)
-
-    s = (ncp,)
-    l = lfs(s)
-    vtan_casing_in = cache_dims!(total_length, l, s)
-
-    vtan_casing_out = cache_dims!(total_length, l, s)
-
-    casing_zpts = cache_dims!(total_length, l, s)
-
-    cp_casing_in = cache_dims!(total_length, l, s)
-    cp_casing_out = cache_dims!(total_length, l, s)
-
-    s = (ndn - 1 - ncp,)
-    l = lfs(s)
-    vtan_nacelle_in = cache_dims!(total_length, l, s)
-
-    vtan_nacelle_out = cache_dims!(total_length, l, s)
-
-    nacelle_zpts = cache_dims!(total_length, l, s)
-
-    cp_nacelle_in = cache_dims!(total_length, l, s)
-    cp_nacelle_out = cache_dims!(total_length, l, s)
-
-    s = (ncbn - 1,)
-    l = lfs(s)
-    vtan_centerbody_in = cache_dims!(total_length, l, s)
-
-    vtan_centerbody_out = cache_dims!(total_length, l, s)
-
-    centerbody_zpts = cache_dims!(total_length, l, s)
-
-    cp_centerbody_in = cache_dims!(total_length, l, s)
-
-    cp_centerbody_out = cache_dims!(total_length, l, s)
-
-    s = (ndn - 1,)
-    l = lfs(s)
-    duct_jump = cache_dims!(total_length, l, s)
-
-    s = (ncbn - 1,)
-    l = lfs(s)
-    centerbody_jump = cache_dims!(total_length, l, s)
-
-    s = (nbp,)
-    l = lfs(s)
-    body_jump_term = cache_dims!(total_length, l, s)
-
-    s = (nbodies,)
-    l = lfs(s)
-    body_thrust = cache_dims!(total_length, l, s)
-
-    body_force_coefficient = cache_dims!(total_length, l, s)
+    zpts, vtan_tuple, cp_tuple, body_thrust, body_force_coefficient = allocate_prepost_body_containers!(
+        total_length, nbp, ncp, ndn, ncbn, nbodies
+    )
 
     ### --- TOTALS Post-Processing Cache --- ###
     s = (1,)
@@ -500,9 +538,9 @@ function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions;
 
     # return tuple of initialized cache and associated dimensions
     return (;
-            prepost_container_cache=PreallocationTools.DiffCache(zeros(total_length[]),
-                fd_chunk_size; levels=levels
-                                                                  ),
+        prepost_container_cache=PreallocationTools.DiffCache(
+            zeros(total_length[]), fd_chunk_size; levels=levels
+        ),
         prepost_container_cache_dims=(;
             ### --- PRE --- ###
             rp_duct_coordinates,
@@ -541,37 +579,9 @@ function allocate_prepost_container_cache(problem_dimensions::ProblemDimensions;
             blade_tangential_force_per_unit_span,
             blade_loading_intermediate_containers=(; cn, ct, cphi, sphi),
             # - BODY - #
-            zpts=(; casing_zpts, nacelle_zpts, centerbody_zpts),
-            vtan_tuple=(;
-                Vtot_in,
-                Vtot_out,
-                Vtan_in,
-                Vtan_out,
-                Vtot_prejump,
-                vtot_body,
-                duct_jump,
-                centerbody_jump,
-                body_jump_term,
-                vtot_jump,
-                vtot_wake,
-                vtot_rotors,
-                vtan_casing_in,
-                vtan_casing_out,
-                vtan_nacelle_in,
-                vtan_nacelle_out,
-                vtan_centerbody_in,
-                vtan_centerbody_out,
-            ),
-            cp_tuple=(;
-                cp_in,
-                cp_out,
-                cp_casing_in,
-                cp_casing_out,
-                cp_nacelle_in,
-                cp_nacelle_out,
-                cp_centerbody_in,
-                cp_centerbody_out,
-            ),
+            zpts,
+            vtan_tuple,
+            cp_tuple,
             body_thrust,
             body_force_coefficient,
             # - TOTALS - #

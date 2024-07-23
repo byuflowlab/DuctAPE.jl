@@ -62,28 +62,33 @@ function get_body_tangential_velocities(
     duct_panel_ids_along_casing_wake_interface,
     num_casing_panels,
 )
-    TF = promote_type(eltype(gamb), eltype(gamw), eltype(sigr))
+    if isnothing(gamw)
+        TF = promote_type(eltype(gamb))
+    else
+        TF = promote_type(eltype(gamb), eltype(gamw), eltype(sigr))
+    end
+
     # - initialize total velocity - #
     Vtot = zeros(TF, 2, totpanel)
     Vtot_in = similar(Vtot) .= 0
     Vtot_out = similar(Vtot) .= 0
-    Vtan_in = similar(Vtot) .= 0
-    Vtan_out = similar(Vtot) .= 0
+    Vtan_in = similar(Vtot, totpanel) .= 0
+    Vtan_out = similar(Vtot, totpanel) .= 0
     Vtot_prejump = similar(Vtot) .= 0
     vtot_body = similar(Vtot) .= 0
     duct_jump = similar(Vtot, (npanel[1],))
     centerbody_jump = similar(Vtot, (npanel[2],))
-    body_jump_term = similar(Vtot) .= 0.0
+    body_jump_term = similar(Vtot, totpanel) .= 0.0
     vtot_jump = similar(Vtot) .= 0.0
     vtot_wake = similar(Vtot) .= 0
     vtot_rotors = similar(Vtot) .= 0.0
     casing_zpts = zeros(TF, num_casing_panels)
     vtan_casing_in = similar(casing_zpts) .= 0
     vtan_casing_out = similar(casing_zpts) .= 0
-    nacelle_zpts = zeros(TF, npanels[1] - num_casing_panels)
+    nacelle_zpts = zeros(TF, npanel[1] - num_casing_panels)
     vtan_nacelle_in = similar(nacelle_zpts) .= 0
     vtan_nacelle_out = similar(nacelle_zpts) .= 0
-    centerbody_zpts = zeros(TF, npanels[2])
+    centerbody_zpts = zeros(TF, npanel[2])
     vtan_centerbody_in = similar(centerbody_zpts) .= 0
     vtan_centerbody_out = similar(centerbody_zpts) .= 0
 
@@ -181,8 +186,13 @@ function get_body_tangential_velocities!(
 )
 
     # - setup - #
-    nws, nrotor = size(sigr)
-    (; v_bb, v_br, v_bw) = ivb
+    if !isnothing(sigr)
+        nws, nrotor = size(sigr)
+        (; v_bb, v_br, v_bw) = ivb
+    else
+        nws = nrotor = nothing
+        (; v_bb) = ivb
+    end
 
     # rename for convenience
     hwi = wake_panel_ids_along_centerbody_wake_interface
@@ -224,19 +234,23 @@ function get_body_tangential_velocities!(
     Vtot_out .+= vtot_body
 
     # - Velocity Contributions from wake - #
-    for (i, vt) in enumerate(eachrow(vtot_wake))
-        vt .= @views v_bw[:, :, i] * gamw
-    end
-    Vtot_out .+= vtot_wake # opposite sign from linear solve
-
-    # - Velocity Contributions from rotors - #
-    for jrotor in 1:nrotor
-        rotorrange = (nws * (jrotor - 1) + 1):(nws * jrotor)
-        for (i, vt) in enumerate(eachrow(vtot_rotors))
-            vt .+= @views v_br[:, rotorrange, i] * sigr[rotorrange]
+    if !isnothing(gamw)
+        for (i, vt) in enumerate(eachrow(vtot_wake))
+            vt .= @views v_bw[:, :, i] * gamw
         end
+        Vtot_out .+= vtot_wake # opposite sign from linear solve
     end
-    Vtot_out .+= vtot_rotors # opposite sign from linear solve
+
+    if !isnothing(sigr)
+        # - Velocity Contributions from rotors - #
+        for jrotor in 1:nrotor
+            rotorrange = (nws * (jrotor - 1) + 1):(nws * jrotor)
+            for (i, vt) in enumerate(eachrow(vtot_rotors))
+                vt .+= @views v_br[:, rotorrange, i] * sigr[rotorrange]
+            end
+        end
+        Vtot_out .+= vtot_rotors # opposite sign from linear solve
+    end
 
     # - Influence from Freestream - #
     Vtot_out[1, :] .+= Vinf # opposite sign from linear solve
@@ -247,8 +261,11 @@ function get_body_tangential_velocities!(
     duct_jump .= @views (gamb[1:(npanel[1])] + gamb[2:(nnode[1])]) / 2
 
     # wake panels interfacing with duct
-    duct_jump[wdi] .+= @views (gamw[dwi[1]:(dwi[end] - 1)] + gamw[(dwi[1] + 1):dwi[end]]) /
-        2.0
+    if !isnothing(gamw)
+        duct_jump[wdi] .+= @views (
+            gamw[dwi[1]:(dwi[end] - 1)] + gamw[(dwi[1] + 1):dwi[end]]
+        ) / 2.0
+    end
 
     # center body panels
     centerbody_jump .= @views (
@@ -256,9 +273,11 @@ function get_body_tangential_velocities!(
     ) / 2.0
 
     # wake panels interfacing with center body
-    centerbody_jump[whi] .+= @views (
-        gamw[hwi[1]:(hwi[end] - 1)] + gamw[(hwi[1] + 1):hwi[end]]
-    ) / 2.0
+    if !isnothing(gamw)
+        centerbody_jump[whi] .+= @views (
+            gamw[hwi[1]:(hwi[end] - 1)] + gamw[(hwi[1] + 1):hwi[end]]
+        ) / 2.0
+    end
 
     body_jump_term[1:length(duct_jump)] .= duct_jump
     body_jump_term[(length(duct_jump) + 1):end] .= centerbody_jump

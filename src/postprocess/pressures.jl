@@ -256,7 +256,8 @@ function get_body_cps(
     centerbody_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
-    zpts,
+    zpts;
+    isolated_body=false
 )
     cp_in = similar(Vtan_in) .= 0
     cp_out = similar(Vtan_in) .= 0
@@ -289,11 +290,12 @@ function get_body_cps(
         Vref,
         B,
         Omega,
-        duct_panel_ids_aft_of_rotors,
+        casing_panel_ids_aft_of_rotors,
         centerbody_panel_ids_aft_of_rotors,
         controlpoints,
         endpanelidxs,
-        zpts,
+        zpts;
+        isolated_body=isolated_body
     )
 end
 
@@ -333,7 +335,8 @@ function get_body_cps!(
     centerbody_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
-    zpts,
+    zpts;
+    isolated_body=false
 )
 
     # rename for convenience
@@ -354,6 +357,7 @@ function get_body_cps!(
     steady_cp!(cp_in, Vtan_in, Vinf, Vref)
     steady_cp!(cp_out, Vtan_out, Vinf, Vref)
 
+    if !isolated_body
     # - add the change in Cp on the walls due to enthalpy, entropy, and vtheta - #
     calculate_body_delta_cp!(
         cp_out,
@@ -367,6 +371,7 @@ function get_body_cps!(
         casing_panel_ids_aft_of_rotors,
         centerbody_panel_ids_aft_of_rotors,
     )
+end
 
     # - Split body strengths into inner/outer duct and hub - #
     split_bodies!(
