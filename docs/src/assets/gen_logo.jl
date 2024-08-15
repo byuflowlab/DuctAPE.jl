@@ -143,7 +143,14 @@ plot!(
 )
 
 # axis of rotation
-plot!([nz[1], wg[1, end, 1]], -0.001 * ones(2); color=plotsgray, label="", lw=lw - 1, linestyle=:dashdot)
+plot!(
+    [nz[1], wg[1, end, 1]],
+    -0.001 * ones(2);
+    color=plotsgray,
+    label="",
+    lw=lw - 1,
+    linestyle=:dashdot,
+)
 
 # plot!(nz[13] * ones(2), [-0.075, 0.075]; color=plotsgray, label="", lw=lw - 1)
 # plot!(nz[13] * ones(2) .+ 0.075, [-0.075, 0.075]; color=plotsgray, label="", lw=lw - 1)
@@ -158,5 +165,7 @@ plot!([nz[1], wg[1, end, 1]], -0.001 * ones(2); color=plotsgray, label="", lw=lw
 
 ##### ----- SAVE ----- #####
 plot!(; grid=false, background_color=nothing)
-# savefig("logo.svg")
-savefig("logo.png")
+savefig("src/assets/logo.png")
+
+plot!(; background_color=:white, size=(600, 600))
+savefig("src/assets/ductapelogo.svg")
