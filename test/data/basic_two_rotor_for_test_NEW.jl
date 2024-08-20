@@ -2,9 +2,7 @@ r1 = [0.25; 0.5; 0.75; 1.0]
 Rtip = [1.0, 1.0]
 rnondim1 = r1 ./ Rtip[1]
 rnondim = [rnondim1 rnondim1]
-afparams1 = dt.c4b.DFDCairfoil(
-    0.0, 1.5, -1.0, 6.28, 0.5, 0.2, 0.012, 0.1, 0.005, 0.0, 200000.0, 0.35, 0.7
-)
+afparams1 = dt.c4b.DFDCairfoil()
 rotorzloc = [0.25, 0.75]
 r = rnondim
 chords = 0.1 * ones(size(rnondim))
