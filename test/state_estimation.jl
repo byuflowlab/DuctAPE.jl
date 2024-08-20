@@ -36,9 +36,7 @@ println("\nSTATE ESTIMATION TESTS")
     @test all(containers.Cmag_rotor .== sqrt.(vthetatest .^ 2 .+ (2.0 * ones(3, 2)) .^ 2))
 
     # more setup
-    dfdcparam = dt.c4b.DFDCairfoil(
-        0.0, 1.5, -1.0, 6.28, 0.5, 0.2, 0.012, 0.1, 0.005, 0.0, 200000.0, 0.35, 0.7
-    )
+    dfdcparam = dt.c4b.DFDCairfoil()
 
     blade_elements = (;
         B=[5, 5],
