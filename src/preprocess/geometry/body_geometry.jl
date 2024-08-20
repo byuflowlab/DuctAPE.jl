@@ -94,6 +94,13 @@ function reinterpolate_bodies!(
         [new_zcenterbody_grid'; new_rcenterbody_grid'],
     )
 
+    # check that the splining didn't put any of the center body radial coordinates in the negative.
+    for rpcb in eachcol(rp_centerbody_coordinates)
+        if rpcb[2] < 0.0 && rpcb[2] > -2.0*eps()
+            rpcb[2] = 0.0
+        end
+    end
+
     return rp_duct_coordinates, rp_centerbody_coordinates
 end
 

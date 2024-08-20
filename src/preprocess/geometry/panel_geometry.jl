@@ -180,7 +180,7 @@ function generate_panels!(
         r = view(c, 2, :)
 
         # Check if any r coordinates are negative (not allowed in axisymmetric method)
-        @assert all(r -> r >= 0.0, r) "Some coordinates have negative radial components."
+        @assert all(r -> r >= 0.0, r) "Some coordinates have negative radial components. $(r)"
 
         ## -- Loop Through Coordinates -- ##
         for ip in 1:Int(npanel[ib])
