@@ -505,9 +505,9 @@ Calculate dimensional and non-dimensional axial force on a single body
 function forces_from_pressure(cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
     # - initialize - #
     cfx = zeros(eltype(cp_out), Int(panels.nbodies[])) # axial force coefficient (all others are zero for axisymmetric case)
-    CFx = similar(cfx) .= 0
+    thrust = similar(cfx) .= 0
 
-    return forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=rhoinf, Vref=Vref)
+    return forces_from_pressure!(thrust, cfx, cp_in, cp_out, panels; rhoinf=rhoinf, Vref=Vref)
 end
 
 """
@@ -515,7 +515,7 @@ end
 
 In-place version of `forces_from_pressure`.
 """
-function forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
+function forces_from_pressure!(thrust, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0)
 
     # - rename for convenience - #
     #just want x-component of normals since it's axisymmetric
@@ -527,17 +527,17 @@ function forces_from_pressure!(CFx, cfx, cp_in, cp_out, panels; rhoinf=1.225, Vr
 
     # for each body
     for ib in 1:(Int(panels.nbodies[]))
-        # - rectangular integration due to constant panel strengths. - #
+        # - rectangular integration due to constant panel pressures. - #
         for ip in Int.(panels.endpanelidxs[1, ib]:panels.endpanelidxs[2, ib])
             cfx[ib] += (cp_out[ip] - cp_in[ip]) * ns[ip] * ds[ip] * 2.0 * pi * rs[ip]
         end
     end
 
     #dimensionalize
-    CFx .= cfx .* 0.5 * rhoinf * Vref^2
+    thrust .= cfx .* 0.5 * rhoinf * Vref^2
 
     #note, thrust is in negative x-direction
-    return CFx, cfx
+    return thrust, cfx
 end
 
 """
