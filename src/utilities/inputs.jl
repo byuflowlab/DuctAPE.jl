@@ -3,10 +3,6 @@
 
 Propulsor operating point information.
 
-Note that the actual struct requires the inputs to be arrays, but there is a constructor function that will take in scalars and automatically build the array-based struct.
-
-Also note that even though each field is required to be a vector, only `Omega` should have more than one entry, and only then if there are more than one rotor.  The purpose behind having vector rather than constant scalar inputs here is for ease of redefinition in an optimization setting when freestream design variables may be present.
-
 # Arguments
 
 - `Vinf::AbstractVector{Float}` : Freestream velocity magnitude (which is only in the axial direction).
@@ -113,7 +109,7 @@ Note that the actual struct requires the inputs to be arrays, but there is a con
 - `twists::AbstractArray{Float}` : Blade element angles, in radians.
 - `tip_gap::AbstractVector{Float}` : Currently unused, do not set to anything other than zeros.
 - `airfoils::AbstractArray{AFType}` : Airfoil types describing the airfoil polars for each blade element. Currently only fully tested with `C4Blade.DFDCairfoil` types.
-- `fliplift::AbstractVector{Bool}` : flag to indicate if the airfoil lift values should be flipped or not.
+- `fliplift::AbstractVector{Bool}` : Flag to indicate if the airfoil lift values should be flipped or not.
 """
 struct RotorStatorParameters{
     Tb<:AbstractVector,

@@ -8,7 +8,7 @@ Convenience function to initialize all caches before calling analysis.
 - `paneling_constants::PanelingConstants` : PanelingConstants object upon which all cache sizing depends
 
 # Keyword Arguments
-- `fd_chunk_size::Int=12` : chunk size to use for PreallocationTools caches.  Note that the automated chuck size for DuctAPE will always be the ForwardDiff threshold of 12 due to the size of the system, so it will be best to leave this at the default unless further development allows for chunk size selection for individual solvers.
+- `fd_chunk_size::Int=12` : chunk size to use for PreallocationTools caches.  Note that the automated chunk size for DuctAPE will always be the ForwardDiff threshold of 12 due to the size of the system, so it will be best to leave this at the default unless further development allows for chunk size selection for individual solvers.
 - `levels::Int=1` : levels for nested duals.  Note that since ImplicitAD is being used for all solves, there should be no need for more than 1 level.
 
 

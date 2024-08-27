@@ -6,18 +6,17 @@ Pages = ["tutorial.md"]
 Depth = 5
 ```
 
-The following is a basic tutorial on how to set up the inputs to, and run, an analysis of a ducted fan in DuctAPE.
+The following is a basic tutorial on how to set up and run an analysis of a ducted fan in DuctAPE.
 
 ```@setup tutorial
 include("../assets/plots_default.jl")
 gr()
 ```
 
-We begin by loading the package, and optionally create a shorthand name.
+We begin by loading the package:
 
 ```@example tutorial
 using DuctAPE
-const dt = DuctAPE
 nothing # hide
 ```
 
@@ -31,7 +30,8 @@ DuctAPE.Propulsor
 
 ### Body Geometry
 
-We begin by defining a matrix of coordinates for the duct and another for the centerbody geometries, for example:
+We begin by defining a matrix of coordinates for the duct and another for the centerbody geometries.
+For example:
 
 ```@example tutorial
 duct_coordinates = [
@@ -139,24 +139,24 @@ nothing # hide
 ```
 
 ```@example tutorial
-pg = plot(
-    duct_coordinates[:, 1],
-    duct_coordinates[:, 2];
-    aspectratio=1,
-    color=1,
-    linewidth=2,
-    label="Duct",
-    xlabel="z",
-    ylabel="r",
-    legend=:left,
+pg = plot( # hide
+    duct_coordinates[:, 1], # hide
+    duct_coordinates[:, 2]; # hide
+    aspectratio=1, # hide
+    color=1, # hide
+    linewidth=2, # hide
+    label="Duct", # hide
+    xlabel="z", # hide
+    ylabel="r", # hide
+    legend=:left, # hide
 ) # hide
-plot!(
-    pg,
-    centerbody_coordinates[:, 1],
-    centerbody_coordinates[:, 2];
-    color=2,
-    linewidth=2,
-    label="Center Body",
+plot!( # hide
+    pg, # hide
+    centerbody_coordinates[:, 1], # hide
+    centerbody_coordinates[:, 2]; # hide
+    color=2, # hide
+    linewidth=2, # hide
+    label="Center Body", # hide
 ) # hide
 ```
 
@@ -249,7 +249,7 @@ afparams = DuctAPE.c4b.DFDCairfoil(;
 airfoils = fill(afparams, length(r)) # specify the airfoil array
 
 # assemble rotor parameters
-rotorstator_parameters = dt.RotorStatorParameters(
+rotorstator_parameters = DuctAPE.RotorStatorParameters(
     [B],
     [rotorzloc],
     r,
@@ -265,14 +265,14 @@ nothing # hide
 ```
 
 ```@example tutorial
-plot!(
-    pg,
-    rotorzloc * ones(length(r)),
-    r .* Rtip;
-    seriestype=:scatter,
-    markersize=3,
-    markerstrokewidth=0,
-    label="Blade Elements",
+plot!( # hide
+    pg, # hide
+    rotorzloc * ones(length(r)), # hide
+    r .* Rtip; # hide
+    seriestype=:scatter, # hide
+    markersize=3, # hide
+    markerstrokewidth=0, # hide
+    label="Blade Elements", # hide
 ) # hide
 ```
 
@@ -302,13 +302,14 @@ RPM = 8000.0
 Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
 
 # utilizing the constructor function to put things in vector types
-operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+operating_point = DuctAPE.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
 nothing # hide
 ```
 
 ### Paneling Constants
 
 The `PanelingConstants` object contains the constants required for DuctAPE to re-panel the provided geometry into a format compatible with the solve structure.
+Specifically, the DuctAPE solver makes some assumptions on the relative positioning of the body surfaces relative to the wakes and each other; and this is most easily guarenteed by a re-paneling of the provided body surface geometry.
 The `PanelingConstants` object is also used to build all of the preallocated caches inside DuctAPE, which can be done up-front if desired.
 Note that there is some functionality in place for cases when the user wants to keep their own specified geometry, but this functionality should be used with caution and only by users who are certain their provided geometry is in the compatible format.  See the [Examples](@ref "Circumventing the Automated Geometry Re-paneling") for an example.
 
@@ -339,7 +340,7 @@ nwake_sheets = 11
 wake_length = 0.8
 
 # assemble paneling constants
-paneling_constants = dt.PanelingConstants(
+paneling_constants = DuctAPE.PanelingConstants(
     nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
 )
 nothing # hide
@@ -361,17 +362,17 @@ Vref = 50.0
 Rref = Rtip
 
 # assemble reference parameters
-reference_parameters = dt.ReferenceParameters([Vref], [Rref])
+reference_parameters = DuctAPE.ReferenceParameters([Vref], [Rref])
 nothing # hide
 ```
 
-### All Together
+### Assembling the Propulsor
 
 We are now posed to construct the `Propulsor` input type.
 
 ```@example tutorial
 # assemble propulsor object
-propulsor = dt.Propulsor(
+propulsor = DuctAPE.Propulsor(
     duct_coordinates,
     centerbody_coordinates,
     rotorstator_parameters,
@@ -391,7 +392,7 @@ DuctAPE.set_options
 ```
 
 ```@example tutorial
-options = dt.set_options()
+options = DuctAPE.set_options()
 ```
 
 For more advanced option selection, see the examples and API reference.
@@ -406,13 +407,13 @@ DuctAPE.analyze(::DuctAPE.Propulsor, ::DuctAPE.Options)
 ```
 
 ```@example tutorial
-outs, success_flag = dt.analyze(propulsor, options)
+outs, success_flag = DuctAPE.analyze(propulsor, options)
 nothing # hide
 ```
 
 ### Single Run Outputs
 
-There are many outputs contained in the named tuple output from the `analyze` function (see the [post_process() docstring](@ref DuctAPE.post_process)), but some that may be of immediate interest include:
+There are many outputs contained in the named tuple output from the `analyze` function (see the [post_process docstring](@ref DuctAPE.post_process)), but some that may be of immediate interest include:
 
 ```@example tutorial
 # Total Thrust Coefficient
@@ -425,7 +426,7 @@ outs.totals.CQ
 
 ## Run a Multi-Point Analysis
 
-In the case that one wants to run the same geometry at several different operating points, for example: for a range of advance ratios, there is another dispatch of the `analyze` function that takes in an input, `multipoint`, that is a vector of operating points.
+In the case that one wants to run the same geometry at several different operating points, for example: for a range of advance ratios, there is another dispatch of the `analyze` function that accepts an input, `multipoint`, that is a vector of operating points.
 
 ```@docs; canonical=false
 DuctAPE.analyze(multipoint::AbstractVector{TO},propulsor::Propulsor,options::Options) where TO<:OperatingPoint
@@ -455,7 +456,7 @@ nothing #hide
 
 There are a few things to note here.
 1. We want to make sure that the operating point objects we put into the input vector are unique instances.
-2. We need to use the dispatch of `set_options` that takes in the operating point vector to set up the right number of things in the background (like convergence flags for each operating point).
+2. We need to use the dispatch of `set_options` that accepts the operating point vector to set up the right number of things in the background (like convergence flags for each operating point).
 3. The outputs of the analysis are vectors of the same outputs for a single analysis.
 
 ### Multi-point Outputs

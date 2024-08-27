@@ -53,13 +53,13 @@ abstract type IntegrationMethod end
 #---------------------------------#
 
 """
-    struct Romberg{TF,TI} <: IntegrationMethod
+    struct Romberg <: IntegrationMethod
 
 Options for Romberg integration method
 
 # Fields
-- `max_subdivisions::TI = 10` : maximum number of subdivisions. Note, total number of internvals is 2^N, where N is number of subdivisions.
-- `atol::TF = 1e-6` : absolute error tolerance.
+- `max_subdivisions::Int = 10` : maximum number of subdivisions. Note, total number of internvals is 2^N, where N is number of subdivisions.
+- `atol::Float = 1e-6` : absolute error tolerance.
 """
 @kwdef struct Romberg{TF,TI} <: IntegrationMethod
     max_subdivisions::TI = 10
@@ -67,14 +67,14 @@ Options for Romberg integration method
 end
 
 """
-    struct GaussKronrod{TF,TI} <: IntegrationMethod
+    struct GaussKronrod <: IntegrationMethod
 
 Options for Gauss-Kronrod integration method
 
 # Fields
-- `order::TI = 7` : order of Legendre polynomial to use on each interval
-- `maxevales::TI = 10^7` : maximum number of evaluations in the adaptive method
-- `atol::TF = 0.0` : absolute error tolerance. (note, if zero, QuadGK uses sqrt(eps()) relative tolerance).
+- `order::Int = 7` : order of Legendre polynomial to use on each interval
+- `maxevales::Int = 10^7` : maximum number of evaluations in the adaptive method
+- `atol::Float = 0.0` : absolute error tolerance. (note, if zero, QuadGK uses sqrt(eps()) relative tolerance).
 """
 @kwdef struct GaussKronrod{TF,TI} <: IntegrationMethod
     order::TI = 7
@@ -83,13 +83,13 @@ Options for Gauss-Kronrod integration method
 end
 
 """
-    struct GaussLegendre{TN,TW} <: IntegrationMethod
+    struct GaussLegendre <: IntegrationMethod
 
 Options for Gauss-Legendre integration method
 
 # Fields
-- `sample_points::TN` : Sample Points
-- `weights::TW` : Gauss weights
+- `sample_points::Int` : Sample Points
+- `weights::Int` : Gauss weights
 """
 struct GaussLegendre{TN,TW} <: IntegrationMethod
     sample_points::TN
@@ -121,7 +121,7 @@ function GaussLegendre(nsamples=8; silence_warnings=true)
 end
 
 """
-    struct IntegrationOptions{TN<:IntegrationMethod,TS<:IntegrationMethod}
+    struct IntegrationOptions
 
 A struct used to hold the integration options for both the nominal and singular cases.
 
@@ -157,29 +157,28 @@ struct Absolute <: ConvergenceType end
 
 # - CSOR Options - #
 """
-    struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TS} <: SolverOptionsType
+    struct CSORSolverOptions <: SolverOptionsType
 
 Type containing all the options for the CSOR (controlled successive over relaxation) solver.
 
 Note that the defaults match DFDC with the exception of the relaxation schedule, which is an experimental feature.
 
 # Fields
-- `var::type` :
-- `verbose::TB = false` : flag to print verbose statements
-- `iteration_limit::TF = 1e2` : maximum number of iterations
-- `nrf::TF = 0.4` : nominal relaxation factor
-- `bt1::TF = 0.2` : backtracking factor 1
-- `bt2::TF = 0.6` : backtracking factor 2
-- `pf1::TF = 0.4` : press forward factor 1
-- `pf2::TF = 0.5` : press forward factor 2
-- `btw::TF = 0.6` : backtracking factor for wake
-- `pfw::TF = 1.2` : press forward factor for wake
+- `verbose::Bool = false` : flag to print verbose statements
+- `iteration_limit::Float = 1e2` : maximum number of iterations
+- `nrf::Float = 0.4` : nominal relaxation factor
+- `bt1::Float = 0.2` : backtracking factor 1
+- `bt2::Float = 0.6` : backtracking factor 2
+- `pf1::Float = 0.4` : press forward factor 1
+- `pf2::Float = 0.5` : press forward factor 2
+- `btw::Float = 0.6` : backtracking factor for wake
+- `pfw::Float = 1.2` : press forward factor for wake
 - `relaxation_schedule::TS = [[0.0;1e-14;1e-13;1e10]), [1.0;1.0;0.0;0.0])]` : values used in spline definition for scaling the relaxation factors (second vector) after various convergence values (first vector).
-- `f_circ::TF = 1e-3` : convergence tolerance for rotor circulation
-- `f_dgamw::TF = 2e-4` : convergence tolerance for wake vortex strength
-- `convergence_type::TC = Relative()` : dispatch for relative or absolute convergence criteria.
-- `Vconv::AbstractArray{TF} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `f_circ::Float = 1e-3` : convergence tolerance for rotor circulation
+- `f_dgamw::Float = 2e-4` : convergence tolerance for wake vortex strength
+- `convergence_type::ConvergenceType = Relative()` : dispatch for relative or absolute convergence criteria.
+- `Vconv::AbstractArray{Float} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: SolverOptionsType
     # Defaults are DFDC hard-coded values
@@ -226,16 +225,16 @@ function CSORSolverOptions(multipoint; kwargs...)
 end
 
 """
-    struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
+    struct FixedPointOptions <: ExternalSolverOptions
 
 Options for the FixedPoint.jl package solver
 
 # Fields
-- `iteration_limit::TF = 1000` : maximum number of iterations
-- `vel::TF = 0.9` : vel keyword argument, default is package default
-- `ep::TF = 0.01` : ep keyword argument, default is package default
-- `atol::TF = 1e-12` : absolute convergence tolerance
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `iteration_limit::Int = 1000` : maximum number of iterations
+- `vel::Float = 0.9` : vel keyword argument, default is package default
+- `ep::Float = 0.01` : ep keyword argument, default is package default
+- `atol::Float = 1e-12` : absolute convergence tolerance
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
     iteration_limit::TI = 1000
@@ -247,23 +246,23 @@ Options for the FixedPoint.jl package solver
 end
 
 """
-    struct SpeedMappingOptions{TB,TF,TI,TL,TSm,TU} <: ExternalSolverOptions
+    struct SpeedMappingOptions <: ExternalSolverOptions
 
 Options for the SpeedMapping.jl package solver
 
 # Fields
-- `orders::AbstractArray{TI} = [3, 2]
-- `sig_min::TSm = 0` : maybe set to 1?
-- `stabilize::TB = false` : stabilizes before extrapolation
-- `check_obj::TB = false` : checks for inf's and nan's and starts from previous finite point
-- `atol::TF = 1e-10` : absolute convergence tolerance
-- `iteration_limit::TF = 1000` : maximum number of iterations
-- `time_limit::TF = Inf` : time limit in seconds
-- `lower::TL = nothing` : box lower bounds
-- `upper::TU = nothing` : box upper bounds
-- `buffer::TF = 0.01` : if using bounds, buffer brings x inside bounds by buffer amountd
-- `Lp::TF = Inf` : p value for p-norm for convergence criteria
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `orders::AbstractArray{Int} = [3, 2]
+- `sig_min::Int = 0` : maybe set to 1?
+- `stabilize::Bool = false` : stabilizes before extrapolation
+- `check_obj::Bool = false` : checks for inf's and nan's and starts from previous finite point
+- `atol::Float = 1e-10` : absolute convergence tolerance
+- `iteration_limit::Float = 1000` : maximum number of iterations
+- `time_limit::Float = Inf` : time limit in seconds
+- `lower::Float = nothing` : box lower bounds
+- `upper::Float = nothing` : box upper bounds
+- `buffer::Float = 0.01` : if using bounds, buffer brings x inside bounds by buffer amountd
+- `Lp::Float = Inf` : p value for p-norm for convergence criteria
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct SpeedMappingOptions{TB,TF,TI,TL,TSm,TU} <: ExternalSolverOptions
     orders::AbstractArray{TI} = [3, 2]
@@ -284,15 +283,15 @@ end
 ##### ----- Quasi-Newton Solvers ----- #####
 
 """
-    struct MinpackOptions{TB,TF,TI,TSym} <: ExternalSolverOptions
+    struct MinpackOptions <: ExternalSolverOptions
 
 Options for the MINPACK's HYBRJ solver
 
 # Fields
-- `algorithm::TSym = :hybr` : algorithm to use in MINPACK.jl (hybr is HYBRJ when the jacobian is provided)
-- `atol::TF = 1e-12` : absolute convergence tolerance
-- `iteration_limit::TF = 100` : maximum number of iterations
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `algorithm::Symbol = :hybr` : algorithm to use in MINPACK.jl (hybr is HYBRJ when the jacobian is provided)
+- `atol::FLoat = 1e-12` : absolute convergence tolerance
+- `iteration_limit::FLoat = 100` : maximum number of iterations
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct MinpackOptions{TB,TF,TI,TSym} <: ExternalSolverOptions
     algorithm::TSym = :hybr
@@ -303,18 +302,18 @@ Options for the MINPACK's HYBRJ solver
 end
 
 """
-    struct SIAMFANLEOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
+    struct SIAMFANLEOptions <: ExternalSolverOptions
 
 Options for the SIAMFANLEquations pacakge solvers
 
 # Fields
-- `algorithm::TA = SIAMFANLEquations.nsoli` : algorithm to use
-- `rtol::TF = 0.0` : relative convergence tolerance
-- `atol::TF = 1e-10` : absolute convergence tolerance
-- `iteration_limit::TF = 1000` : maximum number of iterations
-- `linear_iteration_limit::TF = 5` : maximum number of linear solve iterations (GMRES)
-- `additional_kwargs::TK = (;)` : any additional keyword arguments for the solver
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `algorithm::SIAMFANLEquations algorithm = SIAMFANLEquations.nsoli` : algorithm to use
+- `rtol::Float = 0.0` : relative convergence tolerance
+- `atol::Float = 1e-10` : absolute convergence tolerance
+- `iteration_limit::Int = 1000` : maximum number of iterations
+- `linear_iteration_limit::Float = 5` : maximum number of linear solve iterations (GMRES)
+- `additional_kwargs = (;)` : any additional keyword arguments for the solver
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct SIAMFANLEOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Options for overall solve
@@ -333,16 +332,16 @@ end
 # NOTE: these also have fixed-point options
 
 """
-    struct NonlinearSolveOptions{TA,TB,TF,TI,TT} <: ExternalSolverOptions
+    struct NonlinearSolveOptions <: ExternalSolverOptions
 
 Options for the SimpleNonlinearSolve pacakge solvers
 
 # Fields
-- `algorithm::TA = SimpleNonlinearSolve.SimpleNewtonRaphson` : algorithm to use
-- `additional_kwargs::TK = (;)` : any additional keyword arguments for the solver
-- `atol::TF = 1e-12` : absolute convergence tolerance
-- `iteration_limit::TF = 25` : maximum number of iterations
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `algorithm::SimpleNonlinearSolve algorithm = SimpleNonlinearSolve.SimpleNewtonRaphson` : algorithm to use
+- `additional_kwargs = (;)` : any additional keyword arguments for the solver
+- `atol::Float = 1e-12` : absolute convergence tolerance
+- `iteration_limit::Float = 25` : maximum number of iterations
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct NonlinearSolveOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Algorithm Options
@@ -356,18 +355,18 @@ Options for the SimpleNonlinearSolve pacakge solvers
 end
 
 """
-    struct NLsolveOptions{TB,TF,TK,Tls,Tlsk,TSym} <: ExternalSolverOptions
+    struct NLsolveOptions <: ExternalSolverOptions
 
 Options for the NLsolve pacakge solvers
 
 # Fields
-- `algorithm::TSym = :anderson` : algorithm to use
-- `additional_kwargs::TK = (;)` : any additional keyword arguments for the solver
-- `atol::TF = 1e-12` : absolute convergence tolerance
-- `iteration_limit::TF = 25` : maximum number of iterations
-- `linesearch_method::Tls = LineSearches.MoreThuente` : line search method to use
-- `linesearch_kwargs::Tlsk = (;)` : any additional lineseach keyword arguments
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `algorithm::Symbol = :anderson` : algorithm to use
+- `additional_kwargs = (;)` : any additional keyword arguments for the solver
+- `atol::Float = 1e-12` : absolute convergence tolerance
+- `iteration_limit::Int = 25` : maximum number of iterations
+- `linesearch_method::LineSearches method = LineSearches.MoreThuente` : line search method to use
+- `linesearch_kwargs = (;)` : any additional lineseach keyword arguments
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct NLsolveOptions{TB,TF,TI,Tls,Tlsk,TSym} <: ExternalSolverOptions
     # Options for overall solve
@@ -384,18 +383,16 @@ end
 ##### ----- Poly-Algorithm Solvers ----- #####
 
 """
-    struct CompositeSolverOptions{
-        TB,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
-    } <: PolyAlgorithmOptions
+    struct CompositeSolverOptions <: PolyAlgorithmOptions
 
 Options for Composite Solvers (start with a partial solve of one solve, then finish with another starting where the first left off).
 
 # Fields
-- `solvers::AbstractArray{TS} = [
+- `solvers::AbstractArray{SolverOptionsType} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
     ]' : Vector of solver options to use.
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct CompositeSolverOptions{
     TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
@@ -409,12 +406,12 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
 end
 
 """
-    struct ChainSolverOptions{TB,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}} <:PolyAlgorithmOptions
+    struct ChainSolverOptions <:PolyAlgorithmOptions
 
 Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 
 # Fields
-- `solvers::AbstractArray{TS} = [
+- `solvers::AbstractArray{SolverOptionsType} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
         MinpackOptions(; atol=1e-12),
         NonlinearSolveOptions(;
@@ -423,7 +420,7 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
             additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
         ),
     ] : Vector of solver options to use.
-- `converged::AbstractArray{TB} = [false]` : flag to track if convergence took place.
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
 @kwdef struct ChainSolverOptions{
     TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
@@ -482,14 +479,14 @@ end
 #   ELLIPTIC GRID SOLVER TYPES    #
 #---------------------------------#
 """
-    struct SLORGridSolverOptions{TB,TF,TI} <: GridSolverOptionsType
+    struct SLORGridSolverOptions <: GridSolverOptionsType
 
 Options for SLOR (successive line over relaxation) elliptic grid solver.
 
 # Fields
-- `iteration_limit::TI = 100` : maximum number of iterations
-- `atol::TF = 1e-9` : absolute convergence tolerance
-- `converged::AbstractArray{TB} = [false]
+- `iteration_limit::Int = 100` : maximum number of iterations
+- `atol::Float = 1e-9` : absolute convergence tolerance
+- `converged::AbstractArray{Bool}` = [false]
 """
 @kwdef struct SLORGridSolverOptions{TB,TF,TI} <: GridSolverOptionsType
     iteration_limit::TI = 200
@@ -499,16 +496,16 @@ Options for SLOR (successive line over relaxation) elliptic grid solver.
 end
 
 """
-    struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
+    struct GridSolverOptions <: GridSolverOptionsType
 
 Options for SLOR + Newton elliptic grid solver.
 
 # Fields
-- `iteration_limit::TI = 10` : maximum number of iterations
-- `atol::TF = 1e-14` : absolute convergence tolerance
-- `algorithm::TSym = :newton` : algorithm to use in NLsolve.jl
-- `autodiff::TSym = :forward` : differentiation method to use in NLsolve.jl
-- `converged::AbstractArray{TB}` = [false]
+- `iteration_limit::Int = 10` : maximum number of iterations
+- `atol::Float = 1e-14` : absolute convergence tolerance
+- `algorithm::Symbol = :newton` : algorithm to use in NLsolve.jl
+- `autodiff::Symbol = :forward` : differentiation method to use in NLsolve.jl
+- `converged::AbstractArray{Bool}` = [false]
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
     iteration_limit::TI = 20
@@ -524,45 +521,34 @@ end
 #---------------------------------#
 
 """
-    struct Options{
-        TB,
-        TBwo,
-        TF,
-        TI,
-        TSf,
-        TSt,
-        Tin,
-        TIo<:IntegrationOptions,
-        TSo<:SolverOptionsType,
-        WS<:GridSolverOptionsType,
-    }
+    struct Options
 
 Type containing (nearly) all the available user options.
 
 # Fields
 ## General Options
-- `verbose::TB = false` : flag to print verbose statements
-- `silence_warnings::TB = true` : flag to silence warnings
-- `multipoint_index::TI = [1]` : holds current index of multi-point solver (no need for user to change this usually)
+- `verbose::Bool = false` : flag to print verbose statements
+- `silence_warnings::Bool = true` : flag to silence warnings
+- `multipoint_index::Int = [1]` : holds current index of multi-point solver (no need for user to change this usually)
 ## Pre-processing Options
-### Geometry ee-interpolation and generation options :
-- `finterp::Tin = FLOWMath.akima` : interpolation method used for re-paneling bodies
-- `autoshiftduct::TB = true` : flag as to whether duct geometry should be shifted based on rotor tip location
-- `lu_decomp_flag::TB = false` : flag indicating if panel method LHS matrix factorization was successful
+### Geometry interpolation and generation options :
+- `finterp::Interplation Method = FLOWMath.akima` : interpolation method used for re-paneling bodies
+- `autoshiftduct::Bool = true` : flag as to whether duct geometry should be shifted based on rotor tip location
+- `lu_decomp_flag::Bool = false` : flag indicating if panel method LHS matrix factorization was successful
 ### paneling options
-- `itcpshift::TF = 0.05` : factor for internal trailing edge psuedo-panel placement (default is DFDC hard-coded value)
-- `axistol::TF = 1e-15` : tolerance for how close the the axis of rotation should be considered on the axis
-- `tegaptol::TF = 1e1 * eps()` : tolerance for how large of a trailing edge gap should be considered a gap
+- `itcpshift::Float = 0.05` : factor for internal trailing edge psuedo-panel placement (default is DFDC hard-coded value)
+- `axistol::Float = 1e-15` : tolerance for how close the the axis of rotation should be considered on the axis
+- `tegaptol::Float = 1e1 * eps()` : tolerance for how large of a trailing edge gap should be considered a gap
 ## Integration Options
-- `integration_options::TIo = IntegrationOptions()` : integration options
+- `integration_options::IntegrationOptions type = IntegrationOptions()` : integration options
 ## Post-processing Options
-- `write_outputs::TBwo = [false]` : Bool for whether to write the outputs of the analysis to an external file (slow)
-- `outfile::TSf = ["outputs.jl"]` : External output file name (including path information) for files to write
-- `checkoutfileexists::TB = false` : Flag for whether to check if file exists before overwriting
-- `output_tuple_name::TSt = ["outs"]` : variable name for named tuple written to out file
+- `write_outputs::AbstractArray{Bool} = [false]` : Bool for whether to write the outputs of the analysis to an external file (slow)
+- `outfile::AbstractArray{String} = ["outputs.jl"]` : External output file name (including path information) for files to write
+- `checkoutfileexists::Bool = false` : Flag for whether to check if file exists before overwriting
+- `output_tuple_name::AbstractArray{String} = ["outs"]` : variable name for named tuple written to out file
 ## Solving Options
-- `grid_solver_options::WS = GridSolverOptions()` : elliptic grid solver options
-- `solver_options::TSo = ChainSolverOptions()` : solver options
+- `grid_solver_options::GridSolverOptionsType = GridSolverOptions()` : elliptic grid solver options
+- `solver_options::SolverOptionsType = ChainSolverOptions()` : solver options
 """
 @kwdef struct Options{
     TB,
