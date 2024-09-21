@@ -16,7 +16,7 @@ afparams = DuctAPE.c4b.DFDCairfoil(;
 
 airfoils = fill(afparams, length(r)) # specify the airfoil array
 
-rotorstator_parameters = dt.RotorStatorParameters(
+rotor = dt.Rotor(
     [5],
     [rotorzloc],
     r,
@@ -61,10 +61,10 @@ reference_parameters = dt.ReferenceParameters([Vref], [Rref])
 dz = [reverse(cz); nz[2:end]]
 dr = [reverse(cr); nr[2:end]]
 
-propulsor = dt.Propulsor(
+ducted_rotor = dt.DuctedRotor(
     [dz dr],
     [cbz cbr],
-    rotorstator_parameters,
+    rotor,
     operating_point,
     paneling_constants,
     reference_parameters,
