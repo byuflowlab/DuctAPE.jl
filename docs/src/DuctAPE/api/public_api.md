@@ -7,10 +7,10 @@ Depth = 5
 
 ## Input Types
 ```@docs
-DuctAPE.DuctedRotor
-DuctAPE.Rotor
-DuctAPE.OperatingPoint
 DuctAPE.PanelingConstants
+DuctAPE.Rotor
+DuctAPE.DuctedRotor
+DuctAPE.OperatingPoint
 DuctAPE.ReferenceParameters
 ```
 

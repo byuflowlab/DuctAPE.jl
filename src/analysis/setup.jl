@@ -117,8 +117,8 @@ function setup_analysis(
     )
 
     # copy over operating point
-    for f in fieldnames(typeof(ducted_rotor.operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(ducted_rotor.operating_point, f)
+    for f in fieldnames(typeof(operating_point))
+        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
     end
 
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
@@ -134,6 +134,7 @@ function setup_analysis(
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
         ducted_rotor,
+        operating_point,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=options.grid_solver_options,

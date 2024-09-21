@@ -25,9 +25,7 @@ println("\nITERATION STEP THROUGH TESTS")
         rp_duct_coordinates,
         rp_centerbody_coordinates,
         rotor,
-        operating_point,
         paneling_constants,
-        reference_parameters,
     )
 
     options = dt.DFDC_options(;
@@ -97,8 +95,8 @@ println("\nITERATION STEP THROUGH TESTS")
     )
 
     # copy over operating point
-    for f in fieldnames(typeof(ducted_rotor.operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(ducted_rotor.operating_point, f)
+    for f in fieldnames(typeof(operating_point))
+        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
     end
 
     # generate inputs

@@ -1129,7 +1129,8 @@ end
 
 """
     precompute_parameters(
-        ducted_rotor;
+        ducted_rotor,
+        operating_point;
         grid_solver_options=GridSolverOptions(),
         integration_options=IntegrationOptions(),
         autoshiftduct=true,
@@ -1144,7 +1145,8 @@ end
 Out of place main pre-processing function that computes all the required parameters for the solve.
 
 # Arguments
-- `ducted_rotor::DuctedRotor` : A Propuslor object
+- `ducted_rotor::DuctedRotor` : A DuctedRotor object
+- `operating_point::OperatingPoint` : A OperatingPoint object
 
 # Keyword Arguments
 - `grid_solver_options::GridSolverOptionsType=GridSolverOptions()` : A GridSolverOptionsType object
@@ -1181,7 +1183,8 @@ Out of place main pre-processing function that computes all the required paramet
 - `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
 """
 function precompute_parameters(
-    ducted_rotor;
+    ducted_rotor,
+    operating_point;
     grid_solver_options=GridSolverOptions(),
     integration_options=IntegrationOptions(),
     autoshiftduct=true,
@@ -1388,6 +1391,7 @@ end
         linsys,
         wakeK,
         ducted_rotor,
+        operating_point,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=GridSolverOptions(),
@@ -1410,6 +1414,7 @@ function precompute_parameters!(
     linsys,
     wakeK,
     ducted_rotor,
+    operating_point,
     prepost_containers,
     problem_dimensions;
     grid_solver_options=GridSolverOptions(),
@@ -1429,7 +1434,6 @@ function precompute_parameters!(
         centerbody_coordinates,
         rotor,
         paneling_constants,
-        operating_point,
     ) = ducted_rotor
 
     # - Unpack preprocess containers - #

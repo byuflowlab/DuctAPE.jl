@@ -48,26 +48,5 @@ ducted_rotor = dt.DuctedRotor(
     duct_coordinates,
     centerbody_coordinates,
     rotor,
-    operating_point,
     paneling_constants,
-    reference_parameters,
 )
-#
-#
-#
-#
-#
-# plot(
-#     duct_coordinates[:, 1],
-#     duct_coordinates[:, 2] .- 0.75;
-#     aspectratio=1,
-#     marker=true,
-#     label="",
-# )
-# plot!(hub_coordinates[:, 1], hub_coordinates[:, 2]; marker=true, label="")
-
-# for i in 1:length(rotorzloc)
-#     plot!([rotorzloc[i], rotorzloc[i]], [Rhub, Rtip]; marker=true, label="", color=3)
-# end
-# plot!()
-

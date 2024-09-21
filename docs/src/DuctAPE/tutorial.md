@@ -282,30 +282,6 @@ plot!( # hide
     In addition there are untested cascade types with similar structure to CCBlades airfoil types called `DTCascade`.
     Furthermore, there is an experimental actuator disk model implemented via the `ADM` airfoil type in C4Blade.
 
-### Operating Point
-
-Next we will assemble the operating point which contains information about the freestream as well as the rotor rotation rate(s).
-
-```@docs; canonical=false
-DuctAPE.OperatingPoint
-```
-
-```@example tutorial
-# Freestream
-Vinf = 0.0 # hover condition
-rhoinf = 1.226
-asound = 340.0
-muinf = 1.78e-5
-
-# Rotation Rate
-RPM = 8000.0
-Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
-
-# utilizing the constructor function to put things in vector types
-operating_point = DuctAPE.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
-nothing # hide
-```
-
 ### Paneling Constants
 
 The `PanelingConstants` object contains the constants required for DuctAPE to re-panel the provided geometry into a format compatible with the solve structure.
@@ -345,6 +321,44 @@ paneling_constants = DuctAPE.PanelingConstants(
 )
 nothing # hide
 ```
+### Assembling the DuctedRotor
+
+We are now posed to construct the `DuctedRotor` input type.
+
+```@example tutorial
+# assemble ducted_rotor object
+ducted_rotor = DuctAPE.DuctedRotor(
+    duct_coordinates,
+    centerbody_coordinates,
+    rotor,
+    paneling_constants,
+)
+nothing # hide
+```
+
+### Operating Point
+
+Next we will assemble the operating point which contains information about the freestream as well as the rotor rotation rate(s).
+
+```@docs; canonical=false
+DuctAPE.OperatingPoint
+```
+
+```@example tutorial
+# Freestream
+Vinf = 0.0 # hover condition
+rhoinf = 1.226
+asound = 340.0
+muinf = 1.78e-5
+
+# Rotation Rate
+RPM = 8000.0
+Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
+
+# utilizing the constructor function to put things in vector types
+operating_point = DuctAPE.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+nothing # hide
+```
 
 ### Reference Parameters
 
@@ -366,22 +380,6 @@ reference_parameters = DuctAPE.ReferenceParameters([Vref], [Rref])
 nothing # hide
 ```
 
-### Assembling the DuctedRotor
-
-We are now posed to construct the `DuctedRotor` input type.
-
-```@example tutorial
-# assemble ducted_rotor object
-ducted_rotor = DuctAPE.DuctedRotor(
-    duct_coordinates,
-    centerbody_coordinates,
-    rotor,
-    operating_point,
-    paneling_constants,
-    reference_parameters,
-)
-nothing # hide
-```
 
 ## Set Options
 
@@ -403,11 +401,11 @@ With the ducted_rotor input build, and the options selected, we are now ready to
 This is done simply with the `analyze` function which dispatches the appropriate analysis, solve, and post-processing functions based on the selected options.
 
 ```@docs; canonical=false
-DuctAPE.analyze(::DuctAPE.DuctedRotor, ::DuctAPE.Options)
+DuctAPE.analyze(::DuctAPE.DuctedRotor, ::DuctAPE.OperatingPoint, ::DuctAPE.ReferenceParameters, ::DuctAPE.Options)
 ```
 
 ```@example tutorial
-outs, success_flag = DuctAPE.analyze(ducted_rotor, options)
+outs, success_flag = DuctAPE.analyze(ducted_rotor, operating_point, reference_parameters, options)
 nothing # hide
 ```
 
@@ -429,7 +427,7 @@ outs.totals.CQ
 In the case that one wants to run the same geometry at several different operating points, for example: for a range of advance ratios, there is another dispatch of the `analyze` function that accepts an input, `multipoint`, that is a vector of operating points.
 
 ```@docs; canonical=false
-DuctAPE.analyze(multipoint::AbstractVector{TO},ducted_rotor::DuctedRotor,options::Options) where TO<:OperatingPoint
+DuctAPE.analyze(ducted_rotor::DuctedRotor,operating_point::AbstractVector{TO},reference_parameters::ReferenceParameters,options::Options) where TO<:OperatingPoint
 ```
 
 Running a multi-point analysis on the example geometry given there, it might look something like this:
@@ -444,13 +442,13 @@ n = RPM / 60.0 # rotation rate in revolutions per second
 Vinfs = Js * n * D
 
 # - Set Operating Points - #
-ops = [deepcopy(operating_point) for i in 1:length(Vinfs)]
+operating_points = [deepcopy(operating_point) for i in 1:length(Vinfs)]
 for (iv, v) in enumerate(Vinfs)
-    ops[iv].Vinf[] = v
+    operating_points[iv].Vinf[] = v
 end
 
 # - Run Multi-point Analysis - #
-outs_vec, success_flags = DuctAPE.analyze(ops, ducted_rotor, DuctAPE.set_options(ops))
+outs_vec, success_flags = DuctAPE.analyze(ducted_rotor, operating_points, reference_parameters, DuctAPE.set_options(operating_points))
 nothing #hide
 ```
 
@@ -516,6 +514,7 @@ nothing #hide
 And then we can plot the data to compare DFDC and DuctAPE.
 
 ```@example tutorial
+using Plots
 
 # set up efficiency plot
 pe = plot(; xlabel="Advance Ratio", ylabel="Efficiency")

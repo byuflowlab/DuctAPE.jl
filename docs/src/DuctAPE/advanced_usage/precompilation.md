@@ -78,5 +78,7 @@ The precompiled caches can be passed in via keyword arguments to the analysis fu
 ```@docs; canonical=false
 DuctAPE.analyze(
     ducted_rotor::DuctedRotor,
+    operating_point::OperatingPoint,
+    reference_parameters::ReferenceParameters,
     options::Options=set_options())
 ```

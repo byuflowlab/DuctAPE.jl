@@ -157,7 +157,7 @@ function Rotor(
 end
 
 """
-    DuctedRotor(duct_coordinates, centerbody_coordinates, rotor, operating_point, paneling_constants, reference_parameters)
+    DuctedRotor(duct_coordinates, centerbody_coordinates, rotor, paneling_constants)
 
 # Arguments
 
@@ -169,10 +169,8 @@ end
 struct DuctedRotor{
     Td<:AbstractMatrix,
     Tcb<:AbstractMatrix,
-    Top<:OperatingPoint,
     Tpc<:PanelingConstants,
     Trp<:Rotor,
-    Tref<:ReferenceParameters,
 }
     duct_coordinates::Td
     centerbody_coordinates::Tcb
