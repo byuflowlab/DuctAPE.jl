@@ -14,7 +14,7 @@ tip_gap = [0.0, 0.0]
 B = [2, 4]
 fliplift = [0.0, 0.0]
 
-rotorstator_parameters = dt.RotorStatorParameters(
+rotor = dt.Rotor(
     B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
 )
 
@@ -44,10 +44,10 @@ reference_parameters = dt.ReferenceParameters(Vref, Rref)
 duct_coordinates = [1.0 2.0; 0.5 1.5; 0.0 2.0; 0.5 2.5; 1.0 2.0]
 centerbody_coordinates = [0.0 0.0; 0.5 0.5; 1.0 0.0]
 
-propulsor = dt.Propulsor(
+ducted_rotor = dt.DuctedRotor(
     duct_coordinates,
     centerbody_coordinates,
-    rotorstator_parameters,
+    rotor,
     operating_point,
     paneling_constants,
     reference_parameters,

@@ -1,6 +1,6 @@
 ## Utility Functions
 ```@docs
-DuctAPE.promote_propulsor_type
+DuctAPE.promote_ducted_rotor_type
 DuctAPE.update_operating_point!
 DuctAPE.isscalar
 DuctAPE.dot

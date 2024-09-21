@@ -56,7 +56,7 @@ dt.Freestream(Vinf, rho, mu, asound) #note: this is marine prop, maybe use water
 
 ## - Run Solver - ##
 
-state_variables, converged, params = dt.analyze_propulsor(
+state_variables, converged, params = dt.analyze_ducted_rotor(
     duct_coordinates, hub_coordinates, rotor_parameters
 )
 

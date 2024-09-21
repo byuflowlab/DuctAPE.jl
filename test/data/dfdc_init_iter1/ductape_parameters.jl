@@ -67,7 +67,7 @@ airfoils = fill(afparams, length(r)) # specify the airfoil array
 ##### ----- dt Input Tuples ----- #####
 
 # - Rotor Parameters: Vector of NTuples - #
-rotorstator_parameters = dt.RotorStatorParameters(
+rotor = dt.Rotor(
     B, rotorzloc, r, Rhub, Rtip, chords, twists, 0.0, airfoils, false
 )
 

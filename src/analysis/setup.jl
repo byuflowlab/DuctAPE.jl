@@ -1,6 +1,7 @@
 """
     setup_analysis(
-        propulsor::Propulsor,
+        ducted_rotor::DuctedRotor,
+        operating_point::OperatingPoint,
         options::Options=set_options();
         prepost_container_caching=nothing,
         solve_parameter_caching=nothing,
@@ -10,7 +11,8 @@
 Perform pre-processing and cache setup (as needed) for propuslor analysis.
 
 # Arguments
-- `propulsor::Propulsor` : Propulsor input object (see docstring for `Propulsor` type)
+- `ducted_rotor::DuctedRotor` : DuctedRotor input object (see docstring for `DuctedRotor` type)
+- `operating_point::OperatingPoint` : OperatingPoint input object (see docstring for `OperatingPoint` type)
 - `options::Options=set_options()` : Options object (see `set_options` and related functions)
 
 # Keyword Arguments
@@ -29,7 +31,8 @@ Perform pre-processing and cache setup (as needed) for propuslor analysis.
 - `idmaps::NamedTuple` : Named Tuple containing bookkeeping information (index mappings)
 """
 function setup_analysis(
-    propulsor::Propulsor,
+    ducted_rotor::DuctedRotor,
+    operating_point::OperatingPoint,
     options=set_options();
     prepost_container_caching=nothing,
     solve_parameter_caching=nothing,
@@ -37,23 +40,23 @@ function setup_analysis(
 )
     # - Get type to dispatch caches - #
     TF = promote_type(
-        eltype(propulsor.duct_coordinates),
-        eltype(propulsor.centerbody_coordinates),
-        eltype(propulsor.operating_point.Vinf),
-        eltype(propulsor.operating_point.Omega),
-        eltype(propulsor.operating_point.rhoinf),
-        eltype(propulsor.operating_point.muinf),
-        eltype(propulsor.operating_point.asound),
-        eltype(propulsor.rotorstator_parameters.B),
-        eltype(propulsor.rotorstator_parameters.Rhub),
-        eltype(propulsor.rotorstator_parameters.Rtip),
-        eltype(propulsor.rotorstator_parameters.rotorzloc),
-        eltype(propulsor.rotorstator_parameters.chords),
-        eltype(propulsor.rotorstator_parameters.twists),
+        eltype(ducted_rotor.duct_coordinates),
+        eltype(ducted_rotor.centerbody_coordinates),
+        eltype(ducted_rotor.rotor.B),
+        eltype(ducted_rotor.rotor.Rhub),
+        eltype(ducted_rotor.rotor.Rtip),
+        eltype(ducted_rotor.rotor.rotorzloc),
+        eltype(ducted_rotor.rotor.chords),
+        eltype(ducted_rotor.rotor.twists),
+        eltype(operating_point.Vinf),
+        eltype(operating_point.Omega),
+        eltype(operating_point.rhoinf),
+        eltype(operating_point.muinf),
+        eltype(operating_point.asound),
     )
 
     # - Get Problem Dimensions - #
-    problem_dimensions = get_problem_dimensions(propulsor.paneling_constants)
+    problem_dimensions = get_problem_dimensions(ducted_rotor.paneling_constants)
 
     ##### ----- SET UP CACHES AS NEEDED ----- #####
 
@@ -61,7 +64,7 @@ function setup_analysis(
     # Allocate Cache
     if isnothing(prepost_container_caching)
         prepost_container_caching = allocate_prepost_container_cache(
-            propulsor.paneling_constants
+            ducted_rotor.paneling_constants
         )
     else
         # reset cache
@@ -90,7 +93,7 @@ function setup_analysis(
     # Allocate Cache
     if isnothing(solve_parameter_caching)
         solve_parameter_caching = allocate_solve_parameter_cache(
-            options.solver_options, propulsor.paneling_constants
+            options.solver_options, ducted_rotor.paneling_constants
         )
     else
         # reset cache
@@ -114,8 +117,8 @@ function setup_analysis(
     )
 
     # copy over operating point
-    for f in fieldnames(typeof(propulsor.operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
+    for f in fieldnames(typeof(ducted_rotor.operating_point))
+        solve_parameter_tuple.operating_point[f] .= getfield(ducted_rotor.operating_point, f)
     end
 
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
@@ -130,7 +133,7 @@ function setup_analysis(
         solve_parameter_tuple.blade_elements,
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
-        propulsor,
+        ducted_rotor,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=options.grid_solver_options,

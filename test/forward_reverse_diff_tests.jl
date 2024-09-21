@@ -87,13 +87,13 @@ function dt_post_wrapper(input_vector)
     # generate inputs
     inputs = dt.precomputed_inputs(
         system_geometry,
-        rotorstator_parameters, #vector of named tuples
+        rotor, #vector of named tuples
         freestream,
         reference_parameters;
         debug=false,
     )
 
-    nbe = rotorstator_parameters[1].nwake_sheets - 1
+    nbe = rotor[1].nwake_sheets - 1
 
     Gamr = zeros(TF, nbe, 1) .= input_vector[1:nbe]
     sigr = zeros(TF, nbe + 1, 1) .= input_vector[(nbe + 1):(nbe * 2 + 1)]

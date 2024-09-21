@@ -158,7 +158,7 @@ end
 #    # generate inputs
 #    inputs = dt.precomputed_inputs(
 #        system_geometry,
-#        rotorstator_parameters, #vector of named tuples
+#        rotor, #vector of named tuples
 #        freestream,
 #        reference_parameters;
 #        debug=false,

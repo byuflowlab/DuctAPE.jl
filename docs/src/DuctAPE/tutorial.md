@@ -22,10 +22,10 @@ nothing # hide
 
 ## Assemble Inputs
 
-The next step is to create the input object of type `Propulsor`.
+The next step is to create the input object of type `DuctedRotor`.
 
 ```@docs; canonical=false
-DuctAPE.Propulsor
+DuctAPE.DuctedRotor
 ```
 
 ### Body Geometry
@@ -165,10 +165,10 @@ plot!( # hide
 
 ### Rotor Geometry
 
-The next step is to assemble an object of type `RotorStatorParameters` which contains the geometric information required to define the rotor(s) and their respective blade elements.
+The next step is to assemble an object of type `Rotor` which contains the geometric information required to define the rotor(s) and their respective blade elements.
 
 ```@docs; canonical=false
-DuctAPE.RotorStatorParameters
+DuctAPE.Rotor
 ```
 
 In this example, we have a single rotor defined as follows.
@@ -249,7 +249,7 @@ afparams = DuctAPE.c4b.DFDCairfoil(;
 airfoils = fill(afparams, length(r)) # specify the airfoil array
 
 # assemble rotor parameters
-rotorstator_parameters = DuctAPE.RotorStatorParameters(
+rotor = DuctAPE.Rotor(
     [B],
     [rotorzloc],
     r,
@@ -366,16 +366,16 @@ reference_parameters = DuctAPE.ReferenceParameters([Vref], [Rref])
 nothing # hide
 ```
 
-### Assembling the Propulsor
+### Assembling the DuctedRotor
 
-We are now posed to construct the `Propulsor` input type.
+We are now posed to construct the `DuctedRotor` input type.
 
 ```@example tutorial
-# assemble propulsor object
-propulsor = DuctAPE.Propulsor(
+# assemble ducted_rotor object
+ducted_rotor = DuctAPE.DuctedRotor(
     duct_coordinates,
     centerbody_coordinates,
-    rotorstator_parameters,
+    rotor,
     operating_point,
     paneling_constants,
     reference_parameters,
@@ -399,15 +399,15 @@ For more advanced option selection, see the examples and API reference.
 
 ## Run a Single Analysis
 
-With the propulsor input build, and the options selected, we are now ready to run an analysis.
+With the ducted_rotor input build, and the options selected, we are now ready to run an analysis.
 This is done simply with the `analyze` function which dispatches the appropriate analysis, solve, and post-processing functions based on the selected options.
 
 ```@docs; canonical=false
-DuctAPE.analyze(::DuctAPE.Propulsor, ::DuctAPE.Options)
+DuctAPE.analyze(::DuctAPE.DuctedRotor, ::DuctAPE.Options)
 ```
 
 ```@example tutorial
-outs, success_flag = DuctAPE.analyze(propulsor, options)
+outs, success_flag = DuctAPE.analyze(ducted_rotor, options)
 nothing # hide
 ```
 
@@ -429,7 +429,7 @@ outs.totals.CQ
 In the case that one wants to run the same geometry at several different operating points, for example: for a range of advance ratios, there is another dispatch of the `analyze` function that accepts an input, `multipoint`, that is a vector of operating points.
 
 ```@docs; canonical=false
-DuctAPE.analyze(multipoint::AbstractVector{TO},propulsor::Propulsor,options::Options) where TO<:OperatingPoint
+DuctAPE.analyze(multipoint::AbstractVector{TO},ducted_rotor::DuctedRotor,options::Options) where TO<:OperatingPoint
 ```
 
 Running a multi-point analysis on the example geometry given there, it might look something like this:
@@ -439,7 +439,7 @@ Running a multi-point analysis on the example geometry given there, it might loo
 Js = range(0.0, 2.0; step=0.01)
 
 # - Calculate Vinfs - #
-D = 2.0 * rotorstator_parameters.Rtip[1] # rotor diameter
+D = 2.0 * rotor.Rtip[1] # rotor diameter
 n = RPM / 60.0 # rotation rate in revolutions per second
 Vinfs = Js * n * D
 
@@ -450,7 +450,7 @@ for (iv, v) in enumerate(Vinfs)
 end
 
 # - Run Multi-point Analysis - #
-outs_vec, success_flags = DuctAPE.analyze(ops, propulsor, DuctAPE.set_options(ops))
+outs_vec, success_flags = DuctAPE.analyze(ops, ducted_rotor, DuctAPE.set_options(ops))
 nothing #hide
 ```
 

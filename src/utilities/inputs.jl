@@ -1,7 +1,7 @@
 """
     OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
 
-Propulsor operating point information.
+DuctedRotor operating point information.
 
 # Arguments
 
@@ -91,7 +91,7 @@ Note that unlike other input structures, this one, in general, does not define f
 end
 
 """
-    RotorStatorParameters(
+    Rotor(
         B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
     )
 
@@ -111,7 +111,7 @@ Note that the actual struct requires the inputs to be arrays, but there is a con
 - `airfoils::AbstractArray{AFType}` : Airfoil types describing the airfoil polars for each blade element. Currently only fully tested with `C4Blade.DFDCairfoil` types.
 - `fliplift::AbstractVector{Bool}` : Flag to indicate if the airfoil lift values should be flipped or not.
 """
-struct RotorStatorParameters{
+struct Rotor{
     Tb<:AbstractVector,
     TRz<:AbstractVector,
     Tr<:AbstractArray,
@@ -135,10 +135,10 @@ struct RotorStatorParameters{
     fliplift::Tf
 end
 
-function RotorStatorParameters(
+function Rotor(
     B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
 )
-    return RotorStatorParameters(
+    return Rotor(
         isscalar(B) ? [B] : B,
         isscalar(rotorzloc) ? [rotorzloc] : rotorzloc,
         isscalar(r) ? [r] : r,
@@ -157,37 +157,33 @@ function RotorStatorParameters(
 end
 
 """
-    Propulsor(duct_coordinates, centerbody_coordinates, rotorstator_parameters, operating_point, paneling_constants, reference_parameters)
+    DuctedRotor(duct_coordinates, centerbody_coordinates, rotor, operating_point, paneling_constants, reference_parameters)
 
 # Arguments
 
 - `duct_coordinates::AbstractMatrix` : The [z, r] coordinates of the duct geometry beginning at the inner (casing) side trailing edge and proceeding clockwise. Note that the duct geometry absolute radial position does not need to be included here if the `autoshiftduct` option is selected.
 - `centerbody_coordinates::AbstractMatrix` : The [z, r] coordinates of the centerbody beginning at the leading edge and ending at the trailing edge. Note that the leading edge is assumed to be placed at a radial distance of 0.0 from the axis of rotation.
-- `operating_point::OperatingPoint` : The operating point values.
 - `paneling_constants::PanelingConstants` : Constants used in re-paneling the geometry.
-- `rotorstator_parameters::RotorStatorParameters` : Rotor (and possibly stator) geometric paramters.
-- `reference_parameters::ReferenceParameters` : Reference Parameters.
+- `rotor::Rotor` : Rotor (and possibly stator) geometric paramters.
 """
-struct Propulsor{
+struct DuctedRotor{
     Td<:AbstractMatrix,
     Tcb<:AbstractMatrix,
     Top<:OperatingPoint,
     Tpc<:PanelingConstants,
-    Trp<:RotorStatorParameters,
+    Trp<:Rotor,
     Tref<:ReferenceParameters,
 }
     duct_coordinates::Td
     centerbody_coordinates::Tcb
-    rotorstator_parameters::Trp
-    operating_point::Top
+    rotor::Trp
     paneling_constants::Tpc
-    reference_parameters::Tref
 end
 
 """
 TODO: write this function and have it do all the checks to make sure that the user inputs are going to work.
 """
-function verify_input(propulsor)
+function verify_input(ducted_rotor)
     # TODO: check number of rotors vs npanel
     # TODO: check rotorzloc is sorted
     # TODO: check dte_minus_cbte vs coordinates

@@ -586,7 +586,7 @@ function update_CSOR_residual_values_iad!(
     convergence_type::Relative, state_dims, resid, deltaG, Gamr, B, deltag, Vconv, deltas
 )
     resid[state_dims.Gamr.index] .= reshape(abs.(deltaG ./ (Gamr .* B')), :)
-    resid[state_dims.sigr.index] .= reshape(abs.(deltas), :)
+    resid[state_dims.sigr.index] .= reshape(abs.(deltas), :) # TODO; consider setting to zeros since they aren't really needed for convergence
     resid[state_dims.gamw.index] .= reshape(abs.(deltag ./ Vconv), :)
 
     return resid
@@ -596,7 +596,7 @@ function update_CSOR_residual_values_iad!(
     convergence_type::Absolute, state_dims, resid, deltaG, Gamr, B, deltag, Vconv, deltas
 )
     resid[state_dims.Gamr.index] .= reshape(abs.(deltaG), :)
-    resid[state_dims.sigr.index] .= reshape(abs.(deltas), :)
+    resid[state_dims.sigr.index] .= reshape(abs.(deltas), :) # TODO; consider setting to zeros since they aren't really needed for convergence
     resid[state_dims.gamw.index] .= reshape(abs.(deltag), :)
 
     return resid

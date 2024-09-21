@@ -210,9 +210,9 @@ function dt_full_wrapper(inputs)
     ]
 
     # println("\t\tRunning DuctAPE Analysis")
-    # - run analyze_propulsor function - #
-    # out, _, _, _, _ = @time dt.analyze_propulsor(
-    out, _, _, _, _ = dt.analyze_propulsor(
+    # - run analyze_ducted_rotor function - #
+    # out, _, _, _, _ = @time dt.analyze_ducted_rotor(
+    out, _, _, _, _ = dt.analyze_ducted_rotor(
         duct_coordinates,
         hub_coordinates,
         paneling_constants,

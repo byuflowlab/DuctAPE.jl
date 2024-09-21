@@ -70,7 +70,7 @@ airfoils = fill(afparams, length(r)) # specify the airfoil array
 ##### ----- DuctAPE Input Tuples ----- #####
 
 # - Rotor Parameters: Vector of NTuples - #
-rotorstator_parameters = [(;
+rotor = [(;
     nwake_sheets,
     rotorzloc,
     r,

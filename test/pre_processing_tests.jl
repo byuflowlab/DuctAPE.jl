@@ -13,7 +13,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     zwake, rotor_indices_in_wake = dt.discretize_wake(
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters.rotorzloc, # rotor axial locations
+        rotor.rotorzloc, # rotor axial locations
         paneling_constants.wake_length,
         paneling_constants.npanels,
         paneling_constants.dte_minus_cbte;
@@ -68,9 +68,9 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
     dt.place_duct!(
         rp_duct_coordinates,
-        rotorstator_parameters.Rtip[1],
-        rotorstator_parameters.rotorzloc[1],
-        rotorstator_parameters.tip_gap[1],
+        rotor.Rtip[1],
+        rotor.rotorzloc[1],
+        rotor.tip_gap[1],
     )
 
     @test rp_duct_coordinates[1, :] == rpb4[1, :]
@@ -79,8 +79,8 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     Rtips, Rhubs = dt.get_blade_ends_from_body_geometry(
         rp_duct_coordinates,
         rp_centerbody_coordinates,
-        rotorstator_parameters.tip_gap,
-        rotorstator_parameters.rotorzloc,
+        rotor.tip_gap,
+        rotor.rotorzloc,
     )
 
     @test all(Rtips .== 1.0)
@@ -161,16 +161,16 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
         rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
     )
 
-    num_rotors = length(rotorstator_parameters.B)
+    num_rotors = length(rotor.B)
 
     # rotor source panel objects
     rotor_source_panels = dt.generate_rotor_panels(
-        rotorstator_parameters.rotorzloc, grid, [1, 3], paneling_constants.nwake_sheets
+        rotor.rotorzloc, grid, [1, 3], paneling_constants.nwake_sheets
     )
 
     # rotor blade element objects
     blade_elements, airfoils = dt.interpolate_blade_elements(
-        rotorstator_parameters,
+        rotor,
         Rtips,
         Rhubs,
         rotor_source_panels.controlpoint[2, :],
@@ -192,8 +192,8 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
         atol=1e-6,
     )
     @test blade_elements.fliplift == [false, false]
-    @test blade_elements.Rhub == rotorstator_parameters.Rhub
-    @test blade_elements.Rtip == rotorstator_parameters.Rtip
+    @test blade_elements.Rhub == rotor.Rhub
+    @test blade_elements.Rtip == rotor.Rtip
 end
 
 @testset "Bookkeeping Tests" begin
@@ -354,12 +354,12 @@ end
     options = dt.set_options()
 
     # - Get Problem Dimensions - #
-    problem_dimensions = dt.get_problem_dimensions(propulsor.paneling_constants)
+    problem_dimensions = dt.get_problem_dimensions(ducted_rotor.paneling_constants)
 
     # - Set up Pre- and Post-process Cache - #
     # Allocate Cache
     prepost_container_caching = dt.allocate_prepost_container_cache(
-        propulsor.paneling_constants
+        ducted_rotor.paneling_constants
     )
 
     # unpack the caching
@@ -382,7 +382,7 @@ end
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solver_options, propulsor.paneling_constants
+        options.solver_options, ducted_rotor.paneling_constants
     )
 
     # unpack caching
@@ -401,8 +401,8 @@ end
     )
 
     # copy over operating point
-    for f in fieldnames(typeof(propulsor.operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
+    for f in fieldnames(typeof(ducted_rotor.operating_point))
+        solve_parameter_tuple.operating_point[f] .= getfield(ducted_rotor.operating_point, f)
     end
 
     # - Do preprocessutations - #
@@ -419,7 +419,7 @@ end
         solve_parameter_tuple.blade_elements,
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
-        propulsor,
+        ducted_rotor,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=options.grid_solver_options,
@@ -465,12 +465,12 @@ end
     options = dt.DFDC_options()
 
     # - Get Problem Dimensions - #
-    problem_dimensions = dt.get_problem_dimensions(propulsor.paneling_constants)
+    problem_dimensions = dt.get_problem_dimensions(ducted_rotor.paneling_constants)
 
     # - Set up Pre- and Post-process Cache - #
     # Allocate Cache
     prepost_container_caching = dt.allocate_prepost_container_cache(
-        propulsor.paneling_constants
+        ducted_rotor.paneling_constants
     )
 
     # unpack the caching
@@ -493,7 +493,7 @@ end
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solver_options, propulsor.paneling_constants
+        options.solver_options, ducted_rotor.paneling_constants
     )
 
     # unpack caching
@@ -512,8 +512,8 @@ end
     )
 
     # copy over operating point
-    for f in fieldnames(typeof(propulsor.operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
+    for f in fieldnames(typeof(ducted_rotor.operating_point))
+        solve_parameter_tuple.operating_point[f] .= getfield(ducted_rotor.operating_point, f)
     end
 
     # - Do preprocessutations - #
@@ -530,7 +530,7 @@ end
         solve_parameter_tuple.blade_elements,
         solve_parameter_tuple.linsys,
         solve_parameter_tuple.wakeK,
-        propulsor,
+        ducted_rotor,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=options.grid_solver_options,

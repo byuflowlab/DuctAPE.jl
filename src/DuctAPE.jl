@@ -56,8 +56,8 @@ export c4b
 # - Types - #
 
 # Inputs
-export Propulsor,
-    RotorStatorParameters, OperatingPoint, PanelingConstants, ReferenceParameters
+export DuctedRotor,
+    Rotor, OperatingPoint, PanelingConstants, ReferenceParameters
 
 # - Preallocations - #
 export allocate_prepost_container_cache,
@@ -92,7 +92,6 @@ export analyze
 include("utilities/misc.jl")
 include("utilities/inputs.jl")
 include("utilities/options.jl")
-include("utilities/update_propulsor.jl")
 include("utilities/package_states.jl")
 include("utilities/bookkeeping.jl")
 include("utilities/caching/caches.jl")

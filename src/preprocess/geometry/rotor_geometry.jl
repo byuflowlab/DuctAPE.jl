@@ -3,10 +3,10 @@
         rsp, Rtips, Rhubs, rotor_panel_centers, nbe; finterp=FLOWMath.linear
     )
 
-Interpolate blade elements based on RotorStatorParameters inputs and number of desired blade elements (from number of wake sheet in PanelingConstants input)
+Interpolate blade elements based on Rotor inputs and number of desired blade elements (from number of wake sheet in PanelingConstants input)
 
 # Arguments
-- `rsp::RotorStatorParameters` : A RotorStatorParameters object
+- `rsp::Rotor` : A Rotor object
 - `Rtips::Vector{Float}' : Vector of rotor tip radii
 - `Rhubs::Vector{Float}' : Vector of rotor hub radii
 - `rotor_panel_centers::Vector{Float}' : Vector of rotor panel centers

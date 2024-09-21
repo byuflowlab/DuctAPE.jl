@@ -116,12 +116,12 @@ cbr[end] = 0.0
 
 # purple wake
 
-# assemble propulsor
-include("define_propulsor.jl")
+# assemble ducted_rotor
+include("define_ducted_rotor.jl")
 
 # get wake geometry
 problem_dimensions, prepost_containers, _, _, _, _, _, _ = dt.setup_analysis(
-    propulsor, dt.set_options(; finterp=FLOWMath.akima)
+    ducted_rotor, dt.set_options(; finterp=FLOWMath.akima)
 )
 wg = prepost_containers.wake_grid
 for i in 2:2:size(wg, 3)

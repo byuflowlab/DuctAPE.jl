@@ -140,17 +140,17 @@ function reset_containers!(c; exception_keys=[])
 end
 
 """
-    promote_propulsor_type(propulsor)
+    promote_ducted_rotor_type(ducted_rotor)
 
-Convenience function for promoting types based on any potential elements of the propulsor object dependent on optimization design variables.
+Convenience function for promoting types based on any potential elements of the ducted_rotor object dependent on optimization design variables.
 
 # Arguments
-- `propulsor::Propulsor` : the propulsor input
+- `ducted_rotor::DuctedRotor` : the ducted_rotor input
 
 # Returns
 - `TP::Type` : the promoted type
 """
-function promote_propulsor_type(p)
+function promote_ducted_rotor_type(p)
     return promote_type(
         eltype(p.duct_coordinates),
         eltype(p.centerbody_coordinates),
@@ -159,13 +159,13 @@ function promote_propulsor_type(p)
         eltype(p.operating_point.muinf),
         eltype(p.operating_point.asound),
         eltype(p.operating_point.Omega),
-        eltype(p.rotorstator_parameters.B),
-        eltype(p.rotorstator_parameters.rotorzloc),
-        eltype(p.rotorstator_parameters.r),
-        eltype(p.rotorstator_parameters.Rhub),
-        eltype(p.rotorstator_parameters.Rtip),
-        eltype(p.rotorstator_parameters.chords),
-        eltype(p.rotorstator_parameters.twists),
+        eltype(p.rotor.B),
+        eltype(p.rotor.rotorzloc),
+        eltype(p.rotor.r),
+        eltype(p.rotor.Rhub),
+        eltype(p.rotor.Rtip),
+        eltype(p.rotor.chords),
+        eltype(p.rotor.twists),
     )
 end
 

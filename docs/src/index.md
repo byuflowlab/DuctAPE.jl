@@ -4,7 +4,7 @@ Author: Judd Mehr
 
 Contributer: Taylor McDonnell
 
-DuctAPE is a code for the aerodynamic evaluation of axisymmetric ducted propulsors designed for incompressible (low mach) applications.
+DuctAPE is a code for the aerodynamic evaluation of axisymmetric ducted ducted_rotors designed for incompressible (low mach) applications.
 It is strongly influenced by the underlying [theory](https://web.mit.edu/drela/Public/web/dfdc/DFDCtheory12-31.pdf) of Ducted Fan Design Code [(DFDC)](https://web.mit.edu/drela/Public/web/dfdc/), utilizing a linear axisymmetric vortex panel method for duct and center body, blade element lifting line rotor representation, and wake model axisymmetrically smeared onto an elliptic grid for efficient computation.
 DuctAPE has been developed specifically for applications in gradient-based optimization settings.
 

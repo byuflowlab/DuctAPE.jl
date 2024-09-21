@@ -23,7 +23,7 @@ nduct_inlet = 1
 nwake_sheets = 3
 wake_length = 1.0
 npanels = [2, 1, 4]
-rotorstator_parameters = [
+rotor = [
     (;
         rotorzloc=rotorzloc[i],
         nwake_sheets,

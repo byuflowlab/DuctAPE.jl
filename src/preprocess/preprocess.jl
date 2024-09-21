@@ -3,7 +3,7 @@
         problem_dimensions,
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         paneling_constants;
         autoshiftduct=true,
         grid_solver_options=GridSolverOptions(),
@@ -18,7 +18,7 @@ Re-interpolate the body geometry and return compatible body and way geometry.
 - `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
 - `duct_coordinates::Matrix{Float}` : [z,r] coordinates of duct geometry
 - `centerbody_coordinates::Matrix{Float}` : [z,r] coordinates of centerbody geometry
-- `rotorstator_parameters::RotorStatorParameters` : A RotorStatorParameters object
+- `rotor::Rotor` : A Rotor object
 - `paneling_constants::PanelingConstants` : A PanelingConstants object
 
 # Keyword Arguments
@@ -38,7 +38,7 @@ function reinterpolate_geometry(
     problem_dimensions,
     duct_coordinates,
     centerbody_coordinates,
-    rotorstator_parameters,
+    rotor,
     paneling_constants;
     autoshiftduct=true,
     grid_solver_options=GridSolverOptions(),
@@ -60,10 +60,10 @@ function reinterpolate_geometry(
     TF = promote_type(
         eltype(duct_coordinates),
         eltype(centerbody_coordinates),
-        eltype(rotorstator_parameters.r),
-        eltype(rotorstator_parameters.Rhub),
-        eltype(rotorstator_parameters.Rtip),
-        eltype(rotorstator_parameters.rotorzloc),
+        eltype(rotor.r),
+        eltype(rotor.Rhub),
+        eltype(rotor.Rtip),
+        eltype(rotor.rotorzloc),
     )
 
     wake_grid = zeros(TF, 2, nwsn, nws)
@@ -79,7 +79,7 @@ function reinterpolate_geometry(
         rotor_indices_in_wake,
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         blade_element_cache,
         paneling_constants;
         autoshiftduct=autoshiftduct,
@@ -102,7 +102,7 @@ end
         rotor_indices_in_wake,
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         blade_element_cache,
         paneling_constants;
         autoshiftduct=true,
@@ -121,7 +121,7 @@ function reinterpolate_geometry!(
     rotor_indices_in_wake,
     duct_coordinates,
     centerbody_coordinates,
-    rotorstator_parameters,
+    rotor,
     blade_element_cache,
     paneling_constants;
     autoshiftduct=true,
@@ -135,10 +135,10 @@ function reinterpolate_geometry!(
     (;Rhub, Rtip) = blade_element_cache
 
     (; B, tip_gap, r, chords, twists, rotorzloc, airfoils, fliplift) =
-        rotorstator_parameters
+        rotor
 
-    Rhub .= rotorstator_parameters.Rhub
-    Rtip .= rotorstator_parameters.Rtip
+    Rhub .= rotor.Rhub
+    Rtip .= rotor.Rtip
 
     (; npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte) =
         paneling_constants
@@ -237,7 +237,7 @@ Function that calls all of the various panel generation functions are returns a 
 - `rp_centerbody_coordinates::Matrix{Float}` : matrix containing the re-paneled centerbody coordinates
 - `nwake_sheets::Int` : number of wake sheets
 - `rotor_indices_in_wake::Vector{Int}` : vector containing the indices of where in the wake the rotors reside (used later to define the rotor panel edges).
-- `rotorzloc:Vector{Float}` : axial locations of rotor lifting lines (contained in RotorStatorParameters)
+- `rotorzloc:Vector{Float}` : axial locations of rotor lifting lines (contained in Rotor)
 - `wake_grid::Array{Float}` : array containig the z and r elliptic grid points defning the wake geometry.
 
 # Keyword Arguments
@@ -1129,7 +1129,7 @@ end
 
 """
     precompute_parameters(
-        propulsor;
+        ducted_rotor;
         grid_solver_options=GridSolverOptions(),
         integration_options=IntegrationOptions(),
         autoshiftduct=true,
@@ -1144,7 +1144,7 @@ end
 Out of place main pre-processing function that computes all the required parameters for the solve.
 
 # Arguments
-- `propulsor::Propulsor` : A Propuslor object
+- `ducted_rotor::DuctedRotor` : A Propuslor object
 
 # Keyword Arguments
 - `grid_solver_options::GridSolverOptionsType=GridSolverOptions()` : A GridSolverOptionsType object
@@ -1181,7 +1181,7 @@ Out of place main pre-processing function that computes all the required paramet
 - `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
 """
 function precompute_parameters(
-    propulsor;
+    ducted_rotor;
     grid_solver_options=GridSolverOptions(),
     integration_options=IntegrationOptions(),
     autoshiftduct=true,
@@ -1193,14 +1193,14 @@ function precompute_parameters(
     verbose=false,
 )
 
-    # - Extract propulsor - #
+    # - Extract ducted_rotor - #
     (;
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         paneling_constants,
         operating_point,
-    ) = propulsor
+    ) = ducted_rotor
 
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
@@ -1209,7 +1209,7 @@ function precompute_parameters(
         problem_dimensions,
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         paneling_constants;
         grid_solver_options=grid_solver_options,
         autoshiftduct=autoshiftduct,
@@ -1222,9 +1222,9 @@ function precompute_parameters(
     if autoshiftduct
         place_duct!(
             rp_duct_coordinates,
-            rotorstator_parameters.Rtip[1],
-            rotorstator_parameters.rotorzloc[1],
-            rotorstator_parameters.tip_gap[1],
+            rotor.Rtip[1],
+            rotor.rotorzloc[1],
+            rotor.tip_gap[1],
         )
     end
 
@@ -1232,8 +1232,8 @@ function precompute_parameters(
     Rtips, Rhubs = get_blade_ends_from_body_geometry(
         rp_duct_coordinates,
         rp_centerbody_coordinates,
-        rotorstator_parameters.tip_gap,
-        rotorstator_parameters.rotorzloc,
+        rotor.tip_gap,
+        rotor.rotorzloc,
     )
 
     return precompute_parameters(
@@ -1243,7 +1243,7 @@ function precompute_parameters(
         rotor_indices_in_wake,
         Rtips,
         Rhubs,
-        rotorstator_parameters,
+        rotor,
         paneling_constants,
         operating_point,
         integration_options,
@@ -1264,7 +1264,7 @@ end
         rotor_indices_in_wake,
         Rtips,
         Rhubs,
-        rotorstator_parameters,
+        rotor,
         paneling_constants,
         operating_point,
         integration_options,
@@ -1287,7 +1287,7 @@ function precompute_parameters(
     rotor_indices_in_wake,
     Rtips,
     Rhubs,
-    rotorstator_parameters,
+    rotor,
     paneling_constants,
     operating_point,
     integration_options,
@@ -1305,7 +1305,7 @@ function precompute_parameters(
         rp_centerbody_coordinates,
         paneling_constants.nwake_sheets,
         rotor_indices_in_wake,
-        rotorstator_parameters.rotorzloc,
+        rotor.rotorzloc,
         wake_grid;
         itcpshift=itcpshift,
         axistol=axistol,
@@ -1339,7 +1339,7 @@ function precompute_parameters(
 
     # - Interpolate Blade Elements - #
     blade_elements, airfoils = interpolate_blade_elements(
-        rotorstator_parameters,
+        rotor,
         Rtips,
         Rhubs,
         rotor_source_panels.controlpoint[2, :],
@@ -1387,7 +1387,7 @@ end
         blade_element_cache,
         linsys,
         wakeK,
-        propulsor,
+        ducted_rotor,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=GridSolverOptions(),
@@ -1409,7 +1409,7 @@ function precompute_parameters!(
     blade_element_cache,
     linsys,
     wakeK,
-    propulsor,
+    ducted_rotor,
     prepost_containers,
     problem_dimensions;
     grid_solver_options=GridSolverOptions(),
@@ -1423,14 +1423,14 @@ function precompute_parameters!(
     verbose=false,
 )
 
-    # - unpack propulsor - #
+    # - unpack ducted_rotor - #
     (;
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         paneling_constants,
         operating_point,
-    ) = propulsor
+    ) = ducted_rotor
 
     # - Unpack preprocess containers - #
     (;
@@ -1449,7 +1449,7 @@ function precompute_parameters!(
         rotor_indices_in_wake,
         duct_coordinates,
         centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         blade_element_cache,
         paneling_constants;
         autoshiftduct=autoshiftduct,
@@ -1463,9 +1463,9 @@ function precompute_parameters!(
     if autoshiftduct
         place_duct!(
             rp_duct_coordinates,
-            rotorstator_parameters.Rtip[1],
-            rotorstator_parameters.rotorzloc[1],
-            rotorstator_parameters.tip_gap[1],
+            rotor.Rtip[1],
+            rotor.rotorzloc[1],
+            rotor.tip_gap[1],
         )
     end
 
@@ -1479,7 +1479,7 @@ function precompute_parameters!(
         rp_duct_coordinates,
         rp_centerbody_coordinates,
         rotor_indices_in_wake,
-        rotorstator_parameters,
+        rotor,
         paneling_constants,
         operating_point,
         prepost_containers,
@@ -1506,7 +1506,7 @@ end
         rp_duct_coordinates,
         rp_centerbody_coordinates,
         rotor_indices_in_wake,
-        rotorstator_parameters,
+        rotor,
         paneling_constants,
         operating_point,
         prepost_containers,
@@ -1532,7 +1532,7 @@ function precompute_parameters!(
     rp_duct_coordinates,
     rp_centerbody_coordinates,
     rotor_indices_in_wake,
-    rotorstator_parameters,
+    rotor,
     paneling_constants,
     operating_point,
     prepost_containers,
@@ -1566,12 +1566,12 @@ function precompute_parameters!(
         eltype(operating_point.rhoinf),
         eltype(operating_point.muinf),
         eltype(operating_point.asound),
-        eltype(rotorstator_parameters.B),
-        eltype(rotorstator_parameters.Rhub),
-        eltype(rotorstator_parameters.Rtip),
-        eltype(rotorstator_parameters.rotorzloc),
-        eltype(rotorstator_parameters.chords),
-        eltype(rotorstator_parameters.twists),
+        eltype(rotor.B),
+        eltype(rotor.Rhub),
+        eltype(rotor.Rtip),
+        eltype(rotor.rotorzloc),
+        eltype(rotor.chords),
+        eltype(rotor.twists),
     )
 
     # - Unpack preprocess containers - #
@@ -1591,7 +1591,7 @@ function precompute_parameters!(
         rp_duct_coordinates,
         rp_centerbody_coordinates,
         rotor_indices_in_wake,
-        rotorstator_parameters.rotorzloc,
+        rotor.rotorzloc,
         paneling_constants.nwake_sheets;
         itcpshift=itcpshift,
         axistol=axistol,
@@ -1624,7 +1624,7 @@ function precompute_parameters!(
     # - Interpolate Blade Elements - #
     airfoils = interpolate_blade_elements!(
         blade_element_cache,
-        rotorstator_parameters,
+        rotor,
         panels.rotor_source_panels.controlpoint[2, :],
         problem_dimensions.nbe,
     )

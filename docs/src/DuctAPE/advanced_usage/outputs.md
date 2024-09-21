@@ -22,5 +22,5 @@ Sometimes, it may be desireable to return the pre-process objects, including:
 In this case, we can use the `return_inputs` keyword argument when calling the `analyze` function to return a named tuple containing those pre-process objects.
 
 ```julia
-outs, ins, success_flag = dt.analyze(propulsor; return_inputs=true)
+outs, ins, success_flag = dt.analyze(ducted_rotor; return_inputs=true)
 ```

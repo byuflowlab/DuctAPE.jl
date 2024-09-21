@@ -21,10 +21,10 @@ println("\nITERATION STEP THROUGH TESTS")
     include(datapath * "ductape_parameters.jl")
     #NOTE, for some reason, julia doesn't recognize that this was defined in the above file...
     operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
-    propulsor = dt.Propulsor(
+    ducted_rotor = dt.DuctedRotor(
         rp_duct_coordinates,
         rp_centerbody_coordinates,
-        rotorstator_parameters,
+        rotor,
         operating_point,
         paneling_constants,
         reference_parameters,
@@ -45,7 +45,7 @@ println("\nITERATION STEP THROUGH TESTS")
             rp_centerbody_coordinates,
             paneling_constants.nwake_sheets,
             rotor_indices_in_wake,
-            rotorstator_parameters.rotorzloc,
+            rotor.rotorzloc,
             wake_grid;
             itcpshift=options.itcpshift,
             axistol=options.axistol,
@@ -97,8 +97,8 @@ println("\nITERATION STEP THROUGH TESTS")
     )
 
     # copy over operating point
-    for f in fieldnames(typeof(propulsor.operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(propulsor.operating_point, f)
+    for f in fieldnames(typeof(ducted_rotor.operating_point))
+        solve_parameter_tuple.operating_point[f] .= getfield(ducted_rotor.operating_point, f)
     end
 
     # generate inputs
@@ -112,7 +112,7 @@ println("\nITERATION STEP THROUGH TESTS")
         rp_duct_coordinates,
         rp_centerbody_coordinates,
         rotor_indices_in_wake,
-        rotorstator_parameters,
+        rotor,
         paneling_constants,
         operating_point,
         prepost_containers,

@@ -10,7 +10,7 @@ println("\nSOLVER CHECKS")
     include("data/dfdc_init_iter1/ductape_parameters.jl")
     inputs = dt.precomputed_inputs(
         system_geometry,
-        rotorstator_parameters, #vector of named tuples
+        rotor, #vector of named tuples
         freestream,
         reference_parameters;
         debug=false,
