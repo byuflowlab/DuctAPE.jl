@@ -1,0 +1,349 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                          COUPLING
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Coupling the Rotor-Wake and Body Aerodynamics}
+
+Coupling the body and rotor-wake aerodynamics is, for the most part, a straightforward process, with only a few particular concerns.
+%
+Essentially, the coupling takes place through mutually induced velocities.
+%
+Specifically, the solid bodies, rotor(s), and wake(s), all induce velocities one themselves and each other.
+%
+Accounting for these induced velocities is nearly the totality of the coupling methodology.
+
+
+For the solid bodies, we subtract the induced velocities normal to the panels to the right hand side of the linear system, just as we do for the freestream velocities.
+%
+In addition, at the wake-body interfaces, or in other words, for the wake elements shed from the rotor hub and tip (assuming the rotor tip ``touches'' the duct wall), the wake panels lie directly on the boundary being solved by the linear system.
+%
+This requires the use of the separation of singularity integration when applying the induced velocity of the wake panels onto the body panels on which they lie.
+%
+In order to make this consistent, the geometry is defined from the outset to have the body and wake panel nodes and control points be coincident in order that the separation of singularity method in which we assume the position of the singular portion, functions properly.
+%
+In addition, since the wake panels lie on the boundary being solved, they will also induce a jump in tangential velocity across the boundary which must be accounted for the post-processing step to calculate the body surface velocity, pressure, and thereby thrust/drag.
+%
+Since the rotor tip and hub wakes interact with the body surfaces, additional consideration is also required for considering the strengths to define along the wake elements inside the duct.
+%
+In reality, this is a complex interaction that we cannot properly capture given the inviscid methodologies of DuctAPE.
+%
+As an approximation, we apply a linear interpolation from the body trailing edge, which gets the full rotor wake strength at that point, to the intersection of the rotor plane and wall, which we set to zero just ahead of the rotor.
+%
+% [look into what happens experimentally/in reality/in cfd.  is the wake vorticity suppressed by the body and then pops back up outside the duct?]
+
+
+
+For the rotor(s) we simply the induced axial and radial velocities from the bodies and wakes to the relative axial and radial velocities used in determining the inflow angles and magnitudes across the blades.
+%
+Similarly for the wake, we combine all the induced velocities together to obtain the average meridional velocities required to compute the wake node strengths.
+
+\section{Solution Approach:}
+\subsection{DFDC-like Solve Approach}
+
+\subsubsection{Residual}
+\label{sssec:dfdcresid}
+
+The DFDC-like solution approach implemented in DuctAPE solves a non-linear system for the rotor circulation and wake panel strengths using a controlled successive over-relaxation (CSOR) fixed-point solver, taking the rotor circulation, rotor source panel strengths, and wake panel strengths as state variables.
+
+%
+The residual function can be expressed generally as
+\begin{subequations}
+    \label{eqn:dfdcresid}
+    \begin{align}
+        \Gamma - f\left(\Gamma, \sigma^R, \gamma^W, P\right) &= 0, \\
+        \gamma^W - f\left(\Gamma, \sigma^R, \gamma^W, P\right) &= 0,
+    \end{align}
+\end{subequations}
+ \where \(\Gamma\) are the blade element circulation strengths, \(\sigma^R\) are the rotor source panel strengths, \(\gamma^W\) are the wake vortex panel strengths, and \(P\) here are additional constant parameters used in calculating the residual.
+
+
+\subsubsection{State Initialization}
+\label{sssec:dfdcinit}
+
+To initialize the states in the DFDC-like approach, we first set the rotor source panel strengths to zero.
+%
+For the circulation, we perform a set number of iterations applying simple momentum theory to obtain the average axial induced velocity on the rotor, and use \cref{eqn:bladeelementcirculationrotor} to obtain the circulation strengths along the way.
+%
+The final induced axial velocity, along with the freestream and circulation strengths are then used to initialize the wake panel strengths using \cref{eqn:gamma_theta_general}.
+%
+Note that the tangential induced velocity on the rotors is not included in this process, nor are the body-induced velocities.
+
+
+\subsubsection{Solver Method}
+\label{sssec:dfdcsolve}
+
+The DFDC-like residual function formulation shown algorithmically in \cref{alg:csor} updates the states during the residual evaluation.
+%
+This leads to efficient convergence, but also precludes the DFDC-like approach from being used with many external solvers, some of which may actually be more efficient.
+
+\begin{algorithm}
+\caption{DFDC-like Solution Method}\label{alg:csor}
+\begin{algorithmic}
+\State Initialize body, rotor, and wake strengths
+\While{unconverged \textbf{and} iterator < iteration limit}
+\begin{itemize}
+    \renewcommand\labelitemi{\(\cdot\)}
+    \setlength{\itemindent}{1em}
+    \item Solve the linear system for the body vortex strengths \Comment{using \cref{eqn:neumann2}}.
+    \item Calculate new estimates for the blade element circulation \Comment{using \cref{eqn:bladeelementcirculationrotor}.}
+    \item Select relaxation factors for each blade element circulation value. %\Comment{see \cref{eqn:circulationrelaxation} below.}
+    \item Update the blade element circulation values. %\Comment{see \cref{eqn:updatecirculation} below.}
+    \item Calculate new estimates for the wake vortex strengths \Comment{using \cref{eqn:gamma_theta_general}.}
+    \item Select relaxation factors for each wake node. %\Comment{see \cref{eqn:gammathetarelaxation} below.}
+    \item Update the wake vortex strengths. %\Comment{see \cref{eqn:updategammatheta} below.}
+    \item Update the rotor source panel strengths \Comment{using \cref{eqn:rotorsourcestrengths}.}
+    \item Check for convergence. %\Comment{see \cref{eqn:convergencecrit} below.}
+\end{itemize}
+\EndWhile
+\State Post-process Solution
+\end{algorithmic}
+\end{algorithm}
+
+In addition, we provide here the methodology for calculating the various relaxation parameters used in DFDC's CSOR method which we have also implemented in DuctAPE.
+%
+To obtain the relaxation factors for the rotor blade circulation, we look at the difference in the current axisymmetrically smeared blade element circulation states,
+\(B\vect{\Gamma}\), and the new estimation,
+\((B\vect{\Gamma})_\text{est}\), normalized by the current circulation state with the greatest magnitude for the given rotor, \((B\Gamma)_\text{max}\):
+
+\begin{equation}
+    \hat{\vect{\delta}} = \frac{\vect{\delta}_{B\Gamma}}{(B\Gamma)_\text{max}},
+\end{equation}
+
+\where
+
+\begin{equation}
+    \vect{\delta}_{B\Gamma} = (B\vect{\Gamma})_\text{est} - B\vect{\Gamma}.
+\end{equation}
+
+\noindent To avoid overly large values of \(\hat{\vect{\delta}}\), \((B\Gamma)_\text{max}\) is required to have a magnitude greater than or equal to 0.1 with the sign being positive if the average \(B\Gamma\) value along the blade is positive and negative if the average along the blade is negative:
+%
+\begin{equation}
+    (B\Gamma)_\text{max} =
+    \begin{cases}
+        \text{max}(B\vect{\Gamma},0.1) & \text{if } \overline{B\vect{\Gamma}} > 0, \\
+        \text{min}(B\vect{\Gamma},-0.1) & \text{otherwise};
+    \end{cases}
+\end{equation}
+
+\where \(\overline{B\vect{\Gamma}}\) is the average of \(B\vect{\Gamma}\) for the given rotor.
+%
+We then take the magnitude of the maximum normalized difference along a blade, \(\hat{\delta}_\text{max}\), and set the initial relaxation factor for the whole blade, \(\omega_r\), to be
+
+\begin{equation}
+    \omega_r =
+    \begin{cases}
+        \dfrac{0.2}{|\hat{\delta}|_\text{max}} & \text{if } \frac{\omega_{r_\text{nom}}}{\hat{\delta}_\text{max}} < -0.2,
+        \\[10pt]
+        \dfrac{0.4}{|\hat{\delta}|_\text{max}} & \text{if } \frac{\omega_{r_\text{nom}}}{\hat{\delta}_\text{max}} > 0.4, \\[10pt]
+        \omega_{r_\text{nom}} & \text{otherwise};
+    \end{cases}
+\end{equation}
+
+\where the nominal relaxation factor value, \(\omega_{r_\text{nom}}=0.4\), and the various relaxation factors (here and those described below) may be set as desired by the user; though the defaults presented here are identical to the values hard-coded into DFDC.
+%
+Also note that in DuctAPE, the calculation of \(\hat{\vect{\delta}}\) is implemented so that if \(\hat{\vect{\delta}}\) happened to be zero, it is instead set to a magnitude of 1 to avoid a division by zero.
+
+We then apply an additional scaling factor to the individual blade element relaxation factors, \(\vect{\omega}_{be}\), based on whether the current and previous iteration difference values along the blade (\(\vect{\delta}_{B\Gamma}\) and \(\vect{\delta}_{B\Gamma_\text{prev}}\), respectively) are in the same or opposite directions.
+%
+If the current and previous differences for a given blade element are of different signs, meaning the solver has moved the estimated and previous values in opposite directions, we apply an additional scaling factor of 0.6 to the overall relaxation factor to obtain the relaxation factor for that blade element.
+%
+If the current and previous differences are of the same sign (direction), then we apply an additional scaling factor of 0.5.
+
+\begin{equation}
+    \label{eqn:circulationrelaxation}
+    \omega_{{be}_i} =
+    \begin{cases}
+        0.6 \omega_r & \text{if } \text{sign}(\delta_{B\Gamma_{\text{prev}_i}}) \neq \text{sign}(\delta_{B\Gamma_i}), \\
+        0.5 \omega_r & \text{otherwise}.
+    \end{cases}
+\end{equation}
+
+The relaxation factor selection is very similar for the wake vortex strengths.
+%
+For all wake panel nodes, the nominal relaxation factor is set to \(\omega_{\gamma_\text{nom}} = 0.4\).
+%
+If the difference between current and previous iteration's differences in estimated and previous strength (\(\vect{\delta}_{\gamma_\text{prev}}\) and \(\vect{\delta}_\gamma\), respectively) are of the same sign, we apply a scaling factor of 1.2, and if not, we apply a scaling factor of 0.6:
+
+\begin{equation}
+    \label{eqn:gammathetarelaxation}
+    \omega_{\gamma_i} =
+    \begin{cases}
+        0.6\omega_{\gamma_\text{nom}} &\text{if } \text{sign}(\delta_{\gamma_{\text{prev}_i}}) \neq \text{sign}(\delta_{\gamma_i}), \\
+        1.2\omega_{\gamma_\text{nom}} & \text{otherwise}.
+    \end{cases}
+\end{equation}
+
+We choose the new values for circulation and vortex strength to be the previous values plus the relaxation factors multiplied by the differences between the new estimates and current states:
+
+\begin{align}
+    \label{eqn:updatecirculation}
+    B\vect{\Gamma} \stackrel{+}{=}&~ \vect{\omega}_{be} \vect{\delta}_{B\Gamma}, \\
+    \label{eqn:updategammatheta}
+    \vect{\gamma}_\theta \stackrel{+}{=}&~ \vect{\omega}_\gamma \vect{\delta}_\gamma.
+\end{align}
+
+The nominal DFDC-like, relative convergence criteria for the solver is assembled with a combination of the maximum differences used in the relaxation factor selection:
+
+\begin{equation}
+    \label{eqn:convergencecrit}
+    \begin{aligned}
+        \text{converged if } &|\delta_\gamma|_\text{max} < 2\cdot10^{-4} V_\text{ref}, \\
+    &\text{and  } |\delta_{B\Gamma}|_\text{max} < 10^{-3}|B\Gamma|_\text{max};
+    \end{aligned}
+\end{equation}
+
+\where \(V_\text{ref}\) is a reference velocity set by the user.
+%
+Though in DuctAPE, we often use (especially for optimization) an absolute convergence criteria:
+
+\begin{equation}
+    \label{eqn:convergencecritabs}
+    \begin{aligned}
+        \text{converged if } &|\delta_\gamma|_\text{max} < f_{\delta_\gamma}, \\
+                 &\text{and  } |\delta_{B\Gamma}|_\text{max} < f_{\delta_{B\Gamma}};
+    \end{aligned}
+\end{equation}
+
+\where we typically set \(f_{\delta_\gamma}=f_{\delta_{B\Gamma}}=1e-12\).
+
+
+\subsection{Additional Solve Approach in DuctAPE}
+
+We have implemented an alternate solution approach in DuctAPE that solves a non-linear system for the rotor induced axial and tangential velocities and the wake absolute velocities using a generalized residual compatible with external solvers.
+
+\subsubsection{Residual}
+\label{sssec:dtresid}
+
+We have formulated another residual function unique to DuctAPE that can be generally expressed as
+
+\begin{subequations}
+    \label{eqn:dtresid}
+    \begin{align}
+        f\left(V^\text{rotor}_z, V^\text{rotor}_{\theta}, C^\text{wake}_m, P\right) - V^\text{rotor}_z &= 0, \\
+        f\left(V^\text{rotor}_z, V^\text{rotor}_{\theta}, P\right) - V^\text{rotor}_{\theta} &= 0, \\
+        f\left(V^\text{rotor}_z, V^\text{rotor}_{\theta}, C^\text{wake}_m, P\right) - C^\text{wake}_m &= 0,
+    \end{align}
+\end{subequations}
+
+\where \(V^\text{rotor}_z\) and \(V^\text{rotor}_{\theta}\) are the induced axial and tangential velocities on the rotor blade elements, respectively, \(C^\text{wake}_m\) is the absolute meridional velocity on the wake panel control points, and \(P\) here are various parameters used in calculating the residual.
+
+\subsubsection{State Initialization}
+\label{sssec:dtinit}
+
+To choose initial states for the non-linear solve, we start by solving the panel method for the isolated bodies (without any rotors) first.
+%
+We then take the induced velocities from the body and apply them (along with the freestream velocity) to the blade elements within CCBlade, a blade element momentum theory (BEMT) formulation with guaranteed convergence \scite{CCBlade}. %(thus removing the possibility of non-convergence of the initialization as is possible in DFDC).
+%
+From the BEMT solution, we obtain the rotor induced axial and tangential velocities.
+%
+With the freestream velocity, body panel strengths, and initialized rotor states, we initialize the absolute velocities in the wake.
+
+
+\subsubsection{Solver Method}
+\label{sssec:dtsolve}
+
+A summary of our additional solution approach is shown algorithmically in \cref{alg:ductape} with references to relevant equations and figures.
+%
+The underlying purpose of this additional solve approach is to add greater flexibility in using DuctAPE with external solvers.
+%
+As the DFDC-like approach updates the state variables inside the residual function call, it is somewhat difficult to use that formulation with external solvers.
+%
+We found that our reformulated residual performed better with external solvers than simply altering the DFDC-like residual to not update the state variables internally.
+%
+% Various external solvers have been implemented in DuctAPE (as will be discussed below), and they each have their own options for convergence criteria, so we do not discuss those details here.
+
+\begin{algorithm}
+\caption{Alternate Solution Method}\label{alg:ductape}
+\begin{algorithmic}
+\State Initialize induced rotor velocities, and absolute wake velocities.
+\While{unconverged \textbf{and} iterator < iteration limit}
+\begin{itemize}
+    \renewcommand\labelitemi{\(\cdot\)}
+    \setlength{\itemindent}{1em}
+    \item Calculate the blade element inflow angles and magnitudes \Comment{(see \cref{fig:bladeelementangles}).}
+    \item Look up the blade element local lift and drag.
+    \item Calculate the blade circulation and rotor source panel strengths \Comment{using \cref{eqn:bladeelementcirculationrotor,eqn:rotorsourcestrengths}.}
+    \item Estimate the tangential induced velocity on the rotor \Comment{using \cref{eqn:vthetaself}.}
+    \item Calculate the wake vortex strengths from the current wake velocity states and rotor circulation \Comment{using \cref{eqn:gamma_theta_general}.}
+    \item Solve the linear system for the body vortex strengths \Comment{using \cref{eqn:neumann2}}.
+    \item Estimate the axial induced velocity on the rotor \Comment{using \cref{eqn:vzvr}.}
+    \item Calculate the axial and radial induced velocities on the wake \Comment{using \cref{eqn:vzvr}.}
+    \item Estimate the wake absolute meridional velocities \Comment{using \cref{eqn:vmwm}.}
+    \item Check for convergence.
+\end{itemize}
+\EndWhile
+\State Post-process Solution
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Differences in Approaches}
+
+\subsubsection{Residuals}
+
+The respective residual functions are similar.
+%
+Indeed, under the hood, the residual calculation process is more or less a re-ordering of the internals and the states of each approach are intermediate values of the other (as can be seen from \cref{alg:csor,alg:ductape}).
+%
+% \Cref{fig:flowchartcomp} shows flowcharts of both approaches for a visual comparison in which we see the same underlying equations used for each of the residual calculations.
+%
+The DFDC-like approach converges on the rotor circulation and wake strengths, and also includes the rotor source panel strengths as state variables.
+%
+The alternate approach converges on the rotor induced velocities and the absolute wake velocities which slightly fewer states than the DFDC approach.
+
+% {
+% \hypersetup{linkcolor=white}
+% \begin{figure}[h!]
+%      \centering
+%      \begin{subfigure}[t]{\textwidth}
+%          \centering
+% % \tikzsetnextfilename{solvers/dfdc_flowchart}
+%         \input{figures/dfdc_flowchart.tikz}
+%         \caption{DFDC-like residual}
+%         \label{fig:dfdcflowchart}
+%      \end{subfigure}
+
+     % \begin{subfigure}[t]{\textwidth}
+     %     \centering
+% % \tikzsetnextfilename{solvers/ductape_flowchart}
+     %    \input{figures/ductape_flowchart.tikz}
+     %    \caption{External solver residual}
+     %    \label{fig:ductapeflowchart}
+     % \end{subfigure}
+     % \caption{Visual comparison of the residual formulations implemented in DuctAPE.
+     % \primary{Blue} boxes indicate calculations,
+     % \tertiary{green} boxes indicate when states are being updated,
+     % \secondary{red} boxes indicate checking termination conditions,
+     % and unfilled boxes indicate items that are passed in or out.}
+    % \label{fig:flowchartcomp}
+% \end{figure}
+% }
+% \hypersetup{linkcolor=secondary}
+
+
+\subsubsection{State Initializations}
+
+Both state initialization approaches apply some sort of momentum theory, and that is where the similarities end.
+%
+The approach we take as default in DuctAPE utilizes the body-induced velocities from the rotor-off case, as well as fully converges the blade element induced axial and tangential velocities.
+%
+In contrast, the DFDC-like approach ignores tangential induced velocity, looks only at the average (rather than local blade element) induced axial velocity, and does not require convergence of induced velocity, opting instead for a set number of iterations.
+%
+Both approaches are reasonable and avoid any issues that could be present with a method that requires, but does not guarantee, convergence.
+%
+In practice, however, the DFDC-like method ends up not being suitable for optimization settings as the implementation is susceptible to conditions leading to the square root of a negative number, which is not defined for real numbers.
+%
+This is typically not an issue for manual analysis when the user is providing a reasonable design, but an optimizer is generally not constrained to explore only reasonable designs in the search for the optimum.
+
+
+\subsubsection{Solver Methods}
+
+As mentioned, the solution methods for both approaches use the same underlying equations (as presented in \cref{sec:methods}).
+%
+The largest difference between them is that the CSOR solver is constructed in a vaguely Gauss-Seidel way in that in each iteration the rotor circulation strengths are updated before being used to update the wake panel strengths, which in turn are updated before being used to update the rotor source panel strengths.
+%
+This leads to a highly efficient, but also specialized solver.
+
+On the other hand, the additional method is formulated in such a way that nearly any external solver can be used to converge the residual, which will be showcased somewhat later in \cref{ssec:benchmarking}.
+%
+Therefore, despite lacking specialization for inherent efficiency, the additional approach allows the user to select among various solvers depending on the desired usage.

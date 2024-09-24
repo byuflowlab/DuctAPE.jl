@@ -1,0 +1,203 @@
+% Recommended preamble:
+% \usetikzlibrary{arrows.meta}
+% \usetikzlibrary{backgrounds}
+% \usepgfplotslibrary{patchplots}
+% \usepgfplotslibrary{fillbetween}
+% \pgfplotsset{%
+%     layers/standard/.define layer set={%
+%         background,axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground%
+%     }{
+%         grid style={/pgfplots/on layer=axis grid},%
+%         tick style={/pgfplots/on layer=axis ticks},%
+%         axis line style={/pgfplots/on layer=axis lines},%
+%         label style={/pgfplots/on layer=axis descriptions},%
+%         legend style={/pgfplots/on layer=axis descriptions},%
+%         title style={/pgfplots/on layer=axis descriptions},%
+%         colorbar style={/pgfplots/on layer=axis descriptions},%
+%         ticklabel style={/pgfplots/on layer=axis tick labels},%
+%         axis background@ style={/pgfplots/on layer=axis background},%
+%         3d box foreground style={/pgfplots/on layer=axis foreground},%
+%     },
+% }
+
+\begin{tikzpicture}[/tikz/background rectangle/.style={fill={rgb,1:red,1.0;green,1.0;blue,1.0}, fill opacity={1.0}, draw opacity={1.0}}, show background rectangle]
+\begin{axis}[point meta max={nan}, point meta min={nan}, legend cell align={left}, legend columns={1}, title={}, title style={at={{(0.5,1)}}, anchor={south}, font={{\fontsize{14 pt}{18.2 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, align={center}}, legend style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, line width={1}, solid, fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, text opacity={1.0}, font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, text={rgb,1:red,0.0;green,0.0;blue,0.0}, cells={anchor={center}}, at={(1.02, 1)}, anchor={north west}}, axis background/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={0.0}}, anchor={north west}, xshift={5.0mm}, yshift={-5.0mm}, width={112.0mm}, height={85.25mm}, scaled x ticks={false}, xlabel={}, x tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, x tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, xlabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{11 pt}{14.3 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, xmajorgrids={false}, xmin={-0.030000000000000027}, xmax={1.03}, xticklabels={{}}, xtick={{0.0,0.25,0.5,0.75,1.0}}, xtick style={draw=none}, xticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, x grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis x line*={left}, separate axis lines, x axis line style={{draw opacity = 0}}, scaled y ticks={false}, ylabel={}, y tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, y tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, ylabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{11 pt}{14.3 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, ymajorgrids={false}, ymin={-0.23002317108839082}, ymax={0.5975587961247238}, yticklabels={{}}, ytick={{-0.2,0.0,0.2,0.4}}, ytick style={draw=none}, yticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, y grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis y line*={left}, y axis line style={{draw opacity = 0}}, colorbar={false}]
+    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={67d7ba48-7f21-4a51-aab3-8733bb90eb43}, draw opacity={1.0}, line width={1.0}, solid, mark={*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.1804;blue,0.3647}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 9.0pt, width = 9.0pt]}}}, forget plot]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  0.25  1.0  -0.25  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={67d7ba48-7f21-4a51-aab3-8733bb90eb43}, forget plot, draw opacity={1.0}, line width={1.0}, solid, mark={*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.1804;blue,0.3647}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.25  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={fe12a9c0-4166-45a3-bc20-07a8170c3b2b}, only marks, draw opacity={1.0}, line width={0}, solid, mark={*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.1804;blue,0.3647}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            1.0  0.0  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.6078;green,0.0;blue,0.0}, name path={ff4174f8-569c-4d9c-bcd0-a7ac1c821557}, draw opacity={1.0}, line width={1.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}, forget plot]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.5  0.125  0.06063390625908327  0.24253562503633297  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.6078;green,0.0;blue,0.0}, name path={ff4174f8-569c-4d9c-bcd0-a7ac1c821557}, forget plot, draw opacity={1.0}, line width={1.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.5  0.125  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.9804;green,0.2941;blue,0.2941}, name path={2b9c2727-86ac-462d-a877-7a407780cd0a}, only marks, draw opacity={1.0}, line width={0}, solid, mark={square*}, mark size={3.75 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.9804;green,0.2941;blue,0.2941}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            0.5  0.125  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3843;blue,0.7216}, name path={bb5f76ca-f783-450a-84cd-74708ebffa2a}, draw opacity={1.0}, line width={1.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}, forget plot]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.5867780030864365  0.17469485064199744  -0.0018490729906284198  0.0030979219010443815  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3843;blue,0.7216}, name path={bb5f76ca-f783-450a-84cd-74708ebffa2a}, forget plot, draw opacity={1.0}, line width={1.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.4133974596215561  0.175  \\
+            0.4116502169700881  0.17184352504420958  \\
+            0.41001797208395446  0.16862607766137136  \\
+            0.40850284952427984  0.16535184574246176  \\
+            0.40710682140353127  0.16202509109029392  \\
+            0.40583170481857883  0.1586501438722739  \\
+            0.40467915948552813  0.15523139698417232  \\
+            0.4036506855794017  0.1517733003322468  \\
+            0.40274762178148255  0.14828035504115944  \\
+            0.40197114353686136  0.14475710759522672  \\
+            0.4013222615244543  0.14120814392062872  \\
+            0.40080182034148437  0.13763808341628006  \\
+            0.40041049740413714  0.13405157294113193  \\
+            0.4001488020658235  0.13045328076573168  \\
+            0.4000170749541947  0.126847890495913  \\
+            0.4000154875277758  0.12324009497652465  \\
+            0.4001440418527914  0.1196345901831342  \\
+            0.40040257060047607  0.11603606910965666  \\
+            0.40079073726487335  0.11244921565986365  \\
+            0.40130803660083764  0.10887869855072489  \\
+            0.4019537952816713  0.1053291652355172  \\
+            0.4027271727755395  0.10180523585461021  \\
+            0.4036271624395224  0.09831149722180357  \\
+            0.40465259282988086  0.0948524968540426  \\
+            0.40580212922683  0.09143273705228305  \\
+            0.40707427537183616  0.08805666904121043  \\
+            0.408467375415175  0.08472868717544095  \\
+            0.40997961607121797  0.08145312321974532  \\
+            0.41160902897863877  0.07823424071074134  \\
+            0.41335349326247056  0.07507622940739286  \\
+            0.41521073829467703  0.0719831998375397  \\
+            0.4171783466496453  0.06895917794755607  \\
+            0.41925375725075353  0.0660080998621017  \\
+            0.42143426870391676  0.06313380676078695  \\
+            0.4237170428137733  0.06034003987842006  \\
+            0.42609910827793407  0.05763043563534431  \\
+            0.42857736455448636  0.05500852090420395  \\
+            0.43114858589771854  0.05247770841929941  \\
+            0.43380942555681234  0.05004129233450706  \\
+            0.43655642013203755  0.04770244393554557  \\
+            0.4393859940827794  0.045464207512170035  \\
+            0.4422944643815302  0.043329496395666106  \\
+            0.44527804530778886  0.041301089166802224  \\
+            0.44833285337562645  0.039381626039176124  \\
+            0.4514549123885059  0.03757360542266221  \\
+            0.4546401586147755  0.0358793806714334  \\
+            0.45788444607709966  0.03430115702079063  \\
+            0.4611835519489417  0.032840988716786396  \\
+            0.46453318205107624  0.03150077634237865  \\
+            0.4679289764409745  0.030282264343595974  \\
+            0.47136651508778865  0.029187038758933206  \\
+            0.4748413236255491  0.02821652515493335  \\
+            0.4783488791770838  0.027371986770643092  \\
+            0.48188461624108214  0.026654522873356623  \\
+            0.4854439326346387  0.026065067327788294  \\
+            0.48902219548354203  0.02560438738053658  \\
+            0.49261474725251253  0.025273082661421198  \\
+            0.4962169118075394  0.025071584402993424  \\
+            0.49982400050242587  0.025000154879235667  \\
+            0.5034313182816204  0.025058887064180538  \\
+            0.5070341697913912  0.025247704510894184  \\
+            0.510627865491388  0.02556636145098097  \\
+            0.5142077277586375  0.02601444311448038  \\
+            0.5177690969760268  0.02659136626973954  \\
+            0.5213073375973496  0.027296379982558613  \\
+            0.5248178441810223  0.028128566593621118  \\
+            0.5282960473846147  0.029086842912936894  \\
+            0.5317374199123929  0.03016996162974281  \\
+            0.5351374824081343  0.031376512936026266  \\
+            0.5384918092855431  0.03270492636155828  \\
+            0.5417960344886783  0.034153472818047606  \\
+            0.5450458571748948  0.035720266849754906  \\
+            0.5482370473129031  0.03740326908763808  \\
+            0.5513654511886584  0.039200288903834035  \\
+            0.5544269968119142  0.04110898726302155  \\
+            0.5574176992164026  0.04312687976695448  \\
+            0.5603336656467426  0.04525133988820208  \\
+            0.563171100625325  0.04747960238888699  \\
+            0.5659263108925783  0.04980876691997184  \\
+            0.5685957102141858  0.052235801796409145  \\
+            0.571175824048997  0.05475754794324013  \\
+            0.5736632940715569  0.057370723007507146  \\
+            0.5760548825433661  0.06007192563062731  \\
+            0.5783474765271831  0.06285763987566534  \\
+            0.5805380919388832  0.06572423980374442  \\
+            0.5826238774315995  0.06866799419363773  \\
+            0.5846021181070897  0.07168507139839689  \\
+            0.5864702390495006  0.07477154433269698  \\
+            0.5882258086769268  0.07792339558440611  \\
+            0.5898665419064046  0.08113652264372526  \\
+            0.5913903031282197  0.08440674324309369  \\
+            0.5927951089856575  0.0877298008009085  \\
+            0.5940791309565778  0.09110136996197216  \\
+            0.5952406977334548  0.09451706222745754  \\
+            0.5962782973987824  0.0979724316670622  \\
+            0.5971905793930148  0.10146298070591568  \\
+            0.597976356272481  0.1049841659787091  \\
+            0.5986346052549842  0.10853140424342647  \\
+            0.5991644695510743  0.1121000783469796  \\
+            0.5995652594792613  0.11568554323498295  \\
+            0.5998364533637185  0.11928313199784546  \\
+            0.5999776982133054  0.12288816194530872  \\
+            0.5999888101810273  0.12649594070152623  \\
+            0.599869774803335  0.1301017723127498  \\
+            0.5996207470189501  0.13370096335967216  \\
+            0.5992420509671936  0.13728882906647136  \\
+            0.5987341795660809  0.1408606993986045  \\
+            0.5980977938707295  0.1444119251414141  \\
+            0.5973337222129174  0.14793788395163437  \\
+            0.5964429591229102  0.1514339863739215  \\
+            0.5954266640349624  0.15489568181457694  \\
+            0.5942861597781743  0.1583184644646864  \\
+            0.5930229308546741  0.16169787916496708  \\
+            0.5916386215073596  0.16502952720468847  \\
+            0.5901350335797217  0.16830907204711762  \\
+            0.5885141241705304  0.1715322449740385  \\
+            0.5867780030864365  0.17469485064199744  \\
+        }
+        ;
+    \node[, color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{12 pt}{15.600000000000001 pt}\selectfont}}]  at (axis cs:0.0,0.3) {$p_1$};
+    \node[, color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{12 pt}{15.600000000000001 pt}\selectfont}}]  at (axis cs:1.0,0.05) {$p_2$};
+    \node[, color={rgb,1:red,0.6078;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{12 pt}{15.600000000000001 pt}\selectfont}}]  at (axis cs:0.6106339062590833,0.317535625036333) {$\hat{n}$};
+    \node[, color={rgb,1:red,0.9804;green,0.2941;blue,0.2941}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{12 pt}{15.600000000000001 pt}\selectfont}}]  at (axis cs:0.5,0.075) {$\overline{p}$};
+    \node[right, , color={rgb,1:red,0.0;green,0.3843;blue,0.7216}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{12 pt}{15.600000000000001 pt}\selectfont}}]  at (axis cs:0.5,0.0) {$\gamma$};
+\end{axis}
+\end{tikzpicture}

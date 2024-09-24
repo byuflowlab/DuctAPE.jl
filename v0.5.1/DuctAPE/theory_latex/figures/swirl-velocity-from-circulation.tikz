@@ -1,0 +1,78 @@
+\begin{tikzpicture}[scale=1]
+    %Airfoil
+    \draw[dash pattern=on 1cm off 0.1cm on 0.05cm off 0.1cm on 6.5cm off 0.1cm on 0.05cm off 0.1cm on 1cm] (-2,0) -- (7,0);
+    \draw[ thick, plotsgray, pattern={Hatch[angle=35,distance=2pt,xshift=.1pt, line width=0.25pt]}, pattern color=plotsgray] plot[] file{figures/scaled_dfdc_hub_coordinates.dat};
+
+    \draw[] plot[] file{figures/swirl-velocity-horseshoe1.dat};
+    \draw[] plot[] file{figures/swirl-velocity-horseshoe2.dat};
+    \draw[] plot[] file{figures/swirl-velocity-horseshoe3.dat};
+    \draw[] plot[] file{figures/swirl-velocity-horseshoe4.dat};
+    \draw[] plot[] file{figures/swirl-velocity-horseshoe5.dat};
+    \draw[] plot[] file{figures/swirl-velocity-horseshoe6.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert11.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert12.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert13.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert14.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert15.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert16.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert21.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert22.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert23.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert24.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert25.dat};
+    \draw[] plot[] file{figures/swirl-velocity-vert26.dat};
+    \draw[secondary,thick, densely dotted] plot[] file{figures/swirl-velocity-radialpos.dat};
+
+    % Coordinate system parameters
+    \coordinate (csysO) at (-1.5,3.0);
+    \coordinate (er) at ($(csysO) +(0,1)$);
+    \coordinate (zgap1) at ($(csysO) +(0.065,0)$);
+    \coordinate (zgap2) at ($(csysO) +(0.135,0)$);
+    \coordinate (ez) at ($(csysO) +(1,0)$);
+
+    % z-axis
+    \draw[] (csysO) -- (zgap1);
+    \draw[-Stealth] (zgap2) -- (ez);
+    \node[anchor=south,outer sep=0] at (ez) {$\hat{\vect{e}}_z$};
+
+    % r-axis
+    \draw[-Stealth,] (csysO) -- (er);
+    \node[anchor=west,outer sep=0] at (er) {$\hat{\vect{e}}_r$};
+
+    %theta direction
+    \draw[-Stealth] ($(csysO) + (0.2,0)$) [partial ellipse =7:350:0.1 and 0.5];
+    \node[anchor=north,outer sep=0,shift={(0.0,-0.5)}] at ($(csysO) + (0.2,0)$) {$\hat{\vect{e}}_\theta$};
+
+    % bGamma contours
+    \coordinate (bg1) at (1.35, 2.075);
+    \draw[primary] (bg1) [partial ellipse =105:205:0.25 and 0.05];
+    \draw[primary, -{Stealth[length=3pt,width=2pt]}] (bg1) [partial ellipse =70:-155:0.25 and 0.05];
+    \draw[line width=0.2pt] ($(bg1)-(0.5,-0.2)$) to [out =0, in =180] ($(bg1)-(0.3,0)$);
+    \node[left, primary, shift={(0.1,0.0)}, style={font=\tiny}] at ($(bg1)-(0.5,-0.2)$) {\(B_1\Gamma_1\)};
+
+    \coordinate (bg2) at (2.6, 2.075);
+    \draw[primary] (bg2) [partial ellipse =105:205:0.25 and 0.05];
+    \draw[primary, -{Stealth[length=3pt,width=2pt]}] (bg2) [partial ellipse =70:-155:0.25 and 0.05];
+    \draw[line width=0.2pt] ($(bg2)-(0.5,-0.4)$) to [out =270, in =180] ($(bg2)-(0.3,0)$);
+    \node[above, primary, shift={(0.1,0.0)}, style={font=\tiny}] at ($(bg2)-(0.5,-0.4)$) {\(B_2\Gamma_2\)};
+
+
+    % Gamma tilde contours
+    \coordinate (g1) at (2.0, 1.5);
+    \draw[primary, dashed] (g1) [partial ellipse =1:45:1 and 0.15];
+    \draw[primary, dashed, -Stealth] (g1) [partial ellipse =60:90:1 and 0.15];
+    \draw[primary, dashed] (g1) [partial ellipse =92:123:1 and 0.15];
+    \draw[primary, dashed] (g1) [partial ellipse =140:360:1 and 0.15];
+
+    \coordinate (g2) at (4.0, 0.0);
+    \draw[primary,thick, densely dotted] (g2) [partial ellipse =-10:-1:0.1 and 1.5];
+    \draw[primary,thick] (g2) [partial ellipse =23:28:0.1 and 1.5];
+    \draw[primary,thick] (g2) [partial ellipse =32:38:0.1 and 1.5];
+    \draw[primary,thick] (g2) [partial ellipse =43:47:0.1 and 1.5];
+    \draw[primary,thick, densely dotted] (g2) [partial ellipse =180:190:0.1 and 1.5];
+    \draw[primary,-Stealth,bend right, thick] (g2) [partial ellipse =180:48:0.1 and 1.5];
+
+    \draw[line width=0.2pt] (4.0,1.55) to [out =90, in =200] (3.5,2) node[above right,shift={(-0.1, -0.1)}, primary] {\(\widetilde{\Gamma}\)};
+    \draw[line width=0.2pt] (3.0,1.55) to [out =90, in =200] (3.5,2);
+
+\end{tikzpicture}
