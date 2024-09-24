@@ -635,3 +635,77 @@ ducted_rotor = dt.DuctedRotor(
 
 end
 
+@testset "Wake Geometry Solver" begin
+    function f(x)
+        TF = eltype(x)
+        trcz = x[1] #top right corner
+        trcr = x[2] #top right corner
+
+        # converging geometry
+        wake_grid = zeros(TF, 2, 3, 3)
+        wake_grid[1, :, 1] = [0.0; 0.75; 1.75] * trcz
+        wake_grid[1, :, 2] = [0.0; 0.75; 1.75] * trcz
+        wake_grid[1, :, 3] = [0.0; 0.75; 1.75] * trcz
+
+        wake_grid[2, 1, :] = [0.3; 1.0; 1.7] * trcr
+        wake_grid[2, 2, :] = [0.4; 1.0; 1.6] * trcr
+        wake_grid[2, 3, :] = [0.5; 1.0; 1.5] * trcr
+
+        zs = wake_grid[1, :, :]
+        rs = wake_grid[2, :, :]
+
+        # - Use NLsolve to obtain grid solution - #
+        dt.solve_elliptic_grid!(
+            wake_grid;
+            algorithm=:trust_region,
+            atol=1e-15,
+            iteration_limit=100,
+            converged=[false],
+            verbose=false,
+        )
+
+        return reshape(wake_grid, :)
+    end
+
+    x0 = [1.0; 1.0]
+
+    wg = f(x0)
+
+    steps = 1e-6
+    central_diff_jac = FiniteDiff.finite_difference_jacobian(
+        f, x0, Val(:central); relstep=steps
+    )
+
+    forwardAD_jac = ForwardDiff.jacobian(f, x0)
+
+    maxj, _ = findmax(
+        abs.((forwardAD_jac .- central_diff_jac) ./ (1.0 .+ central_diff_jac))
+    )
+
+    @test isapprox(
+        wg,
+        [
+            0.0
+            0.3
+            0.75
+            0.4
+            1.75
+            0.5
+            0.0
+            1.0
+            0.75
+            0.9587508251715947
+            1.75
+            0.9387512252547923
+            0.0
+            1.7
+            0.75
+            1.6
+            1.75
+            1.5
+        ],
+        atol=1e-12,
+    )
+
+    @test maxj < 1e-9
+end

@@ -1,15 +1,133 @@
 """
+    backward_stencil_1(f, x)
+
+Three-point, backward difference scheme on a non-uniform grid.
+
+# Arguments:
+- `f::AbstractMatrix{Float}` : f(x) for x_{i-2}:x_{i}
+- `x::AbstractVector{Float}` : [x_{i-2}:x_{i}]
+
+# Returns:
+- `f'(x)::Float` : ∂f/∂x at x_i
 """
-function elliptic_grid_residual_clean!(r, y, x, p)
+function backward_stencil_1(f, x)
+    #1 = n-2
+    #2 = n-1
+    #3 = n
+
+    # First Term
+    n1 = (x[3] - x[2])
+    d1 = (x[3] - x[1]) * (x[2] - x[1])
+    t1 = f[1] * n1 / d1
+
+    # Second Term
+    n2 = (x[1] - x[3])
+    d2 = (x[2] - x[1]) * (x[3] - x[2])
+    t2 = f[2] * n2 / d2
+
+    # Third Term
+    n3 = (2.0 * x[3] - x[2] - x[1])
+    d3 = (x[3] - x[2]) * (x[3] - x[1])
+    t3 = f[3] * n3 / d3
+
+    return t1 + t2 + t3
+end
+
+"""
+    center_stencil_1(f, x)
+
+Three-point, central difference scheme on a non-uniform grid, for first derivatives.
+
+# Arguments:
+- `f::AbstractMatrix{Float}` : f(x) for x_{i-1}:x_{i+1}
+- `x::AbstractVector{Float}` : [x_{i-1}:x_{i+1}]
+
+# Returns:
+- `f'(x)::Float` : ∂f/∂x at x_i
+"""
+function center_stencil_1(f, x)
+
+    #1 = i-1
+    #2 = i
+    #3 = i+1
+
+    return (f[3] - f[1]) / (x[3] - x[1])
+end
+
+"""
+    center_stencil_2(f, x)
+
+Three-point, central difference scheme on a non-uniform grid, for second derivatives.
+
+# Arguments:
+- `f::AbstractMatrix{Float}` : f(x) for x_{i-1}:x_{i+1}
+- `x::AbstractVector{Float}` : [x_{i-1}:x_{i+1}]
+
+# Returns:
+- `f''(x)::Float` : ∂^2f/∂x^2 at x_i
+"""
+function center_stencil_2(f, x)
+
+    #1 = i-1
+    #2 = i
+    #3 = i+1
+
+    h2 = (x[2] - x[1])
+    h3 = (x[3] - x[2])
+
+    n1 = h2 * (f[3] - f[2])
+    n2 = h3 * (f[2] - f[1])
+    d1 = h2 * h3 * (h3 + h2)
+
+    return 2.0 * (n1 - n2) / d1
+end
+
+"""
+    center_stencil_2_mixed(f, x, y)
+
+Three-point, central difference scheme on a non-uniform grid, for mixed derivatives.
+Uses a consecutive first derivative central difference (`center_stencil_1`) in the x-dimension then another centeral difference of the f'(x) values in the y-dimension.
+
+# Arguments:
+- `f::AbstractMatrix{Float}` : f(x,y) for x_{i-1}:x_{i+1} and y_{i-1}:y_{i+1}
+- `x::AbstractVector{Float}` : [x_{i-1}:x_{i+1}]
+- `y::AbstractVector{Float}` : [y_{i-1}:y_{i+1}]
+
+# Returns:
+- `f'(x,y)::Float` : ∂^2f/∂x∂y at x_ij
+"""
+function center_stencil_2_mixed(f, x, y)
+    TF = promote_type(eltype(f), eltype(x), eltype(y))
+    dfdx = zeros(TF, 3)
+
+    for j in 1:3
+        dfdx[j] = center_stencil_1(f[:, j], x)
+    end
+
+    return center_stencil_1(dfdx, y)
+end
+
+"""
+assume grid has radial lines of constant axial position such that z'(ξ)=1.0 and z''(ξ)=z`(η)=z''(η)=0.0
+"""
+function elliptic_grid_residual!(r, y, x, p)
+
+    # # - extract parameters - #
+    # allocating version
+    # (; x_caching, itshape) = p
+    # (; x_dims) = x_caching
+    # TF = promote_type(eltype(x), eltype(y))
+    # const_grid, ξ, η = withdraw_grid_parameter_cache(x, x_dims)
+    # proposed_grid = zeros(TF, size(const_grid))
+    # proposed_grid .= const_grid
 
     # - extract parameters - #
+    # use preallocated proposed grid to save a few allocations
     (; x_caching, itshape) = p
-    (; x_dims) = x_caching
-
-    TF = promote_type(eltype(x), eltype(y))
-    const_grid, ξ, η = withdraw_grid_parameter_cache(x, x_dims)
-    proposed_grid = zeros(TF, size(const_grid))
-    proposed_grid .= const_grid
+    (; x_cache, x_dims) = x_caching
+    x_vec = PreallocationTools.get_tmp(x_cache, promote_type(eltype(y), eltype(x))(1.0))
+    x_vec .= x
+    proposed_grid, ξ, η = withdraw_grid_parameter_cache(x_vec, x_dims)
 
     # dimensions
     nxi = x_dims.xi.shape[1]
@@ -22,105 +140,11 @@ function elliptic_grid_residual_clean!(r, y, x, p)
     resid = reshape(r, itshape)
 
     #overwrite proposed_grid internals with the current state variables
-    proposed_grid[:, 2:end, 2:(end - 1)] .= reshape(y, itshape)
+    proposed_grid[2, 2:end, 2:(end - 1)] .= reshape(y, itshape)
 
     # separate x and r components of proposed grid
     zs = view(proposed_grid, 1, :, :)
     rs = view(proposed_grid, 2, :, :)
-
-    # - Spline physical coordinates relative to parametric coordinates - #
-    # initialize f(ξ)
-    z_of_ξ = fill(FLOWMath.Akima(ξ, zs[:, 1]), neta)
-    r_of_ξ = fill(FLOWMath.Akima(ξ, rs[:, 1]), neta)
-
-    # loop over each line of constant η (jth axial line) filling f(ξ)
-    xifine = range(ξ[1], ξ[end], 100)
-    etafine = range(η[1], η[end], 100)
-    for j in 2:neta
-        z_of_ξ[j] = FLOWMath.Akima(ξ, zs[:, j])
-        r_of_ξ[j] = FLOWMath.Akima(ξ, rs[:, j])
-    end
-
-    # initialize f(η)
-    z_of_η = fill(FLOWMath.Akima(η, zs[1, :]), nxi)
-    r_of_η = fill(FLOWMath.Akima(η, rs[1, :]), nxi)
-
-    # loop over each line of constant ξ (ith radial line), filling f(η)
-    for i in 2:nxi
-        z_of_η[i] = FLOWMath.Akima(η, zs[i, :])
-        r_of_η[i] = FLOWMath.Akima(η, rs[i, :])
-    end
-
-    # - Get first and second derivatives of physical coordinates with respect to parametric coordinates - #
-    # initialize first derivatives
-    z_ξ_mat = zeros(TF, nxi, neta)
-    z_η_mat = zeros(TF, nxi, neta)
-
-    r_ξ_mat = zeros(TF, nxi, neta)
-    r_η_mat = zeros(TF, nxi, neta)
-
-    # initialize second derivatives
-    z_ξξ_mat = zeros(TF, nxi, neta)
-    z_ηη_mat = zeros(TF, nxi, neta)
-
-    r_ξξ_mat = zeros(TF, nxi, neta)
-    r_ηη_mat = zeros(TF, nxi, neta)
-
-    # calculate derivatives at each grid point
-    # loop over each line of constant η
-    for j in 1:neta
-        # loop over each line of constant ξ
-
-        for i in 1:nxi
-            # - First Derivatives - #
-
-            # δz/δξ at grid point i,j
-            z_ξ_mat[i, j] = FLOWMath.derivative(z_of_ξ[j], ξ[i])
-            # δz/δη at grid point i,j
-            z_η_mat[i, j] = FLOWMath.derivative(z_of_η[i], η[j])
-
-            # δr/δξ at grid point i,j
-            r_ξ_mat[i, j] = FLOWMath.derivative(r_of_ξ[j], ξ[i])
-            # δr/δη at grid point i,j
-            r_η_mat[i, j] = FLOWMath.derivative(r_of_η[i], η[j])
-
-            # - Second Derivatives - #
-
-            # δ2z/δξ2 at grid point i,j
-            z_ξξ_mat[i, j] = FLOWMath.second_derivative(z_of_ξ[j], ξ[i])
-            # δ2z_dη2 at grid point i,j
-            z_ηη_mat[i, j] = FLOWMath.second_derivative(z_of_η[i], η[j])
-
-            # δ2r/δξ2 at grid point i,j
-            r_ξξ_mat[i, j] = FLOWMath.second_derivative(r_of_ξ[j], ξ[i])
-            # δ2r/δη2 at grid point i,j
-            r_ηη_mat[i, j] = FLOWMath.second_derivative(r_of_η[i], η[j])
-        end
-    end
-
-    # - Get Multivariate derivatives of physical coordinates relative to parametric coordinates - #
-    z_ξη_mat = zeros(TF, nxi, neta)
-    r_ξη_mat = zeros(TF, nxi, neta)
-
-    # loop through lines of constant ξ
-    for i in 1:nxi
-        # - Spline first derivatives with respect to ξ as functions of η along lines of constant ξ - #
-
-        # δz/δξ(η) for the ith line of constant ξ
-        z_ξi_of_η = FLOWMath.Akima(η, z_ξ_mat[i, :])
-        # δr/δξ(η) for the ith line of constant ξ
-        r_ξi_of_η = FLOWMath.Akima(η, r_ξ_mat[i, :])
-
-        for j in 1:neta
-            # - Multivariate Derivatives - #
-
-            # δ2z/δξδη at grid point i,j
-            z_ξη_mat[i, j] = FLOWMath.derivative(z_ξi_of_η, η[j])
-
-            # δ2r/δξδη at grid point i,j
-            r_ξη_mat[i, j] = FLOWMath.derivative(r_ξi_of_η, η[j])
-        end
-    end
 
     # - Populate Residual Vector - #
 
@@ -132,7 +156,7 @@ function elliptic_grid_residual_clean!(r, y, x, p)
         Note: Neumann Boundary Condition:
         Velocity is tangent to streamline
         Streamlines are along lines of constant η
-                            ∴ Velocity components in η̂ direction (perpendicular to streamlines) must go to zero
+        ∴ Velocity components in η̂ direction (perpendicular to streamlines) must go to zero
         =#
 
         # - η unit vector components in z and r directions - #
@@ -146,29 +170,29 @@ function elliptic_grid_residual_clean!(r, y, x, p)
 
         # unit vector components
         # note: set to zero if you'd divide by zero
-         η̂z = iszero(enorm) ? 0.0 : dz / enorm
-         η̂r = iszero(enorm) ? 0.0 : dr / enorm
+        η̂z = iszero(enorm) ? 0.0 : dz / enorm
+        η̂r = iszero(enorm) ? 0.0 : dr / enorm
 
         # Calculate derivatives using spline interpolation
-        z_ξ_outlet = z_ξ_mat[end, j]
-        r_ξ_outlet = r_ξ_mat[end, j]
+        r_ξ_outlet = backward_stencil_1(rs[(end - 2):end, j], ξ[(end - 2):end])
 
         # Boundary condition is that velocity is aligned with streamlines
         #=
-           In other words, we want the velocity perpendicular to the streamline to be zero
-           Cz = dz_dξ_outlet/(ρrJ)
-           Cr = dr_dξ_outlet/(ρrJ)
-                 V⟂ = η̂z*Cz + η̂r*Cr (= 0)
-                 V⟂ = η̂z*dz_dξ_outlet/(ρrJ) + η̂r*dr_dξ_outlet/(ρrJ) (= 0)
-                 V⟂*ρ*r*J = η̂z*dz_dξ_outlet + η̂r*dr_dξ_outlet (= 0)
-                 V⟂ = η̂z*dz_dξ_outlet + η̂r*dr_dξ_outlet (= 0)
-         =#
-          Vperp = η̂z * z_ξ_outlet + η̂r * r_ξ_outlet
+        In other words, we want the velocity perpendicular to the streamline to be zero
+        Cz = dz_dξ_outlet/(ρrJ)
+        Cr = dr_dξ_outlet/(ρrJ)
+        V⟂ = η̂z*Cz + η̂r*Cr (= 0)
+        V⟂ = η̂z*dz_dξ_outlet/(ρrJ) + η̂r*dr_dξ_outlet/(ρrJ) (= 0)
+        V⟂*ρ*r*J = η̂z*dz_dξ_outlet + η̂r*dr_dξ_outlet (= 0)
+        V⟂ = η̂z*dz_dξ_outlet + η̂r*dr_dξ_outlet (= 0)
+        =#
+        Vperp = η̂z + η̂r * r_ξ_outlet
 
         # for residual, need to return a component relative to the associated state
         # (z for index 1, r for index 2)
-         resid[1, end, j - 1] = η̂z * Vperp
-         resid[2, end, j - 1] = η̂r * Vperp
+         # resid[1, end, j - 1] = η̂z * Vperp
+         # resid[2, end, j - 1] = η̂r * Vperp
+         resid[end, j - 1] = η̂r * Vperp
 
         # - Interior Residuals - #
         # Loop over interior points between rotor plane and outlet plane
@@ -179,44 +203,27 @@ function elliptic_grid_residual_clean!(r, y, x, p)
             ### --- Rename For Readability --- ###
 
             # - First Derivative Terms - #
-            z_ξ = z_ξ_mat[i, j]
-            z_η = z_η_mat[i, j]
-            r_ξ = r_ξ_mat[i, j]
-            r_η = r_η_mat[i, j]
+            r_ξ = center_stencil_1(rs[(i - 1):(i + 1), j], ξ[(i - 1):(i + 1)])
+            r_η = center_stencil_1(rs[i, (j - 1):(j + 1)], η[(j - 1):(j + 1)])
 
             # assemble alpha, beta, and gamma (convenience variables)
-            α = z_η^2 + r_η^2
-            β = z_η * z_ξ + r_η * r_ξ
-            γ = z_ξ^2 + r_ξ^2
-            # J = z_ξ*r_η-z_η*r_ξ
+            α = r_η^2
+            β = r_η * r_ξ
+            γ = 1.0 + r_ξ^2
 
             # - Second and Multivariate Derivative Terms - #
             # second
-            z_ξξ = z_ξξ_mat[i, j]
-            z_ηη = z_ηη_mat[i, j]
-            r_ξξ = r_ξξ_mat[i, j]
-            r_ηη = r_ηη_mat[i, j]
+            r_ξξ = center_stencil_2(rs[(i - 1):(i + 1), j], ξ[(i - 1):(i + 1)])
+            r_ηη = center_stencil_2(rs[i, (j - 1):(j + 1)], η[(j - 1):(j + 1)])
 
             # multivariate
-            z_ξη = z_ξη_mat[i, j]
-            r_ξη = r_ξη_mat[i, j]
+            r_ξη = center_stencil_2_mixed(
+                rs[(i - 1):(i + 1), (j - 1):(j + 1)], ξ[(i - 1):(i + 1)], η[(j - 1):(j + 1)]
+            )
 
-            # populate residual vector (remember you reshaped it for easier population)
-            resid[1, i - 1, j - 1] =
-                α * z_ξξ -
-                2.0 * β * z_ξη +
-                γ * z_ηη +
-                γ * r_η * z_η / rs[i, j] -
-                β * r_ξ * z_η / rs[i, j]
-                # -J*z_ξ*z_η/rs[i,j]
-
-            resid[2, i - 1, j - 1] =
-                α * r_ξξ -
-                2.0 * β * r_ξη +
-                γ * r_ηη +
-                γ * r_η^2 / rs[i, j] -
+            resid[i - 1, j - 1] =
+                α * r_ξξ - 2.0 * β * r_ξη + γ * r_ηη + γ * r_η^2 / rs[i, j] -
                 β * r_ξ * r_η / rs[i, j]
-                # -J*r_ξ*z_η/rs[i,j]
         end
     end
 
@@ -225,7 +232,7 @@ end
 
 """
 """
-function elliptic_grid_residual!(r, y, x, p)
+function elliptic_grid_residual_dfdc!(r, y, x, p)
 
     # - extract parameters - #
     (; x_caching, itshape) = p
@@ -303,8 +310,9 @@ function elliptic_grid_residual!(r, y, x, p)
         dxdxi = dzdxi_1 + dxi1 * (dzdxi_1 - dzdxi_2) / (dxi1 + dxi2)
         drdxi = drdxi_1 + dxi1 * (drdxi_1 - drdxi_2) / (dxi1 + dxi2)
 
+
         # - populate residual vector - #
-        tmp = zhat * dzdxi + rhat * drdxi
+        tmp = zhat * dxdxi + rhat * drdxi
 
         resid[1, end, j - 1] = zhat * tmp
         resid[2, end, j - 1] = rhat * tmp
@@ -364,67 +372,16 @@ function elliptic_grid_residual!(r, y, x, p)
             alpha = z_eta^2 + r_eta^2
             beta = z_eta * z_xi + r_eta * r_xi
             gamma = z_xi^2 + r_xi^2
-            J = z_xi * r_eta - z_eta * r_xi
 
             # populate residual vector
 
-            # taylor's
             resid[1, i - 1, j - 1] =
                 alpha * z_xixi - 2.0 * beta * z_xieta + gamma * z_etaeta -
                 beta * r_xi * z_eta * detaminus * detaplus / ravg
-            # println(ForwardDiff.value(
-            #     alpha * z_xixi - 2.0 * beta * z_xieta + gamma * z_etaeta -
-            #     beta * r_xi * z_eta * detaminus * detaplus / ravg,
-            #    ))
             resid[2, i - 1, j - 1] =
                 alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
                 beta * r_xi * r_eta * detaminus * detaplus / ravg
-            # println(
-            #     ForwardDiff.value(
-            #         alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
-            #         beta * r_xi * r_eta * detaminus * detaplus / ravg,
-            #     ),
-            # )
 
-            # println("alpha = ", ForwardDiff.value(alpha))
-            # println("beta = ", ForwardDiff.value(beta))
-            # println("gamma = ", ForwardDiff.value(gamma))
-            # println("J = ", ForwardDiff.value(J))
-
-            # # mine try 1
-            # resid[1, i - 1, j - 1] =
-            # alpha * z_xixi - 2.0 * beta * z_xieta + gamma * z_etaeta -
-            # J * z_eta * z_xi / ravg,
-            # println(ForwardDiff.value(
-            #     alpha * z_xixi - 2.0 * beta * z_xieta + gamma * z_etaeta -
-            #     J * z_eta * z_xi / ravg,
-            #    ))
-            # resid[2, i - 1, j - 1] =
-            #     alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta - J*z_eta*r_xi
-            # println(
-            #     ForwardDiff.value(
-            #         alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
-            #         J * z_eta * r_xi/ravg,
-            #     ),
-            # )
-
-            # # mine try 2
-            # resid[1, i - 1, j - 1] =
-            # alpha * z_xixi - 2.0 * beta * z_xieta + gamma * z_etaeta -
-            # beta * r_xi * z_eta / ravg + gamma * r_eta * z_eta / ravg,
-            # println(ForwardDiff.value(
-            #     alpha * z_xixi - 2.0 * beta * z_xieta + gamma * z_etaeta -
-            #     beta * r_xi * z_eta / ravg + gamma * r_eta * z_eta / ravg,
-            # ))
-            # resid[2, i - 1, j - 1] =
-            #     alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
-            #     beta * r_xi * r_eta  / ravg + gamma*r_eta^2/ravg
-            # println(
-            #     ForwardDiff.value(
-            #         alpha * r_xixi - 2.0 * beta * r_xieta + gamma * r_etaeta -
-            #         beta * r_xi * r_eta/ravg + gamma * r_eta^2 / ravg,
-            #     ),
-            # )
         end
     end
 
@@ -440,14 +397,12 @@ function solve_elliptic_grid(x, p)
         return elliptic_grid_residual!(r, y, x, p)
     end
 
-    # z_vec = PreallocationTools.get_tmp(p.x_caching.z_cache, )
-    # z_vec .= x
     wake_grid, _, _ = withdraw_grid_parameter_cache(x, p.x_caching.x_dims)
 
     # - Call NLsolve - #
     result = NLsolve.nlsolve(
         rwrap!,
-        reshape(@view(wake_grid[:, 2:end, 2:(end - 1)]), :);
+        reshape(@view(wake_grid[2, 2:end, 2:(end - 1)]), :);
         method=p.algorithm,
         autodiff=p.autodiff,
         linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
@@ -473,9 +428,6 @@ function solve_elliptic_grid!(
     verbose=false,
 )
 
-    #For some reason, if the "outlet" z-coordinates are the same, the jacobian of the residual associated with the final z-coordinate on the second wake sheet is zero with respect to all state variables.  Adding a bit of "noise" seems to fix the problem, but too much (even 1e-6) leads to non-convergence.
-    # wake_grid[1, end, :] .+= range(1e-16, 2e-16; length=size(wake_grid, 3))
-
     # - dimensions - #
     gridshape = size(wake_grid)
     nx = gridshape[2]
@@ -491,22 +443,25 @@ function solve_elliptic_grid!(
     x_caching = allocate_grid_parameter_cache(wake_grid, xi, eta)
 
     # - set up solve - #
-    itshape = (gridshape[1], gridshape[2] - 1, gridshape[3] - 2)
+    itshape = (gridshape[2] - 1, gridshape[3] - 2)
     constants = (;
         x_caching, itshape, algorithm, autodiff, atol, iteration_limit, converged, verbose
     )
 
-    grid_internals = solve_elliptic_grid([reshape(wake_grid, :); xi; eta], constants)
+    # non ImplicitAD version
+    # grid_internals = solve_elliptic_grid([reshape(wake_grid, :); xi; eta], constants)
 
-    # grid_internals = ImplicitAD.implicit(
-    #     solve_elliptic_grid,
-    #     elliptic_grid_residual!,
-    #     [reshape(wake_grid, :); xi; eta],
-    #     constants,
-    # )
+    grid_internals = ImplicitAD.implicit(
+        solve_elliptic_grid,
+        elliptic_grid_residual!,
+        [reshape(wake_grid, :); xi; eta],
+        constants,
+    )
 
-    wake_grid[:, 2:end, 2:(end - 1)] .= reshape(grid_internals, itshape)
+    # Place solved grid internals into wake grid
+    wake_grid[2, 2:end, 2:(end - 1)] .= reshape(grid_internals, itshape)
 
+    # Check that no weird things happened with values being placed beneath the axis of rotation
     for g in eachindex(wake_grid[2, :, :])
         if wake_grid[g] < eps()
             wake_grid[g] = 0.0

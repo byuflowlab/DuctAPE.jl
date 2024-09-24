@@ -351,21 +351,22 @@ function relax_grid!(
     tabchar="    ",
     ntab=1,
 )
-    if verbose
-        println(tabchar^ntab * "Preconditioning Elliptic Grid System using SLOR")
-    end
-    # - Relax grid to allow Newton solve a tractable starting point - #
-    relax_grid!(
-        wake_grid;
-        iteration_limit=grid_solver_options.iteration_limit,
-        atol=grid_solver_options.atol,
-        converged=grid_solver_options.converged,
-        verbose=verbose,
-        tabchar="\t",
-        ntab=1,
-    )
 
-    # - Converge grid with Newton Solve - #
+    # if verbose
+    #     println(tabchar^ntab * "Preconditioning Elliptic Grid System using SLOR")
+    # end
+    # # - Relax grid to allow Newton solve a tractable starting point - #
+    # relax_grid!(
+    #     wake_grid;
+    #     iteration_limit=grid_solver_options.iteration_limit,
+    #     atol=grid_solver_options.atol,
+    #     converged=grid_solver_options.converged,
+    #     verbose=verbose,
+    #     tabchar="\t",
+    #     ntab=1,
+    # )
+
+    # - Converge grid with NLsolve - #
 
     # reset convergence flag
     grid_solver_options.converged[1] = false
