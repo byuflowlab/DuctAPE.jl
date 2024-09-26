@@ -136,8 +136,24 @@ struct Rotor{
 end
 
 function Rotor(
-    B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
+    B,
+    rotorzloc,
+    r,
+    Rhub,
+    Rtip,
+    chords,
+    twists,
+    tip_gap,
+    airfoils,
+    fliplift;
+    i_know_what_im_doing=false,
 )
+
+    if length(findall(t -> t > pi / 2, twists)) > 2
+        @warn "It looks like your input twist angles may be in degrees. Note that the required units for twist are radians. Converting to radians for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic conversion)."
+        twists .*= pi / 180.0
+    end
+
     return Rotor(
         isscalar(B) ? [B] : B,
         isscalar(rotorzloc) ? [rotorzloc] : rotorzloc,
@@ -166,12 +182,7 @@ end
 - `paneling_constants::PanelingConstants` : Constants used in re-paneling the geometry.
 - `rotor::Rotor` : Rotor (and possibly stator) geometric paramters.
 """
-struct DuctedRotor{
-    Td<:AbstractMatrix,
-    Tcb<:AbstractMatrix,
-    Tpc<:PanelingConstants,
-    Trp<:Rotor,
-}
+struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:PanelingConstants}
     duct_coordinates::Td
     centerbody_coordinates::Tcb
     rotor::Trp
