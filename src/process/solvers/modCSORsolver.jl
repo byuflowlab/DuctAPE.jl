@@ -24,7 +24,7 @@ Modified DFDC-like CSOR solver that updates all states before relaxing Gamr and 
 """
 function mod_COR_solver(
     r_fun!,
-    initial_states,
+    states,
     B,
     state_dims;
     convergence_tolerance=1e-10,
@@ -44,7 +44,7 @@ function mod_COR_solver(
     r_previous = similar(states) .= 0
 
     # iterate until converged or maximum allowed iterations
-    while !converged && iter[] < iteration_limit
+    while !converged[] && iter[] < iteration_limit
 
         # Calculate Residuals
         # Note: you can pass in intermediate computation caches to the residual via the wrapper that takes in inputs and constants
@@ -52,10 +52,15 @@ function mod_COR_solver(
 
         # Update States
         # Note: you can't pass intermediate computation caches here, unless you allow the solver to take in its own cache
-        update_states!(states, r_current, r_previous, B, relaxation_parameters)
+        update_states!(states, r_current, r_previous, B, relaxation_parameters, state_dims)
 
         # Check if residuals are converged
-        converged[] = maximum(abs.(r)) <= convergence_tolerance
+        converged[] = maximum(abs.(r_current)) <= convergence_tolerance
+        if verbose
+            println("Iteration: $(iter[])")
+            println("max r: ", maximum(abs.(r_current)))
+            println("Converged? $(converged[])")
+        end
 
         # increment iterator
         iter[] += 1
@@ -229,14 +234,16 @@ Update states using DFDC-like relaxation methods.
 """
 function update_states!(states, r_current, r_previous, B, relaxation_parameters, state_dims)
 
-    # - Separate out the residuals - #
+    # - Separate out the states and residuals - #
+    Gamr, sigr, gamw = extract_state_variables(ModCSORSolverOptions(), states, state_dims)
     r_Gamr_current, r_sigr_current, r_gamw_current = extract_state_variables(
-        solver_options, r_current, state_dims
+        ModCSORSolverOptions(), r_current, state_dims
     )
     r_Gamr_previous, r_sigr_previous, r_gamw_previous = extract_state_variables(
-        solver_options, r_previous, state_dims
+        ModCSORSolverOptions(), r_previous, state_dims
     )
 
+    # println("before: ", Gamr)
     # - relax Gamr values - #
     relax_Gamr!(
         Gamr,
@@ -249,6 +256,7 @@ function update_states!(states, r_current, r_previous, B, relaxation_parameters,
         pf1=relaxation_parameters.pf1,
         pf2=relaxation_parameters.pf2,
     )
+    # println("after: ", Gamr)
 
     # relax gamw values
     relax_gamw!(
@@ -260,7 +268,18 @@ function update_states!(states, r_current, r_previous, B, relaxation_parameters,
         pfw=relaxation_parameters.pfw,
     )
 
-    # DON'T DO ANY RELAXATION FOR SIGR
+    # - relax sigr values using same method as Gamr - #
+    relax_Gamr!(
+        sigr,
+        B,
+        r_sigr_current,
+        r_sigr_previous;
+        nrf=relaxation_parameters.nrf,
+        bt1=relaxation_parameters.bt1,
+        bt2=relaxation_parameters.bt2,
+        pf1=relaxation_parameters.pf1,
+        pf2=relaxation_parameters.pf2,
+    )
 
     return states
 end

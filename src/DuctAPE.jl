@@ -133,11 +133,16 @@ include("preprocess/velocities/quadrature/romberg_integrals.jl")
 include("preprocess/velocities/quadrature/gausskronrod_integrals.jl")
 
 ##### ----- PROCESS ----- #####
-# Solve and Residual Functions
+# Dispatches
 include("process/process.jl")
 include("process/solve.jl")
+
+# Internal Solvers
+include("process/solvers/modCSORsolver.jl")
+
+# Residual Functions
 include("process/residuals/CSORresidual.jl")
-include("process/residuals/CSORresidual_iad.jl")
+include("process/residuals/modCSORresidual.jl")
 include("process/residuals/systemresidual.jl")
 
 # Aerodynamics Functions

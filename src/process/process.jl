@@ -34,7 +34,7 @@ function process(
     solve_container_caching,
     idmaps,
     options,
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+) where {TS<:ExternalSolverOptions}
 
     # - Initialize Aero - #
     if options.verbose

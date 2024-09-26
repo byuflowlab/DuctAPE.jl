@@ -629,18 +629,18 @@ OR
   - `solve_parameter_cache_dims::NamedTuple` : a named tuple containing the dimensions used for reshaping the cache when needed.
 """
 function allocate_solve_parameter_cache(
-    solve_type::CSORSolverOptions,
+    solve_type::TS,
     paneling_constants::PanelingConstants;
     fd_chunk_size=12,
     levels=1,
-)
+) where {TS<:InternalSolverOptions}
 
     # - Get problem dimensions - #
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
     return allocate_solve_parameter_cache(
-        solve_type::CSORSolverOptions,
-        problem_dimensions::ProblemDimensions;
+        solve_type,
+        problem_dimensions,
         fd_chunk_size=fd_chunk_size,
         levels=levels,
     )
@@ -683,11 +683,11 @@ function allocate_solve_parameter_extras!(solver_options::SolverOptionsType, inp
 end
 
 function allocate_solve_parameter_cache(
-    solve_type::CSORSolverOptions,
+    solve_type::TS,
     problem_dimensions::ProblemDimensions;
     fd_chunk_size=12,
     levels=1,
-)
+) where {TS<:InternalSolverOptions}
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -850,7 +850,7 @@ end
 
 function allocate_solve_parameter_cache(
     solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+   ) where {TS<:ExternalSolverOptions}
 
     # - Get problem dimensions - #
     problem_dimensions = get_problem_dimensions(paneling_constants)
@@ -862,7 +862,7 @@ end
 
 function allocate_solve_parameter_cache(
     solve_type::TS, problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+   ) where {TS<:ExternalSolverOptions}
     (;
         nrotor,     # number of rotors
         nwn,    # number of wake nodes
@@ -1057,7 +1057,7 @@ OR
   - `solve_container_cache_dims::NamedTuple` : a named tuple containing the dimensions used for reshaping the cache when needed.
 """
 function allocate_solve_container_cache(
-    solve_type::CSORSolverOptions,
+    solve_type::InternalSolverOptions,
     paneling_constants::PanelingConstants;
     fd_chunk_size=12,
     levels=1,
@@ -1070,7 +1070,7 @@ function allocate_solve_container_cache(
 end
 
 function allocate_solve_container_cache(
-    solve_type::CSORSolverOptions,
+    solve_type::InternalSolverOptions,
     problem_dimensions::ProblemDimensions;
     fd_chunk_size=12,
     levels=1,
@@ -1228,7 +1228,7 @@ end
 
 function allocate_solve_container_cache(
     solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+   ) where {TS<:ExternalSolverOptions}
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
     return allocate_solve_container_cache(
@@ -1238,7 +1238,7 @@ end
 
 function allocate_solve_container_cache(
     solve_type::TS, problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+   ) where {TS<:ExternalSolverOptions}
     (;
         nrotor, # number of rotors
         nwn,    # number of wake nodes

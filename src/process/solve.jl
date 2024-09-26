@@ -156,6 +156,7 @@ function solve(
     # - Extract constants - #
     (;
         # General
+        verbose,
         multipoint_index,
         # nlsolve options
         solver_options,
@@ -174,7 +175,7 @@ function solve(
     if verbose
         println("  " * "Wrapping Residual")
     end
-    residual_wrapper(r, states) = mod_CSOR_residual!(r, states, inputs, constants)
+    residual_wrapper(r, states) = mod_CSOR_residual!(r, states, inputs, const_cache)
 
     # - Get number of blades for use in relaxation - #
     # separate out sensitivity_parameters here as well
@@ -188,7 +189,7 @@ function solve(
         initial_guess,
         solve_parameter_tuple.blade_elements.B,
         solve_parameter_cache_dims.state_dims;
-        convergence_tolerance=solver_options.convergence_tolerance,
+        convergence_tolerance=solver_options.atol,
         iteration_limit=solver_options.iteration_limit,
         relaxation_parameters=solver_options.relaxation_parameters,
         verbose=solver_options.verbose,

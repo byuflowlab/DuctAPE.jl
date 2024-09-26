@@ -53,7 +53,7 @@ function mod_CSOR_residual!(r, current_states, inputs, constants)
         solver_options, solve_container_cache_vector, solve_container_cache_dims
     )
 
-    estimated_states = estimate_states(
+    estimated_states = estimate_CSOR_states!(
         solve_containers,
         Gamr,
         sigr,
@@ -61,8 +61,8 @@ function mod_CSOR_residual!(r, current_states, inputs, constants)
         operating_point,
         ivr,
         ivw,
-        linsys,
-        blade_elements,
+        (;linsys..., A_bb_LU),
+        (;blade_elements..., airfoils...),
         wakeK,
         idmaps;
         verbose=false,
@@ -74,7 +74,7 @@ function mod_CSOR_residual!(r, current_states, inputs, constants)
 end
 
 """
-    estimate_states(
+    estimate_CSOR_states!(
         solve_containers,
         Gamr,
         sigr,
@@ -104,8 +104,7 @@ Estimate states for modified CSOR solver.
 - `wakeK::Vector{Float}` : geometric constants used in caculating wake strengths
 - `idmaps::NamedTuple` : index maps used throughout solve
 """
-function estimate_states(
-    solver_options,
+function estimate_CSOR_states!(
     solve_containers,
     Gamr,
     sigr,

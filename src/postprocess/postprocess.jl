@@ -804,3 +804,57 @@ compute_CSOR_residual!(
 
     return (; Gamr, sigr, gamw, solve_containers...)
 end
+
+"""
+"""
+function run_residual!(
+    solver_options::ModCSORSolverOptions,
+    converged_states,
+    state_dims,
+    solve_container_cache,
+    solve_container_cache_dims,
+    operating_point,
+    ivr,
+    ivw,
+    linsys,
+    blade_elements,
+    wakeK,
+    idmaps,
+    multipoint_index,
+)
+
+    #=
+      NOTE: we want to get all the intermediate values available to user if desired.
+      The solve_containers cache will contain all the intermediate values after running the insides of the residual function
+    =#
+    # - Separate out the state variables - #
+    Gamr, sigr, gamw = extract_state_variables(solver_options, converged_states, state_dims)
+
+    # - Extract and Reset Cache - #
+    # get cache vector of correct types
+    solve_container_cache_vec = @views PreallocationTools.get_tmp(
+        solve_container_cache, converged_states
+    )
+    solve_container_cache_vec .= 0
+    solve_containers = withdraw_solve_container_cache(
+        solver_options, solve_container_cache_vec, solve_container_cache_dims
+    )
+
+    # - Run Residual - #
+    estimate_CSOR_states!(
+        solve_containers,
+        Gamr,
+        sigr,
+        gamw,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps;
+        verbose=false,
+    )
+
+    return (; Gamr, sigr, gamw, solve_containers...)
+end

@@ -420,7 +420,7 @@ end
 """
 function solve_elliptic_grid!(
     wake_grid;
-    algorithm=:newton,
+    algorithm=:trust_region,
     autodiff=:forward,
     atol=1e-14,
     iteration_limit=10,

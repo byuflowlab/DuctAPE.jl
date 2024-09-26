@@ -22,8 +22,8 @@ function extract_initial_guess(
 end
 
 function extract_initial_guess(
-    solver_options::CSORSolverOptions, sensitivity_parameters, state_dims
-)
+    solver_options::TS, sensitivity_parameters, state_dims
+) where {TS<:InternalSolverOptions}
     return view(sensitivity_parameters, state_dims.Gamr.index[1]:state_dims.gamw.index[end])
 end
 
@@ -46,7 +46,7 @@ Reshape the state variables from a single vector, to multiple arrays.
 """
 function extract_state_variables(
     solver_options::TS, vars, dims
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+   ) where {TS<:ExternalSolverOptions}
 
     # - Separate out - #
     vz_rotor = @views reshape(vars[dims.vz_rotor.index], dims.vz_rotor.shape)
@@ -56,7 +56,9 @@ function extract_state_variables(
     return vz_rotor, vtheta_rotor, Cm_wake
 end
 
-function extract_state_variables(solver_options::CSORSolverOptions, vars, dims)
+function extract_state_variables(
+    solver_options::TS, vars, dims
+   ) where {TS<:InternalSolverOptions}
 
     # - Separate out - #
     Gamr = @views reshape(vars[dims.Gamr.index], dims.Gamr.shape)

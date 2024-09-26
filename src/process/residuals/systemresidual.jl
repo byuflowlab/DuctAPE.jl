@@ -126,7 +126,7 @@ Update the residual for external solvers.
 - `solve_parameter_cache_dims::Vector{Float}` : dimensions of state vectors to use in accessing the residual vector
 """
 function update_system_residual!(
-    solver_options::Union{NonlinearSolveOptions,NLsolveOptions,SIAMFANLEOptions,MinpackOptions,PolyAlgorithmOptions},
+    solver_options::Union{NonlinearSolveOptions,NLsolveOptions,SIAMFANLEOptions,MinpackOptions,ExternalPolyAlgorithmOptions},
     resid,
     vz_est,
     vz_rotor,

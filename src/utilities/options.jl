@@ -33,11 +33,18 @@ Used for solver dispatch.
 abstract type ExternalSolverOptions <: SolverOptionsType end
 
 """
-    abstract type PolyAlgorithmOptions <: SolverOptionsType
+    abstract type InternalPolyAlgorithmOptions <: SolverOptionsType
 
 Used for solver dispatch.
 """
-abstract type PolyAlgorithmOptions <: SolverOptionsType end
+abstract type InternalPolyAlgorithmOptions <: InternalSolverOptions end
+
+"""
+    abstract type ExternalPolyAlgorithmOptions <: SolverOptionsType
+
+Used for solver dispatch.
+"""
+abstract type ExternalPolyAlgorithmOptions <: ExternalSolverOptions end
 
 # - Wake Solver Options - #
 """
@@ -164,7 +171,7 @@ struct Absolute <: ConvergenceType end
 
 # - CSOR Options - #
 """
-    struct CSORSolverOptions <: SolverOptionsType
+    struct CSORSolverOptions <: InternalSolverOptions
 
 Type containing all the options for the CSOR (controlled successive over relaxation) solver.
 
@@ -229,7 +236,7 @@ function CSORSolverOptions(multipoint; kwargs...)
 end
 
 """
-    struct ModCSORSolverOptions <: SolverOptionsType
+    struct ModCSORSolverOptions <: InternalSolverOptions
 
 Type containing all the options for the modified CSOR solver.
 
@@ -444,7 +451,7 @@ end
 ##### ----- Poly-Algorithm Solvers ----- #####
 
 """
-    struct CompositeSolverOptions <: PolyAlgorithmOptions
+    struct CompositeSolverOptions <: ExternalPolyAlgorithmOptions
 
 Options for Composite Solvers (start with a partial solve of one solve, then finish with another starting where the first left off).
 
@@ -457,8 +464,8 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct CompositeSolverOptions{
-    TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
-} <: PolyAlgorithmOptions
+    TB,TI,TS<:Union{ExternalSolverOptions,ExternalPolyAlgorithmOptions}
+} <: ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
@@ -468,7 +475,7 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
 end
 
 """
-    struct CSORChainSolverOptions <:PolyAlgorithmOptions
+    struct CSORChainSolverOptions <: InternalPolyAlgorithmOptions
 
 Options for CSOR Chain Solvers (try one solver, if it doesn't converge, try another)
 
@@ -481,7 +488,7 @@ Options for CSOR Chain Solvers (try one solver, if it doesn't converge, try anot
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct CSORChainSolverOptions{TB,TI,TS<:InternalSolverOptions} <:
-              PolyAlgorithmOptions
+              InternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         ModCSORSolverOptions(),
         CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
@@ -491,7 +498,7 @@ Options for CSOR Chain Solvers (try one solver, if it doesn't converge, try anot
 end
 
 """
-    struct ChainSolverOptions <:PolyAlgorithmOptions
+    struct ChainSolverOptions <:ExternalPolyAlgorithmOptions
 
 Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 
@@ -509,8 +516,8 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct ChainSolverOptions{
-    TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
-} <: PolyAlgorithmOptions
+    TB,TI,TS<:Union{ExternalSolverOptions,ExternalPolyAlgorithmOptions}
+} <: ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-10, iteration_limit=200),
         MinpackOptions(; atol=1e-10, iteration_limit=100),
@@ -542,14 +549,14 @@ function ChainSolverOptions(multipoint; solvers=nothing)
                 converged=fill(false, lm),
                 iterations=zeros(Int, lm),
             ),
-            MinpackOptions(;
-                atol=1e-10, converged=fill(false, lm), iterations=zeros(Int, lm)
-            ),
             NLsolveOptions(;
                 algorithm=:trust_region,
                 atol=1e-10,
                 converged=fill(false, lm),
                 iterations=zeros(Int, lm),
+            ),
+            MinpackOptions(;
+                atol=1e-10, converged=fill(false, lm), iterations=zeros(Int, lm)
             ),
         ]
     end
@@ -670,7 +677,7 @@ Type containing (nearly) all the available user options.
     checkoutfileexists::TB = false
     output_tuple_name::TSt = ["outs"]
     # - Solving Options - #
-    grid_solver_options::WS = SLORGridSolverOptions()
+    grid_solver_options::WS = GridSolverOptions()
     solver_options::TSo = ChainSolverOptions()
 end
 

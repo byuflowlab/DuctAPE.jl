@@ -36,7 +36,7 @@ function initialize_velocities(
     ivw,
     body_totnodes,
     wake_panel_sheet_be_map,
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+) where {TS<:ExternalSolverOptions}
 
     ##### ----- Initialize ----- #####
     # - get type - #
@@ -110,7 +110,7 @@ function initialize_velocities!(
     ivw,
     body_totnodes,
     wake_panel_sheet_be_map,
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+) where {TS<:ExternalSolverOptions}
 
     # zero outputs:
     vz_rotor .= 0

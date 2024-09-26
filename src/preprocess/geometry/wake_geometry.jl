@@ -372,7 +372,7 @@ function relax_grid!(
     grid_solver_options.converged[1] = false
 
     if verbose
-        println(tabchar^ntab * "Solving Elliptic Grid System using Newton Method")
+        println(tabchar^ntab * "Solving Elliptic Grid System using $(grid_solver_options.algorithm) Method")
     end
 
     # solve

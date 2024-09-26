@@ -611,7 +611,7 @@ Reshape the solve parameter cache vector using the saved dimensions tuple.
 # Returns
 - `solve_parameter_caching::NamedTuple` : Named tuple containing reshaped views of sections of the cache vector.
 """
-function withdraw_solve_parameter_cache(solver_options::CSORSolverOptions, vec, dims)
+function withdraw_solve_parameter_cache(solver_options::TS, vec, dims) where {TS<:InternalSolverOptions}
 
     # - Initial Guesses - #
     Gamr = reshape(@view(vec[dims.Gamr.index]), dims.Gamr.shape)
@@ -747,7 +747,7 @@ end
 
 function withdraw_solve_parameter_cache(
     solver_options::TS, vec, dims
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+   ) where {TS<:ExternalSolverOptions}
 
     # - Initial Guesses - #
     vz_rotor = reshape(@view(vec[dims.vz_rotor.index]), dims.vz_rotor.shape)
@@ -912,7 +912,7 @@ Reshape the intermediate solve container cache vector using the saved dimensions
 # Returns
 - `solve_container_caching::NamedTuple` : Named tuple containing reshaped views of sections of the cache vector.
 """
-function withdraw_solve_container_cache(solver_options::CSORSolverOptions, vec, dims)
+function withdraw_solve_container_cache(solver_options::TS, vec, dims) where {TS<:InternalSolverOptions}
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),
@@ -962,7 +962,7 @@ end
 
 function withdraw_solve_container_cache(
     solver_options::TS, vec, dims
-) where {TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}}
+   ) where {TS<:ExternalSolverOptions}
     return (;
         # Strengths
         gamb=reshape(@view(vec[dims.gamb.index]), dims.gamb.shape),
