@@ -474,28 +474,62 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
     iterations::AbstractArray{TI} = [0]
 end
 
-"""
-    struct CSORChainSolverOptions <: InternalPolyAlgorithmOptions
+# """
+#     struct CSORChainSolverOptions <: InternalPolyAlgorithmOptions
 
-Options for CSOR Chain Solvers (try one solver, if it doesn't converge, try another)
+# Options for CSOR Chain Solvers (try one solver, if it doesn't converge, try another)
 
-# Fields
-- `solvers::AbstractArray{SolverOptionsType} = [
-        ModCSORSolverOptions(),
-        CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
-    ] : Vector of solver options to use.
-- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
-- `iterations::AbstractArray{Int} = [0]` : iteration counter
-"""
-@kwdef struct CSORChainSolverOptions{TB,TI,TS<:InternalSolverOptions} <:
-              InternalPolyAlgorithmOptions
-    solvers::AbstractArray{TS} = [
-        ModCSORSolverOptions(),
-        CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
-    ]
-    converged::AbstractArray{TB} = [false, false]
-    iterations::AbstractArray{TI} = [0, 0]
-end
+# # Fields
+# - `solvers::AbstractArray{SolverOptionsType} = [
+#         ModCSORSolverOptions(),
+#         CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
+#     ] : Vector of solver options to use.
+# - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+# - `iterations::AbstractArray{Int} = [0]` : iteration counter
+# """
+# @kwdef struct CSORChainSolverOptions{TB,TI,TS<:InternalSolverOptions} <:
+#               InternalPolyAlgorithmOptions
+#     solvers::AbstractArray{TS} = [
+#         ModCSORSolverOptions(),
+#         CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
+#     ]
+#     converged::AbstractArray{TB} = [false, false]
+#     iterations::AbstractArray{TI} = [0, 0]
+# end
+
+# """
+#     CSORChainSolverOptions(multipoint)
+
+# Convenience function that set's up CSOR chain solver options from defaults for a given number of multi-points.
+
+# # Arguments
+# - `multipoint::Vector` : doesn't need to be anything but a vector of the length of multipoints.
+
+# # Returns
+# - `solver_options::CSORChainSolverOptions` : A ChainSolverOptions object with arrays for the convergence flags in the overall type as well as inside each of the solver options.
+# """
+# function CSORChainSolverOptions(multipoint; solvers=nothing)
+#     lm = length(multipoint)
+
+#     if isnothing(solvers)
+#         solvers = [
+#             ModCSORSolverOptions(; converged=fill(false, lm), iterations=zeros(Int, lm)),
+#             CSORSolverOptions(;
+#                 convergence_type=Absolute(),
+#                 f_circ=1e-10,
+#                 f_dgamw=1e-10,
+#                 converged=fill(false, lm),
+#                 iterations=zeros(Int, lm),
+#             ),
+#         ]
+#     end
+
+#     return CSORChainSolverOptions(;
+#         solvers=solvers,
+#         converged=fill(false, (length(solvers), lm)),
+#         iterations=zeros(Int, (length(solvers), lm)),
+#     )
+# end
 
 """
     struct ChainSolverOptions <:ExternalPolyAlgorithmOptions
@@ -515,9 +549,7 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
-@kwdef struct ChainSolverOptions{
-    TB,TI,TS<:Union{ExternalSolverOptions,ExternalPolyAlgorithmOptions}
-} <: ExternalPolyAlgorithmOptions
+@kwdef struct ChainSolverOptions{TB,TI,TS<:ExternalSolverOptions} <:ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-10, iteration_limit=200),
         MinpackOptions(; atol=1e-10, iteration_limit=100),
