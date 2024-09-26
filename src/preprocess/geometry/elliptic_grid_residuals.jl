@@ -108,7 +108,17 @@ function center_stencil_2_mixed(f, x, y)
 end
 
 """
-assume grid has radial lines of constant axial position such that z'(ξ)=1.0 and z''(ξ)=z`(η)=z''(η)=0.0
+    elliptic_grid_residual!(r, y, x, p)
+
+Residual function for elliptic grid solver.
+
+Note: We assume grid has radial lines of constant axial position (as is done in the grid initialization) such that z'(ξ)=1.0 and z''(ξ)=z'(η)=z''(η)=0.0.
+
+# Arguments
+- `r::Vector{Float}` : residual values
+- `y::Vector{Float}` : states
+- `x::Vector{Float}` : inputs (to which derivatives are sensitive)
+- `p::Vector{Float}` : constants
 """
 function elliptic_grid_residual!(r, y, x, p)
 
@@ -230,8 +240,6 @@ function elliptic_grid_residual!(r, y, x, p)
     return r
 end
 
-"""
-"""
 function elliptic_grid_residual_dfdc!(r, y, x, p)
 
     # - extract parameters - #
@@ -389,6 +397,16 @@ function elliptic_grid_residual_dfdc!(r, y, x, p)
 end
 
 """
+    solve_elliptic_grid!(x,p)
+
+Solve for elliptic grid using a non-SLOR approach that is compatible with ImplicitAD
+
+# Arguments:
+- `x::Vector{Float}` : inputs (including initial guess for wake grid points)
+- `p::NamedTuple` : constant parameters
+
+# Returns:
+- `converged_states::Vector{Float}` : converged states for grid solver
 """
 function solve_elliptic_grid(x, p)
 
@@ -417,12 +435,34 @@ function solve_elliptic_grid(x, p)
 end
 
 """
+    solve_elliptic_grid!(
+        wake_grid;
+        algorithm=:trust_region,
+        autodiff=:forward,
+        atol=1e-14,
+        iteration_limit=10,
+        converged=[false],
+        verbose=false,
+    )
+
+Solve for elliptic grid using a non-SLOR approach that is compatible with ImplicitAD
+
+# Arguments:
+- `wake_grid::Array{Float}` : initial guess for grid points.
+
+# Keyword Arguments:
+ - `algorithm::Symbol=:trust_region` : NLsolve algorithm type
+ - `autodiff::Symbol=:forward` : NLsolve derivatives option
+ - `atol::Float=1e-10` : convergence tolerance, default = 1e-9
+ - `iteration_limit::Int=10` : maximum number of iterations to run, default=100
+ - `converged::Vector{Bool}=[false]` : convergence flag
+ - `verbose::Bool=false` : flag to print verbose statements
 """
 function solve_elliptic_grid!(
     wake_grid;
     algorithm=:trust_region,
     autodiff=:forward,
-    atol=1e-14,
+    atol=1e-10,
     iteration_limit=10,
     converged=[false],
     verbose=false,
@@ -480,12 +520,11 @@ end
 Relax wake_grid using elliptic wake_grid solver.
 
 # Arguments:
+- `wake_grid::Array{Float}` : initial guess for grid points.
 
 # Keyword Arguments:
  - `iteration_limit::Int` : maximum number of iterations to run, default=100
  - `atol::Float` : convergence tolerance, default = 1e-9
-
-# Returns:
 """
 function relax_grid!(
     wake_grid;

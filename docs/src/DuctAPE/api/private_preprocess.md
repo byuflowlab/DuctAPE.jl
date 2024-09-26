@@ -22,6 +22,13 @@ DuctAPE.generate_wake_grid!
 DuctAPE.initialize_wake_grid
 DuctAPE.initialize_wake_grid!
 DuctAPE.relax_grid!
+DuctAPE.solve_elliptic_grid!
+DuctAPE.solve_elliptic_grid
+DuctAPE.elliptic_grid_residual!
+DuctAPE.backward_stencil_1
+DuctAPE.center_stencil_1
+DuctAPE.center_stencil_2
+DuctAPE.center_stencil_2_mixed
 DuctAPE.generate_wake_panels
 DuctAPE.generate_wake_panels!
 DuctAPE.get_wake_k
