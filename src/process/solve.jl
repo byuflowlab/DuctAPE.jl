@@ -97,7 +97,8 @@ function solve(
 
     TF = eltype(sensitivity_parameters)
 
-    resid = 999 * ones(TF, length(state_variables))
+    # resid = 999 * ones(TF, length(state_variables))
+    resid = 999*ones(TF,2)
     conv = @view(solver_options.converged[multipoint_index[]])
     iter = @view(solver_options.iterations[multipoint_index[]]) .= 0
 
@@ -115,7 +116,7 @@ function solve(
         end
 
         # Call residual
-        CSOR_residual_iad!(
+        CSOR_residual!(
             resid,
             copy_state_variables,
             sensitivity_parameters,
@@ -134,10 +135,10 @@ function solve(
         )
 
         # Check Convergence
-        check_CSOR_convergence_iad!(
+        check_CSOR_convergence!(
             conv,
-            resid,
-            solve_parameter_cache_dims.state_dims;
+            resid;
+            # solve_parameter_cache_dims.state_dims;
             solver_options.f_circ,
             solver_options.f_dgamw,
             convergence_type=typeof(solver_options.convergence_type),
@@ -146,6 +147,58 @@ function solve(
     end
 
     return copy_state_variables
+end
+
+function solve(
+    solver_options::ModCSORSolverOptions, inputs, const_cache; initial_guess=nothing
+)
+
+    # - Extract constants - #
+    (;
+        # General
+        multipoint_index,
+        # nlsolve options
+        solver_options,
+        # Constant Parameters
+        solve_parameter_cache_dims,
+    ) = const_cache
+
+    # - Extract Initial Guess Vector for State Variables - #
+    if isnothing(initial_guess)
+        initial_guess = extract_initial_guess(
+            solver_options, inputs, solve_parameter_cache_dims.state_dims
+        )
+    end
+
+    # - Wrap residual - #
+    if verbose
+        println("  " * "Wrapping Residual")
+    end
+    residual_wrapper(r, states) = mod_CSOR_residual!(r, states, inputs, constants)
+
+    # - Get number of blades for use in relaxation - #
+    # separate out sensitivity_parameters here as well
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solver_options, inputs, solve_parameter_cache_dims
+    )
+
+    # - SOLVE - #
+    sol = mod_COR_solver(
+        residual_wrapper,
+        initial_guess,
+        solve_parameter_tuple.blade_elements.B,
+        solve_parameter_cache_dims.state_dims;
+        convergence_tolerance=solver_options.convergence_tolerance,
+        iteration_limit=solver_options.iteration_limit,
+        relaxation_parameters=solver_options.relaxation_parameters,
+        verbose=solver_options.verbose,
+    )
+
+    # update convergence flag
+    solver_options.converged[multipoint_index[]] = sol.converged
+    solver_options.iterations[multipoint_index[]] = sol.total_iterations
+
+    return sol.y
 end
 
 function solve(
@@ -816,7 +869,7 @@ function solve(
 end
 
 function solve(
-    solver_options::ChainSolverOptions,
+    solver_options::Union{ChainSolverOptions,CSORChainSolverOptions},
     sensitivity_parameters,
     const_cache;
     initial_guess=nothing,

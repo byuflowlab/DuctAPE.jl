@@ -19,6 +19,13 @@ Used for solver dispatch.
 abstract type SolverOptionsType end
 
 """
+    abstract type InternalSolverOptions <: SolverOptionsType
+
+Used for solver dispatch.
+"""
+abstract type InternalSolverOptions <: SolverOptionsType end
+
+"""
     abstract type ExternalSolverOptions <: SolverOptionsType
 
 Used for solver dispatch.
@@ -180,7 +187,7 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 - `Vconv::AbstractArray{Float} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 """
-@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: SolverOptionsType
+@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: InternalSolverOptions
     # Defaults are DFDC hard-coded values
     verbose::TB = false
     iteration_limit::TI = 1000
@@ -214,13 +221,61 @@ Convenience function that sets up CSOR solver options from defaults for a given 
 - `solver_options::CSORSolverOptions` : A CSORSolverOptions object with arrays for the convergence flags in the overall type as well as inside each of the solver options.
 """
 function CSORSolverOptions(multipoint; kwargs...)
-
     lm = length(multipoint)
 
     return CSORSolverOptions(;
-        converged=fill(false, (1, lm)),
-        iterations=zeros(Int, (1, lm)),
-        kwargs...
+        converged=fill(false, (1, lm)), iterations=zeros(Int, (1, lm)), kwargs...
+    )
+end
+
+"""
+    struct ModCSORSolverOptions <: SolverOptionsType
+
+Type containing all the options for the modified CSOR solver.
+
+# Fields
+- `verbose::Bool = false` : flag to print verbose statements
+- `iteration_limit::Float = 1e3` : maximum number of iterations
+- `relaxation_parameters::NamedTuple` = (;
+    - `nrf::Float = 0.4` : nominal relaxation factor
+    - `bt1::Float = 0.2` : backtracking factor 1
+    - `bt2::Float = 0.6` : backtracking factor 2
+    - `pf1::Float = 0.4` : press forward factor 1
+    - `pf2::Float = 0.5` : press forward factor 2
+    - `btw::Float = 0.6` : backtracking factor for wake
+    - `pfw::Float = 1.2` : press forward factor for wake
+    ) : parameters for determining relaxation level of states in each iteration.
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
+"""
+@kwdef struct ModCSORSolverOptions{TB,TF,TI,TT} <: InternalSolverOptions
+    # Defaults are DFDC hard-coded values
+    verbose::TB = false
+    iteration_limit::TI = 1000
+    relaxation_parameters::TT = (;
+        nrf=0.4, bt1=0.2, bt2=0.6, pf1=0.4, pf2=0.5, btw=0.6, pfw=1.2
+    )
+    atol::TF = 1e-10
+    converged::AbstractArray{TB} = [false]
+    iterations::AbstractArray{TI} = [0]
+end
+
+"""
+    ModCSORSolverOptions(multipoint; kwargs...)
+
+Convenience function that sets up CSOR solver options from defaults for a given number of multi-points.
+
+# Arguments
+- `multipoint::Vector` : doesn't need to be anything but a vector of the length of multipoints.
+
+# Returns
+- `solver_options::ModCSORSolverOptions` : A ModCSORSolverOptions object with arrays for the convergence flags in the overall type as well as inside each of the solver options.
+"""
+function ModCSORSolverOptions(multipoint; kwargs...)
+    lm = length(multipoint)
+
+    return ModCSORSolverOptions(;
+        converged=fill(false, (1, lm)), iterations=zeros(Int, (1, lm)), kwargs...
     )
 end
 
@@ -235,6 +290,7 @@ Options for the FixedPoint.jl package solver
 - `ep::Float = 0.01` : ep keyword argument, default is package default
 - `atol::Float = 1e-12` : absolute convergence tolerance
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
     iteration_limit::TI = 1000
@@ -263,6 +319,7 @@ Options for the SpeedMapping.jl package solver
 - `buffer::Float = 0.01` : if using bounds, buffer brings x inside bounds by buffer amountd
 - `Lp::Float = Inf` : p value for p-norm for convergence criteria
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct SpeedMappingOptions{TB,TF,TI,TL,TSm,TU} <: ExternalSolverOptions
     orders::AbstractArray{TI} = [3, 2]
@@ -292,10 +349,11 @@ Options for the MINPACK's HYBRJ solver
 - `atol::FLoat = 1e-12` : absolute convergence tolerance
 - `iteration_limit::FLoat = 100` : maximum number of iterations
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct MinpackOptions{TB,TF,TI,TSym} <: ExternalSolverOptions
     algorithm::TSym = :hybr
-    atol::TF = 1e-12
+    atol::TF = 1e-10
     iteration_limit::TI = 100
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
@@ -314,6 +372,7 @@ Options for the SIAMFANLEquations pacakge solvers
 - `linear_iteration_limit::Float = 5` : maximum number of linear solve iterations (GMRES)
 - `additional_kwargs = (;)` : any additional keyword arguments for the solver
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct SIAMFANLEOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Options for overall solve
@@ -342,6 +401,7 @@ Options for the SimpleNonlinearSolve pacakge solvers
 - `atol::Float = 1e-12` : absolute convergence tolerance
 - `iteration_limit::Float = 25` : maximum number of iterations
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct NonlinearSolveOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Algorithm Options
@@ -367,11 +427,12 @@ Options for the NLsolve pacakge solvers
 - `linesearch_method::LineSearches method = LineSearches.MoreThuente` : line search method to use
 - `linesearch_kwargs = (;)` : any additional lineseach keyword arguments
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct NLsolveOptions{TB,TF,TI,Tls,Tlsk,TSym} <: ExternalSolverOptions
     # Options for overall solve
     algorithm::TSym = :anderson
-    atol::TF = 1e-12
+    atol::TF = 1e-10
     iteration_limit::TI = 100
     # line search parameters
     linesearch_method::Tls = LineSearches.MoreThuente
@@ -393,6 +454,7 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
         NLsolveOptions(; algorithm=:anderson, atol=1e-12),
     ]' : Vector of solver options to use.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct CompositeSolverOptions{
     TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
@@ -403,6 +465,29 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
     ]
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+end
+
+"""
+    struct CSORChainSolverOptions <:PolyAlgorithmOptions
+
+Options for CSOR Chain Solvers (try one solver, if it doesn't converge, try another)
+
+# Fields
+- `solvers::AbstractArray{SolverOptionsType} = [
+        ModCSORSolverOptions(),
+        CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
+    ] : Vector of solver options to use.
+- `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
+"""
+@kwdef struct CSORChainSolverOptions{TB,TI,TS<:InternalSolverOptions} <:
+              PolyAlgorithmOptions
+    solvers::AbstractArray{TS} = [
+        ModCSORSolverOptions(),
+        CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
+    ]
+    converged::AbstractArray{TB} = [false, false]
+    iterations::AbstractArray{TI} = [0, 0]
 end
 
 """
@@ -421,14 +506,15 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
         ),
     ] : Vector of solver options to use.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct ChainSolverOptions{
     TB,TI,TS<:Union{ExternalSolverOptions,PolyAlgorithmOptions}
 } <: PolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
-        NLsolveOptions(; algorithm=:anderson, atol=1e-12, iteration_limit=200),
-        MinpackOptions(; atol=1e-12, iteration_limit=100),
-        NLsolveOptions(; algorithm=:newton, atol=1e-12, iteration_limit=20),
+        NLsolveOptions(; algorithm=:anderson, atol=1e-10, iteration_limit=200),
+        MinpackOptions(; atol=1e-10, iteration_limit=100),
+        NLsolveOptions(; algorithm=:trust_region, atol=1e-10, iteration_limit=20),
     ]
     converged::AbstractArray{TB} = [false, false, false]
     iterations::AbstractArray{TI} = [0, 0, 0]
@@ -446,25 +532,25 @@ Convenience function that set's up chain solver options from defaults for a give
 - `solver_options::ChainSolverOptions` : A ChainSolverOptions object with arrays for the convergence flags in the overall type as well as inside each of the solver options.
 """
 function ChainSolverOptions(multipoint; solvers=nothing)
-
     lm = length(multipoint)
 
     if isnothing(solvers)
         solvers = [
             NLsolveOptions(;
                 algorithm=:anderson,
-                atol=1e-12,
+                atol=1e-10,
                 converged=fill(false, lm),
                 iterations=zeros(Int, lm),
             ),
-            MinpackOptions(; atol=1e-12, converged=fill(false, lm), iterations=zeros(Int, lm)),
-            # NonlinearSolveOptions(;
-            #     algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
-            #     atol=1e-12,
-            #     additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
-            #     converged=fill(false, lm),
-            #     iterations=zeros(Int, lm),
-            # ),
+            MinpackOptions(;
+                atol=1e-10, converged=fill(false, lm), iterations=zeros(Int, lm)
+            ),
+            NLsolveOptions(;
+                algorithm=:trust_region,
+                atol=1e-10,
+                converged=fill(false, lm),
+                iterations=zeros(Int, lm),
+            ),
         ]
     end
 
@@ -487,6 +573,7 @@ Options for SLOR (successive line over relaxation) elliptic grid solver.
 - `iteration_limit::Int = 100` : maximum number of iterations
 - `atol::Float = 1e-9` : absolute convergence tolerance
 - `converged::AbstractArray{Bool}` = [false]
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct SLORGridSolverOptions{TB,TF,TI} <: GridSolverOptionsType
     iteration_limit::TI = 200
@@ -506,6 +593,7 @@ Options for SLOR + Newton elliptic grid solver.
 - `algorithm::Symbol = :newton` : algorithm to use in NLsolve.jl
 - `autodiff::Symbol = :forward` : differentiation method to use in NLsolve.jl
 - `converged::AbstractArray{Bool}` = [false]
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
     iteration_limit::TI = 100
@@ -567,7 +655,7 @@ Type containing (nearly) all the available user options.
     silence_warnings::TB = true
     multipoint_index::TI = [1]
     # - Geometry Re-interpolation and generation options - #
-    finterp::Tin = (x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps())
+    finterp::Tin = (x, y, xp) -> FLOWMath.akima(x, y, xp, 2.0 * eps(), eps())
     autoshiftduct::TB = true
     lu_decomp_flag::TB = false
     # paneling options

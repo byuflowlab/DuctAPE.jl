@@ -192,3 +192,89 @@ function process(
     # )
     return solve(solver_options, solve_parameter_cache_vector, const_cache)
 end
+
+function process(
+    solver_options::ModCSORSolverOptions,
+    solve_parameter_cache_vector,
+    solve_parameter_cache_dims,
+    airfoils,
+    A_bb_LU,
+    solve_container_caching,
+    idmaps,
+    options,
+)
+
+    # - Initialize Aero - #
+    if options.verbose
+        println("\nInitializing Velocities")
+    end
+
+    # view the initial conditions out of the inputs cache
+    solve_parameter_tuple = withdraw_solve_parameter_cache(
+        solver_options, solve_parameter_cache_vector, solve_parameter_cache_dims
+    )
+
+    (; Gamr, sigr, gamw, operating_point, blade_elements, linsys, ivr, ivw, wakeK) =
+        solve_parameter_tuple
+
+    # get correct cache type
+    solve_container_cache_vector = @views PreallocationTools.get_tmp(
+        solve_container_caching.solve_container_cache, Gamr
+    )
+
+    # reset cache
+    solve_container_cache_vector .= 0
+
+    solve_containers = withdraw_solve_container_cache(
+        solver_options,
+        solve_container_cache_vector,
+        solve_container_caching.solve_container_cache_dims,
+    )
+
+    # - Initialize States - #
+    initialize_strengths!(
+        solver_options,
+        Gamr,
+        sigr,
+        gamw,
+        operating_point,
+        (; blade_elements..., airfoils...),
+        (; linsys..., A_bb_LU),
+        ivr,
+        ivw,
+        wakeK,
+        idmaps.body_totnodes,
+        idmaps.wake_nodemap,
+        idmaps.wake_endnodeidxs,
+        idmaps.wake_panel_sheet_be_map,
+        idmaps.wake_node_sheet_be_map,
+        idmaps.wake_node_ids_along_casing_wake_interface,
+        idmaps.wake_node_ids_along_centerbody_wake_interface,
+    )
+
+    # - combine cache and constants - #
+    const_cache = (;
+        # - Constants - #
+        options.silence_warnings,
+        options.verbose,
+        options.multipoint_index,
+        #solve options
+        solver_options,
+        # Constant Parameters
+        airfoils,
+        A_bb_LU,
+        idmaps,
+        # Cache(s)
+        solve_parameter_cache_dims,
+        solve_container_caching...,
+    )
+
+    # - Solve with ImplicitAD - #
+    if options.verbose
+        println("\nSolving Nonlinear System using Modified CSOR Method")
+    end
+
+    return ImplicitAD.implicit(
+        solve, mod_CSOR_residual!, solve_parameter_cache_vector, const_cache
+    )
+end
