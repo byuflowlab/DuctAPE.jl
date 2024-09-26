@@ -1,16 +1,21 @@
+```@contents
+Pages = ["private_process.md"]
+Depth = 5
+```
+
 ## Analysis
 ```@docs
 DuctAPE.analyze_multipoint
 ```
 
-### Process
+## Process
 ```@docs
 DuctAPE.process
 DuctAPE.solve
 ```
 
-#### Solvers
-##### ModCSOR
+### Internal Solvers
+#### ModCSOR
 ```@docs
 DuctAPE.mod_COR_solver
 DuctAPE.relax_Gamr_mod!
@@ -18,7 +23,7 @@ DuctAPE.relax_gamw_mod!
 DuctAPE.update_states!
 ```
 
-##### CSOR
+#### CSOR
 ```@docs
 DuctAPE.apply_relaxation_schedule
 DuctAPE.update_CSOR_residual_values!
@@ -27,21 +32,21 @@ DuctAPE.relax_Gamr!
 DuctAPE.relax_gamw!
 ```
 
-#### Residuals
+### Residuals
 
-##### ModCSOR
+#### ModCSOR
 ```@docs
 DuctAPE.mod_CSOR_residual!
 DuctAPE.estimate_CSOR_states!
 ```
 
-##### CSOR
+#### CSOR
 ```@docs
 DuctAPE.CSOR_residual!
 DuctAPE.compute_CSOR_residual!
 ```
 
-##### External Solvers
+#### External Solvers
 ```@docs
 DuctAPE.system_residual
 DuctAPE.system_residual!
@@ -49,7 +54,7 @@ DuctAPE.update_system_residual!
 DuctAPE.estimate_states!
 ```
 
-#### Solve Utilities
+## Solve Utilities
 ```@docs
 DuctAPE.extract_initial_guess
 DuctAPE.extract_state_variables

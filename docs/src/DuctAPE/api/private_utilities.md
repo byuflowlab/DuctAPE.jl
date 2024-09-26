@@ -1,4 +1,3 @@
-## Utility Functions
 ```@docs
 DuctAPE.promote_ducted_rotor_type
 DuctAPE.isscalar
