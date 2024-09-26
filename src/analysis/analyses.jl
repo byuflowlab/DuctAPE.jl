@@ -253,7 +253,7 @@ function analyze(
     ducted_rotor::DuctedRotor,
     operating_point::AbstractVector{TO},
     reference_parameters::ReferenceParameters,
-    options::Options=set_options(multipoint);
+    options::Options=set_options(operating_point);
     prepost_container_caching=nothing,
     solve_parameter_caching=nothing,
     solve_container_caching=nothing,
