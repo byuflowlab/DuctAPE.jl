@@ -56,6 +56,7 @@ DuctAPE.SIAMFANLEOptions
 DuctAPE.SpeedMappingOptions
 DuctAPE.FixedPointOptions
 DuctAPE.CSORSolverOptions
+DuctAPE.ModCSORSolverOptions
 ```
 ## Preprocess
 

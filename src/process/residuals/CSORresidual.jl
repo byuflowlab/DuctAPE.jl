@@ -408,6 +408,8 @@ Apply relaxed step to Gamr.
 - `Gamr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
+- `maxBGamr::Array{Float}` : stores value of maximum B*Gamr for each rotor
+- `maxdeltaBGamr::Array{Float}` : stores value of maximum change in B*Gamr for each rotor
 - `B::Vector{Float}` : number of blades on each rotor
 - `nrf::Float=0.4` : nominal relaxation factor
 - `bt1::Float=0.2` : backtrack factor 1
@@ -528,7 +530,9 @@ Apply relaxed step to gamw.
 - `gamw::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
 - `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
 - `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
-- `B::Vector{Float}` : number of blades on each rotor
+- `maxdeltagamw::Array{Float}` : Single element array that gets updated with the new maximum change in gamw.
+
+# Keyword Arguments:
 - `nrf::Float=0.4` : nominal relaxation factor
 - `bt1::Float=0.2` : backtrack factor 1
 - `bt2::Float=0.6` : backtrack factor 2

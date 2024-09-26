@@ -870,7 +870,7 @@ function solve(
 end
 
 function solve(
-    solver_options::Union{ChainSolverOptions,CSORChainSolverOptions},
+    solver_options::ChainSolverOptions,
     sensitivity_parameters,
     const_cache;
     initial_guess=nothing,

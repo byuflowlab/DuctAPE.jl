@@ -193,6 +193,7 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 - `convergence_type::ConvergenceType = Relative()` : dispatch for relative or absolute convergence criteria.
 - `Vconv::AbstractArray{Float} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
+- `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: InternalSolverOptions
     # Defaults are DFDC hard-coded values

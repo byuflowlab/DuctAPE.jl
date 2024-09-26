@@ -5,8 +5,10 @@ DuctAPE.ConvergenceType
 DuctAPE.Relative
 DuctAPE.Absolute
 DuctAPE.SolverOptionsType
+DuctAPE.InternalSolverOptions
+DuctAPE.InternalPolyAlgorithmOptions
 DuctAPE.ExternalSolverOptions
-DuctAPE.PolyAlgorithmOptions
+DuctAPE.ExternalPolyAlgorithmOptions
 DuctAPE.GridSolverOptionsType
 DuctAPE.IntegrationMethod
 ```

@@ -69,9 +69,9 @@ As part of the pre-process, an elliptic grid defining the wake geometry is solve
 For this solve there currently two options:
 
 - [SLOR](@ref "DuctAPE.SLORGridSolverOptions"): DFDC grid solver
-- [SLOR+Newton](@ref "DuctAPE.GridSolverOptions")
+- [Default](@ref "DuctAPE.GridSolverOptions"): Default method compatible with ImplicitAD
 
-The SLOR (successive line over relaxation) is the method employed by DFDC, and can be used by itself, or as a preconditioner to a Newton solve (using NLsolve.jl).
+The SLOR (successive line over relaxation) is the method employed by DFDC.
 
 Selection of solver and solver settings follows the same pattern as with the quadrature settings, in that the user must pass the appropriate `GridSolverOptionsType` into the `set_options` call.
 
@@ -80,16 +80,16 @@ For the SLOR method alone, the type is
 DuctAPE.SLORGridSolverOptions
 ```
 
-And for the SLOR+Newton method, the type is
+And for the default method compatible with ImplicitAD, the type is
 ```@docs; canonical=false
 DuctAPE.GridSolverOptions
 ```
 
-As an example, this is the input that would be required to use the SLOR+Newton method with an absolute convergence tolerance of 1e-12, and also including the quadrature settings from above:
+As an example, this is the input that would be required to use the default method with an absolute convergence tolerance of 1e-10, and also including the quadrature settings from above:
 
 ```julia
 # define wake grid solver settings
-wake_solve_options = DuctAPE.GridSolverOptions(; atol=1e-12)
+wake_solve_options = DuctAPE.GridSolverOptions(; atol=1e-10)
 
 # set all options
 options = DuctAPE.set_options(;
@@ -106,6 +106,7 @@ There are two general types of solvers available in DuctAPE, the first is very s
 The other type is for external solvers that converge an alternate residual that is default in DuctAPE.
 The various solver options include:
 - [CSOR](@ref "DuctAPE.CSORSolverOptions"): the DFDC solver
+- [ModCSOR](@ref "DuctAPE.ModCSORSolverOptions"): modified DFDC solver for ImplicitAD compatibility
 - [FixedPoint.jl](@ref "DuctAPE.FixedPointOptions")
 - [SpeedMapping.jl](@ref "DuctAPE.SpeedMappingOptions")
 - [MINPACK.jl](@ref "DuctAPE.MinpackOptions")
@@ -113,7 +114,7 @@ The various solver options include:
 - [NLsolve.jl](@ref "DuctAPE.NLsolveOptions")
 - [SimpleNonlinearSolve.jl](@ref "DuctAPE.NonlinearSolveOptions")
 
-Note that the CSOR, FixedPoint.jl, and SpeedMapping.jl are all different fixed-point iteration solvers, MINPACK.jl and SIAMFANLEquations.jl are primarily quasi-newton solvers, and NLsolve.jl and SimpleNonlinearSolve.jl have various solver options.
+Note that the CSOR, ModCSOR, FixedPoint.jl, and SpeedMapping.jl are all different fixed-point iteration solvers, MINPACK.jl and SIAMFANLEquations.jl are primarily quasi-newton solvers, and NLsolve.jl and SimpleNonlinearSolve.jl have various solver options.
 
 DuctAPE also has some poly-algorithm solvers that employ more than one solver.
 The [Chain Solver](@ref "DuctAPE.ChainSolverOptions") option is the default which starts with a fixed-point iteration, and if it doesn't converge, moves on to a quasi-, then full Newton solver until either convergence is reached, or no convergence is found.
@@ -154,10 +155,9 @@ Here is an example for setting options with the CSOR solver.
 nop = 3
 
 options = DuctAPE.set_options(;
-    solver_options=DuctAPE.CSORSolverOptions(;
+    solver_options=DuctAPE.ModCSORSolverOptions(;
         converged=fill(false, (1, nop)), # need a convergence flag for each operating point
         iterations=zeros(Int, (1, nop)), # need a iteration count for each operating point
-        Vconv=ones(nop), # in this case, we need a reference velocity for each operating point
     ),
     write_outputs=fill(false, nop), # we need to know which of the operating point outputs to write
     outfile=fill("", nop), # we need to include names, even if they won't be used.

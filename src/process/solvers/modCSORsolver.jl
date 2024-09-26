@@ -75,7 +75,7 @@ function mod_COR_solver(
 end
 
 """
-    relax_Gamr!(
+    relax_Gamr_mod!(
         Gamr,
         r_Gamr_current,
         r_Gamr_previous,
@@ -103,7 +103,7 @@ Apply relaxed step to Gamr.
 - `pf1::Float=0.4` : press forward factor 1
 - `pf2::Float=0.5` : press forward factor 2
 """
-function relax_Gamr!(
+function relax_Gamr_mod!(
     Gamr, B, r_Gamr_current, r_Gamr_previous; nrf=0.4, bt1=0.2, bt2=0.6, pf1=0.4, pf2=0.5
 )
 
@@ -183,7 +183,7 @@ function relax_Gamr!(
 end
 
 """
-    relax_gamw!(gamw, r_gamw_current, r_gamw_previous; nrf=0.4, btw=0.6, pfw=1.2)
+    relax_gamw_mod!(gamw, r_gamw_current, r_gamw_previous; nrf=0.4, btw=0.6, pfw=1.2)
 
 Apply relaxed step to gamw.
 
@@ -199,7 +199,7 @@ Apply relaxed step to gamw.
 - `pf1::Float=0.4` : press forward factor 1
 - `pf2::Float=0.5` : press forward factor 2
 """
-function relax_gamw!(gamw, r_gamw_current, r_gamw_previous; nrf=0.4, btw=0.6, pfw=1.2)
+function relax_gamw_mod!(gamw, r_gamw_current, r_gamw_previous; nrf=0.4, btw=0.6, pfw=1.2)
 
     # initilize
     TF = eltype(gamw)
@@ -245,7 +245,7 @@ function update_states!(states, r_current, r_previous, B, relaxation_parameters,
 
     # println("before: ", Gamr)
     # - relax Gamr values - #
-    relax_Gamr!(
+    relax_Gamr_mod!(
         Gamr,
         B,
         r_Gamr_current,
@@ -259,7 +259,7 @@ function update_states!(states, r_current, r_previous, B, relaxation_parameters,
     # println("after: ", Gamr)
 
     # relax gamw values
-    relax_gamw!(
+    relax_gamw_mod!(
         gamw,
         r_gamw_current,
         r_gamw_previous;
@@ -269,7 +269,7 @@ function update_states!(states, r_current, r_previous, B, relaxation_parameters,
     )
 
     # - relax sigr values using same method as Gamr - #
-    relax_Gamr!(
+    relax_Gamr_mod!(
         sigr,
         B,
         r_sigr_current,
