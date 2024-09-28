@@ -10,7 +10,7 @@
         return_inputs=false,
     )
 
-Analyze ducted_rotor, including preprocessing.
+Analyze `ducted_rotor`, including preprocessing.
 
 # Arguments
 - `ducted_rotor::DuctedRotor` : DuctedRotor input object (see docstring for `DuctedRotor` type)
@@ -109,7 +109,7 @@ end
         solve_container_caching=nothing,
     )
 
-Analyze ducted_rotor, assuming `setup_analysis` has been called and the outputs thereof are being passed in here.
+Analyze `ducted_rotor`, assuming `setup_analysis` has been called and the outputs thereof are being passed in here.
 
 # Arguments
 - `ducted_rotor::DuctedRotor` : DuctedRotor input object (see docstring for `DuctedRotor` type)
@@ -230,7 +230,7 @@ end
         return_inputs=false,
     )
 
-Analyze ducted_rotor, including preprocessing, for a set of operating points.
+Analyze `ducted_rotor`, including preprocessing, for a set of operating points.
 
 # Arguments
 - `ducted_rotor::DuctedRotor` : DuctedRotor input object
@@ -285,7 +285,8 @@ function analyze(
         #TODO: write a function that returns the same as outs below, but all zeros
         #TODO: probably just call  the post-process function directly and return a reset_container! of the output
         return [],#zero_outputs(),
-        (; solve_parameter_tuple..., ivb, airfoils, idmaps, panels, problem_dimensions),
+        # (; solve_parameter_tuple..., ivb, airfoils, idmaps, panels, problem_dimensions),
+        (;),
         false
     end
 
@@ -323,7 +324,7 @@ end
         solve_container_caching=nothing,
     )
 
-Analyze ducted_rotor, assuming `setup_analysis` has been called and the inputs are being passed in here.
+Analyze `ducted_rotor`, assuming `setup_analysis` has been called and the inputs are being passed in here.
 
 # Arguments
 - `ducted_rotor::DuctedRotor` : DuctedRotor input object

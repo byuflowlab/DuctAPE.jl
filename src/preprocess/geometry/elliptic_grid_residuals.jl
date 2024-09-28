@@ -424,6 +424,7 @@ function solve_elliptic_grid(x, p)
         method=p.algorithm,
         autodiff=p.autodiff,
         linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),
+        # linesearch=LineSearches.Backtracking(),
         ftol=p.atol,
         iterations=p.iteration_limit,
         show_trace=p.verbose,

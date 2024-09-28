@@ -517,12 +517,12 @@ function solve_turbulent_boundary_layer_rk4!(f, init, params, svec; s_init_defau
     end
 
     if sep[1] == true
-        u1sep = FLOWMath(Cfs[(sepid - 1):sepid], us[1, (sepid - 1):sepid], 0.0)
-        u2sep = FLOWMath(Cfs[(sepid - 1):sepid], us[2, (sepid - 1):sepid], 0.0)
-        u3sep = FLOWMath(Cfs[(sepid - 1):sepid], us[3, (sepid - 1):sepid], 0.0)
+        u1sep = FLOWMath.akima(Cfs[(sepid - 1):sepid], us[1, (sepid - 1):sepid], 0.0)
+        u2sep = FLOWMath.akima(Cfs[(sepid - 1):sepid], us[2, (sepid - 1):sepid], 0.0)
+        u3sep = FLOWMath.akima(Cfs[(sepid - 1):sepid], us[3, (sepid - 1):sepid], 0.0)
         usep = [u1sep; u2sep; u3sep]
-        H12sep = FLOWMath(Cfs[(sepid - 1):sepid], H12s[(sepid - 1):sepid], 0.0)
-        ssep = FLOWMath(Cfs[(sepid - 1):sepid], svec[(sepid - 1):sepid], 0.0)
+        H12sep = FLOWMath.akima(Cfs[(sepid - 1):sepid], H12s[(sepid - 1):sepid], 0.0)
+        ssep = FLOWMath.akima(Cfs[(sepid - 1):sepid], svec[(sepid - 1):sepid], 0.0)
     else
         usep = us[:, end]
         H12sep = H12s[end]

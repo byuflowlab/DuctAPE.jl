@@ -375,6 +375,17 @@ function relax_grid!(
         println(tabchar^ntab * "Solving Elliptic Grid System using $(grid_solver_options.algorithm) Method")
     end
 
+    # # precondition
+    # relax_grid!(
+    #     wake_grid;
+    #     iteration_limit=grid_solver_options.iteration_limit,
+    #     atol=grid_solver_options.atol,
+    #     converged=grid_solver_options.converged,
+    #     verbose=verbose,
+    #     tabchar="\t",
+    #     ntab=1,
+    # )
+
     # solve
     solve_elliptic_grid!(
         wake_grid;

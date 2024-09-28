@@ -98,7 +98,7 @@ function solve(
     TF = eltype(sensitivity_parameters)
 
     # resid = 999 * ones(TF, length(state_variables))
-    resid = 999*ones(TF,2)
+    resid = 999 * ones(TF, 2)
     conv = @view(solver_options.converged[multipoint_index[]])
     iter = @view(solver_options.iterations[multipoint_index[]]) .= 0
 
@@ -887,8 +887,13 @@ function solve(
     # If there is only one solver, or if the first solver converged, return the solution
     if length(solver_options.solvers) == 1 ||
         solver_options.solvers[1].converged[const_cache.multipoint_index[]]
-        solver_options.converged[const_cache.multipoint_index[]] = solver_options.solvers[1].converged[const_cache.multipoint_index[]]
-        solver_options.iterations[const_cache.multipoint_index[]] = solver_options.solvers[1].iterations[const_cache.multipoint_index[]]
+
+        # set converged flags for the first solver across all solvers
+        solver_options.converged[:, const_cache.multipoint_index[]] .= solver_options.solvers[1].converged[const_cache.multipoint_index[]]
+
+        # set iteration count for only the first solver
+        solver_options.iterations[1, const_cache.multipoint_index[]] = solver_options.solvers[1].iterations[const_cache.multipoint_index[]]
+
         return solution
     end
 
@@ -902,16 +907,19 @@ function solve(
                 initial_guess=initial_guess,
             )
 
+            # set this and the remaining convergence flags
+            solver_options.converged[(s + 1):end, const_cache.multipoint_index[]] .= sopt.converged[const_cache.multipoint_index[]]
+
+            # set this iteration count
+            solver_options.iterations[s + 1, const_cache.multipoint_index[]] = sopt.iterations[const_cache.multipoint_index[]]
+
+            # if the solver converged, return
             if sopt.converged[const_cache.multipoint_index[]]
-                solver_options.converged[s + 1, const_cache.multipoint_index[]] = sopt.converged[const_cache.multipoint_index[]]
-                solver_options.iterations[s + 1, const_cache.multipoint_index[]] = sopt.iterations[const_cache.multipoint_index[]]
                 return solution
-            else
-                solver_options.converged[s + 1, const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
-                solver_options.iterations[s + 1, const_cache.multipoint_index[]] = solver_options.solvers[end].iterations[const_cache.multipoint_index[]]
             end
         end
 
+        # run final solver
         solution = solve(
             solver_options.solvers[end],
             sensitivity_parameters,
@@ -919,8 +927,12 @@ function solve(
             initial_guess=initial_guess,
         )
 
+        # set final convergence flag
         solver_options.converged[end, const_cache.multipoint_index[]] = solver_options.solvers[end].converged[const_cache.multipoint_index[]]
+
+        # set final iteration count
         solver_options.iterations[end, const_cache.multipoint_index[]] = solver_options.solvers[end].iterations[const_cache.multipoint_index[]]
+
         return solution
     else
 

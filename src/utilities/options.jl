@@ -636,9 +636,9 @@ Options for SLOR + Newton elliptic grid solver.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
-    iteration_limit::TI = 100
-    atol::TF = 1e-10
-    algorithm::TSym = :trust_region
+    iteration_limit::TI = 10
+    atol::TF = 2e-10
+    algorithm::TSym = :newton
     autodiff::TSym = :forward
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
