@@ -550,7 +550,8 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
-@kwdef struct ChainSolverOptions{TB,TI,TS<:ExternalSolverOptions} <:ExternalPolyAlgorithmOptions
+@kwdef struct ChainSolverOptions{TB,TI,TS<:ExternalSolverOptions} <:
+              ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-10, iteration_limit=200),
         MinpackOptions(; atol=1e-10, iteration_limit=100),
@@ -642,6 +643,34 @@ Options for SLOR + Newton elliptic grid solver.
     autodiff::TSym = :forward
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+end
+
+#---------------------------------#
+#       BOUNDARY LAYER TYPES      #
+#---------------------------------#
+
+"""
+    struct BoundaryLayerOptions
+
+# Fields:
+- `lambda::Bool = true` : flag to add secondary influences into boundary layer residuals
+- `longitudinal_curvature::Bool = true` : if `lambda`=true, flag to add longitudinal curvature influence into boundary layer residuals
+- `lateral_strain::Bool = true` : if `lambda`=true, flag to add lateral strain influence into boundary layer residuals
+- `dilation::Bool = true` : if `lambda`=true, flag to add dilation influence into boundary layer residuals
+- `n_steps::Int = Int(1e2)` : number of steps to use in boundary layer integration
+- `first_step_size::Float = 1e-3` : size of first step in boundary layer integration
+- `offset::Float = 1e-2` : size of offset for (where to initialize) boundary layer integration
+- `rk::Function = RK4` : solver to use for boundary layer integration (RK4 or RK2 available)
+"""
+@kwdef struct BoundaryLayerOptions{Tb,Tf,Tfun,Ti,To}
+    lambda::Tb = true
+    longitudinal_curvature::Tb = true
+    lateral_strain::Tb = true
+    dilation::Tb = true
+    n_steps::Ti = Int(1e2)
+    first_step_size::Tf = 1e-3
+    offset::To = 1e-2
+    rk::Tfun = RK4
 end
 
 #---------------------------------#

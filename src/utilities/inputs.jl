@@ -1,36 +1,119 @@
 """
-    OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+    abstract type Imperial
+
+Disptach type used for setting Operating Point to Imperial Units.
+
+# Units: feet, pounds, seconds
+- Velocity: feet per second
+- Temperature: Fahrenheit
+- Pressure: pounds per square foot
+- Density: slugs per cubic foot
+- Dynamic Viscosity: slugs per square foot
+"""
+abstract type Imperial end
+
+"""
+    OperatingPoint(Vinf, Minf, rhoinf, muinf, asound, Ptot, Ttot, Omega)
+    OperatingPoint(
+        Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
+    )
+    OperatingPoint(
+        ::Imperial, Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
+    )
 
 DuctedRotor operating point information.
 
-# Arguments
+Functions that take in `altitude` will populate undefined thermodynamic properties of the freestream using a standard_atmosphere model, ideal gas law, and Sutherland's law; defaulting to SI units.
+If the `::Imperial` dispatch type is input, then the thermodynamic properties will be converted to Imperial units.
+
+# Fields/Arguments
 
 - `Vinf::AbstractVector{Float}` : Freestream velocity magnitude (which is only in the axial direction).
+- `Minf::AbstractVector{Float}` : Freestream Mach number
 - `rhoinf::AbstractVector{Float}` : Freestream density
 - `muinf::AbstractVector{Float}` : Freestream viscosity
 - `asound::AbstractVector{Float}` : Freestream speed of sound
+- `Ptot::AbstractVector{Float}` : Freestream total pressure
+- `Ttot::AbstractVector{Float}` : Freestream total temperature
 - `Omega::AbstractVector{Float}` : Rotor rototation rate(s)
 """
 struct OperatingPoint{
-    Tv<:AbstractVector,
-    Tr<:AbstractVector,
-    Tm<:AbstractVector,
     Ta<:AbstractVector,
+    TM<:AbstractVector,
+    Tm<:AbstractVector,
     To<:AbstractVector,
+    Tp<:AbstractVector,
+    Tr<:AbstractVector,
+    Tt<:AbstractVector,
+    Tv<:AbstractVector,
 }
     Vinf::Tv
+    Minf::TM
     rhoinf::Tr
     muinf::Tm
     asound::Ta
+    Ptot::Tp
+    Ttot::Tt
     Omega::To
 end
 
-function OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+function OperatingPoint(
+    ::Imperial, Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
+)
+    return operating_point = OperatingPoint(
+        Vinf, Omega; rhoinf=nothing, muinf=nothing, asound=nothing, altitude=0.0
+    )
+
+    # TODO: do all the conversions
+    #########################################################
+    ##########################     ##########################
+    #####################     LOOK!    ######################
+    ###########                                   ###########
+    #####     -----    TODO: YOU ARE HERE     -----     #####
+    ###########                                   ###########
+    #####################     LOOK!    ######################
+    ##########################     ##########################
+    #########################################################
+
+end
+
+function OperatingPoint(
+    Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
+)
+
+    # Get thermodynamic properties
+    Tinf, Pinf, rho_inf, mu_inf = standard_atmosphere(altitude)
+
+    # freestream density
+    if isnothing(rhoinf)
+        rhoinf = rho_inf
+    end
+
+    # freestream dynamic viscosity
+    if isnothing(muinf)
+        muinf = mu_inf
+    end
+
+    # freestream speed of sound
+    if isnothing(asound)
+        asound = speed_of_sound(Pinf, rhoinf)
+    end
+
+    # freestream Mach
+    Minf = calc_mach.(Vinf, asound)
+
+    # freestream total pressure and temperature
+    Ptot = total_pressure.(Pinf, Minf)
+    Ttot = total_temperature.(Tinf, Minf)
+
     return OperatingPoint(
         isscalar(Vinf) ? [Vinf] : Vinf,
+        isscalar(Minf) ? [Minf] : Minf,
         isscalar(rhoinf) ? [rhoinf] : rhoinf,
         isscalar(muinf) ? [muinf] : muinf,
         isscalar(asound) ? [asound] : asound,
+        isscalar(Ptot) ? [Ptot] : Ptot,
+        isscalar(Ttot) ? [Ttot] : Ttot,
         isscalar(Omega) ? [Omega] : Omega,
     )
 end
@@ -148,7 +231,6 @@ function Rotor(
     fliplift;
     i_know_what_im_doing=false,
 )
-
     if length(findall(t -> t > pi / 2, twists)) > 2
         @warn "It looks like your input twist angles may be in degrees. Note that the required units for twist are radians. Converting to radians for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic conversion)."
         twists .*= pi / 180.0
@@ -179,8 +261,8 @@ end
 
 - `duct_coordinates::AbstractMatrix` : The [z, r] coordinates of the duct geometry beginning at the inner (casing) side trailing edge and proceeding clockwise. Note that the duct geometry absolute radial position does not need to be included here if the `autoshiftduct` option is selected.
 - `centerbody_coordinates::AbstractMatrix` : The [z, r] coordinates of the centerbody beginning at the leading edge and ending at the trailing edge. Note that the leading edge is assumed to be placed at a radial distance of 0.0 from the axis of rotation.
-- `paneling_constants::PanelingConstants` : Constants used in re-paneling the geometry.
 - `rotor::Rotor` : Rotor (and possibly stator) geometric paramters.
+- `paneling_constants::PanelingConstants` : Constants used in re-paneling the geometry.
 """
 struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:PanelingConstants}
     duct_coordinates::Td

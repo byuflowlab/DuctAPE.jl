@@ -42,6 +42,9 @@ using NLsolve #Includes Anderson Solver
 using LineSearches # used in newton solver
 using ForwardDiff # used for jacobian for newton solver
 
+# For Root finding
+using Roots
+
 # - Utility Packages - #
 using FLOWMath # used for various items, mostly interpolation
 using Printf # used when verbose option is selected
@@ -56,8 +59,7 @@ export c4b
 # - Types - #
 
 # Inputs
-export DuctedRotor,
-    Rotor, OperatingPoint, PanelingConstants, ReferenceParameters
+export DuctedRotor, Rotor, OperatingPoint, PanelingConstants, ReferenceParameters
 
 # - Preallocations - #
 export allocate_prepost_container_cache,
@@ -76,6 +78,7 @@ export ChainSolverOptions,
     SpeedMappingOptions,
     FixedPointOptions,
     CSORSolverOptions
+export BoundaryLayerOptions
 
 # - Preprocess - #
 export setup_analysis
@@ -90,6 +93,7 @@ export analyze
 ##### ----- UTILITIES ----- #####
 # general utility functions
 include("utilities/misc.jl")
+include("utilities/thermodynamics.jl")
 include("utilities/inputs.jl")
 include("utilities/options.jl")
 include("utilities/package_states.jl")
@@ -156,6 +160,7 @@ include("postprocess/velocities.jl")
 include("postprocess/pressures.jl")
 include("postprocess/rotor_performance.jl")
 include("postprocess/utils.jl")
+include("postprocess/boundary_layer.jl")
 
 ##### ----- DEBUGGING ----- #####
 include("../test/test_utils.jl")

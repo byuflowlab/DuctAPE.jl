@@ -722,11 +722,17 @@ function allocate_solve_parameter_cache(
     l = lfs(s)
     Vinf = cache_dims!(total_length, l, s)
 
+    Minf = cache_dims!(total_length, l, s)
+
     rhoinf = cache_dims!(total_length, l, s)
 
     muinf = cache_dims!(total_length, l, s)
 
     asound = cache_dims!(total_length, l, s)
+
+    Ptot = cache_dims!(total_length, l, s)
+
+    Ttot = cache_dims!(total_length, l, s)
 
     s = (nrotor,)
     l = lfs(s)
@@ -827,7 +833,7 @@ function allocate_solve_parameter_cache(
             Gamr,
             sigr,
             gamw,
-            operating_point=(; Vinf, rhoinf, muinf, asound, Omega),
+            operating_point=(; Vinf, Minf, rhoinf, muinf, asound, Ptot, Ttot, Omega),
             ivr=(; v_rb, v_rr, v_rw),
             ivw=(; v_wb, v_wr, v_ww),
             linsys=(; A_bb, b_bf, A_bw, A_pw, A_br, A_pr),
@@ -899,11 +905,17 @@ function allocate_solve_parameter_cache(
     l = lfs(s)
     Vinf = cache_dims!(total_length, l, s)
 
+    Minf = cache_dims!(total_length, l, s)
+
     rhoinf = cache_dims!(total_length, l, s)
 
     muinf = cache_dims!(total_length, l, s)
 
     asound = cache_dims!(total_length, l, s)
+
+    Ptot = cache_dims!(total_length, l, s)
+
+    Ttot = cache_dims!(total_length, l, s)
 
     s = (nrotor,)
     l = lfs(s)
@@ -1004,7 +1016,7 @@ function allocate_solve_parameter_cache(
             vz_rotor,
             vtheta_rotor,
             Cm_wake,
-            operating_point=(; Vinf, rhoinf, muinf, asound, Omega),
+            operating_point=(; Vinf, Minf, rhoinf, muinf, asound, Ptot, Ttot, Omega),
             ivr=(; v_rb, v_rr, v_rw),
             ivw=(; v_wb, v_wr, v_ww),
             linsys=(; A_bb, b_bf, A_bw, A_pw, A_br, A_pr),

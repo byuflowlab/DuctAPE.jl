@@ -623,6 +623,9 @@ function withdraw_solve_parameter_cache(solver_options::TS, vec, dims) where {TS
         Vinf=reshape(
             @view(vec[dims.operating_point.Vinf.index]), dims.operating_point.Vinf.shape
         ),
+        Minf=reshape(
+            @view(vec[dims.operating_point.Minf.index]), dims.operating_point.Minf.shape
+        ),
         rhoinf=reshape(
             @view(vec[dims.operating_point.rhoinf.index]), dims.operating_point.rhoinf.shape
         ),
@@ -631,6 +634,12 @@ function withdraw_solve_parameter_cache(solver_options::TS, vec, dims) where {TS
         ),
         asound=reshape(
             @view(vec[dims.operating_point.asound.index]), dims.operating_point.asound.shape
+        ),
+        Ptot=reshape(
+            @view(vec[dims.operating_point.Ptot.index]), dims.operating_point.Ptot.shape
+        ),
+        Ttot=reshape(
+            @view(vec[dims.operating_point.Ttot.index]), dims.operating_point.Ttot.shape
         ),
         Omega=reshape(
             @view(vec[dims.operating_point.Omega.index]), dims.operating_point.Omega.shape
@@ -759,6 +768,9 @@ function withdraw_solve_parameter_cache(
         Vinf=reshape(
             @view(vec[dims.operating_point.Vinf.index]), dims.operating_point.Vinf.shape
         ),
+        Minf=reshape(
+            @view(vec[dims.operating_point.Minf.index]), dims.operating_point.Minf.shape
+        ),
         rhoinf=reshape(
             @view(vec[dims.operating_point.rhoinf.index]), dims.operating_point.rhoinf.shape
         ),
@@ -767,6 +779,12 @@ function withdraw_solve_parameter_cache(
         ),
         asound=reshape(
             @view(vec[dims.operating_point.asound.index]), dims.operating_point.asound.shape
+        ),
+        Ptot=reshape(
+            @view(vec[dims.operating_point.Ptot.index]), dims.operating_point.Ptot.shape
+        ),
+        Ttot=reshape(
+            @view(vec[dims.operating_point.Ttot.index]), dims.operating_point.Ttot.shape
         ),
         Omega=reshape(
             @view(vec[dims.operating_point.Omega.index]), dims.operating_point.Omega.shape
