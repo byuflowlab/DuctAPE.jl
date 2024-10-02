@@ -702,11 +702,11 @@ Integrate the turbulent boundary layer using a Runge-Kutta method.
 # Arguments:
 - `f::function_handle` : Governing residual equations to integrate
 - `rk::function_handle` : Runge-Kutta method to use (RK2 or RK4)
-- `rk, initial_states::Float` : initial states
+- `initial_states::Float` : initial states
 - `steps::Vector{Float}` : steps for integration
 - `parameters::NamedTuple` : boundary layer solve options and other parameters
 """
-function solve_turbulent_boundary_layer_rk!(f, rk, rk, initial_states, steps, parameters; verbose=false)
+function solve_turbulent_boundary_layer_rk!(f, rk, initial_states, steps, parameters; verbose=false)
 
     # Unpack States and variables for viscous drag
     u0, Cf0, H12_0 = rk, initial_states

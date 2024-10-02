@@ -356,7 +356,7 @@ RPM = 8000.0
 Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
 
 # utilizing the constructor function to put things in vector types
-operating_point = DuctAPE.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+operating_point = DuctAPE.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
 nothing # hide
 ```
 
