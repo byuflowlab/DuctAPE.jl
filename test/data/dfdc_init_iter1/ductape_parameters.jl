@@ -85,7 +85,7 @@ reference_parameters = dt.ReferenceParameters(Vref, Rtip)
 D = 2.0 * Rtip # rotor diameter
 n = RPM / 60.0 # rotation rate in revolutions per second
 Vinf = 1.0 * n * D
-operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+operating_point = dt.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
 
 # ##### ----- Solid Body Coordinates (GEOM in the DFDC case file) ----- #####
 # # copied from the DFDC case file and put here at end since they're so long

@@ -20,7 +20,7 @@ println("\nITERATION STEP THROUGH TESTS")
     include(datapath * "ductape_formatted_dfdc_geometry.jl")
     include(datapath * "ductape_parameters.jl")
     #NOTE, for some reason, julia doesn't recognize that this was defined in the above file...
-    operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+    operating_point = dt.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
     ducted_rotor = dt.DuctedRotor(
         rp_duct_coordinates,
         rp_centerbody_coordinates,
