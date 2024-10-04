@@ -185,6 +185,7 @@ function analyze(
         solve_parameter_cache_dims,
         operating_point,
         reference_parameters,
+        options.boundary_layer_options,
         A_bb_LU,
         airfoils,
         idmaps,

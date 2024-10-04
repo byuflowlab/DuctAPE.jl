@@ -1,7 +1,7 @@
 """
-    abstract type Imperial
+    struct Imperial
 
-Disptach type used for setting Operating Point to Imperial Units.
+Disptach type used for setting Operating Point Units to Imperial
 
 # Units: feet, pounds, seconds
 - Velocity: feet per second
@@ -10,7 +10,7 @@ Disptach type used for setting Operating Point to Imperial Units.
 - Density: slugs per cubic foot
 - Dynamic Viscosity: slugs per square foot
 """
-abstract type Imperial end
+struct Imperial end
 
 """
     OperatingPoint(Vinf, Minf, rhoinf, muinf, asound, Ptot, Ttot, Omega)
@@ -58,23 +58,50 @@ struct OperatingPoint{
 end
 
 function OperatingPoint(
-    ::Imperial, Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
+    units::Imperial,
+    Vinf,
+    Omega,
+    rhoinf=nothing,
+    muinf=nothing,
+    asound=nothing,
+    altitude=0.0,
 )
-    return operating_point = OperatingPoint(
-        Vinf, Omega; rhoinf=nothing, muinf=nothing, asound=nothing, altitude=0.0
+
+    # Get thermodynamic properties
+    Tinf, Pinf, rho_inf, mu_inf = standard_atmosphere(units, altitude)
+
+    # freestream density
+    if isnothing(rhoinf)
+        rhoinf = rho_inf
+    end
+
+    # freestream dynamic viscosity
+    if isnothing(muinf)
+        muinf = mu_inf
+    end
+
+    # freestream speed of sound
+    if isnothing(asound)
+        asound = speed_of_sound(Pinf, rhoinf)
+    end
+
+    # freestream Mach
+    Minf = calc_mach.(Vinf, asound)
+
+    # freestream total pressure and temperature
+    Ptot = total_pressure.(Pinf, Minf)
+    Ttot = total_temperature.(Tinf, Minf)
+
+    return OperatingPoint(
+        isscalar(Vinf) ? [Vinf] : Vinf,
+        isscalar(Minf) ? [Minf] : Minf,
+        isscalar(rhoinf) ? [rhoinf] : rhoinf,
+        isscalar(muinf) ? [muinf] : muinf,
+        isscalar(asound) ? [asound] : asound,
+        isscalar(Ptot) ? [Ptot] : Ptot,
+        isscalar(Ttot) ? [Ttot] : Ttot,
+        isscalar(Omega) ? [Omega] : Omega,
     )
-
-    # TODO: do all the conversions
-    #########################################################
-    ##########################     ##########################
-    #####################     LOOK!    ######################
-    ###########                                   ###########
-    #####     -----    TODO: YOU ARE HERE     -----     #####
-    ###########                                   ###########
-    #####################     LOOK!    ######################
-    ##########################     ##########################
-    #########################################################
-
 end
 
 function OperatingPoint(

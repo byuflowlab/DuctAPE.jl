@@ -3,56 +3,93 @@
 #---------------------------------#
 
 """
-    split_at_stagnation_point(cp_duct)
+    arc_lengths_from_panel_lengths(duct_panel_lengths, bl_ids)
+
+Cumulative sum of panel lengths for the given section of surface associated with the upper or lower boundary layer.
+
+# Arguments:
+- `duct_panel_lengths::Vector{Float}` : vector of panel lengths (called influence_length in body_vortex_panels) associated with the duct (casing + nacelle).
+
+# Returns:
+- `s::Vector{Float}` : cumulative sum of panel lengths between control points in the given index range, starting from zero.
+"""
+function arc_lengths_from_panel_lengths(duct_panel_lengths)
+    return cumsum(
+        [
+            0.0
+            [
+                0.5 * (duct_panel_lengths[i] + duct_panel_lengths[i - 1]) for
+                i in 2:length(duct_panel_lengths)
+            ]
+        ],
+    )
+end
+
+"""
+   split_at_stagnation_point(duct_panel_lengths, cp_duct)
 
 Find the stagnation point as the point with local cp closest to 1.0.
 
 # Arguments:
+- `duct_panel_lengths::Vector{Float}` : Vector of panel lengths for the duct from casing trailing edge clockwise to nacelle trailing edge.
 - `cp_duct::Vector{Float}` : Vector of surface pressure coefficients on duct from casing trailing edge clockwise to nacelle trailing edge.
 
 # Returns:
-- `upper_boundary_layer_indices::UnitRange{Int}` : range of panel indices for the upper boundary layer.
-- `lower_boundary_layer_indices::StepRange{Int}` : range of panel indices for the lower boundary layer; in reverse order, and therefore front to back.
+- `s::Vector{Float}` : cumulative sum of distance along panels between control points starting at 0.
+- `s_stagnation::Float` : surface length at which the stagnation point occurs, calculated using extrapolation technique described below
+- `lower_length::Float` : length from stagnation point to casing trailing edge control point
+- `upper_length::Float` : length from stagnation point to nacelle trailing edge control point
+
+
+To determine point of intersection between extrapolated lines, we do the following:
+
+Determine the point-slope form of the lines extrapolated from either side of the panel with a pressure coefficient closest to 1.0, and set up equations to find a point somewhere along each line
+
+intersection    Known points on    unknown    slopes of
+   point         each line         factors    each line
+    P1 =       [s[i-2]; cp[i-2]] + x1    *   [ds1; dcp1]
+    P2 =       [s[i+1]; cp[i+1]] + x2    *   [ds2; dcp2]
+
+where if we set P1=P2, in other words, to be the point the lines intersect, we can solve for the unknown factors that yield the point of intersection.
+
+We therefore set P1=P2 and assemble a system of linear equations, then plug one of the solved facotrs back into its associated equation to obtain the s location of intersection of the extrapolated lines and take this to be the stagnation point, regardless of what the pressure coefficient ends up being.
 """
-function split_at_stagnation_point(cp_duct)
-    _, stagnation_id = findmin(abs.(1.0 .- cp_duct))
+function split_at_stagnation_point(duct_panel_lengths, cp_duct)
 
-    return stagnation_id:length(cp_duct), stagnation_id:-1:1
-end
+    # get surface length along entire surface
+    s = arc_lengths_from_panel_lengths(duct_panel_lengths)
 
-"""
-    calc_radius_of_curvature(s, xy, ss)
+    # find index of cp closest to 1.0
+    _, spi = findmin(abs.(1.0 .- cp_duct))
 
-Determine the radius of curvature.
+    # - Extrapolate to determine smooth stagnation point along surface length - #
+        # set up system of equations to determine intersection of extrapolated lines on either side of the index closest to cp = 1.0
+    A = [
+        s[spi - 1]-s[spi - 2] s[spi + 1]-s[spi + 2]
+        cp_duct[spi - 1]-cp_duct[spi - 2] cp_duct[spi + 1]-cp_duct[spi + 2]
+    ]
+    b = [s[spi + 1] - s[spi - 2]; cp_duct[spi + 1] - cp_duct[spi - 2]]
 
-(see https://en.wikipedia.org/wiki/Radius_of_curvature)
+    # note: this should not happen, but if it does, here's how to treat it.
+    # if det(A) < eps()
+    #     # singular matrix, lines are parallel
+    #     # take stagnation point to be panel center
+    #     s_stagnation = s[spi]
+    # else
+    # solve linear system for unknown factors
+    x = ImplicitAD.linear_solve(A, b)
 
-# Arugments:
-- `s::Vector{Float}` : vector of surface lengths.
-- `controlpoint::Matrix{Float} : control point positions, axial in first row, radial in second row
-- `ss::Float` : position along surface length to find radius of curvature.
+    # get stagnation point from one of the equations (choose one arbitrarily)
+    s_stagnation = s[spi - 2] + x[1] * (s[spi - 1] - s[spi - 2])
+    # end
 
-# Return:
-- `radius_of_curvature::Float` : Radius of curvature at point `ss` along surface.
-"""
-function calc_radius_of_curvature(s, controlpoint, ss)
+    # lower length from zero to stagnation point
+    lower_length = s_stagnation
 
-    # spline x and y coordinates with respect to arc length
-    x_of_s = FLOWMath.Akima(s, controlpoint[1, :])
-    y_of_s = FLOWMath.Akima(s, controlpoint[2, :])
+    # upper length from end of surface back to stagnation point
+    upper_length = maximum(s) - s_stagnation
 
-    #get first and second derivatives of coordinates with respect to arc length at integration step locations
-    xdot = FLOWMath.derivative.(Ref(x_of_s), ss)
-    xddot = FLOWMath.second_derivative.(Ref(x_of_s), ss)
-    ydot = FLOWMath.derivative.(Ref(y_of_s), ss)
-    yddot = FLOWMath.second_derivative.(Ref(y_of_s), ss)
-
-    # assemble the numerator and denominator of the radius of curvature expression
-    num = (xdot .^ 2 .+ ydot .^ 2) .^ (1.5)
-    den = xdot .* yddot .- ydot .* xddot
-
-    # convex positive
-    return num ./ den
+    return s, s_stagnation, lower_length, upper_length
 end
 
 """
@@ -89,54 +126,62 @@ function set_bl_steps(N::Int, first_step_size, total_length)
 end
 
 """
-    arc_lengths_from_panel_lengths(panel_lengths, bl_ids)
+    calc_radius_of_curvature(s, xy, ss)
 
-Cumulative sum of panel lengths for the given section of surface associated with the upper or lower boundary layer.
+Determine the radius of curvature.
 
-# Arguments:
-- `panel_lengths::Vector{Float}` : vector of panel lengths (called influence_length in body_vortex_panels).
-- `bl_ids::UnitRange{Int}` : range of indices over which to determine the surface length
+(see https://en.wikipedia.org/wiki/Radius_of_curvature)
 
-# Returns:
-- `s::Vector{Float}` : cumulative sum of panel lengths between control points in the given index range, starting from zero.
+# Arugments:
+- `s::Vector{Float}` : vector of surface lengths.
+- `controlpoint::Matrix{Float} : control point positions, axial in first row, radial in second row
+- `ss::Float` : position along surface length to find radius of curvature.
+
+# Return:
+- `radius_of_curvature::Float` : Radius of curvature at point `ss` along surface.
 """
-function arc_lengths_from_panel_lengths(panel_lengths, bl_ids)
-    if bl_ids[1] < bl_ids[end]
-        bl_range = (bl_ids[1] + 1):(bl_ids[end])
+function calc_radius_of_curvature(s, controlpoint, ss)
 
-        return cumsum(
-            [0.0; [0.5 * (panel_lengths[i] + panel_lengths[i - 1]) for i in bl_range]]
-        )
-    else
-        bl_range = (bl_ids[1] - 1):-1:bl_ids[end]
+    # spline x and y coordinates with respect to arc length
+    x_of_s = Akima_smooth(s, controlpoint[1, :])
+    y_of_s = Akima_smooth(s, controlpoint[2, :])
 
-        return cumsum(
-            [0.0; [0.5 * (panel_lengths[i] + panel_lengths[i + 1]) for i in bl_range]]
-        )
-    end
+    #get first and second derivatives of coordinates with respect to arc length at integration step locations
+    xdot = FLOWMath.derivative.(Ref(x_of_s), ss)
+    xdotsp = Akima_smooth(s,FLOWMath.derivative.(Ref(x_of_s), s))
+    xddot = FLOWMath.derivative.(Ref(xdotsp), ss)
+    # xddot = FLOWMath.second_derivative.(Ref(x_of_s), ss)
+    ydot = FLOWMath.derivative.(Ref(y_of_s), ss)
+    ydotsp = Akima_smooth(s,FLOWMath.derivative.(Ref(y_of_s), s))
+    yddot = FLOWMath.derivative.(Ref(ydotsp), ss)
+    # yddot = FLOWMath.second_derivative.(Ref(y_of_s), ss)
+
+    # assemble the numerator and denominator of the radius of curvature expression
+    num = (xdot .^ 2 .+ ydot .^ 2) .^ (1.5)
+    den = xdot .* yddot .- ydot .* xddot
+
+    # convex positive
+    return num ./ den
 end
 
 """
-    setup_bl(
+    setup_boundary_layer_functions(
+        s,
         vtan_duct,
-        controlpoint,
-        panel_lengths,
-        bl_ids,
+        duct_control_points,
         operating_point,
         boundary_layer_options;
         verbose=false
     )
 
 # Arguments:
-- `panel_lengths::Vector{Float}` : vector of panel lengths for the duct body
-- `controlpoint::Matrix{Float}` : Control point coordinates along the duct surface
-- `panel_lengths::Matrix{Float}` : Panel lengths along the duct surface
-- `bl_ids::UnitRange` : range of indices for which the
+- `s::Vector{Float}` : cumulative sum of panel lengths between control points in the given index range, starting from zero.
+- `vtan_duct::Vector{Float}` : tangential velocity magnitudes for the entire duct
+- `duct_control_points::Matrix{Float}` : Control point coordinates along the duct surface
 - `operating_point::OperatingPoint` : OperatingPoint object
 - `boundary_layer_options::BoundaryLayerOptions` : BoundaryLayerOptions object
 
 # Returns:
-- `steps::Vector{Float}` : steps for ODE integration
 - `boundary_layer_parameters::NamedTuple` : Namped Tuple containing boundary layer solver parameters:
   - `edge_velocity::FLOWMath.Akima` : spline of edge velocities relative to surface length
   - `edge_mach::FLOWMath.Akima` : spline of edge Mach numbers relative to surface length
@@ -147,50 +192,30 @@ end
   - `radial_derivative::FLOWMath.Akima` : spline of dr/ds relative to surface length
   - `radius_of_curvature::FLOWMath.Akima` : spline of radius of curvature relative to surface length
 """
-function setup_bl(
+function setup_boundary_layer_functions(
+    s,
     vtan_duct,
-    controlpoint,
-    panel_lengths,
-    bl_ids,
+    duct_control_points,
     operating_point,
     boundary_layer_options;
     verbose=false,
 )
 
-    # Arc lengths from panel lengths
-    s = arc_lengths_from_panel_lengths(panel_lengths, bl_ids)
-
-    # # Get integration steps
-    # steps = range(
-    #     boundary_layer_options.offset,
-    #     s[end] - 0.5 * sum(panel_lengths[bl_ids[[1:1; end:end]]]) -
-    #     boundary_layer_options.offset;
-    #     step=boundary_layer_options.first_step_size,
-    # )
-
-    steps =
-        set_bl_steps(
-            boundary_layer_options.n_steps,
-            boundary_layer_options.first_step_size,
-            # total length = sum of all panel lengths - half the first and last panel lengths - offset for starting point
-            sum(panel_lengths[bl_ids]) - boundary_layer_options.offset -
-            0.5 * sum(panel_lengths[bl_ids[[1:1; end:end]]]),
-        ) .+ boundary_layer_options.offset
-
     # Edge Velocities
-    edge_velocity = FLOWMath.Akima(s, vtan_duct[bl_ids])
+    # note: the ss that get's passed in is the ss in the full surface length, so in practice this will be stagnation s ± boundary layer step s
+    edge_velocity = Akima_smooth(s, vtan_duct)
 
     # Edge Accelerations (dUe/ds)
     edge_acceleration(ss) = FLOWMath.derivative.(Ref(edge_velocity), ss)
 
     # r's
-    r_coords = FLOWMath.Akima(s, controlpoint[2, bl_ids])
+    r_coords = Akima_smooth(s, duct_control_points[2, :])
 
     # dr/ds
     radial_derivative(ss) = FLOWMath.derivative.(Ref(r_coords), ss)
 
     # radii of curvature
-    radius_of_curvature(ss) = calc_radius_of_curvature(s, controlpoint[:, bl_ids], ss)
+    radius_of_curvature(ss) = calc_radius_of_curvature(s, duct_control_points, ss)
 
     # local mach number
     edge_mach(ss) = calc_mach(edge_velocity(ss), operating_point.asound[])
@@ -203,8 +228,7 @@ function setup_bl(
     Te(ss) = static_temperature.(operating_point.Ttot[], edge_mach(ss))
     edge_viscosity(ss) = sutherlands_law(Te(ss))
 
-    return steps,
-    (;
+    return (;
         edge_velocity,
         edge_mach,
         edge_acceleration,
@@ -338,12 +362,19 @@ function calc_Re(rhoe, Ue, d2, mue)
 end
 
 """
-    calc_Cf0(Red2, M; hardness=50)
+    calc_Cf0(Red2, M)
 
 Calculate Cf₀ value based on momentum thickness Reynolds number (Red2) and edge mach number (M).
 """
-function calc_Cf0(Red2, M; hardness=50)
-    return (0.01013 / (log(10, FR(M) * Red2) - 1.02) - 0.00075) / Fc(M)
+function calc_Cf0(Red2, M)
+    # if (0.01013 / (log(10, FR(M) * Red2) - 1.02) - 0.00075) / Fc(M) < 0.0
+    # println("Red2: ", Red2)
+    # println("FR(M): ", FR(M))
+    # println("Log: ", log(10, FR(M) * Red2))
+    # println("Log-1.02: ", log(10, FR(M) * Red2)-1.02)
+    # println("Cf0: ", (0.01013 / (log(10, FR(M) * Red2) - 1.02) - 0.00075) / Fc(M))
+# end
+return FLOWMath.ksmax([0.0;(0.01013 / (log(10, FLOWMath.ksmax([1.0;FR(M) * Red2])) - 1.02) - 0.00075) / Fc(M)])
 end
 
 """
@@ -484,7 +515,7 @@ end
     calc_CEeq(Ctaueq0, M, lambda, Cf0)
 """
 function calc_CEeq(Ctaueq0, M, lambda, Cf0)
-    c = Ctaueq0 / ((1.0 + 0.1 * M^2) * lambda^2) - 0.32 * Cf0
+    c = FLOWMath.ksmax([0.0;Ctaueq0 / ((1.0 + 0.1 * M^2) * lambda^2) - 0.32 * Cf0])
     return sqrt(c / 1.2 + 0.0001) - 0.01
 end
 
@@ -695,7 +726,7 @@ function RK4(f, y, s, ds, parameters)
 end
 
 """
-    solve_turbulent_boundary_layer_rk!(f, rk, rk, initial_states, steps, parameters; verbose=false)
+    solve_turbulent_boundary_layer_rk!(f, rk, initial_states, steps, parameters; verbose=false)
 
 Integrate the turbulent boundary layer using a Runge-Kutta method.
 
@@ -706,16 +737,19 @@ Integrate the turbulent boundary layer using a Runge-Kutta method.
 - `steps::Vector{Float}` : steps for integration
 - `parameters::NamedTuple` : boundary layer solve options and other parameters
 """
-function solve_turbulent_boundary_layer_rk!(f, rk, initial_states, steps, parameters; verbose=false)
+function solve_turbulent_boundary_layer_rk!(
+    f, rk, initial_states, steps, parameters; verbose=false
+)
 
     # Unpack States and variables for viscous drag
-    u0, Cf0, H12_0 = rk, initial_states
+    u0, Cf0, H12_0 = initial_states
 
     # Initilization separate flags and outputs
     sep = [false]
     sepid = [1]
 
     # Allocate intermediate states and outputs
+    # TODO; put these in a cache that gets updated in place.
     us = zeros(eltype(u0), length(u0), length(steps))
     Cfs = zeros(eltype(u0), length(steps))
     H12s = zeros(eltype(u0), length(steps))
@@ -740,36 +774,37 @@ function solve_turbulent_boundary_layer_rk!(f, rk, initial_states, steps, parame
             f, us[:, i], steps[i], steps[i + 1] - steps[i], parameters
         )
 
-        sepid[1] = i
+        sepid[1] = i + 1
         if Cfs[i + 1] <= 0.0
             sep[1] = true
             break
         end
     end
 
+
     if sep[1] == true
-        u1sep = FLOWMath.akima(
-            Cfs[(sepid[] - 1):sepid[]], us[1, (sepid[] - 1):sepid[]], 0.0
-        )
-        u2sep = FLOWMath.akima(
-            Cfs[(sepid[] - 1):sepid[]], us[2, (sepid[] - 1):sepid[]], 0.0
-        )
-        u3sep = FLOWMath.akima(
-            Cfs[(sepid[] - 1):sepid[]], us[3, (sepid[] - 1):sepid[]], 0.0
-        )
-        usep = [u1sep; u2sep; u3sep]
-        H12sep = FLOWMath.akima(
+
+        # - Interpolate to find actual s_sep - #
+
+        usep = [
+            FLOWMath.linear(Cfs[(sepid[] - 1):sepid[]], us[1, (sepid[] - 1):sepid[]], 0.0)
+            FLOWMath.linear(Cfs[(sepid[] - 1):sepid[]], us[2, (sepid[] - 1):sepid[]], 0.0)
+            FLOWMath.linear(Cfs[(sepid[] - 1):sepid[]], us[3, (sepid[] - 1):sepid[]], 0.0)
+        ]
+
+        H12sep = FLOWMath.linear(
             Cfs[(sepid[] - 1):sepid[]], H12s[(sepid[] - 1):sepid[]], 0.0
         )
-        ssep = FLOWMath.akima(Cfs[(sepid[] - 1):sepid[]], steps[(sepid[] - 1):sepid[]], 0.0)
+
+        s_sep = FLOWMath.linear(Cfs[(sepid[] - 1):sepid[]], steps[(sepid[] - 1):sepid[]], 0.0)
     else
         usep = us[:, end]
         H12sep = H12s[end]
-        ssep = steps[end]
+        s_sep = steps[end]
     end
 
-    # return states at separate, and separation state, and separation postition
-    return us, usep, Cfs, H12sep, ssep, sepid[1]
+    # return states at separate, and separation shape factor, and surface length at separation
+    return usep, H12sep, s_sep
 end
 
 # """
@@ -786,12 +821,50 @@ end
 #          Viscous Drag           #
 #---------------------------------#
 
-# TODO: figure out how to get dimensional drag from squire young.
-# should we be dividing by c? (probably)
 """
+    squire_young(d2, Ue, Uinf, H12)
+
+Squire-Young formula for the viscous drag coeffiecient of one side of a 2D body.
+
+# Arguments:
+- `d2::Float` : Momentum thickness at separation extrapolated back to the trailing edge (d2 = d2sep+rsep-rTE)
+- `Ue::Float` : Edge velocity at separation point
+- `Uinf::Float` : Freestream velocity
+- `H12::Float` : Boundary layer shape factor at separation point
+
+Note: if no separation occurs, the inputs are simply the final values for the boundary layer.
+
+# Returns:
+- `cdc::Float` : viscous drag coefficient times reference chord
 """
-function squire_young(d2, Ue, Uinf, H12, c)
-    return 2.0 * d2 / c * (Ue / Uinf)^((5.0 + H12) / 2.0)
+function squire_young(d2, Ue, Uinf, H12)
+    # note: formula also divides by chord, but we're going to multiply by chord later.
+    return 2.0 * d2 * (Ue / Uinf)^((5.0 + H12) / 2.0)
+end
+
+"""
+    total_viscous_drag_duct(cd_upper, cd_lower, exit_radius, Vref, rhoinf)
+
+Calculate the total viscous drag of the duct from Squire-Young drag coefficients, integrated about exit circumference.
+
+# Arguments:
+- `cdc_upper::Float` : upper side drag coefficient times refernce chord
+- `cdc_lower::Float` : lower side drag coefficient times refernce chord
+- `exit_radius::Float` : radius used for integrating circumferentially
+- `Vref::Float` : reference velocity (Vinf)
+- `rhoinf::Float` : freestream density
+
+# Returns:
+- `viscous_drag::Float` : viscous drag on duct
+"""
+function total_viscous_drag_duct(cd_upper, cd_lower, exit_radius, Vref, rhoinf)
+    # note: cd's are already times chord, so no need to have a separate chord variable
+
+    # drag per unit length
+    dprime = 0.5 * rhoinf * Vref^2 * (cd_upper + cd_lower)
+
+    # drag of annular airfoil
+    return dprime * 2.0 * pi * exit_radius
 end
 
 #---------------------------------#
@@ -799,75 +872,166 @@ end
 #---------------------------------#
 
 """
+    compute_single_side_drag_coefficient(
+        steps,
+        exit_radius,
+        operating_point,
+        boundary_layer_options;
+        verbose=false,
+    )
+
+Solve integral boundary layer and obtain viscous drag coefficient from Squire-Young formula for one side of the duct (side being defined as portion of surface on once side of the stagnation point)
+
+# Arguments:
+- `steps::Vector{Float}` : positions along surface for integration
+- `exit_radius::Float` : radius at duct trailing edge (casing side)
+- `operating_point::Float` : OperatingPoint object
+- `boundary_layer_functions::NamedTuple` : Various Akima splines and other functions for boundary layer values
+- `boundary_layer_options::BoundaryLayerOptions` : BoundaryLayerOptions object
+
+# Returns:
+- `cd::Float` : viscous drag coefficient
 """
-function compute_viscous_drag_duct()
+function compute_single_side_drag_coefficient(
+    steps,
+    exit_radius,
+    operating_point,
+    boundary_layer_functions,
+    boundary_layer_options;
+    verbose=false,
+)
 
-    # Find Stagnation Point
-    upper_bl_ids, lower_bl_ids = split_at_stagnation_point(cp_duct)
-
-    # - Upper Side - #
-    us, usep, Cfs, H12sep, ssep, sepid = compute_viscous_drag_single_side(
-        vtan_duct,
-        controlpoint,
-        influence_length,
-        upper_bl_ids,
-        operating_point,
-        boundary_layer_options,
+    # - Initialize Boundary Layer States - #
+    initial_states, Cf0, H12_0 = initialize_turbulent_boundary_layer_states(
+        steps[1],
+        boundary_layer_functions.r_coords(steps[1]),
+        boundary_layer_functions.edge_velocity(steps[1]),
+        boundary_layer_functions.edge_mach(steps[1]),
+        boundary_layer_functions.edge_density(steps[1]),
+        boundary_layer_functions.edge_viscosity(steps[1]);
+        verbose=verbose,
     )
 
-    # - Lower Side - #
-    us, usep, Cfs, H12sep, ssep, sepid = compute_viscous_drag_single_side(
-        vtan_duct,
-        controlpoint,
-        influence_length,
-        lower_bl_ids,
-        operating_point,
-        boundary_layer_options,
+    usep, H12sep, s_sep = solve_turbulent_boundary_layer_rk!(
+        boundary_layer_residual,
+        boundary_layer_options.rk,
+        [initial_states, Cf0, H12_0],
+        steps,
+        (;
+            boundary_layer_functions...,
+            boundary_layer_options.lambda,
+            boundary_layer_options.longitudinal_curvature,
+            boundary_layer_options.lateral_strain,
+            boundary_layer_options.dilation,
+        );
+        verbose=verbose,
     )
 
-    return nothing
+    cd = squire_young(
+        abs(
+            usep[1] / boundary_layer_functions.r_coords(s_sep) +
+            boundary_layer_functions.r_coords(steps[end]) - exit_radius,
+        ),
+        boundary_layer_functions.edge_velocity(s_sep),
+        operating_point.Vinf[],
+        H12sep,
+    )
+
+    return cd
 end
 
 """
+    compute_viscous_drag_duct(
+        vtan_duct,
+        cp_duct,
+        duct_control_points,
+        duct_panel_lengths,
+        exit_radius,
+        operating_point,
+        boundary_layer_options,
+    )
+
+Determine total, dimensional viscous drag on the duct.
+
+# Arguments:
+- `vtan_duct::Vector{Float}` : tangential velocity magnitudes for the entire duct
+- `duct_control_points::Matrix{Float}` : control point positions for the entire duct
+- `duct_panel_lengths::Vector{Float}` : panel lengths for the entire duct
+- `exit_radius::Float` : radius at duct trailing edge (casing side)
+- `operating_point::Float` : OperatingPoint object
+- `boundary_layer_options::NamedTuple` : BoundaryLayerOptions object
+
+# Returns:
+- `duct_viscous_drag::Float` : total viscous drag of duct
 """
-function compute_viscous_drag_single_side(
+function compute_viscous_drag_duct(
     vtan_duct,
-    controlpoint,
-    influence_length,
-    bl_ids,
+    cp_duct,
+    duct_control_points,
+    duct_panel_lengths,
+    exit_radius,
     operating_point,
     boundary_layer_options;
     verbose=false,
 )
 
-    # - Set up boundary layer solve parameters - #
-    steps, boundary_layer_parameters = setup_bl(
+    # find stagnation point
+    s, s_stagnation, lower_length, upper_length = split_at_stagnation_point(
+        duct_panel_lengths, cp_duct
+    )
+
+    # set up boundary layer solve parameters
+    boundary_layer_functions = setup_boundary_layer_functions(
+        s,
         vtan_duct,
-        controlpoint,
-        influence_length,
-        bl_ids,
+        duct_control_points,
         operating_point,
         boundary_layer_options;
         verbose=verbose,
     )
 
-    # - Initialize Boundary Layer States - #
-    initial_states, Cf0, H12_0 = initialize_turbulent_boundary_layer_states
-    verbose = false(
-        steps[1],
-        boundary_layer_parameters.r_coords(steps[1]),
-        boundary_layer_parameters.edge_velocity(steps[1]),
-        boundary_layer_parameters.edge_mach(steps[1]),
-        boundary_layer_parameters.edge_density(steps[1]),
-        boundary_layer_parameters.edge_viscosity(steps[1]);
+    # - Set integration steps - #
+
+    # upper side
+    upper_steps =
+        s_stagnation .+ set_bl_steps(
+            boundary_layer_options.n_steps,
+            boundary_layer_options.first_step_size,
+            upper_length - boundary_layer_options.offset,
+        ) .+ boundary_layer_options.offset
+
+    # lower side
+    lower_steps =
+        s_stagnation .- set_bl_steps(
+            boundary_layer_options.n_steps,
+            boundary_layer_options.first_step_size,
+            lower_length - boundary_layer_options.offset,
+        ) .+ boundary_layer_options.offset
+
+    # - Get drag coeffients - #
+
+    # upper side
+    cdc_upper = compute_single_side_drag_coefficient(
+        upper_steps,
+        exit_radius,
+        operating_point,
+        boundary_layer_functions,
+        boundary_layer_options;
         verbose=verbose,
     )
 
-    return solve_turbulent_boundary_layer_rk!(
-        boundary_layer_residual,
-        boundary_layer_options.rk,
-        [initial_states, Cf0, H12_0],
-        steps,
-        parameters,
+    # lower side
+    cdc_lower = compute_single_side_drag_coefficient(
+        lower_steps,
+        exit_radius,
+        operating_point,
+        boundary_layer_functions,
+        boundary_layer_options;
+        verbose=verbose,
+    )
+
+    # Return total viscous drag
+    return total_viscous_drag_duct(
+        cdc_upper, cdc_lower, exit_radius, operating_point.Vinf[], operating_point.rhoinf[]
     )
 end

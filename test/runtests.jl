@@ -39,6 +39,7 @@ include("wake_aero_tests.jl")
 
 # - post process related tests - #
 include("post_processing_tests.jl")
+include("boundary_layer_tests.jl")
 
 
 ##########################################################

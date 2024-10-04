@@ -199,3 +199,21 @@ function cache_dims!(total_length, l, s)
     total_length[] += l
     return dims
 end
+
+"""
+    akima_smooth(x, y, xpt; delta=2.0 * eps(), eps=eps())
+
+Wrapper for FLOWMath.akima with different optional argument values.
+"""
+function akima_smooth(x, y, xpt; delta=2.0 * eps(), eps=eps())
+    return FLOWMath.akima(x, y, xpt, delta, eps)
+end
+
+"""
+    Akima_smooth(x, y; delta=2.0 * eps(), eps=eps())
+
+Wrapper for FLOWMath.Akima with different optional argument values.
+"""
+function Akima_smooth(x, y; delta=2.0 * eps(), eps=eps())
+    return FLOWMath.Akima(x, y, delta, eps)
+end

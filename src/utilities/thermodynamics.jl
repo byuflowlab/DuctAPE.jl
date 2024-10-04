@@ -61,6 +61,7 @@ Assumes calorically imperfect gas.
 - `static_dynamic_viscosity::Float` : Static dynamic Viscosity
 """
 function standard_atmosphere(altitude; hardness=25)
+
     #Get temperature (T) and pressure (P) from table fits
     if altitude < (11000 + 25000) / 2.0
         T, P = sa1(altitude; hardness=hardness)
@@ -70,6 +71,36 @@ function standard_atmosphere(altitude; hardness=25)
 
     # return T, P, rho, mu
     return T, P * 1000, ideal_gas_rho(P, T), sutherlands_law(T)
+end
+
+function standard_atmosphere(imperial_units, altitude; hardness=25)
+
+    # convert from feet to meters
+    altitude *= 0.3048
+
+    #Get temperature (T) and pressure (P) from table fits in SI units
+    if altitude < (11000 + 25000) / 2.0
+        T, P = sa1(altitude; hardness=hardness)
+    else
+        T, P = sa2(altitude; hardness=hardness)
+    end
+
+    # - Convert to Imperial Units - #
+
+    # convert from celsius to Fahrenheit
+    T *= 9.0 / 5.0
+    T += 32.0
+
+    # convert from kilo pascals to slugs/ft^2
+    P *= 20.885434273039
+
+    # convert from kg/m^3 to slugs/ft^3
+    rho = ideal_gas_rho(P, T) * 0.00194032
+
+    # convert from Pa-s to slugs/ft-s
+    mu = sutherlands_law(T) * 0.0208854342
+
+    return T, P, rho, mu
 end
 
 """

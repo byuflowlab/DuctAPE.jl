@@ -663,14 +663,15 @@ end
 - `rk::Function = RK4` : solver to use for boundary layer integration (RK4 or RK2 available)
 """
 @kwdef struct BoundaryLayerOptions{Tb,Tf,Tfun,Ti,To}
+    model_drag::Tb=true
     lambda::Tb = true
     longitudinal_curvature::Tb = true
     lateral_strain::Tb = true
     dilation::Tb = true
-    n_steps::Ti = Int(1e2)
-    first_step_size::Tf = 1e-3
+    n_steps::Ti = Int(2e2)
+    first_step_size::Tf = 1e-6
     offset::To = 1e-2
-    rk::Tfun = RK4
+    rk::Tfun = RK2
 end
 
 #---------------------------------#
@@ -699,6 +700,7 @@ Type containing (nearly) all the available user options.
 ## Integration Options
 - `integration_options::IntegrationOptions type = IntegrationOptions()` : integration options
 ## Post-processing Options
+- `boundary_layer_options::BoundaryLayerOptions` : BoundaryLayerOptions object
 - `write_outputs::AbstractArray{Bool} = [false]` : Bool for whether to write the outputs of the analysis to an external file (slow)
 - `outfile::AbstractArray{String} = ["outputs.jl"]` : External output file name (including path information) for files to write
 - `checkoutfileexists::Bool = false` : Flag for whether to check if file exists before overwriting
@@ -709,6 +711,7 @@ Type containing (nearly) all the available user options.
 """
 @kwdef struct Options{
     TB,
+    TBL,
     TBwo,
     TF,
     TI,
@@ -734,6 +737,7 @@ Type containing (nearly) all the available user options.
     # - Integration Options - #
     integration_options::TIo = IntegrationOptions()
     # - Post-processing Options - #
+    boundary_layer_options::TBL = BoundaryLayerOptions()
     write_outputs::TBwo = [false]
     outfile::TSf = ["outputs.jl"]
     checkoutfileexists::TB = false

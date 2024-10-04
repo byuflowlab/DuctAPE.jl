@@ -8,6 +8,7 @@
         solve_parameter_cache_dims,
         operating_point,
         reference_parameters,
+        boundary_layer_options,
         A_bb_LU,
         airfoils,
         idmaps,
@@ -31,6 +32,7 @@ Post-process a converged nonlinear solve solution.
 - `solve_parameter_cache_dims::NamedTuple` : the dimensions of the solver parameters
 - `operating_point::OperatingPoint` : the operating point being analyzed
 - `reference_parameters::ReferenceParameters` : a ReferenceParameters object
+- `BoundaryLayerOptions::BoundaryLayerOptions` : a BoundaryLayerOptions object
 - `A_bb_LU::LinearAlgebra.LU` : LinearAlgebra LU factorization of the LHS matrix
 - `airfoils::Vector{AFType}` : A matrix of airfoil types associated with each of the blade elements
 - `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
@@ -143,6 +145,7 @@ function post_process(
     solve_parameter_cache_dims,
     operating_point,
     reference_parameters,
+    boundary_layer_options,
     A_bb_LU,
     airfoils,
     idmaps,
@@ -486,6 +489,22 @@ function post_process(
         rhoinf=rhoinf[1],
         Vref=Vref[1],
     )
+
+    # - Duct Viscous Drag - #
+    if boundary_layer_options.model_drag
+    duct_viscous_drag = compute_viscous_drag_duct(
+          Vtan_out[1:Int(body_vortex_panels.npanel[1])],
+        [cp_casing_out; cp_casing_in],
+        body_vortex_panels.controlpoint,
+        body_vortex_panels.influence_length,
+        body_vortex_panels.node[2,end],
+        operating_point,
+        boundary_layer_options;
+        verbose=verbose
+    )
+
+    body_thrust[1] -= duct_viscous_drag
+end
 
     ### --- TOTAL OUTPUTS --- ###
 
