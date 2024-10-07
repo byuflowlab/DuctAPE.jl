@@ -70,7 +70,7 @@ function standard_atmosphere(altitude; hardness=25)
     end
 
     # return T, P, rho, mu
-    return T, P * 1000, ideal_gas_rho(P, T), sutherlands_law(T)
+    return T - 273.15, P * 1000, ideal_gas_rho(P, T), sutherlands_law(T)
 end
 
 function standard_atmosphere(imperial_units, altitude; hardness=25)
@@ -87,18 +87,19 @@ function standard_atmosphere(imperial_units, altitude; hardness=25)
 
     # - Convert to Imperial Units - #
 
-    # convert from celsius to Fahrenheit
-    T *= 9.0 / 5.0
-    T += 32.0
-
-    # convert from kilo pascals to slugs/ft^2
-    P *= 20.885434273039
-
     # convert from kg/m^3 to slugs/ft^3
     rho = ideal_gas_rho(P, T) * 0.00194032
 
     # convert from Pa-s to slugs/ft-s
     mu = sutherlands_law(T) * 0.0208854342
+
+    # convert from Kelvin to Fahrenheit
+    T -= 273.15
+    T *= 9.0 / 5.0
+    T += 32.0
+
+    # convert from kilo pascals to slugs/ft^2
+    P *= 20.885434273039
 
     return T, P, rho, mu
 end

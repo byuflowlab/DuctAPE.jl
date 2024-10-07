@@ -39,8 +39,8 @@ include("wake_aero_tests.jl")
 
 # - post process related tests - #
 include("post_processing_tests.jl")
+include("thermodynamics_tests.jl")
 include("boundary_layer_tests.jl")
-
 
 ##########################################################
 #EVERYTHING BELOW THIS POINT NEEDS TO BE UPDATED
@@ -48,7 +48,6 @@ include("boundary_layer_tests.jl")
 
 # - Active Development - #
 # include("solve_checks.jl")
-
 
 # - Need to update, add, fix, etc. - #
 # include("body_aero_tests.jl")
