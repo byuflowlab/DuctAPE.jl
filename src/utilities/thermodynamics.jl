@@ -1,6 +1,7 @@
-# TODO: need to add docstrings for all of these.
-
 """
+    sa1(altitude; hardness=50)
+
+Standard atmosphere temperature and pressure in SI units blended between the first linear portion and the constant portion.
 """
 function sa1(altitude; hardness=50)
     # Sigmoid blend of fits for <11000 and <25000
@@ -14,6 +15,9 @@ function sa1(altitude; hardness=50)
 end
 
 """
+    sa2(altitude; hardness=50)
+
+Standard atmosphere temperature and pressure in SI units blended between the the constant portion and the second linear portion.
 """
 function sa2(altitude; hardness=50)
     # Sigmoid blend of <25000 and >25000
@@ -27,12 +31,20 @@ function sa2(altitude; hardness=50)
 end
 
 """
+    ideal_gas_rho(P, T)
+
+Ideal gas law for calculating density in SI units.
 """
 function ideal_gas_rho(P, T)
     return @. P / (0.2869 * T)
 end
 
 """
+    sutherlands_law(
+        static_temperure, mu_sea_level=1.789e-5, T_sea_level=288.15, S=110.4
+    )
+
+Sutherland's law in SI units for calculating air viscosity relative to sea level.
 """
 function sutherlands_law(
     static_temperure, mu_sea_level=1.789e-5, T_sea_level=288.15, S=110.4
@@ -43,13 +55,14 @@ end
 
 """
     standard_atmosphere(altitude; hardness=25)
+    standard_atmosphere(::Imperial, altitude; hardness=25)
 
 Smoothed fits to the Standard Atmosphere model.
 
 Assumes calorically imperfect gas.
 
 # Arguments
-- `altitude::Float` : Altitude
+- `altitude::Float` : Altitude in meters for SI units, or feet for Imperial units
 
 # Keyword Arguments:
 - `hardness::float` : hardness factor for sigmoid blend
@@ -105,42 +118,63 @@ function standard_atmosphere(imperial_units, altitude; hardness=25)
 end
 
 """
+    speed_of_sound(static_pressure, static_density; gamma=1.4)
+
+Speed of sound from isentropic relations
 """
 function speed_of_sound(static_pressure, static_density; gamma=1.4)
     return sqrt(gamma * static_pressure / static_density)
 end
 
 """
+    calc_mach(edge_velocity, speed_of_sound)
+
+Mach number from velocity and speed of sound
 """
 function calc_mach(edge_velocity, speed_of_sound)
     return edge_velocity / speed_of_sound
 end
 
 """
+    total_pressure(static_pressure, M; gamma=1.4)
+
+Total pressure from isentropic relations
 """
 function total_pressure(static_pressure, M; gamma=1.4)
     return static_pressure * (1.0 + (gamma - 1.0) * M^2 / 2.0)^(gamma / (gamma - 1.0))
 end
 
 """
+    total_temperature(static_temperature, M; gamma=1.4)
+
+Total temperature from isentropic relations
 """
 function total_temperature(static_temperature, M; gamma=1.4)
     return static_temperature * (1.0 + (gamma - 1.0) * M^2 / 2.0)
 end
 
 """
+    static_pressure(total_pressure, M; gamma=1.4)
+
+Static pressure from isentropic relations
 """
 function static_pressure(total_pressure, M; gamma=1.4)
     return total_pressure / ((1.0 + (gamma - 1.0) * M^2 / 2.0)^(gamma / (gamma - 1.0)))
 end
 
 """
+    static_temperature(total_temperature, M; gamma=1.4)
+
+Static temperature from isentropic relations
 """
 function static_temperature(total_temperature, M; gamma=1.4)
     return total_temperature / (1.0 + (gamma - 1.0) * M^2 / 2.0)
 end
 
 """
+    static_density(static_pressure, speed_of_sound; gamma=1.4)
+
+Static density from isentropic relations
 """
 function static_density(static_pressure, speed_of_sound; gamma=1.4)
     return gamma * static_pressure / speed_of_sound^2

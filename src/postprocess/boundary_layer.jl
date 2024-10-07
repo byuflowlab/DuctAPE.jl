@@ -97,14 +97,14 @@ end
 
 Function used in determining step sizes for boundary layer calculation. f(n) = m*n^p
 
-Given a number of steps, n ∈ [1:N], provides the cumulative step lengths according to the power, p, and the multiplicative factor, m; where p determined from the `set_bl_steps` functions.
+Given a number of steps, n ∈ [1:N], provides the cumulative step lengths according to the power, p, and the multiplicative factor, m; where p determined from the `set_boundary_layer_steps` functions.
 """
 function bl_step_fun(n, m, p)
     return m .* n .^ p
 end
 
 """
-    set_bl_steps(N::Int, first_step_size, total_length)
+    set_boundary_layer_steps(N::Int, first_step_size, total_length)
 
 Sets boundary layer steps based on desired number of steps (must be an Integer), an initial step size, and the total cumulative length of the steps.
 
@@ -116,7 +116,7 @@ Sets boundary layer steps based on desired number of steps (must be an Integer),
 # Returns:
 - `steps::Vector{Float}` : steps along surface length satisfying the equation: f(n) = m*n^p with the condition that `m` is the first step size and f(N) = `total_length`
 """
-function set_bl_steps(N::Int, first_step_size, total_length)
+function set_boundary_layer_steps(N::Int, first_step_size, total_length)
     function f(p)
         return total_length - first_step_size * N^p
     end
@@ -126,7 +126,7 @@ function set_bl_steps(N::Int, first_step_size, total_length)
 end
 
 """
-    calc_radius_of_curvature(s, xy, ss)
+    calculate_radius_of_curvature(s, xy, ss)
 
 Determine the radius of curvature.
 
@@ -140,7 +140,7 @@ Determine the radius of curvature.
 # Return:
 - `radius_of_curvature::Float` : Radius of curvature at point `ss` along surface.
 """
-function calc_radius_of_curvature(s, controlpoint, ss)
+function calculate_radius_of_curvature(s, controlpoint, ss)
 
     # spline x and y coordinates with respect to arc length
     x_of_s = Akima_smooth(s, controlpoint[1, :])
@@ -215,10 +215,10 @@ function setup_boundary_layer_functions(
     radial_derivative(ss) = FLOWMath.derivative.(Ref(r_coords), ss)
 
     # radii of curvature
-    radius_of_curvature(ss) = calc_radius_of_curvature(s, duct_control_points, ss)
+    radius_of_curvature(ss) = calculate_radius_of_curvature(s, duct_control_points, ss)
 
     # local mach number
-    edge_mach(ss) = calc_mach(edge_velocity(ss), operating_point.asound[])
+    edge_mach(ss) = calculate_mach(edge_velocity(ss), operating_point.asound[])
 
     # local density
     Pe(ss) = static_pressure(operating_point.Ptot[], edge_mach(ss))
@@ -262,17 +262,17 @@ function d2_init(x, Rex)
 end
 
 """
-Rename of `calc_H12bar0` used for initialization to avoid confusion
+Rename of `calculate_H12bar0` used for initialization to avoid confusion
 """
 function H12bar_init(Cf0, M)
-    return calc_H12bar0(Cf0, M)
+    return calculate_H12bar0(Cf0, M)
 end
 
 """
-Wrapper of `calc_CEeq` used for initialization to avoid confusion (`lambda` set to 1)
+Wrapper of `calculate_CEeq` used for initialization to avoid confusion (`lambda` set to 1)
 """
 function CE_init(Ctaueq0, M, Cf0)
-    return calc_CEeq(Ctaueq0, M, 1, Cf0)
+    return calculate_CEeq(Ctaueq0, M, 1, Cf0)
 end
 
 """
@@ -301,31 +301,31 @@ function initialize_turbulent_boundary_layer_states(
     verbose && println("INITIALIZATION")
     # - Initialize States - #
     # initialize momentum thickness (d2) using flat plate schlichting model
-    Rex = calc_Re(rhoe, Ue, s_init, mue)
+    Rex = calculate_Re(rhoe, Ue, s_init, mue)
     verbose && printdebug("Rex: ", Rex)
     d2 = d2_init(s_init, Rex)
     verbose && printdebug("d2: ", d2)
 
     # initialize H12bar (compressible shape factor) using _0 equations
-    Red2 = calc_Re(rhoe, Ue, d2, mue)
+    Red2 = calculate_Re(rhoe, Ue, d2, mue)
     verbose && printdebug("Red2: ", Red2)
-    Cf0 = calc_Cf0(Red2, M)
+    Cf0 = calculate_Cf0(Red2, M)
     verbose && printdebug("Cf0: ", Cf0)
     H12bar0 = H12bar_init(Cf0, M)
     verbose && printdebug("H12bar0: ", H12bar0)
 
     # initialize the entrainment coefficient (CE) using equilibrium equations
-    H1 = calc_H1(H12bar0)
+    H1 = calculate_H1(H12bar0)
     verbose && printdebug("H1: ", H1)
-    H12 = calc_H12(H12bar0, M)
+    H12 = calculate_H12(H12bar0, M)
     verbose && printdebug("H12: ", H12)
-    Cf = calc_Cf(H12bar0, H12bar0, Cf0)
+    Cf = calculate_Cf(H12bar0, H12bar0, Cf0)
     verbose && printdebug("Cf: ", Cf)
-    d2dUedsUeeq0 = calc_d2dUedsUeeq0(H12bar0, H12, Cf, M)
+    d2dUedsUeeq0 = calculate_d2dUedsUeeq0(H12bar0, H12, Cf, M)
     verbose && printdebug("d2dUedsUeeq0: ", d2dUedsUeeq0)
-    CEeq0 = calc_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
+    CEeq0 = calculate_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
     verbose && printdebug("CEeq0: ", CEeq0)
-    Ctaueq0 = calc_Ctaueq0(CEeq0, Cf0, M)
+    Ctaueq0 = calculate_Ctaueq0(CEeq0, Cf0, M)
     verbose && printdebug("Ctaueq0: ", Ctaueq0)
     CE = CE_init(Ctaueq0, M, Cf0)
     verbose && printdebug("CE: ", CE)
@@ -353,20 +353,20 @@ function FR(M)
 end
 
 """
-    calc_Re(ρ, V, L, μ)
+    calculate_Re(ρ, V, L, μ)
 
 Calculate Reynolds number
 """
-function calc_Re(rhoe, Ue, d2, mue)
+function calculate_Re(rhoe, Ue, d2, mue)
     return rhoe * Ue * d2 / mue
 end
 
 """
-    calc_Cf0(Red2, M)
+    calculate_Cf0(Red2, M)
 
 Calculate Cf₀ value based on momentum thickness Reynolds number (Red2) and edge mach number (M).
 """
-function calc_Cf0(Red2, M)
+function calculate_Cf0(Red2, M)
     # if (0.01013 / (log(10, FR(M) * Red2) - 1.02) - 0.00075) / Fc(M) < 0.0
     # println("Red2: ", Red2)
     # println("FR(M): ", FR(M))
@@ -378,65 +378,65 @@ return FLOWMath.ksmax([0.0;(0.01013 / (log(10, FLOWMath.ksmax([1.0;FR(M) * Red2]
 end
 
 """
-    calc_H12bar0(Cf0, M)
+    calculate_H12bar0(Cf0, M)
 """
-function calc_H12bar0(Cf0, M)
+function calculate_H12bar0(Cf0, M)
     return 1.0 / (1.0 - 6.55 * sqrt(Cf0 / 2.0 * (1.0 + 0.04 * M^2)))
 end
 
 """
-    calc_Cf(H12bar, H12bar0, Cf0)
+    calculate_Cf(H12bar, H12bar0, Cf0)
 
 Calculate friction coefficient.
 """
-function calc_Cf(H12bar, H12bar0, Cf0)
+function calculate_Cf(H12bar, H12bar0, Cf0)
     return Cf0 * (0.9 / (H12bar / H12bar0 - 0.4) - 0.5)
 end
 
 """
-    calc_H12(H12bar, M, Pr=1.0)
+    calculate_H12(H12bar, M, Pr=1.0)
 """
-function calc_H12(H12bar, M, Pr=1.0)
+function calculate_H12(H12bar, M, Pr=1.0)
     return (H12bar + 1.0) * (1.0 + Pr^(1.0 / 3.0) * M^2 / 5) - 1.0
 end
 
 """
-    calc_Ctau(CE, Cf0, M)
+    calculate_Ctau(CE, Cf0, M)
 """
-function calc_Ctau(CE, Cf0, M)
+function calculate_Ctau(CE, Cf0, M)
     return (0.024 * CE + 1.2 * CE^2 + 0.32 * Cf0) * (1.0 + 0.1 * M^2)
 end
 
 """
-    calc_F(CE, Cf0)
+    calculate_F(CE, Cf0)
 """
-function calc_F(CE, Cf0)
+function calculate_F(CE, Cf0)
     return (0.02 * CE + CE^2 + 0.8 * Cf0 / 3) / (0.01 + CE)
 end
 
 """
-    calc_H1(H12bar)
+    calculate_H1(H12bar)
 """
-function calc_H1(H12bar)
+function calculate_H1(H12bar)
     return 3.15 + 1.72 / (H12bar - 1.0) - 0.01 * (H12bar - 1.0)^2
 end
 
 """
-    calc_dH12bardH1(H12bar)
+    calculate_dH12bardH1(H12bar)
 """
-function calc_dH12bardH1(H12bar)
+function calculate_dH12bardH1(H12bar)
     return -(H12bar - 1.0)^2 / (1.72 + 0.02 * (H12bar - 1.0)^3)
 end
 
 """
-    calc_richardson_number(H12bar, d2, H12, H1, R)
+    calculate_richardson_number(H12bar, d2, H12, H1, R)
 """
-function calc_richardson_number(H12bar, d2, H12, H1, R)
+function calculate_richardson_number(H12bar, d2, H12, H1, R)
     return 2.0 * d2 / (3.0 * R) * (H12 + H1) * (H1 / H12bar + 0.3)
 end
 
 """
-    beta(Ri; hardness=100.0)
+    calcualte_beta(Ri; hardness=100.0)
 
 Sigmoind blended version of piecewise function:
     | 7.0 if Ri > 0
@@ -452,7 +452,7 @@ Sigmoind blended version of piecewise function:
 # Returns:
 - `beta::float` : factor used in secondary influence from longitudinal curvature.
 """
-function beta(Ri, hardness=100.0)
+function calcualte_beta(Ri, hardness=100.0)
     return FLOWMath.sigmoid_blend(4.5, 7.0, Ri, 0.0, hardness)
 end
 
@@ -460,7 +460,7 @@ end
     longitudinal_curvature_influence(M, Ri)
 """
 function longitudinal_curvature_influence(M, Ri)
-    return 1 + beta(Ri) * (1.0 + M^2 / 5) * Ri
+    return 1 + calculate_beta(Ri) * (1.0 + M^2 / 5) * Ri
 end
 
 """
@@ -478,51 +478,51 @@ function dilation_influence(H12bar, d2, H12, H1, M, Ue, dUeds)
 end
 
 """
-    calc_lambda(args...)
+    calculate_lambda(args...)
 
 λ = *(args...)
 """
-function calc_lambda(args...)
+function calculate_lambda(args...)
     return *(args...)
 end
 
 """
-    calc_d2dUedsUeeq0(H12bar, H12, Cf, M)
+    calculate_d2dUedsUeeq0(H12bar, H12, Cf, M)
 """
-function calc_d2dUedsUeeq0(H12bar, H12, Cf, M)
+function calculate_d2dUedsUeeq0(H12bar, H12, Cf, M)
     return 1.25 * (Cf / 2.0 - ((H12bar - 1.0) / (6.432 * H12bar))^2 / (1.0 + 0.04 * M^2)) /
            H12
 end
 
 """
-    calc_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
+    calculate_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
 
 Note: applies smooth-max to makes sure this value stays non-negative
 """
-function calc_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
+function calculate_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
     # apply smooth-max to make sure we stay non-negative.
     return FLOWMath.ksmax([0.0; H1 * (Cf / 2.0 - (H12 + 1.0) * d2dUedsUeeq0)])
 end
 
 """
-    calc_Ctaueq0(CEeq0, Cf0, M)
+    calculate_Ctaueq0(CEeq0, Cf0, M)
 """
-function calc_Ctaueq0(CEeq0, Cf0, M)
+function calculate_Ctaueq0(CEeq0, Cf0, M)
     return (0.24 * CEeq0 + 1.2 * CEeq0^2 + 0.32 * Cf0) * (1.0 + 0.1 * M^2)
 end
 
 """
-    calc_CEeq(Ctaueq0, M, lambda, Cf0)
+    calculate_CEeq(Ctaueq0, M, lambda, Cf0)
 """
-function calc_CEeq(Ctaueq0, M, lambda, Cf0)
+function calculate_CEeq(Ctaueq0, M, lambda, Cf0)
     c = FLOWMath.ksmax([0.0;Ctaueq0 / ((1.0 + 0.1 * M^2) * lambda^2) - 0.32 * Cf0])
     return sqrt(c / 1.2 + 0.0001) - 0.01
 end
 
 """
-    calc_d2dUedsUeeq(H1, H12, Cf, CEeq)
+    calculate_d2dUedsUeeq(H1, H12, Cf, CEeq)
 """
-function calc_d2dUedsUeeq(H1, H12, Cf, CEeq)
+function calculate_d2dUedsUeeq(H1, H12, Cf, CEeq)
     return (Cf / 2.0 - CEeq / H1) / (H12 + 1.0)
 end
 
@@ -588,44 +588,44 @@ function boundary_layer_residual!(dy, y, s, parameters)
     verbose && println("   Intermediates:")
     d2 = rd2 / r
     verbose && printdebug("d2: ", d2)
-    Red2 = calc_Re(rhoe, Ue, d2, mue)
+    Red2 = calculate_Re(rhoe, Ue, d2, mue)
     verbose && printdebug("Red2: ", Red2)
 
-    Cf0 = calc_Cf0(Red2, M)
+    Cf0 = calculate_Cf0(Red2, M)
     verbose && printdebug("Cf0: ", Cf0)
 
-    H12bar0 = calc_H12bar0(Cf0, M)
+    H12bar0 = calculate_H12bar0(Cf0, M)
     verbose && printdebug("H12bar0: ", H12bar0)
 
-    Cf = calc_Cf(H12bar, H12bar0, Cf0)
+    Cf = calculate_Cf(H12bar, H12bar0, Cf0)
     verbose && printdebug("Cf: ", Cf)
 
-    H12 = calc_H12(H12bar, M)
+    H12 = calculate_H12(H12bar, M)
     verbose && printdebug("H12: ", H12)
 
-    dH12bardH1 = calc_dH12bardH1(H12bar) #yes, this should be negative according to example
+    dH12bardH1 = calculate_dH12bardH1(H12bar) #yes, this should be negative according to example
     verbose && printdebug("dH12bardH1: ", dH12bardH1)
-    H1 = calc_H1(H12bar)
+    H1 = calculate_H1(H12bar)
     verbose && printdebug("H1: ", H1)
 
-    F = calc_F(CE, Cf0)
+    F = calculate_F(CE, Cf0)
     verbose && printdebug("F: ", F)
 
-    d2dUedsUeeq0 = calc_d2dUedsUeeq0(H12bar, H12, Cf, M)
+    d2dUedsUeeq0 = calculate_d2dUedsUeeq0(H12bar, H12, Cf, M)
     verbose && printdebug("d2dUedsUeeq0: ", d2dUedsUeeq0)
 
-    CEeq0 = calc_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
+    CEeq0 = calculate_CEeq0(H1, H12, Cf, d2dUedsUeeq0)
     verbose && printdebug("CEeq0: ", CEeq0)
 
-    Ctaueq0 = calc_Ctaueq0(CEeq0, Cf0, M)
+    Ctaueq0 = calculate_Ctaueq0(CEeq0, Cf0, M)
     verbose && printdebug("Ctaueq0: ", Ctaueq0)
 
-    Ctau = calc_Ctau(CE, Cf0, M)
+    Ctau = calculate_Ctau(CE, Cf0, M)
     verbose && printdebug("Ctau: ", Ctau)
 
     if parameters.lambda
         if parameters.longitudinal_curvature
-            Ri = calc_richardson_number(H12bar, d2, H12, H1, r)
+            Ri = calculate_richardson_number(H12bar, d2, H12, H1, r)
             l1 = longitudinal_curvature_influence(M, Ri)
         else
             l1 = 1
@@ -643,16 +643,16 @@ function boundary_layer_residual!(dy, y, s, parameters)
             l3 = 1
         end
 
-        lambda = calc_lambda(l1, l2, l3)
+        lambda = calculate_lambda(l1, l2, l3)
     else
         lambda = 1
     end
     verbose && printdebug("lambda: ", lambda)
 
-    CEeq = calc_CEeq(Ctaueq0, M, lambda, Cf0)
+    CEeq = calculate_CEeq(Ctaueq0, M, lambda, Cf0)
     verbose && printdebug("CEeq: ", CEeq)
 
-    d2dUedsUeeq = calc_d2dUedsUeeq(H1, H12, Cf, CEeq)
+    d2dUedsUeeq = calculate_d2dUedsUeeq(H1, H12, Cf, CEeq)
     verbose && printdebug("d2dUedsUeeq: ", d2dUedsUeeq)
 
     # - system of equations - #
@@ -994,7 +994,7 @@ function compute_viscous_drag_duct(
 
     # upper side
     upper_steps =
-        s_stagnation .+ set_bl_steps(
+        s_stagnation .+ set_boundary_layer_steps(
             boundary_layer_options.n_steps,
             boundary_layer_options.first_step_size,
             upper_length - boundary_layer_options.offset,
@@ -1002,7 +1002,7 @@ function compute_viscous_drag_duct(
 
     # lower side
     lower_steps =
-        s_stagnation .- set_bl_steps(
+        s_stagnation .- set_boundary_layer_steps(
             boundary_layer_options.n_steps,
             boundary_layer_options.first_step_size,
             lower_length - boundary_layer_options.offset,
