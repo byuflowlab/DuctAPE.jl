@@ -68,6 +68,7 @@ function initialize_velocities(
     Cm_wake = zeros(TF, size(ivw.v_ww, 1))
 
     return initialize_velocities!(
+        solver_options,
         vz_rotor,
         vtheta_rotor,
         Cm_wake,
