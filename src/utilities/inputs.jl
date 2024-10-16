@@ -13,6 +13,21 @@ Disptach type used for setting Operating Point Units to Imperial
 struct Imperial end
 
 """
+    struct SI
+
+Disptach type used for setting Operating Point Units to SI.
+Note that the default is SI, and is really only used in the backend.
+
+# Units: meters, kilograms, seconds
+- Velocity: meters per second
+- Temperature: Kelvin
+- Pressure: Pascals
+- Density: kilograms per meter cubed
+- Dynamic Viscosity: Pascal seconds
+"""
+struct SI end
+
+"""
     OperatingPoint(Vinf, Minf, rhoinf, muinf, asound, Ptot, Ttot, Omega)
     OperatingPoint(
         Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
@@ -46,7 +61,9 @@ struct OperatingPoint{
     Tr<:AbstractVector,
     Tt<:AbstractVector,
     Tv<:AbstractVector,
+    Tu,
 }
+    units::Tu
     Vinf::Tv
     Minf::TM
     rhoinf::Tr
@@ -86,13 +103,14 @@ function OperatingPoint(
     end
 
     # freestream Mach
-    Minf = calc_mach.(Vinf, asound)
+    Minf = calculate_mach.(Vinf, asound)
 
     # freestream total pressure and temperature
     Ptot = total_pressure.(Pinf, Minf)
     Ttot = total_temperature.(Tinf, Minf)
 
     return OperatingPoint(
+        Imperial(),
         isscalar(Vinf) ? [Vinf] : Vinf,
         isscalar(Minf) ? [Minf] : Minf,
         isscalar(rhoinf) ? [rhoinf] : rhoinf,
@@ -127,13 +145,14 @@ function OperatingPoint(
     end
 
     # freestream Mach
-    Minf = calc_mach.(Vinf, asound)
+    Minf = calculate_mach.(Vinf, asound)
 
     # freestream total pressure and temperature
     Ptot = total_pressure.(Pinf, Minf)
     Ttot = total_temperature.(Tinf, Minf)
 
     return OperatingPoint(
+        SI(),
         isscalar(Vinf) ? [Vinf] : Vinf,
         isscalar(Minf) ? [Minf] : Minf,
         isscalar(rhoinf) ? [rhoinf] : rhoinf,

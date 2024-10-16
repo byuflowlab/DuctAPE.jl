@@ -83,7 +83,7 @@ function standard_atmosphere(altitude; hardness=25)
     end
 
     # return T, P, rho, mu
-    return T - 273.15, P * 1000, ideal_gas_rho(P, T), sutherlands_law(T)
+    return T, P * 1000, ideal_gas_rho(P, T), sutherlands_law(T)
 end
 
 function standard_atmosphere(imperial_units, altitude; hardness=25)
@@ -127,11 +127,11 @@ function speed_of_sound(static_pressure, static_density; gamma=1.4)
 end
 
 """
-    calc_mach(edge_velocity, speed_of_sound)
+    calculate_mach(edge_velocity, speed_of_sound)
 
 Mach number from velocity and speed of sound
 """
-function calc_mach(edge_velocity, speed_of_sound)
+function calculate_mach(edge_velocity, speed_of_sound)
     return edge_velocity / speed_of_sound
 end
 
@@ -179,3 +179,36 @@ Static density from isentropic relations
 function static_density(static_pressure, speed_of_sound; gamma=1.4)
     return gamma * static_pressure / speed_of_sound^2
 end
+
+"""
+"""
+function convert_temperature_to_kelvin(::SI, T)
+    return T
+end
+
+"""
+"""
+function convert_temperature_to_kelvin(::Imperial, T)
+
+    # convert to celsius
+    T -= 32.0
+    T *= 5.0 / 9.0
+
+    # convert to kelvin
+    T += 273.15
+
+    return T
+end
+
+"""
+"""
+function convert_viscosity(::SI, mu)
+    return mu
+end
+
+"""
+"""
+function convert_viscosity(::Imperial, mu)
+    return mu * 0.0208854342
+end
+

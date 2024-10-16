@@ -3,7 +3,7 @@
 
         # - SI Units - #
         T, P, rho, mu = dt.standard_atmosphere(0.0)
-        @test isapprox(T, 14.99, atol=1e-12)
+        @test isapprox(T, 273.15 + 14.99, atol=1e-12)
         @test isapprox(P, 101400.93090454886, atol=1e-12)
         @test isapprox(rho, 1.22661378741097, atol=1e-12)
         @test isapprox(mu, 1.7889517587366847e-5, atol=1e-12)
@@ -20,7 +20,7 @@
 
         # - SI Units - #
         si = dt.OperatingPoint(1.0, 1.0)
-        @test isapprox(si.Ttot[], 14.990025904158804, atol=1e-12)
+        @test isapprox(si.Ttot[], 288.14049793357566, atol=1e-12)
         @test isapprox(si.Ptot[], 101401.54421276736, atol=1e-12)
         @test isapprox(si.asound[], 340.1974608958744, atol=1e-12)
         @test isapprox(si.Minf[], si.Vinf[] / si.asound[], atol=1e-12)

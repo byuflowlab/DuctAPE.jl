@@ -167,7 +167,7 @@ function post_process(
     (; Vref, Rref) = reference_parameters
 
     # - Extract PrePost Cache - #
-    reset_containers!(prepost_containers; exception_keys=(:panels,:ivb))
+    reset_containers!(prepost_containers; exception_keys=(:panels, :ivb))
     (;
         # stuff from pre-process
         panels,
@@ -258,7 +258,7 @@ function post_process(
         blade_elements,
         wakeK,
         idmaps,
-        multipoint_index
+        multipoint_index,
     )
 
     (;
@@ -491,24 +491,27 @@ function post_process(
     )
 
     # - Duct Viscous Drag - #
-    if boundary_layer_options.model_drag
-    duct_viscous_drag = compute_viscous_drag_duct(
-          Vtan_out[1:Int(body_vortex_panels.npanel[1])],
-        [cp_casing_out; cp_casing_in],
-        body_vortex_panels.controlpoint,
-        body_vortex_panels.influence_length,
-        body_vortex_panels.node[2,end],
-        operating_point,
-        boundary_layer_options;
-        verbose=verbose
-    )
 
-    body_thrust[1] -= duct_viscous_drag
-end
+    if boundary_layer_options.model_drag
+        duct_viscous_drag = compute_viscous_drag_head(
+            Vtan_out[1:Int(body_vortex_panels.npanel[1])],
+            length(zpts.casing_zpts),
+            # [cp_casing_out; cp_nacelle_out],
+            body_vortex_panels.controlpoint[:, 1:Int(body_vortex_panels.npanel[1])],
+            body_vortex_panels.influence_length[1:Int(body_vortex_panels.npanel[1])],
+            body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],
+            operating_point,
+            boundary_layer_options;
+            verbose=verbose,
+        )
+
+        body_thrust[1] -= duct_viscous_drag
+    end
 
     ### --- TOTAL OUTPUTS --- ###
 
     # - Total Thrust - #
+    total_thrust[] = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'])
     total_thrust[] = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust])
 
     # - Total Torque - #
@@ -645,10 +648,7 @@ end
             res_vals.vr_wake,
             res_vals.Cm_avg,
         ),
-        reference_values=(;
-          Vinf = operating_point.Vinf[],
-          Vref = reference_parameters.Vref[],
-         ),
+        reference_values=(; Vinf=operating_point.Vinf[], Vref=reference_parameters.Vref[]),
     )
 
     if write_outputs

@@ -66,21 +66,13 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
     rpb4 = copy(rp_duct_coordinates)
 
-    dt.place_duct!(
-        rp_duct_coordinates,
-        rotor.Rtip[1],
-        rotor.rotorzloc[1],
-        rotor.tip_gap[1],
-    )
+    dt.place_duct!(rp_duct_coordinates, rotor.Rtip[1], rotor.rotorzloc[1], rotor.tip_gap[1])
 
     @test rp_duct_coordinates[1, :] == rpb4[1, :]
     @test rp_duct_coordinates[2, :] == rpb4[2, :] .- 0.75
 
     Rtips, Rhubs = dt.get_blade_ends_from_body_geometry(
-        rp_duct_coordinates,
-        rp_centerbody_coordinates,
-        rotor.tip_gap,
-        rotor.rotorzloc,
+        rp_duct_coordinates, rp_centerbody_coordinates, rotor.tip_gap, rotor.rotorzloc
     )
 
     @test all(Rtips .== 1.0)
@@ -170,11 +162,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
     # rotor blade element objects
     blade_elements, airfoils = dt.interpolate_blade_elements(
-        rotor,
-        Rtips,
-        Rhubs,
-        rotor_source_panels.controlpoint[2, :],
-        problem_dimensions.nbe,
+        rotor, Rtips, Rhubs, rotor_source_panels.controlpoint[2, :], problem_dimensions.nbe
     )
 
     @test blade_elements.inner_fraction == [0.75 0.75; 0.25 0.25]
@@ -451,7 +439,9 @@ end
 
     # copy over operating point
     for f in fieldnames(typeof(operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        if f != :units
+            solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        end
     end
 
     # - Do preprocessutations - #
@@ -563,7 +553,9 @@ end
 
     # copy over operating point
     for f in fieldnames(typeof(operating_point))
+        if f != :units
         solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        end
     end
 
     # - Do preprocessutations - #

@@ -22,10 +22,7 @@ println("\nITERATION STEP THROUGH TESTS")
     #NOTE, for some reason, julia doesn't recognize that this was defined in the above file...
     operating_point = dt.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
     ducted_rotor = dt.DuctedRotor(
-        rp_duct_coordinates,
-        rp_centerbody_coordinates,
-        rotor,
-        paneling_constants,
+        rp_duct_coordinates, rp_centerbody_coordinates, rotor, paneling_constants
     )
 
     options = dt.DFDC_options(;
@@ -96,7 +93,9 @@ println("\nITERATION STEP THROUGH TESTS")
 
     # copy over operating point
     for f in fieldnames(typeof(operating_point))
-        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        if f != :units
+            solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        end
     end
 
     # generate inputs

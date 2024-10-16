@@ -65,6 +65,7 @@ DuctAPE.standard_atmosphere
 DuctAPE.ideal_gas_rho
 DuctAPE.sutherlands_law
 DuctAPE.speed_of_sound
+DuctAPE.calcuate_mach
 DuctAPE.total_temperature
 DuctAPE.total_pressure
 DuctAPE.static_temperure

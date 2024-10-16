@@ -93,7 +93,6 @@ export analyze
 ##### ----- UTILITIES ----- #####
 # general utility functions
 include("utilities/misc.jl")
-include("utilities/thermodynamics.jl")
 include("utilities/inputs.jl")
 include("utilities/options.jl")
 include("utilities/package_states.jl")
@@ -103,6 +102,8 @@ include("utilities/caching/allocate_caches.jl")
 include("utilities/caching/reshape_caches.jl")
 include("utilities/caching/integration_caches.jl")
 include("utilities/caching/elliptic_grid_parameter_packaging.jl")
+include("utilities/thermodynamics.jl")
+include("utilities/ode_solvers.jl")
 
 # Airfoil utility functions
 include("utilities/airfoils/airfoil_utilities.jl")
@@ -160,7 +161,10 @@ include("postprocess/velocities.jl")
 include("postprocess/pressures.jl")
 include("postprocess/rotor_performance.jl")
 include("postprocess/utils.jl")
-include("postprocess/boundary_layer.jl")
+include("postprocess/boundary_layer_utils.jl")
+include("postprocess/boundary_layer_green.jl")
+include("postprocess/boundary_layer_head.jl")
+include("postprocess/viscous_drag.jl")
 
 ##### ----- DEBUGGING ----- #####
 include("../test/test_utils.jl")
