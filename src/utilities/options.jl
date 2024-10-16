@@ -625,7 +625,7 @@ end
 """
     struct GridSolverOptions <: GridSolverOptionsType
 
-Options for SLOR + Newton elliptic grid solver.
+Options for Newton elliptic grid solver.
 
 # Fields
 - `iteration_limit::Int = 10` : maximum number of iterations
