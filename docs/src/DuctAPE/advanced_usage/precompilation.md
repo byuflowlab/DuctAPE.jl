@@ -27,7 +27,7 @@ You may run all these simultaneously using the `initialize_all_caches` function.
 DuctAPE.initialize_all_caches
 ```
 
-As an example of how to run this function, we'll grab [solver options](@ref "Aerodynamics Solvers") and [oaneling constants](@ref "Paneling Constants") from previous examples
+As an example of how to run this function, we'll grab [solver options](@ref "Aerodynamics Solvers") and [paneling constants](@ref "Paneling Constants") from previous examples
 
 ```@julia
 # - grab an object of SolverOptionsType defined in a previous example - #
