@@ -94,7 +94,10 @@ struct Section{TFr,TFc,TFt,TAF}
     chord::TFc
     theta::TFt
     af::TAF
-    Section(r,chord,theta,af) = new(promote(r,chord,theta)..., af)
+    function Section(r,chord,theta,af)
+        r, chord, theta = promote(r, chord, theta)
+        new(r,chord,theta, af)
+    end
 end
 
 # # promote to same type, e.g., duals
