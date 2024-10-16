@@ -97,7 +97,7 @@ struct Section{TFr,TFc,TFt,TAF}
 end
 
 # promote to same type, e.g., duals
-function Section(r, chord, solidity, theta, af)
+function Section(r, chord, theta, af)
     r, chord, theta = promote(r, chord, theta)
     return Section(r, chord, theta, af)
 end
