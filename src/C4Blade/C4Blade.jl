@@ -94,13 +94,14 @@ struct Section{TFr,TFc,TFt,TAF}
     chord::TFc
     theta::TFt
     af::TAF
+    Section(r,chord,theta,af) = new(promote(r,chord,theta)..., af)
 end
 
-# promote to same type, e.g., duals
-function Section(r, chord, theta, af)
-    r, chord, theta = promote(r, chord, theta)
-    return Section(r, chord, theta, af)
-end
+# # promote to same type, e.g., duals
+# function Section(r, chord, theta, af)
+#     r, chord, theta = promote(r, chord, theta)
+#     return Section(r, chord, theta, af)
+# end
 
 # convenience function to access fields within an array of structs
 function Base.getproperty(obj::AbstractVector{<:Section}, sym::Symbol)
