@@ -514,7 +514,7 @@ nothing #hide
 And then we can plot the data to compare DFDC and DuctAPE.
 
 ```@example tutorial
-using Plots
+include(normpath(joinpath(splitdir(pathof(DuctAPE))[1], "..", "docs", "src", "assets", "plots_default.jl")))
 
 # set up efficiency plot
 pe = plot(; xlabel="Advance Ratio", ylabel="Efficiency")
