@@ -405,7 +405,9 @@ DuctAPE.analyze(::DuctAPE.DuctedRotor, ::DuctAPE.OperatingPoint, ::DuctAPE.Refer
 ```
 
 ```@example tutorial
-outs, success_flag = DuctAPE.analyze(ducted_rotor, operating_point, reference_parameters, options)
+outs, success_flag = DuctAPE.analyze(
+    ducted_rotor, operating_point, reference_parameters, options
+)
 nothing # hide
 ```
 
@@ -448,7 +450,12 @@ for (iv, v) in enumerate(Vinfs)
 end
 
 # - Run Multi-point Analysis - #
-outs_vec, success_flags = DuctAPE.analyze(ducted_rotor, operating_points, reference_parameters, DuctAPE.set_options(operating_points))
+outs_vec, success_flags = DuctAPE.analyze(
+    ducted_rotor,
+    operating_points,
+    reference_parameters,
+    DuctAPE.set_options(operating_points),
+)
 nothing #hide
 ```
 
@@ -500,12 +507,14 @@ nothing #hide
 We can then access the various multi-point analysis outputs however is convenient, we choose a broadcasting approach here:
 
 ```@example tutorial
-
 # - extract efficiency, power, and thrust coefficients - #
+
 # efficiency
 eta = (p->p.totals.total_efficiency[1]).(outs_vec)
+
 # power
 cp = (p->p.totals.CP[1]).(outs_vec)
+
 # thrust
 ct = (p->p.totals.CT[1]).(outs_vec)
 nothing #hide
@@ -513,7 +522,7 @@ nothing #hide
 
 And then we can plot the data to compare DFDC and DuctAPE.
 
-```@example tutorial
+```julia
 using Plots
 
 # set up efficiency plot
