@@ -514,7 +514,7 @@ nothing #hide
 And then we can plot the data to compare DFDC and DuctAPE.
 
 ```@example tutorial
-include(normpath(joinpath(splitdir(pathof(DuctAPE))[1], "..", "docs", "src", "assets", "plots_default.jl")))
+using Plots
 
 # set up efficiency plot
 pe = plot(; xlabel="Advance Ratio", ylabel="Efficiency")
@@ -526,13 +526,20 @@ plot!(
     dfdc_eta;
     seriestype=:scatter,
     markersize=5,
-    markercolor=plotsgray,
-    markerstrokecolor=plotsgray,
-    label="DFDC"
+    markercolor=plotsgray, # hide
+    markerstrokecolor=plotsgray, # hide
+    label="DFDC",
 )
 
 # Plot DuctAPE outputs
-plot!(pe, Js, eta; linewidth=2, color=primary, label = "DuctAPE")
+plot!(
+    pe,
+    Js,
+    eta;
+    linewidth=2,
+    color=primary, # hide
+    label="DuctAPE",
+)
 
 # setup cp/ct plot
 ppt = plot(; xlabel="Advance Ratio")
@@ -544,21 +551,22 @@ plot!(
     dfdc_cp;
     seriestype=:scatter,
     markersize=5,
-    markercolor=plotsgray,
-    markerstrokecolor=primary,
+    markercolor=plotsgray, # hide
+    markerstrokecolor=primary, # hide
     markerstrokewidth=2,
-    label="DFDC Cp"
+    label="DFDC Cp",
 )
+
 plot!(
     ppt,
     dfdc_J,
     dfdc_ct;
     seriestype=:scatter,
     markersize=5,
-    markercolor=plotsgray,
-    markerstrokecolor=secondary,
+    markercolor=plotsgray, # hide
+    markerstrokecolor=secondary, # hide
     markerstrokewidth=2,
-    label="DFDC Ct"
+    label="DFDC Ct",
 )
 
 # plot DuctAPE outputs
@@ -567,17 +575,24 @@ plot!(
     Js,
     cp;
     linewidth=1.5,
-    color=primary,
-    label="DuctAPE Cp"
+    color=primary, # hide
+    label="DuctAPE Cp",
 )
+
 plot!(
     ppt,
     Js,
     ct;
     linewidth=1.5,
-    color=secondary,
-    label="DuctAPE Ct"
+    color=secondary, # hide
+    label="DuctAPE Ct",
 )
 
-plot(pe, ppt; size=(700,350), layout=(1,2), margin=2mm)
+plot(
+    pe,
+    ppt;
+    size=(700, 350),
+    layout=(1, 2),
+    margin=2mm, # hide
+)
 ```
