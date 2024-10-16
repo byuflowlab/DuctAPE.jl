@@ -513,10 +513,10 @@ We can then access the various multi-point analysis outputs however is convenien
 eta = (p->p.totals.total_efficiency[1]).(outs_vec)
 
 # power
-cp = (p->p.totals.CP[1]).(outs_vec)
+c_p = (p->p.totals.CP[1]).(outs_vec)
 
 # thrust
-ct = (p->p.totals.CT[1]).(outs_vec)
+c_t = (p->p.totals.CT[1]).(outs_vec)
 nothing #hide
 ```
 
@@ -550,7 +550,7 @@ plot!(
     label="DuctAPE",
 )
 
-# setup cp/ct plot
+# setup c_p/c_t plot
 ppt = plot(; xlabel="Advance Ratio")
 
 # plot DFDC data
@@ -582,16 +582,16 @@ plot!(
 plot!(
     ppt,
     Js,
-    cp;
+    c_p;
     linewidth=1.5,
     color=primary, # hide
-    label="DuctAPE Cp",
+    label="DuctAPE c_p",
 )
 
 plot!(
     ppt,
     Js,
-    ct;
+    c_t;
     linewidth=1.5,
     color=secondary, # hide
     label="DuctAPE Ct",
