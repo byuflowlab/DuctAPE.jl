@@ -522,7 +522,7 @@ nothing #hide
 
 And then we can plot the data to compare DFDC and DuctAPE.
 
-```example tutorial
+```@example tutorial
 using Plots
 
 # set up efficiency plot
