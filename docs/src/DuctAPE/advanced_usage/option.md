@@ -128,7 +128,7 @@ The following example should contain all the principles required to be able to a
 aero_solver_options = DuctAPE.NLsolveOptions(;
     algorithm=:newton,
     atol=1e-10,
-    iteration_limite=30,
+    iteration_limit=30,
     linesearch_method=LineSearches.BackTracking, #don't include parentheses on method handle
     linesearch_kwargs=(; order=3, maxstep=1e6),
     additional_kwargs=(; autoscale=false),
