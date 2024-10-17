@@ -523,7 +523,7 @@ function solve(rotor, section, op)
     )
 
     success = false
-    for j in 1:length(order)  # quadrant orders.  In most cases it should find root in first quadrant searched.
+    for j in eachindex(order)  # quadrant orders.  In most cases it should find root in first quadrant searched.
         phimin, phimax = order[j]
 
         # check to see if it would be faster to reverse the bracket search direction
