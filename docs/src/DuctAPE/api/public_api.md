@@ -69,6 +69,14 @@ DuctAPE.setup_analysis
 DuctAPE.analyze
 ```
 
+## Postprocess
+
+```@docs
+DuctAPE.BoundaryLayerOptions
+DuctAPE.HeadsBoundaryLayerOptions
+DuctAPE.GreensBoundaryLayerOptions
+```
+
 ## Miscellaneous
 
 ### Airfoil/Geometry Manipulation

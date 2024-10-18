@@ -145,6 +145,38 @@ DuctAPE.set_options(;
 !!! note "Iteration Counters"
     The `iterations` field (not to be confused with the `iterations_limit` field) in the solver options should generally not be changed.  They automatically save (in-place) the number of iterations the solver performs and can be accessed after the analysis is run.
 
+## Boundary Layer Solvers
+
+If desired, a one-way turbulent boundary layer can be modeled, from which an approximate viscous drag can be determined.
+Currently, only the Head's method for turbulent boundary layer computation is working, but there is a mostly implemented version of Green's lag entrainment expansion of Head's method as well.
+In the case of separation, a separation drag penalty is applied based on values selected in the options.
+
+```@docs; canonical=false
+DuctAPE.HeadsBoundaryLayerOptions
+DuctAPE.GreensBoundaryLayerOptions
+```
+
+Here is an example of a possible boundary layer option setting:
+
+```julia
+# Define Boundary Layer Settings
+boundary_layer_options = DuctAPE.HeadsBoundaryLayerOptions(;
+    model_drag=true,
+    separation_penalty_upper=0.1,
+    separation_penalty_lower=0.1,
+    separation_allowance_upper=3,
+    separation_allowance_lower=25,
+)
+
+# set all the options
+DuctAPE.set_options(;
+    integration_options=integration_options,
+    grid_solver_options=wake_solve_options,
+    solver_options=aero_solver_options,
+    boundary_layer_options=boundary_layer_options,
+)
+```
+
 ## Advanced Options for Multi-point analyses
 
 For using advanced options in multi-point analyses, there are various changes that need to be made to avoid run-time errors.

@@ -65,32 +65,48 @@ DuctAPE.standard_atmosphere
 DuctAPE.ideal_gas_rho
 DuctAPE.sutherlands_law
 DuctAPE.speed_of_sound
-DuctAPE.calcuate_mach
+DuctAPE.calculate_mach
 DuctAPE.total_temperature
 DuctAPE.total_pressure
-DuctAPE.static_temperure
+DuctAPE.static_temperature
 DuctAPE.static_pressure
 DuctAPE.static_density
+DuctAPE.convert_temperature_to_kelvin
+DuctAPE.convert_viscosity
 ```
 
-### Boundary Layer Functions
+### General Boundary Layer Functions
 
-#### Set Up
 ```@docs
 DuctAPE.arc_lengths_from_panel_lengths
 DuctAPE.split_at_stagnation_point
 DuctAPE.bl_step_fun
 DuctAPE.set_boundary_layer_steps
-DuctAPE.calculate_radius_of_curvature
-DuctAPE.setup_boundary_layer_functions
+DuctAPE.RK2
+DuctAPE.RK4
 ```
+
+### Head's Method Specific Functions
+
+```@docs
+DuctAPE.setup_boundary_layer_functions_head
+DuctAPE.calculate_H
+DuctAPE.calculate_cf
+DuctAPE.boundary_layer_residual_head
+DuctAPE.boundary_layer_residual_head!
+DuctAPE.solve_head_boundary_layer!
+```
+
+### Green's Method Specific Functions
 
 #### Initialization
 ```@docs
+DuctAPE.setup_boundary_layer_functions_green
+DuctAPE.calculate_radius_of_curvature
 DuctAPE.d2_init
 DuctAPE.H12bar_init
 DuctAPE.CE_init
-DuctAPE.initialize_turbulent_boundary_layer_states
+DuctAPE.initialize_turbulent_boundary_layer_states_green
 ```
 
 #### Intermediate Calculations
@@ -123,23 +139,18 @@ DuctAPE.calculate_d2dUedsUeeq
 #### Residual Functions
 
 ```@docs
-DuctAPE.boundary_layer_residual
-DuctAPE.boundary_layer_residual!
+DuctAPE.boundary_layer_residual_green
+DuctAPE.boundary_layer_residual_green!
+DuctAPE.solve_green_boundary_layer!
 ```
 
-#### Solver Functions
-
-```@docs
-DuctAPE.RK2
-DuctAPE.RK4
-DuctAPE.solve_turbulent_boundary_layer_rk!
-```
-
-#### Viscous Drag
+### Viscous Drag
 
 ```@docs
 DuctAPE.squire_young
 DuctAPE.total_viscous_drag_duct
-DuctAPE.compute_single_side_drag_coefficient
 DuctAPE.compute_viscous_drag_duct
+DuctAPE.compute_single_side_drag_coefficient_head
+DuctAPE.compute_single_side_drag_coefficient_green
+DuctAPE.compute_viscous_drag_duct_schlichting
 ```
