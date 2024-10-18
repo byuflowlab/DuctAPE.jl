@@ -25,34 +25,47 @@ function arc_lengths_from_panel_lengths(duct_panel_lengths)
     )
 end
 
-"""
-   split_at_stagnation_point(duct_panel_lengths, cp_duct)
+# """
+#    split_at_stagnation_point(duct_panel_lengths, cp_duct)
 
-Find the stagnation point as the point with local cp closest to 1.0.
+# Find the stagnation point as the point with local cp closest to 1.0.
+
+# # Arguments:
+# - `duct_panel_lengths::Vector{Float}` : Vector of panel lengths for the duct from casing trailing edge clockwise to nacelle trailing edge.
+# - `cp_duct::Vector{Float}` : Vector of surface pressure coefficients on duct from casing trailing edge clockwise to nacelle trailing edge.
+
+# # Returns:
+# - `s::Vector{Float}` : cumulative sum of distance along panels between control points starting at 0.
+# - `s_stagnation::Float` : surface length at which the stagnation point occurs, calculated using extrapolation technique described below
+# - `lower_length::Float` : length from stagnation point to casing trailing edge control point
+# - `upper_length::Float` : length from stagnation point to nacelle trailing edge control point
+
+
+# To determine point of intersection between extrapolated lines, we do the following:
+
+# Determine the point-slope form of the lines extrapolated from either side of the panel with a pressure coefficient closest to 1.0, and set up equations to find a point somewhere along each line
+
+# intersection    Known points on    unknown    slopes of
+#    point         each line         factors    each line
+#     P1 =       [s[i-2]; cp[i-2]] + x1    *   [ds1; dcp1]
+#     P2 =       [s[i+1]; cp[i+1]] + x2    *   [ds2; dcp2]
+
+# where if we set P1=P2, in other words, to be the point the lines intersect, we can solve for the unknown factors that yield the point of intersection.
+
+# We therefore set P1=P2 and assemble a system of linear equations, then plug one of the solved facotrs back into its associated equation to obtain the s location of intersection of the extrapolated lines and take this to be the stagnation point, regardless of what the pressure coefficient ends up being.
+# """
+"""
+   split_at_stagnation_point(duct_panel_lengths, n_panels_casing)
+
+Split the duct body surface at the leading edge of the duct.
 
 # Arguments:
 - `duct_panel_lengths::Vector{Float}` : Vector of panel lengths for the duct from casing trailing edge clockwise to nacelle trailing edge.
-- `cp_duct::Vector{Float}` : Vector of surface pressure coefficients on duct from casing trailing edge clockwise to nacelle trailing edge.
+- `n_panels_casing::Int` : number of panels comprising the casing side of the duct
 
 # Returns:
-- `s::Vector{Float}` : cumulative sum of distance along panels between control points starting at 0.
-- `s_stagnation::Float` : surface length at which the stagnation point occurs, calculated using extrapolation technique described below
-- `lower_length::Float` : length from stagnation point to casing trailing edge control point
-- `upper_length::Float` : length from stagnation point to nacelle trailing edge control point
-
-
-To determine point of intersection between extrapolated lines, we do the following:
-
-Determine the point-slope form of the lines extrapolated from either side of the panel with a pressure coefficient closest to 1.0, and set up equations to find a point somewhere along each line
-
-intersection    Known points on    unknown    slopes of
-   point         each line         factors    each line
-    P1 =       [s[i-2]; cp[i-2]] + x1    *   [ds1; dcp1]
-    P2 =       [s[i+1]; cp[i+1]] + x2    *   [ds2; dcp2]
-
-where if we set P1=P2, in other words, to be the point the lines intersect, we can solve for the unknown factors that yield the point of intersection.
-
-We therefore set P1=P2 and assemble a system of linear equations, then plug one of the solved facotrs back into its associated equation to obtain the s location of intersection of the extrapolated lines and take this to be the stagnation point, regardless of what the pressure coefficient ends up being.
+- `s_upper::Vector{Float}` : cumulative sum of upper side (nacelle) panel lengths
+- `s_lower::Vector{Float}` : cumulative sum of lower side (casing) panel lengths
 """
 function split_at_stagnation_point(duct_panel_lengths, n_panels_casing)
     # function split_at_stagnation_point(duct_panel_lengths, cp_duct)

@@ -63,6 +63,9 @@ function setup_boundary_layer_functions_head(
 end
 
 """
+    calculate_H(H1)
+
+Calculate the value of the shape factor used in Head's method.
 """
 function calculate_H(H1)
 
@@ -75,12 +78,18 @@ function calculate_H(H1)
 end
 
 """
+    calculate_cf(H, Red2)
+
+Calculate the skin friction coefficient used in Head's method
 """
 function calculate_cf(H, Red2)
     return 0.245 * 10^(-0.678 * H) * Red2^(-0.268)
 end
 
 """
+    boundary_layer_residual_head(y, s, parameters)
+
+Out of place residual function for Head's method.
 """
 function boundary_layer_residual_head(y, s, parameters)
     dy = similar(y) .= 0

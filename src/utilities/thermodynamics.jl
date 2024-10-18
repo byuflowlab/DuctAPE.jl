@@ -181,13 +181,14 @@ function static_density(static_pressure, speed_of_sound; gamma=1.4)
 end
 
 """
+    convert_temperature_to_kelvin(::Units, T)
+
+Convert from Fahrenheit to Kelvin or Return temperature if already in SI units
 """
 function convert_temperature_to_kelvin(::SI, T)
     return T
 end
 
-"""
-"""
 function convert_temperature_to_kelvin(::Imperial, T)
 
     # convert to celsius
@@ -201,13 +202,14 @@ function convert_temperature_to_kelvin(::Imperial, T)
 end
 
 """
+    convert_viscosity(::SI, mu)
+
+Convert viscosity from Imperial units to SI or Return input if already SI units.
 """
 function convert_viscosity(::SI, mu)
     return mu
 end
 
-"""
-"""
 function convert_viscosity(::Imperial, mu)
     return mu * 0.0208854342
 end

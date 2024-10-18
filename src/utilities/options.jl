@@ -62,6 +62,13 @@ Used in integration method dispatch
 """
 abstract type IntegrationMethod end
 
+"""
+    abstract type BoundaryLayerOptions
+
+Used in boundary layer method dispatch
+"""
+abstract type BoundaryLayerOptions end
+
 #---------------------------------#
 #         QUADRATURE TYPES        #
 #---------------------------------#
@@ -648,30 +655,66 @@ end
 #---------------------------------#
 #       BOUNDARY LAYER TYPES      #
 #---------------------------------#
-
 """
-    struct BoundaryLayerOptions
+    struct HeadsBoundaryLayerOptions
 
 # Fields:
+- `model_drag::Tb=true` : flag to turn off viscous drag approximation
+- `n_steps::Int = Int(2e2)` : number of steps to use in boundary layer integration
+- `first_step_size::Float = 1e-6` : size of first step in boundary layer integration
+- `offset::Float = 1e-3` : size of offset for (where to initialize) boundary layer integration
+- `rk::Function = RK4` : solver to use for boundary layer integration (RK4 or RK2 available)
+- `separation_allowance_upper::Int=10` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
+- `separation_allowance_lower::Int=10` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
+- `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
+- `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
+"""
+@kwdef struct HeadsBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp} <: BoundaryLayerOptions
+    model_drag::Tb=true
+    n_steps::Ti = Int(2e2)
+    first_step_size::Tf = 1e-6
+    offset::To = 1e-3
+    rk::Tfun = RK2
+    separation_allowance_upper::Ti=10
+    separation_allowance_lower::Ti=10
+    separation_penalty_upper::Tp=0.2
+    separation_penalty_lower::Tp=0.2
+end
+
+"""
+    struct GreensBoundaryLayerOptions
+
+NOTE: Green's method is mostly implemented, but there are several bugs still, especially when using Imperial units.  Also note that the method is less robust than Head's method. Use with caution.
+
+# Fields:
+- `model_drag::Tb=true` : flag to turn off viscous drag approximation
 - `lambda::Bool = true` : flag to add secondary influences into boundary layer residuals
 - `longitudinal_curvature::Bool = true` : if `lambda`=true, flag to add longitudinal curvature influence into boundary layer residuals
 - `lateral_strain::Bool = true` : if `lambda`=true, flag to add lateral strain influence into boundary layer residuals
 - `dilation::Bool = true` : if `lambda`=true, flag to add dilation influence into boundary layer residuals
-- `n_steps::Int = Int(1e2)` : number of steps to use in boundary layer integration
+- `n_steps::Int = Int(2e2)` : number of steps to use in boundary layer integration
 - `first_step_size::Float = 1e-3` : size of first step in boundary layer integration
 - `offset::Float = 1e-2` : size of offset for (where to initialize) boundary layer integration
 - `rk::Function = RK4` : solver to use for boundary layer integration (RK4 or RK2 available)
+- `separation_allowance_upper::Int=3` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
+- `separation_allowance_lower::Int=3` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
+- `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
+- `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
-@kwdef struct BoundaryLayerOptions{Tb,Tf,Tfun,Ti,To}
+@kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp} <: BoundaryLayerOptions
     model_drag::Tb=true
-    lambda::Tb = true
+    lambda::Tb = false
     longitudinal_curvature::Tb = true
     lateral_strain::Tb = true
     dilation::Tb = true
     n_steps::Ti = Int(2e2)
     first_step_size::Tf = 1e-6
-    offset::To = 1e-2
+    offset::To = 1e-3
     rk::Tfun = RK2
+    separation_allowance_upper::Ti=25
+    separation_allowance_lower::Ti=25
+    separation_penalty_upper::Tp=0.2
+    separation_penalty_lower::Tp=0.2
 end
 
 #---------------------------------#
@@ -737,7 +780,7 @@ Type containing (nearly) all the available user options.
     # - Integration Options - #
     integration_options::TIo = IntegrationOptions()
     # - Post-processing Options - #
-    boundary_layer_options::TBL = BoundaryLayerOptions()
+    boundary_layer_options::TBL = HeadsBoundaryLayerOptions()
     write_outputs::TBwo = [false]
     outfile::TSf = ["outputs.jl"]
     checkoutfileexists::TB = false

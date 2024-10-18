@@ -104,43 +104,41 @@ function compute_single_side_drag_coefficient_head(
         boundary_layer_options.rk,
         [initial_states, H0],
         steps,
-        (;
-            boundary_layer_functions...,
-            boundary_layer_options.lambda,
-            boundary_layer_options.longitudinal_curvature,
-            boundary_layer_options.lateral_strain,
-            boundary_layer_options.dilation,
-        );
+        (; boundary_layer_functions...);
         verbose=verbose,
     )
 
-    # println(
-    #     "separated at sepid=$(sepid[]) of $(length(steps)): $(ForwardDiff.value(steps[sepid[]])) of $(ForwardDiff.value(maximum(steps)-minimum(steps)))",
-    # )
-    # # println("max steps: ", ForwardDiff.value(maximum(steps)))
-    # # println("min steps: ", ForwardDiff.value(minimum(steps)))
-
     println("s_sep - steps[end]: ", abs(s_sep - steps[end]))
-    cd = squire_young(
-        usep[1], boundary_layer_functions.edge_velocity(s_sep), operating_point.Vinf[], Hsep
+    cd = FLOWMath.ksmin(
+        [
+            2.0
+            squire_young(
+                usep[1],
+                boundary_layer_functions.edge_velocity(s_sep),
+                operating_point.Vinf[],
+                Hsep,
+            )
+        ],
     )
 
-    #########################################################
-    ##########################     ##########################
-    #####################     LOOK!    ######################
-    ###########                                   ###########
-    #####     -----    TODO: YOU ARE HERE     -----     #####
-    ###########                                   ###########
-    #####################     LOOK!    ######################
-    ##########################     ##########################
-    #########################################################
-    # TODO: probably want to add some sort of smooth scale factor that reduces the aggression of the separation stuff based on how close to the trailing edge you are
     println("cd nosep: ", cd)
-    cd = squire_young(
-        usep[1] + abs(boundary_layer_functions.r_coords(s_sep) - exit_radius),
-        boundary_layer_functions.edge_velocity(s_sep),
-        operating_point.Vinf[],
-        Hsep,
+
+    cdadd = FLOWMath.linear(
+        [0.0; steps[end - boundary_layer_options.separation_allowance]],
+        [boundary_layer_options.separation_penalty; 0.0],
+        s_sep,
+    )
+    cd += FLOWMath.ksmax(
+        [
+            0.0
+            FLOWMath.sigmoid_blend(
+                cdadd,
+                0.0,
+                s_sep,
+                steps[end - boundary_layer_options.separation_allowance],
+                100,
+            )
+        ],
     )
     println("cd w/sep: ", cd)
     println()
@@ -149,45 +147,39 @@ function compute_single_side_drag_coefficient_head(
 end
 
 """
-    compute_viscous_drag_head(
+    compute_viscous_drag_duct(
+        boundary_layer_options::BoundaryLayerOptions,
         vtan_duct,
         cp_duct,
         duct_control_points,
         duct_panel_lengths,
         exit_radius,
         operating_point,
-        boundary_layer_options,
     )
 
 Determine total, dimensional viscous drag on the duct.
 
 # Arguments:
+- `boundary_layer_options::BoundaryLayerOptions` : BoundaryLayerOptions object, used for dispatch as well
 - `vtan_duct::Vector{Float}` : tangential velocity magnitudes for the entire duct
 - `duct_control_points::Matrix{Float}` : control point positions for the entire duct
 - `duct_panel_lengths::Vector{Float}` : panel lengths for the entire duct
 - `exit_radius::Float` : radius at duct trailing edge (casing side)
 - `operating_point::Float` : OperatingPoint object
-- `boundary_layer_options::NamedTuple` : BoundaryLayerOptions object
 
 # Returns:
 - `duct_viscous_drag::Float` : total viscous drag of duct
 """
-function compute_viscous_drag_head(
+function compute_viscous_drag_duct(
+    boundary_layer_options::HeadsBoundaryLayerOptions,
     vtan_duct,
-    # cp_duct,
     sid,
     duct_control_points,
     duct_panel_lengths,
     exit_radius,
-    operating_point,
-    boundary_layer_options;
+    operating_point;
     verbose=false,
 )
-
-    # # find stagnation point
-    # s, s_stagnation, lower_length, upper_length = split_at_stagnation_point(
-    #     duct_panel_lengths, cp_duct
-    # )
 
     # find stagnation point
     s_upper, s_lower = split_at_stagnation_point(duct_panel_lengths, sid)
@@ -238,7 +230,11 @@ function compute_viscous_drag_head(
         exit_radius,
         operating_point,
         boundary_layer_functions_upper,
-        boundary_layer_options;
+        (;
+            boundary_layer_options.rk,
+            separation_allowance=boundary_layer_options.separation_allowance_upper,
+            separation_penalty=boundary_layer_options.separation_penalty_upper,
+        );
         verbose=verbose,
     )
 
@@ -249,7 +245,11 @@ function compute_viscous_drag_head(
         exit_radius,
         operating_point,
         boundary_layer_functions_lower,
-        boundary_layer_options;
+        (;
+            boundary_layer_options.rk,
+            separation_allowance=boundary_layer_options.separation_allowance_lower,
+            separation_penalty=boundary_layer_options.separation_penalty_lower,
+        );
         verbose=verbose,
     )
 
@@ -337,84 +337,77 @@ function compute_single_side_drag_coefficient_green(
 
     cd = squire_young(
         usep[1] / boundary_layer_functions.r_coords(s_sep),
-        # abs(
-        #     usep[1] / boundary_layer_functions.r_coords(s_sep) +
-        #     boundary_layer_functions.r_coords(steps[end]) - exit_radius,
-        # ),
         boundary_layer_functions.edge_velocity(s_sep),
         operating_point.Vinf[],
         H12sep,
     )
 
+    # prenalize for early separation
+    cd += akima_smooth(
+        [0.0; steps[(end - boundary_layer_options.separation_allowance):end]],
+        [boundary_layer_options.separation_penalty; 0.0; 0.0],
+        s_sep,
+    )
+
     return cd
 end
 
-"""
-    compute_viscous_drag_green(
-        vtan_duct,
-        cp_duct,
-        duct_control_points,
-        duct_panel_lengths,
-        exit_radius,
-        operating_point,
-        boundary_layer_options,
-    )
-
-Determine total, dimensional viscous drag on the duct.
-
-# Arguments:
-- `vtan_duct::Vector{Float}` : tangential velocity magnitudes for the entire duct
-- `duct_control_points::Matrix{Float}` : control point positions for the entire duct
-- `duct_panel_lengths::Vector{Float}` : panel lengths for the entire duct
-- `exit_radius::Float` : radius at duct trailing edge (casing side)
-- `operating_point::Float` : OperatingPoint object
-- `boundary_layer_options::NamedTuple` : BoundaryLayerOptions object
-
-# Returns:
-- `duct_viscous_drag::Float` : total viscous drag of duct
-"""
-function compute_viscous_drag_green(
+# has a docstring for the other dispatch above
+function compute_viscous_drag_duct(
+    boundary_layer_options::GreensBoundaryLayerOptions,
     vtan_duct,
-    cp_duct,
+    # cp_duct,
+    sid,
     duct_control_points,
     duct_panel_lengths,
     exit_radius,
-    operating_point,
-    boundary_layer_options;
+    operating_point;
     verbose=false,
 )
 
+    # # find stagnation point
+    # s, s_stagnation, lower_length, upper_length = split_at_stagnation_point(
+    #     duct_panel_lengths, cp_duct
+    # )
+
     # find stagnation point
-    s, s_stagnation, lower_length, upper_length = split_at_stagnation_point(
-        duct_panel_lengths, cp_duct
+    s_upper, s_lower = split_at_stagnation_point(duct_panel_lengths, sid)
+
+    # set up boundary layer solve parameters
+    boundary_layer_functions_upper = setup_boundary_layer_functions_head(
+        s_upper,
+        vtan_duct[sid:end],
+        duct_control_points[:, sid:end],
+        operating_point,
+        boundary_layer_options;
+        verbose=verbose,
     )
 
     # set up boundary layer solve parameters
-    boundary_layer_functions = setup_boundary_layer_functions_green(
-        s,
-        vtan_duct,
-        duct_control_points,
+    boundary_layer_functions_lower = setup_boundary_layer_functions_head(
+        s_lower,
+        vtan_duct[sid:-1:1],
+        duct_control_points[:, sid:-1:1],
         operating_point,
         boundary_layer_options;
         verbose=verbose,
     )
 
     # - Set integration steps - #
-
     # upper side
     upper_steps =
-        s_stagnation .+ set_boundary_layer_steps(
+        set_boundary_layer_steps(
             boundary_layer_options.n_steps,
             boundary_layer_options.first_step_size,
-            upper_length - boundary_layer_options.offset,
+            s_upper[end] - boundary_layer_options.offset,
         ) .+ boundary_layer_options.offset
 
     # lower side
     lower_steps =
-        s_stagnation .- set_boundary_layer_steps(
+        set_boundary_layer_steps(
             boundary_layer_options.n_steps,
             boundary_layer_options.first_step_size,
-            lower_length - boundary_layer_options.offset,
+            s_lower[end] - boundary_layer_options.offset,
         ) .+ boundary_layer_options.offset
 
     # - Get drag coeffients - #
@@ -449,6 +442,19 @@ end
 #    SCHLICHTING APPROXIMATION    #
 #---------------------------------#
 
+"""
+    compute_viscous_drag_duct_schlichting(
+        vtan_duct_TE, duct_chord, TE_radius, operating_point
+    )
+
+Computes Schlichting approximation of skin friction drag dimensionalized to drag per unit length using duct chord, and using the trailing edge circuference as the total length.
+
+# Arguments:
+- `vtan_duct_TE::Float` : tangential velocity at the duct trailing edge
+- `duct_chord::Float` : length of duct
+- `TE_radius::Float` : radius of the trailing edge point
+- `operating_point::OperatingPoint` : OperatingPoint object
+"""
 function compute_viscous_drag_duct_schlichting(
     vtan_duct_TE, duct_chord, TE_radius, operating_point
 )
@@ -459,11 +465,5 @@ function compute_viscous_drag_duct_schlichting(
         0.074 ./
         calculate_Re.(Ref(rhoinf[]), vtan_duct_TE, Ref(duct_chord), Ref(muinf[])) .^ 0.2
 
-    # println("Vtan_TE = ", vtan_duct_TE)
-    # println("q = ", q)
-    # println("Cf = ", Cf)
-    # println("duct_chord*2.0*pi*TE_radius = ", duct_chord * 2.0 * pi * TE_radius)
-    # println()
-
-    return (Cf[1] * q[1] + Cf[2] * q[2]) * duct_chord * 2.0 * pi * TE_radius
+    return (Cf[1] * q[1] + Cf[2] * q[2]) * duct_chord * 2.0 * pi * TE_radius, Cf
 end
