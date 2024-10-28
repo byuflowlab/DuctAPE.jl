@@ -496,8 +496,8 @@ function post_process(
         duct_viscous_drag = compute_viscous_drag_duct(
             boundary_layer_options,
             Vtan_out[1:Int(body_vortex_panels.npanel[1])],
-            length(zpts.casing_zpts),
-            # [cp_casing_out; cp_nacelle_out],
+            # length(zpts.casing_zpts),
+            findmin(1.0.-[cp_casing_out; cp_nacelle_out])[2],
             body_vortex_panels.controlpoint[:, 1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.influence_length[1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],

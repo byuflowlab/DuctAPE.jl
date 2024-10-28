@@ -664,17 +664,19 @@ end
 - `first_step_size::Float = 1e-6` : size of first step in boundary layer integration
 - `offset::Float = 1e-3` : size of offset for (where to initialize) boundary layer integration
 - `rk::Function = RK4` : solver to use for boundary layer integration (RK4 or RK2 available)
+- `separation_criteria::Float=3.0` : value of H12 after which separation should happen.
 - `separation_allowance_upper::Int=10` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_allowance_lower::Int=10` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
-@kwdef struct HeadsBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp} <: BoundaryLayerOptions
+@kwdef struct HeadsBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts} <: BoundaryLayerOptions
     model_drag::Tb=true
     n_steps::Ti = Int(2e2)
     first_step_size::Tf = 1e-6
     offset::To = 1e-3
     rk::Tfun = RK2
+    separation_criteria::Ts=3.0
     separation_allowance_upper::Ti=10
     separation_allowance_lower::Ti=10
     separation_penalty_upper::Tp=0.2
@@ -684,7 +686,10 @@ end
 """
     struct GreensBoundaryLayerOptions
 
-NOTE: Green's method is mostly implemented, but there are several bugs still, especially when using Imperial units.  Also note that the method is less robust than Head's method. Use with caution.
+NOTE: Green's method is mostly implemented, but there are several bugs still, especially when using Imperial units.
+Known Bugs:
+- Imperial units overestimate momentum thickness.  Likely a unit conversion bug.
+- In some cases of non-separation, the momentum thickens or shape parameter becomes exceedingly large, vastly overestimating the drag coefficient.  Likely the product of one or more of the adjustments to try and make the method more robust.
 
 # Fields:
 - `model_drag::Tb=true` : flag to turn off viscous drag approximation

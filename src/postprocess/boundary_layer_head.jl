@@ -71,10 +71,10 @@ function calculate_H(H1)
 
     # get each side of the piecewise equation
     hgeq = 0.86 * (H1 - 3.3)^(-0.777) + 1.1
-    hlt = 1.1538 * (H1 - 3.3)^(-0.325) + 0.6778
+    hlt = 1.1538 * (H1 - 3.3)^(-0.326) + 0.6778
 
     # blend the pieces smoothly
-    return FLOWMath.sigmoid_blend(hlt, hgeq, H1, H1)
+    return FLOWMath.sigmoid_blend(hlt, hgeq, H1, 5.3)
 end
 
 """
@@ -83,7 +83,7 @@ end
 Calculate the skin friction coefficient used in Head's method
 """
 function calculate_cf(H, Red2)
-    return 0.245 * 10^(-0.678 * H) * Red2^(-0.268)
+    return 0.246 * 10^(-0.678 * H) * Red2^(-0.268)
 end
 
 """
@@ -197,7 +197,7 @@ function solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; ve
         )
 
         sepid[1] = i + 1
-        if Hs[i + 1] >= 3.0
+        if Hs[i + 1] >= parameters.separation_criteria
             sep[1] = true
             break
         end
@@ -208,14 +208,28 @@ function solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; ve
         # - Interpolate to find actual s_sep - #
 
         usep = [
-            FLOWMath.linear(Hs[(sepid[] - 1):sepid[]], us[1, (sepid[] - 1):sepid[]], 3.0)
-            FLOWMath.linear(Hs[(sepid[] - 1):sepid[]], us[2, (sepid[] - 1):sepid[]], 3.0)
+            FLOWMath.linear(
+                Hs[(sepid[] - 1):sepid[]],
+                us[1, (sepid[] - 1):sepid[]],
+                parameters.separation_criteria,
+            )
+            FLOWMath.linear(
+                Hs[(sepid[] - 1):sepid[]],
+                us[2, (sepid[] - 1):sepid[]],
+                parameters.separation_criteria,
+            )
         ]
 
-        Hsep = FLOWMath.linear(Hs[(sepid[] - 1):sepid[]], Hs[(sepid[] - 1):sepid[]], 3.0)
+        Hsep = FLOWMath.linear(
+            Hs[(sepid[] - 1):sepid[]],
+            Hs[(sepid[] - 1):sepid[]],
+            parameters.separation_criteria,
+        )
 
         s_sep = FLOWMath.linear(
-            Hs[(sepid[] - 1):sepid[]], steps[(sepid[] - 1):sepid[]], 3.0
+            Hs[(sepid[] - 1):sepid[]],
+            steps[(sepid[] - 1):sepid[]],
+            parameters.separation_criteria,
         )
     else
         usep = us[:, end]

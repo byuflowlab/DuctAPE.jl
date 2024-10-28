@@ -104,44 +104,42 @@ function compute_single_side_drag_coefficient_head(
         boundary_layer_options.rk,
         [initial_states, H0],
         steps,
-        (; boundary_layer_functions...);
+        (; boundary_layer_functions..., boundary_layer_options.separation_criteria);
         verbose=verbose,
     )
 
-    println("s_sep - steps[end]: ", abs(s_sep - steps[end]))
-    cd = FLOWMath.ksmin(
-        [
-            2.0
-            squire_young(
-                usep[1],
-                boundary_layer_functions.edge_velocity(s_sep),
-                operating_point.Vinf[],
-                Hsep,
-            )
-        ],
+    println(s_sep)
+
+    # println("s_sep - steps[end]: ", abs(s_sep - steps[end]))
+
+    cdsq = squire_young(
+        usep[1], boundary_layer_functions.edge_velocity(s_sep), operating_point.Vinf[], Hsep
     )
 
-    println("cd nosep: ", cd)
+    # println("cdsq: ", cdsq)
 
-    cdadd = FLOWMath.linear(
-        [0.0; steps[end - boundary_layer_options.separation_allowance]],
-        [boundary_layer_options.separation_penalty; 0.0],
-        s_sep,
-    )
-    cd += FLOWMath.ksmax(
+    cd = FLOWMath.ksmin([boundary_layer_options.separation_penalty; cdsq])
+
+    # println("cd nosep: ", cd)
+
+    cdadd = FLOWMath.ksmax(
         [
             0.0
-            FLOWMath.sigmoid_blend(
-                cdadd,
-                0.0,
+            FLOWMath.linear(
+                [0.0; steps[end - boundary_layer_options.separation_allowance]],
+                [boundary_layer_options.separation_penalty; 0.0],
                 s_sep,
-                steps[end - boundary_layer_options.separation_allowance],
-                100,
             )
         ],
+        100,
     )
-    println("cd w/sep: ", cd)
-    println()
+
+    # println("cdadd: ", cdadd)
+
+    # cd += cdadd
+
+    # println("cd w/sep: ", cd)
+    # println()
 
     return cd
 end
@@ -224,7 +222,8 @@ function compute_viscous_drag_duct(
     # - Get drag coeffients - #
 
     # upper side
-    println("upper: ")
+    print("upper: ")
+
     cdc_upper = compute_single_side_drag_coefficient_head(
         upper_steps,
         exit_radius,
@@ -232,6 +231,7 @@ function compute_viscous_drag_duct(
         boundary_layer_functions_upper,
         (;
             boundary_layer_options.rk,
+            boundary_layer_options.separation_criteria,
             separation_allowance=boundary_layer_options.separation_allowance_upper,
             separation_penalty=boundary_layer_options.separation_penalty_upper,
         );
@@ -239,7 +239,8 @@ function compute_viscous_drag_duct(
     )
 
     # lower side
-    println("lower: ")
+    print("lower: ")
+
     cdc_lower = compute_single_side_drag_coefficient_head(
         lower_steps,
         exit_radius,
@@ -247,6 +248,7 @@ function compute_viscous_drag_duct(
         boundary_layer_functions_lower,
         (;
             boundary_layer_options.rk,
+            boundary_layer_options.separation_criteria,
             separation_allowance=boundary_layer_options.separation_allowance_lower,
             separation_penalty=boundary_layer_options.separation_penalty_lower,
         );
@@ -325,29 +327,41 @@ function compute_single_side_drag_coefficient_green(
         )
     end
 
-    # if verbose
-    #     println("d2_sep: ", usep[1]/boundary_layer_functions.r_coords(s_sep))
-    #     println("d2_in: ", abs(
-    #         usep[1] / boundary_layer_functions.r_coords(s_sep) +
-    #         boundary_layer_functions.r_coords(steps[end]) - exit_radius,
-    #        ))
-    #     println("H12_sep: ", H12sep[1])
-    #     println("edge vel sep: ", boundary_layer_functions.edge_velocity(s_sep))
-    # end
-
-    cd = squire_young(
-        usep[1] / boundary_layer_functions.r_coords(s_sep),
+    println("s_sep - steps[end]: ", abs(s_sep - steps[end]))
+    cdsq = squire_young(
+        usep[1],
         boundary_layer_functions.edge_velocity(s_sep),
         operating_point.Vinf[],
         H12sep,
     )
 
-    # prenalize for early separation
-    cd += akima_smooth(
-        [0.0; steps[(end - boundary_layer_options.separation_allowance):end]],
-        [boundary_layer_options.separation_penalty; 0.0; 0.0],
-        s_sep,
+    println("cdsq: ", cdsq)
+
+    cd = FLOWMath.ksmin([
+        2.0
+        cdsq
+    ])
+
+    println("cd nosep: ", cd)
+
+    cdadd = FLOWMath.ksmax(
+        [
+            0.0
+            FLOWMath.linear(
+                [0.0; steps[end - boundary_layer_options.separation_allowance]],
+                [boundary_layer_options.separation_penalty; 0.0],
+                s_sep,
+            )
+        ],
+        100,
     )
+
+    println("cdadd: ", cdadd)
+
+    cd += cdadd
+
+    println("cd w/sep: ", cd)
+    println()
 
     return cd
 end
@@ -374,7 +388,7 @@ function compute_viscous_drag_duct(
     s_upper, s_lower = split_at_stagnation_point(duct_panel_lengths, sid)
 
     # set up boundary layer solve parameters
-    boundary_layer_functions_upper = setup_boundary_layer_functions_head(
+    boundary_layer_functions_upper = setup_boundary_layer_functions_green(
         s_upper,
         vtan_duct[sid:end],
         duct_control_points[:, sid:end],
@@ -384,7 +398,7 @@ function compute_viscous_drag_duct(
     )
 
     # set up boundary layer solve parameters
-    boundary_layer_functions_lower = setup_boundary_layer_functions_head(
+    boundary_layer_functions_lower = setup_boundary_layer_functions_green(
         s_lower,
         vtan_duct[sid:-1:1],
         duct_control_points[:, sid:-1:1],
@@ -417,8 +431,16 @@ function compute_viscous_drag_duct(
         upper_steps,
         exit_radius,
         operating_point,
-        boundary_layer_functions,
-        boundary_layer_options;
+        boundary_layer_functions_upper,
+        (;
+            boundary_layer_options.lambda,
+            boundary_layer_options.longitudinal_curvature,
+            boundary_layer_options.lateral_strain,
+            boundary_layer_options.dilation,
+            boundary_layer_options.rk,
+            separation_allowance=boundary_layer_options.separation_allowance_upper,
+            separation_penalty=boundary_layer_options.separation_penalty_upper,
+        );
         verbose=verbose,
     )
 
@@ -427,8 +449,16 @@ function compute_viscous_drag_duct(
         lower_steps,
         exit_radius,
         operating_point,
-        boundary_layer_functions,
-        boundary_layer_options;
+        boundary_layer_functions_lower,
+        (;
+            boundary_layer_options.lambda,
+            boundary_layer_options.longitudinal_curvature,
+            boundary_layer_options.lateral_strain,
+            boundary_layer_options.dilation,
+            boundary_layer_options.rk,
+            separation_allowance=boundary_layer_options.separation_allowance_lower,
+            separation_penalty=boundary_layer_options.separation_penalty_lower,
+        );
         verbose=verbose,
     )
 
