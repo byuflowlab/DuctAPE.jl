@@ -346,7 +346,7 @@ DuctAPE.OperatingPoint
 
 ```@example tutorial
 # Freestream
-Vinf = 0.0 # hover condition
+Vinf = 30.0
 rhoinf = 1.226
 asound = 340.0
 muinf = 1.78e-5
@@ -434,7 +434,7 @@ Running a multi-point analysis on the example geometry given there, it might loo
 
 ```@example tutorial
 # - Advance Ratio Range - #
-Js = range(0.0, 2.0; step=0.01)
+Js = range(0.1, 2.0; step=0.01)
 
 # - Calculate Vinfs - #
 D = 2.0 * rotor.Rtip[1] # rotor diameter
@@ -514,8 +514,6 @@ nothing #hide
 And then we can plot the data to compare DFDC and DuctAPE.
 
 ```@example tutorial
-using Plots
-
 # set up efficiency plot
 pe = plot(; xlabel="Advance Ratio", ylabel="Efficiency")
 

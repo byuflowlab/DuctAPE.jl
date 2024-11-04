@@ -21,14 +21,15 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "DuctAPE" => [
-            "Getting Started" => "DuctAPE/tutorial.md",
-            "Advanced Usage" => [
-                "Options" => "DuctAPE/advanced_usage/option.md",
-                "Preallocation" => "DuctAPE/advanced_usage/precompilation.md",
-                # "Multi-Rotor Analysis" => "DuctAPE/advanced_usage/multi_rotor.md",
-                "Outputs" => "DuctAPE/advanced_usage/outputs.md",
-                # "Manual Geometry" => "DuctAPE/advanced_usage/manual_repaneling.md",
-            ],
+            # "Getting Started" => "DuctAPE/tutorial.md",
+            # "Advanced Usage" => [
+            #     "Options" => "DuctAPE/advanced_usage/option.md",
+            #     "Preallocation" => "DuctAPE/advanced_usage/precompilation.md",
+            #     # "Multi-Rotor Analysis" => "DuctAPE/advanced_usage/multi_rotor.md",
+            #     "Outputs" => "DuctAPE/advanced_usage/outputs.md",
+            #     # "Manual Geometry" => "DuctAPE/advanced_usage/manual_repaneling.md",
+            # ],
+            "Visualization" => "DuctAPE/visualization.md",
             "API" => [
                 "Public API Reference" => "DuctAPE/api/public_api.md",
                 "Private API Reference" => [

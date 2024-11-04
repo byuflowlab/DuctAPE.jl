@@ -148,12 +148,11 @@ DuctAPE.set_options(;
 ## Boundary Layer Solvers
 
 If desired, a one-way turbulent boundary layer can be modeled, from which an approximate viscous drag can be determined.
-Currently, only the Head's method for turbulent boundary layer computation is working, but there is a mostly implemented version of Green's lag entrainment expansion of Head's method as well.
+Currently, only the Head's method for turbulent boundary layer computation is working.
 In the case of separation, a separation drag penalty is applied based on values selected in the options.
 
 ```@docs; canonical=false
 DuctAPE.HeadsBoundaryLayerOptions
-DuctAPE.GreensBoundaryLayerOptions
 ```
 
 Here is an example of a possible boundary layer option setting:
