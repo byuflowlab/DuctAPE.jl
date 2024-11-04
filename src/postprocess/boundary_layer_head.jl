@@ -25,7 +25,7 @@
 function setup_boundary_layer_functions_head(
     s,
     vtan_duct,
-    duct_control_points,
+    # duct_control_points,
     operating_point,
     boundary_layer_options;
     verbose=false,
@@ -54,12 +54,10 @@ function setup_boundary_layer_functions_head(
         return convert_viscosity.(Ref(operating_point.units), sutherlands_law(Te(ss)))
     end
 
-    # r's
-    r_coords = Akima_smooth(s, duct_control_points[2, :])
+    # # r's
+    # r_coords = Akima_smooth(s, duct_control_points[2, :])
 
-    return (;
-        edge_velocity, edge_acceleration, edge_density, edge_viscosity, r_coords, verbose
-    )
+    return (; edge_velocity, edge_acceleration, edge_density, edge_viscosity, verbose)
 end
 
 """
@@ -231,12 +229,16 @@ function solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; ve
             steps[(sepid[] - 1):sepid[]],
             parameters.separation_criteria,
         )
+        stepsol = steps[1:sepid[]]
+        usol = us[:, 1:sepid[]]
     else
         usep = us[:, end]
         Hsep = Hs[end]
         s_sep = steps[end]
+        usol = us
+        stepsol = steps
     end
 
     # return states at separate, and separation shape factor, and surface length at separation
-    return usep, Hsep, s_sep, sepid
+    return usep, Hsep, s_sep, sepid, usol, stepsol
 end

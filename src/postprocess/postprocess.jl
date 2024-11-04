@@ -493,19 +493,21 @@ function post_process(
     # - Duct Viscous Drag - #
 
     if boundary_layer_options.model_drag
-        duct_viscous_drag = compute_viscous_drag_duct(
+
+        duct_viscous_drag, boundary_layer_outputs = compute_viscous_drag_duct(
             boundary_layer_options,
             Vtan_out[1:Int(body_vortex_panels.npanel[1])],
-            # length(zpts.casing_zpts),
-            findmin(1.0.-[cp_casing_out; cp_nacelle_out])[2],
-            body_vortex_panels.controlpoint[:, 1:Int(body_vortex_panels.npanel[1])],
+            Vtot_out[:, 1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.influence_length[1:Int(body_vortex_panels.npanel[1])],
+            body_vortex_panels.tangent[:, 1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],
             operating_point;
             verbose=verbose,
         )
 
         body_thrust[1] -= duct_viscous_drag
+    else
+        boundary_layer_outputs = nothing
     end
 
     ### --- TOTAL OUTPUTS --- ###
@@ -585,6 +587,8 @@ function post_process(
             vtan_nacelle_out,
             vtan_centerbody_in,
             vtan_centerbody_out,
+            # boundary layers
+            boundary_layers = boundary_layer_outputs,
         ),
         # - Rotor Values - #
         rotors=(;
