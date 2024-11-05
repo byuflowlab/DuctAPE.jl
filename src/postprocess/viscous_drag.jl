@@ -154,6 +154,17 @@ Determine total, dimensional viscous drag on the duct.
 
 # Returns:
 - `duct_viscous_drag::Float` : total viscous drag of duct
+- `boundary_layer_outputs::NamedTuple` : named tuple of various boundary layer related outputs:
+  - `stagnation_indices`
+  - `upper_solved_states`
+  - `upper_solved_steps`
+  - `lower_solved_states`
+  - `lower_solved_steps`
+  - `surface_length_upper`
+  - `surface_length_lower`
+  - `split_ratio`
+  - `separation_point_ratio_upper`
+  - `separation_point_ratio_lower`
 """
 function compute_viscous_drag_duct(
     boundary_layer_options::HeadsBoundaryLayerOptions,

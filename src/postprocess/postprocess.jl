@@ -79,6 +79,17 @@ Post-process a converged nonlinear solve solution.
   - `vtan_nacelle_out`
   - `vtan_centerbody_in`
   - `vtan_centerbody_out`
+  - `boundary_layers`
+    - `stagnation_indices`
+    - `upper_solved_states`
+    - `upper_solved_steps`
+    - `lower_solved_states`
+    - `lower_solved_steps`
+    - `surface_length_upper`
+    - `surface_length_lower`
+    - `split_ratio`
+    - `separation_point_ratio_upper`
+    - `separation_point_ratio_lower`
 - `rotors`
   - `circulation`
   - `panel_strengths`
