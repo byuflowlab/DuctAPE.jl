@@ -252,7 +252,8 @@ function generate_plots(
                 plotCP(),
                 body_vortex_panels,
                 out.bodies,
-                rotor_source_panels;
+                rotor_source_panels,
+                wake_vortex_panels;
                 subplot=2,
                 inset=(1, Plots.bbox(0, 0, 1, 1)),
                 (; kwargs..., background_color=:white)...,
@@ -279,7 +280,8 @@ function generate_plots(
                 body_vortex_panels,
                 out.bodies,
                 out.reference_values.Vref[],
-                rotor_source_panels;
+                rotor_source_panels,
+                wake_vortex_panels;
                 subplot=2,
                 inset=(1, Plots.bbox(0, 0, 1, 1)),
                 (; kwargs..., background_color=:white)...,

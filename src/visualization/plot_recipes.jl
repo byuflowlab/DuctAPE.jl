@@ -235,7 +235,9 @@ end
     ::plotCP,
     bvp,
     bout,
-    rsp=nothing;
+    rsp=nothing,
+    wvp=nothing;
+    cp_ylim=nothing,
     default_colors=(;
         primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
         secondary=RGB(189 / 255, 10 / 255, 53 / 255), #red
@@ -244,7 +246,6 @@ end
         quinary=RGB(155 / 255, 82 / 255, 162 / 255), #purple
         plotsgray=RGB(128 / 255, 128 / 255, 128 / 255), #gray
     ),
-    cp_ylim=nothing,
 )
     color_palette --> [
         default_colors.primary,
@@ -298,6 +299,7 @@ end
     Vref,
     rsp=nothing,
     wvp=nothing;
+    vtan_ylim=nothing,
     default_colors=(;
         primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
         secondary=RGB(189 / 255, 10 / 255, 53 / 255), #red
@@ -306,8 +308,6 @@ end
         quinary=RGB(155 / 255, 82 / 255, 162 / 255), #purple
         plotsgray=RGB(128 / 255, 128 / 255, 128 / 255), #gray
     ),
-    labels=["Duct"; "Center Body"],
-    vtan_ylim=nothing,
 )
     color_palette --> [
         default_colors.primary,
