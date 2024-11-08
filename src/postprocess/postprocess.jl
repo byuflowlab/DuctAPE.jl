@@ -180,10 +180,10 @@ function post_process(
     # - Extract PrePost Cache - #
     reset_containers!(prepost_containers; exception_keys=(:panels, :ivb))
     (;
-        # stuff from pre-process
+        # Stuff from Pre-process
         panels,
         ivb,
-        # rotor stuff
+        # Rotor Stuff
         rotor_inviscid_thrust,
         rotor_inviscid_thrust_dist,
         rotor_viscous_thrust,
@@ -207,14 +207,13 @@ function post_process(
         blade_normal_force_per_unit_span,
         blade_tangential_force_per_unit_span,
         blade_loading_intermediate_containers,
-        # body stuff
+        # Body Stuff
         zpts,
         vtan_tuple,
         cp_tuple,
         body_thrust,
         body_force_coefficient,
-        # cp_tuple,
-        # totals stuff
+        # Totals Stuff
         total_thrust,
         total_torque,
         total_power,
@@ -223,6 +222,9 @@ function post_process(
         total_CT,
         total_CQ,
         total_CP,
+        # Boundary Layer Stuff #TODO: add these to caches at some point (requires re-work of boundary layer implementation likey)
+        # duct_viscous_drag,
+        # boundary_layer_outputs,
     ) = prepost_containers
 
     # - Extract Panels - #
@@ -505,6 +507,8 @@ function post_process(
 
     if boundary_layer_options.model_drag
 
+        #TODO; make this in place
+        # compute_viscous_drag_duct!(duct_viscous_drag, boundary_layer_outputs,
         duct_viscous_drag, boundary_layer_outputs = compute_viscous_drag_duct(
             boundary_layer_options,
             Vtan_out[1:Int(body_vortex_panels.npanel[1])],
