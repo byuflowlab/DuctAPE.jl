@@ -659,7 +659,7 @@ end
     struct HeadsBoundaryLayerOptions
 
 # Fields:
-- `model_drag::Tb=true` : flag to turn off viscous drag approximation
+- `model_drag::Tb=false` : flag to turn on viscous drag approximation
 - `n_steps::Int = Int(2e2)` : number of steps to use in boundary layer integration
 - `first_step_size::Float = 1e-6` : size of first step in boundary layer integration
 - `offset::Float = 1e-3` : size of offset for (where to initialize) boundary layer integration
@@ -671,7 +671,7 @@ end
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
 @kwdef struct HeadsBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts} <: BoundaryLayerOptions
-    model_drag::Tb=true
+    model_drag::Tb=false
     n_steps::Ti = Int(2e2)
     first_step_size::Tf = 1e-6
     offset::To = 1e-3

@@ -14,10 +14,10 @@ struct animatedPlots end
         static_file_type=".pdf",
         suffix=nothing,
         plot_geometry=true,
-        plot_pressure=true,
-        plot_velocity=true,
-        plot_boundary_layer=true,
-        plot_streamlines=true,
+        plot_pressure=false,
+        plot_velocity=false,
+        plot_boundary_layer=false,
+        plot_streamlines=false,
         verbose=false,
         kwargs...,
     )
@@ -35,10 +35,11 @@ Generate standard suite of plots or animations from input and output objects.
 - `static_file_type=".pdf"` : file type for static files (must be compatible with the desired backend)
 - `suffix=nothing` : custom suffixes, if unused plots files will be numbered starting from 1.
 - `plot_geometry=true` : flag to generate geometry plot
-- `plot_pressure=true` : flag to generate surface pressures plot
-- `plot_velocity=true` : flag to generate surface velocities plot
-- `plot_boundary_layer=true` : flag to generate boundary layer plot
-- `plot_streamlines=true` : flag to generate streamlines plot
+- `plot_panels=false` : flag to include markers indicating panel edges in geometry plot
+- `plot_pressure=false` : flag to generate surface pressures plot
+- `plot_velocity=false` : flag to generate surface velocities plot
+- `plot_boundary_layer=false` : flag to generate boundary layer plot
+- `plot_streamlines=false` : flag to generate streamlines plot
 - `verbose=false` : print verbose statements
 - `kwargs...` : arguments passed into the plot functions (Plots keyword arguments/defaults to be used in every plot)
 """
@@ -51,10 +52,11 @@ function generate_plots(
     static_file_type=".pdf",
     suffix=nothing,
     plot_geometry=true,
-    plot_pressure=true,
-    plot_velocity=true,
-    plot_boundary_layer=true,
-    plot_streamlines=true,
+    plot_panels=false,
+    plot_pressure=false,
+    plot_velocity=false,
+    plot_boundary_layer=false,
+    plot_streamlines=false,
     verbose=false,
     kwargs...,
 )
@@ -70,10 +72,11 @@ function generate_plots(
     if plot_geometry
         verbose && println("Plotting Geometry")
         Plots.plot(
-            DuctAPE.plotGeometry(),
+            plotGeometry(),
             body_vortex_panels,
             rotor_source_panels,
             wake_vortex_panels;
+            plot_panels=plot_panels,
             kwargs...,
         )
         Plots.savefig(save_path * "geometry" * static_file_type)
@@ -86,15 +89,12 @@ function generate_plots(
 
             # underlay geometry first
             plt = Plots.plot(
-                DuctAPE.underlayGeometry(),
-                body_vortex_panels,
-                rotor_source_panels;
-                kwargs...,
+                underlayGeometry(), body_vortex_panels, rotor_source_panels; kwargs...
             )
 
             # then Plots.plot pressure distributions
             Plots.plot!(
-                DuctAPE.plotCP(),
+                plotCP(),
                 body_vortex_panels,
                 out.bodies,
                 rotor_source_panels;
@@ -113,15 +113,12 @@ function generate_plots(
         for (i, out) in zip(suffix, outs)
             # underlay geometry first
             plt = Plots.plot(
-                DuctAPE.underlayGeometry(),
-                body_vortex_panels,
-                rotor_source_panels;
-                kwargs...,
+                underlayGeometry(), body_vortex_panels, rotor_source_panels; kwargs...
             )
 
             # then Plots.plot velocity distributions
             Plots.plot!(
-                DuctAPE.plotVtan(),
+                plotVtan(),
                 body_vortex_panels,
                 out.bodies,
                 out.reference_values.Vref[],
@@ -140,15 +137,11 @@ function generate_plots(
         for (i, out) in zip(suffix, outs)
             # Plots.plot momentum thicknesses on top
             plt = Plots.plot(
-                DuctAPE.plotDuctGeometry(),
-                body_vortex_panels;
-                color=6,
-                linewidth=0.5,
-                kwargs...,
+                plotDuctGeometry(), body_vortex_panels; color=6, linewidth=0.5, kwargs...
             )
 
             Plots.plot!(
-                DuctAPE.plotMomentum(),
+                plotMomentum(),
                 out.bodies.boundary_layers,
                 body_vortex_panels;
                 scale_thickness=5.0,
@@ -157,7 +150,7 @@ function generate_plots(
 
             # Plots.plot stagnation point on top
             Plots.plot!(
-                DuctAPE.plotStagnation(),
+                plotStagnation(),
                 out.bodies.boundary_layers,
                 body_vortex_panels;
                 markersize=4,
@@ -173,10 +166,10 @@ function generate_plots(
     if plot_streamlines
         verbose && println("Plotting Streamlines")
         for (i, out) in zip(suffix, outs)
-            plt = Plots.plot(DuctAPE.plotBodyGeometry(), body_vortex_panels; kwargs...)
+            plt = Plots.plot(plotBodyGeometry(), body_vortex_panels; kwargs...)
 
             Plots.plot!(
-                DuctAPE.plotStreamlines(),
+                plotStreamlines(),
                 body_vortex_panels,
                 out.bodies.panel_strengths,
                 wake_vortex_panels,
@@ -188,13 +181,13 @@ function generate_plots(
                 axial_range=[-0.15, 0.5],
                 step_limit=75,
                 nominal_step_size=1e-2,
-                integration_options=DuctAPE.IntegrationOptions(),
+                integration_options=IntegrationOptions(),
                 stag_tol=0.0,
                 kwargs...,
             )
 
             Plots.plot!(
-                DuctAPE.plotStagnation(),
+                plotStagnation(),
                 out.bodies.boundary_layers,
                 body_vortex_panels;
                 markersize=4,
@@ -217,10 +210,11 @@ function generate_plots(
     save_path="",
     static_file_type=".pdf",
     plot_geometry=true,
-    plot_pressure=true,
-    plot_velocity=true,
-    plot_boundary_layer=true,
-    plot_streamlines=true,
+    plot_panels=false,
+    plot_pressure=false,
+    plot_velocity=false,
+    plot_boundary_layer=false,
+    plot_streamlines=false,
     verbose=false,
     kwargs...,
 )
@@ -232,10 +226,11 @@ function generate_plots(
     if plot_geometry
         verbose && println("Plotting Geometry")
         Plots.plot(
-            DuctAPE.plotGeometry(),
+            plotGeometry(),
             body_vortex_panels,
             rotor_source_panels,
             wake_vortex_panels;
+            plot_panels=plot_panels,
             kwargs...,
         )
         Plots.savefig(save_path * "geometry" * static_file_type)
@@ -249,15 +244,12 @@ function generate_plots(
 
             # underlay geometry first
             plt = Plots.plot(
-                DuctAPE.underlayGeometry(),
-                body_vortex_panels,
-                rotor_source_panels;
-                kwargs...,
+                underlayGeometry(), body_vortex_panels, rotor_source_panels; kwargs...
             )
 
             # then Plots.plot pressure distributions
             Plots.plot!(
-                DuctAPE.plotCP(),
+                plotCP(),
                 body_vortex_panels,
                 out.bodies,
                 rotor_source_panels;
@@ -278,15 +270,12 @@ function generate_plots(
         for out in outs
             # underlay geometry first
             plt = Plots.plot(
-                DuctAPE.underlayGeometry(),
-                body_vortex_panels,
-                rotor_source_panels;
-                kwargs...,
+                underlayGeometry(), body_vortex_panels, rotor_source_panels; kwargs...
             )
 
             # then Plots.plot velocity distributions
             Plots.plot!(
-                DuctAPE.plotVtan(),
+                plotVtan(),
                 body_vortex_panels,
                 out.bodies,
                 out.reference_values.Vref[],
@@ -307,15 +296,11 @@ function generate_plots(
         for out in outs
             # Plots.plot momentum thicknesses on top
             plt = Plots.plot(
-                DuctAPE.plotDuctGeometry(),
-                body_vortex_panels;
-                color=6,
-                linewidth=0.5,
-                kwargs...,
+                plotDuctGeometry(), body_vortex_panels; color=6, linewidth=0.5, kwargs...
             )
 
             Plots.plot!(
-                DuctAPE.plotMomentum(),
+                plotMomentum(),
                 out.bodies.boundary_layers,
                 body_vortex_panels;
                 scale_thickness=5.0,
@@ -324,7 +309,7 @@ function generate_plots(
 
             # Plots.plot stagnation point on top
             Plots.plot!(
-                DuctAPE.plotStagnation(),
+                plotStagnation(),
                 out.bodies.boundary_layers,
                 body_vortex_panels;
                 color=3,
@@ -341,10 +326,10 @@ function generate_plots(
         verbose && println("Animating Streamlines")
         anim = Plots.Animation()
         for out in outs
-            plt = Plots.plot(DuctAPE.plotBodyGeometry(), body_vortex_panels; kwargs...)
+            plt = Plots.plot(plotBodyGeometry(), body_vortex_panels; kwargs...)
 
             Plots.plot!(
-                DuctAPE.plotStreamlines(),
+                plotStreamlines(),
                 body_vortex_panels,
                 out.bodies.panel_strengths,
                 wake_vortex_panels,
@@ -356,13 +341,13 @@ function generate_plots(
                 axial_range=[-0.15, 0.5],
                 step_limit=75,
                 nominal_step_size=1e-2,
-                integration_options=DuctAPE.IntegrationOptions(),
+                integration_options=IntegrationOptions(),
                 stag_tol=0.0,
                 kwargs...,
             )
 
             Plots.plot!(
-                DuctAPE.plotStagnation(),
+                plotStagnation(),
                 out.bodies.boundary_layers,
                 body_vortex_panels;
                 markersize=2,

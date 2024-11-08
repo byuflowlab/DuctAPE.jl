@@ -129,6 +129,7 @@ end
     rsp,
     wvp;
     plot_panels=false,
+    discrete_labels=true,
     default_colors=(;
         primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
         secondary=RGB(189 / 255, 10 / 255, 53 / 255), #red
@@ -151,9 +152,20 @@ end
     xguide --> L"z"
     yguide --> L"r"
 
+    # TODO: go grab the discrete labels stuff from the pressure plot an put here too (and the other geometry plots)
+
     # Aspect Ratio
     aspect_ratio --> 1
     ylim --> (0.0, maximum(bvp.node[2, :]) * 1.05)
+
+    if discrete_labels
+        xticks --> determine_geometry_xlabels(bvp, rsp, wvp)
+        yticks --> determine_geometry_ylabels(bvp, rsp)
+        xgrid --> true
+        ygrid --> true
+    else
+        grid --> false
+    end
 
     # - Plot Rotor Geometry - #
     for r in 1:Int(rsp.nbodies[])
@@ -161,9 +173,14 @@ end
             label --> false
             seriescolor --> 2
             if plot_panels
-                marker --> true
-                markersize --> 1.25
+                markershape --> :square
+                markersize --> 2
+                markercolor --> 2
                 markerstrokecolor --> 2
+                markerstrokealpha --> 0
+                linewidth --> 0.5
+            else
+                linewidth --> 2
             end
             return rsp.node[1, Int(rsp.endnodeidxs[1, r]):Int(rsp.endnodeidxs[2, r])],
             rsp.node[2, Int(rsp.endnodeidxs[1, r]):Int(rsp.endnodeidxs[2, r])]
@@ -176,10 +193,16 @@ end
             label --> false
             seriescolor --> 1
             if plot_panels
-                marker --> true
-                markersize --> 0.75
+                markershape --> :circle
+                markersize --> 1.5
+                markercolor --> 1
                 markerstrokecolor --> 1
+                markerstrokealpha --> 0
+                linewidth --> 0.5
+            else
+                linewidth --> 1.5
             end
+
             return bvp.node[1, Int(bvp.endnodeidxs[1, b]):Int(bvp.endnodeidxs[2, b])],
             bvp.node[2, Int(bvp.endnodeidxs[1, b]):Int(bvp.endnodeidxs[2, b])]
         end
@@ -192,8 +215,9 @@ end
             seriescolor --> 3
             linewidth --> 0.5
             if plot_panels
-                marker --> true
-                markersize --> 0.5
+                markershape --> :vline
+                markersize --> 1
+                markercolor --> 3
                 markerstrokecolor --> 3
             end
             return wvp.node[1, Int(wvp.endnodeidxs[1, w]):Int(wvp.endnodeidxs[2, w])],
@@ -220,10 +244,8 @@ end
         quinary=RGB(155 / 255, 82 / 255, 162 / 255), #purple
         plotsgray=RGB(128 / 255, 128 / 255, 128 / 255), #gray
     ),
-    cp_ylim =nothing
+    cp_ylim=nothing,
 )
-
-
     color_palette --> [
         default_colors.primary,
         default_colors.secondary,
@@ -239,8 +261,8 @@ end
     yguide --> L"C_P"
     xguide --> L"z"
 
-    if !isnothing(rsp)
-        xticks --> determine_geometry_xlabels(bvp, rsp)
+    if !isnothing(rsp) && !isnothing(wvp)
+        xticks --> determine_geometry_xlabels(bvp, rsp, wvp)
         xgrid --> true
         ygrid --> false
     else
@@ -274,7 +296,8 @@ end
     bvp,
     bout,
     Vref,
-    rsp=nothing;
+    rsp=nothing,
+    wvp=nothing;
     default_colors=(;
         primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
         secondary=RGB(189 / 255, 10 / 255, 53 / 255), #red
@@ -284,7 +307,7 @@ end
         plotsgray=RGB(128 / 255, 128 / 255, 128 / 255), #gray
     ),
     labels=["Duct"; "Center Body"],
-    vtan_ylim=nothing
+    vtan_ylim=nothing,
 )
     color_palette --> [
         default_colors.primary,
@@ -302,8 +325,8 @@ end
         ylim --> vtan_ylim
     end
 
-    if !isnothing(rsp)
-        xticks --> determine_geometry_xlabels(bvp, rsp)
+    if !isnothing(rsp) && !isnothing(wvp)
+        xticks --> determine_geometry_xlabels(bvp, rsp, wvp)
         xgrid --> true
         ygrid --> false
     else
@@ -327,7 +350,19 @@ end
 #---------------------------------#
 #   SET XTICKS AT LE, TE, ETC.    #
 #---------------------------------#
-function determine_geometry_xlabels(bvp, rsp; tol=1e-2)
+function add_ticks(xt, xl, tmp, tol)
+    if !any(abs.(tmp .- xt) .< tol)
+        push!(xl, round(tmp; digits=2))
+    else
+        push!(xl, "")
+    end
+    if !any(abs.(tmp .- xt) .< tol / 10)
+        push!(xt, tmp)
+    end
+    return xt, xl
+end
+
+function determine_geometry_xlabels(bvp, rsp, wvp; tol=1e-2)
     xt = []
     xl = []
 
@@ -340,32 +375,58 @@ function determine_geometry_xlabels(bvp, rsp; tol=1e-2)
     # Centerbody
     for i in 1:2
         tmp = bvp.node[1, Int(bvp.endnodeidxs[i, 2])]
-        if !any(abs.(tmp .- xt) .< tol)
-            push!(xl, round(tmp; digits=2))
-        end
-        if !any(abs.(tmp .- xt) .< tol / 10)
-            push!(xt, tmp)
-        end
+        xt, xl = add_ticks(xt, xl, tmp, tol)
     end
 
     # Duct
     for f in [maximum, minimum]
         tmp = f(bvp.node[1, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
-        if !any(abs.(tmp .- xt) .< tol)
-            push!(xl, round(tmp; digits=2))
-        end
-        if !any(abs.(tmp .- xt) .< tol / 10)
-            push!(xt, tmp)
-        end
+        xt, xl = add_ticks(xt, xl, tmp, tol)
     end
 
+    # Wake
+    tmp = maximum(wvp.node[1, Int(wvp.endnodeidxs[1, 1]):Int(wvp.endnodeidxs[2, 1])])
+    xt, xl = add_ticks(xt, xl, tmp, tol)
+
     return (xt, xl)
+end
+
+function determine_geometry_ylabels(bvp, rsp; tol=1e-2)
+    yt = []
+    yl = []
+
+    # Rotor
+    for r in 1:Int(rsp.nbodies[])
+        push!(yt, rsp.node[2, Int(rsp.endnodeidxs[r, r])])
+        push!(yl, round(rsp.node[2, Int(rsp.endnodeidxs[r, r])]; digits=2))
+    end
+
+    # Centerbody
+    for i in 1:2
+        tmp = bvp.node[2, Int(bvp.endnodeidxs[i, 2])]
+        yt, yl = add_ticks(yt, yl, tmp, tol)
+    end
+
+    # Duct front/back
+    for f in [findmax, findmin]
+        tmp = f(bvp.node[1, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
+        tmpy = bvp.node[2, tmp[2]]
+        yt, yl = add_ticks(yt, yl, tmpy, tol)
+    end
+
+    # Duct inner/outer
+    for f in [maximum, minimum]
+        tmp = f(bvp.node[2, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
+        yt, yl = add_ticks(yt, yl, tmp, tol)
+    end
+
+    return (yt, yl)
 end
 
 #---------------------------------#
 #PLOT GEOMETRY UNDER DISTRIBUTIONS#
 #---------------------------------#
-@recipe function plot_overlayed_geometry(
+@recipe function plot_underlayed_geometry(
     ::underlayGeometry,
     bvp,
     rsp;
@@ -480,7 +541,7 @@ end
         plotsgray=RGB(128 / 255, 128 / 255, 128 / 255), #gray
     ),
     scale_thickness=50.0,
-    bl_ylim=nothing
+    bl_ylim=nothing,
 )
     color_palette --> [
         default_colors.primary,
