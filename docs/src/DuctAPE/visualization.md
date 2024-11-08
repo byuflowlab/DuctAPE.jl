@@ -295,17 +295,21 @@ DuctAPE.generate_plots(
     Plots, # Pass in the Plots namespace
     ins,
     outs;
+    plot_pressure=true,
+    plot_velocity=true,
+    plot_boundary_layer=true,
+    plot_streamlines=true,
     save_path="../assets/",
     static_file_type=".png",
     (;
         custom_defaults...,
         size=(600, 400),
-        markersize=4,
         cp_ylim=(-3, 3), # keyword argument to set ylim for cp plots
         vtan_ylim=(0, 3), # keyword argument to set ylim for vtan plots
         bl_ylim=(0.1, 0.25), # keyword argument to set ylim for boundary layer plots
     )...,
 )
+nothing # hide
 ```
 
 !!! note "Custom Defaults"
