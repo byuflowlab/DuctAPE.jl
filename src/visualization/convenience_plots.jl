@@ -195,6 +195,7 @@ function generate_plots(
                 markerstrokecolor=2,
                 kwargs...,
             )
+
             Plots.savefig(save_path * "streamlines" * i * static_file_type)
         end
     end
@@ -240,6 +241,9 @@ function generate_plots(
     if plot_pressure
         verbose && println("Animating Surface Pressure")
         anim = Plots.Animation()
+        if verbose
+            pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
+        end
         for out in outs
 
             # underlay geometry first
@@ -260,7 +264,9 @@ function generate_plots(
             )
 
             Plots.frame(anim, plt)
+            verbose && next!(pbar)
         end
+        verbose && println("Saving $(save_path)surface_pressure.gif")
         Plots.gif(anim, save_path * "surface_pressure.gif")
     end
 
@@ -268,6 +274,9 @@ function generate_plots(
     if plot_velocity
         verbose && println("Animating Surface Velocity")
         anim = Plots.Animation()
+        if verbose
+            pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
+        end
         for out in outs
             # underlay geometry first
             plt = Plots.plot(
@@ -287,7 +296,9 @@ function generate_plots(
                 (; kwargs..., background_color=:white)...,
             )
             Plots.frame(anim, plt)
+            verbose && next!(pbar)
         end
+        verbose && println("Saving $(save_path)surface_velocity.gif")
         Plots.gif(anim, save_path * "surface_velocity.gif")
     end
 
@@ -295,6 +306,9 @@ function generate_plots(
     if plot_boundary_layer
         verbose && println("Animating Boundary Layer")
         anim = Plots.Animation()
+        if verbose
+            pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
+        end
         for out in outs
             # Plots.plot momentum thicknesses on top
             plt = Plots.plot(
@@ -319,13 +333,18 @@ function generate_plots(
                 (; kwargs..., background_color=:white)...,
             )
             Plots.frame(anim, plt)
+            verbose && next!(pbar)
         end
+        verbose && println("Saving $(save_path)boundary_layer.gif")
         Plots.gif(anim, save_path * "boundary_layer.gif")
     end
 
     # - Streamlines - #
     if plot_streamlines
         verbose && println("Animating Streamlines")
+        if verbose
+            pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
+        end
         anim = Plots.Animation()
         for out in outs
             plt = Plots.plot(plotBodyGeometry(), body_vortex_panels; kwargs...)
@@ -357,8 +376,12 @@ function generate_plots(
                 markerstrokecolor=2,
                 (; kwargs..., background_color=:white)...,
             )
+
             Plots.frame(anim, plt)
+
+            verbose && next!(pbar)
         end
+        verbose && println("Saving $(save_path)streamlines.gif")
         Plots.gif(anim, save_path * "streamlines.gif")
     end
 

@@ -53,6 +53,7 @@ using RecipesBase # for plotting
 # - Visualization Packages - #
 import Colors.RGB
 using LaTeXStrings
+using ProgressMeter
 
 #---------------------------------#
 #             EXPORTS             #
