@@ -130,6 +130,9 @@ end
     wvp;
     plot_panels=false,
     discrete_labels=true,
+    xticktol=1e-2,
+    yticktol=1e-2,
+    tickdigits=2,
     default_colors=(;
         primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
         secondary=RGB(189 / 255, 10 / 255, 53 / 255), #red
@@ -152,15 +155,15 @@ end
     xguide --> L"z"
     yguide --> L"r"
 
-    # TODO: go grab the discrete labels stuff from the pressure plot an put here too (and the other geometry plots)
-
     # Aspect Ratio
     aspect_ratio --> 1
     ylim --> (0.0, maximum(bvp.node[2, :]) * 1.05)
 
     if discrete_labels
-        xticks --> determine_geometry_xlabels(bvp, rsp, wvp)
-        yticks --> determine_geometry_ylabels(bvp, rsp)
+        xticks --> DuctAPE.determine_geometry_xlabels(
+            bvp, rsp, wvp; tol=xticktol, tickdigits=tickdigits
+        )
+        yticks --> determine_geometry_ylabels(bvp, rsp; tol=yticktol, tickdigits=tickdigits)
         xgrid --> true
         ygrid --> true
     else
@@ -237,6 +240,8 @@ end
     bout,
     rsp=nothing,
     wvp=nothing;
+    xticktol=1e-2,
+    tickdigits=2,
     cp_ylim=nothing,
     default_colors=(;
         primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
@@ -263,7 +268,8 @@ end
     xguide --> L"z"
 
     if !isnothing(rsp) && !isnothing(wvp)
-        xticks --> determine_geometry_xlabels(bvp, rsp, wvp)
+        xticks -->
+        determine_geometry_xlabels(bvp, rsp, wvp; tol=xticktol, tickdigits=tickdigits)
         xgrid --> true
         ygrid --> false
     else
@@ -290,7 +296,7 @@ end
 end
 
 #---------------------------------#
-#      PLOT Vtan DISTRIBUTINS     #
+#      PLOT Vtan DISTRIBUTIONS    #
 #---------------------------------#
 @recipe function plot_vtan(
     ::plotVtan,
@@ -299,6 +305,8 @@ end
     Vref,
     rsp=nothing,
     wvp=nothing;
+    xticktol=1e-2,
+    tickdigits=2,
     vtan_ylim=nothing,
     default_colors=(;
         primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
@@ -326,7 +334,8 @@ end
     end
 
     if !isnothing(rsp) && !isnothing(wvp)
-        xticks --> determine_geometry_xlabels(bvp, rsp, wvp)
+        xticks -->
+        determine_geometry_xlabels(bvp, rsp, wvp; tol=xticktol, tickdigits=tickdigits)
         xgrid --> true
         ygrid --> false
     else
@@ -350,74 +359,74 @@ end
 #---------------------------------#
 #   SET XTICKS AT LE, TE, ETC.    #
 #---------------------------------#
-function add_ticks(xt, xl, tmp, tol)
-    if !any(abs.(tmp .- xt) .< tol)
-        push!(xl, round(tmp; digits=2))
-    else
-        push!(xl, "")
-    end
+function add_ticks(xt, xl, tmp, tol, tickdigits=2)
     if !any(abs.(tmp .- xt) .< tol / 10)
+        if !any(abs.(tmp .- xt) .< tol)
+            push!(xl, @sprintf "%3.*f" tickdigits tmp)
+        else
+            push!(xl, "")
+        end
         push!(xt, tmp)
     end
     return xt, xl
 end
 
-function determine_geometry_xlabels(bvp, rsp, wvp; tol=1e-2)
+function determine_geometry_xlabels(bvp, rsp, wvp; tol=1e-2, tickdigits=2)
     xt = []
     xl = []
 
     # Rotor
     for r in 1:Int(rsp.nbodies[])
         push!(xt, rsp.node[1, Int(rsp.endnodeidxs[r, r])])
-        push!(xl, round(rsp.node[1, Int(rsp.endnodeidxs[r, r])]; digits=2))
+        push!(xl, @sprintf "%3.*f" tickdigits rsp.node[1, Int(rsp.endnodeidxs[r, r])])
     end
 
     # Centerbody
     for i in 1:2
         tmp = bvp.node[1, Int(bvp.endnodeidxs[i, 2])]
-        xt, xl = add_ticks(xt, xl, tmp, tol)
+        xt, xl = add_ticks(xt, xl, tmp, tol, tickdigits)
     end
 
     # Duct
     for f in [maximum, minimum]
         tmp = f(bvp.node[1, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
-        xt, xl = add_ticks(xt, xl, tmp, tol)
+        xt, xl = add_ticks(xt, xl, tmp, tol, tickdigits)
     end
 
     # Wake
     tmp = maximum(wvp.node[1, Int(wvp.endnodeidxs[1, 1]):Int(wvp.endnodeidxs[2, 1])])
-    xt, xl = add_ticks(xt, xl, tmp, tol)
+    xt, xl = add_ticks(xt, xl, tmp, tol, tickdigits)
 
     return (xt, xl)
 end
 
-function determine_geometry_ylabels(bvp, rsp; tol=1e-2)
+function determine_geometry_ylabels(bvp, rsp; tol=1e-2, tickdigits=2)
     yt = []
     yl = []
 
     # Rotor
     for r in 1:Int(rsp.nbodies[])
         push!(yt, rsp.node[2, Int(rsp.endnodeidxs[r, r])])
-        push!(yl, round(rsp.node[2, Int(rsp.endnodeidxs[r, r])]; digits=2))
+        push!(yl, @sprintf "%3.*f" tickdigits rsp.node[2, Int(rsp.endnodeidxs[r, r])])
     end
 
     # Centerbody
     for i in 1:2
         tmp = bvp.node[2, Int(bvp.endnodeidxs[i, 2])]
-        yt, yl = add_ticks(yt, yl, tmp, tol)
+        yt, yl = add_ticks(yt, yl, tmp, tol, tickdigits)
     end
 
     # Duct front/back
     for f in [findmax, findmin]
         tmp = f(bvp.node[1, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
         tmpy = bvp.node[2, tmp[2]]
-        yt, yl = add_ticks(yt, yl, tmpy, tol)
+        yt, yl = add_ticks(yt, yl, tmpy, tol, tickdigits)
     end
 
     # Duct inner/outer
     for f in [maximum, minimum]
         tmp = f(bvp.node[2, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
-        yt, yl = add_ticks(yt, yl, tmp, tol)
+        yt, yl = add_ticks(yt, yl, tmp, tol, tickdigits)
     end
 
     return (yt, yl)
