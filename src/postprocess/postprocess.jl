@@ -8,6 +8,7 @@
         solve_parameter_cache_dims,
         operating_point,
         reference_parameters,
+        boundary_layer_options,
         A_bb_LU,
         airfoils,
         idmaps,
@@ -31,6 +32,7 @@ Post-process a converged nonlinear solve solution.
 - `solve_parameter_cache_dims::NamedTuple` : the dimensions of the solver parameters
 - `operating_point::OperatingPoint` : the operating point being analyzed
 - `reference_parameters::ReferenceParameters` : a ReferenceParameters object
+- `BoundaryLayerOptions::BoundaryLayerOptions` : a BoundaryLayerOptions object
 - `A_bb_LU::LinearAlgebra.LU` : LinearAlgebra LU factorization of the LHS matrix
 - `airfoils::Vector{AFType}` : A matrix of airfoil types associated with each of the blade elements
 - `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
@@ -77,6 +79,17 @@ Post-process a converged nonlinear solve solution.
   - `vtan_nacelle_out`
   - `vtan_centerbody_in`
   - `vtan_centerbody_out`
+  - `boundary_layers`
+    - `stagnation_indices`
+    - `upper_solved_states`
+    - `upper_solved_steps`
+    - `lower_solved_states`
+    - `lower_solved_steps`
+    - `surface_length_upper`
+    - `surface_length_lower`
+    - `split_ratio`
+    - `separation_point_ratio_upper`
+    - `separation_point_ratio_lower`
 - `rotors`
   - `circulation`
   - `panel_strengths`
@@ -143,6 +156,7 @@ function post_process(
     solve_parameter_cache_dims,
     operating_point,
     reference_parameters,
+    boundary_layer_options,
     A_bb_LU,
     airfoils,
     idmaps,
@@ -164,12 +178,12 @@ function post_process(
     (; Vref, Rref) = reference_parameters
 
     # - Extract PrePost Cache - #
-    reset_containers!(prepost_containers; exception_keys=(:panels,:ivb))
+    reset_containers!(prepost_containers; exception_keys=(:panels, :ivb))
     (;
-        # stuff from pre-process
+        # Stuff from Pre-process
         panels,
         ivb,
-        # rotor stuff
+        # Rotor Stuff
         rotor_inviscid_thrust,
         rotor_inviscid_thrust_dist,
         rotor_viscous_thrust,
@@ -193,14 +207,13 @@ function post_process(
         blade_normal_force_per_unit_span,
         blade_tangential_force_per_unit_span,
         blade_loading_intermediate_containers,
-        # body stuff
+        # Body Stuff
         zpts,
         vtan_tuple,
         cp_tuple,
         body_thrust,
         body_force_coefficient,
-        # cp_tuple,
-        # totals stuff
+        # Totals Stuff
         total_thrust,
         total_torque,
         total_power,
@@ -209,6 +222,9 @@ function post_process(
         total_CT,
         total_CQ,
         total_CP,
+        # Boundary Layer Stuff #TODO: add these to caches at some point (requires re-work of boundary layer implementation likey)
+        # duct_viscous_drag,
+        # boundary_layer_outputs,
     ) = prepost_containers
 
     # - Extract Panels - #
@@ -255,7 +271,7 @@ function post_process(
         blade_elements,
         wakeK,
         idmaps,
-        multipoint_index
+        multipoint_index,
     )
 
     (;
@@ -487,9 +503,32 @@ function post_process(
         Vref=Vref[1],
     )
 
+    # - Duct Viscous Drag - #
+
+    if boundary_layer_options.model_drag
+
+        #TODO; make this in place
+        # compute_viscous_drag_duct!(duct_viscous_drag, boundary_layer_outputs,
+        duct_viscous_drag, boundary_layer_outputs = compute_viscous_drag_duct(
+            boundary_layer_options,
+            Vtan_out[1:Int(body_vortex_panels.npanel[1])],
+            Vtot_out[:, 1:Int(body_vortex_panels.npanel[1])],
+            body_vortex_panels.influence_length[1:Int(body_vortex_panels.npanel[1])],
+            body_vortex_panels.tangent[:, 1:Int(body_vortex_panels.npanel[1])],
+            body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],
+            operating_point;
+            verbose=verbose,
+        )
+
+        body_thrust[1] -= duct_viscous_drag
+    else
+        boundary_layer_outputs = nothing
+    end
+
     ### --- TOTAL OUTPUTS --- ###
 
     # - Total Thrust - #
+    total_thrust[] = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'])
     total_thrust[] = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust])
 
     # - Total Torque - #
@@ -563,6 +602,8 @@ function post_process(
             vtan_nacelle_out,
             vtan_centerbody_in,
             vtan_centerbody_out,
+            # boundary layers
+            boundary_layers = boundary_layer_outputs,
         ),
         # - Rotor Values - #
         rotors=(;
@@ -626,10 +667,7 @@ function post_process(
             res_vals.vr_wake,
             res_vals.Cm_avg,
         ),
-        reference_values=(;
-          Vinf = operating_point.Vinf[],
-          Vref = reference_parameters.Vref[],
-         ),
+        reference_values=(; Vinf=operating_point.Vinf[], Vref=reference_parameters.Vref[]),
     )
 
     if write_outputs
@@ -695,47 +733,11 @@ Run through the residual function post-convergence to save needed intermediate v
 - `res_vals::NamedTuple` : A named tuple containing the state variables and populated solve containers.
 """
 function run_residual!(
-solver_options::TS,
-converged_states,
-state_dims,
-solve_container_cache,
-solve_container_cache_dims,
-operating_point,
-ivr,
-ivw,
-linsys,
-blade_elements,
-wakeK,
-idmaps,
-multipoint_index
-) where {TS<:ExternalSolverOptions}
-
-#=
-  NOTE: we want to get all the intermediate values available to user if desired.
-  The solve_containers cache will contain all the intermediate values after running the estimate states function.
-=#
-# - Separate out the state variables - #
-vz_rotor, vtheta_rotor, Cm_wake = extract_state_variables(
-    solver_options, converged_states, state_dims
-)
-
-# - Extract and Reset Cache - #
-# get cache vector of correct types
-solve_container_cache_vec = @views PreallocationTools.get_tmp(
-    solve_container_cache, converged_states
-)
-solve_containers = withdraw_solve_container_cache(
-    solver_options, solve_container_cache_vec, solve_container_cache_dims
-)
-reset_containers!(solve_containers) #note: also zeros out state estimates
-
-# - Estimate New States - #
-# currently has 280 allocations
-estimate_states!(
-    solve_containers,
-    vz_rotor,
-    vtheta_rotor,
-    Cm_wake,
+    solver_options::TS,
+    converged_states,
+    state_dims,
+    solve_container_cache,
+    solve_container_cache_dims,
     operating_point,
     ivr,
     ivw,
@@ -743,54 +745,55 @@ estimate_states!(
     blade_elements,
     wakeK,
     idmaps,
-)
+    multipoint_index,
+) where {TS<:ExternalSolverOptions}
 
-return (; vz_rotor, vtheta_rotor, Cm_wake, solve_containers...)
+    #=
+      NOTE: we want to get all the intermediate values available to user if desired.
+      The solve_containers cache will contain all the intermediate values after running the estimate states function.
+    =#
+    # - Separate out the state variables - #
+    vz_rotor, vtheta_rotor, Cm_wake = extract_state_variables(
+        solver_options, converged_states, state_dims
+    )
+
+    # - Extract and Reset Cache - #
+    # get cache vector of correct types
+    solve_container_cache_vec = @views PreallocationTools.get_tmp(
+        solve_container_cache, converged_states
+    )
+    solve_containers = withdraw_solve_container_cache(
+        solver_options, solve_container_cache_vec, solve_container_cache_dims
+    )
+    reset_containers!(solve_containers) #note: also zeros out state estimates
+
+    # - Estimate New States - #
+    # currently has 280 allocations
+    estimate_states!(
+        solve_containers,
+        vz_rotor,
+        vtheta_rotor,
+        Cm_wake,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+    )
+
+    return (; vz_rotor, vtheta_rotor, Cm_wake, solve_containers...)
 end
 
 """
 """
 function run_residual!(
-solver_options::CSORSolverOptions,
-converged_states,
-state_dims,
-solve_container_cache,
-solve_container_cache_dims,
-operating_point,
-ivr,
-ivw,
-linsys,
-blade_elements,
-wakeK,
-idmaps,
-multipoint_index
-)
-
-#=
-  NOTE: we want to get all the intermediate values available to user if desired.
-  The solve_containers cache will contain all the intermediate values after running the insides of the residual function
-=#
-# - Separate out the state variables - #
-Gamr, sigr, gamw = extract_state_variables(solver_options, converged_states, state_dims)
-
-# - Extract and Reset Cache - #
-# get cache vector of correct types
-solve_container_cache_vec = @views PreallocationTools.get_tmp(
-    solve_container_cache, converged_states
-)
-solve_container_cache_vec .= 0
-solve_containers = withdraw_solve_container_cache(
-    solver_options, solve_container_cache_vec, solve_container_cache_dims
-)
-
-# - Run Residual - #
-compute_CSOR_residual!(
-    zeros(eltype(converged_states), 2),
-    solver_options,
-    solve_containers,
-    Gamr,
-    sigr,
-    gamw,
+    solver_options::CSORSolverOptions,
+    converged_states,
+    state_dims,
+    solve_container_cache,
+    solve_container_cache_dims,
     operating_point,
     ivr,
     ivw,
@@ -798,8 +801,43 @@ compute_CSOR_residual!(
     blade_elements,
     wakeK,
     idmaps,
-    multipoint_index;
-    verbose=false,
+    multipoint_index,
+)
+
+    #=
+      NOTE: we want to get all the intermediate values available to user if desired.
+      The solve_containers cache will contain all the intermediate values after running the insides of the residual function
+    =#
+    # - Separate out the state variables - #
+    Gamr, sigr, gamw = extract_state_variables(solver_options, converged_states, state_dims)
+
+    # - Extract and Reset Cache - #
+    # get cache vector of correct types
+    solve_container_cache_vec = @views PreallocationTools.get_tmp(
+        solve_container_cache, converged_states
+    )
+    solve_container_cache_vec .= 0
+    solve_containers = withdraw_solve_container_cache(
+        solver_options, solve_container_cache_vec, solve_container_cache_dims
+    )
+
+    # - Run Residual - #
+    compute_CSOR_residual!(
+        zeros(eltype(converged_states), 2),
+        solver_options,
+        solve_containers,
+        Gamr,
+        sigr,
+        gamw,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+        multipoint_index;
+        verbose=false,
     )
 
     return (; Gamr, sigr, gamw, solve_containers...)

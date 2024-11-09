@@ -32,6 +32,16 @@ function printval(text, val)
 end
 
 """
+    printdebug(variable_name, variable, nspaces=4)
+
+Formatted printing when you have lots of debugging to do and want things to line up nicely.
+"""
+function printdebug(variable_name, variable, nspaces=4)
+    @printf "%*s %-14s %2.12f\n" nspaces " " variable_name variable
+    # println("\t$(variable_name)" * v)
+    return nothing
+end
+"""
     dot(A, B) = sum(a * b for (a, b) in zip(A, B))
 
 A faster dot product.
@@ -188,4 +198,22 @@ function cache_dims!(total_length, l, s)
     dims = (; index=(total_length[] + 1):(total_length[] + l), shape=s)
     total_length[] += l
     return dims
+end
+
+"""
+    akima_smooth(x, y, xpt; delta=2.0 * eps(), eps=eps())
+
+Wrapper for FLOWMath.akima with different optional argument values.
+"""
+function akima_smooth(x, y, xpt; delta=2.0 * eps(), eps=eps())
+    return FLOWMath.akima(x, y, xpt, delta, eps)
+end
+
+"""
+    Akima_smooth(x, y; delta=2.0 * eps(), eps=eps())
+
+Wrapper for FLOWMath.Akima with different optional argument values.
+"""
+function Akima_smooth(x, y; delta=2.0 * eps(), eps=eps())
+    return FLOWMath.Akima(x, y, delta, eps)
 end

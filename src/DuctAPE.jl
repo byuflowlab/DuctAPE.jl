@@ -42,9 +42,18 @@ using NLsolve #Includes Anderson Solver
 using LineSearches # used in newton solver
 using ForwardDiff # used for jacobian for newton solver
 
+# For boundary layer stuff
+using Roots
+
 # - Utility Packages - #
 using FLOWMath # used for various items, mostly interpolation
 using Printf # used when verbose option is selected
+using RecipesBase # for plotting
+
+# - Visualization Packages - #
+import Colors.RGB
+using LaTeXStrings
+using ProgressMeter
 
 #---------------------------------#
 #             EXPORTS             #
@@ -56,8 +65,7 @@ export c4b
 # - Types - #
 
 # Inputs
-export DuctedRotor,
-    Rotor, OperatingPoint, PanelingConstants, ReferenceParameters
+export DuctedRotor, Rotor, OperatingPoint, PanelingConstants, ReferenceParameters
 
 # - Preallocations - #
 export allocate_prepost_container_cache,
@@ -76,12 +84,27 @@ export ChainSolverOptions,
     SpeedMappingOptions,
     FixedPointOptions,
     CSORSolverOptions
+export BoundaryLayerOptions
 
 # - Preprocess - #
 export setup_analysis
 
 # - Analyses - #
 export analyze
+
+# - Visualization - #
+export generate_plots
+export plotGeometry,
+    plotDuctGeometry,
+    plotBodyGeometry,
+    underlayGeometry,
+    plotCP,
+    plotVtan,
+    plotStagnation,
+    plotMomentum,
+    plotStreamlines,
+    staticPlots,
+    animatedPlots
 
 #---------------------------------#
 #            INCLUDES             #
@@ -99,6 +122,8 @@ include("utilities/caching/allocate_caches.jl")
 include("utilities/caching/reshape_caches.jl")
 include("utilities/caching/integration_caches.jl")
 include("utilities/caching/elliptic_grid_parameter_packaging.jl")
+include("utilities/thermodynamics.jl")
+include("utilities/ode_solvers.jl")
 
 # Airfoil utility functions
 include("utilities/airfoils/airfoil_utilities.jl")
@@ -156,6 +181,16 @@ include("postprocess/velocities.jl")
 include("postprocess/pressures.jl")
 include("postprocess/rotor_performance.jl")
 include("postprocess/utils.jl")
+include("postprocess/boundary_layer_utils.jl")
+include("postprocess/boundary_layer_green.jl")
+include("postprocess/boundary_layer_head.jl")
+include("postprocess/viscous_drag.jl")
+
+##### ----- VISUALIZATION ----- #####
+# include("visualization/plot_recipe_defaults.jl")
+include("visualization/plot_recipes.jl")
+include("visualization/calculate_streamlines.jl")
+include("visualization/convenience_plots.jl")
 
 ##### ----- DEBUGGING ----- #####
 include("../test/test_utils.jl")

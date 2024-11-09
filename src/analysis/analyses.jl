@@ -185,6 +185,7 @@ function analyze(
         solve_parameter_cache_dims,
         operating_point,
         reference_parameters,
+        options.boundary_layer_options,
         A_bb_LU,
         airfoils,
         idmaps,
@@ -457,7 +458,9 @@ function analyze_multipoint(
     if options.verbose
         println("\n  Operating Point:")
         for fn in fieldnames(typeof(operating_point))
-            println(@sprintf "    %6s = %5.3e" fn getfield(operating_point, fn)[])
+            if fn!=:units
+                println(@sprintf "    %6s = %5.3e" fn getfield(operating_point, fn)[])
+            end
         end
     end
 
@@ -468,7 +471,9 @@ function analyze_multipoint(
 
     # - copy over operating point - #
     for f in fieldnames(typeof(operating_point))
+        if f != :units
         solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        end
     end
 
     # - Set up Body Linear System RHS - #

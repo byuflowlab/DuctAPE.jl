@@ -40,7 +40,7 @@ RPM = 8000.0
 Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
 
 # utilizing the constructor function to put things in vector types
-operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+operating_point = dt.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
 
 nduct_inlet = 50
 ncenterbody_inlet = 30

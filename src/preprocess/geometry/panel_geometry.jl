@@ -41,15 +41,15 @@ function generate_panels(
 
     # - Initialize Outputs - #
     # control points
-    controlpoint = zeros(TF, 2, totpanel[]) # x-r, panel
+    controlpoint = zeros(TF, 2, totpanel[]) # z-r, panel
     # nodes
-    node = zeros(TF, 2, totnode[]) # x-r, node
+    node = zeros(TF, 2, totnode[]) # z-r, node
     # node map
-    nodemap = zeros(Int, 2, totpanel[]) # node, x-r
+    nodemap = zeros(Int, 2, totpanel[]) # node, z-r
     # first and last nodes of bodies, rotor, or wakes
 
     #TODO: check where this is used and update order of indices if needed
-    endnodes = zeros(TF, nbodies[], 2, 2) # TE, upper-lower, x-r
+    endnodes = zeros(TF, nbodies[], 2, 2) # TE, upper-lower, z-r
     # indices of endnodess
     endnodeidxs = ones(Int, 2, nbodies[]) # lower idx, upper idx, lower or upper
     # indices of endpanels
@@ -68,8 +68,8 @@ function generate_panels(
     ittangent = zeros(TF, 2, nbodies[])
 
     # trailing edge gap
-    tenode = zeros(TF, nbodies[], 2, 2) # body, node1-2, x-r
-    tenormal = zeros(TF, 2, nbodies[]) #body, x-r
+    tenode = zeros(TF, nbodies[], 2, 2) # body, node1-2, z-r
+    tenormal = zeros(TF, 2, nbodies[]) #body, z-r
     teinfluence_length = zeros(TF, nbodies[])
     teadjnodeidxs = similar(endnodeidxs) .= 1 #can't be the same as endpoints, because we may have repeated values for non-duct bodies
     tendotn = zeros(TF, 2, nbodies[]) #bodies, node1,2
@@ -330,7 +330,7 @@ function def_te_panel!(
     endnodeidxs,
 )
     for ib in 1:Int(nbodies[])
-        # check if signs of x-tangents are the same
+        # check if signs of z-tangents are the same
         if sign(tangent[1, Int(endpanelidxs[1, ib])]) !=
             sign(tangent[1, Int(endpanelidxs[2, ib])])
             # if not: it's a duct

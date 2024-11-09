@@ -35,7 +35,7 @@ muinf = [1.78e-5]
 asound = [340.0]
 Omega = [5000.0, 0.0] * pi / 30  # convert from RPM to rad/s
 
-operating_point = dt.OperatingPoint(Vinf, rhoinf, muinf, asound, Omega)
+operating_point = dt.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
 
 Vref = [10.0]
 Rref = [Rtip]

@@ -29,6 +29,7 @@ makedocs(;
                 "Outputs" => "DuctAPE/advanced_usage/outputs.md",
                 # "Manual Geometry" => "DuctAPE/advanced_usage/manual_repaneling.md",
             ],
+            "Visualization" => "DuctAPE/visualization.md",
             "API" => [
                 "Public API Reference" => "DuctAPE/api/public_api.md",
                 "Private API Reference" => [
