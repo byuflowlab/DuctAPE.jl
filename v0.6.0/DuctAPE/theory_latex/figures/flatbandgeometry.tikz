@@ -1,0 +1,52 @@
+\begin{tikzpicture}
+    \coordinate (O) at (0,0);
+    \coordinate (xo) at ($(O) + (160 : 0.5 and 2)$);
+    \coordinate (g) at ($(O) + (130 : 0.5 and 2)$);
+    \coordinate (x) at ($(O) + (4,2)$);
+    \coordinate (ez) at (2,0);
+    \coordinate (b1) at ($(O) -(0.2,0) + (263 : 0.5 and 1.9)$);
+    \coordinate (b2) at ($(O) +(0.2,0) + (263 : 0.5 and 2.1)$);
+    \coordinate (t1) at ($(O) -(0.2,0) + (97 : 0.5 and 1.9)$);
+    \coordinate (t2) at ($(O) +(0.2,0) + (97 : 0.5 and 2.1)$);
+    \coordinate (p1) at ($(O) -(0.2,0) + (160 : 0.5 and 1.9)$);
+    \coordinate (p2) at ($(O) +(0.2,0) + (160 : 0.5 and 2.1)$);
+
+    %z-axis
+    \draw[] (-2,0) -- (-0.7,0);
+    \draw[,plotsgray] (-0.7,0) -- (-0.3,0);
+    \draw[-Stealth,] (-0.3,0) -- (ez);
+    \node[anchor=south west,outer sep=1] at (ez) {$\hat{\vect{e}}_z$};
+
+    %radial direction arrow
+    \draw[-Stealth, shorten >=2,plotsgray] (O) -- (xo);
+    \draw[ shorten >=10] (O) -- (xo)node[anchor=north west, shift={(0.25,-0.05)}]{$\hat{\vect{e}}_r$};
+
+    %vortex band
+    \draw[thick,secondary] (O) [partial ellipse =1:85:0.5 and 2];
+    \draw[thick,secondary] (O) [partial ellipse =97:263:0.5 and 2];
+    \draw[thick,secondary] (O) [partial ellipse =275:359:0.5 and 2];
+
+    \draw[thick,primary] ($(O)+(0.2,0)$) [partial ellipse =1:359:0.5 and 2.1];
+
+    \draw[thick,primary] ($(O)-(0.2,0)$) [partial ellipse =1:73:0.5 and 1.9];
+    \draw[thick,primary] ($(O)-(0.2,0)$) [partial ellipse =97:263:0.5 and 1.9];
+    \draw[thick,primary] ($(O)-(0.2,0)$) [partial ellipse =287:359:0.5 and 1.9];
+
+    \draw[primary, thick] (p1)--(p2);
+    \draw[thick,primary] (b1)--(b2);
+    \draw[thick,primary] (t1)--(t2);
+
+    %x_o
+    \node[fill=secondary, minimum size=3pt, inner sep=0, outer sep=0] at (xo){};
+    % \draw (xo)node[anchor=east, secondary, outer sep=4]{$\overline{\vect{p}}$};
+
+    \filldraw[primary] (p1) circle (0.035);
+    \filldraw[primary] (p2) circle (0.035);
+
+    %tangential direction arrow
+    \draw[-Stealth,] (xo) -- (-0.6,-1)node[anchor=east]{$\hat{\vect{e}}_\theta$};
+
+    % Gamma circle
+    % \draw[-{Stealth[bend]}, tertiary, thick] (g) [partial ellipse = -55:220:0.35 and 0.25]node[anchor=south east,outer sep=1, tertiary]{$\gamma$};
+
+\end{tikzpicture}

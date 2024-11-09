@@ -1,0 +1,48 @@
+\begin{tikzpicture}[scale=1.0]
+
+    % coordinate system
+    \coordinate (O) at (-1,-1);
+    \coordinate (er) at ($(O) +(0,1)$);
+    \coordinate (ez) at ($(O) +(1,0)$);
+    \draw[-Stealth,] (O) -- (er);
+    \draw[-Stealth,] (O) -- (ez);
+    \node[anchor=west,outer sep=0] at (er) {$\hat{\vect{e}}_r$};
+    \node[anchor=south,outer sep=0] at (ez) {$\hat{\vect{e}}_z$};
+
+    % filament line
+    \draw[densely dotted]  (3,0) -- ++(-3,0) node[pos=0.65,below, secondary] {\(\gamma_\mathrm{visc}=0\)}-- ++(0,2.5) node[pos=0.5,right,shift={(0.2,0)}, primary] {\(\sigma\)} -- ++(3,0) ;
+    \draw[dashed] (2.25,-0.5) -- +(0,3.5);
+    \draw[dashed] (2.75,-0.5) -- +(0,3.5) node[pos=0.5,right] {EIF};
+
+    % vm arrows
+    \node[above] at (2.5,3) {\(C_m\)};
+    \foreach \z in {-0.5,-0.3,...,3.0}
+        \draw[-{Stealth[length=4pt, width=3pt]}] (2.25,\z) -- (2.75,\z);
+
+    % sigma arrows
+    \foreach \z in {0.2,0.7,...,2.2}
+    {
+         \coordinate (s) at (0,\z);
+         \coordinate (s11) at ($(s) + (-0.184,0.1)$);
+         \coordinate (s12) at ($(s) + (0.1,0.184)$);
+         \coordinate (s21) at ($(s) + (-0.1,-0.184)$);
+         \coordinate (s22) at ($(s) + (0.184,-0.1)$);
+         \draw[primary,-{Stealth[length=3.5pt,width=2.5pt]}] (s) -- (s11);
+         \draw[primary,-{Stealth[length=3.5pt,width=2.5pt]}] (s) -- (s12);
+         \draw[primary,-{Stealth[length=3.5pt,width=2.5pt]}] (s) -- (s21);
+         \draw[primary,-{Stealth[length=3.5pt,width=2.5pt]}] (s) -- (s22);
+     };
+
+    % entropy jump
+     \draw[] (-0.25, 2.25) -- ++(0.0,0.5)  -- node[above, pos=0.5] {\(\Delta S\)} ++(0.5,0) -- ++(0,-0.5);
+     \filldraw[] (-0.25,2.25) circle(1pt);
+     \filldraw[] (0.25,2.25) circle(1pt);
+
+    % static pressure jump
+     \draw[] (2.95, 2.4) -- ++(0.2,0)  -- node[right, pos=0.5] {\(\Delta p_s=0\)} ++(0,0.2) -- ++(-0.2,0);
+     \filldraw[] (2.95,2.4) circle(1pt);
+     \filldraw[] (2.95,2.6) circle(1pt);
+
+    % Cf (needed?)
+
+\end{tikzpicture}
