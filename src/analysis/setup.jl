@@ -118,10 +118,10 @@ function setup_analysis(
 
     # copy over operating point
     for f in fieldnames(typeof(operating_point))
-        if f!=:units
-        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        if f != :units
+            solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+        end
     end
-end
 
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
     if options.verbose

@@ -57,21 +57,32 @@ function split_at_stagnation_point(duct_panel_lengths, duct_panel_tangents, Vtot
         dp[1] = dp[2]
     end
 
-    # interpolate the lengths between control points
-    sum_length = 0.5 * sum(duct_panel_lengths[stag_ids])
-    stag_interp = FLOWMath.linear(dp, [0.0, sum_length], 0.0)
+    if dp[1] == dp[2]
+        # we're likely in a hover-ish case and there is no stagnation point.
 
-    partial_panel_lengths = [stag_interp, sum_length - stag_interp]
+        s_upper = nothing
+        s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end:-1:1])
+        split_ratio = 1.0
+        stag_ids .= length(duct_panel_lengths)
+    else
 
-    s_upper = arc_lengths_from_panel_lengths(
-        [abs(partial_panel_lengths[2]); duct_panel_lengths[stag_ids[2]:end]]
-    )
+        # interpolate the lengths between control points
+        sum_length = 0.5 * sum(duct_panel_lengths[stag_ids])
+        stag_interp = FLOWMath.linear(dp, [0.0, sum_length], 0.0)
 
-    s_lower = arc_lengths_from_panel_lengths(
-        [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
-    )
+        partial_panel_lengths = [stag_interp, sum_length - stag_interp]
 
-    return s_upper, s_lower, stag_ids, stag_interp / sum_length
+        s_upper = arc_lengths_from_panel_lengths(
+            [abs(partial_panel_lengths[2]); duct_panel_lengths[stag_ids[2]:end]]
+        )
+
+        s_lower = arc_lengths_from_panel_lengths(
+            [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
+        )
+        split_ratio = stag_interp / sum_length
+    end
+
+    return s_upper, s_lower, stag_ids, split_ratio
 end
 
 """

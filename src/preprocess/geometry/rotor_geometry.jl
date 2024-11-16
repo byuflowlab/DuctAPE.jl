@@ -242,10 +242,10 @@ function get_blade_ends_from_body_geometry!(
     if !silence_warnings
         for (irotor, (R, r)) in enumerate(zip(Rtip, Rhub))
             if r !== rp_centerbody_coordinates[2, ihub[irotor]]
-                @warn "Overwriting Rhub for rotor $(irotor) to place it at the centerbody wall.  Moving from $(r) to $(rp_centerbody_coordinates[2, ihub[irotor]])"
+                @warn "Overwriting Rhub for rotor $(ForwardDiff.value(irotor)) to place it at the centerbody wall.  Moving from $(ForwardDiff.value(r)) to $(ForwardDiff.value(rp_centerbody_coordinates[2, ihub[irotor]]))"
             end
             if R !== rp_duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor]
-                @warn "Overwriting Rtip for rotor $(irotor) to place it at the correct tip gap relative to the casing wall. Moving from $(R) to $(rp_duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor])"
+                @warn "Overwriting Rtip for rotor $(ForwardDiff.value(irotor)) to place it at the correct tip gap relative to the casing wall. Moving from $(ForwardDiff.value(R)) to $(ForwardDiff.value(rp_duct_coordinates[2, iduct[irotor]] .- tip_gaps[irotor]))"
             end
         end
     end
