@@ -20,7 +20,7 @@ Note: if no separation occurs, the inputs are simply the final values for the bo
 """
 function squire_young(d2, Ue, Uinf, H12)
     # note: formula also divides by chord, but we're going to multiply by chord later.
-    return 2.0 * d2 * (Ue / Uinf)^((5.0 + H12) / 2.0)
+    return 2.0 * d2 * FLOWMath.abs_smooth(Ue / Uinf, 2.0*eps())^((5.0 + H12) / 2.0)
 end
 
 """
@@ -183,13 +183,15 @@ function compute_viscous_drag_duct(
     )
 
     # set up boundary layer solve parameters
-    boundary_layer_functions_upper = setup_boundary_layer_functions_head(
-        s_upper,
-        [0.0; Vtan_duct[stag_ids[2]:end]],
-        operating_point,
-        boundary_layer_options;
-        verbose=verbose,
-    )
+    if !isnothing(s_upper)
+        boundary_layer_functions_upper = setup_boundary_layer_functions_head(
+            s_upper,
+            [0.0; Vtan_duct[stag_ids[2]:end]],
+            operating_point,
+            boundary_layer_options;
+            verbose=verbose,
+        )
+    end
 
     # set up boundary layer solve parameters
     boundary_layer_functions_lower = setup_boundary_layer_functions_head(
@@ -201,13 +203,15 @@ function compute_viscous_drag_duct(
     )
 
     # - Set integration steps - #
-    # upper side
-    upper_steps =
-        set_boundary_layer_steps(
-            boundary_layer_options.n_steps,
-            boundary_layer_options.first_step_size,
-            s_upper[end] - boundary_layer_options.offset,
-        ) .+ boundary_layer_options.offset
+    if !isnothing(s_upper)
+        # upper side
+        upper_steps =
+            set_boundary_layer_steps(
+                boundary_layer_options.n_steps,
+                boundary_layer_options.first_step_size,
+                s_upper[end] - boundary_layer_options.offset,
+            ) .+ boundary_layer_options.offset
+    end
 
     # lower side
     lower_steps =
@@ -219,19 +223,26 @@ function compute_viscous_drag_duct(
 
     # - Get drag coeffients - #
 
-    cdc_upper, usol_upper, stepsol_upper, s_sep_upper = compute_single_side_drag_coefficient_head(
-        upper_steps,
-        exit_radius,
-        operating_point,
-        boundary_layer_functions_upper,
-        (;
-            boundary_layer_options.rk,
-            boundary_layer_options.separation_criteria,
-            separation_allowance=boundary_layer_options.separation_allowance_upper,
-            separation_penalty=boundary_layer_options.separation_penalty_upper,
-        );
-        verbose=verbose,
-    )
+    if !isnothing(s_upper)
+        cdc_upper, usol_upper, stepsol_upper, s_sep_upper = compute_single_side_drag_coefficient_head(
+            upper_steps,
+            exit_radius,
+            operating_point,
+            boundary_layer_functions_upper,
+            (;
+                boundary_layer_options.rk,
+                boundary_layer_options.separation_criteria,
+                separation_allowance=boundary_layer_options.separation_allowance_upper,
+                separation_penalty=boundary_layer_options.separation_penalty_upper,
+            );
+            verbose=verbose,
+        )
+    else
+        cdc_upper = 0.0
+        usol_upper = -ones(eltype(Vtan_duct), 3)
+        stepsol_upper = -1
+        s_sep_upper = -1.0
+    end
 
     cdc_lower, usol_lower, stepsol_lower, s_sep_lower = compute_single_side_drag_coefficient_head(
         lower_steps,

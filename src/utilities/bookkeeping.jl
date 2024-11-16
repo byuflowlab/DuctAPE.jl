@@ -65,7 +65,6 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
     nbe = nws - 1
 
     # number of body panels
-    # TODO: need number of casing and centerbody nodes separately as well
     ncp = nduct_inlet
     ncbp = ncenterbody_inlet
     # add rest of panels mutual between centerbody and duct
