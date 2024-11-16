@@ -36,11 +36,21 @@ end
 
 Formatted printing when you have lots of debugging to do and want things to line up nicely.
 """
-function printdebug(variable_name, variable, nspaces=4)
-    @printf "%*s %-14s %2.12f\n" nspaces " " variable_name variable
+function printdebug(variable_name, variable, nspaces=4; colw=16)
+    if length(variable) == 1
+        s = @sprintf "%*s %-*s %2.12f" nspaces " " colw variable_name variable[1]
+        println(rstrip(s, ['0', ' ']))
+    else
+        @printf "%*s %-*s\n" nspaces " " colw variable_name
+        for v in variable
+            s = @sprintf "%*s %-*s %2.12f" (nspaces) " " colw "" v
+            println(rstrip(s, ['0', ' ']))
+        end
+    end
     # println("\t$(variable_name)" * v)
     return nothing
 end
+
 """
     dot(A, B) = sum(a * b for (a, b) in zip(A, B))
 
@@ -150,32 +160,33 @@ function reset_containers!(c; exception_keys=[])
 end
 
 """
-    promote_ducted_rotor_type(ducted_rotor)
+    promote_ducted_rotor_type(ducted_rotor, operating_point)
 
 Convenience function for promoting types based on any potential elements of the ducted_rotor object dependent on optimization design variables.
 
 # Arguments
 - `ducted_rotor::DuctedRotor` : the ducted_rotor input
+- `operating_point::OperatingPoint` : the operating_point input
 
 # Returns
 - `TP::Type` : the promoted type
 """
-function promote_ducted_rotor_type(p)
+function promote_ducted_rotor_type(d,o)
     return promote_type(
-        eltype(p.duct_coordinates),
-        eltype(p.centerbody_coordinates),
-        eltype(p.operating_point.Vinf),
-        eltype(p.operating_point.rhoinf),
-        eltype(p.operating_point.muinf),
-        eltype(p.operating_point.asound),
-        eltype(p.operating_point.Omega),
-        eltype(p.rotor.B),
-        eltype(p.rotor.rotorzloc),
-        eltype(p.rotor.r),
-        eltype(p.rotor.Rhub),
-        eltype(p.rotor.Rtip),
-        eltype(p.rotor.chords),
-        eltype(p.rotor.twists),
+        eltype(d.duct_coordinates),
+        eltype(d.centerbody_coordinates),
+        eltype(o.Vinf),
+        eltype(o.rhoinf),
+        eltype(o.muinf),
+        eltype(o.asound),
+        eltype(o.Omega),
+        eltype(d.rotor.B),
+        eltype(d.rotor.rotorzloc),
+        eltype(d.rotor.r),
+        eltype(d.rotor.Rhub),
+        eltype(d.rotor.Rtip),
+        eltype(d.rotor.chords),
+        eltype(d.rotor.twists),
     )
 end
 

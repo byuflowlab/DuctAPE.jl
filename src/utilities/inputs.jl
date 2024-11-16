@@ -277,7 +277,7 @@ function Rotor(
     fliplift;
     i_know_what_im_doing=false,
 )
-    if length(findall(t -> t > pi / 2, twists)) > 2
+    if length(findall(t -> t > 1.75, twists)) > 2
         @warn "It looks like your input twist angles may be in degrees. Note that the required units for twist are radians. Converting to radians for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic conversion)."
         twists .*= pi / 180.0
     end

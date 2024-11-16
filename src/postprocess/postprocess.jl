@@ -517,7 +517,7 @@ function post_process(
             body_vortex_panels.tangent[:, 1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],
             operating_point;
-            verbose=verbose,
+            verbose=false,
         )
 
         body_thrust[1] -= duct_viscous_drag

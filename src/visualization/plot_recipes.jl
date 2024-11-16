@@ -160,9 +160,8 @@ end
     ylim --> (0.0, maximum(bvp.node[2, :]) * 1.05)
 
     if discrete_labels
-        xticks --> DuctAPE.determine_geometry_xlabels(
-            bvp, rsp, wvp; tol=xticktol, tickdigits=tickdigits
-        )
+        xticks -->
+        determine_geometry_xlabels(bvp, rsp, wvp; tol=xticktol, tickdigits=tickdigits)
         yticks --> determine_geometry_ylabels(bvp, rsp; tol=yticktol, tickdigits=tickdigits)
         xgrid --> true
         ygrid --> true
@@ -406,8 +405,10 @@ function determine_geometry_ylabels(bvp, rsp; tol=1e-2, tickdigits=2)
 
     # Rotor
     for r in 1:Int(rsp.nbodies[])
-        push!(yt, rsp.node[2, Int(rsp.endnodeidxs[r, r])])
-        push!(yl, @sprintf "%3.*f" tickdigits rsp.node[2, Int(rsp.endnodeidxs[r, r])])
+        for i in 1:2
+            push!(yt, rsp.node[2, Int(rsp.endnodeidxs[i, r])])
+            push!(yl, @sprintf "%3.*f" tickdigits rsp.node[2, Int(rsp.endnodeidxs[i, r])])
+        end
     end
 
     # Centerbody
@@ -416,18 +417,22 @@ function determine_geometry_ylabels(bvp, rsp; tol=1e-2, tickdigits=2)
         yt, yl = add_ticks(yt, yl, tmp, tol, tickdigits)
     end
 
-    # Duct front/back
-    for f in [findmax, findmin]
-        tmp = f(bvp.node[1, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
-        tmpy = bvp.node[2, tmp[2]]
-        yt, yl = add_ticks(yt, yl, tmpy, tol, tickdigits)
-    end
+    # # Duct front/back
+    # for f in [findmax, findmin]
+    #     tmp = f(bvp.node[1, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
+    #     tmpy = bvp.node[2, tmp[2]]
+    #     yt, yl = add_ticks(yt, yl, tmpy, tol, tickdigits)
+    # end
 
-    # Duct inner/outer
-    for f in [maximum, minimum]
-        tmp = f(bvp.node[2, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
-        yt, yl = add_ticks(yt, yl, tmp, tol, tickdigits)
-    end
+    # Duct Exit Radius
+    tmpy = bvp.node[2, 1]
+    yt, yl = add_ticks(yt, yl, tmpy, tol, tickdigits)
+
+    # # Duct inner/outer
+    # for f in [maximum, minimum]
+    #     tmp = f(bvp.node[2, Int(bvp.endnodeidxs[1, 1]):Int(bvp.endnodeidxs[2, 1])])
+    #     yt, yl = add_ticks(yt, yl, tmp, tol, tickdigits)
+    # end
 
     return (yt, yl)
 end
@@ -712,7 +717,7 @@ end
     # Plot specific values
     aspect_ratio --> 1
 
-    p, _ = DuctAPE.calculate_streamlines(
+    p, _ = calculate_streamlines(
         bvp,
         bvs,
         wvp,
