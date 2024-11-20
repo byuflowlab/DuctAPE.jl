@@ -127,24 +127,6 @@ function process(
     )
 
     # - Initialize States - #
-    # DFDC-like Initialization: In optimization, tends to break due to sqrt of negative numbers every now and then.
-    # initialize_strengths!(
-    #     solver_options,
-    #     Gamr,
-    #     sigr,
-    #     gamw,
-    #     solve_containers,
-    #     operating_point,
-    #     (; blade_elements..., airfoils...),
-    #     wakeK,
-    #     idmaps.wake_nodemap,
-    #     idmaps.wake_endnodeidxs,
-    #     idmaps.wake_panel_sheet_be_map,
-    #     idmaps.wake_node_sheet_be_map,
-    #     idmaps.wake_node_ids_along_casing_wake_interface,
-    #     idmaps.wake_node_ids_along_centerbody_wake_interface;
-    # )
-
     initialize_strengths!(
         solver_options,
         Gamr,
@@ -187,9 +169,7 @@ function process(
     if options.verbose
         println("\nSolving Nonlinear System using CSOR Method")
     end
-    # return ImplicitAD.implicit(
-    #     solve, CSOR_residual_iad!, solve_parameter_cache_vector, const_cache
-    # )
+
     return solve(solver_options, solve_parameter_cache_vector, const_cache)
 end
 

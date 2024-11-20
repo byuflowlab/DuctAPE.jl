@@ -525,10 +525,10 @@ function post_process(
         boundary_layer_outputs = nothing
     end
 
+
     ### --- TOTAL OUTPUTS --- ###
 
     # - Total Thrust - #
-    total_thrust[] = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'])
     total_thrust[] = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust])
 
     # - Total Torque - #

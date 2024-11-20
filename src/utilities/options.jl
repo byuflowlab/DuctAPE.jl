@@ -250,7 +250,7 @@ Type containing all the options for the modified CSOR solver.
 
 # Fields
 - `verbose::Bool = false` : flag to print verbose statements
-- `iteration_limit::Float = 1e3` : maximum number of iterations
+- `iteration_limit::Float = 250` : maximum number of iterations
 - `relaxation_parameters::NamedTuple` = (;
     - `nrf::Float = 0.4` : nominal relaxation factor
     - `bt1::Float = 0.2` : backtracking factor 1
@@ -266,7 +266,7 @@ Type containing all the options for the modified CSOR solver.
 @kwdef struct ModCSORSolverOptions{TB,TF,TI,TT} <: InternalSolverOptions
     # Defaults are DFDC hard-coded values
     verbose::TB = false
-    iteration_limit::TI = 1000
+    iteration_limit::TI = 250
     relaxation_parameters::TT = (;
         nrf=0.4, bt1=0.2, bt2=0.6, pf1=0.4, pf2=0.5, btw=0.6, pfw=1.2
     )

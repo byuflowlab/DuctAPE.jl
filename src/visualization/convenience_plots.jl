@@ -217,11 +217,17 @@ function generate_plots(
     plot_boundary_layer=false,
     plot_streamlines=false,
     verbose=false,
+    titles=nothing,
+    fps=30,
     kwargs...,
 )
 
     # Extract useful items
     (; body_vortex_panels, wake_vortex_panels, rotor_source_panels) = ins.panels
+
+    if isnothing(titles)
+        titles = fill(nothing, length(outs))
+    end
 
     # - Geometry - #
     if plot_geometry
@@ -244,11 +250,15 @@ function generate_plots(
         if verbose
             pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
         end
-        for out in outs
+        for (o, out) in enumerate(outs)
 
             # underlay geometry first
             plt = Plots.plot(
-                underlayGeometry(), body_vortex_panels, rotor_source_panels; kwargs...
+                underlayGeometry(),
+                body_vortex_panels,
+                rotor_source_panels;
+                title=titles[o],
+                kwargs...,
             )
 
             # then Plots.plot pressure distributions
@@ -267,7 +277,7 @@ function generate_plots(
             verbose && next!(pbar)
         end
         verbose && println("Saving $(save_path)surface_pressure.gif")
-        Plots.gif(anim, save_path * "surface_pressure.gif")
+        Plots.gif(anim, save_path * "surface_pressure.gif"; fps=fps)
     end
 
     # - Tangential Velocity - #
@@ -277,10 +287,14 @@ function generate_plots(
         if verbose
             pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
         end
-        for out in outs
+        for (o, out) in enumerate(outs)
             # underlay geometry first
             plt = Plots.plot(
-                underlayGeometry(), body_vortex_panels, rotor_source_panels; kwargs...
+                underlayGeometry(),
+                body_vortex_panels,
+                rotor_source_panels;
+                title=titles[o],
+                kwargs...,
             )
 
             # then Plots.plot velocity distributions
@@ -299,7 +313,7 @@ function generate_plots(
             verbose && next!(pbar)
         end
         verbose && println("Saving $(save_path)surface_velocity.gif")
-        Plots.gif(anim, save_path * "surface_velocity.gif")
+        Plots.gif(anim, save_path * "surface_velocity.gif"; fps=fps)
     end
 
     # - Boundary Layer Stuff - #
@@ -309,10 +323,15 @@ function generate_plots(
         if verbose
             pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
         end
-        for out in outs
+        for (o, out) in enumerate(outs)
             # Plots.plot momentum thicknesses on top
             plt = Plots.plot(
-                plotDuctGeometry(), body_vortex_panels; color=6, linewidth=0.5, kwargs...
+                plotDuctGeometry(),
+                body_vortex_panels;
+                color=6,
+                linewidth=0.5,
+                title=titles[o],
+                kwargs...,
             )
 
             Plots.plot!(
@@ -336,7 +355,7 @@ function generate_plots(
             verbose && next!(pbar)
         end
         verbose && println("Saving $(save_path)boundary_layer.gif")
-        Plots.gif(anim, save_path * "boundary_layer.gif")
+        Plots.gif(anim, save_path * "boundary_layer.gif"; fps=fps)
     end
 
     # - Streamlines - #
@@ -346,8 +365,10 @@ function generate_plots(
             pbar = Progress(length(outs); desc="Generating Frames...", showspeed=true)
         end
         anim = Plots.Animation()
-        for out in outs
-            plt = Plots.plot(plotBodyGeometry(), body_vortex_panels; kwargs...)
+        for (o, out) in enumerate(outs)
+            plt = Plots.plot(
+                plotBodyGeometry(), body_vortex_panels; title=titles[o], kwargs...
+            )
 
             Plots.plot!(
                 plotStreamlines(),
@@ -382,7 +403,7 @@ function generate_plots(
             verbose && next!(pbar)
         end
         verbose && println("Saving $(save_path)streamlines.gif")
-        Plots.gif(anim, save_path * "streamlines.gif")
+        Plots.gif(anim, save_path * "streamlines.gif"; fps=fps)
     end
 
     return nothing

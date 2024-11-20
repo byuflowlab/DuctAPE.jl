@@ -348,10 +348,8 @@ In-place version of `get_total_efficiency`.
 """
 function get_total_efficiency!(eta, total_thrust, total_power, Vinf)
     for i in 1:length(total_thrust)
-        # if Vinf <= 0.0 || total_power[i] < eps() || total_thrust[i] <= 0.0
-        #do nothing, efficiency can't physically be negative or infinite.
-        if abs(total_power[i]) < eps()
-            # allow negative efficiency
+        if Vinf <= 0.0 || total_power[i] < eps() || total_thrust[i] <= 0.0
+            #do nothing, efficiency can't physically be negative or infinite.
             eta[i] = 0.0
         else
             eta[i] = total_thrust[i] * Vinf / total_power[i]
@@ -388,8 +386,7 @@ In-place version of `get_induced_efficiency`.
 """
 function get_induced_efficiency!(eta_inv, Tinv, Tduct, Pinv, Vinf)
     for (e, ti, p) in zip(eachrow(eta_inv), Tinv, Pinv)
-        # if Vinf <= 0.0 || p <= 0.0
-        if abs(p) <= eps()
+        if Vinf <= 0.0 || p <= eps() || (ti + Tduct) <= 0.0
             e[1] = 0.0
         else
             e[1] = Vinf * (ti + Tduct) / p

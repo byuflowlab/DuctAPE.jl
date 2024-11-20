@@ -20,7 +20,7 @@ Note: if no separation occurs, the inputs are simply the final values for the bo
 """
 function squire_young(d2, Ue, Uinf, H12)
     # note: formula also divides by chord, but we're going to multiply by chord later.
-    return 2.0 * d2 * FLOWMath.abs_smooth(Ue / Uinf, 2.0*eps())^((5.0 + H12) / 2.0)
+    return 2.0 * d2 * FLOWMath.abs_smooth(Ue / Uinf, 2.0 * eps())^((5.0 + H12) / 2.0)
 end
 
 """

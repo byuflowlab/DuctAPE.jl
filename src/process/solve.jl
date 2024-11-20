@@ -162,6 +162,8 @@ function solve(
         solver_options,
         # Constant Parameters
         solve_parameter_cache_dims,
+        # Cache(s)
+        solve_container_cache,
     ) = const_cache
 
     # - Extract Initial Guess Vector for State Variables - #
@@ -175,6 +177,7 @@ function solve(
     if verbose
         println("  " * "Wrapping Residual")
     end
+
     residual_wrapper(r, states) = mod_CSOR_residual!(r, states, inputs, const_cache)
 
     # - Get number of blades for use in relaxation - #

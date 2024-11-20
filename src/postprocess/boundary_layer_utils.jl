@@ -47,7 +47,8 @@ function split_at_stagnation_point(duct_panel_lengths, duct_panel_tangents, Vtot
     dp[1] = dot(duct_panel_tangents[:, 1], Vtot_duct[:, 1])
 
     # loop through panels and stop when dot product of panel vector and velocity vector changes sign
-    for i in 2:length(duct_panel_lengths)
+    # TODO: have to start further than the size of the first step size for the ODE solver
+    for i in 3:length(duct_panel_lengths)
         dp[2] = dot(duct_panel_tangents[:, i], Vtot_duct[:, i])
 
         if sign(dp[1]) != sign(dp[2])
@@ -64,6 +65,14 @@ function split_at_stagnation_point(duct_panel_lengths, duct_panel_tangents, Vtot
         s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end:-1:1])
         split_ratio = 1.0
         stag_ids .= length(duct_panel_lengths)
+
+        elseif stag_ids[2] == length(duct_panel_lengths)
+        # things flipped on the last panel
+
+        s_upper = nothing
+        s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end-1:-1:1])
+        split_ratio = 1.0
+        stag_ids .= length(duct_panel_lengths)-1
     else
 
         # interpolate the lengths between control points
@@ -79,7 +88,7 @@ function split_at_stagnation_point(duct_panel_lengths, duct_panel_tangents, Vtot
         s_lower = arc_lengths_from_panel_lengths(
             [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
         )
-        split_ratio = stag_interp / sum_length
+        split_ratio = s_lower[end]/(s_lower[end]+s_upper[end])
     end
 
     return s_upper, s_lower, stag_ids, split_ratio

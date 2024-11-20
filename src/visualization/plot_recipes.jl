@@ -592,47 +592,6 @@ end
     end
 
     @series begin
-        color --> 1
-        label --> false
-        # linewidth --> 0.5
-        if isapprox(blo.separation_point_ratio_upper, 1.0)
-            arrow --> :closed
-        end
-
-        # spline the states vs steps
-        d2_upper = blo.upper_solved_states[1, :]
-
-        # spline the control points vs surface length
-        cpzu = akima_smooth(
-            blo.surface_length_upper,
-            [stagz; bvp.controlpoint[1, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
-            blo.upper_solved_steps,
-        )
-        cpru = akima_smooth(
-            blo.surface_length_upper,
-            [stagr; bvp.controlpoint[2, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
-            blo.upper_solved_steps,
-        )
-
-        nhatzu = akima_smooth(
-            blo.surface_length_upper,
-            [stagnz; bvp.normal[1, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
-            blo.upper_solved_steps,
-        )
-        nhatru = akima_smooth(
-            blo.surface_length_upper,
-            [stagnr; bvp.normal[2, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
-            blo.upper_solved_steps,
-        )
-
-        # thickness point is thickness normal to control points
-        d2zu = cpzu .+ (d2_upper .* nhatzu) .* scale_thickness
-        d2ru = cpru .+ (d2_upper .* nhatru) .* scale_thickness
-
-        return d2zu, d2ru
-    end
-
-    @series begin
         color --> 2
         label --> false
         # linewidth --> 0.5
@@ -671,6 +630,49 @@ end
         d2rl = cprl .+ (d2_lower .* nhatrl) .* scale_thickness
 
         return d2zl, d2rl
+    end
+
+    if blo.split_ratio < 1.0
+        @series begin
+            color --> 1
+            label --> false
+            # linewidth --> 0.5
+            if isapprox(blo.separation_point_ratio_upper, 1.0)
+                arrow --> :closed
+            end
+
+            # spline the states vs steps
+            d2_upper = blo.upper_solved_states[1, :]
+
+            # spline the control points vs surface length
+            cpzu = akima_smooth(
+                blo.surface_length_upper,
+                [stagz; bvp.controlpoint[1, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
+                blo.upper_solved_steps,
+            )
+            cpru = akima_smooth(
+                blo.surface_length_upper,
+                [stagr; bvp.controlpoint[2, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
+                blo.upper_solved_steps,
+            )
+
+            nhatzu = akima_smooth(
+                blo.surface_length_upper,
+                [stagnz; bvp.normal[1, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
+                blo.upper_solved_steps,
+            )
+            nhatru = akima_smooth(
+                blo.surface_length_upper,
+                [stagnr; bvp.normal[2, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
+                blo.upper_solved_steps,
+            )
+
+            # thickness point is thickness normal to control points
+            d2zu = cpzu .+ (d2_upper .* nhatzu) .* scale_thickness
+            d2ru = cpru .+ (d2_upper .* nhatru) .* scale_thickness
+
+            return d2zu, d2ru
+        end
     end
 
     return nothing
