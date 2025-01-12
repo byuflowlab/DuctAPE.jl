@@ -129,6 +129,7 @@ function reinterpolate_geometry!(
     finterp=(x,y,xp)->FLOWMath.akima(x,y,xp,2.0*eps(),eps()),
     verbose=false,
     silence_warnings=true,
+    le_bracket=1,
 )
 
     ##### ----- Extract Tuples ----- #####
@@ -147,13 +148,14 @@ function reinterpolate_geometry!(
 
     # - Discretize Wake z-coordinates - #
     # also returns indices of rotor locations and duct and center body trailng edges in the wake
-    zwake, rotor_indices_in_wake[:] = discretize_wake(
+    zwake, rotor_indices_in_wake[:], duct_le_coordinates = discretize_wake(
         duct_coordinates,
         centerbody_coordinates,
         rotorzloc, # rotor axial locations
         wake_length,
         npanels,
-        dte_minus_cbte,
+        dte_minus_cbte;
+        le_bracket=le_bracket
     )
 
     # - Re-interpolate Bodies - #
@@ -163,6 +165,7 @@ function reinterpolate_geometry!(
         duct_coordinates,
         centerbody_coordinates,
         zwake,
+        duct_le_coordinates,
         ncenterbody_inlet,
         nduct_inlet;
         finterp=finterp,

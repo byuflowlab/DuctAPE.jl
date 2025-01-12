@@ -5,8 +5,9 @@
         duct_coordinates,
         centerbody_coordinates,
         zwake,
+        duct_le_coordinates,
         ncenterbody_inlet,
-        nduct_inlet;
+        nduct_inlet,
         finterp=FLOWMath.akima,
     )
 
@@ -17,9 +18,10 @@ Reinterpolate duct and centerbody coordinates in order to make them compatible w
 - `rp_centerbody_coordinates::Matrix{Float}` : the re-paneled centerbody coordinates
 - `duct_coordinates::Matrix{Float}` : the input duct coordinates
 - `centerbody_coordinates::Matrix{Float}` : the input centerbody coordinates
-- `zwake::Matrix{Float}` : the wake sheet panel node axial positions
-- `ncenterbody_inlet::Matrix{Float}` : the number of panels to use for the centerbody inlet
-- `nduct_inlet::Matrix{Float}` : the number of panels to use for the duct inlet
+- `zwake::Vector{Float}` : the wake sheet panel node axial positions
+- `duct_le_coordinates::Matrix{Float}` : [z r] coordinates of duct leading edge
+- `ncenterbody_inlet::Int` : the number of panels to use for the centerbody inlet
+- `nduct_inlet,::Int` : the number of panels to use for the duct inlet
 
 # Keyword Arguments
 - `finterp::Function=FLOWMath.akima` : interpolation method
@@ -30,6 +32,7 @@ function reinterpolate_bodies!(
     duct_coordinates,
     centerbody_coordinates,
     zwake,
+    duct_le_coordinates,
     ncenterbody_inlet,
     nduct_inlet;
     finterp=FLOWMath.akima,
@@ -37,61 +40,96 @@ function reinterpolate_bodies!(
 
     # - separate inner and outer duct coordinates - #
     dle, dleidx = findmin(view(duct_coordinates, :, 1))
-    duct_inner_coordinates = view(duct_coordinates, dleidx:-1:1, :)
-    duct_outer_coordinates = view(duct_coordinates, dleidx:size(duct_coordinates, 1), :)
+    duct_inlet_length = zwake[1] - duct_le_coordinates[1]
+
+    if duct_le_coordinates[2] > duct_coordinates[dleidx, 2]
+        duct_inner_coordinates = [
+            duct_le_coordinates
+            view(duct_coordinates, dleidx:-1:1, :)
+        ]
+        duct_outer_coordinates = [
+            duct_le_coordinates
+            view(duct_coordinates, (dleidx + 1):size(duct_coordinates, 1), :)
+        ]
+    elseif duct_le_coordinates[2] < duct_coordinates[dleidx, 2]
+        duct_inner_coordinates = [
+            duct_le_coordinates
+            view(duct_coordinates, (dleidx - 1):-1:1, :)
+        ]
+        duct_outer_coordinates = [
+            duct_le_coordinates
+            view(duct_coordinates, dleidx:size(duct_coordinates, 1), :)
+        ]
+    else
+        # coordinate is the zero
+        duct_inner_coordinates = view(duct_coordinates, dleidx:-1:1, :)
+        duct_outer_coordinates = view(duct_coordinates, dleidx:size(duct_coordinates, 1), :)
+    end
 
     # - interpolate inner duct geometry to provided grid locations - #
-    zduct_inner = view(duct_inner_coordinates, :, 1)
-    rduct_inner = view(duct_inner_coordinates, :, 2)
-    duct_trailing_index = min(length(zwake), searchsortedfirst(zwake, zduct_inner[end]))
-    new_zduct_grid = @view(zwake[1:duct_trailing_index])
-    new_rduct_grid = finterp(zduct_inner, rduct_inner, new_zduct_grid)
+
+    # rename for convenience
+    casing_z = view(duct_inner_coordinates, :, 1)
+    casing_r = view(duct_inner_coordinates, :, 2)
+
+    # index of casing trailing edge in wake discretization
+    casing_te_id = min(length(zwake), searchsortedfirst(zwake, casing_z[end]))
+
+    # new points for casing aft of rotor
+    casing_in_wake_z = @view(zwake[1:casing_te_id])
+    casing_in_wake_r = finterp(casing_z, casing_r, casing_in_wake_z)
+
+    # repaneled casing inlet nodes
+    casing_inlet_z = scaled_cosine_spacing(
+        nduct_inlet + 1, 2 * duct_inlet_length, duct_le_coordinates[1]; mypi=pi / 2.0
+    )
+    casing_inlet_r = finterp(casing_z, casing_r, casing_inlet_z)
 
     # - interpolate outer duct geometry to provided grid locations - #
-    zduct_outer = view(duct_outer_coordinates, :, 1)
-    rduct_outer = view(duct_outer_coordinates, :, 2)
 
-    new_rduct_grid_outer = finterp(zduct_outer, rduct_outer, new_zduct_grid)
+    # rename for convenience
+    nacelle_z = view(duct_outer_coordinates, :, 1)
+    nacelle_r = view(duct_outer_coordinates, :, 2)
+
+    nacelle_in_wake_z = collect(
+        range(zwake[1], nacelle_z[end]; length=length(casing_in_wake_z))
+    )
+    nacelle_in_wake_r = finterp(nacelle_z, nacelle_r, nacelle_in_wake_z)
+
+    # repaneled nacelle inlet nodes
+    nacelle_inlet_z = scaled_cosine_spacing(
+        nduct_inlet + 1, 2 * duct_inlet_length, duct_le_coordinates[1]; mypi=pi / 2.0
+    )
+    nacelle_inlet_r = finterp(nacelle_z, nacelle_r, nacelle_inlet_z)
 
     # - interpolate centerbody geometry to provided grid locations - #
-    zcenterbody = view(centerbody_coordinates, :, 1)
-    rcenterbody = view(centerbody_coordinates, :, 2)
-    centerbody_trailing_index = min(
-        length(zwake), searchsortedfirst(zwake, zcenterbody[end])
-    )
-    new_zcenterbody_grid = @view(zwake[1:centerbody_trailing_index])
-    new_rcenterbody_grid = finterp(zcenterbody, rcenterbody, new_zcenterbody_grid)
 
-    scale = new_zcenterbody_grid[1] - zcenterbody[1]
-    transform = zcenterbody[1]
-    new_zcenterbody = scaled_cosine_spacing(
-        ncenterbody_inlet + 1, 2 * scale, transform; mypi=pi / 2
-    )
-    new_rcenterbody = finterp(zcenterbody, rcenterbody, new_zcenterbody)
+    # rename for convenience
+    centerbody_z = view(centerbody_coordinates, :, 1)
+    centerbody_r = view(centerbody_coordinates, :, 2)
 
-    scale = new_zduct_grid[1] - duct_coordinates[dleidx, 1]
-    transform = duct_coordinates[dleidx, 1]
-    new_zduct_inner = scaled_cosine_spacing(
-        nduct_inlet + 1, 2 * scale, transform; mypi=pi / 2
-    )
-    new_rduct_inner = finterp(zduct_inner, rduct_inner, new_zduct_inner)
+    centerbody_te_id = min(length(zwake), searchsortedfirst(zwake, centerbody_z[end]))
+    centerbody_in_wake_z = @view(zwake[1:centerbody_te_id])
+    centerbody_in_wake_r = finterp(centerbody_z, centerbody_r, centerbody_in_wake_z)
 
-    # update outer duct geometry
-    # in order to make sure that the trailing edge panels are (nearly) the same length it's easiest just to use the same x-spacing for the outer side of the duct as well.
-    new_rduct_outer = finterp(zduct_outer, rduct_outer, new_zduct_inner)
+    centerbody_inlet_length = centerbody_in_wake_z[1] - centerbody_z[1]
+    centerbody_inlet_z = scaled_cosine_spacing(
+        ncenterbody_inlet + 1, 2 * centerbody_inlet_length, centerbody_z[1]; mypi=pi / 2.0
+    )
+    centerbody_inlet_r = finterp(centerbody_z, centerbody_r, centerbody_inlet_z)
 
     # assemble new duct coordinates
     rp_duct_coordinates .= hcat(
-        [reverse(new_zduct_grid)'; reverse(new_rduct_grid)'],
-        [reverse(new_zduct_inner)[2:end]'; reverse(new_rduct_inner)[2:end]'],
-        [new_zduct_inner[2:(end - 1)]'; new_rduct_outer[2:(end - 1)]'],
-        [new_zduct_grid'; new_rduct_grid_outer'],
+        [reverse(casing_in_wake_z)'; reverse(casing_in_wake_r)'],
+        [reverse(casing_inlet_z)[2:end]'; reverse(casing_inlet_r)[2:end]'],
+        [nacelle_inlet_z[2:end]'; nacelle_inlet_r[2:end]'],
+        [nacelle_in_wake_z[2:end]'; nacelle_in_wake_r[2:end]'],
     )
 
     # assemble new centerbody coordinates
     rp_centerbody_coordinates .= hcat(
-        [new_zcenterbody[1:(end - 1)]'; new_rcenterbody[1:(end - 1)]'],
-        [new_zcenterbody_grid'; new_rcenterbody_grid'],
+        [centerbody_inlet_z[1:(end - 1)]'; centerbody_inlet_r[1:(end - 1)]'],
+        [centerbody_in_wake_z'; centerbody_in_wake_r'],
     )
 
     # check that the splining didn't put any of the center body radial coordinates in the negative.

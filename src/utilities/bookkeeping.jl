@@ -4,20 +4,20 @@
 Struct containing dimensions of the problem used throughout the analysis.
 
 - `nrotor`    : number of rotors
--  nwn`       : number of wake nodes
--  nwp`       : number of wake panels
--  ncp`       : number of casing panels
--  ndn`       : number of duct nodes
--  ncbn`      : number of centerbody nodes
--  nbn`       : number of body nodes
--  nbp`       : number of body panels
--  nws`       : number of wake sheets (also rotor nodes)
--  nbe`       : number of blade elements (also rotor panels)
--  nwsn`      : number of nodes in each wake sheet
--  nwsp`      : number of panels in each wake sheet
--  ndwin`     : number of duct-wake interfacing nodes
--  ncbwin`    : number of centerbody-wake interfacing nodes
--  nbodies=2` : number of bodies (currently hardcoded to 2)
+- `nwn`       : number of wake nodes
+- `nwp`       : number of wake panels
+- `ncp`       : number of casing panels
+- `ndn`       : number of duct nodes
+- `ncbn`      : number of centerbody nodes
+- `nbn`       : number of body nodes
+- `nbp`       : number of body panels
+- `nws`       : number of wake sheets (also rotor nodes)
+- `nbe`       : number of blade elements (also rotor panels)
+- `nwsn`      : number of nodes in each wake sheet
+- `nwsp`      : number of panels in each wake sheet
+- `ndwin`     : number of duct-wake interfacing nodes
+- `ncbwin`    : number of centerbody-wake interfacing nodes
+- `nbodies=2` : number of bodies (currently hardcoded to 2)
 """
 @kwdef struct ProblemDimensions{TI}
     nrotor::TI      # number of rotors
@@ -52,8 +52,9 @@ Determine all relevant dimensions to the problem based either on the paneling_co
 function get_problem_dimensions(paneling_constants::PanelingConstants)
 
     # - Extract Paneling Constants - #
-    (; npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte) =
-        paneling_constants
+    (;
+        npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte
+    ) = paneling_constants
 
     # number of rotors is one less than the length of npanels if the duct and hub trailing edges line up, and is two less if they don't
     nrotor = iszero(dte_minus_cbte) ? length(npanels) - 1 : length(npanels) - 2
@@ -83,7 +84,7 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
         ncbp += npanels[end - 1]
     end
 
-    # duct panels are 2x the number of nacelle panels
+    # duct panels are casing + nacelle panels
     ndp = 2 * ncp
 
     # duct and center body nodes are 1 more than number of panels
@@ -119,21 +120,21 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
     end
 
     return ProblemDimensions(;
-        nrotor,     # number of rotors
-        nwn,    # number of wake nodes
-        nwp,    # number of wake panels
-        ncp,    # number of casing panels
-        ndn,    # number of duct nodes
-        ncbn,   # number of centerbody nodes
-        nbn,    # number of body nodes
-        nbp,    # number of body panels
-        nws,    # number of wake sheets (also rotor nodes)
-        nbe,    # number of blade elements (also rotor panels)
-        nwsn,   # number of nodes in each wake sheet
-        nwsp,   # number of panels in each wake sheet
-        ndwin,  # number of duct-wake interfacing nodes
-        ncbwin, # number of centerbody-wake interfacing nodes
-        nbodies=2, #hard code this for now.
+        nrotor,    # number of rotors
+        nwn,       # number of wake nodes
+        nwp,       # number of wake panels
+        ncp,       # number of casing panels
+        ndn,       # number of duct nodes
+        ncbn,      # number of centerbody nodes
+        nbn,       # number of body nodes
+        nbp,       # number of body panels
+        nws,       # number of wake sheets (also rotor nodes)
+        nbe,       # number of blade elements (also rotor panels)
+        nwsn,      # number of nodes in each wake sheet
+        nwsp,      # number of panels in each wake sheet
+        ndwin,     # number of duct-wake interfacing nodes
+        ncbwin,    # number of centerbody-wake interfacing nodes
+        nbodies=2, # hard code this for now.
     )
 end
 

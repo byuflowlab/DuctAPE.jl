@@ -25,7 +25,7 @@
 function setup_boundary_layer_functions_head(
     s,
     vtan_duct,
-    # duct_control_points,
+    duct_control_points,
     operating_point,
     boundary_layer_options;
     verbose=false,
@@ -76,6 +76,15 @@ function calculate_H(H1)
 end
 
 """
+    limH1(H1)
+
+Returns a limited H1 to avoid undefined behavior
+"""
+function limH1(H1)
+    return FLOWMath.ksmax([H1; 3.3 + 1e-4])
+end
+
+"""
     calculate_cf(H, Red2)
 
 Calculate the skin friction coefficient used in Head's method
@@ -85,24 +94,24 @@ function calculate_cf(H, Red2)
 end
 
 """
-    boundary_layer_residual_head(y, s, parameters)
+    boundary_layer_residual_head(y, parameters, s)
 
 Out of place residual function for Head's method.
 """
-function boundary_layer_residual_head(y, s, parameters)
+function boundary_layer_residual_head(y, parameters, s)
     dy = similar(y) .= 0
-    return boundary_layer_residual_head!(dy, y, s, parameters)
+    return boundary_layer_residual_head!(dy, y, parameters, s)
 end
 
 """
-    boundary_layer_residual_head!(dy, y, s, parameters)
+    boundary_layer_residual_head!(dy, y, parameters, s)
 
 Calculate dy give the current states, y, the input position, s, and various parameters.
 """
-function boundary_layer_residual_head!(dy, y, s, parameters)
+function boundary_layer_residual_head!(dy, y, parameters, s)
 
     # - unpack parameters - #
-    (; verbose) = parameters
+    (; edge_velocity, edge_acceleration, edge_density, edge_viscosity, verbose) = parameters
 
     # - unpack variables - #
     d2, H1 = y
@@ -110,11 +119,8 @@ function boundary_layer_residual_head!(dy, y, s, parameters)
     verbose && printdebug("H1: ", H1)
 
     # limit H1 to be greater than 3.3
-    H1lim = FLOWMath.ksmax([H1; 3.3 + 1e-2])
+    H1lim = limH1(H1)
     verbose && printdebug("H1lim: ", H1lim)
-
-    # - unpack variables - #
-    (; edge_velocity, edge_acceleration, edge_density, edge_viscosity) = parameters
 
     # - Intermediate Calculations - #
     # determine dUedx
@@ -146,22 +152,45 @@ function boundary_layer_residual_head!(dy, y, s, parameters)
     dy[2] = 0.0306 / d2 * (H1lim - 3.0)^(-0.6169) - dUedx * H1lim / Ue - dy[1] * H1lim / d2
     verbose && printdebug("dy[2]: ", dy[2])
 
-    return dy, H
+    return dy
+end
+
+function initialize_head_states(boundary_layer_functions, s_init; verbose=false)
+
+    (; edge_density, edge_velocity, edge_viscosity) = boundary_layer_functions
+
+    # - Initialize Boundary Layer States - #
+    H10 = 10.6
+    d20 =
+        0.036 * s_init / calculate_Re(
+            edge_density(s_init),
+            edge_velocity(s_init),
+            s_init,
+            edge_viscosity(s_init),
+        )^0.2
+
+    initial_states = [d20; H10]
+    H0 = 1.28
+
+    return initial_states, H0
 end
 
 """
-    solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; verbose=false)
+    solve_head_boundary_layer!(f, ode, initial_states, steps, parameters; verbose=false)
 
 Integrate the turbulent boundary layer using a Runge-Kutta method.
 
 # Arguments:
 - `f::function_handle` : Governing residual equations to integrate
-- `rk::function_handle` : Runge-Kutta method to use (RK2 or RK4)
+- `ode::function_handle` : ODE method to use (RK2 or RK4)
 - `initial_states::Float` : initial states
 - `steps::Vector{Float}` : steps for integration
 - `parameters::NamedTuple` : boundary layer solve options and other parameters
 """
-function solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; verbose=false)
+function solve_head_boundary_layer!(
+    ::RK, ode, initial_states, steps, parameters; verbose=false
+)
+    f = boundary_layer_residual_head
 
     # Unpack States and variables for viscous drag
     u0, H0 = initial_states
@@ -190,11 +219,11 @@ function solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; ve
         end
 
         # take step
-        us[:, i + 1], Hs[i + 1] = rk(
-            f, us[:, i], steps[i], abs(steps[i + 1] - steps[i]), parameters
-        )
+        us[:, i + 1] = ode(f, us[:, i], steps[i], abs(steps[i + 1] - steps[i]), parameters)
 
-        sepid[1] = i + 1
+        Hs[i + 1] = calculate_H(limH1(us[2, i + 1]))
+
+        sepid[1] = i
         if Hs[i + 1] >= parameters.separation_criteria
             sep[1] = true
             break
@@ -229,8 +258,10 @@ function solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; ve
             steps[(sepid[] - 1):sepid[]],
             parameters.separation_criteria,
         )
+
         stepsol = steps[1:sepid[]]
         usol = us[:, 1:sepid[]]
+
     else
         usep = us[:, end]
         Hsep = Hs[end]
@@ -240,5 +271,56 @@ function solve_head_boundary_layer!(f, rk, initial_states, steps, parameters; ve
     end
 
     # return states at separate, and separation shape factor, and surface length at separation
-    return usep, Hsep, s_sep, sepid, usol, stepsol
+    return usep, Hsep, s_sep, usol, stepsol
+end
+
+"""
+    solve_head_boundary_layer!(::DiffEq, ode, initial_states, steps, parameters; verbose=false)
+
+Integrate the turbulent boundary layer using a Runge-Kutta method.
+
+# Arguments:
+- `f::function_handle` : Governing residual equations to integrate
+- `ode::function_handle` : ODE method to use (one of the DifferentialEquations.jl options)
+- `initial_states::Float` : initial states
+- `steps::Vector{Float}` : steps for integration
+- `parameters::NamedTuple` : boundary layer solve options and other parameters
+"""
+function solve_head_boundary_layer!(
+    ::DiffEq, ode, initial_states, steps, parameters; verbose=false
+)
+    f = boundary_layer_residual_head!
+
+    prob = ODEProblem(f, initial_states[1], [steps[1], steps[end]], parameters)
+
+    # set up separation termination conditions
+    function condition(u, t, integrator)
+        return calculate_H(limH1(u[2])) - parameters.separation_criteria
+    end
+
+    function affect!(integrator)
+        return terminate!(integrator)
+    end
+
+    cb = ContinuousCallback(condition, affect!)
+
+    sol = diffeq_solve(
+        prob,
+        ode();
+        callback=cb,
+        abstol=eps(),
+        dtmax=1e-4,
+        # alg_hints=[:stiff],
+        # dt=parameters.first_step_size,
+        verbose=verbose,
+    )
+
+    usep = sol.u[end]
+    Hsep = calculate_H(usep[2])
+    s_sep = sol.t[end]
+    usol = reduce(hcat, (sol.u))
+    stepsol = sol.t
+
+    # return states at separate, and separation shape factor, and surface length at separation
+    return usep, Hsep, s_sep, usol, stepsol
 end

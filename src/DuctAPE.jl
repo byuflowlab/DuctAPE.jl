@@ -44,6 +44,9 @@ using ForwardDiff # used for jacobian for newton solver
 
 # For boundary layer stuff
 using Roots
+using OrdinaryDiffEq:
+    ODEProblem, terminate!, ContinuousCallback, RadauIIA5
+using OrdinaryDiffEq: solve as diffeq_solve
 
 # - Utility Packages - #
 using FLOWMath # used for various items, mostly interpolation
@@ -85,6 +88,8 @@ export ChainSolverOptions,
     FixedPointOptions,
     CSORSolverOptions
 export BoundaryLayerOptions
+export RK2, RK4
+export RadauIIA5, RadauIIA3
 
 # - Preprocess - #
 export setup_analysis
@@ -190,6 +195,7 @@ include("postprocess/viscous_drag.jl")
 # include("visualization/plot_recipe_defaults.jl")
 include("visualization/plot_recipes.jl")
 include("visualization/calculate_streamlines.jl")
+    include("visualization/calculate_velocity_field.jl")
 include("visualization/convenience_plots.jl")
 
 ##### ----- DEBUGGING ----- #####

@@ -18,6 +18,7 @@ struct plotMomentum end
 
 # Streamlines
 struct plotStreamlines end
+# struct plotVelocityField end
 
 #---------------------------------#
 #        PLOT Duct GEOMETRY        #
@@ -554,7 +555,7 @@ end
         quinary=RGB(155 / 255, 82 / 255, 162 / 255), #purple
         plotsgray=RGB(128 / 255, 128 / 255, 128 / 255), #gray
     ),
-    scale_thickness=50.0,
+    scale_thickness=5.0,
     bl_ylim=nothing,
 )
     color_palette --> [
@@ -746,3 +747,65 @@ end
 
     return nothing
 end
+
+##---------------------------------#
+##        PLOT VELOCITY FIELD      #
+##---------------------------------#
+
+#@recipe function plot_velocity_field(
+#    ::plotVelocityField,
+#    points,
+#    bvp,
+#    bvs,
+#    wvp,
+#    wvs,
+#    rsp,
+#    rss,
+#    vinf;
+#    integration_options=IntegrationOptions(),
+#    default_colors=(;
+#        primary=RGB(1 / 255, 149 / 255, 226 / 255), #blue
+#        secondary=RGB(189 / 255, 10 / 255, 53 / 255), #red
+#        tertiary=RGB(76 / 255, 173 / 255, 59 / 255), #green
+#        quaternary=RGB(238 / 255, 167 / 255, 46 / 255), #orange
+#        quinary=RGB(155 / 255, 82 / 255, 162 / 255), #purple
+#        plotsgray=RGB(128 / 255, 128 / 255, 128 / 255), #gray
+#    ),
+#    scale_thickness=50.0,
+#)
+#    color_palette --> [
+#        default_colors.primary,
+#        default_colors.secondary,
+#        default_colors.tertiary,
+#        default_colors.quaternary,
+#        default_colors.quinary,
+#        default_colors.plotsgray,
+#    ]
+
+#    # Plot specific values
+#    aspect_ratio --> 1
+
+#    u, v = calculate_velocity_field(
+#        points,
+#        bvp,
+#        bvs,
+#        wvp,
+#        wvs,
+#        rsp,
+#        rss,
+#        vinf;
+#        integration_options=integration_options,
+#    )
+
+#    for (z, r) in zip(eachcol(points[1, :]), eachcol(points[2, :]))
+#        @series begin
+#            color --> default_colors.plotsgray
+#            label --> ""
+#            linewidth --> 0.5
+#            quiver --> (u, v)
+#            return z, r
+#        end
+#    end
+
+#    return nothing
+#end

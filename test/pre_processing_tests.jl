@@ -10,13 +10,14 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     # get input data
     include("data/basic_two_rotor_for_test_NEW.jl")
 
-    zwake, rotor_indices_in_wake = dt.discretize_wake(
+    zwake, rotor_indices_in_wake, duct_le_coordinates = dt.discretize_wake(
         duct_coordinates,
         centerbody_coordinates,
         rotor.rotorzloc, # rotor axial locations
         paneling_constants.wake_length,
         paneling_constants.npanels,
         paneling_constants.dte_minus_cbte;
+        le_bracket=1,
     )
 
     @test zwake == [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
@@ -45,6 +46,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
         duct_coordinates,
         centerbody_coordinates,
         zwake,
+        duct_le_coordinates,
         paneling_constants.ncenterbody_inlet,
         paneling_constants.nduct_inlet;
         finterp=fm.linear,
@@ -55,10 +57,13 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     @test size(rp_duct_coordinates, 2) == 2 * size(duct_coordinates, 1) - 1
     @test size(rp_centerbody_coordinates, 2) == 2 * size(centerbody_coordinates, 1) - 1
 
-    @test rp_duct_coordinates == [
-        1.0 0.75 0.5 0.25 0.0 0.25 0.5 0.75 1.0
-        2.0 1.75 1.5 1.75 2.0 2.25 2.5 2.25 2.0
-    ]
+    @test isapprox(
+        rp_duct_coordinates,
+        [
+            1.0 0.75 0.5 0.25 0.0 0.25 0.5 0.75 1.0
+            2.0 1.75 1.5 1.75 2.0 2.25 2.5 2.25 2.0
+        ],
+    )
     @test rp_centerbody_coordinates == [
         0.0 0.25 0.5 0.75 1.0
         0.0 0.25 0.5 0.25 0.0
@@ -554,7 +559,7 @@ end
     # copy over operating point
     for f in fieldnames(typeof(operating_point))
         if f != :units
-        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+            solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
         end
     end
 

@@ -66,7 +66,7 @@ function analyze(
         #TODO: probably just call  the post-process function directly and return a reset_container! of the output
         if return_inputs
             return [],#zero_outputs(),
-            (; solve_parameter_tuple..., airfoils, idmaps, panels, problem_dimensions),
+            (; solve_parameter_tuple..., airfoils, idmaps, panels, problem_dimensions, reference_parameters, multi_point = [operating_point]),
             false
         else
             return [],#zero_outputs(),
@@ -410,6 +410,8 @@ function analyze(
             linsys=(; solve_parameter_tuple.linsys..., A_bb_LU),
             idmaps,
             problem_dimensions,
+            reference_parameters,
+            multi_point=operating_point,
         ),
         options.solver_options.converged
     else

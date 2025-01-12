@@ -38,16 +38,15 @@ Formatted printing when you have lots of debugging to do and want things to line
 """
 function printdebug(variable_name, variable, nspaces=4; colw=16)
     if length(variable) == 1
-        s = @sprintf "%*s %-*s %2.18f" nspaces " " colw variable_name variable[1]
+        s = @sprintf "%*s %-*s %2.18f" nspaces " " colw variable_name ForwardDiff.value(variable[1])
         println(rstrip(s, ['0', ' ']))
     else
         @printf "%*s %-*s\n" nspaces " " colw variable_name
         for v in variable
-            s = @sprintf "%*s %-*s %2.18f" (nspaces) " " colw "" v
+            s = @sprintf "%*s %-*s %2.18f" (nspaces) " " colw "" ForwardDiff.value(v)
             println(rstrip(s, ['0', ' ']))
         end
     end
-    # println("\t$(variable_name)" * v)
     return nothing
 end
 

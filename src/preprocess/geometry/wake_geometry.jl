@@ -25,15 +25,35 @@ function discretize_wake(
     wake_length,
     npanels,
     dte_minus_cbte;
+    le_bracket=5,
+    fitscale=1e2,
 )
 
-    # extract duct leading and trailing edge locations
-    duct_lez = minimum(duct_coordinates[:, 1])
-    duct_tez = maximum(duct_coordinates[:, 1])
+    # try a root finder to get the true leading edge
+    duct_lez, duct_minz = findmin(@view(duct_coordinates[:, 1]))
+
+    duct_lesp = FLOWMath.Akima(
+        @view(duct_coordinates[(duct_minz - le_bracket):(duct_minz + le_bracket), 2]),
+        @view(duct_coordinates[(duct_minz - le_bracket):(duct_minz + le_bracket), 1]),
+    )
+
+    duct_ler = Roots.find_zero(
+        x -> FLOWMath.derivative(duct_lesp, x) * fitscale,
+        (
+            duct_coordinates[duct_minz - le_bracket, 2],
+            duct_coordinates[duct_minz + le_bracket, 2],
+        ),
+        Roots.Brent();
+        atol=eps(),
+    )
+    duct_lez = duct_lesp(duct_ler)
+
+    # trailing edge shouldn't need anything fancy
+    duct_tez = duct_coordinates[1, 1]
 
     # extract hub leading and trailing edge location
-    cb_lez = minimum(centerbody_coordinates[:, 1])
-    cb_tez = maximum(centerbody_coordinates[:, 1])
+    cb_lez = centerbody_coordinates[1, 1]
+    cb_tez = centerbody_coordinates[end, 1]
 
     # calculate duct chord
     duct_chord = max(duct_tez, cb_tez) - min(duct_lez, cb_lez)
@@ -79,7 +99,7 @@ function discretize_wake(
     ridx = findall(x -> x in rotorzloc, zwake)
 
     # return dimensionalized wake x-coordinates
-    return zwake, ridx
+    return zwake, ridx, [duct_lez duct_ler]
 end
 
 """
@@ -97,7 +117,6 @@ Initialize the wake grid.
 - `wake_grid::Array{Float,3}` : 3D Array of axial and radial wake_grid points
 """
 function initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake)
-
     TF = promote_type(
         eltype(rp_duct_coordinates),
         eltype(rp_centerbody_coordinates),
@@ -197,7 +216,6 @@ function initialize_wake_grid!(
 
     return wake_grid
 end
-
 
 """
     generate_wake_grid(
@@ -320,7 +338,6 @@ function generate_wake_grid!(
     return wake_grid
 end
 
-
 """
     relax_grid!(
         grid_solver_options::GridSolverOptionsType,
@@ -372,7 +389,10 @@ function relax_grid!(
     grid_solver_options.converged[1] = false
 
     if verbose
-        println(tabchar^ntab * "Solving Elliptic Grid System using $(grid_solver_options.algorithm) Method")
+        println(
+            tabchar^ntab *
+            "Solving Elliptic Grid System using $(grid_solver_options.algorithm) Method",
+        )
     end
 
     # # precondition

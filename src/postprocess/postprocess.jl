@@ -145,7 +145,9 @@ Post-process a converged nonlinear solve solution.
   - `vz_wake`
   - `vr_wake`
   - `Cm_avg`
-
+- `reference_values`
+  - `Vinf`
+  - `Vref`
 """
 function post_process(
     solver_options,
@@ -513,18 +515,21 @@ function post_process(
             boundary_layer_options,
             Vtan_out[1:Int(body_vortex_panels.npanel[1])],
             Vtot_out[:, 1:Int(body_vortex_panels.npanel[1])],
+            body_vortex_panels.controlpoint[:, 1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.influence_length[1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.tangent[:, 1:Int(body_vortex_panels.npanel[1])],
-            body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],
-            operating_point;
-            verbose=false,
+            # body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],
+            Rref[1],
+            operating_point,
+            reference_parameters;
+            verbose=verbose,
         )
 
-        body_thrust[1] -= duct_viscous_drag
+        # body_thrust[1] -= duct_viscous_drag
     else
+        duct_viscous_drag = [0.0, 0.0]
         boundary_layer_outputs = nothing
     end
-
 
     ### --- TOTAL OUTPUTS --- ###
 
@@ -571,8 +576,10 @@ function post_process(
             # panel strengths
             panel_strengths=gamb[1:(idmaps.body_totnodes)],
             # body thrust
-            total_thrust=sum(body_thrust),
+            body_force_coefficient=body_force_coefficient,
+            total_thrust=sum(body_thrust) - sum(duct_viscous_drag),
             thrust_comp=body_thrust,
+            duct_viscous_drag=duct_viscous_drag,
             induced_efficiency,
             # surface pressures
             cp_in,
@@ -603,7 +610,7 @@ function post_process(
             vtan_centerbody_in,
             vtan_centerbody_out,
             # boundary layers
-            boundary_layers = boundary_layer_outputs,
+            boundary_layers=boundary_layer_outputs,
         ),
         # - Rotor Values - #
         rotors=(;

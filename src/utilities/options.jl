@@ -69,6 +69,14 @@ Used in boundary layer method dispatch
 """
 abstract type BoundaryLayerOptions end
 
+"""
+    abstract type RK
+
+Used for selecting boundary layer ODE solver
+"""
+struct RK end
+struct DiffEq end
+
 #---------------------------------#
 #         QUADRATURE TYPES        #
 #---------------------------------#
@@ -663,19 +671,23 @@ end
 - `n_steps::Int = Int(5e2)` : number of steps to use in boundary layer integration
 - `first_step_size::Float = 1e-6` : size of first step in boundary layer integration
 - `offset::Float = 1e-3` : size of offset for (where to initialize) boundary layer integration
-- `rk::Function = RK4` : solver to use for boundary layer integration (RK4 or RK2 available)
+- `solver_type::Type = DiffEq()` : type of ODE solver (RK() or DiffEq())
+- `ode::Function = RadauIIA5` : solver to use for boundary layer integration (RadauIIA5, RK4, or RK2 available)
 - `separation_criteria::Float=3.0` : value of H12 after which separation should happen.
 - `separation_allowance_upper::Int=10` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_allowance_lower::Int=10` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
-@kwdef struct HeadsBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts} <: BoundaryLayerOptions
+@kwdef struct HeadsBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <: BoundaryLayerOptions
     model_drag::Tb=false
     n_steps::Ti = Int(5e2)
     first_step_size::Tf = 1e-6
+    upper_step_size::Tssu=nothing
+    lower_step_size::Tssl=nothing
     offset::To = 1e-3
-    rk::Tfun = RK2
+    solver_type::Tsol = DiffEq()
+    ode::Tfun = RadauIIA5
     separation_criteria::Ts=3.0
     separation_allowance_upper::Ti=10
     separation_allowance_lower::Ti=10
@@ -700,13 +712,14 @@ Known Bugs:
 - `n_steps::Int = Int(2e2)` : number of steps to use in boundary layer integration
 - `first_step_size::Float = 1e-3` : size of first step in boundary layer integration
 - `offset::Float = 1e-2` : size of offset for (where to initialize) boundary layer integration
-- `rk::Function = RK4` : solver to use for boundary layer integration (RK4 or RK2 available)
+- `solver_type::Type = DiffEq()` : type of ODE solver (RK() or DiffEq())
+- `ode::Function = RadauIIA5` : solver to use for boundary layer integration (RadauIIA5, RK4, or RK2 available)
 - `separation_allowance_upper::Int=3` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_allowance_lower::Int=3` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
-@kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp} <: BoundaryLayerOptions
+@kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <: BoundaryLayerOptions
     model_drag::Tb=true
     lambda::Tb = false
     longitudinal_curvature::Tb = true
@@ -714,8 +727,12 @@ Known Bugs:
     dilation::Tb = true
     n_steps::Ti = Int(2e2)
     first_step_size::Tf = 1e-6
+    upper_step_size::Tssu=nothing
+    lower_step_size::Tssl=nothing
     offset::To = 1e-3
-    rk::Tfun = RK2
+    solver_type::Tsol = DiffEq()
+    ode::Tfun = RadauIIA5
+    separation_criteria::Ts=0.0
     separation_allowance_upper::Ti=25
     separation_allowance_lower::Ti=25
     separation_penalty_upper::Tp=0.2

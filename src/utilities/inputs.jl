@@ -203,7 +203,7 @@ Note that unlike other input structures, this one, in general, does not define f
 
 # Arguments
 
-- `nduct_inlet::Int` : The number of panels to use for the duct inlet (this number is used for both the casing and nacelle re-paneling)
+- `nduct_inlet::Int` : The number of panels to use for the casing inlet.
 - `ncenterbody_inlet::Int` : The number of panels to use for the centerbody inlet.
 - `npanels::AbstractVector{Int}` : A vector containing the number of panels between discrete locations inside the wake. Specifically, the number of panels between the rotors, between the last rotor and the first body trailing edge, between the body trailing edges (if different), and between the last body trailing edge and the end of the wake.  The length of this vector should be N+1 (where N is the number of rotors) if the duct and centerbody trailing edges are aligned, and N+2 if not.
 - `dte_minus_cbte::Float` : An indicator concerning the hub and duct trailing edge relative locations. Should be set to -1 if the duct trailing edge axial position minus the centerbody trailing edge axial position is negative, +1 if positive (though any positive or negative number will suffice), and zero if the trailing edges are aligned.

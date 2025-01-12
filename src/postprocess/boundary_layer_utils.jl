@@ -39,59 +39,83 @@ Split the duct body surface at the leading edge of the duct.
 - `s_upper::Vector{Float}` : cumulative sum of upper side (nacelle) panel lengths
 - `s_lower::Vector{Float}` : cumulative sum of lower side (casing) panel lengths
 """
-function split_at_stagnation_point(duct_panel_lengths, duct_panel_tangents, Vtot_duct)
+function split_at_stagnation_point(
+    duct_panel_lengths, duct_panel_tangents, Vtot_duct, Vtan_duct, first_step_size
+)
+    offset = findfirst(x -> x > 1.1 * first_step_size, cumsum(duct_panel_lengths[end:-1:1]))
 
-    # initialize stagnation point finder
-    stag_ids = [1, 1]
-    dp = zeros(eltype(Vtot_duct), 2)
-    dp[1] = dot(duct_panel_tangents[:, 1], Vtot_duct[:, 1])
+    s_tot = arc_lengths_from_panel_lengths(duct_panel_lengths[1:(end - offset)])
 
-    # loop through panels and stop when dot product of panel vector and velocity vector changes sign
-    # TODO: have to start further than the size of the first step size for the ODE solver
-    for i in 3:length(duct_panel_lengths)
-        dp[2] = dot(duct_panel_tangents[:, i], Vtot_duct[:, i])
+    dots = [
+        dot(duct_panel_tangents[:, i], Vtot_duct[:, i]) for
+        i in 1:(length(duct_panel_lengths) - offset)
+    ]
 
-        if sign(dp[1]) != sign(dp[2])
-            stag_ids[:] .= [i - 1; i]
-            break
+    if allequal(sign.(dots))
+        #=
+            We're likely in a hover-ish case and there is no stagnation point.
+            Want to find the minimum Vtan in this case, since either the stagnation point is the trailing edge, or it has lifted off the surface and the most recent point of stagnation could be used.
+        =#
+
+        _, minvtid = findmin(Vtan_duct)
+        vtsp = Akima_smooth(s_tot, Vtan_duct)
+
+        if minvtid == length(Vtan_duct)
+            s_upper = nothing
+            s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end:-1:1])
+            split_ratio = 1.0
+            stag_ids = ones(Int, 2) .* length(duct_panel_lengths)
+
+            return s_upper, s_lower, stag_ids, split_ratio, dots
+        else
+            stag_point = Roots.find_zero(
+                x -> FLOWMath.derivative(vtsp, x),
+                (s_tot[max(minvtid - 1, 1)], s_tot[minvtid + 1]),
+                Roots.Brent();
+                atol=eps(),
+            )
         end
-        dp[1] = dp[2]
-    end
 
-    if dp[1] == dp[2]
-        # we're likely in a hover-ish case and there is no stagnation point.
+        # elseif mindotid == length(duct_panel_lengths) - offset
 
-        s_upper = nothing
-        s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end:-1:1])
-        split_ratio = 1.0
-        stag_ids .= length(duct_panel_lengths)
-
-        elseif stag_ids[2] == length(duct_panel_lengths)
-        # things flipped on the last panel
-
-        s_upper = nothing
-        s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end-1:-1:1])
-        split_ratio = 1.0
-        stag_ids .= length(duct_panel_lengths)-1
+        #     s_upper = nothing
+        #     s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[(end - 1):-1:1])
+        #     split_ratio = 1.0
+        #     stag_ids = ones(Int,2) .* (length(duct_panel_lengths) - offset)
     else
+        mindotid = findfirst(x -> sign(x) != sign(dots[1]), dots)
+        dotsp = Akima_smooth(s_tot, dots)
 
-        # interpolate the lengths between control points
-        sum_length = 0.5 * sum(duct_panel_lengths[stag_ids])
-        stag_interp = FLOWMath.linear(dp, [0.0, sum_length], 0.0)
+        # println("mindotid: ", mindotid)
+        # println("mindot: ", dots[mindotid])
+        # println("bracket: ", (s_tot[max(mindotid - 1, 1)], s_tot[mindotid]))
+        # println(
+        #     "bracket vals: ", dotsp([(s_tot[max(mindotid - 1, 1)], s_tot[mindotid])...])
+        # )
+        # println("dots: ", dots)
 
-        partial_panel_lengths = [stag_interp, sum_length - stag_interp]
-
-        s_upper = arc_lengths_from_panel_lengths(
-            [abs(partial_panel_lengths[2]); duct_panel_lengths[stag_ids[2]:end]]
+        stag_point = Roots.find_zero(
+            dotsp, (s_tot[max(mindotid - 1, 1)], s_tot[mindotid]), Roots.Brent(); atol=eps()
         )
-
-        s_lower = arc_lengths_from_panel_lengths(
-            [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
-        )
-        split_ratio = s_lower[end]/(s_lower[end]+s_upper[end])
     end
 
-    return s_upper, s_lower, stag_ids, split_ratio
+    stag_ids = searchsortedfirst(s_tot, stag_point) .+ [-1, 0]
+    split_ratio = stag_point / s_tot[end]
+
+    partial_panel_lengths = [
+        stag_point - s_tot[stag_ids[1]]
+        s_tot[stag_ids[2]] - stag_point
+    ]
+
+    s_upper = arc_lengths_from_panel_lengths(
+        [abs(partial_panel_lengths[2]); duct_panel_lengths[stag_ids[2]:end]]
+    )
+
+    s_lower = arc_lengths_from_panel_lengths(
+        [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
+    )
+
+    return s_upper, s_lower, stag_ids, split_ratio, dots
 end
 
 """

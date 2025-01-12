@@ -24,38 +24,34 @@ function squire_young(d2, Ue, Uinf, H12)
 end
 
 """
-    total_viscous_drag_duct(cd_upper, cd_lower, exit_radius, Vref, rhoinf)
+    total_viscous_drag_duct(cd_upper, cd_lower, rotor_tip_radius, Vref, rhoinf)
 
 Calculate the total viscous drag of the duct from Squire-Young drag coefficients, integrated about exit circumference.
 
 # Arguments:
 - `cdc_upper::Float` : upper side drag coefficient times refernce chord
 - `cdc_lower::Float` : lower side drag coefficient times refernce chord
-- `exit_radius::Float` : radius used for integrating circumferentially
+- `rotor_tip_radius::Float` : radius used for integrating circumferentially
 - `Vref::Float` : reference velocity (Vinf)
 - `rhoinf::Float` : freestream density
 
 # Returns:
 - `viscous_drag::Float` : viscous drag on duct
 """
-function total_viscous_drag_duct(cdc_upper, cdc_lower, exit_radius, Vref, rhoinf)
+function total_viscous_drag_duct(cdc_upper, cdc_lower, rotor_tip_radius, Vref, rhoinf)
     # note: cdc's are already times chord, so no need to have a separate chord variable
 
     # drag per unit length
     dprime = 0.5 * rhoinf * Vref^2 * (cdc_upper + cdc_lower)
 
     # drag of annular airfoil
-    return dprime * 2.0 * pi * exit_radius
+    return dprime * 2.0 * pi * rotor_tip_radius
 end
 
-#---------------------------------#
-#          HEAD'S METHOD          #
-#---------------------------------#
-
 """
-    compute_single_side_drag_coefficient_head(
+    compute_single_side_drag_coefficient(
         steps,
-        exit_radius,
+        rotor_tip_radius,
         operating_point,
         boundary_layer_options;
         verbose=false,
@@ -65,67 +61,107 @@ Solve integral boundary layer and obtain viscous drag coefficient from Squire-Yo
 
 # Arguments:
 - `steps::Vector{Float}` : positions along surface for integration
-- `exit_radius::Float` : radius at duct trailing edge (casing side)
-- `operating_point::Float` : OperatingPoint object
-- `boundary_layer_functions::NamedTuple` : Various Akima splines and other functions for boundary layer values
+- `rotor_tip_radius::Float` : radius at duct trailing edge (casing side)
+- `Vref::Float` : reference velocity
+- `setup_boundary_layer_functions::NamedTuple` : Various Akima splines and other functions for boundary layer values
 - `boundary_layer_options::BoundaryLayerOptions` : BoundaryLayerOptions object
 
 # Returns:
 - `cd::Float` : viscous drag coefficient
 """
-function compute_single_side_drag_coefficient_head(
+function compute_single_side_drag_coefficient(
+    boundary_layer_options::HeadsBoundaryLayerOptions,
     steps,
-    exit_radius,
-    operating_point,
+    rotor_tip_radius,
+    Vref,
     boundary_layer_functions,
-    boundary_layer_options;
+    separation_options;
     verbose=false,
 )
-    (; edge_density, edge_velocity, edge_viscosity) = boundary_layer_functions
-
-    # verbose && printdebug("initial velocity: ", edge_velocity(steps[1]))
-    # verbose && printdebug("initial density: ", edge_density(steps[1]))
-    # verbose && printdebug("initial viscosity: ", edge_viscosity(steps[1]))
-
-    # - Initialize Boundary Layer States - #
-    H10 = 10.6
-    d20 =
-        0.036 * steps[1] / calculate_Re(
-            edge_density(steps[1]),
-            edge_velocity(steps[1]),
-            steps[1],
-            edge_viscosity(steps[1]),
-        )
-    initial_states = [d20; H10]
-    H0 = 1.28
-
-    usep, Hsep, s_sep, sepid, usol, stepsol = solve_head_boundary_layer!(
-        boundary_layer_residual_head,
-        boundary_layer_options.rk,
-        [initial_states, H0],
+    return compute_single_side_drag_coefficient(
+        initialize_head_states,
+        solve_head_boundary_layer!,
         steps,
-        (; boundary_layer_functions..., boundary_layer_options.separation_criteria);
-        verbose=false,
+        rotor_tip_radius,
+        Vref,
+        boundary_layer_functions,
+        (;
+            boundary_layer_options.solver_type,
+            boundary_layer_options.ode,
+            boundary_layer_options.separation_criteria,
+            boundary_layer_options.first_step_size,
+            separation_options...,
+        );
+        verbose=verbose,
     )
+end
 
-    # verbose && println(s_sep / steps[end])
+function compute_single_side_drag_coefficient(
+    boundary_layer_options::GreensBoundaryLayerOptions,
+    steps,
+    rotor_tip_radius,
+    Vref,
+    boundary_layer_functions,
+    separation_options;
+    verbose=false,
+)
+    return compute_single_side_drag_coefficient(
+        initialize_green_states,
+        solve_green_boundary_layer!,
+        steps,
+        rotor_tip_radius,
+        Vref,
+        boundary_layer_functions,
+        (;
+            boundary_layer_options.solver_type,
+            boundary_layer_options.ode,
+            boundary_layer_options.separation_criteria,
+            boundary_layer_options.first_step_size,
+            boundary_layer_options.lambda,
+            boundary_layer_options.longitudinal_curvature,
+            boundary_layer_options.lateral_strain,
+            boundary_layer_options.dilation,
+            separation_options...,
+        );
+        verbose=verbose,
+    )
+end
+
+function compute_single_side_drag_coefficient(
+    initialize_states,
+    solve_boundary_layer,
+    steps,
+    rotor_tip_radius,
+    Vref,
+    boundary_layer_functions,
+    single_side_boundary_layer_options;
+    verbose=false,
+)
+    usep, Hsep, s_sep, usol, stepsol = solve_boundary_layer(
+        single_side_boundary_layer_options.solver_type,
+        single_side_boundary_layer_options.ode,
+        initialize_states(boundary_layer_functions, steps[1]; verbose=verbose),
+        steps,
+        (; boundary_layer_functions..., single_side_boundary_layer_options...);
+        verbose=verbose,
+    )
 
     cdsq = squire_young(
-        usep[1], boundary_layer_functions.edge_velocity(s_sep), operating_point.Vinf[], Hsep
+        usep[1], boundary_layer_functions.edge_velocity(s_sep), Vref[], Hsep
     )
 
-    cd = FLOWMath.ksmin([boundary_layer_options.separation_penalty; cdsq])
+    cd = FLOWMath.ksmin([single_side_boundary_layer_options.separation_penalty; cdsq])
 
     cdadd = FLOWMath.ksmax(
         [
             0.0
             FLOWMath.linear(
-                [0.0; steps[end - boundary_layer_options.separation_allowance]],
-                [boundary_layer_options.separation_penalty; 0.0],
+                [0.0; steps[end - single_side_boundary_layer_options.separation_allowance]],
+                [single_side_boundary_layer_options.separation_penalty; 0.0],
                 s_sep,
             )
         ],
-        100,
+        1e8,
     )
 
     cd += cdadd
@@ -139,8 +175,9 @@ end
         Vtan_duct,
         cp_duct,
         duct_panel_lengths,
-        exit_radius,
+        rotor_tip_radius,
         operating_point,
+        reference_parameters,
     )
 
 Determine total, dimensional viscous drag on the duct.
@@ -149,8 +186,9 @@ Determine total, dimensional viscous drag on the duct.
 - `boundary_layer_options::BoundaryLayerOptions` : BoundaryLayerOptions object, used for dispatch as well
 - `Vtan_duct::Vector{Float}` : tangential velocity magnitudes for the entire duct
 - `duct_panel_lengths::Vector{Float}` : panel lengths for the entire duct
-- `exit_radius::Float` : radius at duct trailing edge (casing side)
-- `operating_point::Float` : OperatingPoint object
+- `rotor_tip_radius::Float` : radius at duct trailing edge (casing side)
+- `operating_point::OperatingPoint` : OperatingPoint object
+- `reference_parameters::ReferenceParameters` : ReferenceParameters object
 
 # Returns:
 - `duct_viscous_drag::Float` : total viscous drag of duct
@@ -165,28 +203,91 @@ Determine total, dimensional viscous drag on the duct.
   - `split_ratio`
   - `separation_point_ratio_upper`
   - `separation_point_ratio_lower`
+  - `cdc_upper`
+  - `cdc_lower`
 """
 function compute_viscous_drag_duct(
     boundary_layer_options::HeadsBoundaryLayerOptions,
     Vtan_duct,
     Vtot_duct,
+    duct_control_points,
     duct_panel_lengths,
     duct_panel_tangents,
-    exit_radius,
-    operating_point;
+    rotor_tip_radius,
+    operating_point,
+    reference_parameters;
     verbose=false,
 )
+    return compute_viscous_drag_duct(
+        setup_boundary_layer_functions_head,
+        boundary_layer_options,
+        Vtan_duct,
+        Vtot_duct,
+        duct_control_points,
+        duct_panel_lengths,
+        duct_panel_tangents,
+        rotor_tip_radius,
+        operating_point,
+        reference_parameters;
+        verbose=verbose,
+    )
+end
 
+function compute_viscous_drag_duct(
+    boundary_layer_options::GreensBoundaryLayerOptions,
+    Vtan_duct,
+    Vtot_duct,
+    duct_control_points,
+    duct_panel_lengths,
+    duct_panel_tangents,
+    rotor_tip_radius,
+    operating_point,
+    reference_parameters;
+    verbose=false,
+)
+    return compute_viscous_drag_duct(
+        setup_boundary_layer_functions_green,
+        boundary_layer_options,
+        Vtan_duct,
+        Vtot_duct,
+        duct_control_points,
+        duct_panel_lengths,
+        duct_panel_tangents,
+        rotor_tip_radius,
+        operating_point,
+        reference_parameters;
+        verbose=verbose,
+    )
+end
+
+function compute_viscous_drag_duct(
+    setup_boundary_layer_functions,
+    boundary_layer_options,
+    Vtan_duct,
+    Vtot_duct,
+    duct_control_points,
+    duct_panel_lengths,
+    duct_panel_tangents,
+    rotor_tip_radius,
+    operating_point,
+    reference_parameters;
+    verbose=false,
+)
     # find stagnation point
-    s_upper, s_lower, stag_ids, split_ratio = split_at_stagnation_point(
-        duct_panel_lengths, duct_panel_tangents, Vtot_duct
+    s_upper, s_lower, stag_ids, split_ratio, dots = split_at_stagnation_point(
+        duct_panel_lengths,
+        duct_panel_tangents,
+        Vtot_duct,
+        Vtan_duct,
+        boundary_layer_options.first_step_size,
     )
 
     # set up boundary layer solve parameters
     if !isnothing(s_upper)
-        boundary_layer_functions_upper = setup_boundary_layer_functions_head(
+        boundary_layer_functions_upper = setup_boundary_layer_functions(
             s_upper,
             [0.0; Vtan_duct[stag_ids[2]:end]],
+            duct_control_points,
             operating_point,
             boundary_layer_options;
             verbose=verbose,
@@ -194,9 +295,10 @@ function compute_viscous_drag_duct(
     end
 
     # set up boundary layer solve parameters
-    boundary_layer_functions_lower = setup_boundary_layer_functions_head(
+    boundary_layer_functions_lower = setup_boundary_layer_functions(
         s_lower,
         [0.0; Vtan_duct[stag_ids[1]:-1:1]],
+        duct_control_points,
         operating_point,
         boundary_layer_options;
         verbose=verbose,
@@ -205,33 +307,66 @@ function compute_viscous_drag_duct(
     # - Set integration steps - #
     if !isnothing(s_upper)
         # upper side
-        upper_steps =
-            set_boundary_layer_steps(
-                boundary_layer_options.n_steps,
-                boundary_layer_options.first_step_size,
-                s_upper[end] - boundary_layer_options.offset,
-            ) .+ boundary_layer_options.offset
+        if boundary_layer_options.solver_type == RK()
+            if isnothing(boundary_layer_options.upper_step_size)
+                upper_steps =
+                    set_boundary_layer_steps(
+                        boundary_layer_options.n_steps,
+                        boundary_layer_options.first_step_size,
+                        s_upper[end] - boundary_layer_options.offset,
+                    ) .+ boundary_layer_options.offset
+            else
+                upper_steps =
+                    range(
+                        0.0,
+                        s_upper[end] - boundary_layer_options.offset;
+                        step=boundary_layer_options.upper_step_size,
+                    ) .+ boundary_layer_options.offset
+            end
+        else
+            upper_steps =
+                range(
+                    0.0,
+                    s_upper[end] - boundary_layer_options.offset;
+                    length=length(s_upper),
+                ) .+ boundary_layer_options.offset
+        end
     end
 
     # lower side
-    lower_steps =
-        set_boundary_layer_steps(
-            boundary_layer_options.n_steps,
-            boundary_layer_options.first_step_size,
-            s_lower[end] - boundary_layer_options.offset,
-        ) .+ boundary_layer_options.offset
+    if boundary_layer_options.solver_type == RK()
+        if isnothing(boundary_layer_options.lower_step_size)
+            lower_steps =
+                set_boundary_layer_steps(
+                    boundary_layer_options.n_steps,
+                    boundary_layer_options.first_step_size,
+                    s_lower[end] - boundary_layer_options.offset,
+                ) .+ boundary_layer_options.offset
+        else
+            lower_steps =
+                range(
+                    0.0,
+                    s_lower[end] - boundary_layer_options.offset;
+                    step=boundary_layer_options.lower_step_size,
+                ) .+ boundary_layer_options.offset
+        end
+    else
+        lower_steps =
+            range(
+                0.0, s_lower[end] - boundary_layer_options.offset; length=length(s_lower)
+            ) .+ boundary_layer_options.offset
+    end
 
     # - Get drag coeffients - #
 
     if !isnothing(s_upper)
-        cdc_upper, usol_upper, stepsol_upper, s_sep_upper = compute_single_side_drag_coefficient_head(
+        cdc_upper, usol_upper, stepsol_upper, s_sep_upper = compute_single_side_drag_coefficient(
+            boundary_layer_options,
             upper_steps,
-            exit_radius,
-            operating_point,
+            rotor_tip_radius,
+            reference_parameters.Vref,
             boundary_layer_functions_upper,
             (;
-                boundary_layer_options.rk,
-                boundary_layer_options.separation_criteria,
                 separation_allowance=boundary_layer_options.separation_allowance_upper,
                 separation_penalty=boundary_layer_options.separation_penalty_upper,
             );
@@ -244,14 +379,13 @@ function compute_viscous_drag_duct(
         s_sep_upper = -1.0
     end
 
-    cdc_lower, usol_lower, stepsol_lower, s_sep_lower = compute_single_side_drag_coefficient_head(
+    cdc_lower, usol_lower, stepsol_lower, s_sep_lower = compute_single_side_drag_coefficient(
+        boundary_layer_options,
         lower_steps,
-        exit_radius,
-        operating_point,
+        rotor_tip_radius,
+        reference_parameters.Vref,
         boundary_layer_functions_lower,
         (;
-            boundary_layer_options.rk,
-            boundary_layer_options.separation_criteria,
             separation_allowance=boundary_layer_options.separation_allowance_lower,
             separation_penalty=boundary_layer_options.separation_penalty_lower,
         );
@@ -260,7 +394,11 @@ function compute_viscous_drag_duct(
 
     # Calculate total viscous drag
     total_drag = total_viscous_drag_duct(
-        cdc_upper, cdc_lower, exit_radius, operating_point.Vinf[], operating_point.rhoinf[]
+        cdc_upper,
+        cdc_lower,
+        rotor_tip_radius,
+        reference_parameters.Vref[],
+        operating_point.rhoinf[],
     )
 
     # Return
@@ -276,6 +414,9 @@ function compute_viscous_drag_duct(
         split_ratio,
         separation_point_ratio_upper=s_sep_upper,
         separation_point_ratio_lower=s_sep_lower,
+        cdc_upper=cdc_upper,
+        cdc_lower=cdc_lower,
+        vtdotpv=dots,
     )
 end
 
