@@ -115,7 +115,7 @@ function split_at_stagnation_point(
         [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
     )
 
-    return s_upper, s_lower, stag_ids, split_ratio, dots
+    return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
 end
 
 """

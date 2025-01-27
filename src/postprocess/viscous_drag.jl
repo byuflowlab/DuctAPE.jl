@@ -137,14 +137,19 @@ function compute_single_side_drag_coefficient(
     single_side_boundary_layer_options;
     verbose=false,
 )
+    u_init = initialize_states(boundary_layer_functions, steps[1]; verbose=verbose)
+
     usep, Hsep, s_sep, usol, stepsol = solve_boundary_layer(
         single_side_boundary_layer_options.solver_type,
         single_side_boundary_layer_options.ode,
-        initialize_states(boundary_layer_functions, steps[1]; verbose=verbose),
+        u_init,
         steps,
         (; boundary_layer_functions..., single_side_boundary_layer_options...);
         verbose=verbose,
     )
+
+    # printdebug("Hsep:", Hsep)
+    # printdebug("δ_2:", usep[1])
 
     cdsq = squire_young(
         usep[1], boundary_layer_functions.edge_velocity(s_sep), Vref[], Hsep
@@ -166,7 +171,7 @@ function compute_single_side_drag_coefficient(
 
     cd += cdadd
 
-    return cd, usol, stepsol, s_sep / steps[end]
+    return cd, u_init, usol, stepsol, s_sep / steps[end]
 end
 
 """
@@ -274,7 +279,7 @@ function compute_viscous_drag_duct(
     verbose=false,
 )
     # find stagnation point
-    s_upper, s_lower, stag_ids, split_ratio, dots = split_at_stagnation_point(
+    s_upper, s_lower, stag_ids, stag_point, split_ratio, dots = split_at_stagnation_point(
         duct_panel_lengths,
         duct_panel_tangents,
         Vtot_duct,
@@ -360,7 +365,7 @@ function compute_viscous_drag_duct(
     # - Get drag coeffients - #
 
     if !isnothing(s_upper)
-        cdc_upper, usol_upper, stepsol_upper, s_sep_upper = compute_single_side_drag_coefficient(
+        cdc_upper, u_init_upper, usol_upper, stepsol_upper, s_sep_upper = compute_single_side_drag_coefficient(
             boundary_layer_options,
             upper_steps,
             rotor_tip_radius,
@@ -379,7 +384,7 @@ function compute_viscous_drag_duct(
         s_sep_upper = -1.0
     end
 
-    cdc_lower, usol_lower, stepsol_lower, s_sep_lower = compute_single_side_drag_coefficient(
+    cdc_lower, u_init_lower, usol_lower, stepsol_lower, s_sep_lower = compute_single_side_drag_coefficient(
         boundary_layer_options,
         lower_steps,
         rotor_tip_radius,
@@ -405,18 +410,23 @@ function compute_viscous_drag_duct(
     return total_drag,
     (;
         stagnation_indices=stag_ids,
+        upper_initial_states=u_init_upper,
         upper_solved_states=usol_upper,
         upper_solved_steps=stepsol_upper,
+        lower_initial_states=u_init_lower,
         lower_solved_states=usol_lower,
         lower_solved_steps=stepsol_lower,
         surface_length_upper=s_upper,
         surface_length_lower=s_lower,
+        stag_point,
         split_ratio,
         separation_point_ratio_upper=s_sep_upper,
         separation_point_ratio_lower=s_sep_lower,
         cdc_upper=cdc_upper,
         cdc_lower=cdc_lower,
         vtdotpv=dots,
+        boundary_layer_functions_lower,
+        boundary_layer_functions_upper,
     )
 end
 

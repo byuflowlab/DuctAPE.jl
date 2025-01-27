@@ -81,7 +81,7 @@ end
 Returns a limited H1 to avoid undefined behavior
 """
 function limH1(H1)
-    return FLOWMath.ksmax([H1; 3.3 + 1e-4])
+    return FLOWMath.ksmax([H1; 3.3 + 1e-4], 25)
 end
 
 """
@@ -98,9 +98,9 @@ end
 
 Out of place residual function for Head's method.
 """
-function boundary_layer_residual_head(y, parameters, s)
+function boundary_layer_residual_head(y, parameters, s; debug=false)
     dy = similar(y) .= 0
-    return boundary_layer_residual_head!(dy, y, parameters, s)
+    return boundary_layer_residual_head!(dy, y, parameters, s; debug=debug)
 end
 
 """
@@ -108,7 +108,7 @@ end
 
 Calculate dy give the current states, y, the input position, s, and various parameters.
 """
-function boundary_layer_residual_head!(dy, y, parameters, s)
+function boundary_layer_residual_head!(dy, y, parameters, s; debug=false)
 
     # - unpack parameters - #
     (; edge_velocity, edge_acceleration, edge_density, edge_viscosity, verbose) = parameters
@@ -118,14 +118,11 @@ function boundary_layer_residual_head!(dy, y, parameters, s)
     verbose && printdebug("d2: ", d2)
     verbose && printdebug("H1: ", H1)
 
-    # limit H1 to be greater than 3.3
+    # limit H1 to be greater than 3.3(+1e-4)
     H1lim = limH1(H1)
     verbose && printdebug("H1lim: ", H1lim)
 
     # - Intermediate Calculations - #
-    # determine dUedx
-    dUedx = edge_acceleration(s)
-    verbose && printdebug("dUedx: ", dUedx)
 
     # determine H
     H = calculate_H(H1lim)
@@ -143,34 +140,39 @@ function boundary_layer_residual_head!(dy, y, parameters, s)
     cf = calculate_cf(H, Red2)
     verbose && printdebug("cf: ", cf)
 
+    # determine dUedx
+    dUedx = edge_acceleration(s)
+    verbose && printdebug("dUedx: ", dUedx)
+
     # - "Residuals" - #
-    # dδ₂/dx
+    # dδ₂/ds
     dy[1] = cf / 2.0 - dUedx * d2 / Ue * (H + 2.0)
     verbose && printdebug("dy[1]: ", dy[1])
 
-    # dH₁/dx
+    # dH₁/ds
     dy[2] = 0.0306 / d2 * (H1lim - 3.0)^(-0.6169) - dUedx * H1lim / Ue - dy[1] * H1lim / d2
     verbose && printdebug("dy[2]: ", dy[2])
 
-    return dy
+    if debug
+        return dy[1], dy[2], H1lim, H, Ue, dUedx, Red2, cf
+    else
+        return dy
+    end
 end
 
 function initialize_head_states(boundary_layer_functions, s_init; verbose=false)
-
     (; edge_density, edge_velocity, edge_viscosity) = boundary_layer_functions
 
     # - Initialize Boundary Layer States - #
     H10 = 10.6
     d20 =
-        0.036 * s_init / calculate_Re(
-            edge_density(s_init),
-            edge_velocity(s_init),
-            s_init,
-            edge_viscosity(s_init),
+        0.036 * s_init /
+        calculate_Re(
+            edge_density(s_init), edge_velocity(s_init), s_init, edge_viscosity(s_init)
         )^0.2
 
     initial_states = [d20; H10]
-    H0 = 1.28
+    H0 = calculate_H(H10)
 
     return initial_states, H0
 end
@@ -274,6 +276,23 @@ function solve_head_boundary_layer!(
     return usep, Hsep, s_sep, usol, stepsol
 end
 
+function update_Cf_head(state, step, parameters)
+
+    # Unpack State
+    d2, H1 = state
+
+    # Unpack parameters
+    (; edge_velocity, edge_density, edge_viscosity) = parameters
+
+    Red2 = calculate_Re(edge_density(step), edge_velocity(step), d2, edge_viscosity(step))
+
+    H = calculate_H(limH1(H1))
+
+    cf = calculate_cf(H, Red2)
+
+    return cf
+end
+
 """
     solve_head_boundary_layer!(::DiffEq, ode, initial_states, steps, parameters; verbose=false)
 
@@ -293,33 +312,52 @@ function solve_head_boundary_layer!(
 
     prob = ODEProblem(f, initial_states[1], [steps[1], steps[end]], parameters)
 
-    # set up separation termination conditions
-    function condition(u, t, integrator)
-        return calculate_H(limH1(u[2])) - parameters.separation_criteria
-    end
-
-    function affect!(integrator)
-        return terminate!(integrator)
-    end
-
-    cb = ContinuousCallback(condition, affect!)
+    # TODO: put termination option in options and pass into paramters
+    # if parameters.terminate
+    #     # set up separation termination conditions
+    #     function condition(u, t, integrator)
+    #         return calculate_H(limH1(u[2])) - parameters.separation_criteria
+    #         return update_Cf_head(u, t, parameters) + 1e-2
+    #     end
+    #     function affect!(integrator)
+    #         return terminate!(integrator)
+    #     end
+    #     cb = ContinuousCallback(condition, affect!)
+    # else
+    #     # TODO: figure out what default continuous callback is and use that here
+    #     cb = nothing
+    # end
 
     sol = diffeq_solve(
         prob,
         ode();
-        callback=cb,
+        # callback=cb,
         abstol=eps(),
-        dtmax=1e-4,
+        dtmax=1e-4, # TODO: put this in options and pass into parameters
         # alg_hints=[:stiff],
         # dt=parameters.first_step_size,
         verbose=verbose,
     )
 
-    usep = sol.u[end]
-    Hsep = calculate_H(usep[2])
-    s_sep = sol.t[end]
     usol = reduce(hcat, (sol.u))
     stepsol = sol.t
+
+    Hsol = calculate_H.(limH1.(usol[2, :]))
+    Hsep = min(parameters.separation_criteria, maximum(Hsol))
+
+    if Hsep == parameters.separation_criteria
+
+        #spline H and steps from solution, get step at H=3
+        sepwrap(x) = parameters.separation_criteria - akima_smooth(stepsol, Hsol, x)
+        hid = findfirst(x->x>=parameters.separation_criteria, Hsol)
+        s_sep = Roots.find_zero(sepwrap, stepsol[hid])
+        # spline states and steps, get states at step for H=3
+        usep = [akima_smooth(stepsol, u, s_sep) for u in eachrow(usol)]
+    else
+        usep = sol.u[end]
+        Hsep = calculate_H(limH1(usep[2]))
+        s_sep = sol.t[end]
+    end
 
     # return states at separate, and separation shape factor, and surface length at separation
     return usep, Hsep, s_sep, usol, stepsol
