@@ -69,7 +69,8 @@ function calculate_H(H1)
 
     # get each side of the piecewise equation
     hgeq = 0.86 * (H1 - 3.3)^(-0.777) + 1.1
-    hlt = 1.1538 * (H1 - 3.3)^(-0.326) + 0.6778
+    # hlt = 1.1538 * (H1 - 3.3)^(-0.326) + 0.6778
+    hlt = FLOWMath.ksmin([3.1; 1.1538 * (H1 - 3.3)^(-0.326) + 0.6778], 5)
 
     # blend the pieces smoothly
     return FLOWMath.sigmoid_blend(hlt, hgeq, H1, 5.3)
@@ -349,7 +350,7 @@ function solve_head_boundary_layer!(
 
         #spline H and steps from solution, get step at H=3
         sepwrap(x) = parameters.separation_criteria - akima_smooth(stepsol, Hsol, x)
-        hid = findfirst(x->x>=parameters.separation_criteria, Hsol)
+        hid = findfirst(x -> x >= parameters.separation_criteria, Hsol)
         s_sep = Roots.find_zero(sepwrap, stepsol[hid])
         # spline states and steps, get states at step for H=3
         usep = [akima_smooth(stepsol, u, s_sep) for u in eachrow(usol)]

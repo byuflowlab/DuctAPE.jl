@@ -64,9 +64,10 @@ function split_at_stagnation_point(
             s_upper = nothing
             s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end:-1:1])
             split_ratio = 1.0
+            stag_point = s_tot[1]
             stag_ids = ones(Int, 2) .* length(duct_panel_lengths)
 
-            return s_upper, s_lower, stag_ids, split_ratio, dots
+            return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
         else
             stag_point = Roots.find_zero(
                 x -> FLOWMath.derivative(vtsp, x),

@@ -379,6 +379,8 @@ function compute_viscous_drag_duct(
         )
     else
         cdc_upper = 0.0
+        u_init_upper = 0.0
+        boundary_layer_functions_upper = (;)
         usol_upper = -ones(eltype(Vtan_duct), 3)
         stepsol_upper = -1
         s_sep_upper = -1.0
