@@ -90,6 +90,10 @@ function compute_single_side_drag_coefficient(
             boundary_layer_options.ode,
             boundary_layer_options.separation_criteria,
             boundary_layer_options.first_step_size,
+            boundary_layer_options.dy_eps,
+            boundary_layer_options.H1_eps,
+            boundary_layer_options.H_eps,
+            boundary_layer_options.terminate,
             separation_options...,
         );
         verbose=verbose,
@@ -113,7 +117,7 @@ function compute_single_side_drag_coefficient(
         Vref,
         boundary_layer_functions,
         (;
-            boundary_layer_options.solver_type,
+            boundary_layer_options...,
             boundary_layer_options.ode,
             boundary_layer_options.separation_criteria,
             boundary_layer_options.first_step_size,
@@ -121,6 +125,7 @@ function compute_single_side_drag_coefficient(
             boundary_layer_options.longitudinal_curvature,
             boundary_layer_options.lateral_strain,
             boundary_layer_options.dilation,
+            boundary_layer_options.terminate,
             separation_options...,
         );
         verbose=verbose,

@@ -679,8 +679,9 @@ end
 - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
-@kwdef struct HeadsBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <: BoundaryLayerOptions
+@kwdef struct HeadsBoundaryLayerOptions{Tb,Te,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <: BoundaryLayerOptions
     model_drag::Tb=false
+    terminate::Tb=true
     n_steps::Ti = Int(5e2)
     first_step_size::Tf = 1e-6
     upper_step_size::Tssu=nothing
@@ -693,6 +694,9 @@ end
     separation_allowance_lower::Ti=10
     separation_penalty_upper::Tp=0.2
     separation_penalty_lower::Tp=0.2
+    dy_eps::Te=0.0
+    H1_eps::Te=1e-4
+    H_eps::Te=0.0
 end
 
 """
@@ -721,6 +725,7 @@ Known Bugs:
 """
 @kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <: BoundaryLayerOptions
     model_drag::Tb=true
+    terminate::Tb=true
     lambda::Tb = false
     longitudinal_curvature::Tb = true
     lateral_strain::Tb = true
