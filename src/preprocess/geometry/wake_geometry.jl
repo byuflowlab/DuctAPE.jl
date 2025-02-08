@@ -413,6 +413,8 @@ function relax_grid!(
         atol=grid_solver_options.atol,
         iteration_limit=grid_solver_options.iteration_limit,
         grid_solver_options.converged,
+        grid_solver_options.residual_value,
+        grid_solver_options.iterations,
         verbose=verbose,
     )
 

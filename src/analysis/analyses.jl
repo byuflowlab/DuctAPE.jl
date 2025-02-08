@@ -59,7 +59,8 @@ function analyze(
             if iszero(lu_decomp_flag)
                 @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
             elseif !options.grid_solver_options.converged[1]
-                @warn "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good."
+                @warn begin "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good. \nConvergence Tolerance: $(options.grid_solver_options.atol)\nSolver terminated after $(options.grid_solver_options.iterations[1]) iterations with a residual of $(options.grid_solver_options.residual_value[1])"
+                end
             end
         end
         #TODO: write a function that returns the same as outs below, but all zeros
@@ -280,7 +281,9 @@ function analyze(
             if iszero(lu_decomp_flag)
                 @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
             elseif !options.grid_solver_options.converged[1]
-                @warn "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good."
+                @warn begin "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good. \nConvergence Tolerance: $(options.grid_solver_options.atol)\nSolver terminated after $(options.grid_solver_options.iterations[1]) iterations with a residual of $(options.grid_solver_options.residual_value[1])"
+                end
+
             end
         end
         #TODO: write a function that returns the same as outs below, but all zeros

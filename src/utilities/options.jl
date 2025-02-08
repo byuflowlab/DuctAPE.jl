@@ -644,20 +644,21 @@ end
 Options for Newton elliptic grid solver.
 
 # Fields
-- `iteration_limit::Int = 10` : maximum number of iterations
-- `atol::Float = 1e-14` : absolute convergence tolerance
+- `iteration_limit::Int = 20` : maximum number of iterations
+- `atol::Float = 3e-10` : absolute convergence tolerance
 - `algorithm::Symbol = :newton` : algorithm to use in NLsolve.jl
 - `autodiff::Symbol = :forward` : differentiation method to use in NLsolve.jl
 - `converged::AbstractArray{Bool}` = [false]
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
-    iteration_limit::TI = 10
-    atol::TF = 2e-10
+    iteration_limit::TI = 20
+    atol::TF = 3e-10
     algorithm::TSym = :newton
     autodiff::TSym = :forward
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residual_value::AbstractArray{TF} = [0.0]
 end
 
 #---------------------------------#

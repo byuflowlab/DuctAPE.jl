@@ -397,7 +397,7 @@ function elliptic_grid_residual_dfdc!(r, y, x, p)
 end
 
 """
-    solve_elliptic_grid!(x,p)
+    solve_elliptic_grid(x,p)
 
 Solve for elliptic grid using a non-SLOR approach that is compatible with ImplicitAD
 
@@ -431,6 +431,8 @@ function solve_elliptic_grid(x, p)
     )
 
     p.converged[1] = NLsolve.converged(result)
+    p.iterations[1] = result.iterations
+    p.residual_value[1] = result.residual_norm
 
     return result.zero
 end
@@ -443,6 +445,7 @@ end
         atol=1e-14,
         iteration_limit=10,
         converged=[false],
+        residual_value=[0.0],
         verbose=false,
     )
 
@@ -457,6 +460,7 @@ Solve for elliptic grid using a non-SLOR approach that is compatible with Implic
  - `atol::Float=1e-10` : convergence tolerance, default = 1e-9
  - `iteration_limit::Int=10` : maximum number of iterations to run, default=100
  - `converged::Vector{Bool}=[false]` : convergence flag
+ - `residual_value::Vector{Float}=[0.0]` : final residual value
  - `verbose::Bool=false` : flag to print verbose statements
 """
 function solve_elliptic_grid!(
@@ -466,6 +470,8 @@ function solve_elliptic_grid!(
     atol=1e-10,
     iteration_limit=10,
     converged=[false],
+    residual_value=[0.0],
+    iterations=[0],
     verbose=false,
 )
 
@@ -486,7 +492,7 @@ function solve_elliptic_grid!(
     # - set up solve - #
     itshape = (gridshape[2] - 1, gridshape[3] - 2)
     constants = (;
-        x_caching, itshape, algorithm, autodiff, atol, iteration_limit, converged, verbose
+        x_caching, itshape, algorithm, autodiff, atol, iteration_limit, converged, residual_value, iterations, verbose
     )
 
     # non ImplicitAD version
