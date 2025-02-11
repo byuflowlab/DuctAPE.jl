@@ -70,9 +70,9 @@ function split_at_stagnation_point(
 
             return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
         else
-            print("in past bug area that is hard to recreate.  ")
-            print("min Vt index: ", minvtid)
-            println("  length s_tot: ", length(s_tot))
+            # print("in past bug area that is hard to recreate.  ")
+            # print("min Vt index: ", minvtid)
+            # println("  length s_tot: ", length(s_tot))
             stag_point = Roots.find_zero(
                 x -> FLOWMath.derivative(vtsp, x),
                 (s_tot[max(minvtid - 1, 1)], s_tot[min(minvtid + 1, length(s_tot))]),
