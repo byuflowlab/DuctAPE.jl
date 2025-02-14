@@ -156,11 +156,17 @@ function compute_single_side_drag_coefficient(
     # printdebug("Hsep:", Hsep)
     # printdebug("δ_2:", usep[1])
 
-    cdsq = squire_young(
+    cdsqy = squire_young(
         usep[1], boundary_layer_functions.edge_velocity(s_sep), Vref[], Hsep
     )
 
-    cd = FLOWMath.ksmin([single_side_boundary_layer_options.separation_penalty; cdsq])
+    if single_side_boundary_layer_options.separation_penalty < eps()
+        cd = cdsqy
+    else
+        cd = FLOWMath.ksmin(
+            [single_side_boundary_layer_options.separation_penalty; cdsqy], 100
+        )
+    end
 
     cdadd = FLOWMath.ksmax(
         [

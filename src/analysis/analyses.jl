@@ -213,6 +213,7 @@ function analyze(
             linsys=(; solve_parameter_tuple.linsys..., A_bb_LU),
             idmaps,
             problem_dimensions,
+            options = deepcopy(options),
         ),
         any(options.solver_options.converged)
     else
