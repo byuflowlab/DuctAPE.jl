@@ -60,8 +60,7 @@ function split_at_stagnation_point(
         _, minvtid = findmin(Vtan_duct)
         vtsp = Akima_smooth(s_tot, Vtan_duct)
 
-
-        if minvtid == length(s_tot)
+        if minvtid >= length(s_tot)
             s_upper = nothing
             s_lower = arc_lengths_from_panel_lengths(duct_panel_lengths[end:-1:1])
             split_ratio = 1.0
@@ -74,11 +73,9 @@ function split_at_stagnation_point(
             # print("min Vt index: ", minvtid)
             # println("  length s_tot: ", length(s_tot))
             # println("  length Vtan_duct: ", length(Vtan_duct))
+            bracket = (s_tot[max(minvtid - 1, 1)], s_tot[min(minvtid + 1, length(s_tot))])
             stag_point = Roots.find_zero(
-                x -> FLOWMath.derivative(vtsp, x),
-                (s_tot[max(minvtid - 1, 1)], s_tot[min(minvtid + 1, length(s_tot))]),
-                Roots.Brent();
-                atol=eps(),
+                x -> FLOWMath.derivative(vtsp, x), bracket, Roots.Brent(); atol=eps()
             )
         end
 
