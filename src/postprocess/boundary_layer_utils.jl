@@ -69,14 +69,63 @@ function split_at_stagnation_point(
 
             return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
         else
+
             # print("in past bug area that is hard to recreate.  ")
             # print("min Vt index: ", minvtid)
             # println("  length s_tot: ", length(s_tot))
             # println("  length Vtan_duct: ", length(Vtan_duct))
+
+            # - Check Bracket actually brackets - #
             bracket = (s_tot[max(minvtid - 1, 1)], s_tot[min(minvtid + 1, length(s_tot))])
-            stag_point = Roots.find_zero(
-                x -> FLOWMath.derivative(vtsp, x), bracket, Roots.Brent(); atol=eps()
-            )
+            bracketvals = FLOWMath.derivative.(Ref(vtsp), bracket)
+
+            # if not, get a bracket
+            bidl = 0
+            bidr = 1
+            bid = 1
+            while sign(bracketvals[1]) == sign(bracketvals[2])
+                # not a bracketing interval
+                lb = max(minvtid - bidl, 1)
+                ub = min(minvtid + bidr, length(s_tot))
+                bracket = (s_tot[lb], s_tot[ub])
+
+                bracketvals = FLOWMath.derivative.(Ref(vtsp), bracket)
+
+                if lb == 1 && ub == length(s_tot)
+                    break
+                else
+                    if bid % 2 == 0
+                        bidr += 2
+                        bid += 1
+                    else
+                        bidt = bidl
+                        bidl = bidr
+                        bidr = bidt
+                        bid += 1
+                    end
+                end
+            end
+
+            # printdebug("bracket:", bracket)
+            # printdebug("bracketvals:", FLOWMath.derivative.(Ref(vtsp), bracket))
+
+            # if still no bracket found, then try one last attempt without bracketing method
+            if sign(bracketvals[1]) == sign(bracketvals[2])
+
+                # println("using non-brent search")
+
+                stag_point = Roots.find_zero(
+                    x -> FLOWMath.derivative(vtsp, x), stot[minvtid]; atol=eps()
+                )
+                # use bracketing method if you can
+            else
+
+                # println("using brent search")
+
+                stag_point = Roots.find_zero(
+                    x -> FLOWMath.derivative(vtsp, x), bracket, Roots.Brent(); atol=eps()
+                )
+            end
         end
 
         # elseif mindotid == length(duct_panel_lengths) - offset
