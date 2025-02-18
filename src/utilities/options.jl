@@ -652,7 +652,7 @@ Options for Newton elliptic grid solver.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
-    iteration_limit::TI = 20
+    iteration_limit::TI = 30
     atol::TF = 3e-10
     algorithm::TSym = :newton
     autodiff::TSym = :forward
