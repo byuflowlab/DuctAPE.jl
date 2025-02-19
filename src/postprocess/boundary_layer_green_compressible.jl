@@ -85,7 +85,7 @@ function setup_boundary_layer_functions_green(
     edge_acceleration(ss) = FLOWMath.derivative.(Ref(edge_velocity), ss)
 
     # r's
-    r_coords = Akima_smooth(s, duct_control_points[2, :])
+    r_coords = smooth_Akima(s, duct_control_points[2, :])
 
     # dr/ds
     radial_derivative(ss) = FLOWMath.derivative.(Ref(r_coords), ss)

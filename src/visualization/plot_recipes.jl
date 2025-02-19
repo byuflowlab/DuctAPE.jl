@@ -662,7 +662,7 @@ end
                 [stagnz; bvp.normal[1, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
                 blo.upper_solved_steps,
             )
-            nhatru = akima_smooth(
+            nhatru = smooth_akima(
                 blo.surface_length_upper,
                 [stagnr; bvp.normal[2, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
                 blo.upper_solved_steps,
