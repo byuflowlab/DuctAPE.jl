@@ -58,7 +58,7 @@ function split_at_stagnation_point(
         =#
 
         _, minvtid = findmin(Vtan_duct)
-        vtsp = Akima_smooth(s_tot, Vtan_duct)
+        vtsp = smooth_Akima(s_tot, Vtan_duct)
 
         if minvtid >= length(s_tot)
             s_upper = nothing
@@ -136,7 +136,7 @@ function split_at_stagnation_point(
         #     stag_ids = ones(Int,2) .* (length(duct_panel_lengths) - offset)
     else
         mindotid = findfirst(x -> sign(x) != sign(dots[1]), dots)
-        dotsp = Akima_smooth(s_tot, dots)
+        dotsp = smooth_Akima(s_tot, dots)
 
         # println("mindotid: ", mindotid)
         # println("mindot: ", dots[mindotid])

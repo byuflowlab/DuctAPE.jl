@@ -55,10 +55,10 @@ function mod_COR_solver(
         update_states!(states, r_current, r_previous, B, relaxation_parameters, state_dims)
 
         # Check if residuals are converged
-        converged[] = maximum(abs.(r_current)) <= convergence_tolerance
+        converged[] = maximum(smooth_abs(r_current)) <= convergence_tolerance
         if verbose
             println("Iteration: $(iter[])")
-            println("max r: ", maximum(abs.(r_current)))
+            println("max r: ", maximum(smooth_abs(r_current)))
             println("Converged? $(converged[])")
         end
 
@@ -70,7 +70,7 @@ function mod_COR_solver(
     end
 
     return (;
-        y=states, converged=converged[1], total_iterations=iter[1], residual=r_current
+            y=states, converged=converged[1], total_iterations=iter[1], residual=maximum(smooth_abs(r_current))
     )
 end
 
@@ -143,7 +143,7 @@ function relax_Gamr_mod!(
         # note: delta = Gamr_estimate .- Gamr_current
         # note: deltahat here is actually 1/deltahat which is the version needed later
         for (j, d) in enumerate(eachrow(deltahat))
-            if abs(delta[j]) < eps()
+            if smooth_abs(delta[j]) < eps()
                 d[1] = sign(delta[j]) * sign(maxBGamr[i]) #avoid division by zero
             else
                 d[1] = maxBGamr[i] ./ delta[j]
@@ -151,7 +151,7 @@ function relax_Gamr_mod!(
         end
 
         # get initial relaxation factor
-        bladeomega[i], oi = findmin(abs.(deltahat))
+        bladeomega[i], oi = findmin(smooth_abs(deltahat))
 
         # scale relaxation factor based on if the change and old values are the same sign (back tracking or pressing forward)
         if (nrf / deltahat[oi]) < -bt1

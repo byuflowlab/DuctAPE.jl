@@ -16,16 +16,16 @@ Determine the radius of curvature.
 function calculate_radius_of_curvature(s, controlpoint, ss)
 
     # spline x and y coordinates with respect to arc length
-    x_of_s = Akima_smooth(s, controlpoint[1, :])
-    y_of_s = Akima_smooth(s, controlpoint[2, :])
+    x_of_s = smooth_Akima(s, controlpoint[1, :])
+    y_of_s = smooth_Akima(s, controlpoint[2, :])
 
     #get first and second derivatives of coordinates with respect to arc length at integration step locations
     xdot = FLOWMath.derivative.(Ref(x_of_s), ss)
-    xdotsp = Akima_smooth(s, FLOWMath.derivative.(Ref(x_of_s), s))
+    xdotsp = smooth_Akima(s, FLOWMath.derivative.(Ref(x_of_s), s))
     xddot = FLOWMath.derivative.(Ref(xdotsp), ss)
 
     ydot = FLOWMath.derivative.(Ref(y_of_s), ss)
-    ydotsp = Akima_smooth(s, FLOWMath.derivative.(Ref(y_of_s), s))
+    ydotsp = smooth_Akima(s, FLOWMath.derivative.(Ref(y_of_s), s))
     yddot = FLOWMath.derivative.(Ref(ydotsp), ss)
 
     # assemble the numerator and denominator of the radius of curvature expression
@@ -79,7 +79,7 @@ function setup_boundary_layer_functions_green(
 
     # Edge Velocities
     # note: the ss that get's passed in is the ss in the full surface length, so in practice this will be stagnation s ± boundary layer step s
-    edge_velocity = Akima_smooth(s, vtan_duct)
+    edge_velocity = smooth_Akima(s, vtan_duct)
 
     # Edge Accelerations (dUe/ds)
     edge_acceleration(ss) = FLOWMath.derivative.(Ref(edge_velocity), ss)

@@ -38,7 +38,9 @@ Formatted printing when you have lots of debugging to do and want things to line
 """
 function printdebug(variable_name, variable, nspaces=4; colw=16)
     if length(variable) == 1
-        s = @sprintf "%*s %-*s %2.18f" nspaces " " colw variable_name ForwardDiff.value(variable[1])
+        s = @sprintf "%*s %-*s %2.18f" nspaces " " colw variable_name ForwardDiff.value(
+            variable[1]
+        )
         println(rstrip(s, ['0', ' ']))
     else
         @printf "%*s %-*s\n" nspaces " " colw variable_name
@@ -170,7 +172,7 @@ Convenience function for promoting types based on any potential elements of the 
 # Returns
 - `TP::Type` : the promoted type
 """
-function promote_ducted_rotor_type(d,o)
+function promote_ducted_rotor_type(d, o)
     return promote_type(
         eltype(d.duct_coordinates),
         eltype(d.centerbody_coordinates),
@@ -211,19 +213,25 @@ function cache_dims!(total_length, l, s)
 end
 
 """
-    akima_smooth(x, y, xpt; delta=2.0 * eps(), eps=eps())
+    smooth_akima(x, y, xpt; delta=2.0 * eps(), eps=eps())
 
 Wrapper for FLOWMath.akima with different optional argument values.
 """
-function akima_smooth(x, y, xpt; delta=2.0 * eps(), eps=eps())
+function smooth_akima(x, y, xpt; delta=2.0 * eps(), eps=eps())
     return FLOWMath.akima(x, y, xpt, delta, eps)
 end
 
 """
-    Akima_smooth(x, y; delta=2.0 * eps(), eps=eps())
+    smooth_Akima(x, y; delta=2.0 * eps(), eps=eps())
 
 Wrapper for FLOWMath.Akima with different optional argument values.
 """
-function Akima_smooth(x, y; delta=2.0 * eps(), eps=eps())
+function smooth_Akima(x, y; delta=2.0 * eps(), eps=eps())
     return FLOWMath.Akima(x, y, delta, eps)
+end
+
+"""
+"""
+function smooth_abs(x; eps=eps())
+    return FLOWMath.abs_smooth.(x, Ref(eps))
 end

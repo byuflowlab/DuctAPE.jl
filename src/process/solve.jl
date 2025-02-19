@@ -200,6 +200,7 @@ function solve(
 
     # update convergence flag
     solver_options.converged[multipoint_index[]] = sol.converged
+    solver_options.residual[multipoint_index[]] = ForwardDiff.value(sol.residual)
     solver_options.iterations[multipoint_index[]] = sol.total_iterations
 
     return sol.y

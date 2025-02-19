@@ -281,6 +281,7 @@ Type containing all the options for the modified CSOR solver.
     atol::TF = 1e-10
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residual::AbstractArray{TF} = [-1.0]
 end
 
 """
@@ -298,7 +299,10 @@ function ModCSORSolverOptions(multipoint; kwargs...)
     lm = length(multipoint)
 
     return ModCSORSolverOptions(;
-        converged=fill(false, (1, lm)), iterations=zeros(Int, (1, lm)), kwargs...
+        converged=fill(false, (1, lm)),
+        residual=zeros(1, lm),
+        iterations=zeros(Int, (1, lm)),
+        kwargs...,
     )
 end
 
@@ -680,24 +684,25 @@ end
 - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
-@kwdef struct HeadsBoundaryLayerOptions{Tb,Te,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <: BoundaryLayerOptions
-    model_drag::Tb=false
-    terminate::Tb=true
+@kwdef struct HeadsBoundaryLayerOptions{Tb,Te,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <:
+              BoundaryLayerOptions
+    model_drag::Tb = false
+    terminate::Tb = true
     n_steps::Ti = Int(5e2)
     first_step_size::Tf = 1e-6
-    upper_step_size::Tssu=nothing
-    lower_step_size::Tssl=nothing
+    upper_step_size::Tssu = nothing
+    lower_step_size::Tssl = nothing
     offset::To = 1e-3
     solver_type::Tsol = DiffEq()
     ode::Tfun = RadauIIA5
-    separation_criteria::Ts=3.0
-    separation_allowance_upper::Ti=10
-    separation_allowance_lower::Ti=10
-    separation_penalty_upper::Tp=0.2
-    separation_penalty_lower::Tp=0.2
-    dy_eps::Te=0.0
-    H1_eps::Te=1e-4
-    H_eps::Te=0.0
+    separation_criteria::Ts = 3.0
+    separation_allowance_upper::Ti = 10
+    separation_allowance_lower::Ti = 10
+    separation_penalty_upper::Tp = 0.2
+    separation_penalty_lower::Tp = 0.2
+    dy_eps::Te = 0.0
+    H1_eps::Te = 1e-4
+    H_eps::Te = 0.0
 end
 
 """
@@ -724,25 +729,26 @@ Known Bugs:
 - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
 """
-@kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <: BoundaryLayerOptions
-    model_drag::Tb=true
-    terminate::Tb=true
+@kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <:
+              BoundaryLayerOptions
+    model_drag::Tb = true
+    terminate::Tb = true
     lambda::Tb = false
     longitudinal_curvature::Tb = true
     lateral_strain::Tb = true
     dilation::Tb = true
     n_steps::Ti = Int(2e2)
     first_step_size::Tf = 1e-6
-    upper_step_size::Tssu=nothing
-    lower_step_size::Tssl=nothing
+    upper_step_size::Tssu = nothing
+    lower_step_size::Tssl = nothing
     offset::To = 1e-3
     solver_type::Tsol = DiffEq()
     ode::Tfun = RadauIIA5
-    separation_criteria::Ts=0.0
-    separation_allowance_upper::Ti=25
-    separation_allowance_lower::Ti=25
-    separation_penalty_upper::Tp=0.2
-    separation_penalty_lower::Tp=0.2
+    separation_criteria::Ts = 0.0
+    separation_allowance_upper::Ti = 25
+    separation_allowance_lower::Ti = 25
+    separation_penalty_upper::Tp = 0.2
+    separation_penalty_lower::Tp = 0.2
 end
 
 #---------------------------------#

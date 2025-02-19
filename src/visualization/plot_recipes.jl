@@ -604,23 +604,23 @@ end
         d2_lower = blo.lower_solved_states[1, :]
 
         # spline the control points vs surface length
-        cpzl = akima_smooth(
+        cpzl = smooth_akima(
             blo.surface_length_lower,
             [bvp.controlpoint[1, blo.stagnation_indices[2]:-1:1]; stagz],
             blo.lower_solved_steps,
         )
-        cprl = akima_smooth(
+        cprl = smooth_akima(
             blo.surface_length_lower,
             [bvp.controlpoint[2, blo.stagnation_indices[2]:-1:1]; stagr],
             blo.lower_solved_steps,
         )
 
-        nhatzl = akima_smooth(
+        nhatzl = smooth_akima(
             blo.surface_length_lower,
             [bvp.normal[1, blo.stagnation_indices[2]:-1:1]; stagnz],
             blo.lower_solved_steps,
         )
-        nhatrl = akima_smooth(
+        nhatrl = smooth_akima(
             blo.surface_length_lower,
             [bvp.normal[2, blo.stagnation_indices[2]:-1:1]; stagnr],
             blo.lower_solved_steps,
@@ -646,18 +646,18 @@ end
             d2_upper = blo.upper_solved_states[1, :]
 
             # spline the control points vs surface length
-            cpzu = akima_smooth(
+            cpzu = smooth_akima(
                 blo.surface_length_upper,
                 [stagz; bvp.controlpoint[1, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
                 blo.upper_solved_steps,
             )
-            cpru = akima_smooth(
+            cpru = smooth_akima(
                 blo.surface_length_upper,
                 [stagr; bvp.controlpoint[2, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
                 blo.upper_solved_steps,
             )
 
-            nhatzu = akima_smooth(
+            nhatzu = smooth_akima(
                 blo.surface_length_upper,
                 [stagnz; bvp.normal[1, blo.stagnation_indices[2]:Int(bvp.npanel[1])]],
                 blo.upper_solved_steps,

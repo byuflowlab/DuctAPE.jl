@@ -33,7 +33,7 @@ function setup_boundary_layer_functions_head(
 
     # Edge Velocities
     # note: the ss that get's passed in is the ss in the full surface length, so in practice this will be stagnation s ± boundary layer step s
-    edge_velocity = Akima_smooth(s, vtan_duct)
+    edge_velocity = smooth_Akima(s, vtan_duct)
 
     # Edge Accelerations (dUe/ds)
     edge_acceleration(ss) = FLOWMath.derivative.(Ref(edge_velocity), ss)
@@ -55,7 +55,7 @@ function setup_boundary_layer_functions_head(
     end
 
     # # r's
-    # r_coords = Akima_smooth(s, duct_control_points[2, :])
+    # r_coords = smooth_Akima(s, duct_control_points[2, :])
 
     return (; edge_velocity, edge_acceleration, edge_density, edge_viscosity, verbose)
 end
@@ -364,11 +364,11 @@ function solve_head_boundary_layer!(
     if Hsep == parameters.separation_criteria
 
         #spline H and steps from solution, get step at H=3
-        sepwrap(x) = parameters.separation_criteria - akima_smooth(stepsol, Hsol, x)
+        sepwrap(x) = parameters.separation_criteria - smooth_akima(stepsol, Hsol, x)
         hid = findfirst(x -> x > parameters.separation_criteria, Hsol)
         s_sep = Roots.find_zero(sepwrap, [stepsol[hid - 1]; stepsol[hid]])
         # spline states and steps, get states at step for H=3
-        usep = [akima_smooth(stepsol, u, s_sep) for u in eachrow(usol)]
+        usep = [smooth_akima(stepsol, u, s_sep) for u in eachrow(usol)]
     else
         usep = sol.u[end]
         Hsep = calculate_H(limH1(usep[2]))
