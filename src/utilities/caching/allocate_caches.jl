@@ -340,6 +340,10 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
 
     s = (nbodies,)
     l = lfs(s)
+    body_inviscid_thrust = cache_dims!(total_length, l, s)
+
+    body_viscous_drag = cache_dims!(total_length, l, s)
+
     body_thrust = cache_dims!(total_length, l, s)
 
     body_force_coefficient = cache_dims!(total_length, l, s)
@@ -375,6 +379,8 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
         cp_centerbody_in,
         cp_centerbody_out,
     ), # cp_tuple
+    body_inviscid_thrust,
+    body_viscous_drag,
     body_thrust,
     body_force_coefficient
 end
@@ -456,6 +462,7 @@ function allocate_prepost_container_cache(
 
     ### --- ROTOR Post-Processing Cache --- ###
 
+    # TODO: consider moving rotor stuff to its own function like body stuff
     s = (nrotor,)
     l = lfs(s)
     rotor_inviscid_thrust = cache_dims!(total_length, l, s)
@@ -513,7 +520,7 @@ function allocate_prepost_container_cache(
     sphi = cache_dims!(total_length, l, s)
 
     ### --- BODY Post-Processing Cache --- ###
-    zpts, vtan_tuple, cp_tuple, body_thrust, body_force_coefficient = allocate_prepost_body_containers!(
+    zpts, vtan_tuple, cp_tuple, body_inviscid_thrust, body_viscous_drag, body_thrust, body_force_coefficient = allocate_prepost_body_containers!(
         total_length, nbp, ncp, ndn, ncbn, nbodies
     )
 

@@ -50,8 +50,10 @@ Post-process a converged nonlinear solve solution.
 `outs::NamedTuple` : A named tuple containing all the output values including
 - `bodies`
   - `panel_strengths`
-  - `total_thrust`
+  - `inviscid_thrust`
+  - `viscous_drag`
   - `thrust_comp`
+  - `total_thrust`
   - `induced_efficiency`
   - `cp_in`
   - `cp_out`
@@ -81,15 +83,23 @@ Post-process a converged nonlinear solve solution.
   - `vtan_centerbody_out`
   - `boundary_layers`
     - `stagnation_indices`
+    - `upper_initial_states`
     - `upper_solved_states`
     - `upper_solved_steps`
+    - `lower_initial_states`
     - `lower_solved_states`
     - `lower_solved_steps`
     - `surface_length_upper`
     - `surface_length_lower`
+    - `stag_point`
     - `split_ratio`
     - `separation_point_ratio_upper`
     - `separation_point_ratio_lower`
+    - `cdc_upper`cdc_upper`
+    - `cdc_lower`cdc_lower`
+    - `vtdotpv`
+    - `boundary_layer_functions_lower`
+    - `boundary_layer_functions_upper`
 - `rotors`
   - `circulation`
   - `panel_strengths`
@@ -213,6 +223,8 @@ function post_process(
         zpts,
         vtan_tuple,
         cp_tuple,
+        body_inviscid_thrust,
+        body_viscous_drag,
         body_thrust,
         body_force_coefficient,
         # Totals Stuff
@@ -485,7 +497,7 @@ function post_process(
 
     # - Calculate Thrust from Bodies - #
     forces_from_pressure!(
-        body_thrust,
+        body_inviscid_thrust,
         body_force_coefficient,
         cp_in,
         cp_out,
@@ -496,7 +508,7 @@ function post_process(
 
     # add thrust from trailing edge panels on bodies
     forces_from_TEpanels!(
-        body_thrust,
+        body_inviscid_thrust,
         body_force_coefficient,
         cp_in,
         cp_out,
@@ -509,9 +521,8 @@ function post_process(
 
     if boundary_layer_options.model_drag
 
-        #TODO; make this in place
-        # compute_viscous_drag_duct!(duct_viscous_drag, boundary_layer_outputs,
-        duct_viscous_drag, boundary_layer_outputs = compute_viscous_drag_duct(
+        #TODO; make this in place once you've finalized outputs
+        body_viscous_drag[1], boundary_layer_outputs = compute_viscous_drag_duct(
             boundary_layer_options,
             Vtan_out[1:Int(body_vortex_panels.npanel[1])],
             Vtot_out[:, 1:Int(body_vortex_panels.npanel[1])],
@@ -525,16 +536,20 @@ function post_process(
             verbose=verbose,
         )
 
-        # body_thrust[1] -= duct_viscous_drag
     else
-        duct_viscous_drag = [0.0, 0.0]
+        body_viscous_drag = [0.0, 0.0]
         boundary_layer_outputs = nothing
     end
+
+    # Total body thrust
+    body_thrust = sum(body_inviscid_thrust) - sum(duct_viscous_drag)
 
     ### --- TOTAL OUTPUTS --- ###
 
     # - Total Thrust - #
-    total_thrust[] = sum([rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust])
+    total_thrust[] = sum(
+        [rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust; body_viscous_drag]
+    )
 
     # - Total Torque - #
     total_torque[] = sum([rotor_inviscid_torque; rotor_viscous_torque])
@@ -577,9 +592,10 @@ function post_process(
             panel_strengths=gamb[1:(idmaps.body_totnodes)],
             # body thrust
             body_force_coefficient=body_force_coefficient,
-            total_thrust=sum(body_thrust) - sum(duct_viscous_drag),
+            inviscid_thrust=body_inviscid_thrust,
+            viscous_drag=body_viscous_drag,
             thrust_comp=body_thrust,
-            duct_viscous_drag=duct_viscous_drag,
+            total_thrust=sum(body_thrust),
             induced_efficiency,
             # surface pressures
             cp_in,
