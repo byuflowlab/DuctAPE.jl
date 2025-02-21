@@ -14,3 +14,8 @@ It is strongly influenced by the underlying [theory](https://web.mit.edu/drela/P
 
 DuctAPE has been developed specifically for applications in gradient-based optimization settings. <!-- add citations later -->
 The default solver methods have been chosen to balance code efficiency as well as robustness while simultaneously allowing for efficient automatic differentiation through DuctAPE employing [ImplicitAD.jl](https://flow.byu.edu/ImplicitAD.jl/dev/).
+
+
+## Publications
+
+[Mehr, J., and Ning, A., “DuctAPE: A steady-state, axisymmetric ducted fan analysis code designed for gradient-based optimization.,” AIAA Aviation Forum, Las Vegas, Jul. 2024. doi:10.2514/6.2024-4297](https://scholarsarchive.byu.edu/facpub/7214/)
