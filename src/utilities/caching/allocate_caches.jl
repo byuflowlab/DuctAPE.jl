@@ -589,6 +589,8 @@ function allocate_prepost_container_cache(
             zpts,
             vtan_tuple,
             cp_tuple,
+            body_inviscid_thrust,
+            body_viscous_drag,
             body_thrust,
             body_force_coefficient,
             # - TOTALS - #

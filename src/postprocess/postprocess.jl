@@ -542,7 +542,7 @@ function post_process(
     end
 
     # Total body thrust
-    body_thrust = sum(body_inviscid_thrust) - sum(duct_viscous_drag)
+    body_thrust = sum(body_inviscid_thrust) - sum(body_viscous_drag)
 
     ### --- TOTAL OUTPUTS --- ###
 

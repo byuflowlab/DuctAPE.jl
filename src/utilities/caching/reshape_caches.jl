@@ -103,12 +103,18 @@ function withdraw_prepost_body_container_cache(vec, dims)
             dims.cp_tuple.cp_centerbody_out.shape,
         ),
     )
+
+    body_inviscid_thrust = reshape(@view(vec[dims.body_inviscid_thrust.index]), dims.body_inviscid_thrust.shape)
+
+    body_viscous_drag = reshape(@view(vec[dims.body_viscous_drag.index]), dims.body_viscous_drag.shape)
+
     body_thrust = reshape(@view(vec[dims.body_thrust.index]), dims.body_thrust.shape)
+
     body_force_coefficient = reshape(
         @view(vec[dims.body_force_coefficient.index]), dims.body_force_coefficient.shape
     )
 
-    return zpts, vtan_tuple, cp_tuple, body_thrust, body_force_coefficient
+    return zpts, vtan_tuple, cp_tuple, body_inviscid_thrust, body_viscous_drag,body_thrust, body_force_coefficient
 end
 
 """
@@ -526,7 +532,7 @@ function withdraw_prepost_container_cache(vec, dims)
     )
 
     # - BODY POST CACHE - #
-    zpts, vtan_tuple, cp_tuple, body_thrust, body_force_coefficient = withdraw_prepost_body_container_cache(
+    zpts, vtan_tuple, cp_tuple, body_inviscid_thrust, body_viscous_drag, body_thrust, body_force_coefficient = withdraw_prepost_body_container_cache(
         vec, dims
     )
 
@@ -584,6 +590,8 @@ function withdraw_prepost_container_cache(vec, dims)
         zpts,
         vtan_tuple,
         cp_tuple,
+        body_inviscid_thrust,
+        body_viscous_drag,
         body_thrust,
         body_force_coefficient,
         # Totals Post

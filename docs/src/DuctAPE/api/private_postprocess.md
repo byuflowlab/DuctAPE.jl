@@ -103,6 +103,6 @@ DuctAPE.solve_head_boundary_layer!
 DuctAPE.squire_young
 DuctAPE.total_viscous_drag_duct
 DuctAPE.compute_viscous_drag_duct
-DuctAPE.compute_single_side_drag_coefficient_head
+DuctAPE.compute_single_side_drag_coefficient
 DuctAPE.compute_viscous_drag_duct_schlichting
 ```
