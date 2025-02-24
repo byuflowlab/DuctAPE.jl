@@ -652,14 +652,19 @@ Options for Newton elliptic grid solver.
 - `atol::Float = 3e-10` : absolute convergence tolerance
 - `algorithm::Symbol = :newton` : algorithm to use in NLsolve.jl
 - `autodiff::Symbol = :forward` : differentiation method to use in NLsolve.jl
+- `precondition = false` : flag to precondition with SLOR
+- `precondition_max_iterations = 3` : number of precondition iterations
 - `converged::AbstractArray{Bool}` = [false]
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residual_value::AbstractArray{Int} = [0]` : residual value
 """
 @kwdef struct GridSolverOptions{TB,TF,TI,TSym} <: GridSolverOptionsType
     iteration_limit::TI = 30
     atol::TF = 3e-10
     algorithm::TSym = :newton
     autodiff::TSym = :forward
+    precondition::TB = false
+    precondition_max_iterations::TI = 3
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residual_value::AbstractArray{TF} = [0.0]

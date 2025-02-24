@@ -368,55 +368,55 @@ function relax_grid!(
     tabchar="    ",
     ntab=1,
 )
-
-    # if verbose
-    #     println(tabchar^ntab * "Preconditioning Elliptic Grid System using SLOR")
-    # end
-    # # - Relax grid to allow Newton solve a tractable starting point - #
-    # relax_grid!(
-    #     wake_grid;
-    #     iteration_limit=grid_solver_options.iteration_limit,
-    #     atol=grid_solver_options.atol,
-    #     converged=grid_solver_options.converged,
-    #     verbose=verbose,
-    #     tabchar="\t",
-    #     ntab=1,
-    # )
-
-    # - Converge grid with NLsolve - #
-
-    # reset convergence flag
-    grid_solver_options.converged[1] = false
-
-    if verbose
-        println(
-            tabchar^ntab *
-            "Solving Elliptic Grid System using $(grid_solver_options.algorithm) Method",
+    if grid_solver_options.precondition
+        if verbose
+            println(tabchar^ntab * "Preconditioning Elliptic Grid System using SLOR")
+        end
+        # - Relax grid to allow Newton solve a tractable starting point - #
+        relax_grid!(
+            wake_grid;
+            iteration_limit=grid_solver_options.iteration_limit,
+            atol=grid_solver_options.atol,
+            converged=grid_solver_options.converged,
+            verbose=verbose,
+            tabchar="\t",
+            ntab=1,
         )
     end
 
-    # # precondition
-    # relax_grid!(
-    #     wake_grid;
-    #     iteration_limit=grid_solver_options.iteration_limit,
-    #     atol=grid_solver_options.atol,
-    #     converged=grid_solver_options.converged,
-    #     verbose=verbose,
-    #     tabchar="\t",
-    #     ntab=1,
-    # )
+    # - Converge grid with NLsolve - #
 
-    # solve
-    solve_elliptic_grid!(
-        wake_grid;
-        algorithm=grid_solver_options.algorithm,
-        atol=grid_solver_options.atol,
-        iteration_limit=grid_solver_options.iteration_limit,
-        grid_solver_options.converged,
-        grid_solver_options.residual_value,
-        grid_solver_options.iterations,
-        verbose=verbose,
-    )
+    if !grid_solver_options.converged[1]
+
+        # reset convergence flag
+        grid_solver_options.converged[1] = false
+
+        if verbose
+            println(
+                tabchar^ntab *
+                "Solving Elliptic Grid System using $(grid_solver_options.algorithm) Method",
+            )
+        end
+
+        # solve
+        solve_elliptic_grid!(
+            wake_grid;
+            algorithm=grid_solver_options.algorithm,
+            atol=grid_solver_options.atol,
+            iteration_limit=grid_solver_options.iteration_limit,
+            grid_solver_options.converged,
+            grid_solver_options.residual_value,
+            grid_solver_options.iterations,
+            verbose=verbose,
+        )
+    else
+        if verbose
+            println(
+                tabchar^ntab *
+                "Preconditioning Elliptic Grid System converged within final tolerance, skipping non-linear solve.",
+            )
+        end
+    end
 
     return wake_grid
 end
