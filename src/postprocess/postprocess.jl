@@ -548,7 +548,7 @@ function post_process(
 
     # - Total Thrust - #
     total_thrust[] = sum(
-        [rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust; body_viscous_drag]
+        [rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust]
     )
 
     # - Total Torque - #
@@ -594,7 +594,7 @@ function post_process(
             body_force_coefficient=body_force_coefficient,
             inviscid_thrust=body_inviscid_thrust,
             viscous_drag=body_viscous_drag,
-            thrust_comp=body_thrust,
+            thrust_comp=body_inviscid_thrust .+ body_viscous_drag,
             total_thrust=sum(body_thrust),
             induced_efficiency,
             # surface pressures
