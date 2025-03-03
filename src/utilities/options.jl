@@ -301,8 +301,8 @@ function ModCSORSolverOptions(multipoint; kwargs...)
 
     return ModCSORSolverOptions(;
         converged=fill(false, (1, lm)),
-        residual=zeros(1, lm),
         iterations=zeros(Int, (1, lm)),
+        residuals=zeros(1, lm),
         kwargs...,
     )
 end
