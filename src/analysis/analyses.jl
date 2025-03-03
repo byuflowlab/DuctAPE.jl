@@ -57,21 +57,60 @@ function analyze(
     if iszero(lu_decomp_flag) || !options.grid_solver_options.converged[1]
         if !options.silence_warnings
             if iszero(lu_decomp_flag)
-                @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
+                @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there are no panels lying directly atop eachother, surface cross-overs, or other similarly problematic geometry."
             elseif !options.grid_solver_options.converged[1]
-                @warn begin "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good. \nConvergence Tolerance: $(options.grid_solver_options.atol)\nSolver terminated after $(options.grid_solver_options.iterations[1]) iterations with a residual of $(options.grid_solver_options.residual_value[1])"
+                @warn begin
+                    "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good. \nConvergence Tolerance: $(options.grid_solver_options.atol)\nSolver terminated after $(options.grid_solver_options.iterations[1]) iterations with a residual of $(options.grid_solver_options.residual_value[1])"
                 end
             end
         end
-        #TODO: write a function that returns the same as outs below, but all zeros
-        #TODO: probably just call  the post-process function directly and return a reset_container! of the output
-        if return_inputs
-            return [],#zero_outputs(),
-            (; solve_parameter_tuple..., airfoils, idmaps, panels, problem_dimensions, reference_parameters, multi_point = [operating_point]),
-            false
+
+        if options.hard_fail
+            return nothing, nothing, nothing
         else
-            return [],#zero_outputs(),
-            false
+
+            # Set Fail Flags
+            options.solver_options.converged .= false
+
+            # Assemble outputs of correct sizes
+            outs = failed_initialization(
+                ducted_rotor,
+                operating_point,
+                reference_parametersr,
+                prepost_containers,
+                solve_parameter_cache_vector,
+                solve_parameter_cache_dims,
+                airfoils,
+                A_bb_LU,
+                idmaps,
+                problem_dimensions,
+                options;
+                solve_container_caching=solve_container_caching,
+            )
+
+            if return_inputs
+                solve_parameter_tuple = withdraw_solve_parameter_cache(
+                    options.solver_options,
+                    solve_parameter_cache_vector,
+                    solve_parameter_cache_dims,
+                )
+
+                return outs,
+                (;
+                    prepost_containers.panels,
+                    prepost_containers.ivb,
+                    solve_parameter_tuple...,
+                    blade_elements=(; solve_parameter_tuple.blade_elements..., airfoils...),
+                    linsys=(; solve_parameter_tuple.linsys..., A_bb_LU),
+                    idmaps,
+                    problem_dimensions,
+                    options=deepcopy(options),
+                ),
+                any(options.solver_options.converged)
+            else
+                return outs,
+                any(options.solver_options.converged[:, options.multipoint_index[]])
+            end
         end
     end
 
@@ -173,9 +212,6 @@ function analyze(
         options,
     )
 
-    # return converged_states,
-    # any(options.solver_options.converged[:, options.multipoint_index[]])
-
     # - Post-Process - #
     outs = post_process(
         options.solver_options,
@@ -213,7 +249,7 @@ function analyze(
             linsys=(; solve_parameter_tuple.linsys..., A_bb_LU),
             idmaps,
             problem_dimensions,
-            options = deepcopy(options),
+            options=deepcopy(options),
         ),
         any(options.solver_options.converged)
     else
@@ -280,21 +316,64 @@ function analyze(
     if iszero(lu_decomp_flag) || !options.grid_solver_options.converged[1]
         if !options.silence_warnings
             if iszero(lu_decomp_flag)
-                @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there will be no panels lying directly atop eachother or other similar problematic geometry."
+                @warn "Exiting.  LU decomposition of the LHS matrix for the linear system failed.  Please check your body geometry and ensure that there are no panels lying directly atop eachother, surface cross-overs, or other similarly problematic geometry."
             elseif !options.grid_solver_options.converged[1]
-                @warn begin "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good. \nConvergence Tolerance: $(options.grid_solver_options.atol)\nSolver terminated after $(options.grid_solver_options.iterations[1]) iterations with a residual of $(options.grid_solver_options.residual_value[1])"
+                @warn begin
+                    "Exiting. Wake elliptic grid solve did not converge. Consider a looser convergence tolerance if the geometry looks good. \nConvergence Tolerance: $(options.grid_solver_options.atol)\nSolver terminated after $(options.grid_solver_options.iterations[1]) iterations with a residual of $(options.grid_solver_options.residual_value[1])"
                 end
-
             end
         end
-        #TODO: write a function that returns the same as outs below, but all zeros
-        #TODO: probably just call  the post-process function directly and return a reset_container! of the output
-        return [],#zero_outputs(),
-        # (; solve_parameter_tuple..., ivb, airfoils, idmaps, panels, problem_dimensions),
-        (;),
-        false
-    end
 
+        if options.hard_fail
+            return nothing, nothing, nothing
+        else
+
+            # Set Fail Flags
+            options.solver_options.converged .= false
+
+            # Assemble outputs of correct sizes
+            outs = [
+                failed_initialization(
+                    ducted_rotor,
+                    op,
+                    reference_parameters,
+                    prepost_containers,
+                    solve_parameter_cache_vector,
+                    solve_parameter_cache_dims,
+                    airfoils,
+                    A_bb_LU,
+                    idmaps,
+                    problem_dimensions,
+                    options;
+                    solve_container_caching=solve_container_caching,
+                ) for op in operating_point
+            ]
+
+            if return_inputs
+                solve_parameter_tuple = withdraw_solve_parameter_cache(
+                    options.solver_options,
+                    solve_parameter_cache_vector,
+                    solve_parameter_cache_dims,
+                )
+
+                return outs,
+                (;
+                    prepost_containers.panels,
+                    prepost_containers.ivb,
+                    solve_parameter_tuple...,
+                    blade_elements=(; solve_parameter_tuple.blade_elements..., airfoils...),
+                    linsys=(; solve_parameter_tuple.linsys..., A_bb_LU),
+                    idmaps,
+                    problem_dimensions,
+                    reference_parameters,
+                    multi_point=operating_point,
+                ),
+                options.solver_options.converged
+            else
+                return outs, options.solver_options.converged
+            end
+        end
+    end
     return analyze(
         ducted_rotor,
         operating_point,
@@ -464,7 +543,7 @@ function analyze_multipoint(
     if options.verbose
         println("\n  Operating Point:")
         for fn in fieldnames(typeof(operating_point))
-            if fn!=:units
+            if fn != :units
                 println(@sprintf "    %6s = %5.3e" fn getfield(operating_point, fn)[])
             end
         end
@@ -478,7 +557,7 @@ function analyze_multipoint(
     # - copy over operating point - #
     for f in fieldnames(typeof(operating_point))
         if f != :units
-        solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
+            solve_parameter_tuple.operating_point[f] .= getfield(operating_point, f)
         end
     end
 

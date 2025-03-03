@@ -25,7 +25,7 @@ function discretize_wake(
     wake_length,
     npanels,
     dte_minus_cbte;
-    le_bracket=5,
+    le_bracket=1,
     fitscale=1e2,
 )
 

@@ -270,6 +270,7 @@ Type containing all the options for the modified CSOR solver.
     ) : parameters for determining relaxation level of states in each iteration.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Int} = [0]` : iteration counter
 """
 @kwdef struct ModCSORSolverOptions{TB,TF,TI,TT} <: InternalSolverOptions
     # Defaults are DFDC hard-coded values
@@ -281,7 +282,7 @@ Type containing all the options for the modified CSOR solver.
     atol::TF = 1e-10
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
-    residual::AbstractArray{TF} = [-1.0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 """
@@ -790,6 +791,8 @@ Type containing (nearly) all the available user options.
 ## Solving Options
 - `grid_solver_options::GridSolverOptionsType = GridSolverOptions()` : elliptic grid solver options
 - `solver_options::SolverOptionsType = ChainSolverOptions()` : solver options
+## Failure Options
+- `hard_fail::Bool = true` : flag as to whether DuctAPE should return nothing immediately after a failed initialization of the elliptic grid or a failed decomposition of the body influence matrix.  If set to false, DuctAPE will attempt to return objects of the correct size, but with initialized values only.
 """
 @kwdef struct Options{
     TB,
@@ -827,6 +830,8 @@ Type containing (nearly) all the available user options.
     # - Solving Options - #
     grid_solver_options::WS = GridSolverOptions()
     solver_options::TSo = ChainSolverOptions()
+    # - Failure Options - #
+    hard_fail::TB = true
 end
 
 """

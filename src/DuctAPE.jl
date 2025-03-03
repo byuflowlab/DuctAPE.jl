@@ -190,12 +190,13 @@ include("postprocess/boundary_layer_utils.jl")
 include("postprocess/boundary_layer_green.jl")
 include("postprocess/boundary_layer_head.jl")
 include("postprocess/viscous_drag.jl")
+include("postprocess/failed_initialization.jl")
 
 ##### ----- VISUALIZATION ----- #####
 # include("visualization/plot_recipe_defaults.jl")
 include("visualization/plot_recipes.jl")
 include("visualization/calculate_streamlines.jl")
-    include("visualization/calculate_velocity_field.jl")
+include("visualization/calculate_velocity_field.jl")
 include("visualization/convenience_plots.jl")
 
 ##### ----- DEBUGGING ----- #####
