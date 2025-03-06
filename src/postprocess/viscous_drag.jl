@@ -94,6 +94,7 @@ function compute_single_side_drag_coefficient(
             boundary_layer_options.H1_eps,
             boundary_layer_options.H_eps,
             boundary_layer_options.terminate,
+            boundary_layer_options.return_last_max_shape_factor,
             separation_options...,
         );
         verbose=verbose,
@@ -126,6 +127,7 @@ function compute_single_side_drag_coefficient(
             boundary_layer_options.lateral_strain,
             boundary_layer_options.dilation,
             boundary_layer_options.terminate,
+            boundary_layer_options.return_last_max_shape_factor,
             separation_options...,
         );
         verbose=verbose,
@@ -166,21 +168,24 @@ function compute_single_side_drag_coefficient(
         cd = FLOWMath.ksmin(
             [single_side_boundary_layer_options.separation_penalty; cdsqy], 100
         )
+
+        cdadd = FLOWMath.ksmax(
+            [
+                0.0
+                FLOWMath.linear(
+                    [
+                        0.0
+                        steps[end - single_side_boundary_layer_options.separation_allowance]
+                    ],
+                    [single_side_boundary_layer_options.separation_penalty; 0.0],
+                    s_sep,
+                )
+            ],
+            1e8,
+        )
+
+        cd += cdadd
     end
-
-    cdadd = FLOWMath.ksmax(
-        [
-            0.0
-            FLOWMath.linear(
-                [0.0; steps[end - single_side_boundary_layer_options.separation_allowance]],
-                [single_side_boundary_layer_options.separation_penalty; 0.0],
-                s_sep,
-            )
-        ],
-        1e8,
-    )
-
-    cd += cdadd
 
     return cd, u_init, usol, stepsol, s_sep / steps[end]
 end

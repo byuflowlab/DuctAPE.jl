@@ -694,6 +694,7 @@ end
               BoundaryLayerOptions
     model_drag::Tb = false
     terminate::Tb = true
+    return_last_max_shape_factor::Tb = true
     n_steps::Ti = Int(5e2)
     first_step_size::Tf = 1e-6
     upper_step_size::Tssu = nothing

@@ -193,6 +193,39 @@ function initialize_head_states(boundary_layer_functions, s_init; verbose=false)
     return initial_states, H0
 end
 
+function find_last_max_H(usol, stepsol)
+    Hsol = calculate_H.(limH1.(usol[2, :]))
+    # check if H drops at the end
+    if Hsol[end] < Hsol[end - 1]
+        # if it drops, spline H and s
+        hsp = smooth_Akima(stepsol, Hsol)
+        # determine where the sign of the derivative changes,
+        zidx = findlast(
+            x -> sign(x) != sign(FLOWMath.derivative(hsp, stepsol[end])),
+            FLOWMath.derivative.(Ref(hsp), stepsol),
+        )
+        if isnothing(zidx)
+            # if it doesn't change, return the final point.
+            usep = usol[:, end]
+            Hsep = Hsol[end]
+            s_sep = stepsol[end]
+        else
+            # if it does change, zero find the zero derivative point.
+            maxwrap(x) = FLOWMath.derivative.(Ref(hsp), x)
+            s_sep = Roots.find_zero(maxwrap, [stepsol[zidx - 1]; stepsol[zidx + 2]])
+            Hsep = hsp(s_sep)
+            usep = [smooth_akima(stepsol, usol[1, :], s_sep); Hsep]
+        end
+
+    else
+        usep = usol[:, end]
+        Hsep = Hsol[end]
+        s_sep = stepsol[end]
+    end
+
+    return usep, Hsep, s_sep
+end
+
 """
     solve_head_boundary_layer!(f, ode, initial_states, steps, parameters; verbose=false)
 
@@ -242,9 +275,11 @@ function solve_head_boundary_layer!(
         Hs[i + 1] = calculate_H(limH1(us[2, i + 1]))
 
         sepid[1] = i
-        if Hs[i + 1] >= parameters.separation_criteria
-            sep[1] = true
-            break
+        if parameters.terminate
+            if Hs[i + 1] >= parameters.separation_criteria
+                sep[1] = true
+                break
+            end
         end
     end
 
@@ -281,11 +316,16 @@ function solve_head_boundary_layer!(
         usol = us[:, 1:sepid[]]
 
     else
-        usep = us[:, end]
-        Hsep = Hs[end]
-        s_sep = steps[end]
         usol = us
         stepsol = steps
+
+        if parameters.return_last_max_shape_factor
+            usep, Hsep, s_sep = find_last_max_H(usol, stepsol)
+        end
+
+        usep = usol[:, end]
+        Hsep = calculate_H(limH1(usep[2]))
+        s_sep = stepsol[end]
     end
 
     # return states at separate, and separation shape factor, and surface length at separation
@@ -370,9 +410,13 @@ function solve_head_boundary_layer!(
         # spline states and steps, get states at step for H=3
         usep = [smooth_akima(stepsol, u, s_sep) for u in eachrow(usol)]
     else
-        usep = sol.u[end]
-        Hsep = calculate_H(limH1(usep[2]))
-        s_sep = sol.t[end]
+        if parameters.return_last_max_shape_factor
+            usep, Hsep, s_sep = find_last_max_H(usol, stepsol)
+        else
+            usep = usol[end]
+            Hsep = calculate_H(limH1(usep[2]))
+            s_sep = stepsol[end]
+        end
     end
 
     # return states at separate, and separation shape factor, and surface length at separation
