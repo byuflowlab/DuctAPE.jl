@@ -274,62 +274,40 @@ function solve_head_boundary_layer!(
 
         Hs[i + 1] = calculate_H(limH1(us[2, i + 1]))
 
-        sepid[1] = i
-        if parameters.terminate
-            if Hs[i + 1] >= parameters.separation_criteria
-                sep[1] = true
+        if Hs[i + 1] >= parameters.separation_criteria
+            sepid[1] = i
+            sep[1] = true
+            if parameters.terminate
                 break
             end
         end
     end
 
-    if sep[1] == true
+    Hsep = min(parameters.separation_criteria, maximum(Hs))
+
+    if Hsep == parameters.separation_criteria
 
         # - Interpolate to find actual s_sep - #
-
-        usep = [
-            FLOWMath.linear(
-                Hs[(sepid[] - 1):sepid[]],
-                us[1, (sepid[] - 1):sepid[]],
-                parameters.separation_criteria,
-            )
-            FLOWMath.linear(
-                Hs[(sepid[] - 1):sepid[]],
-                us[2, (sepid[] - 1):sepid[]],
-                parameters.separation_criteria,
-            )
-        ]
-
-        Hsep = FLOWMath.linear(
-            Hs[(sepid[] - 1):sepid[]],
-            Hs[(sepid[] - 1):sepid[]],
-            parameters.separation_criteria,
-        )
-
-        s_sep = FLOWMath.linear(
-            Hs[(sepid[] - 1):sepid[]],
-            steps[(sepid[] - 1):sepid[]],
-            parameters.separation_criteria,
-        )
-
-        stepsol = steps[1:sepid[]]
-        usol = us[:, 1:sepid[]]
+        #spline H and steps from solution, get step at H=3
+        sepwrap(x) = parameters.separation_criteria - smooth_akima(steps, Hs, x)
+        hid = findfirst(x -> x > parameters.separation_criteria, Hs)
+        s_sep = Roots.find_zero(sepwrap, [steps[hid - 1]; steps[hid]])
+        # spline states and steps, get states at step for H=3
+        usep = [smooth_akima(steps, u, s_sep) for u in eachrow(us)]
 
     else
-        usol = us
-        stepsol = steps
 
         if parameters.return_last_max_shape_factor
-            usep, Hsep, s_sep = find_last_max_H(usol, stepsol)
+            usep, Hsep, s_sep = find_last_max_H(us, steps)
+        else
+            usep = us[:, end]
+            Hsep = calculate_H(limH1(usep[2]))
+            s_sep = steps[end]
         end
-
-        usep = usol[:, end]
-        Hsep = calculate_H(limH1(usep[2]))
-        s_sep = stepsol[end]
     end
 
     # return states at separate, and separation shape factor, and surface length at separation
-    return usep, Hsep, s_sep, usol, stepsol
+    return usep, Hsep, s_sep, us, steps
 end
 
 function update_Cf_head(state, step, parameters)
@@ -413,7 +391,7 @@ function solve_head_boundary_layer!(
         if parameters.return_last_max_shape_factor
             usep, Hsep, s_sep = find_last_max_H(usol, stepsol)
         else
-            usep = usol[end]
+            usep = usol[:, end]
             Hsep = calculate_H(limH1(usep[2]))
             s_sep = stepsol[end]
         end
