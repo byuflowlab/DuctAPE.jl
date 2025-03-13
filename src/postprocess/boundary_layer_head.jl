@@ -60,6 +60,14 @@ function setup_boundary_layer_functions_head(
     return (; edge_velocity, edge_acceleration, edge_density, edge_viscosity, verbose)
 end
 
+function regularization(fx, x; sigma=1e-4)
+    if x < sigma
+        return fx + (x - sigma)^2
+    else
+        return fx
+    end
+end
+
 """
     calculate_H(H1)
 
@@ -69,9 +77,11 @@ function calculate_H(H1; eps=0.0)
 
     # get each side of the piecewise equation
     # hgeq = 0.86 * ((H1 - 3.3)^(-0.777)) + 1.1
-    hgeq = 0.86 * 1.0 / ((H1 - 3.3)^(0.777) + eps) + 1.1
+    # hgeq = 0.86 * 1.0 / ((H1 - 3.3)^(0.777) + eps) + 1.1
+    hgeq = 0.86 * 1.0 / (regularization((H1 - 3.3)^(0.777), H1; sigma=eps)) + 1.1
     # hlt = 1.1538 * ((H1 - 3.3)^(-0.326)) + 0.6778
-    hlt = 1.1538 * 1.0 / ((H1 - 3.3)^(0.326) + eps) + 0.6778
+    # hlt = 1.1538 * 1.0 / ((H1 - 3.3)^(0.326) + eps) + 0.6778
+    hlt = 1.1538 * 1.0 / (regularization((H1 - 3.3)^(0.326), H1; sigma=eps)) + 0.6778
     # hlt = FLOWMath.ksmin([3.1; 1.1538 * (H1 - 3.3)^(-0.326) + 0.6778], 5)
 
     # blend the pieces smoothly
@@ -164,9 +174,12 @@ function boundary_layer_residual_head!(dy, y, parameters, s; debug=false)
 
     # dH₁/ds
     # dy[2] = 0.0306 / d2 * (H1lim - 3.0)^(-0.6169) - dUedx * H1lim / Ue - dy[1] * H1lim / d2
+    # dy[2] =
+    #     0.0306 / d2 * 1.0 / ((H1lim - 3.0)^(0.6169) + dy_eps) - dUedx * H1lim / Ue -
+    #     dy[1] * H1lim / d2
     dy[2] =
-        0.0306 / d2 * 1.0 / ((H1lim - 3.0)^(0.6169) + dy_eps) - dUedx * H1lim / Ue -
-        dy[1] * H1lim / d2
+        0.0306 / d2 * 1.0 / (regularization((H1lim - 3.0)^(0.6169), H1lim; sigma=dy_eps)) -
+        dUedx * H1lim / Ue - dy[1] * H1lim / d2
     verbose && printdebug("dy[2]: ", dy[2])
 
     if debug
@@ -286,6 +299,7 @@ function solve_head_boundary_layer!(
     Hsep = min(parameters.separation_criteria, maximum(Hs))
 
     if Hsep == parameters.separation_criteria
+        # println("separated")
 
         # - Interpolate to find actual s_sep - #
         #spline H and steps from solution, get step at H=3
@@ -296,10 +310,12 @@ function solve_head_boundary_layer!(
         usep = [smooth_akima(steps, u, s_sep) for u in eachrow(us)]
 
     else
-
+        # println("not separated")
         if parameters.return_last_max_shape_factor
+            # println("return last max")
             usep, Hsep, s_sep = find_last_max_H(us, steps)
         else
+            # println("return last")
             usep = us[:, end]
             Hsep = calculate_H(limH1(usep[2]))
             s_sep = steps[end]
@@ -380,6 +396,7 @@ function solve_head_boundary_layer!(
     Hsep = min(parameters.separation_criteria, maximum(Hsol))
 
     if Hsep == parameters.separation_criteria
+        # println("separated")
 
         #spline H and steps from solution, get step at H=3
         sepwrap(x) = parameters.separation_criteria - smooth_akima(stepsol, Hsol, x)
@@ -388,9 +405,12 @@ function solve_head_boundary_layer!(
         # spline states and steps, get states at step for H=3
         usep = [smooth_akima(stepsol, u, s_sep) for u in eachrow(usol)]
     else
+        # println("not separated")
         if parameters.return_last_max_shape_factor
+            # println("return last max value")
             usep, Hsep, s_sep = find_last_max_H(usol, stepsol)
         else
+            # println("return last value")
             usep = usol[:, end]
             Hsep = calculate_H(limH1(usep[2]))
             s_sep = stepsol[end]
