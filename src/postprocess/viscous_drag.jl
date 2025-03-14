@@ -95,6 +95,7 @@ function compute_single_side_drag_coefficient(
             boundary_layer_options.H_eps,
             boundary_layer_options.terminate,
             boundary_layer_options.return_last_max_shape_factor,
+            boundary_layer_options.cutoff_Hsep,
             separation_options...,
         );
         verbose=verbose,

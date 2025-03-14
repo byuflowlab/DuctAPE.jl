@@ -225,7 +225,13 @@ function find_last_max_H(usol, stepsol)
         else
             # if it does change, zero find the zero derivative point.
             maxwrap(x) = FLOWMath.derivative.(Ref(hsp), x)
-            s_sep = Roots.find_zero(maxwrap, [stepsol[zidx - 1]; stepsol[zidx + 2]])
+            bracket = [stepsol[max(1, zidx - 1)]; stepsol[min(zidx + 1, length(stepsol))]]
+            if sign(maxwrap(bracket[1])) == maxwrap(bracket[2])
+                s_sep = Roots.find_zero(maxwrap, stepsol[zidx])
+            else
+                s_sep = Roots.find_zero(maxwrap, bracket)
+            end
+
             Hsep = hsp(s_sep)
             usep = [smooth_akima(stepsol, usol[1, :], s_sep); Hsep]
         end
@@ -323,6 +329,9 @@ function solve_head_boundary_layer!(
     end
 
     # return states at separate, and separation shape factor, and surface length at separation
+    if parameters.cutoff_Hsep
+        Hsep = FLOWMath.ksmin([Hsep; parameters.separation_criteria], 50)
+    end
     return usep, Hsep, s_sep, us, steps
 end
 
