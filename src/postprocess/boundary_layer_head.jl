@@ -226,7 +226,7 @@ function find_last_max_H(usol, stepsol)
             # if it does change, zero find the zero derivative point.
             maxwrap(x) = FLOWMath.derivative.(Ref(hsp), x)
             bracket = [stepsol[max(1, zidx - 1)]; stepsol[min(zidx + 1, length(stepsol))]]
-            if sign(maxwrap(bracket[1])) == maxwrap(bracket[2])
+            if sign(maxwrap(bracket[1])) == sign(maxwrap(bracket[2]))
                 s_sep = Roots.find_zero(maxwrap, stepsol[zidx])
             else
                 s_sep = Roots.find_zero(maxwrap, bracket)
