@@ -1,0 +1,320 @@
+%#####################################################################
+%                                                                    #
+%                            Validation                             #
+%                                                                    #
+%#####################################################################
+
+\section{Verification and Validation of Isolated DuctAPE Components}
+
+\subsection{Validation of Isolated Body Aerodynamics}
+
+%---------------------------------#
+% Isolated Center Body Validation #
+%---------------------------------#
+\subsubsection{Isolated Duct}
+
+\begin{figure}[h!]
+    \centering
+        \input{ductape/figures/duct-validation-geometry.tikz}
+        \caption{Isolated annular airfoil cross section used for validation for a duct with length/diameter of 0.5988.}
+    \label{fig:ductgeom}
+\end{figure}
+
+For the isolated duct, we compare with data provided by Lewis for an annular airfoil using the NACA \(66_2\)-\(015\) geometry and with a length to diameter ratio of 0.5988\scite{Lewis_1991}.
+%
+We generated smooth NACA 66-015 geometry using the airfoil tools within Open Vehicle Sketch Pad (OpenVSP)\scite{McDonald_2022}, and for the geometry producing \cref{fig:isolatedductvalidation}, we interpolated the OpenVSP coordinates using a cosine spacing resulting in a total of 161 coordinate points, and thus 160 panels.
+%
+See \cref{fig:ductgeom} for the cross sectional geometry we used.
+%
+\Cref{fig:isolatedductvalidation} shows a comparison of the experimental data provided by Lewis and the computation output from DuctAPE.
+%
+Observing \cref{fig:isolatedductvalidation}, we see very good agreement with the experimental data, with minor discrepancies on the aft portion of the duct, due to viscous effects being ignored in the present methodology.
+
+\begin{figure}[h!]
+    \centering
+        \input{ductape/figures/duct-pressure-comp-160-panels.tikz}%
+        \caption{Comparison of experimental data with DuctAPE for an isolated duct shows very good agreement despite the inviscid approximation in DuctAPE's development.}
+    \label{fig:isolatedductvalidation}
+\end{figure}
+
+\Cref{fig:isolatedductgridconv} shows a refinement convergence for the aforementioned geometry.
+%
+We start with a very coarse refinement of 20 panels, and increase by 100 panels until reaching 700.\sidenote{Note that after 700 panels, the numerical integration scheme had trouble converging due to the proximity of the singularities for extremely small panels.}
+%
+Comparing the value of the sum of the local surface pressure coefficients multiplied by the associated panel length, we see that for 160 panels, a typical number in general use cases, we have only a 0.93\% difference from the value computed with 700 panels.
+
+\begin{figure}[h!]
+    \centering
+        \input{ductape/figures/duct-grid-refinement.tikz}%
+        \caption{Between 100 and 200 panels is generally a sufficient refinement for our use case.}
+    \label{fig:isolatedductgridconv}
+\end{figure}
+
+
+%---------------------------------#
+% Isolated Center Body Validation #
+%---------------------------------#
+\subsubsection{Isolated Center Body}
+
+\begin{figure}[hb!]
+    \centering
+        \input{ductape/figures/cb-validation-geom.tikz}
+        \caption{Isolated center body geometry used for validation; note the trailing edge does not extend all the way to zero radius.}
+    \label{fig:cbgeom}
+\end{figure}
+
+For the isolated center body, we again compare with data provided by Lewis as shown in \cref{fig:cbgeom}.
+%
+\Cref{fig:isolatedductvalidation} shows a comparison of the experimental data provided by Lewis and the computation output from DuctAPE.
+%
+We used the coordinates provided by Lewis to obtain the leading edge circular radius, the length of the flat portion, and the total length of the cross section to generate our own smooth geometry manually
+%
+For the geometry producing \cref{fig:isolatedhubvalidation}, we interpolated the coordinates using a cosine spacing resulting in a total of 81 coordinate points, and thus 80 panels.
+%
+Observing \cref{fig:isolatedhubvalidation}, we see good agreement with the experimental data, with discrepancies near the trailing edge which are, again, a result of the inviscid assumption in DuctAPE, as well as the small radial dimensions at the trailing edge, as discussed in \cref{ssec:panelmethodology}.
+
+\begin{figure}[h!]
+    \centering
+        \input{ductape/figures/hub-velocity-comp-80-panels.tikz}
+        \caption{Comparison of experimental data with DuctAPE for an isolated hub shows good agreement despite the inviscid approximation in DuctAPE's development.}
+    \label{fig:isolatedhubvalidation}
+\end{figure}
+
+\begin{figure}[hb!]
+    \centering
+        \input{ductape/figures/hub-grid-refinement.tikz}%
+        \caption{Between 70 and 100 panels is generally a sufficient refinement for our use case.}
+    \label{fig:isolatedhubgridconv}
+\end{figure}
+
+
+\Cref{fig:isolatedhubgridconv} shows a refinement convergence for the aforementioned geometry.
+%
+We start with a very coarse refinement of 20 panels, increasing by 10s until reaching 100 panels, after which we increase by 100 panels until reaching 350 (half of what was used in the duct validation).
+%
+Comparing the value of the sum of the local surface pressure coefficients multiplied by the associated panel length, we see that for 80 panels, a typical number in general use cases, we have 14.7\% difference from the value computed with 350 panels; though the absolute magnitudes are very small in the first place.
+
+
+%---------------------------------#
+%     Multi-Body Verification     #
+%---------------------------------#
+\subsection{Multi-body System Verification}
+
+If we now combine these two geometries together, we can check that a multi-body system analysis works as expected.
+%
+Unfortunately, we do not have any experimental data at the time for an isolated duct and center body, but we can compare with Ducted Fan Design Code, from which we have developed most of our methodology, for verification.
+%
+\Cref{fig:ducthubvalgeom} shows the geometry of the duct and center body we have been using thus far for reference.
+%
+We now place both in a single system in order to verify that multi-body systems work properly.
+
+\begin{figure}[hb!]
+    \centering
+        \input{ductape/figures/duct-and-hub-validation-geom.tikz}%
+        \caption{Isolated duct and center body geometry together.}
+    \label{fig:ducthubvalgeom}
+\end{figure}
+%
+As can be seen in \cref{fig:dfdclewiscomp}, the surface velocity on the hub and pressure on the duct match very well to DFDC, lending confidence in DuctAPE's ability to model both a duct and hub together.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{ductape/figures/dfdclewis-velocity-comp-107-duct-panels-78-hub-panels.tikz}%
+         \caption{Comparison of the surface velocity on the center body with sharp trailing edge calculated by DFDC and calculated by DuctAPE.}
+        \label{fig:dfdclewisvel}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{ductape/figures/dfdclewis-pressure-comp-107-duct-panels-78-hub-panels.tikz}%
+         \caption{Comparison of the surface pressure on the duct with sharp trailing edge calculated by DFDC and calculated by DuctAPE.}
+         \label{fig:dfdclewiscp}
+     \end{subfigure}
+     \caption{\primary{DuctAPE (blue)} matches very well to \secondary{DFDC (red dash)} for the multi-body, no rotor case, with sharp trailing edges.}
+     \label{fig:dfdclewiscomp}
+\end{figure}
+
+
+As a second check, we use geometry provided in the DFDC example files that contain blunt trailing edges on the duct and center body.
+%
+In this case, we need to apply the augmentations to the system for trailing edge gap panels.
+%
+\begin{figure}[hb!]
+    \centering
+        \input{ductape/figures/duct-and-hub-dfdc-example-verification-geometry.tikz}
+        \caption{Duct and center body geometry provided in DFDC examples.}
+    \label{fig:ducthubvalgeom}
+\end{figure}
+%
+We see in \cref{fig:dfdcexamplecomp} that DuctAPE also matches well with DFDC in this case.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{ductape/figures/dfdcexample-velocity-comp-106-duct-panels-61-hub-panels.tikz}%
+         \caption{Comparison of the surface velocity on the center body with blunt trailing edge calculated by DFDC and calculated by DuctAPE.}
+        \label{fig:dfdcexamplevel}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \raggedright
+         \input{ductape/figures/dfdcexample-pressure-comp-106-duct-panels-61-hub-panels.tikz}%
+         \caption{Comparison of the surface pressure on the duct with blunt trailing edge calculated by DFDC and calculated by DuctAPE.}
+         \label{fig:dfdcexamplecp}
+     \end{subfigure}
+     \caption{\primary{DuctAPE (blue)} matches very well to \secondary{DFDC (red dash)} for the multi-body, no rotor case with blunt trailing edges.}
+     \label{fig:dfdcexamplecomp}
+\end{figure}
+
+\subsection{Verification and Validation of Isolated Rotor+Wake Aerodynamics}
+\label{ssec:rwvv}
+
+\subsection{Verification of Rotor and Wake Induced Velocities}
+
+To verify that the rotor and wake models are behaving as expected, we look at the induced velocities (axial and swirl) at locations ranging from upstream of the rotor to downstream of the rotor.
+%
+We compare to blade element momentum theory (BEMT) using the CCBlade.jl Julia package.
+%
+The rotor we use for comparison is the APC 10x5 propeller; geometry for which is provided in the CCBlade documentation and in the UIUC database.
+%
+\Cref{fig:inducedvelcheck} shows the near- and far-field values from BEMT compared to the DuctAPE values across the range of locations sampled.
+%
+We see that the general trends match well: the upstream velocities are at or near zero, and the far field velocities are approximately double the velocities at the rotor plane.
+%
+Note that the swirl velocity as modeled in DuctAPE is zero upstream of the rotor, and the far-field value at any point aft of the rotor as described by \cref{eqn:vtheta,eqn:vthetaself}.
+
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \raisebox{-3em}{\input{./ductape/figures/vx-verify.tikz}}
+        \caption{Axial Velocity (\(v_x\))}
+        \label{}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \raisebox{-3em}{\input{./ductape/figures/vtheta-verify.tikz}}
+        \caption{Swirl Velocity (\(v_\theta\))}
+        \label{}
+     \end{subfigure}
+     \caption{Comparison of induced velocities from BEMT near and far field with induced velocities from DuctAPE sample at a range from one diameter upstream (\gray{gray}) to the rotor plane (\primary{blue}) and from the rotor plane to one diameter downstream (\secondary{red}).}
+    \label{fig:inducedvelcheck}
+\end{figure}
+
+
+\subsection{Validation of Thrust and Power Coefficients for Rotor and Wake Models}
+
+For one validation case, we compare the thrust and power coefficients as well as efficiency with experimental data provided by UIUC for the APC 10x5.
+%
+We also compare to the BEMT outputs for further context.
+%
+As can be seen in \cref{fig:rotval1}, DuctAPE matches well with BEMT, and both are within expectations when compared to experimental data.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \input{./ductape/figures/rotor-only-thrust-and-power-validation.tikz}
+        \caption{Comparison of rotor power (\(C_P\)) and thrust (\(C_T\)) coefficients.}
+        \label{}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{./ductape/figures/rotor-only-efficiency-validation.tikz}
+        \caption{Comparison of rotor efficiency (\(\eta\)).}
+        \label{}
+     \end{subfigure}
+     \caption{A comparison of rotor performance metrics across a range of advance ratios (\(J\)) shows good agreement between DuctAPE, BEMT, and experimental data.}
+    \label{fig:rotval1}
+\end{figure}
+
+\section{Verification and Validation of Complete DuctAPE Analysis}
+
+\subsection{Verification Compared to DFDC}
+
+As we have established, the methodology behind DuctAPE is based heavily on DFDC.
+%
+Therefore, we performed a set of comparisons between DuctAPE and DFDC.
+%
+We compared an example available in the DFDC source code using a single ducted rotor across a range of operating conditions, specifically across a range of advance ratios including a hover condition.
+
+The geometry used in the single ducted rotor example case is shown in \cref{fig:singlerotorgeom}.
+%
+For this verification case, we used a rotor with tip radius of 0.15572 meters located 0.12 meters aft of the center body leading edge.
+%
+The wake extended 0.8 times the length of the duct (roughly 0.25 meters) past the duct trailing edge.
+%
+We used 10 blade elements associated with 11 wake sheets to model the rotor.
+%
+We set the rotor rotation rate constant at 8000 revolutions per minute and adjusted the freestream velocity in order to sweep across advance ratios from 0.0 to 2.0 by increments of 0.1.
+%
+We assumed sea level conditions for reference values.
+
+\begin{figure}[h!]
+     \centering
+\tikzsetnextfilename{verification/verification_geometry}
+     \input{figures/verification/verification_geometry.tikz}%\hspace*{5em}
+     \caption{Single rotor verification case geometry generated by DuctAPE. Duct and center body geometry in \primary{blue}, rotor lifting line location in \secondary{red}, and approximate wake streamlines in \tertiary{green}, where markers indicate panel egdes.}
+    \label{fig:singlerotorgeom}
+\end{figure}
+
+We note here that DuctAPE also differs from DFDC in the geometry re-paneling approach.
+%
+The DuctAPE geometry re-paneling approach aligns the duct, center body, and wake panels aft of the rotor and distributes them linearly.
+%
+We align the panels so that there is a consistent number of panels between discrete locations (such as rotor positions and body trailing edges) in the geometry, thereby avoiding discontinuities.
+%
+For example, the number of center body and duct panels ahead of and behind the rotor need to stay constant if the rotor position is selected as a design variable in an optimization.
+%
+Without the number of panels ahead of and behind the rotor staying constant, there would be discontinuities as the rotor passed over panels along the solid bodies.
+
+
+
+
+Scanning \cref{tab:dfdccompsinglerotor}, we see that the differences between DFDC and DuctAPE are less than 0.5\% for major output values for both a hover and a cruise case.
+%
+\Cref{fig:singlerotorcpcteta} shows comparisons of total thrust and power coefficients (\cref{fig:singlerotorcpct}) and total efficiency (\cref{fig:singlerotoreta}), across the range of advance ratios, showing excellent matching across the entire range.
+%
+
+\begin{table}[h!]
+    \caption{Comparison of solver outputs for a cruise (\(J=1.0\) and hover (\(J=0.0\)) case. Errors relative to DFDC.}
+    \begin{subtable}[t]{0.35\textwidth}
+        \begin{center}
+            \input{figures/verification/single_rotor_J1_verification_table.tex}
+        \end{center}
+    \end{subtable}
+\hfill
+    \begin{subtable}[t]{0.45\textwidth}
+        \begin{center}
+            \input{figures/verification/single_rotor_J0_verification_table.tex}
+        \end{center}
+    \end{subtable}
+    \label{tab:dfdccompsinglerotor}
+\end{table}
+
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+\tikzsetnextfilename{verification/single_rotor_cpct_comparison}
+        \input{figures/verification/single_rotor_cpct_comparison.tikz}
+        \caption{Power and thrust comparison.}
+        \label{fig:singlerotorcpct}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+\tikzsetnextfilename{verification/single_rotor_efficiency_comparison}
+         \input{figures/verification/single_rotor_efficiency_comparison.tikz}
+         \caption{Efficiency comparison.}
+        \label{fig:singlerotoreta}
+     \end{subfigure}
+    \caption{Comparison of power and thrust coefficients and efficiency for DFDC (dashed) and the DuctAPE implementations (solid) across a range of advance ratios.}
+    \label{fig:singlerotorcpcteta}
+\end{figure}
