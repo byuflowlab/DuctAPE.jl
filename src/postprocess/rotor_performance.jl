@@ -37,6 +37,7 @@ function inviscid_rotor_thrust!(
     # problem dimensions
     nr, nrotor = size(dTi)
 
+    panel_iter = 1
     for irotor in 1:nrotor
         for ir in 1:nr
             # section thrust
@@ -44,12 +45,13 @@ function inviscid_rotor_thrust!(
                 -rhoinf *
                 Gamma_tilde[ir, irotor] *
                 Ctheta_rotor[ir, irotor] *
-                rotor_panel_length[ir, irotor]
+                rotor_panel_length[panel_iter]
+            panel_iter += 1
         end
     end
 
     #sum the section thrust
-    Tinv .= sum(dTi; dims=1)
+    Tinv .= sum(dTi; dims=1)'
 
     return Tinv, dTi
 end
@@ -100,6 +102,7 @@ function viscous_rotor_thrust!(
     # get dimensions
     nr, nrotor = size(dTv)
 
+    panel_iter = 1
     for irotor in 1:nrotor
         for ir in 1:nr
             # hrwc = 0.5 * rhoinf * Cmag_rotor[ir, irotor] * chord[ir, irotor]
@@ -108,11 +111,12 @@ function viscous_rotor_thrust!(
                 -(0.5 * rhoinf * Cmag_rotor[ir, irotor] * chord[ir, irotor]) *
                 cd[ir, irotor] *
                 Cz_rotor[ir, irotor] *
-                (B[irotor] * rotor_panel_length[ir, irotor])
+                (B[irotor] * rotor_panel_length[panel_iter])
+            panel_iter += 1
         end
     end
 
-    Tvisc .= sum(dTv; dims=1)
+    Tvisc .= sum(dTv; dims=1)'
 
     return Tvisc, dTv
 end
@@ -161,6 +165,7 @@ function inviscid_rotor_torque!(
     # dimensions
     nr, nrotor = size(dQi)
 
+    panel_iter = 1
     for irotor in 1:nrotor
         for ir in 1:nr
             # rdr = rotor_panel_center[ir, irotor] * rotor_panel_length[ir, irotor]
@@ -168,11 +173,12 @@ function inviscid_rotor_torque!(
                 rhoinf *
                 Gamma_tilde[ir, irotor] *
                 Cz_rotor[ir, irotor] *
-                (rotor_panel_center[ir, irotor] * rotor_panel_length[ir, irotor])
+                (rotor_panel_center[panel_iter] * rotor_panel_length[panel_iter])
+            panel_iter += 1
         end
     end
 
-    Qinv .= sum(dQi; dims=1)
+    Qinv .= sum(dQi; dims=1)'
 
     return Qinv, dQi
 end
@@ -258,6 +264,7 @@ function viscous_rotor_torque!(
     # dimensions
     nr, nrotor = size(dQv)
 
+    panel_iter = 1
     for irotor in 1:nrotor
         for ir in 1:nr
             # hrwc = 0.5 * rhoinf * Cmag_rotor[ir, irotor] * chord[ir, irotor]
@@ -269,13 +276,14 @@ function viscous_rotor_torque!(
                 Ctheta_rotor[ir, irotor] *
                 (
                     B[irotor] *
-                    rotor_panel_center[ir, irotor] *
-                    rotor_panel_length[ir, irotor]
+                    rotor_panel_center[panel_iter] *
+                    rotor_panel_length[panel_iter]
                 )
+            panel_iter += 1
         end
     end
 
-    Qvisc .= sum(dQv; dims=1)
+    Qvisc .= sum(dQv; dims=1)'
 
     return Qvisc, dQv
 end

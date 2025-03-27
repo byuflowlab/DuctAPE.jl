@@ -224,11 +224,11 @@ function initialize_velocities!(
         #=
           NOTE: we need the values at the nodes not centers, so average the values and use the end values on the end points
         =#
-        sigr[1] = @. blade_elements.B[irotor] / (4.0 * pi) *
+        sigr[1,irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
             getfield.(out, :cd)[1] *
             getfield.(out, :W)[1] *
             blade_elements.chords[1, irotor]
-        @. sigr[2:(end - 1)] =
+        @. sigr[2:(end - 1),irotor] =
             (
                 blade_elements.B[irotor] / (4.0 * pi) *
                 getfield.(out, :cd)[2:end] *
@@ -239,7 +239,7 @@ function initialize_velocities!(
                 getfield.(out, :W)[1:(end - 1)] *
                 blade_elements.chords[1:(end - 1), irotor]
             ) / 2.0
-        sigr[end] = @. blade_elements.B[irotor] / (4.0 * pi) *
+        sigr[end,irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
             getfield.(out, :cd)[end] *
             getfield.(out, :W)[end] *
             blade_elements.chords[end, irotor]
