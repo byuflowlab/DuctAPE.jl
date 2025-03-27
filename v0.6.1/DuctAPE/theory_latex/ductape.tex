@@ -1,0 +1,36 @@
+\chapter{DuctAPE Theory}
+
+\noindent Author: Judd Mehr
+
+\noindent Last Updated: \today
+
+\input{ductintro}
+
+\input{ductbodymethods}
+
+\input{ductrotorwakemethods}
+
+\input{ductpostprocessing}
+
+\input{ductverification}
+
+% %%% --- Chapter Appendices --- %%%
+\clearpage
+\newpage
+\begin{subappendices}
+    \input{vortexringinducedvelocity}
+    \input{separationofsingularity}
+    \input{ductairfoilcorrections}
+    \input{poissoneqninversion}
+%     % \input{ductape/axisym_self_induction} %not needed now?
+\end{subappendices}
+
+%%% --- Bibliography --- %%%
+\clearpage
+\newpage
+\let\oldaddcontentsline\addcontentsline% Store \addcontentsline
+\renewcommand{\addcontentsline}[3]{}% Make \addcontentsline a no-op
+\printbibliography[title=References,heading=subbibliography]
+\let\addcontentsline\oldaddcontentsline% Restore \addcontentsline
+
+% \end{document}

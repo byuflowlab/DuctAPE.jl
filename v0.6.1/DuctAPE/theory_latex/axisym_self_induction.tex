@@ -1,0 +1,307 @@
+\section{Derivation of Self-induction terms for Axisymmetric Panel Method}
+\label{sec:axisym_selfinduction}
+
+The panels of the axisymmetric panel method, though flat, should be thought of as curved for the purposes of attributing self-induced velocities.
+\Cref{fig:axisym_selfinduced_geometry} shows the two curvatures associated with the axisymmetric panels.
+The first curvature that leads to a self-induced velocity is the curvature in the \((x,r)\) plane, the same plane in which a planar method would be developed.
+In this case, we can reasonably use the self-induced velocity used for the planar case as described in the next sub-section.
+
+The other curvature that causes a self-induced velocity exists in the \((r,\theta)\) plane, and can be thought of as the effects of an equivalent vortex ring, sometimes referred to as a ``smoke'' ring due to the ease of visualization.
+In \cref{ssec:ringvortexinduction} we go over the process of equating a ring vortex to an element of our vortex sheet to find this component of self-induced velocity.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.65\textwidth]{./figures/axisym_selfinduced_geometry}
+    \caption{}
+    \label{fig:axisym_selfinduced_geometry}
+\end{figure}
+
+
+\subsection{Planar Component}
+\label{app:planarselfinducedvelocity}
+
+Start with the standard planar vortex influence coefficient expressions for a vortex of unit strength with induced velocity components of
+
+\begin{align}
+    v_{x_{mn}} &= \frac{r_m - r_n}{2 \pi r^2_{mn}} d_n \\
+    v_{r_{mn}} &= \frac{x_m - x_n}{2 \pi r^2_{mn}} d_n,
+\end{align}
+
+\noindent and putting them together into the influence coefficient (coupling coefficient multiplied by panel length)
+
+\begin{equation}
+    a^\text{plane}_{mm} = \frac{d_m}{2 \pi} \lim_{m\rightarrow n} \left[\frac{(r_m - r_n)\cos \beta_m  - (x_m - x_n)\sin \beta_m}{(x_m - x_n)^2+(r_m - r_n)^2}\right].
+\end{equation}
+
+\noindent Note that we want to find the value for the affect of the panel on itself, so we apply the limit as \(m\) approaches \(n\).
+
+We next note the following definitions for sine and cosine of the panel angle, \(\beta_m\):
+
+\begin{align}
+    \cos \beta_m  &= \frac{\d x_m}{\d s_m} \\
+    \sin \beta_m  &= \frac{\d r_m}{\d s_m};
+\end{align}
+
+\noindent which we can substitute into our expression to yield
+
+\begin{equation}
+    a^\text{plane}_{mm} = \frac{d_m}{2 \pi} \lim_{m\rightarrow n} \left[\frac{(r_m - r_n) \frac{\d x_m}{\d s_m}  - (x_m - x_n)\frac{\d r_m}{\d s_m}}{(x_m - x_n)^2+(r_m - r_n)^2}\right].
+\end{equation}
+
+Since this is indeterminate, we apply L'Hospital's rule, taking derivatives with respect to the differential length along the surface,\(s_m\), and treating the \(n\)th terms as constants.
+We will work out the numerator first, then the denominator before putting everything back together.
+
+For the first term in the numerator, applying the product rule gives:
+
+\begin{equation}
+    \frac{\d}{\d s_m} \left[ (r_m-r_n)\frac{\d x_m}{\d s_m}\right] = \left(\frac{\d r_m}{\d s_m} - \frac{\d r_n}{\d s_m} \right) \frac{\d x_m}{\d s_m} + (r_m-r_n)\frac{\d^2 x_m}{\d s_m^2},
+\end{equation}
+
+\noindent which we can simplify slightly, remembering that we are taking \(n\)th terms as constants
+
+\begin{equation}
+ \left(\frac{\d r_m}{\d s_m} - \cancel{\frac{\d r_n}{\d s_m}} \right) \frac{\d x_m}{\d s_m} + (r_m-r_n)\frac{\d^2 x_m}{\d s_m^2} =  \frac{\d r_m}{\d s_m} \frac{\d x_m}{\d s_m} + (r_m-r_n)\frac{\d^2 x_m}{\d s_m^2}.
+\end{equation}
+
+We approach the second term of the numerator in the same manner,
+
+\begin{equation}
+    \begin{aligned}
+    \frac{\d}{\d s_m} \left[ (x_m-x_n)\frac{\d r_m}{\d s_m}\right] &= \left(\frac{\d x_m}{\d s_m} - \cancel{\frac{\d x_n}{\d s_m}} \right) \frac{\d r_m}{\d s_m} + (x_m-x_n)\frac{\d^2 r_m}{\d s_m^2}\\
+    &= \frac{\d x_m}{\d s_m} \frac{\d r_m}{\d s_m} + (x_m-x_n)\frac{\d^2 r_m}{\d s_m^2}.
+    \end{aligned}
+\end{equation}
+
+\noindent Putting the terms of the numerator together (remebering to subtract the second term from the first) we see that the \(\frac{\d x_m}{\d s_m} \frac{\d r_m}{\d s_m}\) terms cancel out, leaving us with a numerator of
+
+\begin{equation}
+(r_m-r_n)\frac{\d^2 x_m}{\d s_m^2} - (x_m-x_n)\frac{\d^2 r_m}{\d s_m^2}
+\end{equation}
+
+Next we look at the denominator of our limit.
+Applying the chain rule to the first term in the denominator, and removing derivatives of constants yields
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\d}{\d s_m} (x_m-x_n)^2 &= 2(x_m-x_n)\left(\frac{\d x_m}{\d s_m}-\cancel{\frac{\d x_n}{\d s_m}}\right)\\
+        &= 2(x_m-x_n)\frac{\d x_m}{\d s_m}.
+    \end{aligned}
+\end{equation}
+
+\noindent Similarly for the second term in the denominator:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\d}{\d s_m} (r_m-r_n)^2 &= 2(r_m-r_n)\left(\frac{\d r_m}{\d s_m}-\cancel{\frac{\d r_n}{\d s_m}}\right)\\
+        &= 2(r_m-r_n)\frac{\d r_m}{\d s_m}.
+    \end{aligned}
+\end{equation}
+
+\noindent Combining the two terms gives us the complete denominator
+
+\begin{equation}
+    2\left[(x_m-x_n)\frac{\d x_m}{\d s_m} + (r_m-r_n)\frac{\d r_m}{\d s_m}\right]
+\end{equation}
+
+Putting the numerator and denominator back together, and taking the 2 in the denominator out of the limit gives us
+
+\begin{equation}
+    a^\text{plane}_{mm} = \frac{d_m}{4 \pi} \lim_{m\rightarrow n} \left[\frac{(r_m-r_n)\frac{\d^2 x_m}{\d s_m^2} - (x_m-x_n)\frac{\d^2 r_m}{\d s_m^2}}{(x_m-x_n)\frac{\d x_m}{\d s_m} + (r_m-r_n)\frac{\d r_m}{\d s_m}}\right],
+\end{equation}
+
+\noindent which we can see is still indeterminate.
+So we will apply L'Hospital's rule once again.
+
+Beginning again with the first term of the numerator:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\d}{\d s_m} \left[(r_m-r_n)\frac{\d^2 x_m}{\d s_m^2}\right] &= \left(\frac{\d r_m}{\d s_m} - \cancel{\frac{\d r_n}{\d s_m}}\right)\frac{\d^2 x_m}{\d s_m^2}+(r_m-r_n)\frac{\d^3 x_m}{\d s_m^3}\\
+        &= \frac{\d r_m}{\d s_m} \frac{\d^2 x_m}{\d s_m^2}+(r_m-r_n)\frac{\d^3 x_m}{\d s_m^3}.
+    \end{aligned}
+\end{equation}
+
+\noindent Then the second term of the numerator:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\d}{\d s_m} \left[(x_m-x_n)\frac{\d^2 r_m}{\d s_m^2}\right] &= \left(\frac{\d x_m}{\d s_m} - \cancel{\frac{\d x_n}{\d s_m}}\right)\frac{\d^2 r_m}{\d s_m^2}+(x_m-x_n)\frac{\d^3 r_m}{\d s_m^3}\\
+        &= \frac{\d x_m}{\d s_m} \frac{\d^2 r_m}{\d s_m^2}+(x_m-x_n)\frac{\d^3 r_m}{\d s_m^3}.
+    \end{aligned}
+\end{equation}
+
+Now the first term of the denominator:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\d}{\d s_m} \left[(x_m-x_n)\frac{\d x_m}{\d s_m}\right] &= \left(\frac{\d x_m}{\d s_m} - \cancel{\frac{\d x_n}{\d s_m}}\right)\frac{\d x_m}{\d s_m}+(x_m-x_n)\frac{\d^2 x_m}{\d s_m^2}\\
+        &= \left(\frac{\d x_m}{\d s_m}\right)^2+(x_m-x_n)\frac{\d^2 x_m}{\d s_m^2}.
+    \end{aligned}
+\end{equation}
+
+\noindent And the second term of the denominator:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\d}{\d s_m} \left[(r_m-r_n)\frac{\d r_m}{\d s_m}\right] &= \left(\frac{\d r_m}{\d s_m} - \cancel{\frac{\d r_n}{\d s_m}}\right)\frac{\d r_m}{\d s_m}+(r_m-r_n)\frac{\d^2 r_m}{\d s_m^2}\\
+        &= \left(\frac{\d r_m}{\d s_m}\right)^2+(r_m-r_n)\frac{\d^2 r_m}{\d s_m^2}.
+    \end{aligned}
+\end{equation}
+
+\noindent Putting everything back together (remembering again that the second term in the numerator is subtracted) gives
+
+\begin{equation}
+    a^\text{plane}_{mm} = \frac{d_m}{4 \pi} \lim_{m\rightarrow n} \left[\frac{\frac{\d r_m}{\d s_m} \frac{\d^2 x_m}{\d s_m^2}+(r_m-r_n)\frac{\d^3 x_m}{\d s_m^3}-\frac{\d x_m}{\d s_m} \frac{\d^2 r_m}{\d s_m^2}-(x_m-x_n)\frac{\d^3 r_m}{\d s_m^3}}{\left(\frac{\d x_m}{\d s_m}\right)^2+(x_m-x_n)\frac{\d^2 x_m}{\d s_m^2}+\left(\frac{\d r_m}{\d s_m}\right)^2+(r_m-r_n)\frac{\d^2 r_m}{\d s_m^2}}\right].
+\end{equation}
+
+Taking the limit now, give us
+
+\begin{equation}
+    \label{eqn:planarselfinduced1}
+    a^\text{plane}_{mm} = \frac{d_m}{4 \pi} \frac{\frac{\d r_m}{\d s_m} \frac{\d^2 x_m}{\d s_m^2}-\frac{\d x_m}{\d s_m} \frac{\d^2 r_m}{\d s_m^2}}{\left(\frac{\d x_m}{\d s_m}\right)^2+\left(\frac{\d r_m}{\d s_m}\right)^2}.
+\end{equation}
+
+
+Although this expression can be uses as-is, Lewis \cite{Lewis_1991} proposed the introduction of a transformation that can further simplify this expression, removing the need for curve fitting procedures.
+
+He begins with the transformations
+
+\begin{align}
+    \frac{\d r_m}{\d s_m} &= \frac{\d r_m}{\d x_m}\frac{\d x_m}{\d s_m}\\
+    \frac{\d^2 r_m}{\d s_m^2} &= \frac{\d^2 r_m}{\d x_m^2}\left(\frac{\d x_m}{\d s_m}\right)^2 + \frac{\d r_m}{\d x_m}\frac{\d^2 x_m}{\d s_m^2}.
+\end{align}
+
+Applying these transformations to \cref{eqn:planarselfinduced1} and simplifying leads to
+
+\begin{align}
+    a^\text{plane}_{mm} &= \frac{d_m}{4 \pi}
+    \frac{
+        \frac{\d r_m}{\d x_m}\frac{\d x_m}{\d s_m} \frac{\d^2 x_m}{\d s_m^2}
+        -\frac{\d x_m}{\d s_m} \left[\frac{\d^2 r_m}{\d x_m^2}\left(\frac{\d x_m}{\d s_m}\right)^2
+        + \frac{\d r_m}{\d x_m}\frac{\d^2 x_m}{\d s_m^2} \right]
+    }{
+        \left(\frac{\d x_m}{\d s_m}\right)^2
+        + \left(\frac{\d r_m}{\d x_m}\right)^2\left(\frac{\d x_m}{\d s_m}\right)^2
+    } \\
+%
+    &= \frac{d_m}{4 \pi}
+    \frac{
+        \frac{\d r_m}{\d x_m}\cancel{\frac{\d x_m}{\d s_m}} \frac{\d^2 x_m}{\d s_m^2}
+        - \cancel{\frac{\d x_m}{\d s_m}}  \left[\frac{\d^2 r_m}{\d x_m^2}\left(\frac{\d x_m}{\d s_m}\right)^2
+        + \frac{\d r_m}{\d x_m}\frac{\d^2 x_m}{\d s_m^2} \right]
+    }{
+        \left(\frac{\d x_m}{\d s_m}\right)^{\cancel{2}}
+        + \left(\frac{\d r_m}{\d x_m}\right)^2\left(\frac{\d x_m}{\d s_m}\right)^{\cancel{2}}
+    } \\
+%
+    &= \frac{d_m}{4 \pi}
+    \frac{
+        \cancel{\frac{\d r_m}{\d x_m} \frac{\d^2 x_m}{\d s_m^2}}
+        -  \left[\frac{\d^2 r_m}{\d x_m^2}\left(\frac{\d x_m}{\d s_m}\right)^2
+        + \cancel{\frac{\d r_m}{\d x_m} \frac{\d^2 x_m}{\d s_m^2}} \right]
+    }{
+        \frac{\d x_m}{\d s_m}
+        + \left(\frac{\d r_m}{\d x_m}\right)^2 \frac{\d x_m}{\d s_m}
+    } \\
+%
+    &= \frac{d_m}{4 \pi}
+    \frac{
+        - \frac{\d^2 r_m}{\d x_m^2}\left(\frac{\d x_m}{\d s_m}\right)^{\cancel{2}}
+    }{
+        \cancel{\frac{\d x_m}{\d s_m}}
+        + \left(\frac{\d r_m}{\d x_m}\right)^2\cancel{\frac{\d x_m}{\d s_m}}
+    } \\
+%
+\label{eqn:planarselfinduced2}
+    &= \frac{d_m}{4 \pi}
+    \frac{
+        - \frac{\d^2 r_m}{\d x_m^2} \frac{\d x_m}{\d s_m}
+    }{
+        1 + \left(\frac{\d r_m}{\d x_m}\right)^2
+    }.
+\end{align}
+
+\noindent We can then eliminate the \(\d x_m/ \d s_m\) term by applying the Pythagorean theorem such that
+
+\begin{align}
+    \d s_m^2 &= \d x_m^2 + \d r_m^2 \\
+    \left(\frac{\d s_m}{\d x_m}\right)^2 &= \left(\frac{\d x_m}{\d x_m}\right)^2 + \left(\frac{\d r_m}{\d x_m}\right)^2 \\
+    \frac{\d s_m}{\d x_m} &= \left[1 + \left(\frac{\d r_m}{\d x_m}\right)^2\right]^{1/2} \\
+    \frac{\d x_m}{\d s_m} &= \frac{1}{\left[1 + \left(\frac{\d r_m}{\d x_m}\right)^2\right]^{1/2} }
+\end{align}
+
+\noindent Which substituted into \cref{eqn:planarselfinduced2} leaves
+
+\begin{align}
+a^\text{plane}_{mm} &= \frac{d_m}{4 \pi}
+\frac{
+    - \frac{\d^2 r_m}{\d x_m^2} \frac{1}{\left[1 + \left(\frac{\d r_m}{\d x_m}\right)^2\right]^{1/2} }
+}{
+    \left(\frac{\d r_m}{\d x_m}\right)^2
+} \\
+%
+    &= \frac{d_m}{4 \pi}
+    \frac{
+        - \frac{\d^2 r_m}{\d x_m^2}
+    }{
+        \left[1 + \left(\frac{\d r_m}{\d x_m}\right)^2\right]^{1/2} \left[1 + \left(\frac{\d r_m}{\d x_m}\right)^2\right]
+    } \\
+%
+    &= \frac{d_m}{4 \pi}
+    \frac{
+        - \frac{\d^2 r_m}{\d x_m^2}
+    }{
+        \left[1 + \left(\frac{\d r_m}{\d x_m}\right)^2\right]^{3/2}
+    }
+\end{align}
+
+Realizing that the formula for the \textit{internal} radius of curvature is
+
+\begin{equation}
+    R_m = \frac{
+        \left[1 + \left(\frac{\d r_m}{\d x_m}\right)^2\right]^{3/2}
+    }{
+        -\frac{\d^2 r_m}{\d x_m^2}
+    },
+\end{equation}
+
+\noindent we are left with the simple expression
+
+\begin{equation}
+    a^\text{plane}_{mm} = \frac{d_m}{4 \pi R_m}.
+\end{equation}
+
+
+
+\subsection{Vortex Ring Component}
+\label{app:smokeringinduction}
+
+We start with an approximate expression for the self-induced velocity of a ring vortex as presented by Lamb \cite{Lamb_1945}.\sidenote{Lamb notes/cites that this expression is presented and/or verified by other authors in addition to the derivation he presents.}%book is called Hydrodyanmics, and is in your reading/books directory
+
+\begin{equation}
+    \label{eqn:lambvortex}
+    v_x = - \frac{1}{4 \pi r_m} \left[ \ln \left(\frac{8 r_m}{a} - \frac{1}{4}\right)\right]
+\end{equation}
+
+\where the negative out front is due to our coordinate system as shown in \cref{fig:axisym_fundamental_geometry}, thus the vortex rings used in our method will induce a velocity in the negative x-direction.
+The variable \(a\) in this expression is the cross-sectional radius of the vortex ring.
+If we take an element of our vortex sheet of length, \(d_m\), having a total strength of \(\gamma(s_m)d_m\), distributed across the vortex element, we can reasonable imagine this to be analogous to a flattened vortex ring of total perimeter \(2d_m\) and vorticity strength of \(\gamma(s_m)/2\) (see \cref{fig:smokeringselfinduction})
+With this assumption in mind, we can relate our vortex sheet to the vortex ring by taking the ring to have the same total perimeter, thus the radius of the equivalent vortex ring would be \(a = d_m / \pi\).
+Substituting into \cref{eqn:lambvortex} gives us the expression for the self-induced velocity due to the curvature of the surface in the \((r,\theta)\) plane
+
+\begin{equation}
+    v_x = - \frac{1}{4 \pi r_m} \left[ \ln \left(\frac{8 \pi r_m}{d_m} - \frac{1}{4}\right)\right]
+\end{equation}
+
+\noindent To apply this now to our panel method, we simply need to remember to multiply by the length and cosine of the angle of the panel on which we are stationed to achieve this portion of the influence coefficient.
+
+\begin{equation}
+    a^\text{ring}_{mm} = - \frac{\cos(\beta_m)d_m}{4 \pi r_m} \left[ \ln \left(\frac{8 \pi r_m}{d_m} - \frac{1}{4}\right)\right]
+\end{equation}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.65\textwidth]{./figures/smokeringselfinduction}
+    \caption{}
+    \label{fig:smokeringselfinduction}
+\end{figure}
