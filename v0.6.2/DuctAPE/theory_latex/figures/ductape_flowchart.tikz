@@ -1,0 +1,53 @@
+\begin{tikzpicture}[block/.style={rectangle, rounded corners, fill=primary, text=white, minimum width=3cm, minimum height=1cm,align=center}, node distance = 5mm and 5mm]
+
+    \matrix (chart)
+    [
+        row sep = 8mm,
+        column sep = 5mm,
+    ]
+    {
+         % \node [block,fill=tertiary] (solve) {Update States}; & & & \\
+         \node [block, fill=tertiary] (solve) {$\begin{array}{c}\text{Update States:}\\v_\theta^R, v_z^R, C_m^W\end{array}$}; & & & \\
+         %
+         \node [block] (Gamr) {$\begin{array}{c}\text{Calculate }\Gamma\\ \text{\cref{eqn:bladeelementcirculationrotor}}\end{array}$}; &
+         \node [block] (gamw) {$\begin{array}{c}\text{Calculate }\gamma^W \\ \text{\cref{eqn:gamma_theta_general}}\end{array}$}; &
+             \node [block] (body) {$\begin{array}{c}\text{Calculate }\gamma^B \\ \text{\cref{eqn:neumann2}}\end{array}$}; &
+         % \node [block] (body) {$\begin{array}{c}\text{Calculate }\gamma^B \\ \gamma^B = AIC \backslash f(\gamma^W,\sigma^R,V_\infty)\end{array}$}; &
+         \node [block] (sigr) {$\begin{array}{c}\text{Calculate }\sigma^R \\ \text{\cref{eqn:rotorsourcestrengths}}\end{array}$}; \\
+         %
+         \node [block] (est_vtheta) {$\begin{array}{c}\text{Estimate }v_\theta^R \\ \text{\cref{eqn:vthetaself}}\end{array}$}; &
+         \node [block] (est_vz) {$\begin{array}{c}\text{Estimate }v_z^R \\ \text{\cref{eqn:vzvr}}\end{array}$}; &
+         \node [block] (est_cm) {$\begin{array}{c}\text{Estimate }C_m^W \\ \text{\cref{eqn:vzvr,eqn:vmwm}}\end{array}$}; & \\
+         %
+         \node [block,fill=secondary] (conv) {Converged?}; & & & \\
+         %
+         \node [draw, rounded corners] (return) {$\begin{array}{c}\text{Post Process}\\v_\theta^R, v_z^R, C_m^W\end{array}$}; & & & \\
+    };
+
+    \draw[-Stealth] (solve) -- (Gamr);
+    \draw[-Stealth] (solve.east) -| (gamw.north);
+    \draw[-Stealth] (solve.east) -| (body.north);
+    \draw[-Stealth] (solve.east) -| (sigr.north);
+
+    \draw[-Stealth] (Gamr) -- (est_vtheta);
+    \draw[-Stealth] (Gamr) -- (gamw);
+
+    \draw[-Stealth] (gamw) -- (body);
+    \draw[-Stealth] (gamw) -- (est_vz);
+    \draw[-Stealth] (gamw.south) -- +(0,-4mm) -| (est_cm.north);
+
+    \draw[-Stealth] (sigr) -- (body);
+    \draw[-Stealth] (sigr.south) -- +(0,-4mm) -| (est_vz.north);
+    \draw[-Stealth] (sigr.south) -- +(0,-4mm) -| (est_cm.north);
+
+    \draw[-Stealth] (body.south) -- +(0,-4mm) -| (est_vz.north);
+    \draw[-Stealth] (body) -- (est_cm);
+
+    \draw[-Stealth] (est_vtheta) -- (conv);
+    \draw[-Stealth] (est_vz.south) |- (conv.east);
+    \draw[-Stealth] (est_cm.south) |- (conv.east);
+
+    \draw[-Stealth] (conv.west) -- +(-6mm,0) |- (solve.west) node [pos=0.25, fill=white] {No};
+    \draw[-Stealth] (conv) -- (return) node [pos=0.4, fill=white] {Yes};
+
+\end{tikzpicture}

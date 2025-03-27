@@ -1,0 +1,193 @@
+\section{Post-Processing}
+\label{sec:postprocess}
+
+After we have solved the non-linear system for unknown body, rotor, and wake strengths, we need to perform some post-processing in order to assess useful outputs such as thrust, torque, power, efficiency, blade loading, etc.
+%
+This section covers the methodology for calculating desired outputs.
+
+\subsection{Body Thrust}
+
+The body thrust is the sum of forces on the bodies and may augment the total system thrust and therefore efficiency.
+%
+Due to \cref{asm:axisymmetric}, the net radial pressure forces on the body cancel; we also assume there are no tangential forces induced due to the bodies.
+%
+We therefore sum the forces due to pressure in the axial direction to obtain thrust due to the bodies.
+
+\begin{equation}
+    T_\text{bod} = \frac{1}{2}\rho_\infty V_\text{ref}^2 f_z
+\end{equation}
+
+\where the non-dimensional force coefficient, \(f_z\), is the integral of the pressure force coefficient in the axial direction about the body surfaces:
+
+\begin{equation}
+    \label{eqn:fzbody}
+    f_z = \sum_{i=1}^{N_b} 2 \pi \int_{S_i} r(s_i) (c_{p_\text{out}}-c_{p_\text{in}}) (s_i) \hat{\vect{n}}_{z}(s_i) \d s_i.
+\end{equation}
+%
+In the case of a blunt trailing edge, the trailing edge gap panel is also included in the integral for the total axial force coefficient, though the pressure coefficient values used in that case are simply the average of the adjoining panels in the duct case, and the last panel in the center body case.
+%
+Since the trailing edge gap panels are in general pointing in the positive axial direction, this provides a rough approximation of profile drag due to the blunt trailing edges.
+
+Note that in \cref{eqn:fzbody} we integrate the difference in surface pressure between the outer and inner sides of the body surface.
+%
+This is due to the fact that there is a non-zero induced velocity on the inner side of the body boundaries as mentioned in \cref{sssec:vtanbody}.
+%
+To obtain the thrust due to a pressure difference, then, we require to net pressure induced on the body surfaces rather than just the externally induced surface pressure.
+%
+Internally, there is no additional effects on the surface pressure by the rotor and wake.
+%
+Externally however, there is a jump in pressure aft of the rotor(s) inside the duct.
+
+Aft of the rotor plane(s), the pressure coefficient changes due to the enthalpy and entropy jumps across the rotor plane as well as the addition of swirl velocity.
+%
+Remembering \cref{eqn:totalpressure1} we see that the steady state pressure coefficient changes due to the disk jumps as
+
+\begin{equation}
+    \begin{aligned}
+        \Delta c_{p_{hs}} &= \frac{\widetilde{p_t}}{\frac{1}{2} \rho V_\text{ref}^2} \\
+                          &= \frac{\rho \left(\widetilde{h}-\widetilde{S} \right)}{\frac{1}{2} \rho V_\text{ref}^2} \\
+                          &= \frac{\widetilde{h}-\widetilde{S}}{\frac{1}{2} V_\text{ref}^2}
+    \end{aligned}
+\end{equation}
+
+\noindent The pressure is also altered by the addition of swirl velocity due to the rotor.
+%
+We treat this in the same manner as we do for the nominal, steady pressure coefficient based on the surface velocity.
+%
+For the nominal case, we only look at the velocity in the axial and radial directions, obtaining the velocity tangent to the body surfaces.
+%
+The pressure coefficient, is given by
+
+\begin{equation}
+    c_p = \frac{p - p_\infty}{\frac{1}{2} \rho V_\text{ref}^2}
+\end{equation}
+%
+By \cref{asm:incompressible}, we can apply Bernoulli's equation
+
+\begin{align}
+    p_\infty + \frac{1}{2} \rho V_\infty^2 &= p + \frac{1}{2} \rho V_\text{tan}^2 \\
+    p-p_\infty &= \frac{1}{2} \rho V_\infty^2 - \frac{1}{2} \rho V_\text{tan}^2
+\end{align}
+
+\where \(V_\text{tan}\) is the velocity tangent to the body surface, and substitute into the numerator and cancel to obtain
+
+\begin{equation}
+    c_p = \frac{V_\infty^2 - V_\text{tan}^2}{V_\text{ref}^2}
+\end{equation}
+%
+Aft of the rotor, inside the duct, and on the outer side of the body surfaces \(V_\text{tan}\) contains a swirl component that is not present upstream of the rotor.
+%
+Since the \(V_{\theta_\infty}=0\), the change in pressure coefficient aft of the rotor due to the addition of swirl velocity is simply
+
+\begin{equation}
+    \Delta c_{p_\theta} = -\frac{V_\theta^2}{V_\text{ref}^2}
+\end{equation}
+%
+All together the outer surface pressure coefficient rise aft of a rotor is then:
+
+\begin{equation}
+    \begin{aligned}
+        \Delta c_p &= \Delta c_{p_{hs}} + \Delta c_{p_\theta} \\
+     &= \frac{2 (\widetilde{h} - \widetilde{S}) - V_\theta^2}{V_\text{ref}^2}.
+    \end{aligned}
+\end{equation}
+
+\subsection{Rotor Performance}
+\label{ssec:rotorperformance}
+
+\subsubsection{Blade Loading}
+
+Rotor performance calculation begins with determining the blade element aerodynamic loads.
+%
+To obtain the loads in the axial and tangential direction, we start with the lift and drag coefficients for the blade elements, calculated as explained in \cref{ssec:bladeelementmodel}.
+%
+The lift and drag coefficients are then rotated into the axial and tangential directions using the inflow angle, \(\beta_1\):
+
+\begin{align}
+    c_z &= c_\ell \cos(\beta_1) - c_d \sin(\beta_1) \\
+    c_\theta &= c_\ell \sin(\beta_1) + c_d \cos(\beta_1),
+\end{align}
+
+\where \(c_z\) is the force coefficient in the axial direction, and \(c_\theta\) is the force coefficient in the tangential direction.
+%
+We then multiply by the chord length to scale the force and dimensionalize to obtain the forces per unit length:\sidenote{
+It is these forces that are used in an aerostructural analysis and optimization setting.}
+
+\begin{align}
+    f_n &= \frac{1}{2} \rho_\infty W^2 c c_z \\
+    f_t &= \frac{1}{2} \rho_\infty W^2 c c_\theta.
+\end{align}
+
+\noindent We can then integrate these forces per unit length across the blade and multiply by the number of blades to obtain the full rotor thrust, \(T_\text{rot}\), and torque, \(Q\), on the rotor.
+
+\begin{equation}
+    T_\text{rot} = B \int_{R_\text{hub}}^{R_\text{tip}} f_n \d r
+\end{equation}
+
+\begin{equation}
+    Q = B \int_{R_\text{hub}}^{R_\text{tip}} f_t r \d r
+\end{equation}
+
+\noindent Power is related to torque by the rotation rate, \(\Omega\), and is therefore immediately found as well:
+
+\begin{equation}
+    P = Q\Omega.
+\end{equation}
+
+It is common to express the rotor thrust, torque and power as non-dimensional coefficients.
+%
+We use the propeller convention here.
+%
+The thrust coefficient, \(C_T\), is
+
+\begin{equation}
+    C_T = \frac{T}{\rho_\infty n^2 D^4},
+\end{equation}
+
+\where \(n=\Omega/2\pi\) is the rotation rate in revolutions per second and \(D=2R_\text{tip}\) is the rotor tip diameter.
+%
+The torque coefficient, \(C_Q\), is
+
+\begin{equation}
+    C_Q = \frac{Q}{\rho_\infty n^2 D^5},
+\end{equation}
+
+\noindent and the power coefficient, \(C_P\), is
+
+\begin{equation}
+    C_P = C_Q \Omega
+\end{equation}
+
+
+\subsubsection{Efficiency}
+
+The rotor efficiency is the ratio of the thrust to power multiplied by the freestream velocity.
+%
+\begin{equation}
+    \eta_\text{rot} = \frac{T_\text{rot}}{P} V_\infty.
+\end{equation}
+%
+To obtain the total system efficiency, we simply add the body thrust to the rotor thrust.
+
+\begin{equation}
+    \eta_\text{tot} = \frac{T_\text{tot}}{P} V_\infty.
+\end{equation}
+
+\where
+
+\begin{equation}
+    T_\text{tot} = T_\text{rot}+T_\text{bod}
+\end{equation}
+
+%\subsubsection{Induced Efficiency}
+%%todo: is this needed for anything? if so, need to separate the rotated cn and ct out to just lift or drag contributions, the inv subscripts are from the lift only contributions to thrust and power
+%\begin{equation}
+%    \eta_\text{inv} = \frac{T_\text{inv} + T_\text{bod}}{P_\text{inv}}
+%\end{equation}
+
+\noindent The ideal efficiency is useful for comparing the actual efficiency with the theoretical potential and is defined as
+
+\begin{equation}
+    \eta_\text{ideal} = \frac{2}{1 + \left[\frac{1 + T_\text{tot}}{\frac{1}{2}\rho_\infty V_\infty^2 \pi R_\text{ref}^2}\right]^{1/2}}.
+\end{equation}
+

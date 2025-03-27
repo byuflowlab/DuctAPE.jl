@@ -1,0 +1,424 @@
+\section{Airfoil Polar Corrections for Ducted Rotors}
+
+When airfoil/cascade aerodynamic data is unavailable for each of the rotor blade sections, it may be possible to use airfoil section data for subsonic flow regimes (and perhaps even mildly super sonic regimes) without terrible inaccuracy if we apply some corrections to the airfoil polar.
+%
+Though the accuracy of solutions does break down quickly for high subsonic, transonic, and supersonic cases.
+%
+If supersonic airfoil or cascade data is an absolute necessity (e.g. for fully super sonic data), then the following corrections should not be used, and proper section polars should be generated through appropriate means.
+%
+The following subsections cover the airfoil data corrections and adjustments available in DuctAPE as well as addition adjustments made to the implementation of each as required for suitability in gradient-based optimization.
+%
+Specifically, we discuss the nominal correction methodology and then go over implementation details required for removing any discontinuities\sidenote{As we do not necessarily know a priori where in the design space an optimizer will search, we need to ensure that the correction models are continuous over the entire design space when using gradient-based optimization.} present in the nominal formulation.
+
+
+\subsection{Stall Cutoffs}
+Before any actual corrections are applied, we need to make an important adjustment to the nominal airfoil data.
+%
+Especially if the airfoil data provided includes information in the post stall regime, we see that it is possible to obtain the same lift coefficient at two different angles of attack.
+%
+This feature of the airfoil data can make it difficult for the DuctAPE solver to converge, since a blade element method is the foundation of the rotor and wake models.
+%
+To remove the possibility of multiple solutions for the lift, we effectively cut off the airfoil data post stall and assign our own, slightly positive lift slope above the maximum lift coefficient and below the minimum lift coefficient.
+%
+We keep the nominal data between the minimum and maximum lift coefficients and smoothly blend that data into the prescribed lift slopes for the rest of the possible range of angles of attack.
+%
+We apply a similar procedure to the drag data, but use the cutoff angles of attack from the lift curve.
+%
+\Cref{fig:stall-cutoff} shows an example of our stall cutoff adjustment to lift and drag data.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{figures/liftstall-cutoff.tikz}
+        \caption{Lift data is overwritten and extended outside the minimum and maximum lift coefficient values.}
+        \label{fig:liftstallcutoff}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+         \input{figures/dragstall-cutoff.tikz}
+         \caption{We cutoff Drag data at the same angles of attack as the lift data.}
+        \label{fig:dragstallcutoff}
+     \end{subfigure}
+        \caption{We cut off airfoil data outside the range of minimum and maximum lift coefficient and replace/extend the data using a prescribed lift curve slope in order to avoid numerical difficulties associated with multiple angles of attack resulting in equal lift coefficients.}
+     \label{fig:stall-cutoff}
+\end{figure}
+
+
+%---------------------------------#
+%       Cascade Corrections       #
+%---------------------------------#
+
+\subsection{Solidity and Stagger Corrections}
+
+Isolated airfoil data needs to be corrected to account for cascade, or multi-plane interference, effects since the airfoils along a rotor blade section are not actually isolated.
+%
+This is especially true for higher solidities, where blades are relatively close together.
+%
+We apply corrections based on a simple model published by Wallis\scite{Wallis_1968,Wallis_1977,Wallis_1983}, which assumes smooth transition between isolated airfoil and cascade data as solidity increases, as well as circular camber line airfoil geometries.
+%
+\begin{marginfigure}
+	\input{figures/soliditystagger-correction-margin.tikz}
+    \caption{Example curves demonstrating the changes to the lift coefficient vs angle of attack for the nominal polar when corrections for a solidity of 1.0 at a stagger angle of \(\pi/4\) are applied.}
+	\label{fig:soliditystagger-correction}
+\end{marginfigure}
+%
+The corrections depend both on solidity and stagger, though stagger only begin to effect the correction after 20 degrees.
+%
+These corrections are somewhat limited as they assume the airfoil camber is well matched to the operating conditions such that the deviation angle isn't overly large, but they should be sufficient for our purposes.
+%
+Wallis gives his corrections in the form of a line plot, to which quadratic fits are made.
+%
+Specifically, we use the quadratic fits provided in the DFDC source code.
+%
+The model is also applied only for stagger angles less than 90 degrees, and stagger effects are held constant after that.
+%
+Furthermore, the total correction factor is set to a maximum of 1, since, as stated by Wallis, ``there are no documented examples of factors exceeding unity,'' and the tendency of theoretical models predict values above 1 appears to be due to not capturing increased deviation angles completely.
+
+For implementation, since the solidity and stagger corrections only apply for stagger angles between 20 and 90 degrees, and we also set a maximum adjustment factor of 1, we limit stagger angles below 20 degrees to 20 degrees, and above 90 degrees to 90 degrees.
+%
+We apply these limits using a sigmoid blending function between the limited ranges and the nominal range.
+%
+For the limit of the overall adjustment factor, we subtract the difference of the unlimited adjustment factor and the factor limit of 1 from the unlimited factor.
+%
+To keep the end product smooth, we actually apply another sigmoid blending function to the difference to be subtracted and zero, centered just before the point of limitation to mitigate overshoot by the blending function.
+%
+\Cref{fig:cascadesmoothed} shows the limited correction curves with respect to changes in solidity and stagger.
+%
+We also see in \cref{fig:cascadesmoothed} that our applications of smooth blending functions have minimal effect on the calculated correction values.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{figures/solidity-smoothed.tikz}
+        \caption{Corrected value vs solidity for a stagger angle of \(\pi/4\).}
+        \label{fig:solidtysmoothed}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+         \input{figures/stagger-smoothed.tikz}
+         \caption{Corrected value vs stagger angle for a solidity of \(\sigma=2\)}
+         \label{fig:staggersmoothed}
+     \end{subfigure}
+     \caption{Nominal (with cutoffs) and smoothed solidity and stagger corrections for a nominal lift coefficient of 1.}
+        \label{fig:cascadesmoothed}
+\end{figure}
+
+
+
+%---------------------------------#
+%   Compressibility Corrections   #
+%---------------------------------#
+\subsection{Compressibility Lift Corrections}
+
+% \subsubsection{Subsonic Corrections}
+
+For subsonic compressibility corrections, we apply the well-used Pradtl-Glauert correction, which is based off of compressible potential flow and thin airfoil theories\scite{Glauert_1928}.
+%
+The Pradtl-Glauert correction states that for the nominal lift coefficient (which in our case is already corrected for solidty and stagger effects), \(c_{\ell_\text{ss}}\), one can apply a correction factor of \(\beta = \left[1-M^2\right]^{-1/2}\) to correct for compressibility affects of lift on the airfoil for Mach numbers, \(M\), up to about 0.7.
+
+\begin{marginfigure}
+	\input{figures/prandtlglauert-correction-margin.tikz}
+    \caption{Example curves demonstrating the changes to the lift coefficient vs angle of attack for the nominal polar when the Prandtl-Glauert correction applied.}
+	\label{fig:prandtlglauert-correction}
+\end{marginfigure}
+
+\begin{equation}
+    \label{eqn:prandtlglauertlift}
+    c_{\ell_\text{pg}} = \frac{c_{\ell_\text{ss}}}{\left[1-M^2\right]^{1/2}}
+\end{equation}
+
+\where the Mach number is defined as
+
+\begin{equation}
+    M = \frac{W}{V_s}
+\end{equation}
+
+\where \(W\) is the local inflow velocity magnitude and \(V_s\) is the local speed of sound (which we assume to be the freestream speed of sound).
+%
+\Cref{fig:prandtlglauert-correction} shows an example application of the Pradtl-Glauert correction applied to an arbitrary set of airfoil data for a Mach number of 0.5.
+
+\begin{marginfigure}
+	\input{figures/pg-smoothed-margin.tikz}
+    \caption{Nominal (with cutoff Mach number) and smoothed versions of the Prandtl-Glauert correction compared for a nominal lift coefficient of 1.}
+	\label{fig:prandtlglauert-smoothed-correction}
+\end{marginfigure}
+
+For implementation in a gradient-based optimization setting, we note that \cref{eqn:prandtlglauertlift} is only valid for Mach numbers less than 1.
+%
+At \(M=1\) we get infinity, and for \(M>1\) the output is not a real number.
+%
+In order to remedy these issues, we first set a limit on the Mach numbers that can be input, say \(M=0.999\), we then apply a quintic polynomial blend between \cref{eqn:prandtlglauertlift} and the output for the limit of \(M=0.999\) centered at \(M=0.975\) with an interpolation range of 0.02 on either side of the center point.
+%
+This provides a smooth transition to the cutoff value as well as avoids the possibility of \cref{eqn:prandtlglauertlift} being evaluated at or above \(M=1\).
+%
+Although, as may be seen in \cref{fig:prandtlglauert-smoothed-correction}, this adjustments causes a slight deviation from the nominal correction for high subsonic Mach numbers, the deviations are small and in ranges that we do not expect to operate frequently.
+
+
+%---------------------------------#
+%      Reynolds Corrections       #
+%---------------------------------#
+\subsection{Reynolds Number Drag Adjustments}
+
+If we have airfoil data at one Reynolds number, but we need to know how the airfoil behaves at a slightly different Reynolds number, we can apply an adjustment to the drag coefficient based on similarity between flat plate skin friction drag.
+%
+The limitation here is that we assume that the flow regimes between the Reynolds numbers are similar, in that they have similar laminar vs turbulent behavior, so that we can cancel out unknown constants due to airfoil shape and flow regime to arrive at
+
+\begin{marginfigure}
+	\input{figures/redrag-correction-margin.tikz}
+    \caption{Example curves demonstrating the changes to the drag coefficient vs angle of attack for the nominal polar when the Reynolds number adjustment is applied for a slightly higher Reynolds number.}
+	\label{fig:redrag-correction}
+\end{marginfigure}
+
+\begin{equation}
+    c_{d_{Re}} = c_{d_o} \left(\frac{Re_o}{Re}\right)^p;
+\end{equation}
+
+\where \(Re\) is the local Reynolds number, \(Re_o\) is the Reynolds number at which the data was generated, and the exponent terms are defined, for example, as \(p=0.5\) for fully laminar flow and \(p=0.2\) for fully turbulent flow.
+%
+\Cref{fig:redrag-correction} shows an example of the Reynolds number drag adjustment for an arbitrary drag curve applied for use at a Reynolds number 2.5 times larger than the nominal case.
+%
+Note that we do not have to apply a similar correction to the lift coefficient, because within the constraint of similar flow regimes (that is, relatively small changes in Reynolds number), the lift does not actually change significantly.
+%
+Also note that in practice, it may be better to simply utilize an interpolation between data at various Reynolds numbers, especially if the laminar vs turbulent regime is not fully characterized a priori.
+
+
+
+%---------------------------------#
+%      Transonic Corrections      #
+%---------------------------------#
+
+%%%%% ----- Transonic Lift Adjustments ----- %%%%%
+
+\subsection{Transonic Effects on Lift and Drag Coefficients}
+
+Above a critical Mach number, often around 0.7, the Pradtl-Glauert correction begins to break down due to transonic effects over the airfoil.
+%
+If shock waves are present on the airfoil, we can expect a decrease in lift as early separation can occur.
+%
+For these high subsonic and transonic cases, we apply limiters to the maximum and minimum lift coefficients.
+%
+We choose to employ the method used in XROTOR\sidenote{\url{https://web.mit.edu/drela/Public/web/xrotor/}} and DFDC\sidenote{\url{https://web.mit.edu/drela/Public/web/dfdc/}}.
+%
+The lift curve limiter correction used in these codes takes the form:
+
+\begin{equation}
+    c_{\ell_\text{corr}} = c_{\ell_\text{pg}} - (1-f_\text{stall}) c_{\ell_\text{lim}},
+\end{equation}
+
+\where
+
+\begin{marginfigure}
+	\input{figures/clminmaxlimit-correction-margin.tikz}
+    \caption{Example curves demonstrating the changes to the lift coefficient vs angle of attack for the nominal polar when the critical mach limiter is applied.}
+	\label{fig:clminmax-correction}
+\end{marginfigure}
+
+\begin{equation}
+    f_\text{stall} = \frac{\left.\frac{\d c_\ell}{\d \alpha}\right|_\text{stall}}{\frac{\d c_\ell}{\d \alpha}},
+\end{equation}
+%
+and
+%
+\begin{equation}
+    c_{\ell_\text{lim}} = \Delta c_{\ell_\text{stall}} \ln \left[\frac{1 + exp\left(\frac{c_{\ell_\text{pg}}-c_{\ell_\text{max}}'}{\Delta c_{\ell_\text{stall}}}\right)}{1+exp\left(\frac{c_{\ell_\text{min}}'-c_{\ell_\text{pg}}}{\Delta c_{\ell_\text{stall}}}\right)}\right];
+\end{equation}
+
+\where \(\left.\frac{\d c_\ell}{\d \alpha}\right|_\text{stall}\) is the lift curve slope to apply in the post stall region as part of this limiting correction, and \(\frac{\d c_\ell}{\d \alpha}\) is the nominal lift curve slope.
+%
+The \(\Delta c_{\ell_\text{stall}}\) term is the change in \(c_\ell\) between incipient and total stall.
+%
+The \(c_{\ell_\text{max}}'\) and \(c_{\ell_\text{min}}'\) values are the minimum and maximum of the nominal \(c_{\ell_{\text{max}_o}}\) and \(c_{\ell_{\text{min}_o}}\) and the following expressions, respectively:
+
+\begin{subequations}
+    \begin{align}
+        c_{\ell_\text{max}}' &= min \left[\left.c_\ell\right|_{c_{d_\text{min}}}+4\left(M_\text{crit} - M +\Delta M_\text{stall}\right),~~c_{\ell_{\text{max}_o}}\right] \\
+        c_{\ell_\text{min}}' &= max \left[\left.c_\ell\right|_{c_{d_\text{min}}}-4\left(M_\text{crit} - M +\Delta M_\text{stall}\right),~~c_{\ell_{\text{min}_o}} \right],
+    \end{align}
+\end{subequations}
+
+\where \(M_\text{crit}\) is the critical Mach number, \(\left.c_\ell\right|_{c_{d_min}}\) is the lift coefficient at the minimum drag angle of attack, and
+
+\begin{equation}
+    \Delta M_\text{stall} = \left(\frac{0.1}{10}\right)^{1/3}
+\end{equation}
+
+\noindent is comprised of chosen factors that yield reasonable results.\sidenote{These numbers are hard coded into XROTOR and DFDC.}
+%
+\Cref{fig:clminmax-correction} shows an example transonic limit adjustment for an arbitrary lift curve given a critical Mach number of 0.7 and an operational Mach number of 0.8.
+
+
+%%%%% ----- Transonic Drag Adjustments ----- %%%%%
+
+
+Along with the limiters placed on the lift curve due to transonic effects for Mach numbers above the critical Mach number for the airfoil, there are accompanying increases in the drag coefficients.
+%
+Again, we turn to the corrections provided in the XROTOR and DFDC codes, which add compressibility drag based on the limited lift coefficients described previously.
+%
+The added compressibility drag takes the form
+
+\begin{equation}
+    c_{d_c} = c_{d_{Re}} + 10 \left(M-M_\text{crit}(c_\ell)\right)^{3},
+\end{equation}
+
+\begin{marginfigure}
+	\input{figures/transdrag-correction-margin.tikz}
+    \caption{Example curves demonstrating the changes to the drag coefficient vs angle of attack for the nominal polar when the transonic compressibility corrections are added for a Mach number of 0.1 above \(M_\text{crit}\).}
+	\label{fig:transdrag-correction}
+\end{marginfigure}
+%
+
+\where the critical Mach adjusted for the limited lift coefficient takes the form
+
+\begin{equation}
+    \label{eqn:mcritcl}
+    M_\text{crit}(c_\ell) = M_\text{crit} - \frac{\bigg|c_{\ell_\text{lim}} - \left.c_\ell\right|_{c_{d_\text{min}}}\bigg|}{4} - \Delta M_\text{crit},
+\end{equation}
+
+\where
+
+\begin{equation}
+    \Delta M_\text{crit} = \left(\frac{0.002}{10}\right)^{1/3}
+\end{equation}
+
+\noindent comes from the difference in Mach corresponding to a rise in \(c_d\) of 0.002 at \(M_\text{crit}\), which is chosen to match empirical experience.\sidenote{Again, these values are hard coded into XROTOR and DFDC.}
+%
+Similarly, as before, the other constants are chosen to yield reasonable results.
+%
+\Cref{fig:transdrag-correction} shows an example comparison between a nominal drag curve and one for which the transonic compressibility augmentations have been applied for a Mach number 0.1 above \(M_\text{crit}\).
+
+
+For smooth implementation there are several min/max operations in the lift limiter function, these have been smoothed with sigmoid blending functions, and very little change is introduced from the nominal function as seen in \cref{fig:translim-smoothed}.
+%
+In addition, the nominal drag limiter function only adds drag after the critical Mach number is reached.
+%
+We smoothed this transition, which is perhaps less physical, but the differences are minimal as seen in \cref{fig:translim-smoothed}.
+%
+Furthermore, we used a smoothed absolute value with relatively tight smoothing range.
+%
+In this case, there is a slight over-prediction of the corrected drag for values at and just above the critical mach number, which actually counters the under prediction introduced by smoothing across the critical mach.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{figures/cltranslim-smoothed.tikz}
+        % \label{fig:cltranslim-smoothed}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+         \input{figures/cdtranslim-smoothed.tikz}
+         % \label{fig:cdtranslim-smoothed}
+     \end{subfigure}
+     \caption{Nominal and smoothed transonic lift and drag coefficient limits across a range of Mach numbers for a Nominal lift coefficient of unity.}
+        \label{fig:translim-smoothed}
+\end{figure}
+
+
+\subsection{Combined Implementation}
+
+In DuctAPE, these corrections are applied as follows.
+%
+First, it is assumed that the user inputs airfoil data that is already pre-processed with the stall limits applied.
+%
+Ideally, the airfoil data also inherently has Reynolds number dependencies (data at various Reynolds numbers) already as well.
+%
+Then during computation, the corrections are applied on-the-fly, beginning with the solidity/stagger correction.
+%
+The Prandtl-Glauert compressibility correction is applied next, followed by the Reynolds number drag correction if data at multiple Reynolds numbers was not provided.
+%
+Finally, the transonic effect lift limiter and drag addition corrections are applied.
+
+
+
+% \subsection{Rotation (3D) Corrections}
+
+
+\section{Comparison of Corrected Airfoil Polars to Experimental Cascade Data}
+
+To see how the corrections actually fare (especially the solidity and stagger corrections), we compare to experimental data produced by NACA for their NACA 65-410 airfoil.
+The NACA 65-series compressor blade airfoils are base on a basic thickness form and mean line.
+%
+The basic thickness form comes from the \(65_2\)-016 airfoil which is first scaled down to 10\% thickness and then the y-coordinates are increased by 0.0015 times the chord-wise coordinate to slightly thicken the trailing edge.
+%
+There are also directly derived values for the coordinates; they are slightly different than the scaled values used in the study.
+%
+The basic mean line comes from the NACA 6-series method to obtain a design lift coefficient of 1.0, and then scaled based on the desired lift coefficient.
+%
+For example the 65-410 mean camber line takes the basic mean camber line and scales it by 0.4, while the 65-(12)10 mean camber line is the basic mean camber line scaled by a factor of 1.2.
+%
+Tests were run for at solidities from 0.5 to 1.5 and inflow angles of \(30^\circ\) to \(70^\circ\), although not every combination was tested.
+%
+Tests at solidities of 1.0 and above were performed at a Reynolds number of 2.45e5; for solidities less than 1.0 tests were performed at a Reynolds number of 2e5.
+%
+The experimental data for lift and drag coefficients in the NACA report is given for each tested combination of inflow angle and solidity across a range of angles of attack, generally ranging from negative to positive stall.
+%
+Note that the lift and drag forces were not measured directly, but rather calculated from pressure and velocity measurements.
+%
+In order to apply our airfoil corrections we calculate the stagger angles, \(\gamma\), from the provided inflow angles, \(\beta_1\), and angles of attack, \(\alpha\), as
+
+\begin{equation}
+    \gamma = \beta_1 - \alpha
+\end{equation}
+
+\begin{figure}[hb!]
+    \centering
+        \input{figures/naca-65410scaled.tikz}%
+        \caption{NACA 65-410 compressor series airfoil geometry (using the scaled ordinates).}
+    \label{fig:naca65410scaled}
+\end{figure}
+
+
+As can be seen in \cref{fig:naca65410comps}, the method of corrected airfoil data does not do especially well at matching actual cascade data.
+%
+In general, the lift curve slopes of the cascades are much shallower than that of the isolated and corrected XFOIL outputs.
+%
+In addition, the drag ``bucket'' of the isolated airfoil is much narrower than for the cascades.
+%
+We note that we did not apply drag corrections in an attempt to capture cascade effects.
+%
+Such corrections would increase the drag due to blockage from solidity and increase the discrepancies we already see in \cref{fig:naca65410comps}.
+
+\clearpage
+\newpage
+
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{\textwidth}
+         \centering
+        \input{figures/naca_65410_clcd_b30_comp.tikz}%
+         \caption{Inflow angle of \(\beta_1=30^\circ\).}
+         \label{}
+     \end{subfigure}
+
+     \begin{subfigure}[t]{\textwidth}
+         \centering
+        \input{figures/naca_65410_clcd_b45_comp.tikz}%
+         \caption{Inflow angle of \(\beta_1=45^\circ\).}
+         \label{}
+     \end{subfigure}
+
+     \begin{subfigure}[t]{\textwidth}
+         \centering
+        \input{figures/naca_65410_clcd_b60_comp.tikz}%
+         \caption{Inflow angle of \(\beta_1=60^\circ\).}
+         \label{}
+     \end{subfigure}
+
+     \begin{subfigure}[t]{\textwidth}
+         \centering
+         \raisebox{-4em}{\input{figures/naca_65410_clcd_b70_comp.tikz}}%
+         \caption{Inflow angle of \(\beta_1=70^\circ\).}
+         \label{}
+     \end{subfigure}
+
+     \caption{Comparison of NACA experimental data (\(\blacktriangle\) markers) and XFOIL airfoil outputs with applied corrections (lines) for angles of attack vs lift \((c_\ell\)) and drag \((c_d\)) coefficients at various inflow angles (\(\beta_1\)) and solidities. \primary{Blue indicates solidity = 1.0}, \secondary{red indicates solidity = 1.25}, and \tertiary{green indicates solidity = 1.5}; \gray{Grey dashed lines indicate the uncorrected, smoothed XFOIL outputs}.}
+     \label{fig:naca65410comps}
+\end{figure}
+
+\clearpage
+\newpage

@@ -1,0 +1,42 @@
+\begin{tikzpicture}[scale=1.0]
+
+    % Triangle 1
+    \coordinate (O11) at (0.0,0.0);
+    \coordinate (O12) at ($(O11) + (0.0,-2.0)$);
+    \coordinate (O13) at ($(O11) + (-1.0,-1.5)$);
+    % Triangle 2
+    \coordinate (O21) at ($(O11) + (2.0,-0.5)$);
+    \coordinate (O22) at ($(O21) + (1.5,0.0)$);
+    \coordinate (O23) at ($(O21) + (2.0,-1.0)$);
+    % Triangle 3
+    \coordinate (O31) at ($(O21) + (3.0,0.0)$);
+    \coordinate (O32) at ($(O31) + (2.0,0.0)$);
+    \coordinate (O33) at ($(O31) + (2.0,-1.0)$);
+
+    \draw [-Stealth,thick,shorten >=2pt] (O11) -- (O12) node [midway, right] {\(\vect{U}\)};
+    \draw [-Stealth,thick,shorten >=2pt] (O13) -- (O11) node [midway, above left, shift={(0.1,-0.05)}] {\(\vect{W}\)};
+    \draw [-Stealth,thick,shorten >=1pt] (O13) -- (O12) node [midway, below left, shift={(0.1,0.05)}] {\(\vect{C}\)};
+
+    \draw [-Stealth,thick,shorten >=1pt] (O21) -- (O22) node [midway, above] {\(C_\infty\)};
+    \draw [-Stealth,thick,shorten >=4pt] (O21) -- (O23) node [midway, below left, shift={(0.1,0.05)}] {\(\vect{C}\)};
+    \draw [-Stealth,thick,shorten >=4pt] (O22) -- (O23) node [midway, above right, shift={(-0.05,0.0)}] {\(\vect{V}\)};
+
+    \draw [-Stealth,thick,shorten >=1pt] (O31) -- (O32) node [midway, above] {\(C_m\)};
+    \draw [-Stealth,thick,shorten >=2pt] (O31) -- (O33) node [midway, below left, shift={(0.1,0.05)}] {\(\vect{C}\)};
+    \draw [-Stealth,thick,shorten >=2pt] (O32) -- (O33) node [midway, right] {\(C_\theta\)};
+
+    % Coordinate system parameters
+    \coordinate (csysO) at ($(O11) + (-2.0,1.0)$);
+    \coordinate (et) at ($(csysO) +(0,-1)$);
+    \coordinate (em) at ($(csysO) +(1,0)$);
+    % z-axis
+    \draw[-Stealth,] (csysO) -- (em);
+    \node[anchor=south,outer sep=0] at (em) {$\hat{\vect{e}}_m$};
+    % r-axis
+    \draw[-Stealth,] (csysO) -- (et);
+    \node[anchor=west,outer sep=0] at (et) {$\hat{\vect{e}}_\theta$};
+
+    %Duct
+    \draw[primary, pattern={Hatch[angle=80,distance=1.5pt,xshift=.1pt]}, pattern color=plotsgray] plot[smooth] file{figures/relative-frame-airfoil.dat};
+
+\end{tikzpicture}
