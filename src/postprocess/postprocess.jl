@@ -547,9 +547,7 @@ function post_process(
     ### --- TOTAL OUTPUTS --- ###
 
     # - Total Thrust - #
-    total_thrust[] = sum(
-        [rotor_inviscid_thrust'; rotor_viscous_thrust'; body_thrust]
-    )
+    total_thrust[] = sum([rotor_inviscid_thrust; rotor_viscous_thrust; body_thrust])
 
     # - Total Torque - #
     total_torque[] = sum([rotor_inviscid_torque; rotor_viscous_torque])
@@ -579,7 +577,7 @@ function post_process(
         total_torque,
         total_power,
         rhoinf[1],
-        Omega,
+        Omega[1],
         Rref[1],
     )
 

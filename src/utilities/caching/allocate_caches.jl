@@ -879,7 +879,7 @@ function allocate_solve_parameter_cache(
     solve_type::TS, problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
    ) where {TS<:ExternalSolverOptions}
     (;
-        nrotor,     # number of rotors
+        nrotor, # number of rotors
         nwn,    # number of wake nodes
         nwp,    # number of wake panels
         nbn,    # number of body nodes
