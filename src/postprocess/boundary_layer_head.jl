@@ -332,6 +332,7 @@ function solve_head_boundary_layer!(
     if parameters.cutoff_Hsep
         Hsep = FLOWMath.ksmin([Hsep; parameters.separation_criteria], 50)
     end
+
     return usep, Hsep, s_sep, us, steps
 end
 
