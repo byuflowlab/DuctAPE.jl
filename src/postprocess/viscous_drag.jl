@@ -188,7 +188,7 @@ function compute_single_side_drag_coefficient(
         cd += cdadd
     end
 
-    return cd, u_init, usol, stepsol, s_sep / steps[end]
+    return cd, u_init, usol, stepsol, s_sep / steps[end], Hsep
 end
 
 """
@@ -382,7 +382,7 @@ function compute_viscous_drag_duct(
     # - Get drag coeffients - #
 
     if !isnothing(s_upper)
-        cdc_upper, u_init_upper, usol_upper, stepsol_upper, s_sep_upper = compute_single_side_drag_coefficient(
+        cdc_upper, u_init_upper, usol_upper, stepsol_upper, s_sep_upper, Hsep_upper = compute_single_side_drag_coefficient(
             boundary_layer_options,
             upper_steps,
             rotor_tip_radius,
@@ -401,9 +401,10 @@ function compute_viscous_drag_duct(
         usol_upper = -ones(eltype(Vtan_duct), 3)
         stepsol_upper = -1
         s_sep_upper = -1.0
+        Hsep_upper = 0.0
     end
 
-    cdc_lower, u_init_lower, usol_lower, stepsol_lower, s_sep_lower = compute_single_side_drag_coefficient(
+    cdc_lower, u_init_lower, usol_lower, stepsol_lower, s_sep_lower, Hsep_lower = compute_single_side_drag_coefficient(
         boundary_layer_options,
         lower_steps,
         rotor_tip_radius,
@@ -430,8 +431,10 @@ function compute_viscous_drag_duct(
     (;
         stagnation_indices=stag_ids,
         upper_initial_states=u_init_upper,
+        Hsep_upper,
         upper_solved_states=usol_upper,
         upper_solved_steps=stepsol_upper,
+        Hsep_lower,
         lower_initial_states=u_init_lower,
         lower_solved_states=usol_lower,
         lower_solved_steps=stepsol_lower,
