@@ -166,29 +166,17 @@ function compute_single_side_drag_coefficient(
     if single_side_boundary_layer_options.separation_penalty < eps()
         cd = cdsqy
     else
-        cd = FLOWMath.ksmin(
-            [single_side_boundary_layer_options.separation_penalty; cdsqy], 100
+        cdadd = separation_penalty(
+            s_sep,
+            steps,
+            single_side_boundary_layer_options.separation_allowance,
+            single_side_boundary_layer_options.separation_penalty,
         )
 
-        cdadd = FLOWMath.ksmax(
-            [
-                0.0
-                FLOWMath.linear(
-                    [
-                        0.0
-                        steps[end - single_side_boundary_layer_options.separation_allowance]
-                    ],
-                    [single_side_boundary_layer_options.separation_penalty; 0.0],
-                    s_sep,
-                )
-            ],
-            1e8,
-        )
-
-        cd += cdadd
+        cdsqy += cdadd
     end
 
-    return cd, u_init, usol, stepsol, s_sep / steps[end], Hsep
+    return cdsqy, u_init, usol, stepsol, s_sep, Hsep
 end
 
 """
@@ -442,8 +430,12 @@ function compute_viscous_drag_duct(
         surface_length_lower=s_lower,
         stag_point,
         split_ratio,
-        separation_point_ratio_upper=s_sep_upper,
-        separation_point_ratio_lower=s_sep_lower,
+        s_sep_upper,
+        s_sep_lower,
+        upper_steps,
+        lower_steps,
+        separation_point_ratio_upper=s_sep_upper/upper_steps[end],
+        separation_point_ratio_lower=s_sep_lower/lower_steps[end],
         cdc_upper=cdc_upper,
         cdc_lower=cdc_lower,
         vtdotpv=dots,

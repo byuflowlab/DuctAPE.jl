@@ -708,6 +708,7 @@ end
     separation_allowance_lower::Ti = 10
     separation_penalty_upper::Tp = 0.2
     separation_penalty_lower::Tp = 0.2
+    apply_separation_penalty_to_rotor::Tb = true
     dy_eps::Te = 0.0
     H1_eps::Te = 1e-4
     H_eps::Te = 0.0

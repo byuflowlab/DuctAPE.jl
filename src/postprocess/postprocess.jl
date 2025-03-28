@@ -536,6 +536,23 @@ function post_process(
             verbose=verbose,
         )
 
+        # Apply penalty to rotor performance
+        if boundary_layer_options.apply_separation_penalty_to_rotor &&
+            boundary_layer_options.separation_penalty_lower > eps()
+            rotor_penalty = separation_penalty(
+                boundary_layer_outputs.s_sep_lower,
+                boundary_layer_outputs.lower_steps,
+                boundary_layer_options.separation_allowance_lower,
+                boundary_layer_options.separation_penalty_lower,
+            )
+
+            rotor_inviscid_torque .*= (1.0 .- sign.(rotor_inviscid_torque) * rotor_penalty)
+            rotor_viscous_torque .*= (1.0 .- sign.(rotor_viscous_torque) * rotor_penalty)
+            rotor_inviscid_power .*= (1.0 .- sign.(rotor_inviscid_power) * rotor_penalty)
+            rotor_viscous_power .*= (1.0 .- sign.(rotor_viscous_power) * rotor_penalty)
+            rotor_inviscid_thrust .*= (1.0 .- sign.(rotor_inviscid_thrust) * rotor_penalty)
+            rotor_viscous_thrust .*= (1.0 .- sign.(rotor_viscous_thrust) * rotor_penalty)
+        end
     else
         body_viscous_drag = [0.0, 0.0]
         boundary_layer_outputs = nothing

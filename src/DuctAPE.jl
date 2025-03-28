@@ -191,6 +191,7 @@ include("postprocess/boundary_layer_green.jl")
 include("postprocess/boundary_layer_head.jl")
 include("postprocess/viscous_drag.jl")
 include("postprocess/failed_initialization.jl")
+include("postprocess/penalties.jl")
 
 ##### ----- VISUALIZATION ----- #####
 # include("visualization/plot_recipe_defaults.jl")
