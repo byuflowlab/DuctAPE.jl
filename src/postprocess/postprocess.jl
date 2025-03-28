@@ -306,119 +306,11 @@ function post_process(
         Cm_wake,
     ) = res_vals
 
-    ### ----- ROTOR OUTPUTS ----- ###
-    # rename for convenience
+    # - rename for convenience - #
     (; nbe, nrotor) = problem_dimensions
     rotor_panel_centers = blade_elements.rotor_panel_centers
     B = blade_elements.B
     chords = blade_elements.chords
-
-    # - Rotor Thrust - #
-    # inviscid thrust
-    inviscid_rotor_thrust!(
-        rotor_inviscid_thrust,
-        rotor_inviscid_thrust_dist,
-        Ctheta_rotor,
-        Gamma_tilde,
-        rotor_panel_lengths,
-        rhoinf[1],
-    )
-
-    # viscous thrust
-    viscous_rotor_thrust!(
-        rotor_viscous_thrust,
-        rotor_viscous_thrust_dist,
-        Cz_rotor,
-        Cmag_rotor,
-        B,
-        chords,
-        rotor_panel_lengths,
-        cd,
-        rhoinf[1],
-    )
-
-    # total thrust
-    rotor_thrust .= rotor_inviscid_thrust .+ rotor_viscous_thrust
-
-    # - Rotor Torque - #
-    # inviscid torque
-    inviscid_rotor_torque!(
-        rotor_inviscid_torque,
-        rotor_inviscid_torque_dist,
-        Cz_rotor,
-        rotor_panel_centers,
-        rotor_panel_lengths,
-        Gamma_tilde,
-        rhoinf[1],
-    )
-
-    # viscous torque
-    viscous_rotor_torque!(
-        rotor_viscous_torque,
-        rotor_viscous_torque_dist,
-        Ctheta_rotor,
-        Cmag_rotor,
-        B,
-        chords,
-        rotor_panel_centers,
-        rotor_panel_lengths,
-        cd,
-        rhoinf[1],
-    )
-
-    # total torque
-    rotor_torque .= rotor_inviscid_torque .+ rotor_viscous_torque
-
-    # - Rotor Power - #
-    # inviscid power
-    rotor_power!(
-        rotor_inviscid_power,
-        rotor_inviscid_power_dist,
-        rotor_inviscid_torque,
-        rotor_inviscid_torque_dist,
-        Omega,
-    )
-
-    # viscous power
-    rotor_power!(
-        rotor_viscous_power,
-        rotor_viscous_power_dist,
-        rotor_viscous_torque,
-        rotor_viscous_torque_dist,
-        Omega,
-    )
-
-    # total power
-    rotor_power .= rotor_inviscid_power .+ rotor_viscous_power
-
-    # - Rotor Performance Coefficients - #
-    tqpcoeff!(
-        rotor_CT,
-        rotor_CQ,
-        rotor_CP,
-        rotor_thrust,
-        rotor_torque,
-        rotor_power,
-        rhoinf[1],
-        Omega,
-        Rref[1],
-    )
-
-    # - Rotor Efficiency - #
-    get_total_efficiency!(rotor_efficiency, rotor_thrust, rotor_power, Vinf[1])
-
-    # - Blade Loading - #
-    get_blade_loads!(
-        blade_normal_force_per_unit_span,
-        blade_tangential_force_per_unit_span,
-        Cmag_rotor,
-        beta1,
-        cl,
-        cd,
-        chords,
-        rhoinf[1],
-        blade_loading_intermediate_containers,
-    )
 
     ### --- BODY OUTPUTS --- ###
     # - Surface Velocity on Bodies - #
@@ -536,23 +428,6 @@ function post_process(
             verbose=verbose,
         )
 
-        # Apply penalty to rotor performance
-        if boundary_layer_options.apply_separation_penalty_to_rotor &&
-            boundary_layer_options.separation_penalty_lower > eps()
-            rotor_penalty = separation_penalty(
-                boundary_layer_outputs.s_sep_lower,
-                boundary_layer_outputs.lower_steps,
-                boundary_layer_options.separation_allowance_lower,
-                boundary_layer_options.separation_penalty_lower,
-            )
-
-            rotor_inviscid_torque .*= (1.0 .- sign.(rotor_inviscid_torque) * rotor_penalty)
-            rotor_viscous_torque .*= (1.0 .- sign.(rotor_viscous_torque) * rotor_penalty)
-            rotor_inviscid_power .*= (1.0 .- sign.(rotor_inviscid_power) * rotor_penalty)
-            rotor_viscous_power .*= (1.0 .- sign.(rotor_viscous_power) * rotor_penalty)
-            rotor_inviscid_thrust .*= (1.0 .- sign.(rotor_inviscid_thrust) * rotor_penalty)
-            rotor_viscous_thrust .*= (1.0 .- sign.(rotor_viscous_thrust) * rotor_penalty)
-        end
     else
         body_viscous_drag = [0.0, 0.0]
         boundary_layer_outputs = nothing
@@ -560,6 +435,136 @@ function post_process(
 
     # Total body thrust
     body_thrust = sum(body_inviscid_thrust) - sum(body_viscous_drag)
+
+    ### ----- ROTOR OUTPUTS ----- ###
+
+    # - Rotor Thrust - #
+    # inviscid thrust
+    inviscid_rotor_thrust!(
+        rotor_inviscid_thrust,
+        rotor_inviscid_thrust_dist,
+        Ctheta_rotor,
+        Gamma_tilde,
+        rotor_panel_lengths,
+        rhoinf[1],
+    )
+
+    # viscous thrust
+    viscous_rotor_thrust!(
+        rotor_viscous_thrust,
+        rotor_viscous_thrust_dist,
+        Cz_rotor,
+        Cmag_rotor,
+        B,
+        chords,
+        rotor_panel_lengths,
+        cd,
+        rhoinf[1],
+    )
+
+    # - Rotor Torque - #
+    # inviscid torque
+    inviscid_rotor_torque!(
+        rotor_inviscid_torque,
+        rotor_inviscid_torque_dist,
+        Cz_rotor,
+        rotor_panel_centers,
+        rotor_panel_lengths,
+        Gamma_tilde,
+        rhoinf[1],
+    )
+
+    # viscous torque
+    viscous_rotor_torque!(
+        rotor_viscous_torque,
+        rotor_viscous_torque_dist,
+        Ctheta_rotor,
+        Cmag_rotor,
+        B,
+        chords,
+        rotor_panel_centers,
+        rotor_panel_lengths,
+        cd,
+        rhoinf[1],
+    )
+
+    # - Rotor Power - #
+    # inviscid power
+    rotor_power!(
+        rotor_inviscid_power,
+        rotor_inviscid_power_dist,
+        rotor_inviscid_torque,
+        rotor_inviscid_torque_dist,
+        Omega,
+    )
+
+    # viscous power
+    rotor_power!(
+        rotor_viscous_power,
+        rotor_viscous_power_dist,
+        rotor_viscous_torque,
+        rotor_viscous_torque_dist,
+        Omega,
+    )
+
+    # Apply penalty to rotor performance
+    if boundary_layer_options.model_drag &&
+        boundary_layer_options.apply_separation_penalty_to_rotor &&
+        boundary_layer_options.separation_penalty_lower > eps()
+        rotor_penalty = separation_penalty(
+            boundary_layer_outputs.s_sep_lower,
+            boundary_layer_outputs.lower_steps,
+            boundary_layer_options.separation_allowance_lower,
+            boundary_layer_options.separation_penalty_lower,
+        )
+
+        rotor_inviscid_torque .*= (1.0 .- sign.(rotor_inviscid_torque) * rotor_penalty)
+        rotor_viscous_torque .*= (1.0 .- sign.(rotor_viscous_torque) * rotor_penalty)
+        rotor_inviscid_power .*= (1.0 .- sign.(rotor_inviscid_power) * rotor_penalty)
+        rotor_viscous_power .*= (1.0 .- sign.(rotor_viscous_power) * rotor_penalty)
+        rotor_inviscid_thrust .*= (1.0 .- sign.(rotor_inviscid_thrust) * rotor_penalty)
+        rotor_viscous_thrust .*= (1.0 .- sign.(rotor_viscous_thrust) * rotor_penalty)
+    end
+
+    # - Rotor Totals - #
+
+    # total thrust
+    rotor_thrust .= rotor_inviscid_thrust .+ rotor_viscous_thrust
+
+    # total torque
+    rotor_torque .= rotor_inviscid_torque .+ rotor_viscous_torque
+
+    # total power
+    rotor_power .= rotor_inviscid_power .+ rotor_viscous_power
+
+    # - Rotor Performance Coefficients - #
+    tqpcoeff!(
+        rotor_CT,
+        rotor_CQ,
+        rotor_CP,
+        rotor_thrust,
+        rotor_torque,
+        rotor_power,
+        rhoinf[1],
+        Omega,
+        Rref[1],
+    )
+
+    # - Rotor Efficiency - #
+    get_total_efficiency!(rotor_efficiency, rotor_thrust, rotor_power, Vinf[1])
+
+    # - Blade Loading - #
+    get_blade_loads!(
+        blade_normal_force_per_unit_span,
+        blade_tangential_force_per_unit_span,
+        Cmag_rotor,
+        beta1,
+        cl,
+        cd,
+        chords,
+        rhoinf[1],
+        blade_loading_intermediate_containers,
+    )
 
     ### --- TOTAL OUTPUTS --- ###
 
