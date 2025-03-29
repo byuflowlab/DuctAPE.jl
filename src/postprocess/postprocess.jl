@@ -518,12 +518,12 @@ function post_process(
             boundary_layer_options.separation_penalty_lower,
         )
 
-        rotor_inviscid_torque .*= (1.0 .- sign.(rotor_inviscid_torque) * rotor_penalty)
-        rotor_viscous_torque .*= (1.0 .- sign.(rotor_viscous_torque) * rotor_penalty)
-        rotor_inviscid_power .*= (1.0 .- sign.(rotor_inviscid_power) * rotor_penalty)
-        rotor_viscous_power .*= (1.0 .- sign.(rotor_viscous_power) * rotor_penalty)
-        rotor_inviscid_thrust .*= (1.0 .- sign.(rotor_inviscid_thrust) * rotor_penalty)
-        rotor_viscous_thrust .*= (1.0 .- sign.(rotor_viscous_thrust) * rotor_penalty)
+        rotor_inviscid_torque .*= (1.0 .- rotor_penalty)
+        rotor_viscous_torque .*= (1.0 .- rotor_penalty)
+        rotor_inviscid_power .*= (1.0 .- rotor_penalty)
+        rotor_viscous_power .*= (1.0 .- rotor_penalty)
+        rotor_inviscid_thrust .*= (1.0 .- rotor_penalty)
+        rotor_viscous_thrust .*= (1.0 .- rotor_penalty)
     end
 
     # - Rotor Totals - #
