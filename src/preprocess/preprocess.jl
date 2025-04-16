@@ -138,6 +138,8 @@ function reinterpolate_geometry!(
     (; B, tip_gap, r, chords, twists, rotorzloc, airfoils, fliplift) =
         rotor
 
+    @assert length(unique(rotorzloc)) == length(rotorzloc) "Cannot place rotors on top of eachother: rotorzloc = $rotorzloc"
+
     Rhub .= rotor.Rhub
     Rtip .= rotor.Rtip
 

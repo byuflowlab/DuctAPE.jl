@@ -235,7 +235,7 @@ function slopes65c(clo, x)
 
     dydxfine = FLOWMath.akima(a1x[2:(end - 1)], dydx, x)
 
-    return dydx * clo
+    return dydxfine * clo
 end
 
 """
@@ -258,7 +258,7 @@ Cambered blade sections are obtained by applying the thickness perpendicular to 
 In the designation the camber is given by the first number after the dash in tenths of cl_o.
 For example, the NACA 65-810 and NACA 65-(12)10 blade sections are cambered for cl_o = 0.8 and cl_o = 1.2, respectively.
 """
-function naca65c(clo; method="scaled", N=161, x=nothing, split=false)
+function naca65c(clo; smoothed_leading_edge=true, method="scaled", N=161, x=nothing, split=false)
 
     # get x coordinates
     N = Int(ceil(N / 2))
@@ -266,17 +266,87 @@ function naca65c(clo; method="scaled", N=161, x=nothing, split=false)
         x = cosine_spacing(N)
     end
 
+    leading_edge_radius = 0.666*1e-2
+    theta_initial = slopes65c(clo, 0.005)
+    cos_theta_initial = cos(theta_initial)
+    leading_edge_circle_center_x = leading_edge_radius * cos_theta_initial
+    x = linear_transform(
+        (0, 1),
+        (-leading_edge_radius * cos_theta_initial + leading_edge_circle_center_x, 1),
+        x,
+    )
+
     t = thickness65c(x; method=method)
     c = camber65c(clo, x)
     s = slopes65c(clo, x)
 
-    #y-positions at chordwise stations
-    yl = c .- t
-    yu = c .+ t
+    if !smoothed_leading_edge
 
-    if split
-        return reverse(x), x, reverse(yl), yu
+        #y-positions at chordwise stations
+        yl = c .- t
+        yu = c .+ t
+
+        if split
+            return reverse(x), x, reverse(yl), yu
+        else
+            return [reverse(x); x[2:end]], [reverse(yl); yu[2:end]]
+        end
+
     else
-        return [reverse(x); x[2:end]], [reverse(yl); yu[2:end]]
+
+        #define output vectors
+        y_upper = similar(x) .= 0.0
+        y_lower = similar(x) .= 0.0
+        x_upper = similar(x) .= 0.0
+        x_lower = similar(x) .= 0.0
+
+        cos_theta = cos.(s)
+        sin_theta = sin.(s)
+        tan_theta = tan.(s)
+
+        for i in 1:N
+            if x[i] < 0.005
+                c[i] = camber65c(clo, 0.005)
+                tan_theta[i] = tan(theta_initial)
+                sin_theta[i] = sin(theta_initial)
+                cos_theta[i] = cos(theta_initial)
+                rad_a =
+                    leading_edge_radius^2 -
+                    ((leading_edge_circle_center_x - x[i]) / cos_theta[2])^2
+                if rad_a < 0
+                    a = 0.0
+                else
+                    a = sqrt(rad_a)
+                end
+                x_upper[i] = x[i] - a * sin_theta[i]
+                x_lower[i] = x[i] + a * sin_theta[i]
+                y_upper_1 = x[i] * tan_theta[i] + a * cos_theta[i]
+                y_upper_2 = c[i] + t[i] * cos_theta[i]
+                y_lower_1 = x[i] * tan_theta[i] - a * cos_theta[i]
+                y_lower_2 = c[i] - t[i] * cos_theta[i]
+                if y_upper_1 >= y_upper_2
+                    y_upper[i] = y_upper_1
+                else
+                    y_upper[i] = y_upper_2
+                end
+                if y_lower_1 <= y_lower_2
+                    y_lower[i] = y_lower_1
+                else
+                    y_lower[i] = y_lower_2
+                end
+                transition_index = i
+            else
+                x_upper[i] = x[i] - t[i] * sin_theta[i]
+                y_upper[i] = c[i] + t[i] * cos_theta[i]
+                x_lower[i] = x[i] + t[i] * sin_theta[i]
+                y_lower[i] = c[i] - t[i] * cos_theta[i]
+            end
+        end
+
+        if split
+            return reverse(x_lower), x_upper, reverse(y_lower), y_upper
+        else
+            return [reverse(x_lower); x_upper[2:end]], [reverse(y_lower); y_upper[2:end]]
+        end
     end
 end

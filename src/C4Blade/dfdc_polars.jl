@@ -82,6 +82,10 @@ function dfdceval(
     verbose=false,
     fliplift=0,
 )
+    if !iszero(fliplift)
+        # if stator and you want to use a normal airfoil, flip lift will flip the angle of attack to effectively flip the airfoil camber direction.
+        alpha *= -1.0
+    end
 
     #all these come from user defined inputs.
     (;
@@ -258,7 +262,7 @@ function dfdceval(
     cd_w = fac * cd_w + fac_w * cdrag + dcd_w + cdc_alf
     cd_rey = fac * cd_rey
 
-    #jm: if flip lift is true, return negative of clift (for stators)
+    #jm: if flip lift is true, return negative of clift (for stators) to put the force in the correct direction.
     return !iszero(fliplift) ? -clift : clift, cdrag, cmom
 end
 
