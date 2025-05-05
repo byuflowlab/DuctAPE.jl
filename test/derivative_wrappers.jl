@@ -93,7 +93,7 @@ function dt_full_wrapper(inputs)
         tip_gap=0.0,
         B,
         Omega,
-        fliplift=false,
+        is_stator=false,
     )]
     paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
     freestream = (; rhoinf, muinf, asound, Vinf)
@@ -348,7 +348,7 @@ function dt_prepost_wrapper(inputs)
         tip_gap=0.0,
         B,
         Omega,
-        fliplift=false,
+        is_stator=false,
     )]
     paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
     freestream = (; rhoinf, muinf, asound, Vinf)

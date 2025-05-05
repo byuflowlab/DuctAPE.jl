@@ -12,10 +12,10 @@ Rhub = [0.25, 0.25]
 Rtip = Rtip
 tip_gap = [0.0, 0.0]
 B = [2, 4]
-fliplift = [0.0, 0.0]
+is_stator = [0.0, 0.0]
 
 rotor = dt.Rotor(
-    B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
+    B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
 )
 
 ncenterbody_inlet = 1

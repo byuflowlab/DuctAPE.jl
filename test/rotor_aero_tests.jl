@@ -86,7 +86,7 @@ end
             inner_airfoil=fill(af, 2),
             outer_airfoil=fill(af, 2),
             inner_fraction=[1.0; 1.0],
-            fliplift=false,
+            is_stator=false,
         ) for i in 1:2
     ]
 

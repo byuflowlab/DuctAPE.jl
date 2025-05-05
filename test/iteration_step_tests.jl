@@ -248,7 +248,7 @@ println("\nITERATION STEP THROUGH TESTS")
 
     Gamr_est = similar(Gamr1mat) .= 0
     dt.calculate_rotor_circulation_strengths!(
-        Gamr_est, solve_containers.Cmag_rotor, blade_elements.chords, solve_containers.cl
+        Gamr_est, solve_containers.Cmag_rotor, blade_elements.chords, solve_containers.cl,blade_elements
     )
     @test isapprox(Gamr_est, be2.Gamr_est ./ B, atol=1e-1)
 

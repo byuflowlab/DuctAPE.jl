@@ -184,7 +184,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
         ],
         atol=1e-6,
     )
-    @test blade_elements.fliplift == [false, false]
+    @test blade_elements.is_stator == [false, false]
     @test blade_elements.Rhub == rotor.Rhub
     @test blade_elements.Rtip == rotor.Rtip
 end
@@ -357,10 +357,10 @@ end
     Rtip = Rtip
     tip_gap = [0.0, 0.0]
     B = [2, 4]
-    fliplift = [0.0, 0.0]
+    is_stator = [0.0, 0.0]
 
     rotor = dt.Rotor(
-        B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
+        B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
     )
 
     ncenterbody_inlet = 1

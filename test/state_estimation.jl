@@ -47,7 +47,7 @@ println("\nSTATE ESTIMATION TESTS")
         stagger=0.5 * ones(3, 2),
         inner_airfoil=fill(dfdcparam, 3, 2),
         outer_airfoil=fill(dfdcparam, 3, 2),
-        fliplift=zeros(3, 2),
+        is_stator=zeros(3, 2),
         chords=ones(3, 2),
         twists=zeros(3, 2),
         rotor_panel_centers=rotor_panel_center,
@@ -76,7 +76,7 @@ println("\nSTATE ESTIMATION TESTS")
     # - Test Circulation calcs - #
     Gamr = zeros(3, 2)
     dt.calculate_rotor_circulation_strengths!(
-        Gamr, containers.Cmag_rotor, blade_elements.chords, 2.0 * ones(size(Gamr))
+        Gamr, containers.Cmag_rotor, blade_elements.chords, 2.0 * ones(size(Gamr)),blade_elements
     )
 
     @test all(Gamr .== 0.5 .* containers.Cmag_rotor .* blade_elements.chords * 2.0)

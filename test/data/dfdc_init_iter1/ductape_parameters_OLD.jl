@@ -82,7 +82,7 @@ rotor = [(;
     tip_gap=0.0, # currently only zero tip gaps work.
     B,
     Omega,
-    fliplift=false, # can flip the cl lookups on the fly if desired, say, for stator sections
+    is_stator=false, # can flip the cl lookups on the fly if desired, say, for stator sections
 )]
 
 # - Paneling Constants - #
