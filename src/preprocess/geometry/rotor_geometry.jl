@@ -26,7 +26,7 @@ function interpolate_blade_elements(
     Rtip = Rtips
     Rhub = Rhubs
     B = rsp.B
-    fliplift = rsp.fliplift
+    is_stator = rsp.is_stator
     chords = similar(rsp.chords, nbe, nrotor) .= 0
     twists = similar(rsp.twists, nbe, nrotor) .= 0
     stagger = similar(rsp.twists, nbe, nrotor) .= 0
@@ -82,7 +82,7 @@ function interpolate_blade_elements(
         Rhub,
         rotor_panel_centers=reshape(rotor_panel_centers, (nbe, nrotor)),
         B,
-        fliplift,
+        is_stator,
         chords,
         twists,
         stagger,
@@ -109,7 +109,7 @@ function interpolate_blade_elements!(
     Rtip = blade_element_cache.Rtip .= rsp.Rtip
     Rhub = blade_element_cache.Rhub .= rsp.Rhub
     blade_element_cache.B .= rsp.B
-    blade_element_cache.fliplift .= rsp.fliplift
+    blade_element_cache.is_stator .= rsp.is_stator
     outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
     inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
 

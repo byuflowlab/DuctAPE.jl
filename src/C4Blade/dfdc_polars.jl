@@ -48,7 +48,7 @@ end
         afparams,
         asound;
         verbose=false,
-        fliplift=0,
+        is_stator=0,
     )
 
 DFDC-like polar function.
@@ -64,7 +64,7 @@ DFDC-like polar function.
 
 # Keyword Arguments:
 - `verbose::Bool=false::` : print verbose statements
-- `fliplift::Int=0` : flag to flip lift values (e.g. for stators)
+- `is_stator::Int=0` : flag to flip lift values (e.g. for stators)
 
 # Returns:
 - `cl::Float` : lift coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
@@ -80,9 +80,9 @@ function dfdceval(
     afparams,
     asound;
     verbose=false,
-    fliplift=0,
+    is_stator=0,
 )
-    if !iszero(fliplift)
+    if !iszero(is_stator)
         # if stator and you want to use a normal airfoil, flip lift will flip the angle of attack to effectively flip the airfoil camber direction.
         alpha *= -1.0
     end
@@ -263,7 +263,8 @@ function dfdceval(
     cd_rey = fac * cd_rey
 
     #jm: if flip lift is true, return negative of clift (for stators) to put the force in the correct direction.
-    return !iszero(fliplift) ? -clift : clift, cdrag, cmom
+    # return !iszero(is_stator) ? -clift : clift, cdrag, cmom
+    return clift, cdrag, cmom
 end
 
 """

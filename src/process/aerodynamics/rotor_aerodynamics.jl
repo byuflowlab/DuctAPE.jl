@@ -53,8 +53,8 @@ function calculate_induced_velocities_on_rotors!(
 )
 
     # - Clear out inputs - #
-    vz_rotor .=0
-    vtheta_rotor .=0
+    vz_rotor .= 0
+    vtheta_rotor .= 0
 
     # problem dimensions
     nbe, nrotor = size(Gamr) # number of rotors
@@ -152,11 +152,22 @@ end
 
 """
 """
-function calculate_rotor_circulation_strengths!(Gamr, Wmag_rotor, chords, cls)
-    for (G, c, cl, W) in
-        zip(eachcol(Gamr), eachcol(chords), eachcol(cls), eachcol(Wmag_rotor))
+function calculate_rotor_circulation_strengths!(
+    Gamr, Wmag_rotor, chords, cls, blade_elements
+)
+    for (G, c, cl, W, is_stator) in zip(
+        eachcol(Gamr),
+        eachcol(chords),
+        eachcol(cls),
+        eachcol(Wmag_rotor),
+        blade_elements.is_stator,
+    )
         # calculate vortex strength
         @. G = 0.5 * W * c * cl
+        # flip if stator
+        if !iszero(is_stator)
+            G .*= -1.0
+        end
     end
 
     return Gamr
@@ -166,7 +177,7 @@ end
 function calculate_rotor_source_strengths!(sigr, Wmag_rotor, chords, B, cd)
 
     # Loop through rotors
-    for irotor in axes(sigr,2)
+    for irotor in axes(sigr, 2)
 
         # Loop through blade panel nodes
         for inode in axes(sigr, 1)
@@ -288,7 +299,7 @@ function calculate_blade_element_coefficients!(
             # extract blade element properties
             # TODO: consider not renaming these to avoid the small allocation
             B = be.B[irotor] # number of blades
-            fliplift = be.fliplift[irotor]
+            is_stator = be.is_stator[irotor]
             c = be.chords[ir, irotor] # chord length
             stagger = be.stagger[ir, irotor]
             solidity = be.solidity[ir, irotor]
@@ -304,10 +315,7 @@ function calculate_blade_element_coefficients!(
 
             # get local Reynolds number
             reynolds[ir, irotor] = calc_reynolds(
-                c,
-                Wmag_rotor[ir, irotor],
-                operating_point.rhoinf[],
-                operating_point.muinf[],
+                c, Wmag_rotor[ir, irotor], operating_point.rhoinf[], operating_point.muinf[]
             )
             # c * abs(Wmag_rotor[ir, irotor]) * operating_point.rhoinf / operating_point.muinf
 
@@ -330,7 +338,7 @@ function calculate_blade_element_coefficients!(
                 reynolds[ir, irotor],
                 mach[ir, irotor],
                 operating_point.asound[];
-                fliplift=fliplift,
+                is_stator=is_stator,
                 verbose=verbose,
             )
 
@@ -363,7 +371,7 @@ function lookup_clcd(
     mach,
     asound;
     verbose=false,
-    fliplift=0,
+    is_stator=0,
 )
 
     # look up lift and drag data for the nearest two input sections
@@ -380,7 +388,7 @@ function lookup_clcd(
             inner_airfoil,
             asound;
             verbose=verbose,
-            fliplift=fliplift,
+            is_stator=is_stator,
         )
         # get outer values
         clout, cdout, _ = c4b.dfdceval(
@@ -392,7 +400,7 @@ function lookup_clcd(
             outer_airfoil,
             asound;
             verbose=verbose,
-            fliplift=fliplift,
+            is_stator=is_stator,
         )
 
     elseif typeof(inner_airfoil) <: c4b.DTCascade

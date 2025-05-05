@@ -308,9 +308,7 @@ function post_process(
 
     # - rename for convenience - #
     (; nbe, nrotor) = problem_dimensions
-    rotor_panel_centers = blade_elements.rotor_panel_centers
-    B = blade_elements.B
-    chords = blade_elements.chords
+    (;rotor_panel_centers, B, chords, is_stator) = blade_elements
 
     ### --- BODY OUTPUTS --- ###
     # - Surface Velocity on Bodies - #
@@ -563,6 +561,7 @@ function post_process(
         cd,
         chords,
         rhoinf[1],
+        is_stator,
         blade_loading_intermediate_containers,
     )
 

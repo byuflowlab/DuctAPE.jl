@@ -514,16 +514,24 @@ end
 
 In-place version of `get_blade_loads`.
 """
-function get_blade_loads!(Np, Tp, Cmag_rotor, beta1, cl, cd, chords, rhoinf, cache)#, Rhub, Rtip, rotor_panel_centers,rotor_panel_lengths ,B, Omega)
+function get_blade_loads!(
+    Np, Tp, Cmag_rotor, beta1, cl, cd, chords, rhoinf, is_stator, cache
+)#, Rhub, Rtip, rotor_panel_centers,rotor_panel_lengths ,B, Omega)
 
     # dimensions
     nr, nrotor = size(Np)
 
     for irotor in 1:nrotor
         for ir in 1:nr
-            # rename for convenience
-            cache.cphi[ir, irotor] = cos(beta1[ir, irotor])
-            cache.sphi[ir, irotor] = sin(beta1[ir, irotor])
+            if iszero(is_stator[irotor])
+                # rename for convenience
+                cache.cphi[ir, irotor] = cos(beta1[ir, irotor])
+                cache.sphi[ir, irotor] = sin(beta1[ir, irotor])
+            else
+                # rename for convenience
+                cache.cphi[ir, irotor] = cos(-beta1[ir, irotor])
+                cache.sphi[ir, irotor] = sin(-beta1[ir, irotor])
+            end
 
             # resolve lift and drag into normal and tangential coefficients
             cache.cn[ir, irotor] =

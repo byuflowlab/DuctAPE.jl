@@ -693,9 +693,9 @@ function withdraw_solve_parameter_cache(solver_options::TS, vec, dims) where {TS
         Rhub=reshape(
             @view(vec[dims.blade_elements.Rhub.index]), dims.blade_elements.Rhub.shape
         ),
-        fliplift=reshape(
-            @view(vec[dims.blade_elements.fliplift.index]),
-            dims.blade_elements.fliplift.shape,
+        is_stator=reshape(
+            @view(vec[dims.blade_elements.is_stator.index]),
+            dims.blade_elements.is_stator.shape,
         ),
         chords=reshape(
             @view(vec[dims.blade_elements.chords.index]), dims.blade_elements.chords.shape
@@ -832,9 +832,9 @@ function withdraw_solve_parameter_cache(
         Rhub=reshape(
             @view(vec[dims.blade_elements.Rhub.index]), dims.blade_elements.Rhub.shape
         ),
-        fliplift=reshape(
-            @view(vec[dims.blade_elements.fliplift.index]),
-            dims.blade_elements.fliplift.shape,
+        is_stator=reshape(
+            @view(vec[dims.blade_elements.is_stator.index]),
+            dims.blade_elements.is_stator.shape,
         ),
         chords=reshape(
             @view(vec[dims.blade_elements.chords.index]), dims.blade_elements.chords.shape

@@ -808,7 +808,7 @@ function allocate_solve_parameter_cache(
 
     Rhub = cache_dims!(total_length, l, s)
 
-    fliplift = cache_dims!(total_length, l, s)
+    is_stator = cache_dims!(total_length, l, s)
 
     s = (nbe, nrotor)
     l = lfs(s)
@@ -848,7 +848,7 @@ function allocate_solve_parameter_cache(
             linsys=(; A_bb, b_bf, A_bw, A_pw, A_br, A_pr),
             blade_elements=(;
                 B,
-                fliplift,
+                is_stator,
                 chords,
                 twists,
                 stagger,
@@ -991,7 +991,7 @@ function allocate_solve_parameter_cache(
 
     Rhub = cache_dims!(total_length, l, s)
 
-    fliplift = cache_dims!(total_length, l, s)
+    is_stator = cache_dims!(total_length, l, s)
 
     s = (nbe, nrotor)
     l = lfs(s)
@@ -1031,7 +1031,7 @@ function allocate_solve_parameter_cache(
             linsys=(; A_bb, b_bf, A_bw, A_pw, A_br, A_pr),
             blade_elements=(;
                 B,
-                fliplift,
+                is_stator,
                 chords,
                 twists,
                 stagger,

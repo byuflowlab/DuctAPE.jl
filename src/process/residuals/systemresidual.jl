@@ -260,6 +260,7 @@ function estimate_states!(
         solve_containers.Cmag_rotor,
         blade_elements.chords,
         solve_containers.cl,
+        blade_elements
     )
 
     # - Calculate Rotor Panel Strengths - #

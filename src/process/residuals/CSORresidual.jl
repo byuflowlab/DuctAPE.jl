@@ -246,6 +246,7 @@ function compute_CSOR_residual!(
         solve_containers.Cmag_rotor,
         blade_elements.chords,
         solve_containers.cl,
+        blade_elements
     )
 
     # - get difference between estimated Gamr and old Gamr - #

@@ -135,7 +135,7 @@ function reinterpolate_geometry!(
     ##### ----- Extract Tuples ----- #####
     (;Rhub, Rtip) = blade_element_cache
 
-    (; B, tip_gap, r, chords, twists, rotorzloc, airfoils, fliplift) =
+    (; B, tip_gap, r, chords, twists, rotorzloc, airfoils, is_stator) =
         rotor
 
     @assert length(unique(rotorzloc)) == length(rotorzloc) "Cannot place rotors on top of eachother: rotorzloc = $rotorzloc"

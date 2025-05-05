@@ -187,6 +187,7 @@ function estimate_CSOR_states!(
         solve_containers.Cmag_rotor,
         blade_elements.chords,
         solve_containers.cl,
+        blade_elements
     )
 
     ##### ----- Estimate gamw ----- #####

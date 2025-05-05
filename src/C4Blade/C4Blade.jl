@@ -256,7 +256,7 @@ function residual_and_outputs(phi, x, p)  #rotor, section, op)
             af,
             asound;
             verbose=false,
-            fliplift=false,
+            is_stator=false,
         )
     elseif taf <: DTCascade #cascade type, theta is stagger
         cl, cd = caseval(af, phi, Re, theta, sigma_p, Mach)

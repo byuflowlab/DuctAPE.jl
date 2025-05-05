@@ -221,7 +221,7 @@ end
 
 """
     Rotor(
-        B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, fliplift
+        B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
     )
 
 Composite type containing the rotor(s) geometric properties.
@@ -238,7 +238,7 @@ Note that the actual struct requires the inputs to be arrays, but there is a con
 - `twists::AbstractArray{Float}` : Blade element angles, in radians.
 - `tip_gap::AbstractVector{Float}` : Currently unused, do not set to anything other than zeros.
 - `airfoils::AbstractArray{AFType}` : Airfoil types describing the airfoil polars for each blade element. Currently only fully tested with `C4Blade.DFDCairfoil` types.
-- `fliplift::AbstractVector{Bool}` : Flag to indicate if the airfoil lift values should be flipped or not.
+- `is_stator::AbstractVector{Bool}` : Flag to indicate if the airfoil lift values should be flipped or not.
 """
 struct Rotor{
     Tb<:AbstractVector,
@@ -261,7 +261,7 @@ struct Rotor{
     twists::Tt
     tip_gap::TTg
     airfoils::Taf
-    fliplift::Tf
+    is_stator::Tf
 end
 
 function Rotor(
@@ -274,10 +274,10 @@ function Rotor(
     twists,
     tip_gap,
     airfoils,
-    fliplift;
+    is_stator;
     i_know_what_im_doing=false,
 )
-    if length(findall(t -> t > 1.75, twists)) > 2
+    if !i_know_what_im_doing && length(findall(t -> t > 1.75, twists)) > 2
         @warn "It looks like your input twist angles may be in degrees. Note that the required units for twist are radians. Converting to radians for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic conversion)."
         twists .*= pi / 180.0
     end
@@ -296,7 +296,7 @@ function Rotor(
         else
             airfoils
         end,
-        isscalar(fliplift) ? [fliplift] : fliplift,
+        isscalar(is_stator) ? [is_stator] : is_stator,
     )
 end
 
