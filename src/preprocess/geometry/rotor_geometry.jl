@@ -234,8 +234,13 @@ function get_blade_ends_from_body_geometry!(
     iduct = zeros(Int, length(rotorzloc))
     for i in eachindex(rotorzloc)
         #indices
-        _, ihub[i] = findmin(x -> abs(x - rotorzloc[i]), view(rp_centerbody_coordinates, 1, :))
-        _, iduct[i] = findmin(x -> abs(x - rotorzloc[i]), view(rp_duct_coordinates, 1, :))
+        _, ihub[i] = findmin(
+            x -> abs(x - rotorzloc[i]), view(rp_centerbody_coordinates, 1, :)
+        )
+        _, iduct[i] = findmin(
+            x -> abs(x - rotorzloc[i]),
+            view(rp_duct_coordinates, 1, 1:ceil(Int, size(rp_duct_coordinates, 2) / 2)),
+        )
     end
 
     # - Add warnings about over writing Rhub and Rtip
