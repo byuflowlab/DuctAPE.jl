@@ -53,7 +53,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -222,7 +221,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -319,7 +317,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -397,7 +394,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -498,7 +494,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         resid_cache_vec,
@@ -617,7 +612,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -705,7 +699,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,

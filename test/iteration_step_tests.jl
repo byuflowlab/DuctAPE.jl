@@ -231,7 +231,7 @@ println("\nITERATION STEP THROUGH TESTS")
         solve_containers.alpha,
         solve_containers.reynolds,
         solve_containers.mach,
-        (; blade_elements..., airfoils...),
+        blade_elements,
         solve_containers.Cz_rotor,
         solve_containers.Ctheta_rotor,
         solve_containers.Cmag_rotor,

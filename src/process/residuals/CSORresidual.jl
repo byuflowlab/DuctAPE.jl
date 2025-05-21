@@ -96,7 +96,7 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
         ivr,
         ivw,
         (; linsys..., A_bb_LU),
-        (; blade_elements..., airfoils...),
+        blade_elements,
         wakeK,
         idmaps,
         multipoint_index;

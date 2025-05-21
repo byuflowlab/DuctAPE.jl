@@ -27,7 +27,6 @@ Perform pre-processing and cache setup (as needed) for propuslor analysis.
 - `solve_parameter_cache_dims::NamedTuple` : Named Tuple containing dimensions used for reshaping the solve parameter cache
 - `A_bb_LU::LinearAlgebra.LU` : The LU factorization of the AIC matrix used in the panel method
 - `lu_decomp_flag::Bool` : flag indicating if the LU decomposition was successful
-- `airfoils::Matrix{AFType}` : Matrix contiaining the blade element airfoil polar objects
 - `idmaps::NamedTuple` : Named Tuple containing bookkeeping information (index mappings)
 """
 function setup_analysis(
@@ -129,7 +128,7 @@ function setup_analysis(
     end
 
     # - Preprocess - #
-    A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = precompute_parameters!(
+    A_bb_LU, lu_decomp_flag, idmaps, _ = precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -156,6 +155,5 @@ function setup_analysis(
     solve_parameter_cache_dims,
     A_bb_LU,
     lu_decomp_flag,
-    airfoils,
     idmaps
 end

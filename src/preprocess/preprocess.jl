@@ -1178,7 +1178,6 @@ Out of place main pre-processing function that computes all the required paramet
 - `A_bb_LU::LinearAlgebra.LU` : LinearAlgebra LU factorization of the LHS matrix
 - `lu_decomp_flag::Vector{Bool}` : flag for whether factorization was successful
 - `blade_elements::NamedTuple` : A named tuple containing cacheable blade element information (see docs for `interpolate_blade_elements`)
-- `airfoils::Vector{AFType}` : A matrix of airfoil types associated with each of the blade elements
 - `wakeK::Matrix{Float}` : A matrix of precomputed geometric constants used in the calculation of the wake vortex strengths
 - `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
 - `panels::NamedTuple` : A named tuple of panel objects including:
@@ -1346,7 +1345,7 @@ function precompute_parameters(
     )
 
     # - Interpolate Blade Elements - #
-    blade_elements, airfoils = interpolate_blade_elements(
+    blade_elements = interpolate_blade_elements(
         rotor,
         Rtips,
         Rhubs,
@@ -1380,7 +1379,6 @@ function precompute_parameters(
     A_bb_LU,
     lu_decomp_flag,
     blade_elements,
-    airfoils,
     wakeK,
     idmaps,
     (; body_vortex_panels, rotor_source_panels, wake_vortex_panels),
@@ -1631,7 +1629,7 @@ function precompute_parameters!(
     )
 
     # - Interpolate Blade Elements - #
-    airfoils = interpolate_blade_elements!(
+    interpolate_blade_elements!(
         blade_element_cache,
         rotor,
         panels.rotor_source_panels.controlpoint[2, :],
@@ -1657,5 +1655,5 @@ function precompute_parameters!(
         problem_dimensions.nrotor,
     )
 
-    return A_bb_LU, lu_decomp_flag, airfoils, idmaps, problem_dimensions
+    return A_bb_LU, lu_decomp_flag, idmaps, problem_dimensions
 end
