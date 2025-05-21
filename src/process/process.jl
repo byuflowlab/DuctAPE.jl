@@ -113,19 +113,6 @@ function process(
     (; Gamr, sigr, gamw, operating_point, blade_elements, linsys, ivr, ivw, wakeK) =
         solve_parameter_tuple
 
-    # get correct cache type
-    solve_container_cache_vector = @views PreallocationTools.get_tmp(
-        solve_container_caching.solve_container_cache, Gamr
-    )
-    # reset cache
-    solve_container_cache_vector .= 0
-
-    solve_containers = withdraw_solve_container_cache(
-        solver_options,
-        solve_container_cache_vector,
-        solve_container_caching.solve_container_cache_dims,
-    )
-
     # - Initialize States - #
     initialize_strengths!(
         solver_options,
@@ -196,20 +183,6 @@ function process(
 
     (; Gamr, sigr, gamw, operating_point, blade_elements, linsys, ivr, ivw, wakeK) =
         solve_parameter_tuple
-
-    # get correct cache type
-    solve_container_cache_vector = @views PreallocationTools.get_tmp(
-        solve_container_caching.solve_container_cache, Gamr
-    )
-
-    # reset cache
-    solve_container_cache_vector .= 0
-
-    solve_containers = withdraw_solve_container_cache(
-        solver_options,
-        solve_container_cache_vector,
-        solve_container_caching.solve_container_cache_dims,
-    )
 
     # - Initialize States - #
     initialize_strengths!(

@@ -420,6 +420,32 @@ function lookup_clcd(
         clout = clfromGamr(outer_airfoil.prescribed_circulation, Wmag, chord)
         cdin = cdfromsigr(inner_airfoil.prescribed_source_strength, Wmag, chord, B)
         cdout = cdfromsigr(outer_airfoil.prescribed_source_strength, Wmag, chord, B)
+    elseif typeof(inner_airfoil) <: c4b.ExternalAirfoil
+        # get inner values
+        clin, cdin = c4b.external_eval(
+            Wmag,
+            reynolds,
+            solidity,
+            stagger,
+            alpha,
+            inner_airfoil,
+            asound;
+            verbose=verbose,
+            is_stator=is_stator,
+        )
+
+        # get outer values
+        clout, cdout = c4b.external_eval(
+            Wmag,
+            reynolds,
+            solidity,
+            stagger,
+            alpha,
+            outer_airfoil,
+            asound;
+            verbose=verbose,
+            is_stator=is_stator,
+        )
     else
         @error "No blade element datatype: $(typeof(inner_airfoil)) defined."
     end

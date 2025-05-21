@@ -252,13 +252,13 @@ filenames with one file per Reynolds number.
 - `filenames::Vector{String}`: name/path of files to read in, each at a different Reynolds number in ascending order
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
-struct AlphaReAF{TF, TS} <: AFType
+struct AlphaReAF{TF, TS, TM} <: AFType
     alpha::Vector{TF}
     Re::Vector{TF}
     cl::Matrix{TF}
     cd::Matrix{TF}
     info::TS # not used except for info in file
-    Mach::TF # not used except for info in file
+    Mach::TM # not used except for info in file
 end
 
 AlphaReAF(alpha, Re, cl, cd, info) = AlphaReAF(alpha, Re, cl, cd, info, 0.0)

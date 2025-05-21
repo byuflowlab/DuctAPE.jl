@@ -68,7 +68,7 @@ DFDC-like polar function.
 
 # Returns:
 - `cl::Float` : lift coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
-- `cd::Float` : lift coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
+- `cd::Float` : drag coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
 - `cmom::Float` : returned from input
 """
 function dfdceval(

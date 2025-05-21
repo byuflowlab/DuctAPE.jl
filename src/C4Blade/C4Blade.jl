@@ -19,6 +19,7 @@ using ImplicitAD
 include("airfoils.jl")  # all the code related to airfoil data
 include("cascades.jl")  # all the code related to cascade data
 include("dfdc_polars.jl")  # all the code related to dfdc (XROTOR) style data
+include("external_airfoils.jl")  # all the code related to external airfoil functions
 include("prescribed_circulation.jl")
 include("airfoil_corrections.jl") # various airfoil to cascade corrections
 
@@ -40,13 +41,15 @@ Parameters defining the rotor (apply to all sections).
 - `re::ReCorrection`: correction method for Reynolds number
 - `rotation::RotationCorrection`: correction method for blade rotation
 - `tip::TipCorrection`: correction method for hub/tip loss
+- `is_stator::Bool` : flag to indicate if stator for airofil evaluation
 """
-struct Rotor{
+@kwdef struct Rotor{
     TFrh,
     TFrt,
     TFp,
     TI,
     TB,
+    TS,
     T1<:Union{Nothing,MachCorrection},
     T2<:Union{Nothing,ReCorrection},
     T3<:Union{Nothing,RotationCorrection},
@@ -61,6 +64,7 @@ struct Rotor{
     re::T2
     rotation::T3
     tip::T4
+    is_stator::TS
 end
 
 # convenience constructor with keyword parameters
@@ -74,8 +78,9 @@ function Rotor(
     re=nothing,
     rotation=nothing,
     tip=PrandtlTipHub(),
+    is_stator=0.0
 )
-    return Rotor(Rhub, Rtip, B, precone, turbine, mach, re, rotation, tip)
+    return Rotor(Rhub, Rtip, B, precone, turbine, mach, re, rotation, tip, is_stator)
 end
 
 """
@@ -215,7 +220,7 @@ function residual_and_outputs(phi, x, p)  #rotor, section, op)
 
     # unpack inputs
     r, chord, theta, Rhub, Rtip, B, Vx, Vy, rho, pitch, mu, asound = x  # variables
-    af, turbine, re_corr, mach_corr, rotation_corr, tip_corr = p  # parameters
+    af, turbine, re_corr, mach_corr, rotation_corr, tip_corr, is_stator = p  # parameters
 
     # rename for convenience
     taf = typeof(af)
@@ -226,12 +231,12 @@ function residual_and_outputs(phi, x, p)  #rotor, section, op)
     cphi = cos(phi)
 
     # angle of attack
-    if taf <: AFType || taf <: DFDCairfoil
-        alpha = (theta + pitch) - phi
-    elseif taf <: DTCascade #cascade type, theta is stagger
+    if taf <: DTCascade #cascade type, theta is stagger
         alpha = (0.5 * pi - theta + pitch) - phi
-    else
-        @error "No Airfoil Type: $taf"
+    else# taf <: AFType || taf <: DFDCairfoil
+        alpha = (theta + pitch) - phi
+        # else
+        #     @error "No Airfoil Type: $taf"
     end
 
     if turbine
@@ -256,16 +261,28 @@ function residual_and_outputs(phi, x, p)  #rotor, section, op)
             af,
             asound;
             verbose=false,
-            is_stator=false,
+            is_stator=is_stator,
         )
     elseif taf <: DTCascade #cascade type, theta is stagger
         cl, cd = caseval(af, phi, Re, theta, sigma_p, Mach)
+    elseif taf <: ExternalAirfoil
+        cl, cd = external_eval(
+            W0,
+            Re,
+            sigma_p,
+            theta, #stagger
+            alpha,
+            af,
+            asound;
+            verbose=false,
+            is_stator=is_stator,
+        )
     else
         @error "No Airfoil Type: $taf"
     end
 
     if turbine
-        cl *= -1
+        cl *= -1.0
     end
 
     # airfoil corrections
@@ -312,7 +329,7 @@ function residual_and_outputs(phi, x, p)  #rotor, section, op)
 
     else
         if phi < 0
-            k *= -1
+            k *= -1.0
         end
 
         if isapprox(k, 1.0; atol=1e-6)  # state corresopnds to Vx=0, return any nonzero residual
@@ -519,7 +536,13 @@ function solve(rotor, section, op)
         op.asound,
     ]
     pv = (
-        section.af, rotor.turbine, rotor.re, rotor.mach, rotor.rotation, rotor.tip
+        section.af,
+        rotor.turbine,
+        rotor.re,
+        rotor.mach,
+        rotor.rotation,
+        rotor.tip,
+        rotor.is_stator,
     )
 
     success = false
@@ -550,7 +573,8 @@ function solve(rotor, section, op)
 
         # once bracket is found, solve root finding problem and compute loads
         if success
-            phistar = implicit(solve, residual, xv, pv)
+            # phistar = implicit(solve, residual, xv, pv)
+            phistar = solve(xv, pv)
             _, outputs = residual_and_outputs(phistar, xv, pv)
             return outputs
         end

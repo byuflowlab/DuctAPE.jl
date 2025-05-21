@@ -423,7 +423,7 @@ function post_process(
             Rref[1],
             operating_point,
             reference_parameters;
-            verbose=verbose,
+            verbose=boundary_layer_options.verbose,
         )
 
     else

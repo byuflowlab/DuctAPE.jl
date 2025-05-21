@@ -182,6 +182,7 @@ function initialize_velocities!(
             blade_elements.Rtip[irotor],
             blade_elements.B[irotor];
             tip=nothing,
+            is_stator=blade_elements.is_stator[irotor],
         )
 
         # define rotor sections
@@ -224,11 +225,11 @@ function initialize_velocities!(
         #=
           NOTE: we need the values at the nodes not centers, so average the values and use the end values on the end points
         =#
-        sigr[1,irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
+        sigr[1, irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
             getfield.(out, :cd)[1] *
             getfield.(out, :W)[1] *
             blade_elements.chords[1, irotor]
-        @. sigr[2:(end - 1),irotor] =
+        @. sigr[2:(end - 1), irotor] =
             (
                 blade_elements.B[irotor] / (4.0 * pi) *
                 getfield.(out, :cd)[2:end] *
@@ -239,7 +240,7 @@ function initialize_velocities!(
                 getfield.(out, :W)[1:(end - 1)] *
                 blade_elements.chords[1:(end - 1), irotor]
             ) / 2.0
-        sigr[end,irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
+        sigr[end, irotor] = @. blade_elements.B[irotor] / (4.0 * pi) *
             getfield.(out, :cd)[end] *
             getfield.(out, :W)[end] *
             blade_elements.chords[end, irotor]
@@ -412,6 +413,7 @@ function initialize_strengths!(
             blade_elements.Rtip[irotor],
             blade_elements.B[irotor];
             tip=nothing,
+            is_stator=blade_elements.is_stator[irotor],
         )
 
         # define rotor sections
@@ -444,6 +446,10 @@ function initialize_strengths!(
         Gamr[:, irotor] .=
             0.5 .* getfield.(out, :cl) .* getfield.(out, :W) .*
             blade_elements.chords[:, irotor]
+
+        if !iszero(blade_elements.is_stator[irotor])
+            Gamr[:, irotor] .*= -1.0
+        end
 
         # - Get Cm_wake - #
         #=
@@ -630,7 +636,6 @@ function initialize_strengths!(
         eltype(blade_elements.Rhub),
     )
 
-
     # - Rename for Convenience - #
     nbe, nrotor = size(Gamr)
     (; Vinf, rhoinf, muinf, Omega) = operating_point
@@ -638,12 +643,11 @@ function initialize_strengths!(
 
     reset_containers!(solve_containers)
 
-    vz_rotor=-Vinf[] + 1.0
+    vz_rotor = -Vinf[] + 1.0
 
     # loop through rotors
     for irotor in 1:nrotor
-
-        segment_length = (Rtip[irotor]-Rhub[irotor])/nbe
+        segment_length = (Rtip[irotor] - Rhub[irotor]) / nbe
 
         # do niter iterations
         for iter in 1:niter
@@ -656,8 +660,7 @@ function initialize_strengths!(
                     (2.0 * pi * rotor_panel_centers[:, irotor])
             end
 
-            @views @. solve_containers.Cz_rotor[:, irotor] =
-                Vinf[] + vz_rotor
+            @views @. solve_containers.Cz_rotor[:, irotor] = Vinf[] + vz_rotor
 
             @views @. solve_containers.Ctheta_rotor[:, irotor] .=
                 solve_containers.vtheta_rotor[:, irotor] .-
@@ -683,8 +686,13 @@ function initialize_strengths!(
             )
 
             @views BGamr_est =
-                0.5 * solve_containers.cl[:, irotor] .* solve_containers.Cmag_rotor[:, irotor] .*
-                chords[:, irotor] * B[irotor]
+                0.5 * solve_containers.cl[:, irotor] .*
+                solve_containers.Cmag_rotor[:, irotor] .* chords[:, irotor] * B[irotor]
+
+            #TODO: figure out how to handle stators in this case
+            # if !iszero(blade_elements.is_stator[irotor])
+            #     BGamr_est .*= -1.0
+            # end
 
             delta_BGamr = BGamr_est .- B[irotor] * Gamr[:, irotor]
 
@@ -712,8 +720,7 @@ function initialize_strengths!(
         # Set average velocity in duct
         for (wid, wmap) in enumerate(eachrow(wake_panel_sheet_be_map))
             if wmap[2] >= irotor && wmap[2] < irotor + 1
-                solve_containers.Cm_wake[wid] =
-                    vz_rotor + Vinf[]
+                solve_containers.Cm_wake[wid] = vz_rotor + Vinf[]
             end
         end
     end # for irotor
@@ -726,7 +733,9 @@ function initialize_strengths!(
     deltaH = zeros(TF, nbe + 1, nrotor)
     Cm_avg = zeros(TF, size(gamw)) .= 0
 
-    average_wake_velocities!(Cm_avg, solve_containers.Cm_wake, wake_nodemap, wake_endnodeidxs)
+    average_wake_velocities!(
+        Cm_avg, solve_containers.Cm_wake, wake_nodemap, wake_endnodeidxs
+    )
 
     # - Calculate Wake Panel Strengths - #
     # in-place solve for gamw,
