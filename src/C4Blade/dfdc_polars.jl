@@ -1,22 +1,22 @@
 """
 # Fields:
-- `alpha0::Float` : zero lift angle of attack
-- `clmax::Float` : maximum cl
-- `clmin::Float` : minimum cl
-- `dclda::Float` : lift curve slope (1/radians)
-- `dclda_stall::Float` :  lift curve slope post-stall (1/radians)
-- `dcl_stall::Float` : cl increment from initial to total stall.
-- `cdmin::Float` : minimum cd
-- `cldmin::Float` : cl at cdmin
-- `dcddcl2::Float` : quadratic curve factor for cl vs cd curve \$\\left(\\frac{d(c_d)}{d(c_l^2)}\\right)\$
-- `cmcon::Float` : pitching moment constant (unused right now)
-- `Re_ref::Float` : reference Reynolds number at which cd values apply
-- `Re_exp::Float` : Reynolds number exponent scaling \$\\left( c_d = c_d(Re/Re_{ref})^{Re_{exp}}\\right)\$ should be 0.2 for fully laminar and 0.5 for fully turbulent
-- `mcrit::Float` : critical Mach number
-- `correct_for_mach::Bool` : flag to add Prandtl-Glauert correction
-- `correct_for_cascade::Bool` : flag to add cascade corrections
-- `correct_for_reynolds::Bool` : flag to add reynolds drag correction
-- `correct_for_transonic::Bool` : flag to add drag correction above critical mach number
+- `alpha0::Vector{Float}` : zero lift angle of attack
+- `clmax::Vector{Float}` : maximum cl
+- `clmin::Vector{Float}` : minimum cl
+- `dclda::Vector{Float}` : lift curve slope (1/radians)
+- `dclda_stall::Vector{Float}` :  lift curve slope post-stall (1/radians)
+- `dcl_stall::Vector{Float}` : cl increment from initial to total stall.
+- `cdmin::Vector{Float}` : minimum cd
+- `cldmin::Vector{Float}` : cl at cdmin
+- `dcddcl2::Vector{Float}` : quadratic curve factor for cl vs cd curve \$\\left(\\frac{d(c_d)}{d(c_l^2)}\\right)\$
+- `cmcon::Vector{Float}` : pitching moment constant (unused right now)
+- `Re_ref::Vector{Float}` : reference Reynolds number at which cd values apply
+- `Re_exp::Vector{Float}` : Reynolds number exponent scaling \$\\left( c_d = c_d(Re/Re_{ref})^{Re_{exp}}\\right)\$ should be 0.2 for fully laminar and 0.5 for fully turbulent
+- `mcrit::Vector{Float}` : critical Mach number
+- `correct_for_mach::Vector{Float}` : flag to add Prandtl-Glauert correction
+- `correct_for_cascade::Vector{Float}` : flag to add cascade corrections
+- `correct_for_reynolds::Vector{Float}` : flag to add reynolds drag correction
+- `correct_for_transonic::Vector{Float}` : flag to add drag correction above critical mach number
 """
 struct DFDCairfoil{T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TB}
     alpha0::T1
