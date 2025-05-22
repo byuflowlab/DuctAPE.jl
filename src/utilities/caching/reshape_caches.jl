@@ -606,6 +606,19 @@ function withdraw_prepost_container_cache(vec, dims)
     )
 end
 
+function withdraw_airfoil_cache(vec, af_dims)
+
+    # rename for convenience
+    (; airfoil_cache_dims, airfoil_constructors) = af_dims
+
+    airfoils = [
+        con([reshape(@view(vec[dim[i].index]), dim[i].shape) for i in 1:length(dim)]...) for
+        (con, dim) in zip(airfoil_constructors, airfoil_cache_dims)
+    ]
+
+    return reshape(airfoils, size(airfoil_cache_dims))
+end
+
 """
     withdraw_solve_parameter_cache(solver_options::SolverOptionsType, vec, dims)
 
@@ -718,6 +731,8 @@ function withdraw_solve_parameter_cache(solver_options::TS, vec, dims) where {TS
             @view(vec[dims.blade_elements.inner_fraction.index]),
             dims.blade_elements.inner_fraction.shape,
         ),
+        inner_airfoil=withdraw_airfoil_cache(vec, dims.blade_elements.inner_airfoil),
+        outer_airfoil=withdraw_airfoil_cache(vec, dims.blade_elements.outer_airfoil),
     )
 
     wakeK = reshape(@view(vec[dims.wakeK.index]), dims.wakeK.shape)
@@ -761,6 +776,7 @@ function withdraw_solve_parameter_cache(solver_options::TS, vec, dims) where {TS
 
     return (; Gamr, sigr, gamw, operating_point, ivr, ivw, linsys, blade_elements, wakeK)
 end
+
 
 function withdraw_solve_parameter_cache(
     solver_options::TS, vec, dims
@@ -857,6 +873,8 @@ function withdraw_solve_parameter_cache(
             @view(vec[dims.blade_elements.inner_fraction.index]),
             dims.blade_elements.inner_fraction.shape,
         ),
+        inner_airfoil=withdraw_airfoil_cache(vec, dims.blade_elements.inner_airfoil),
+        outer_airfoil=withdraw_airfoil_cache(vec, dims.blade_elements.outer_airfoil),
     )
 
     wakeK = reshape(@view(vec[dims.wakeK.index]), dims.wakeK.shape)

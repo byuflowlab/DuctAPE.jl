@@ -41,7 +41,9 @@ A helper function is assembling the prepost_container_cache.
 # Returns
 - `rotor_source_panels::NamedTuple` : A named containing the dimensions needed to reshape the cache with regards to the rotor source panel object
 """
-function allocate_rotor_panel_container!(total_length, problem_dimensions::ProblemDimensions)
+function allocate_rotor_panel_container!(
+    total_length, problem_dimensions::ProblemDimensions
+)
     (;
         nrotor,     # number of rotors
         nws,    # number of wake sheets (also rotor nodes)
@@ -219,15 +221,9 @@ A helper function is assembling the prepost_container_cache.
 - `panels::NamedTuple` : A named tuple of named tuples containing the dimensions needed to reshape the cache with regards to the panel objects
 """
 function allocate_panel_containers!(total_length, problem_dimensions::ProblemDimensions)
-    body_vortex_panels = allocate_body_panel_container!(
-        total_length, problem_dimensions
-    )
-    rotor_source_panels = allocate_rotor_panel_container!(
-        total_length, problem_dimensions
-    )
-    wake_vortex_panels = allocate_wake_panel_container!(
-        total_length, problem_dimensions
-    )
+    body_vortex_panels = allocate_body_panel_container!(total_length, problem_dimensions)
+    rotor_source_panels = allocate_rotor_panel_container!(total_length, problem_dimensions)
+    wake_vortex_panels = allocate_wake_panel_container!(total_length, problem_dimensions)
 
     return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
 end
@@ -253,17 +249,14 @@ OR
   - `prepost_container_cache::PreallocationTools.DiffCache` : the cache
   - `prepost_container_cache_dims::NamedTuple` : a named tuple containing the dimensions used for reshaping the cache when needed.
 """
-function allocate_prepost_container_cache(paneling_constants::PanelingConstants;
-    fd_chunk_size=12,
-    levels=1,
-    )
-
+function allocate_prepost_container_cache(
+    paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
+)
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
-    return allocate_prepost_container_cache(problem_dimensions;
-    fd_chunk_size=fd_chunk_size,
-    levels=levels,
-                                           )
+    return allocate_prepost_container_cache(
+        problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
+    )
 end
 
 function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nbodies)
@@ -610,12 +603,14 @@ end
     allocate_solve_parameter_cache(
         solve_type::SolverOptionsType,
         paneling_constants::PanelingConstants;
+        airfoils,
         fd_chunk_size=12,
         levels=1,
     )
     allocate_solve_parameter_cache(
         solve_type::SolverOptionsType,
         problem_dimensions::ProblemDimensions;
+        airfoils,
         fd_chunk_size=12,
         levels=1
     )
@@ -625,8 +620,11 @@ Allocate the solve parameter cache for parameters passed into the solver(s).
 # Arguments
 - `solve_type::SolverOptionsType` : Solver options type used for dispatch
 - `paneling_constants::PanelingConstants` : a PanlingConstants object used for sizing
+- `airfoils::Airfoil` : an array of airfoil composite types (MUST be a composite type), such as one of the types available in DuctAPE.C4Blade.
 OR
+- `solve_type::SolverOptionsType` : Solver options type used for dispatch
 - `problem_dimensions::ProblemDimensions` : a ProblemDimensions object used for sizing
+- `airfoils::Airfoil` : an array of airfoil composite types (MUST be a composite type), such as one of the types available in DuctAPE.C4Blade.
 
 # Keyword Arguments
 - `fd_chunk_size::Int=12` : chunk size to use for PreallocationTools caches.  Note that the automated chunk size for DuctAPE will always be the ForwardDiff threshold of 12 due to the size of the system, so it will be best to leave this at the default unless further development allows for chunk size selection for individual solvers.
@@ -639,7 +637,8 @@ OR
 """
 function allocate_solve_parameter_cache(
     solve_type::TS,
-    paneling_constants::PanelingConstants;
+    paneling_constants::PanelingConstants,
+    airfoils;
     fd_chunk_size=12,
     levels=1,
 ) where {TS<:InternalSolverOptions}
@@ -648,10 +647,7 @@ function allocate_solve_parameter_cache(
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
     return allocate_solve_parameter_cache(
-        solve_type,
-        problem_dimensions,
-        fd_chunk_size=fd_chunk_size,
-        levels=levels,
+        solve_type, problem_dimensions, airfoils; fd_chunk_size=fd_chunk_size, levels=levels
     )
 end
 
@@ -687,13 +683,74 @@ function allocate_solve_parameter_extras!(
     return (; resid_cache_vec, krylov_cache_vec, jvp_cache_vec)
 end
 
-function allocate_solve_parameter_extras!(solver_options::SolverOptionsType, input_length, total_length)
+function allocate_solve_parameter_extras!(
+    solver_options::SolverOptionsType, input_length, total_length
+)
     return (;)
+end
+
+"""
+    allocate_airfoil_cache(airfoils, total_length, nbe, nrotor)
+
+Allocate caches for airfoil struct fields.
+
+
+# Arguments:
+- `airfoils::Vector{Vector{Airfoil}}` : Airfoil objects, where each element of the outer vector is associated with a rotor and the elements of the inner vectors are the input airfoils to be interpolated across each rotor blade. Note that even if only one rotor is being used, the input must still be a vector of vectors.
+- `total_length::Vector{Float}` : updated in-place, used for sizing the overall PreallocationTools cache.
+- `number_of_blade_elements::Int` : number of blade elements for analysis (this is defined from the `nwake_sheets` input in the PanelingConstants input).
+- `number_of_rotors::Int` : the number of rotors (note that a stator is considered a rotor).
+
+# Returns:
+- `airfoil_cache::NamedTuple` : contains:
+  - `airfoil_cache_dims::Matrix{NamedTuple}` : A matrix (num blade elem x num rotor) of named tuples containing the indices and shapes required for extracting the airfoils from the PreallocationTools cache.
+  - `airfoil_constructors::Matrix{type.name.wrapper}` : Wrappers for re-constructing the airfoil objects from the cache.
+
+Notes:
+- Due to how DuctAPE interpolates the blade elements, we require all airfoil types and the sizes of the fields in those types to be identical across blades; but they may be different for each rotor. For example, you could use a CCBlade-like airfoil for the rotor and a DFDC-like airfoil for the stator, but all the rotor airfoils must be the same type with fields of the same size and likewise for the stator.
+- Since the airfoil input structure is a vector of vectors, the vectors for each rotor may be different sizes as well. For example, you can define 6 airfoils to get interpolated for the rotor, and 2 for the stator (or however many you want).
+"""
+function allocate_airfoil_cache(airfoils, total_length, nbe, nrotor)
+
+    airfoil_cache_dims = reshape(
+        reduce(
+            vcat,
+            [
+                [
+                    ntt.namedtuple(
+                        propertynames(airfoils[irotor][1]),
+                        [
+                            cache_dims!(
+                                total_length,
+                                length(getproperty(airfoils[irotor][1], p)),
+                                size(getproperty(airfoils[irotor][1], p)),
+                            ) for p in propertynames(airfoils[irotor][1])
+                        ],
+                    ) for _ in 1:nbe
+                ] for irotor in 1:nrotor
+            ],
+        ),
+        (nbe, nrotor),
+    )
+
+    airfoil_constructors = reshape(
+        reduce(
+            vcat,
+            [
+                [typeof(airfoils[irotor][1]).name.wrapper for _ in 1:nbe] for
+                irotor in 1:nrotor
+            ],
+        ),
+        (nbe, nrotor),
+    )
+
+    return (; airfoil_cache_dims, airfoil_constructors)
 end
 
 function allocate_solve_parameter_cache(
     solve_type::TS,
-    problem_dimensions::ProblemDimensions;
+    problem_dimensions::ProblemDimensions,
+    airfoils;
     fd_chunk_size=12,
     levels=1,
 ) where {TS<:InternalSolverOptions}
@@ -824,14 +881,14 @@ function allocate_solve_parameter_cache(
 
     inner_fraction = cache_dims!(total_length, l, s)
 
+    inner_airfoil = allocate_airfoil_cache(airfoils, total_length, nbe, nrotor)
+
+    outer_airfoil = allocate_airfoil_cache(airfoils, total_length, nbe, nrotor)
+
     # - Wake constants - #
     s = (nwn,)
     l = lfs(s)
     wakeK = cache_dims!(total_length, l, s)
-
-    # TODO: WHAT TO DO ABOUT AIRFOILS?
-    # NOTE: how to know the size of airfoil objects up front?  if it's a DFDC type, this is pretty simple, but if it's a CCBlade type, then the size could be anything depending on how many data points are used
-    # airfoils = allocate_airfoil_cache(aftype, nrotor, nbe)
 
     return (;
         solve_parameter_cache=PreallocationTools.DiffCache(
@@ -857,6 +914,8 @@ function allocate_solve_parameter_cache(
                 inner_fraction,
                 Rtip,
                 Rhub,
+                inner_airfoil,
+                outer_airfoil,
             ),
             wakeK,
         ),
@@ -864,20 +923,28 @@ function allocate_solve_parameter_cache(
 end
 
 function allocate_solve_parameter_cache(
-    solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
-   ) where {TS<:ExternalSolverOptions}
+    solve_type::TS,
+    paneling_constants::PanelingConstants,
+    airfoils;
+    fd_chunk_size=12,
+    levels=1,
+) where {TS<:ExternalSolverOptions}
 
     # - Get problem dimensions - #
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
     return allocate_solve_parameter_cache(
-        solve_type, problem_dimensions; fd_chunk_size=fd_chunk_size, levels=levels
+        solve_type, problem_dimensions, airfoils; fd_chunk_size=fd_chunk_size, levels=levels
     )
 end
 
 function allocate_solve_parameter_cache(
-    solve_type::TS, problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
-   ) where {TS<:ExternalSolverOptions}
+    solve_type::TS,
+    problem_dimensions::ProblemDimensions,
+    airfoils;
+    fd_chunk_size=12,
+    levels=1,
+) where {TS<:ExternalSolverOptions}
     (;
         nrotor, # number of rotors
         nwn,    # number of wake nodes
@@ -1007,14 +1074,14 @@ function allocate_solve_parameter_cache(
 
     inner_fraction = cache_dims!(total_length, l, s)
 
+    inner_airfoil = allocate_airfoil_cache(airfoils, total_length, nbe, nrotor)
+
+    outer_airfoil = allocate_airfoil_cache(airfoils, total_length, nbe, nrotor)
+
     # - Wake constants - #
     s = (nwn,)
     l = lfs(s)
     wakeK = cache_dims!(total_length, l, s)
-
-    # TODO: WHAT TO DO ABOUT AIRFOILS?
-    # NOTE: how to know the size of airfoil objects up front?  if it's a DFDC type, this is pretty simple, but if it's a CCBlade type, then the size could be anything depending on how many data points are used
-    # airfoils = allocate_airfoil_cache(aftype, nrotor, nbe)
 
     return (;
         solve_parameter_cache=PreallocationTools.DiffCache(
@@ -1040,6 +1107,8 @@ function allocate_solve_parameter_cache(
                 inner_fraction,
                 Rtip,
                 Rhub,
+                inner_airfoil,
+                outer_airfoil,
             ),
             wakeK,
             SIAMFANLE_cache_vecs...,
@@ -1185,7 +1254,7 @@ function allocate_solve_container_cache(
 
     deltaG_prev = cache_dims!(total_length, l, s)
 
-    s = (nbe+1, nrotor)
+    s = (nbe + 1, nrotor)
     l = lfs(s)
     deltas = cache_dims!(total_length, l, s)
 
@@ -1249,7 +1318,7 @@ end
 
 function allocate_solve_container_cache(
     solve_type::TS, paneling_constants::PanelingConstants; fd_chunk_size=12, levels=1
-   ) where {TS<:ExternalSolverOptions}
+) where {TS<:ExternalSolverOptions}
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
     return allocate_solve_container_cache(
@@ -1259,7 +1328,7 @@ end
 
 function allocate_solve_container_cache(
     solve_type::TS, problem_dimensions::ProblemDimensions; fd_chunk_size=12, levels=1
-   ) where {TS<:ExternalSolverOptions}
+) where {TS<:ExternalSolverOptions}
     (;
         nrotor, # number of rotors
         nwn,    # number of wake nodes

@@ -19,7 +19,6 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
         # solve options for dispatch
         solver_options,
         # comp,
-        airfoils,                   # airfoils
         A_bb_LU,                    # linear system left hand side LU decomposition
         idmaps,                     # book keeping items
         solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
@@ -96,7 +95,7 @@ function CSOR_residual!(resid, state_variables, sensitivity_parameters, constant
         ivr,
         ivw,
         (; linsys..., A_bb_LU),
-        (; blade_elements..., airfoils...),
+        blade_elements,
         wakeK,
         idmaps,
         multipoint_index;

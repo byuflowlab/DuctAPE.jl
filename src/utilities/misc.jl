@@ -126,6 +126,42 @@ function lfs(shape)
     end
 end
 
+function reset_array!(c; exception_keys=[])
+    if !(eltype(c) <: Union{String,Number})
+        reset_struct_tuple!(c; exception_keys=exception_keys)
+    else
+        #do nothing if it's a string
+        (eltype(c) == String) || (c .= 0)
+    end
+    return nothing
+end
+
+function reset_struct_tuple!(c; exception_keys=[])
+    for f in fieldnames(typeof(c))
+        if !(f in exception_keys)
+            cp = getfield(c, f)
+            if typeof(cp) <: AbstractArray
+                if eltype(cp) <: Tuple
+                    for i in 1:length(cp[1])
+                        for j in eachindex(cp)
+                            cp[j][i] .= 0.0
+                        end
+                    end
+                elseif !(eltype(cp) <: Union{String,Number})
+                    reset_struct_tuple!(cp; exception_keys=exception_keys)
+                else
+                    #do nothing if it's a string
+                    (eltype(cp) == String) || (cp .= 0)
+                end
+            else
+                reset_containers!(cp; exception_keys=exception_keys)
+            end
+        end
+    end
+
+    return nothing
+end
+
 """
     reset_containers!(containers; exception_keys=[])
 
@@ -133,28 +169,9 @@ Resets all fields (not incluing any contained in exception keys) of containers--
 """
 function reset_containers!(c; exception_keys=[])
     if typeof(c) <: AbstractArray
-        #do nothing if it's a string
-        (eltype(c) == String) || (c .= 0)
+        reset_array!(c; exception_keys=exception_keys)
     else
-        for f in fieldnames(typeof(c))
-            if !(f in exception_keys)
-                cp = getfield(c, f)
-                if typeof(cp) <: AbstractArray
-                    if eltype(cp) <: Tuple
-                        for i in 1:length(cp[1])
-                            for j in eachindex(cp)
-                                cp[j][i] .= 0.0
-                            end
-                        end
-                    else
-                        #do nothing if it's a string
-                        (eltype(cp) == String) || (cp .= 0)
-                    end
-                else
-                    reset_containers!(cp; exception_keys=exception_keys)
-                end
-            end
-        end
+        reset_struct_tuple!(c; exception_keys=exception_keys)
     end
 
     return c

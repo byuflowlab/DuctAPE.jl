@@ -10,7 +10,6 @@ function failed_initialization(
     prepost_containers,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
-    airfoils,
     A_bb_LU,
     idmaps,
     problem_dimensions,
@@ -133,7 +132,7 @@ function failed_initialization(
     (; ivr, ivw, linsys, blade_elements, wakeK) = solve_parameter_tuple
 
     # put airfoils in blade elements and LU decomp into linsys
-    blade_elements = (; blade_elements..., airfoils...)
+    blade_elements = blade_elements
     linsys = (; linsys..., A_bb_LU)
 
     # - Extract Solve Container Cache - #

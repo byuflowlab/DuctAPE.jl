@@ -67,8 +67,28 @@ paneling_constants = DuctAPE.PanelingConstants(
     nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
 )
 
+# DFDC-type airfoil object
+afparams = DuctAPE.c4b.DFDCairfoil(;
+    alpha0=0.0,
+    clmax=1.5,
+    clmin=-1.0,
+    dclda=6.28,
+    dclda_stall=0.5,
+    dcl_stall=0.2,
+    cdmin=0.012,
+    clcdmin=0.1,
+    dcddcl2=0.005,
+    cmcon=0.0,
+    Re_ref=2e5,
+    Re_exp=0.35,
+    mcrit=0.7,
+)
+
+# specify the airfoil array
+airfoils = [fill(afparams, length(r))]
+
 # - Initialize Caches - #
-prepost_container_caching, solve_parameter_caching, solve_container_caching = DuctAPE.initialize_all_caches(aero_solver_options, paneling_constants)
+prepost_container_caching, solve_parameter_caching, solve_container_caching = DuctAPE.initialize_all_caches(aero_solver_options, paneling_constants, airfoils)
 ```
 
 ## How to pass the caches into an analysis

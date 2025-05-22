@@ -1,41 +1,83 @@
 """
 # Fields:
-- `alpha0::Float` : zero lift angle of attack
-- `clmax::Float` : maximum cl
-- `clmin::Float` : minimum cl
-- `dclda::Float` : lift curve slope (1/radians)
-- `dclda_stall::Float` :  lift curve slope post-stall (1/radians)
-- `dcl_stall::Float` : cl increment from initial to total stall.
-- `cdmin::Float` : minimum cd
-- `cldmin::Float` : cl at cdmin
-- `dcddcl2::Float` : quadratic curve factor for cl vs cd curve \$\\left(\\frac{d(c_d)}{d(c_l^2)}\\right)\$
-- `cmcon::Float` : pitching moment constant (unused right now)
-- `Re_ref::Float` : reference Reynolds number at which cd values apply
-- `Re_exp::Float` : Reynolds number exponent scaling \$\\left( c_d = c_d(Re/Re_{ref})^{Re_{exp}}\\right)\$ should be 0.2 for fully laminar and 0.5 for fully turbulent
-- `mcrit::Float` : critical Mach number
-- `correct_for_mach::Bool` : flag to add Prandtl-Glauert correction
-- `correct_for_cascade::Bool` : flag to add cascade corrections
-- `correct_for_reynolds::Bool` : flag to add reynolds drag correction
-- `correct_for_transonic::Bool` : flag to add drag correction above critical mach number
+- `alpha0::Vector{Float}` : zero lift angle of attack
+- `clmax::Vector{Float}` : maximum cl
+- `clmin::Vector{Float}` : minimum cl
+- `dclda::Vector{Float}` : lift curve slope (1/radians)
+- `dclda_stall::Vector{Float}` :  lift curve slope post-stall (1/radians)
+- `dcl_stall::Vector{Float}` : cl increment from initial to total stall.
+- `cdmin::Vector{Float}` : minimum cd
+- `cldmin::Vector{Float}` : cl at cdmin
+- `dcddcl2::Vector{Float}` : quadratic curve factor for cl vs cd curve \$\\left(\\frac{d(c_d)}{d(c_l^2)}\\right)\$
+- `cmcon::Vector{Float}` : pitching moment constant (unused right now)
+- `Re_ref::Vector{Float}` : reference Reynolds number at which cd values apply
+- `Re_exp::Vector{Float}` : Reynolds number exponent scaling \$\\left( c_d = c_d(Re/Re_{ref})^{Re_{exp}}\\right)\$ should be 0.2 for fully laminar and 0.5 for fully turbulent
+- `mcrit::Vector{Float}` : critical Mach number
+- `correct_for_mach::Vector{Float}` : flag to add Prandtl-Glauert correction
+- `correct_for_cascade::Vector{Float}` : flag to add cascade corrections
+- `correct_for_reynolds::Vector{Float}` : flag to add reynolds drag correction
+- `correct_for_transonic::Vector{Float}` : flag to add drag correction above critical mach number
 """
-@kwdef struct DFDCairfoil{TF,TB}
-    alpha0::TF = 0.0
-    clmax::TF = 1.5
-    clmin::TF = -0.5
-    dclda::TF = 2.0 * pi
-    dclda_stall::TF = 0.1
-    dcl_stall::TF = 0.1
-    cdmin::TF = 0.01
-    clcdmin::TF = 0.5
-    dcddcl2::TF = 0.005
-    cmcon::TF = 0.0
-    Re_ref::TF = 1e6
-    Re_exp::TF = 0.35
-    mcrit::TF = 0.7
-    correct_for_mach::TB = true
-    correct_for_cascade::TB = true
-    correct_for_reynolds::TB = true
-    correct_for_transonic::TB = true
+struct DFDCairfoil{T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TB}
+    alpha0::T1
+    clmax::T2
+    clmin::T3
+    dclda::T4
+    dclda_stall::T5
+    dcl_stall::T6
+    cdmin::T7
+    clcdmin::T8
+    dcddcl2::T9
+    cmcon::T10
+    Re_ref::T11
+    Re_exp::T12
+    mcrit::T13
+    correct_for_mach::TB
+    correct_for_cascade::TB
+    correct_for_reynolds::TB
+    correct_for_transonic::TB
+end
+
+function DFDCairfoil(;
+    alpha0=[0.0],
+    clmax=[1.5],
+    clmin=[-0.5],
+    dclda=[2.0 * pi],
+    dclda_stall=[0.1],
+    dcl_stall=[0.1],
+    cdmin=[0.01],
+    clcdmin=[0.5],
+    dcddcl2=[0.005],
+    cmcon=[0.0],
+    Re_ref=[1e6],
+    Re_exp=[0.35],
+    mcrit=[0.7],
+    correct_for_mach=[1.0],
+    correct_for_cascade=[1.0],
+    correct_for_reynolds=[1.0],
+    correct_for_transonic=[1.0],
+)
+    TB = Float64
+
+    return DFDCairfoil(
+        isscalar(alpha0) ? [alpha0] : alpha0,
+        isscalar(clmax) ? [clmax] : clmax,
+        isscalar(clmin) ? [clmin] : clmin,
+        isscalar(dclda) ? [dclda] : dclda,
+        isscalar(dclda_stall) ? [dclda_stall] : dclda_stall,
+        isscalar(dcl_stall) ? [dcl_stall] : dcl_stall,
+        isscalar(cdmin) ? [cdmin] : cdmin,
+        isscalar(clcdmin) ? [clcdmin] : clcdmin,
+        isscalar(dcddcl2) ? [dcddcl2] : dcddcl2,
+        isscalar(cmcon) ? [cmcon] : cmcon,
+        isscalar(Re_ref) ? [Re_ref] : Re_ref,
+        isscalar(Re_exp) ? [Re_exp] : Re_exp,
+        isscalar(mcrit) ? [mcrit] : mcrit,
+        isscalar(correct_for_mach) ? TB[correct_for_mach] : correct_for_mach,
+        isscalar(correct_for_cascade) ? TB[correct_for_cascade] : correct_for_cascade,
+        isscalar(correct_for_reynolds) ? TB[correct_for_reynolds] : correct_for_reynolds,
+        isscalar(correct_for_transonic) ? TB[correct_for_transonic] : correct_for_transonic,
+    )
 end
 
 """
@@ -88,21 +130,20 @@ function dfdceval(
     end
 
     #all these come from user defined inputs.
-    (;
-        alpha0,
-        clmax,
-        clmin,
-        dclda,
-        dclda_stall,
-        dcl_stall,
-        cdmin,
-        clcdmin,
-        dcddcl2,
-        cmcon,
-        Re_ref,
-        Re_exp,
-        mcrit,
-    ) = afparams
+
+    alpha0 = first(afparams.alpha0)
+    clmax = first(afparams.clmax)
+    clmin = first(afparams.clmin)
+    dclda = first(afparams.dclda)
+    dclda_stall = first(afparams.dclda_stall)
+    dcl_stall = first(afparams.dcl_stall)
+    cdmin = first(afparams.cdmin)
+    clcdmin = first(afparams.clcdmin)
+    dcddcl2 = first(afparams.dcddcl2)
+    cmcon = first(afparams.cmcon)
+    Re_ref = first(afparams.Re_ref)
+    Re_exp = first(afparams.Re_exp)
+    mcrit = first(afparams.mcrit)
 
     (; correct_for_mach, correct_for_reynolds, correct_for_cascade, correct_for_transonic) =
         afparams
@@ -124,7 +165,7 @@ function dfdceval(
     mach_w = 0.0
     pgrt = 1.0
     pgrt_w = 0.0
-    if correct_for_mach
+    if !iszero(correct_for_mach)
         # prandtl-glauert compressibility factor
         msq = (inflow_magnitude / asound)^2
         msq_w = 2.0 * inflow_magnitude / asound^2
@@ -155,7 +196,7 @@ function dfdceval(
 
     # generate clfactor for cascade effects from section solidity
     clfactor = 1.0
-    if correct_for_cascade
+    if !iszero(correct_for_cascade)
         if local_solidity > 0.0
             clfactor = getclfactor(local_solidity, local_stagger)
         end
@@ -202,7 +243,7 @@ function dfdceval(
 
     # cd from profile drag, stall drag and compressibility drag
     # reynolds number scaling factor
-    if (local_reynolds <= 0.0) || !correct_for_reynolds
+    if (local_reynolds <= 0.0) || iszero(correct_for_reynolds)
         rcorr = 1.0
         rcorr_rey = 0.0
     else
@@ -239,7 +280,7 @@ function dfdceval(
     critmach = mcrit - clmfactor * abs(clift - clcdmin) - dmdd
     critmach_alf = -clmfactor * abs(cl_alf)
     critmach_w = -clmfactor * abs(cl_w)
-    if (mach < critmach) || !correct_for_transonic
+    if (mach < critmach) || iszero(correct_for_transonic)
         cdc = 0.0
         cdc_alf = 0.0
         cdc_w = 0.0

@@ -62,7 +62,7 @@ r = rct[:, 1] ./ Rtip # non-dimensionalize the radial stations
 chords = rct[:, 2]
 twists = rct[:, 3] * pi / 180.0 # convert to radians
 
-airfoils = fill(afparams, length(r)) # specify the airfoil array
+airfoils = [fill(afparams, length(r))] # specify the airfoil array
 
 ##### ----- dt Input Tuples ----- #####
 

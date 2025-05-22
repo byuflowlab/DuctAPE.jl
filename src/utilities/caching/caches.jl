@@ -1,11 +1,12 @@
 """
-    initialize_all_caches(solver_options, paneling_constants)
+    initialize_all_caches(solver_options, paneling_constants, airfoils)
 
 Convenience function to initialize all caches before calling analysis.
 
 # Arguments
 - `solver_options::SolverOptionsType` : solver options used for cache allocation dispatch
 - `paneling_constants::PanelingConstants` : PanelingConstants object upon which all cache sizing depends
+- `airfoils::Array{Airfoil}` : Array of airfoil objects (from Rotor object)
 
 # Keyword Arguments
 - `fd_chunk_size::Int=12` : chunk size to use for PreallocationTools caches.  Note that the automated chunk size for DuctAPE will always be the ForwardDiff threshold of 12 due to the size of the system, so it will be best to leave this at the default unless further development allows for chunk size selection for individual solvers.
@@ -18,7 +19,7 @@ Convenience function to initialize all caches before calling analysis.
 - `solve_container_caching::NamedTuple` : A named tuple containing the PreallocationTools DiffCache and a named tuple with relevant dimensions for accessing the cache.
 """
 function initialize_all_caches(
-    solver_options, paneling_constants; fd_chunk_size=12, levels=1
+    solver_options, paneling_constants, airfoils; fd_chunk_size=12, levels=1
 )
 
     # - Pre/Post Containers Cache - #
@@ -28,7 +29,7 @@ function initialize_all_caches(
 
     # - Solve (Sensitivity) Parameters Cache - #
     solve_parameter_caching = allocate_solve_parameter_cache(
-        solver_options, paneling_constants; fd_chunk_size=fd_chunk_size, levels=levels
+        solver_options, paneling_constants, airfoils; fd_chunk_size=fd_chunk_size, levels=levels
     )
 
     # - Solve Intermediate Containers Cache - #

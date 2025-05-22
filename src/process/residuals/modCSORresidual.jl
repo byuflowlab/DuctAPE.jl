@@ -15,7 +15,6 @@ function mod_CSOR_residual!(r, current_states, inputs, constants)
     (;
         # solve options for dispatch
         solver_options,
-        airfoils,                   # airfoils
         A_bb_LU,                    # linear system left hand side LU decomposition
         idmaps,                     # book keeping items
         solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
@@ -62,7 +61,7 @@ function mod_CSOR_residual!(r, current_states, inputs, constants)
         ivr,
         ivw,
         (;linsys..., A_bb_LU),
-        (;blade_elements..., airfoils...),
+        blade_elements,
         wakeK,
         idmaps;
         verbose=false,

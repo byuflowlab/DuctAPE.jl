@@ -1,6 +1,7 @@
 # CCBlade Airfoil Types
 
-DuctAPE includes all the airfoil types and methods available in [CCBlade](https://flow.byu.edu/CCBlade.jl/stable/reference/#Airfoil-Evaluation).  We repeat them here for convenience, but refer the user to the CCBlade documentation for more context if advanced usage is desired.
+DuctAPE includes stripped-down versions of all the airfoil types as well as most of the methods available in [CCBlade](https://flow.byu.edu/CCBlade.jl/stable/reference/#Airfoil-Evaluation).
+We include the modified airfoil types here.  The various methods are typically not necessary for the user to access, but the CCBlade documentation has more information on those methods if desired.
 
 ```@autodocs
 Modules = [DuctAPE.C4Blade]
