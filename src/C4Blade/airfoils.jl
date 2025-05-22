@@ -169,9 +169,9 @@ a file
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
 struct AlphaAF{TA,TL,TD} <: AFType
-    alpha::Vector{TA}
-    cl::Vector{TL}
-    cd::Vector{TD}
+    alpha::TA
+    cl::TL
+    cd::TD
 end
 
 function AlphaAF(filename::String; radians=true)
@@ -225,10 +225,10 @@ filenames with one file per Reynolds number.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
 struct AlphaReAF{TA,TL,TD,TR} <: AFType
-    alpha::Vector{TA}
-    Re::Vector{TR}
-    cl::Matrix{TL}
-    cd::Matrix{TD}
+    alpha::TA
+    Re::TR
+    cl::TL
+    cd::TD
 end
 
 function AlphaReAF(filenames::Vector{String}; radians=true)
@@ -301,10 +301,10 @@ filenames with one file per Mach number.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
 struct AlphaMachAF{TA,TL,TD,TM} <: AFType
-    alpha::Vector{TA}
-    Mach::Vector{TM}
-    cl::Matrix{TL}
-    cd::Matrix{TD}
+    alpha::TA
+    Mach::TM
+    cl::TL
+    cd::TD
 end
 
 function AlphaMachAF(filenames::Vector{String}; radians=true)
@@ -376,11 +376,11 @@ or files with one per Re/Mach combination
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
 struct AlphaReMachAF{TA,TL,TD,TM,TR} <: AFType
-    alpha::Vector{TA}
-    Re::Vector{TR}
-    Mach::Vector{TM}
-    cl::Array{TL}
-    cd::Array{TD}
+    alpha::TA
+    Re::TR
+    Mach::TM
+    cl::TL
+    cd::TD
 end
 
 function AlphaReMachAF(filenames::Matrix{String}; radians=true)
