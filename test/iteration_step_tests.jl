@@ -73,7 +73,7 @@ println("\nITERATION STEP THROUGH TESTS")
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solver_options, problem_dimensions
+        options.solver_options, problem_dimensions, airfoils
     )
 
     # unpack caching
@@ -99,7 +99,7 @@ println("\nITERATION STEP THROUGH TESTS")
     end
 
     # generate inputs
-    A_bb_LU, lu_decomp_flag, airfoils, idmaps, problem_dimensions = dt.precompute_parameters!(
+    A_bb_LU, lu_decomp_flag, idmaps, problem_dimensions = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,

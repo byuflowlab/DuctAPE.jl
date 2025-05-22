@@ -53,7 +53,7 @@ function process(
         vtheta_rotor,
         Cm_wake,
         solve_parameter_tuple.operating_point,
-        (; solve_parameter_tuple.blade_elements..., airfoils...),
+        solve_parameter_tuple.blade_elements,
         (; solve_parameter_tuple.linsys..., A_bb_LU),
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,

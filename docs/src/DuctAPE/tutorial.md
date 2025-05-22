@@ -246,7 +246,8 @@ afparams = DuctAPE.c4b.DFDCairfoil(;
 )
 
 # all airfoils are the same
-airfoils = fill(afparams, length(r)) # specify the airfoil array
+# NOTE: airfoils are inputs as a vector of vectors rather than a matrix
+airfoils = [fill(afparams, length(r))] # specify the airfoil array
 
 # assemble rotor parameters
 rotor = DuctAPE.Rotor(

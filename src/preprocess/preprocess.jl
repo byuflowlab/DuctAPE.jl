@@ -861,7 +861,6 @@ function initialize_linear_system!(
     )
 
     # - LU Decomposition - #
-    # TODO: you aren't going to be able to put the factorization inside the cache. it needs to always be a float. so you need to set it up like the airfoils, where it's allocated and passed in along side linsys.
     A_bb_LU = factorize_LHS(A_bb)
     lu_decomp_flag = eltype(A_bb)(issuccess(A_bb_LU))
 

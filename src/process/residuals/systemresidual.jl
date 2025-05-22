@@ -28,7 +28,6 @@ function system_residual!(resid, state_variables, sensitivity_parameters, consta
         # solve options for dispatch
         solver_options,
         # comp,
-        airfoils,                   # airfoils
         A_bb_LU,                    # linear system left hand side LU decomposition
         idmaps,                     # book keeping items
         solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache

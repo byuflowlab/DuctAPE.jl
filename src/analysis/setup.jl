@@ -92,7 +92,9 @@ function setup_analysis(
     # Allocate Cache
     if isnothing(solve_parameter_caching)
         solve_parameter_caching = allocate_solve_parameter_cache(
-            options.solver_options, ducted_rotor.paneling_constants
+            options.solver_options,
+            ducted_rotor.paneling_constants,
+            ducted_rotor.rotor.airfoils,
         )
     else
         # reset cache

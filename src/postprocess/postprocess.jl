@@ -10,7 +10,6 @@
         reference_parameters,
         boundary_layer_options,
         A_bb_LU,
-        airfoils,
         idmaps,
         problem_dimensions,
         multipoint_index;
@@ -95,8 +94,8 @@ Post-process a converged nonlinear solve solution.
     - `split_ratio`
     - `separation_point_ratio_upper`
     - `separation_point_ratio_lower`
-    - `cdc_upper`cdc_upper`
-    - `cdc_lower`cdc_lower`
+    - `cdc_upper`
+    - `cdc_lower`
     - `vtdotpv`
     - `boundary_layer_functions_lower`
     - `boundary_layer_functions_upper`
@@ -170,7 +169,6 @@ function post_process(
     reference_parameters,
     boundary_layer_options,
     A_bb_LU,
-    airfoils,
     idmaps,
     problem_dimensions,
     multipoint_index;

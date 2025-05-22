@@ -16,6 +16,16 @@ using ImplicitAD
 # export simple_op, windturbine_op
 # export solve, thrusttorque, nondim
 
+import Base.BroadcastStyle
+"""
+    isscalar(x::T) where {T} = isscalar(T)
+    isscalar(::Type{T}) where {T} = BroadcastStyle(T) isa Broadcast.DefaultArrayStyle{0}
+
+Determines if the input is a scalar. Note that `Base.BroadcastStyle` is imported.
+"""
+isscalar(x::T) where {T} = isscalar(T)
+isscalar(::Type{T}) where {T} = BroadcastStyle(T) isa Broadcast.DefaultArrayStyle{0}
+
 include("airfoils.jl")  # all the code related to airfoil data
 include("cascades.jl")  # all the code related to cascade data
 include("dfdc_polars.jl")  # all the code related to dfdc (XROTOR) style data

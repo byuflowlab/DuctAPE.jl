@@ -156,13 +156,13 @@ function interpolate_blade_elements!(
             # outer airfoil
             io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
             populate_airfoil_cache!(
-                blade_element_cache.outer_airfoil[ir, irotor], rsp.airfoils[io, irotor]
+                blade_element_cache.outer_airfoil[ir, irotor], rsp.airfoils[irotor][io]
             )
 
             # inner airfoil
             ii = max(1, io - 1)
             populate_airfoil_cache!(
-                blade_element_cache.inner_airfoil[ir, irotor], rsp.airfoils[ii, irotor]
+                blade_element_cache.inner_airfoil[ir, irotor], rsp.airfoils[irotor][ii]
             )
 
             # fraction of inner airfoil's polars to use
