@@ -56,11 +56,11 @@ function interpolate_blade_elements(
         for ir in 1:nbe
             # outer airfoil
             io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
-            outer_airfoil[ir, irotor] = rsp.airfoils[io, irotor]
+            outer_airfoil[ir, irotor] = rsp.airfoils[irotor][io]
 
             # inner airfoil
             ii = max(1, io - 1)
-            inner_airfoil[ir, irotor] = rsp.airfoils[ii, irotor]
+            inner_airfoil[ir, irotor] = rsp.airfoils[irotor][ii]
 
             # fraction of inner airfoil's polars to use
             if rblade[io] == rblade[ii]

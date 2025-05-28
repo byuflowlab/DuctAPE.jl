@@ -412,9 +412,9 @@ function lookup_clcd(
     elseif typeof(inner_airfoil) <: c4b.AFType
         # - Airfoil Lookups - #
         # get inner values
-        clin, cdin = search_polars(inner_airfoil, alpha)
+        clin, cdin = c4b.afeval(inner_airfoil, alpha, reynolds, mach)
         # get outer values
-        clout, cdout = search_polars(outer_airfoil, alpha)
+        clout, cdout = c4b.afeval(outer_airfoil, alpha, reynolds, mach)
     elseif typeof(inner_airfoil) <: c4b.ADM
         clin = clfromGamr(inner_airfoil.prescribed_circulation, Wmag, chord)
         clout = clfromGamr(outer_airfoil.prescribed_circulation, Wmag, chord)
@@ -476,14 +476,6 @@ function calculate_inflow_angles(Cz_rotor, Ctheta_rotor, stagger)
 
     return beta1, alpha
 end
-
-"""
-    search_polars(airfoil, alpha, re=0.0, ma=0.0)
-
-Look up lift and drag data for an airfoil using CCBlade
-TODO: add in cascade database search at some point.
-"""
-search_polars(airfoil, alpha, re=0.0, ma=0.0) = c4b.afeval(airfoil, alpha, re, ma)
 
 ######################################################################
 #                                                                    #
