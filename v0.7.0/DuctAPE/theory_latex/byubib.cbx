@@ -1,0 +1,55 @@
+
+%% -----------------------------------------------------------------
+%% Purpose: A biblatex implementation for AIAA Publications
+%% Source:  https://github.com/nasa/nasa-latex-docs
+%% Type:    Biblatex Citation Style
+%% -----------------------------------------------------------------
+
+\ProvidesFile{byubib.cbx}[2016/04/13 v1.0 biblatex citation style]
+
+\RequireCitationStyle{numeric-comp}
+
+\ExecuteBibliographyOptions
+  {
+    autocite  = superscript,
+    autopunct = false,
+    sorting   = none
+  }
+
+\DeclareFieldFormat[article,inbook,report,techreport,
+    inproceedings,patent,thesis,unpublished,suppbook,
+    suppcollection,suppperiodical]{citetitle}{\usebibmacro{string+doiurlisbn}{\mkbibquote{#1}}}
+\DeclareFieldFormat[book,incollection]{citetitle}{\usebibmacro{string+doiurlisbn}{\mkbibemph{#1}}}
+
+% NOTE: added coloring here to match the margin and bibliography number coloring.
+\DeclareCiteCommand{\cbx@mcite}[\color{primary}\mkbibsuperscript]
+  {\usebibmacro{cite:init}%
+  \let\multicitedelim=\supercitedelim
+  \iffieldundef{prenote}
+     {}
+     {\BibliographyWarning{Ignoring prenote argument}}%
+   \iffieldundef{postnote}
+     {}
+     {\BibliographyWarning{Ignoring postnote argument}}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite:comp}}
+  {}
+  {\usebibmacro{cite:dump}}
+
+  \DeclareCiteCommand{\mcite}[\cbx@mcite@init\cbx@mcite]
+  {\gdef\cbx@savedkeys{}%
+   \citetrackerfalse%
+   \pagetrackerfalse%
+   \DeferNextCitekeyHook%
+   \usebibmacro{cite:init}}
+  {\xappto\cbx@savedkeys{\thefield{entrykey},}%
+  \usebibmacro{sidecite}}
+  {}
+  {\protected@xappto\cbx@savedcites{%
+     [\thefield{prenote}][\thefield{postnote}]{\cbx@savedkeys}}}
+
+\DeclareDelimcontextAlias{cbx@mcite}{mcite}
+
+\newrobustcmd{\cbx@mcite@init}[2]{%
+  \def\cbx@savedcites{#1}#2\cbx@savedcites\empty}
+%% End of file `aiaas.cbx'.

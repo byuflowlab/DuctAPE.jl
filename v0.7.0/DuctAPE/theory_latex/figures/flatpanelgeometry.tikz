@@ -1,0 +1,45 @@
+\begin{tikzpicture}[scale=0.75]
+
+    % Locations of p1 and p2
+        \node[outer sep=0, inner sep=0] (p1) at(0,0){};
+        \node[outer sep=0, inner sep=0] (p2) at(10:4){};
+
+    % Draw main line
+        \draw[primary, thick] (p1)node[anchor=north, primary]{$\vect{p}_j$} -- (p2)node[anchor=north, primary]{$\vect{p}_{j+1}$};
+
+        \draw[-Stealth, shorten >=2.5pt] (10:2)-- (p2) node[anchor=south, pos=0.5] {$\hat{\vect{t}}_j$};
+
+
+    % Draw circles
+        \filldraw[outer sep=0, inner sep=0, primary] (p1) circle (3pt);
+        \filldraw[outer sep=0, inner sep=0, primary] (p2) circle (3pt);
+
+    % Draw normal
+        \draw[-Stealth] (10:2) -- ++(100:2)node[anchor=west]{$\hat{\vect{n}}_j$};
+
+        % set location of pbar marker
+        \node[fill=secondary, minimum size=6pt, inner sep=0, outer sep=0] (p) at (10:2){};
+
+    % Draw arc
+        \draw[thick, -{Stealth[bend]}, tertiary] (p1) [partial ellipse = 120:360:0.85 and 0.85];
+        \node[anchor=north, shift={(0.5,-0.7)}, tertiary] at (p1) {$\gamma_j$};
+
+        \draw[thick, -{Stealth[bend]}, tertiary] (p2) [partial ellipse = 220:460:1 and 1];
+        \node[anchor=north, shift={(0.5,-0.7)}, tertiary] at (p2) {$\gamma_{j+1}$};
+
+    % label pbar
+        \draw (p)node[anchor=north, secondary, outer sep=3]{$\overline{\vect{p}_j}$};
+
+
+    \coordinate (O) at (-0.5,1.75);
+    \coordinate (er) at ($(O) +(0,1)$);
+    \coordinate (ez) at ($(O) +(1,0)$);
+    \draw[-Stealth,] (O) -- (er);
+    \draw[-Stealth,] (O) -- (ez);
+    \draw[] (O) circle (3pt);
+    \filldraw[] (O) circle (1pt);
+    \node[anchor=north east,outer sep=0] at (O) {$\hat{\vect{e}}_\theta$};
+    \node[anchor=west,outer sep=0] at (er) {$\hat{\vect{e}}_r$};
+    \node[anchor=south,outer sep=0] at (ez) {$\hat{\vect{e}}_z$};
+
+\end{tikzpicture}

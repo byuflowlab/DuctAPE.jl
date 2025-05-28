@@ -1,0 +1,89 @@
+\begin{tikzpicture}
+    \coordinate (a11) at (0.0,0.0);
+    \coordinate (a21) at (1.0,0.0);
+    \coordinate (ro1) at (1.0,3.0);
+    \coordinate (rx1) at (2.0,3.0);
+    \coordinate (a31) at (2.0,0.0);
+
+    \coordinate (a12) at ($(a11)+(4,0)$);
+    \coordinate (a22) at ($(a21)+(4,0)$);
+    \coordinate (ro2) at ($(ro1)+(4,0)$);
+    \coordinate (rx2) at ($(rx1)+(4,0)$);
+    \coordinate (a32) at ($(a31)+(4,0)$);
+
+    \coordinate (a13) at ($(a12)+(4,0)$);
+    \coordinate (a23) at ($(a22)+(4,0)$);
+    \coordinate (ro3) at ($(ro2)+(4,0)$);
+    \coordinate (rx3) at ($(rx2)+(4,0)$);
+    \coordinate (a33) at ($(a32)+(4,0)$);
+
+% - Panel - %
+
+    % axis of symmetry
+    \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt ] (a21) -- (a31);
+    \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt ] (a21) -- (a11);
+
+    % radius
+    \draw[-Stealth] (a21) -- (ro1) node[anchor=west,pos=0.5]{$r_o$};
+
+    % velocity direction
+    \draw[-Stealth] (ro1) -- (rx1) node[anchor=north,pos=1.0]{$v_z$};
+
+    % surface section
+    % \draw[thick] ($(ro1)-(0.75,0.25)$) -- ($(ro1)+(0.75,0.25)$);
+    \draw[ thick, primary] (ro1)--+(30:0.75);
+    \draw[ thick, primary] (ro1)--+(210:0.75);
+
+    % dimension surface section
+    \draw[->|] ($(ro1)+(-0.0625,0.125)$) -- ++(30:0.75) node[pos=0,anchor=south ]{$\Delta s$};
+    \draw[->|] ($(ro1)+(-0.0625,0.125)$) -- ++(210:0.75);
+
+    % gamma
+    \draw[primary, thick, -{Stealth[bend]}] (ro1) [partial ellipse = 60:300:1 and 1]node[primary, anchor=south east, pos=0.5] {$\gamma$};
+
+% - Flat Circle - %
+
+    % big right arrow
+    \draw[  double distance=1.5pt,
+    arrows = {-implies}] (2.5,1.5) -- (3.5,1.5);
+
+    % axis of symmetry
+    \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt ] (a22) -- (a32);
+    \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt ] (a22) -- (a12);
+
+    % radius
+    \draw[-Stealth] (a22) -- (ro2) node[anchor=west,pos=0.5]{$r_o$};
+
+    % velocity direction
+    \draw[-Stealth] (ro2) -- (rx2) node[anchor=north,pos=1.0]{$v_z$};
+
+    % dimension surface section
+
+    % rounded rectangle with arrows
+    \draw[rounded corners=0.05cm, rotate=30, thick, primary] ($(ro2)-(0.75,0.05)$) rectangle ($(ro2)+(0.75,0.05)$);
+    \draw[arrows={-Stealth[width=3pt, reversed]},primary, thick] ($(ro2)+(0.0,0.0577)$)--+(30:0.5)node[pos=0,anchor=south east, shift={(0.25,0.0)}, primary]{$\frac{1}{2}\gamma \Delta s$};
+    \draw[arrows={-Stealth[width=3pt,reversed]},primary, thick] ($(ro2)-(0.0,0.0577)$)--+(210:0.5);
+
+% - Circle - %
+
+    % big right arrow
+    \draw[  double distance=1.5pt,
+    arrows = {-implies}] (6.5,1.5) -- (7.5,1.5);
+
+    % axis of symmetry
+    \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt ] (a23) -- (a33);
+    \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt ] (a23) -- (a13);
+
+    % radius
+    \draw[-Stealth] (a23) -- (ro3) node[anchor=west,pos=0.5]{$r_o$};
+
+    % velocity direction
+    \draw[-Stealth] (ro3) -- (rx3) node[anchor=north,pos=1.0]{$v_z$};
+
+    % circle
+    \draw[primary, -{Stealth[bend]}, thick] (ro3) [partial ellipse = 200:560:0.75 and 0.75]node[anchor=south east, shift={(-0.,0.)}]{$\frac{1}{2}\primary{\gamma} \Delta s$};
+
+    % dimension surface section
+    \draw[-Stealth] (ro3) -- ++(45:0.75) node[pos=0,anchor=south east, shift={(0.25,0.0)}]{$R$};
+
+\end{tikzpicture}
