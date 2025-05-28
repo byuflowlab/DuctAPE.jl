@@ -31,8 +31,10 @@ function interpolate_blade_elements(
     twists = similar(rsp.twists, nbe, nrotor) .= 0
     stagger = similar(rsp.twists, nbe, nrotor) .= 0
     solidity = similar(rsp.chords, nbe, nrotor) .= 0
-    outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
-    inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
+    # outer_airfoil = similar(rsp.airfoils[1], nbe, nrotor)
+    # inner_airfoil = similar(rsp.airfoils[1], nbe, nrotor)
+    outer_airfoil = Array{eltype(rsp.airfoils[1][1])}(undef, nbe, nrotor)
+    inner_airfoil = Array{eltype(rsp.airfoils[1][1])}(undef, nbe, nrotor)
     inner_fraction = similar(rsp.r, nbe, nrotor) .= 0
 
     for irotor in 1:nrotor

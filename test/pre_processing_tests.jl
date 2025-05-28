@@ -4,11 +4,11 @@ Tests for all the components of precomputed_inputs function
 println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
 #simple geometry to work with:
-# include("data/basic_two_rotor_for_test_NEW.jl")
+# include("data/basic_two_rotor_for_test.jl")
 
 @testset "Rotor/Wake Geometry Initialization" begin
     # get input data
-    include("data/basic_two_rotor_for_test_NEW.jl")
+    include("data/basic_two_rotor_for_test.jl")
 
     zwake, rotor_indices_in_wake, duct_le_coordinates = dt.discretize_wake(
         duct_coordinates,
