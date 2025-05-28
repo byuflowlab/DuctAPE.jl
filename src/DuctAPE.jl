@@ -20,6 +20,7 @@ using QuadGK
 # - Packages for Code Efficiency - #
 using StaticArrays # used in miscellaneous places for code efficiency
 using PreallocationTools # caches
+import NamedTupleTools as ntt # airfoil caching
 
 # - Packages for Solves - #
 using ImplicitAD # used for all solves

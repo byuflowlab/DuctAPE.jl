@@ -31,8 +31,10 @@ function interpolate_blade_elements(
     twists = similar(rsp.twists, nbe, nrotor) .= 0
     stagger = similar(rsp.twists, nbe, nrotor) .= 0
     solidity = similar(rsp.chords, nbe, nrotor) .= 0
-    outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
-    inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
+    # outer_airfoil = similar(rsp.airfoils[1], nbe, nrotor)
+    # inner_airfoil = similar(rsp.airfoils[1], nbe, nrotor)
+    outer_airfoil = Array{eltype(rsp.airfoils[1][1])}(undef, nbe, nrotor)
+    inner_airfoil = Array{eltype(rsp.airfoils[1][1])}(undef, nbe, nrotor)
     inner_fraction = similar(rsp.r, nbe, nrotor) .= 0
 
     for irotor in 1:nrotor
@@ -56,11 +58,11 @@ function interpolate_blade_elements(
         for ir in 1:nbe
             # outer airfoil
             io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
-            outer_airfoil[ir, irotor] = rsp.airfoils[io, irotor]
+            outer_airfoil[ir, irotor] = rsp.airfoils[irotor][io]
 
             # inner airfoil
             ii = max(1, io - 1)
-            inner_airfoil[ir, irotor] = rsp.airfoils[ii, irotor]
+            inner_airfoil[ir, irotor] = rsp.airfoils[irotor][ii]
 
             # fraction of inner airfoil's polars to use
             if rblade[io] == rblade[ii]
@@ -88,8 +90,21 @@ function interpolate_blade_elements(
         stagger,
         solidity,
         inner_fraction,
-    ),
-    (; outer_airfoil, inner_airfoil)
+        outer_airfoil,
+        inner_airfoil,
+    )
+end
+
+"""
+    populate_airfoil_cache(cache, airfoil)
+
+Copy the contents of airfoil into cache of the same type and size.
+"""
+function populate_airfoil_cache!(cache, airfoil)
+    for pn in propertynames(airfoil)
+        getproperty(cache, pn) .= getproperty(airfoil, pn)
+    end
+    return nothing
 end
 
 """
@@ -110,8 +125,6 @@ function interpolate_blade_elements!(
     Rhub = blade_element_cache.Rhub .= rsp.Rhub
     blade_element_cache.B .= rsp.B
     blade_element_cache.is_stator .= rsp.is_stator
-    outer_airfoil = similar(rsp.airfoils, nbe, nrotor)
-    inner_airfoil = similar(rsp.airfoils, nbe, nrotor)
 
     for irotor in 1:nrotor
         rpcs = @view(rotor_panel_centers[(nbe * (irotor - 1) + 1):(nbe * irotor)])
@@ -144,11 +157,15 @@ function interpolate_blade_elements!(
         for ir in 1:nbe
             # outer airfoil
             io = min(length(rblade), searchsortedfirst(rblade, rpcs[ir]))
-            outer_airfoil[ir, irotor] = rsp.airfoils[io, irotor]
+            populate_airfoil_cache!(
+                blade_element_cache.outer_airfoil[ir, irotor], rsp.airfoils[irotor][io]
+            )
 
             # inner airfoil
             ii = max(1, io - 1)
-            inner_airfoil[ir, irotor] = rsp.airfoils[ii, irotor]
+            populate_airfoil_cache!(
+                blade_element_cache.inner_airfoil[ir, irotor], rsp.airfoils[irotor][ii]
+            )
 
             # fraction of inner airfoil's polars to use
             if rblade[io] == rblade[ii]
@@ -167,7 +184,7 @@ function interpolate_blade_elements!(
 
     blade_element_cache.rotor_panel_centers .= reshape(rotor_panel_centers, (nbe, nrotor))
 
-    return (; outer_airfoil, inner_airfoil)
+    return blade_element_cache
 end
 
 """

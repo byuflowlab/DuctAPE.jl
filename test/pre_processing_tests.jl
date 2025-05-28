@@ -4,11 +4,11 @@ Tests for all the components of precomputed_inputs function
 println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
 #simple geometry to work with:
-# include("data/basic_two_rotor_for_test_NEW.jl")
+# include("data/basic_two_rotor_for_test.jl")
 
 @testset "Rotor/Wake Geometry Initialization" begin
     # get input data
-    include("data/basic_two_rotor_for_test_NEW.jl")
+    include("data/basic_two_rotor_for_test.jl")
 
     zwake, rotor_indices_in_wake, duct_le_coordinates = dt.discretize_wake(
         duct_coordinates,
@@ -166,7 +166,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     )
 
     # rotor blade element objects
-    blade_elements, airfoils = dt.interpolate_blade_elements(
+    blade_elements = dt.interpolate_blade_elements(
         rotor, Rtips, Rhubs, rotor_source_panels.controlpoint[2, :], problem_dimensions.nbe
     )
 
@@ -352,7 +352,7 @@ end
     r = rnondim
     chords = 0.1 * ones(size(rnondim))
     twists = 20.0 * pi / 180.0 * ones(size(rnondim))
-    airfoils = fill(afparams1, 4, 2)
+    airfoils = [fill(afparams1, 4), fill(afparams1,4)]
     Rhub = [0.25, 0.25]
     Rtip = Rtip
     tip_gap = [0.0, 0.0]
@@ -424,7 +424,7 @@ end
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solver_options, ducted_rotor.paneling_constants
+        options.solver_options, ducted_rotor.paneling_constants, airfoils
     )
 
     # unpack caching
@@ -457,7 +457,7 @@ end
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
 
     # - Preprocess - #
-    A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
+    A_bb_LU, lu_decomp_flag, idmaps, _ = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -488,7 +488,7 @@ end
         vtheta_rotor,
         Cm_wake,
         solve_parameter_tuple.operating_point,
-        (; solve_parameter_tuple.blade_elements..., airfoils...),
+        solve_parameter_tuple.blade_elements,
         (; solve_parameter_tuple.linsys..., A_bb_LU),
         ivr,
         ivw,
@@ -538,7 +538,7 @@ end
 
     # Allocate Cache
     solve_parameter_caching = dt.allocate_solve_parameter_cache(
-        options.solver_options, ducted_rotor.paneling_constants
+        options.solver_options, ducted_rotor.paneling_constants, airfoils
     )
 
     # unpack caching
@@ -571,7 +571,7 @@ end
     ##### ----- PERFORM PREPROCESSING COMPUTATIONS ----- #####
 
     # - Preprocess - #
-    A_bb_LU, lu_decomp_flag, airfoils, idmaps, _ = dt.precompute_parameters!(
+    A_bb_LU, lu_decomp_flag, idmaps, _ = dt.precompute_parameters!(
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
         solve_parameter_tuple.blade_elements,
@@ -601,7 +601,7 @@ end
         sigr,
         gamw,
         operating_point,
-        (; solve_parameter_tuple.blade_elements..., airfoils...),
+        solve_parameter_tuple.blade_elements,
         (; solve_parameter_tuple.linsys..., A_bb_LU),
         ivr,
         ivw,

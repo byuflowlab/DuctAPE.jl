@@ -53,7 +53,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -124,7 +123,6 @@ function solve(
                 # solve options for dispatch
                 solver_options,
                 # comp,
-                airfoils,                   # airfoils
                 A_bb_LU,                    # linear system left hand side LU decomposition
                 idmaps,                     # book keeping items
                 solve_parameter_cache_dims, # dimensions for shaping the view of the parameter cache
@@ -222,7 +220,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -266,7 +263,6 @@ function solve(
             sensitivity_parameters,
             (;
                 solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
                 A_bb_LU,                    # LU decomposition of linear system LHS
                 idmaps,                     # book keeping items
                 solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
@@ -319,7 +315,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -347,7 +342,6 @@ function solve(
             sensitivity_parameters,
             (;
                 solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
                 A_bb_LU,                    # LU decomposition of linear system LHS
                 idmaps,                     # book keeping items
                 solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
@@ -397,7 +391,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -426,7 +419,6 @@ function solve(
             sensitivity_parameters,
             (;
                 solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
                 A_bb_LU,                    # LU decomposition of linear system LHS
                 idmaps,                     # book keeping items
                 solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
@@ -498,7 +490,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         resid_cache_vec,
@@ -576,7 +567,6 @@ function solve(
             jvp_cache_vec, # TODO: add this to solve_parameter_cache
             constants=(;
                 solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
                 A_bb_LU,                    # LU decomposition of linear system LHS
                 idmaps,                     # book keeping items
                 solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
@@ -617,7 +607,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -662,7 +651,6 @@ function solve(
             sensitivity_parameters,
             constants=(;
                 solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
                 A_bb_LU,                    # LU decomposition of linear system LHS
                 idmaps,                     # book keeping items
                 solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters
@@ -705,7 +693,6 @@ function solve(
         # nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -743,7 +730,6 @@ function solve(
             sensitivity_parameters,
             (;
                 solver_options, # for dispatch
-                airfoils,                   # inner and outer airfoil objects along blades
                 A_bb_LU,                    # LU decomposition of linear system LHS
                 idmaps,                     # book keeping items
                 solve_parameter_cache_dims, # dimensions for shaping sensitivity parameters

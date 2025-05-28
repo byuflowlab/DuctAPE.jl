@@ -237,7 +237,7 @@ Note that the actual struct requires the inputs to be arrays, but there is a con
 - `chords::AbstractArray{Float}` : Dimensional chord lengths of the blade elements.
 - `twists::AbstractArray{Float}` : Blade element angles, in radians.
 - `tip_gap::AbstractVector{Float}` : Currently unused, do not set to anything other than zeros.
-- `airfoils::AbstractArray{AFType}` : Airfoil types describing the airfoil polars for each blade element. Currently only fully tested with `C4Blade.DFDCairfoil` types.
+- `airfoils::Vector{Vector{AFType}}` : Airfoil types describing the airfoil polars for each rotor and blade element [[rotor 1 airfoils], [rotor 2 airfoils], ...].
 - `is_stator::AbstractVector{Bool}` : Flag to indicate if the airfoil lift values should be flipped or not.
 """
 struct Rotor{

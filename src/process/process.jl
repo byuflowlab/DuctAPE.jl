@@ -3,7 +3,6 @@
         solver_options::SolverOptionsType,
         solve_parameter_cache_vector,
         solve_parameter_cache_dims,
-        airfoils,
         A_bb_LU,
         solve_container_caching,
         idmaps,
@@ -29,7 +28,6 @@ function process(
     solver_options::TS,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
-    airfoils,
     A_bb_LU,
     solve_container_caching,
     idmaps,
@@ -55,7 +53,7 @@ function process(
         vtheta_rotor,
         Cm_wake,
         solve_parameter_tuple.operating_point,
-        (; solve_parameter_tuple.blade_elements..., airfoils...),
+        solve_parameter_tuple.blade_elements,
         (; solve_parameter_tuple.linsys..., A_bb_LU),
         solve_parameter_tuple.ivr,
         solve_parameter_tuple.ivw,
@@ -72,7 +70,6 @@ function process(
         #nlsolve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         solve_parameter_cache_dims,
@@ -95,7 +92,6 @@ function process(
     solver_options::CSORSolverOptions,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
-    airfoils,
     A_bb_LU,
     solve_container_caching,
     idmaps,
@@ -120,7 +116,7 @@ function process(
         sigr,
         gamw,
         operating_point,
-        (; blade_elements..., airfoils...),
+        blade_elements,
         (; linsys..., A_bb_LU),
         ivr,
         ivw,
@@ -143,7 +139,6 @@ function process(
         #CSOR solve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         # Cache(s)
@@ -164,7 +159,6 @@ function process(
     solver_options::ModCSORSolverOptions,
     solve_parameter_cache_vector,
     solve_parameter_cache_dims,
-    airfoils,
     A_bb_LU,
     solve_container_caching,
     idmaps,
@@ -191,7 +185,7 @@ function process(
         sigr,
         gamw,
         operating_point,
-        (; blade_elements..., airfoils...),
+        blade_elements,
         (; linsys..., A_bb_LU),
         ivr,
         ivw,
@@ -214,7 +208,6 @@ function process(
         #solve options
         solver_options,
         # Constant Parameters
-        airfoils,
         A_bb_LU,
         idmaps,
         # Cache(s)
