@@ -39,7 +39,7 @@ afparams = DuctAPE.c4b.DFDCairfoil(;
 
 ##### ----- Rotor Parameters (ROTOR in DFDC case file) ----- #####
 
-rotorzloc = 0.12 # Xdisk in DFDC case file
+rotor_axial_position = 0.12 # Xdisk in DFDC case file
 B = 5 # Nblds in DFDC case file
 
 rct = [
@@ -72,7 +72,7 @@ airfoils = fill(afparams, length(r)) # specify the airfoil array
 # - Rotor Parameters: Vector of NTuples - #
 rotor = [(;
     nwake_sheets,
-    rotorzloc,
+    rotor_axial_position,
     r,
     chords,
     twists,

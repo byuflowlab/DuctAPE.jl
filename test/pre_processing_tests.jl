@@ -13,7 +13,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     zwake, rotor_indices_in_wake, duct_le_coordinates = dt.discretize_wake(
         duct_coordinates,
         center_body_coordinates,
-        rotor.rotorzloc, # rotor axial locations
+        rotor.rotor_axial_position, # rotor axial locations
         paneling_constants.wake_length,
         paneling_constants.npanels,
         paneling_constants.dte_minus_cbte;
@@ -71,13 +71,13 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
     rpb4 = copy(rp_duct_coordinates)
 
-    dt.place_duct!(rp_duct_coordinates, rotor.Rtip[1], rotor.rotorzloc[1], rotor.tip_gap[1])
+    dt.place_duct!(rp_duct_coordinates, rotor.Rtip[1], rotor.rotor_axial_position[1], rotor.tip_gap[1])
 
     @test rp_duct_coordinates[1, :] == rpb4[1, :]
     @test rp_duct_coordinates[2, :] == rpb4[2, :] .- 0.75
 
     Rtips, Rhubs = dt.get_blade_ends_from_body_geometry(
-        rp_duct_coordinates, rp_center_body_coordinates, rotor.tip_gap, rotor.rotorzloc
+        rp_duct_coordinates, rp_center_body_coordinates, rotor.tip_gap, rotor.rotor_axial_position
     )
 
     @test all(Rtips .== 1.0)
@@ -162,7 +162,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
     # rotor source panel objects
     rotor_source_panels = dt.generate_rotor_panels(
-        rotor.rotorzloc, grid, [1, 3], paneling_constants.nwake_sheets
+        rotor.rotor_axial_position, grid, [1, 3], paneling_constants.nwake_sheets
     )
 
     # rotor blade element objects
@@ -348,7 +348,7 @@ end
     rnondim1 = r1 ./ Rtip[1]
     rnondim = [rnondim1 rnondim1]
     afparams1 = dt.c4b.DFDCairfoil()
-    rotorzloc = [0.25, 0.75]
+    rotor_axial_position = [0.25, 0.75]
     r = rnondim
     chords = 0.1 * ones(size(rnondim))
     twists = 20.0 * pi / 180.0 * ones(size(rnondim))
@@ -360,7 +360,7 @@ end
     is_stator = [0.0, 0.0]
 
     rotor = dt.Rotor(
-        B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
+        B, rotor_axial_position, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
     )
 
     ncenter_body_inlet = 1

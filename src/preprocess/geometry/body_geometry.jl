@@ -143,22 +143,22 @@ function reinterpolate_bodies!(
 end
 
 """
-    place_duct!(rp_duct_coordinates, Rtip, rotorzloc, tip_gap)
+    place_duct!(rp_duct_coordinates, Rtip, rotor_axial_position, tip_gap)
 
 Transform the duct radial coordinates such that the leading rotor radius touches the duct wall.
 
-Note that this function is called AFTER the repanling function is called, such that the rotorzloc locations should line up directly with the duct and center_body coordinates.
+Note that this function is called AFTER the repanling function is called, such that the rotor_axial_position locations should line up directly with the duct and center_body coordinates.
 
 # Arguments
 - `rp_duct_coordinates::Matrix{Float}` : the re-paneled duct coordinates
 - `Rtip::Vector{Float}` : Tip radii for the rotor(s)
-- `rotorzloc::Vector{Float}` : axial position(s) of the rotor(s)
+- `rotor_axial_position::Vector{Float}` : axial position(s) of the rotor(s)
 - `tip_gap::Vector{Float}` : tip gap for the fore-most rotor (MUST BE ZERO for now)
 """
-function place_duct!(rp_duct_coordinates, Rtip, rotorzloc, tip_gap)
+function place_duct!(rp_duct_coordinates, Rtip, rotor_axial_position, tip_gap)
 
     # get current radial position of duct wall at leading rotor location
-    _, iduct = findmin(x -> abs(x - rotorzloc), rp_duct_coordinates[1, :])
+    _, iduct = findmin(x -> abs(x - rotor_axial_position), rp_duct_coordinates[1, :])
     rduct = rp_duct_coordinates[2, iduct]
 
     # - transform duct r-coordinates up by Rtip+tip gap of first rotor - #

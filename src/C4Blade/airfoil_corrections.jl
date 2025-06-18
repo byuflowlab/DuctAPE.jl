@@ -500,10 +500,10 @@ function transonic_lift_limiter_smooth!(
     clmin,
     dclda;
     mcrit=0.7,
-    # rotorzloc airfoil type parameters for post-stall behavior
+    # rotor_axial_position airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
     dclda_stall=0.1,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -614,10 +614,10 @@ function transonic_lift_limiter(
     clmin,
     dclda;
     mcrit=0.7,
-    # rotorzloc airfoil type parameters for post-stall behavior
+    # rotor_axial_position airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
     dclda_stall=0.1,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -679,7 +679,7 @@ function transonic_drag_addition!(
     clcdmin,
     mach;
     mcrit=0.7,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -744,7 +744,7 @@ function transonic_drag_addition(
     clcdmin,
     mach;
     mcrit=0.7,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -822,11 +822,11 @@ or
 # Keyword Arguments:
 - `mcrit::Float`=0.7 : Critical Mach number
 
-**rotorzloc airfoil type parameters for post-stall behavior**
+**rotor_axial_position airfoil type parameters for post-stall behavior**
 - `dcl_stall::Float`=0.1 : change in cl from incipient to total stall, used in transonic lift limiter correction
 - `dclda_stall::Float`=0.1 : Post-stall lift curve slope
 
-**Correction factors that were hard coded in rotorzloc and DFDC**
+**Correction factors that were hard coded in rotor_axial_position and DFDC**
 - `cdmfactor::Float`=10.0 :
 - `clmfactor::Float`=0.25 :
 - `mexp::Float`=3.0 :
@@ -853,10 +853,10 @@ function corrected_clcd(
     clmin,
     dclda;
     mcrit=0.7,
-    # rotorzloc airfoil type parameters for post-stall behavior
+    # rotor_axial_position airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
     dclda_stall=0.1,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -886,10 +886,10 @@ function corrected_clcd(
         clmin,
         dclda;
         mcrit=0.7,
-        # rotorzloc airfoil type parameters for post-stall behavior
+        # rotor_axial_position airfoil type parameters for post-stall behavior
         dcl_stall=0.1,
         dclda_stall=0.1,
-        # factors hard coded in rotorzloc and dfdc
+        # factors hard coded in rotor_axial_position and dfdc
         cdmfactor=10.0,
         clmfactor=0.25,
         mexp=3.0,
@@ -921,10 +921,10 @@ function corrected_clcd!(
     clmin,
     dclda;
     mcrit=0.7,
-    # rotorzloc airfoil type parameters for post-stall behavior
+    # rotor_axial_position airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
     dclda_stall=0.1,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -958,10 +958,10 @@ function corrected_clcd!(
     clmin,
     dclda;
     mcrit=0.7,
-    # rotorzloc airfoil type parameters for post-stall behavior
+    # rotor_axial_position airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
     dclda_stall=0.1,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -992,10 +992,10 @@ function corrected_clcd!(
         clmin,
         dclda;
         mcrit=mcrit,
-        # rotorzloc airfoil type parameters for post-stall behavior
+        # rotor_axial_position airfoil type parameters for post-stall behavior
         dcl_stall=dcl_stall,
         dclda_stall=dclda_stall,
-        # factors hard coded in rotorzloc and dfdc
+        # factors hard coded in rotor_axial_position and dfdc
         cdmfactor=cdmfactor,
         clmfactor=clmfactor,
         mexp=mexp,
@@ -1012,7 +1012,7 @@ function corrected_clcd!(
         clcdmin,
         Mach;
         mcrit=mcrit,
-        # factors hard coded in rotorzloc and dfdc
+        # factors hard coded in rotor_axial_position and dfdc
         cdmfactor=cdmfactor,
         clmfactor=clmfactor,
         mexp=mexp,
@@ -1045,10 +1045,10 @@ function corrected_clcd!(
     # Reynolds correction numbers
     re_ref=2e6,
     re_exp=0.2,
-    # rotorzloc airfoil type parameters for post-stall behavior
+    # rotor_axial_position airfoil type parameters for post-stall behavior
     dcl_stall=0.1,
     dclda_stall=0.1,
-    # factors hard coded in rotorzloc and dfdc
+    # factors hard coded in rotor_axial_position and dfdc
     cdmfactor=10.0,
     clmfactor=0.25,
     mexp=3.0,
@@ -1085,10 +1085,10 @@ function corrected_clcd!(
         clmin,
         dclda;
         mcrit=mcrit,
-        # rotorzloc airfoil type parameters for post-stall behavior
+        # rotor_axial_position airfoil type parameters for post-stall behavior
         dcl_stall=dcl_stall,
         dclda_stall=dclda_stall,
-        # factors hard coded in rotorzloc and dfdc
+        # factors hard coded in rotor_axial_position and dfdc
         cdmfactor=cdmfactor,
         clmfactor=clmfactor,
         mexp=mexp,
@@ -1105,7 +1105,7 @@ function corrected_clcd!(
         clcdmin,
         Mach;
         mcrit=mcrit,
-        # factors hard coded in rotorzloc and dfdc
+        # factors hard coded in rotor_axial_position and dfdc
         cdmfactor=cdmfactor,
         clmfactor=clmfactor,
         mexp=mexp,

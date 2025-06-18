@@ -40,7 +40,7 @@ println("\nITERATION STEP THROUGH TESTS")
             rp_centerbody_coordinates,
             paneling_constants.nwake_sheets,
             rotor_indices_in_wake,
-            rotor.rotorzloc,
+            rotor.rotor_axial_position,
             wake_grid;
             itcpshift=options.itcpshift,
             axistol=options.axistol,

@@ -36,7 +36,7 @@ afparams = dt.c4b.DFDCairfoil(;
 
 ##### ----- Rotor Parameters (ROTOR in DFDC case file) ----- #####
 
-rotorzloc = 0.12 # Xdisk in DFDC case file
+rotor_axial_position = 0.12 # Xdisk in DFDC case file
 B = 5 # Nblds in DFDC case file
 
 rct = [
@@ -68,7 +68,7 @@ airfoils = [fill(afparams, length(r))] # specify the airfoil array
 
 # - Rotor Parameters: Vector of NTuples - #
 rotor = dt.Rotor(
-    B, rotorzloc, r, Rhub, Rtip, chords, twists, 0.0, airfoils, false
+    B, rotor_axial_position, r, Rhub, Rtip, chords, twists, 0.0, airfoils, false
 )
 
 # - Paneling Constants - #

@@ -2,7 +2,7 @@
     discretize_wake(
         duct_coordinates,
         center_body_coordinates,
-        rotorzloc, # rotor axial locations
+        rotor_axial_position, # rotor axial locations
         wake_length,
         npanels,
         dte_minus_cbte;
@@ -13,7 +13,7 @@ Calculate wake sheet panel node z-coordinates.
 # Arguments
 - `duct_coordinates::Matrix{Float}` : Array of input duct coordinates
 - `center_body_coordinates::Matrix{Float}` : Array of input center_body_coordinates coordinates
-- `rotorzloc ::Vector{Float}` : rotor axial locations
+- `rotor_axial_position ::Vector{Float}` : rotor axial locations
 - `wake_length::Float` : non-dimensional length of wake to extend beyond aft-most body trailing edge.
 - `npanels::Vector{Int}` : A vector of the number of panels between each discrete point.  For example: [number of panels between the rotors; number of panels between the stator and the first trailing edge; number of panels between the trailing edges; number of panels between the last trailing edge and the end of the wake]
 - `dte_minus_cbte::Float` : indicator as to whether the duct trailing edge minus the center_body trailing edge is positive, zero, or negative.
@@ -21,7 +21,7 @@ Calculate wake sheet panel node z-coordinates.
 function discretize_wake(
     duct_coordinates,
     center_body_coordinates,
-    rotorzloc,
+    rotor_axial_position,
     wake_length,
     npanels,
     dte_minus_cbte;
@@ -63,10 +63,10 @@ function discretize_wake(
     wake_length *= duct_chord
 
     # ensure rotors are ordered properly
-    !issorted(rotorzloc) && sort!(rotorzloc)
+    !issorted(rotor_axial_position) && sort!(rotor_axial_position)
 
     # make sure that all rotors are inside the duct
-    for rzl in rotorzloc
+    for rzl in rotor_axial_position
         @assert rzl > duct_lez "Rotor is in front of duct leading edge."
         @assert rzl < duct_tez "Rotor is behind duct trailing edge."
         @assert rzl > cb_lez "Rotor is in front of center_body leading edge."
@@ -75,14 +75,14 @@ function discretize_wake(
 
     # combine all discrete locations into one ordered array
     if iszero(dte_minus_cbte)
-        zd = vcat(rotorzloc, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 1 "Length of vector `npanels` should be one more than the length of vector `rotorzloc` when the duct and center_body trailing edges align."
+        zd = vcat(rotor_axial_position, cb_tez, cb_tez + wake_length)
+        @assert length(npanels) == length(rotor_axial_position) + 1 "Length of vector `npanels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
     elseif dte_minus_cbte < 0 #duct_tez < cb_tez
-        zd = vcat(rotorzloc, duct_tez, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and center_body trailing edges do not align."
+        zd = vcat(rotor_axial_position, duct_tez, cb_tez, cb_tez + wake_length)
+        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
     else #dte_minus_cbte > 0 # duct_tez < cb_tez
-        zd = vcat(rotorzloc, cb_tez, duct_tez, duct_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and center_body trailing edges align."
+        zd = vcat(rotor_axial_position, cb_tez, duct_tez, duct_tez + wake_length)
+        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
     end
 
     # calculate indices for the start of each discrete section
@@ -96,7 +96,7 @@ function discretize_wake(
     end
 
     # get rotor location sectionid
-    ridx = findall(x -> x in rotorzloc, zwake)
+    ridx = findall(x -> x in rotor_axial_position, zwake)
 
     # return dimensionalized wake x-coordinates
     return zwake, ridx, [duct_lez duct_ler]

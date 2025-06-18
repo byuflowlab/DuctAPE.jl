@@ -63,7 +63,7 @@ function reinterpolate_geometry(
         eltype(rotor.r),
         eltype(rotor.Rhub),
         eltype(rotor.Rtip),
-        eltype(rotor.rotorzloc),
+        eltype(rotor.rotor_axial_position),
     )
 
     wake_grid = zeros(TF, 2, nwsn, nws)
@@ -135,10 +135,10 @@ function reinterpolate_geometry!(
     ##### ----- Extract Tuples ----- #####
     (;Rhub, Rtip) = blade_element_cache
 
-    (; B, tip_gap, r, chords, twists, rotorzloc, airfoils, is_stator) =
+    (; B, tip_gap, r, chords, twists, rotor_axial_position, airfoils, is_stator) =
         rotor
 
-    @assert length(unique(rotorzloc)) == length(rotorzloc) "Cannot place rotors on top of eachother: rotorzloc = $rotorzloc"
+    @assert length(unique(rotor_axial_position)) == length(rotor_axial_position) "Cannot place rotors on top of eachother: rotor_axial_position = $rotor_axial_position"
 
     Rhub .= rotor.Rhub
     Rtip .= rotor.Rtip
@@ -153,7 +153,7 @@ function reinterpolate_geometry!(
     zwake, rotor_indices_in_wake[:], duct_le_coordinates = discretize_wake(
         duct_coordinates,
         center_body_coordinates,
-        rotorzloc, # rotor axial locations
+        rotor_axial_position, # rotor axial locations
         wake_length,
         npanels,
         dte_minus_cbte;
@@ -187,7 +187,7 @@ function reinterpolate_geometry!(
 
     # - Move duct to correct position if user didn't provide coordintes with radial placement - #
     if autoshiftduct
-        place_duct!(rp_duct_coordinates, Rtip[1], rotorzloc[1], tip_gap[1])
+        place_duct!(rp_duct_coordinates, Rtip[1], rotor_axial_position[1], tip_gap[1])
     end
 
     # - Fix any user errors in rotor radius definitons - #
@@ -197,7 +197,7 @@ function reinterpolate_geometry!(
         rp_duct_coordinates,
         rp_center_body_coordinates,
         tip_gap,
-        rotorzloc;
+        rotor_axial_position;
         silence_warnings=silence_warnings,
     )
 
@@ -227,7 +227,7 @@ end
         rp_center_body_coordinates,
         nwake_sheets,
         rotor_indices_in_wake,
-        rotorzloc,
+        rotor_axial_position,
         wake_grid;
         itcpshift=0.05,
         axistol=1e-15,
@@ -242,7 +242,7 @@ Function that calls all of the various panel generation functions are returns a 
 - `rp_center_body_coordinates::Matrix{Float}` : matrix containing the re-paneled center_body coordinates
 - `nwake_sheets::Int` : number of wake sheets
 - `rotor_indices_in_wake::Vector{Int}` : vector containing the indices of where in the wake the rotors reside (used later to define the rotor panel edges).
-- `rotorzloc:Vector{Float}` : axial locations of rotor lifting lines (contained in Rotor)
+- `rotor_axial_position:Vector{Float}` : axial locations of rotor lifting lines (contained in Rotor)
 - `wake_grid::Array{Float}` : array containig the z and r elliptic grid points defning the wake geometry.
 
 # Keyword Arguments
@@ -262,7 +262,7 @@ function generate_all_panels(
     rp_center_body_coordinates,
     nwake_sheets,
     rotor_indices_in_wake,
-    rotorzloc,
+    rotor_axial_position,
     wake_grid;
     itcpshift=0.05,
     axistol=1e-15,
@@ -277,7 +277,7 @@ function generate_all_panels(
     # - Rotor Panels - #
     #TODO: test this function
     rotor_source_panels = generate_rotor_panels(
-        rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+        rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets
     )
 
     # - Wake Panels - #
@@ -297,7 +297,7 @@ end
         rp_duct_coordinates,
         rp_center_body_coordinates,
         rotor_indices_in_wake,
-        rotorzloc,
+        rotor_axial_position,
         nwake_sheets;
         itcpshift=0.05,
         axistol=1e-15,
@@ -313,7 +313,7 @@ function generate_all_panels!(
     rp_duct_coordinates,
     rp_center_body_coordinates,
     rotor_indices_in_wake,
-    rotorzloc,
+    rotor_axial_position,
     nwake_sheets;
     itcpshift=0.05,
     axistol=1e-15,
@@ -332,7 +332,7 @@ function generate_all_panels!(
     # - Rotor Panels - #
     #TODO: test this function
     generate_rotor_panels!(
-        rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+        rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets
     )
 
     # - Wake Panels - #
@@ -1229,7 +1229,7 @@ function precompute_parameters(
         place_duct!(
             rp_duct_coordinates,
             rotor.Rtip[1],
-            rotor.rotorzloc[1],
+            rotor.rotor_axial_position[1],
             rotor.tip_gap[1],
         )
     end
@@ -1239,7 +1239,7 @@ function precompute_parameters(
         rp_duct_coordinates,
         rp_center_body_coordinates,
         rotor.tip_gap,
-        rotor.rotorzloc,
+        rotor.rotor_axial_position,
     )
 
     return precompute_parameters(
@@ -1311,7 +1311,7 @@ function precompute_parameters(
         rp_center_body_coordinates,
         paneling_constants.nwake_sheets,
         rotor_indices_in_wake,
-        rotor.rotorzloc,
+        rotor.rotor_axial_position,
         wake_grid;
         itcpshift=itcpshift,
         axistol=axistol,
@@ -1470,7 +1470,7 @@ function precompute_parameters!(
         place_duct!(
             rp_duct_coordinates,
             rotor.Rtip[1],
-            rotor.rotorzloc[1],
+            rotor.rotor_axial_position[1],
             rotor.tip_gap[1],
         )
     end
@@ -1575,7 +1575,7 @@ function precompute_parameters!(
         eltype(rotor.B),
         eltype(rotor.Rhub),
         eltype(rotor.Rtip),
-        eltype(rotor.rotorzloc),
+        eltype(rotor.rotor_axial_position),
         eltype(rotor.chords),
         eltype(rotor.twists),
     )
@@ -1597,7 +1597,7 @@ function precompute_parameters!(
         rp_duct_coordinates,
         rp_center_body_coordinates,
         rotor_indices_in_wake,
-        rotor.rotorzloc,
+        rotor.rotor_axial_position,
         paneling_constants.nwake_sheets;
         itcpshift=itcpshift,
         axistol=axistol,

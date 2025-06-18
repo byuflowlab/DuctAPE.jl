@@ -209,7 +209,7 @@ function promote_ducted_rotor_type(d, o)
         eltype(o.asound),
         eltype(o.Omega),
         eltype(d.rotor.B),
-        eltype(d.rotor.rotorzloc),
+        eltype(d.rotor.rotor_axial_position),
         eltype(d.rotor.r),
         eltype(d.rotor.Rhub),
         eltype(d.rotor.Rtip),

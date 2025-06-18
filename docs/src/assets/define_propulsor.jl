@@ -18,7 +18,7 @@ airfoils = fill(afparams, length(r)) # specify the airfoil array
 
 rotor = dt.Rotor(
     [5],
-    [rotorzloc],
+    [rotor_axial_position],
     r,
     [Rhub+0.01],
     [Rtip-0.025],

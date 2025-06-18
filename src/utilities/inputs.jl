@@ -276,7 +276,7 @@ end
 
 """
     Rotor(
-        B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
+        B, rotor_axial_position, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
     )
 
 Composite type containing the rotor(s) geometric properties.
@@ -285,9 +285,9 @@ Note that the actual struct requires the inputs to be arrays, but there is a con
 
 # Arguments
 - `B::AbstractVector{Float}` : The number of blades for each rotor. May not be an integer, but usually is.
-- `rotorzloc::AbstractVector{Float}` : Dimensional, axial position of each rotor.
+- `rotor_axial_position::AbstractVector{Float}` : Dimensional, axial position of each rotor.
 - `r::AbstractArray{Float}` : Non-dimensional radial locations of each blade element.
-- `Rhub::AbstractVector{Float}` : Dimensional hub radius of rotor. (may be changed if it does not match the radial position of the center_body geometry at the selected `rotorzloc`.
+- `Rhub::AbstractVector{Float}` : Dimensional hub radius of rotor. (may be changed if it does not match the radial position of the center_body geometry at the selected `rotor_axial_position`.
 - `Rtip::AbstractVector{Float}` : Dimensional tip radius of rotor. Is used to determine the radial position of the duct if the `autoshiftduct` option is selected.
 - `chords::AbstractArray{Float}` : Dimensional chord lengths of the blade elements.
 - `twists::AbstractArray{Float}` : Blade element angles, in radians.
@@ -311,7 +311,7 @@ struct Rotor{
     Tf<:AbstractVector,
 }
     B::Tb
-    rotorzloc::TRz
+    rotor_axial_position::TRz
     r::Tr
     Rhub::TRh
     Rtip::TRt
@@ -323,7 +323,7 @@ struct Rotor{
 
     function Rotor(
         B::Tb,
-        rotorzloc::TRz,
+        rotor_axial_position::TRz,
         r::Tr,
         Rhub::TRh,
         Rtip::TRt,
@@ -356,7 +356,7 @@ struct Rotor{
             twists .*= pi / 180.0
         end
 
-        if length(unique(rotorzloc)) == length(rotorzloc)
+        if length(unique(rotor_axial_position)) == length(rotor_axial_position)
             throw_error = true
             error_messages *= "\n\tError $(error_count): Cannot place rotors on top of eachother."
             error_count += 1
@@ -383,7 +383,7 @@ struct Rotor{
         else
             return new(
                 isscalar(B) ? [B] : B,
-                isscalar(rotorzloc) ? [rotorzloc] : rotorzloc,
+                isscalar(rotor_axial_position) ? [rotor_axial_position] : rotor_axial_position,
                 isscalar(r) ? [r] : r,
                 isscalar(Rhub) ? [Rhub] : Rhub,
                 isscalar(Rtip) ? [Rtip] : Rtip,
@@ -464,14 +464,14 @@ struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:Paneli
                  - number of rotors and body alignment vs npanel
                  - dte_minus_cbte vs coordinates
                  if iszero(dte_minus_cbte)
-        zd = vcat(rotorzloc, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 1 "Length of vector `npanels` should be one more than the length of vector `rotorzloc` when the duct and center_body trailing edges align."
+        zd = vcat(rotor_axial_position, cb_tez, cb_tez + wake_length)
+        @assert length(npanels) == length(rotor_axial_position) + 1 "Length of vector `npanels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
         elseif dte_minus_cbte < 0 #duct_tez < cb_tez
-        zd = vcat(rotorzloc, duct_tez, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and center_body trailing edges do not align."
+        zd = vcat(rotor_axial_position, duct_tez, cb_tez, cb_tez + wake_length)
+        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
         else #dte_minus_cbte > 0 # duct_tez < cb_tez
-        zd = vcat(rotorzloc, cb_tez, duct_tez, duct_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and center_body trailing edges align."
+        zd = vcat(rotor_axial_position, cb_tez, duct_tez, duct_tez + wake_length)
+        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
         end
         =#
 
@@ -479,7 +479,7 @@ struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:Paneli
 
         # other checks:
         # - rotor location is inside duct
-        for rzl in rotorzloc
+        for rzl in rotor_axial_position
             @assert rzl > duct_lez "Rotor is in front of duct leading edge."
             @assert rzl < duct_tez "Rotor is behind duct trailing edge."
             @assert rzl > cb_lez "Rotor is in front of center_body leading edge."

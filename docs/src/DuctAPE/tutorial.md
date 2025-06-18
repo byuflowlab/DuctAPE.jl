@@ -178,7 +178,7 @@ In this example, we have a single rotor defined as follows.
 B = 5
 
 # rotor axial location
-rotorzloc = 0.12
+rotor_axial_position = 0.12
 
 # rotor tip radius
 Rtip = 0.15572081487373543
@@ -252,7 +252,7 @@ airfoils = [fill(afparams, length(r))] # specify the airfoil array
 # assemble rotor parameters
 rotor = DuctAPE.Rotor(
     [B],
-    [rotorzloc],
+    [rotor_axial_position],
     r,
     [Rhub],
     [Rtip],
@@ -268,7 +268,7 @@ nothing # hide
 ```@example tutorial
 plot!( # hide
     pg, # hide
-    rotorzloc * ones(length(r)), # hide
+    rotor_axial_position * ones(length(r)), # hide
     r .* Rtip; # hide
     seriestype=:scatter, # hide
     markersize=3, # hide

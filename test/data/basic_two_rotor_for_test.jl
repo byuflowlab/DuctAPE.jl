@@ -3,7 +3,7 @@ Rtip = [1.0, 1.0]
 rnondim1 = r1 ./ Rtip[1]
 rnondim = [rnondim1 rnondim1]
 afparams1 = dt.c4b.DFDCairfoil()
-rotorzloc = [0.25, 0.75]
+rotor_axial_position = [0.25, 0.75]
 r = rnondim
 chords = 0.1 * ones(size(rnondim))
 twists = 20.0 * pi / 180.0 * ones(size(rnondim))
@@ -14,7 +14,7 @@ tip_gap = [0.0, 0.0]
 B = [2, 4]
 is_stator = [0.0, 0.0]
 
-rotor = dt.Rotor(B, rotorzloc, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator)
+rotor = dt.Rotor(B, rotor_axial_position, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator)
 
 ncenterbody_inlet = 1
 nduct_inlet = 1

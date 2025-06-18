@@ -189,7 +189,7 @@ end
 
 """
     get_blade_ends_from_body_geometry(
-        rp_duct_coordinates, rp_center_body_coordinates, tip_gaps, rotorzloc
+        rp_duct_coordinates, rp_center_body_coordinates, tip_gaps, rotor_axial_position
     )
 
 Obtain rotor hub and tip radii based on duct and center_body geometry.
@@ -199,27 +199,27 @@ Obtain rotor hub and tip radii based on duct and center_body geometry.
 - `rp_duct_coordinates::Matrix{Float}` : re-paneled duct coordinates
 - `rp_center_body_coordinates::Matrix{Float}` : re-paneled center_body coordinates
 - `tip_gaps::Vector{Float}` : gaps between blade tips and duct surface (MUST BE ZEROS for now)
-- `rotorzloc::Vector{Float}` : rotor lifting line axial positions.
+- `rotor_axial_position::Vector{Float}` : rotor lifting line axial positions.
 
 # Returns
 - `Rtips::Vector{Float}` : rotor tip radii
 - `Rhubs::Vector{Float}` : rotor hub radii
 """
 function get_blade_ends_from_body_geometry(
-    rp_duct_coordinates, rp_center_body_coordinates, tip_gaps, rotorzloc
+    rp_duct_coordinates, rp_center_body_coordinates, tip_gaps, rotor_axial_position
 )
     TF = promote_type(
         eltype(rp_duct_coordinates),
         eltype(rp_center_body_coordinates),
         eltype(tip_gaps),
-        eltype(rotorzloc),
+        eltype(rotor_axial_position),
     )
 
-    Rtip = zeros(TF, length(rotorzloc))
-    Rhub = zeros(TF, length(rotorzloc))
+    Rtip = zeros(TF, length(rotor_axial_position))
+    Rhub = zeros(TF, length(rotor_axial_position))
 
     return get_blade_ends_from_body_geometry!(
-        Rtip, Rhub, rp_duct_coordinates, rp_center_body_coordinates, tip_gaps, rotorzloc
+        Rtip, Rhub, rp_duct_coordinates, rp_center_body_coordinates, tip_gaps, rotor_axial_position
     )
 end
 
@@ -230,7 +230,7 @@ end
         rp_duct_coordinates,
         rp_center_body_coordinates,
         tip_gaps,
-        rotorzloc;
+        rotor_axial_position;
         silence_warnings=true,
     )
 
@@ -242,20 +242,20 @@ function get_blade_ends_from_body_geometry!(
     rp_duct_coordinates,
     rp_center_body_coordinates,
     tip_gaps,
-    rotorzloc;
+    rotor_axial_position;
     silence_warnings=true,
 )
 
     # - Get hub and tip wall indices - #
-    ihub = zeros(Int, length(rotorzloc))
-    iduct = zeros(Int, length(rotorzloc))
-    for i in eachindex(rotorzloc)
+    ihub = zeros(Int, length(rotor_axial_position))
+    iduct = zeros(Int, length(rotor_axial_position))
+    for i in eachindex(rotor_axial_position)
         #indices
         _, ihub[i] = findmin(
-            x -> abs(x - rotorzloc[i]), view(rp_center_body_coordinates, 1, :)
+            x -> abs(x - rotor_axial_position[i]), view(rp_center_body_coordinates, 1, :)
         )
         _, iduct[i] = findmin(
-            x -> abs(x - rotorzloc[i]),
+            x -> abs(x - rotor_axial_position[i]),
             view(rp_duct_coordinates, 1, 1:ceil(Int, size(rp_duct_coordinates, 2) / 2)),
         )
     end
@@ -314,12 +314,12 @@ function get_stagger(twists)
 end
 
 """
-    generate_rotor_panels(rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets)
+    generate_rotor_panels(rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets)
 
 Generate rotor panel objects.
 
 # Arguments
-- `rotorzloc::Vector{Float}` : rotor lifting line axial position
+- `rotor_axial_position::Vector{Float}` : rotor lifting line axial position
 - `wake_grid::Array{Float,3}` : wake elliptic grid axial and radial locations
 - `rotor_indices_in_wake::Vector{Int}` : indices of where along wake the rotors are placed
 - `nwake_sheets::Int` : number of wake sheets
@@ -327,14 +327,14 @@ Generate rotor panel objects.
 # Returns
 - `rotor_source_panels::NamedTuple` : A named tuple containing the rotor source panel variables.
 """
-function generate_rotor_panels(rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets)
-    TF = promote_type(eltype(rotorzloc), eltype(wake_grid))
+function generate_rotor_panels(rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets)
+    TF = promote_type(eltype(rotor_axial_position), eltype(wake_grid))
 
-    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotorzloc)]
+    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotor_axial_position)]
 
-    for irotor in eachindex(rotorzloc)
+    for irotor in eachindex(rotor_axial_position)
         @views xr[irotor] = [
-            fill(rotorzloc[irotor], nwake_sheets)'
+            fill(rotor_axial_position[irotor], nwake_sheets)'
             wake_grid[2, rotor_indices_in_wake[irotor], 1:nwake_sheets]'
         ]
     end
@@ -344,21 +344,21 @@ end
 
 """
     generate_rotor_panels!(
-        rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+        rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets
     )
 
 In-place version of `generate_rotor_panels`.
 """
 function generate_rotor_panels!(
-    rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+    rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets
 )
-    TF = promote_type(eltype(rotorzloc), eltype(wake_grid))
+    TF = promote_type(eltype(rotor_axial_position), eltype(wake_grid))
 
-    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotorzloc)]
+    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotor_axial_position)]
 
-    for irotor in eachindex(rotorzloc)
+    for irotor in eachindex(rotor_axial_position)
         @views xr[irotor] = [
-            fill(rotorzloc[irotor], nwake_sheets)'
+            fill(rotor_axial_position[irotor], nwake_sheets)'
             wake_grid[2, Int(rotor_indices_in_wake[irotor]), 1:nwake_sheets]'
         ]
     end
