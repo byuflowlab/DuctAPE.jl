@@ -575,68 +575,68 @@ function relax_gamw!(
     end
 end
 
-"""
-    apply_relaxation_schedule(
-        resid::AbstractVector, solver_options::TS
-    ) where {TS<:SolverOptionsType}
-
-Apply custom relaxation schedule to all relaxation factor inputs based on residual values.
-
-# Arguments
-- `resid::AbstractVector{Float}` : current residual values
-- `solver_options::SolverOptionsType` : SolverOptions containing relaxation schedule
-
-# Returns
-- `nrf::Float` : nominal relaxation factor
-- `bt1::Float` : backtrack factor 1
-- `bt2::Float` : backtrack factor 2
-- `pf1::Float` : press forward factor 1
-- `pf2::Float` : press forward factor 2
-"""
-function apply_relaxation_schedule(
-    resid::AbstractArray, solver_options::TS
-) where {TS<:SolverOptionsType}
-    # Apply relaxation schedule to Circulation relaxation factors
-    nrf = apply_relaxation_schedule(
-        resid[1], solver_options.nrf, solver_options.relaxation_schedule
-    )
-
-    bt1 = solver_options.bt1 * nrf / solver_options.nrf
-    bt2 = solver_options.bt2 * nrf / solver_options.nrf
-    pf1 = solver_options.pf1 * nrf / solver_options.nrf
-    pf2 = solver_options.pf2 * nrf / solver_options.nrf
-
-    # Apply relaxation schedule to wake strength relaxation factors
-    nrfw = apply_relaxation_schedule(
-        resid[2], solver_options.nrf, solver_options.relaxation_schedule
-    )
-
-    btw = solver_options.btw * nrf / solver_options.nrf
-    pfw = solver_options.pfw * nrf / solver_options.nrf
-
-    return nrf, bt1, bt2, pf1, pf2, nrfw, btw, pfw
-end
-
-"""
-    apply_relaxation_schedule(resid, nominal, schedule)
-
-Apply custom relaxation schedule to a single relaxation factor input.
-
-# Arguments
-- `resid::Float` : residual value
-- `nominal::Float` : nominal relaxation value
-- `schedule::AbstractVector{AbstractVector{Float}}` : values between which to interpolate to scale the nominal relaxation value.
-
-# Returns
-- `rf::Float` : the updated relaxation factor
-"""
-function apply_relaxation_schedule(resid, nominal, schedule)
-    rf = linear_transform(
-        (0, 1), (nominal, 1), FLOWMath.linear(schedule[1], schedule[2], resid)
-    )
-
-    return rf
-end
+# """
+#     apply_relaxation_schedule(
+#         resid::AbstractVector, solver_options::TS
+#     ) where {TS<:SolverOptionsType}
+#
+# Apply custom relaxation schedule to all relaxation factor inputs based on residual values.
+#
+# # Arguments
+# - `resid::AbstractVector{Float}` : current residual values
+# - `solver_options::SolverOptionsType` : SolverOptions containing relaxation schedule
+#
+# # Returns
+# - `nrf::Float` : nominal relaxation factor
+# - `bt1::Float` : backtrack factor 1
+# - `bt2::Float` : backtrack factor 2
+# - `pf1::Float` : press forward factor 1
+# - `pf2::Float` : press forward factor 2
+# """
+# function apply_relaxation_schedule(
+#     resid::AbstractArray, solver_options::TS
+# ) where {TS<:SolverOptionsType}
+#     # Apply relaxation schedule to Circulation relaxation factors
+#     nrf = apply_relaxation_schedule(
+#         resid[1], solver_options.nrf, solver_options.relaxation_schedule
+#     )
+#
+#     bt1 = solver_options.bt1 * nrf / solver_options.nrf
+#     bt2 = solver_options.bt2 * nrf / solver_options.nrf
+#     pf1 = solver_options.pf1 * nrf / solver_options.nrf
+#     pf2 = solver_options.pf2 * nrf / solver_options.nrf
+#
+#     # Apply relaxation schedule to wake strength relaxation factors
+#     nrfw = apply_relaxation_schedule(
+#         resid[2], solver_options.nrf, solver_options.relaxation_schedule
+#     )
+#
+#     btw = solver_options.btw * nrf / solver_options.nrf
+#     pfw = solver_options.pfw * nrf / solver_options.nrf
+#
+#     return nrf, bt1, bt2, pf1, pf2, nrfw, btw, pfw
+# end
+#
+# """
+#     apply_relaxation_schedule(resid, nominal, schedule)
+#
+# Apply custom relaxation schedule to a single relaxation factor input.
+#
+# # Arguments
+# - `resid::Float` : residual value
+# - `nominal::Float` : nominal relaxation value
+# - `schedule::AbstractVector{AbstractVector{Float}}` : values between which to interpolate to scale the nominal relaxation value.
+#
+# # Returns
+# - `rf::Float` : the updated relaxation factor
+# """
+# function apply_relaxation_schedule(resid, nominal, schedule)
+#     rf = linear_transform(
+#         (0, 1), (nominal, 1), FLOWMath.linear(schedule[1], schedule[2], resid)
+#     )
+#
+#     return rf
+# end
 
 """
     update_CSOR_residual_values!(

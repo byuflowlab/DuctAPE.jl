@@ -128,8 +128,8 @@ include("utilities/thermodynamics.jl")
 include("utilities/ode_solvers.jl")
 
 # Airfoil utility functions
+# TODO: pretty much this whole file should be moved/re-moved, but there's a bunch of tedious changes that need to be  made in the tests and docs before it can be.
 include("utilities/airfoils/airfoil_utilities.jl")
-include("utilities/airfoils/naca_65series.jl")
 
 ##### ----- Analysis ----- #####
 include("analysis/setup.jl")
