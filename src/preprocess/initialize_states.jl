@@ -19,7 +19,7 @@ Initialize velocity state variables.
 - `linsys::NamedTuple` : A named tuple containing the panel method linear system information.
 - `ivr::NamedTuple` : A named tuple containing the unit induced velocities on the rotors
 - `ivw::NamedTuple` : A named tuple containing the unit induced velocities on the wake
-- `body_totnodes::Int` : the total number of panel nodes comprising the duct and centerbody geometry
+- `body_totnodes::Int` : the total number of panel nodes comprising the duct and center_body geometry
 - `wake_panel_sheet_be_map::Matrix{Int}` : An index map from the wake panels to the nearest ahead rotor blade element along the wake sheets
 
 # Returns
@@ -299,7 +299,7 @@ end
         wake_panel_sheet_be_map,
         wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
-        wake_node_ids_along_centerbody_wake_interface,
+        wake_node_ids_along_center_body_wake_interface,
     )
 
 Initialize strength state variables.
@@ -315,13 +315,13 @@ Initialize strength state variables.
 - `ivr::NamedTuple` : A named tuple containing the unit induced velocities on the rotors
 - `ivw::NamedTuple` : A named tuple containing the unit induced velocities on the wake
 - `wakeK::Vector{Float}` : geometric constants of wake nodes used in calculating wake strengths
-- `body_totnodes::Int` : the total number of panel nodes comprising the duct and centerbody geometry
+- `body_totnodes::Int` : the total number of panel nodes comprising the duct and center_body geometry
 - `wake_nodemap::Matrix{Int}` : an index map of wake panel to the associated node indices
 - `wake_endnodeidxs::Matrix{Int}` : the node indices of the start and end of the wake sheets.
 - `wake_panel_sheet_be_map::Matrix{Int}` : An index map from the wake panels to the nearest ahead rotor blade element along the wake sheets
 - `wake_node_sheet_be_map::Matrix{Int}` : An index map from the wake nodes to the nearest ahead rotor blade element along the wake sheets
 - `wake_node_ids_along_casing_wake_interface::type` : An index map indicating which wake nodes interface with the duct wall
-- `wake_node_ids_along_centerbody_wake_interface::type` : An index map indicating which wake nodes interface with the centerbody wall
+- `wake_node_ids_along_center_body_wake_interface::type` : An index map indicating which wake nodes interface with the center_body wall
 """
 function initialize_strengths!(
     solver_options,
@@ -340,7 +340,7 @@ function initialize_strengths!(
     wake_panel_sheet_be_map,
     wake_node_sheet_be_map,
     wake_node_ids_along_casing_wake_interface,
-    wake_node_ids_along_centerbody_wake_interface,
+    wake_node_ids_along_center_body_wake_interface,
 )
 
     # zero outputs:
@@ -537,7 +537,7 @@ function initialize_strengths!(
         wakeK,
         wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
-        wake_node_ids_along_centerbody_wake_interface;
+        wake_node_ids_along_center_body_wake_interface;
     )
 
     # Gamr struggles to converge if it's not initially positive...
@@ -565,7 +565,7 @@ end
         wake_panel_sheet_be_map,
         wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
-        wake_node_ids_along_centerbody_wake_interface;
+        wake_node_ids_along_center_body_wake_interface;
         niter=10,
         rlx=0.5,
     )
@@ -593,7 +593,7 @@ induced axial velocity
 - `wake_panel_sheet_be_map::Matrix{Int}` : An index map from the wake panels to the nearest ahead rotor blade element along the wake sheets
 - `wake_node_sheet_be_map::Matrix{Int}` : An index map from the wake nodes to the nearest ahead rotor blade element along the wake sheets
 - `wake_node_ids_along_casing_wake_interface::type` : An index map indicating which wake nodes interface with the duct wall
-- `wake_node_ids_along_centerbody_wake_interface::type` : An index map indicating which wake nodes interface with the centerbody wall
+- `wake_node_ids_along_center_body_wake_interface::type` : An index map indicating which wake nodes interface with the center_body wall
 
 # Keyword Arguments
 - `rlx::Float=0.5` : factor for under-relaxation to reduce transients in CL
@@ -614,7 +614,7 @@ function initialize_strengths!(
     wake_panel_sheet_be_map,
     wake_node_sheet_be_map,
     wake_node_ids_along_casing_wake_interface,
-    wake_node_ids_along_centerbody_wake_interface;
+    wake_node_ids_along_center_body_wake_interface;
     niter=10,
     rlx=0.5,
     tip_gap=zeros(10), # just make sure it's long enough to not break stuff for now.
@@ -752,7 +752,7 @@ function initialize_strengths!(
         wakeK,
         wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
-        wake_node_ids_along_centerbody_wake_interface;
+        wake_node_ids_along_center_body_wake_interface;
     )
 
     return Gamr, gamw, sigr

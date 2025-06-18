@@ -30,7 +30,7 @@ DuctAPE.DuctedRotor
 
 ### Body Geometry
 
-We begin by defining a matrix of coordinates for the duct and another for the centerbody geometries.
+We begin by defining a matrix of coordinates for the duct and another for the center_body geometries.
 For example:
 
 ```@example tutorial
@@ -101,7 +101,7 @@ nothing # hide
 ```
 
 ```@example tutorial
-centerbody_coordinates = [
+center_body_coordinates = [
     0.0       0.0
     0.000586  0.005293
     0.002179  0.010047
@@ -152,8 +152,8 @@ pg = plot( # hide
 ) # hide
 plot!( # hide
     pg, # hide
-    centerbody_coordinates[:, 1], # hide
-    centerbody_coordinates[:, 2]; # hide
+    center_body_coordinates[:, 1], # hide
+    center_body_coordinates[:, 2]; # hide
     color=2, # hide
     linewidth=2, # hide
     label="Center Body", # hide
@@ -299,7 +299,7 @@ DuctAPE.PanelingConstants
 nduct_inlet = 30
 
 # number of panels for the center body inlet
-ncenterbody_inlet = 30
+ncenter_body_inlet = 30
 
 # number of panels from:
 #  - rotor to duct trailing edge
@@ -307,7 +307,7 @@ ncenterbody_inlet = 30
 #  - center body trailing edge to end of wake
 npanels = [30, 1, 30]
 
-# the duct trailing edge is ahead of the centerbody trailing edge.
+# the duct trailing edge is ahead of the center_body trailing edge.
 dte_minus_cbte = -1.0
 
 # number of wake sheets (one more than blade elements to use)
@@ -318,7 +318,7 @@ wake_length = 0.8
 
 # assemble paneling constants
 paneling_constants = DuctAPE.PanelingConstants(
-    nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
+    nduct_inlet, ncenter_body_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
 )
 nothing # hide
 ```
@@ -330,7 +330,7 @@ We are now posed to construct the `DuctedRotor` input type.
 # assemble ducted_rotor object
 ducted_rotor = DuctAPE.DuctedRotor(
     duct_coordinates,
-    centerbody_coordinates,
+    center_body_coordinates,
     rotor,
     paneling_constants,
 )

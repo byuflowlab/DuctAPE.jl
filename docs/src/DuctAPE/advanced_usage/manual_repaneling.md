@@ -1,6 +1,6 @@
 ## Circumventing the Automated Geometry Re-paneling
 
-It is not advised to circument the automated geometry re-paneling, but if it must be done, the user needs to provide duct, centerbody, and wake nodes conforming to compatible geometry formatting.
+It is not advised to circument the automated geometry re-paneling, but if it must be done, the user needs to provide duct, center_body, and wake nodes conforming to compatible geometry formatting.
 The best use case for this is to use previously generated geometry or perhaps geometry exported from DFDC.
 
 The process is not simple, but is possible.

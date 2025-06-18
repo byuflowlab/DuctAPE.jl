@@ -50,11 +50,16 @@ struct plotStreamlines end
     yguide --> L"r"
 
     # Aspect Ratio
-    aspect_ratio --> 1
+    # aspect_ratio --> 1
     xlim --> (
         minimum(bvp.node[1, 1:Int(bvp.npanel[1])]) - maximum(bvp.node[1, :]) * 0.1,
         maximum(bvp.node[1, :]) * 1.1,
     )
+    ylim --> (
+        minimum(bvp.node[2, 1:Int(bvp.npanel[1])]) - maximum(bvp.node[2, :]) * 0.1,
+        maximum(bvp.node[2, :]) * 1.1,
+    )
+    extra_kwargs --> Dict(:subplot => Dict("axis equal image" => nothing))
 
     # - Plot Body Geometry - #
     @series begin
@@ -381,7 +386,7 @@ function determine_geometry_xlabels(bvp, rsp, wvp; tol=1e-2, tickdigits=2)
         push!(xl, @sprintf "%3.*f" tickdigits rsp.node[1, Int(rsp.endnodeidxs[r, r])])
     end
 
-    # Centerbody
+    # center_body
     for i in 1:2
         tmp = bvp.node[1, Int(bvp.endnodeidxs[i, 2])]
         xt, xl = add_ticks(xt, xl, tmp, tol, tickdigits)
@@ -412,7 +417,7 @@ function determine_geometry_ylabels(bvp, rsp; tol=1e-2, tickdigits=2)
         end
     end
 
-    # Centerbody
+    # center_body
     for i in 1:2
         tmp = bvp.node[2, Int(bvp.endnodeidxs[i, 2])]
         yt, yl = add_ticks(yt, yl, tmp, tol, tickdigits)

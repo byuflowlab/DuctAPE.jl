@@ -87,7 +87,7 @@ plot!(
 plot!(nz, nr; label="", color=julia_green, linewidth=lw)
 
 # red center body
-cbz, cbr, _, _, _ = centerbody_geom(
+cbz, cbr, _, _, _ = center_body_geom(
     Rhub,
     duct_chord;
     cb_nc_le=0.125,

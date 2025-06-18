@@ -62,9 +62,9 @@ Post-process a converged nonlinear solve solution.
   - `cp_nacelle_in`
   - `cp_nacelle_out`
   - `nacelle_zpts`
-  - `cp_centerbody_in`
-  - `cp_centerbody_out`
-  - `centerbody_zpts`
+  - `cp_center_body_in`
+  - `cp_center_body_out`
+  - `center_body_zpts`
   - `Vtot_in`
   - `Vtot_out`
   - `Vtot_prejump`
@@ -78,8 +78,8 @@ Post-process a converged nonlinear solve solution.
   - `vtan_casing_out`
   - `vtan_nacelle_in`
   - `vtan_nacelle_out`
-  - `vtan_centerbody_in`
-  - `vtan_centerbody_out`
+  - `vtan_center_body_in`
+  - `vtan_center_body_out`
   - `boundary_layers`
     - `stagnation_indices`
     - `upper_initial_states`
@@ -324,10 +324,10 @@ function post_process(
         body_vortex_panels.tangent,
         body_vortex_panels.controlpoint,
         Int.(body_vortex_panels.endpanelidxs),
-        idmaps.wake_node_ids_along_centerbody_wake_interface,
+        idmaps.wake_node_ids_along_center_body_wake_interface,
         idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.centerbody_panel_ids_along_centerbody_wake_interface,
-        idmaps.duct_panel_ids_along_centerbody_wake_interface,
+        idmaps.center_body_panel_ids_along_center_body_wake_interface,
+        idmaps.duct_panel_ids_along_center_body_wake_interface,
         zpts,
     )
 
@@ -348,8 +348,8 @@ function post_process(
         vtan_casing_out,     # tangent velocity along casing outside of duct body
         vtan_nacelle_in,     # tangent velocity along nacelle inside of duct body
         vtan_nacelle_out,    # tangent velocity along nacelle outside of duct body
-        vtan_centerbody_in,  # tangent velocity inside of centerbody
-        vtan_centerbody_out, # tangent velocity outside of centerbody
+        vtan_center_body_in,  # tangent velocity inside of center_body
+        vtan_center_body_out, # tangent velocity outside of center_body
     ) = vtan_tuple
 
     # - Surface Pressure on Bodies - #
@@ -365,7 +365,7 @@ function post_process(
         B,
         Omega,
         idmaps.id_of_first_casing_panel_aft_of_each_rotor,
-        idmaps.id_of_first_centerbody_panel_aft_of_each_rotor,
+        idmaps.id_of_first_center_body_panel_aft_of_each_rotor,
         body_vortex_panels.controlpoint,
         body_vortex_panels.endpanelidxs,
         zpts,
@@ -377,10 +377,10 @@ function post_process(
         cp_out,            # surface pressure along outside of bodies
         cp_casing_in,      # surface pressure along inside of casing
         cp_nacelle_in,     # surface pressure along inside of nacell
-        cp_centerbody_in,  # surface pressure along inside of centerbody
+        cp_center_body_in,  # surface pressure along inside of center_body
         cp_casing_out,     # surface pressure along outside of casing
         cp_nacelle_out,    # surface pressure along outside of nacelle
-        cp_centerbody_out, # surface pressure along outside of centerbody
+        cp_center_body_out, # surface pressure along outside of center_body
     ) = cp_tuple
 
     # - Calculate Thrust from Bodies - #
@@ -623,9 +623,9 @@ function post_process(
             cp_nacelle_in,
             cp_nacelle_out,
             zpts.nacelle_zpts,
-            cp_centerbody_in,
-            cp_centerbody_out,
-            zpts.centerbody_zpts,
+            cp_center_body_in,
+            cp_center_body_out,
+            zpts.center_body_zpts,
             #individual body velocity contributions
             Vtot_in,
             Vtot_out,
@@ -640,8 +640,8 @@ function post_process(
             vtan_casing_out,
             vtan_nacelle_in,
             vtan_nacelle_out,
-            vtan_centerbody_in,
-            vtan_centerbody_out,
+            vtan_center_body_in,
+            vtan_center_body_out,
             # boundary layers
             boundary_layers=boundary_layer_outputs,
         ),

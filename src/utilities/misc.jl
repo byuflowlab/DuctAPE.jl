@@ -126,6 +126,11 @@ function lfs(shape)
     end
 end
 
+"""
+    reset_array!(c; exception_keys=[])
+
+Recursively resets contents of array to zeros.
+"""
 function reset_array!(c; exception_keys=[])
     if !(eltype(c) <: Union{String,Number})
         reset_struct_tuple!(c; exception_keys=exception_keys)
@@ -136,6 +141,11 @@ function reset_array!(c; exception_keys=[])
     return nothing
 end
 
+"""
+    reset_struct_tuple!(c; exception_keys=[])
+
+Recursively resets contents of structs and tuples ot zero.
+"""
 function reset_struct_tuple!(c; exception_keys=[])
     for f in fieldnames(typeof(c))
         if !(f in exception_keys)
@@ -192,7 +202,7 @@ Convenience function for promoting types based on any potential elements of the 
 function promote_ducted_rotor_type(d, o)
     return promote_type(
         eltype(d.duct_coordinates),
-        eltype(d.centerbody_coordinates),
+        eltype(d.center_body_coordinates),
         eltype(o.Vinf),
         eltype(o.rhoinf),
         eltype(o.muinf),
@@ -248,6 +258,9 @@ function smooth_Akima(x, y; delta=2.0 * eps(), eps=eps())
 end
 
 """
+    smooth_abs(x; eps=eps())
+
+Convenience method to call FLOWMath's `abs_smooth` function on a vector.
 """
 function smooth_abs(x; eps=eps())
     return FLOWMath.abs_smooth.(x, Ref(eps))

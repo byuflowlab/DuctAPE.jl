@@ -45,7 +45,7 @@ aero_solver_options = DuctAPE.NLsolveOptions(;
 nduct_inlet = 30
 
 # number of panels for the center body inlet
-ncenterbody_inlet = 30
+ncenter_body_inlet = 30
 
 # number of panels from:
 #  - rotor to duct trailing edge
@@ -53,7 +53,7 @@ ncenterbody_inlet = 30
 #  - center body trailing edge to end of wake
 npanels = [30, 1, 30]
 
-# the duct trailing edge is ahead of the centerbody trailing edge.
+# the duct trailing edge is ahead of the center_body trailing edge.
 dte_minus_cbte = -1.0
 
 # number of wake sheets (one more than blade elements to use)
@@ -64,7 +64,7 @@ wake_length = 0.8
 
 # assemble paneling constants
 paneling_constants = DuctAPE.PanelingConstants(
-    nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
+    nduct_inlet, ncenter_body_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
 )
 
 # DFDC-type airfoil object

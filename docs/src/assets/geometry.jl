@@ -17,16 +17,16 @@ end
 - `duct_chord::Float` : dimensional duct (annular airfoil) chord
 
 # Keyword Arguments:
-- `cb_nc_le::Float=0.125` : centerbody nosecone leading edge, non-dimensionalized by duct_chord
-- `cb_nc_stop::Float=0.35` : centerbody nosecone stop point, non-dimensionalized by duct_chord
-- `cb_tc_start::Float=1.0` : centerbody tailcone start point, non-dimensionalized by duct_chord
-- `cb_ncp_z::Float=0.25` : centerbody nosecone spline 2nd control point axial location, non-dimensionalized by duct_chord
-- `cb_tcp_z::Float=0.5` : centerbody tailcone spline 2nd control point axial location, non-dimensionalized by duct_chord
-- `cb_te_r::Float=1.0` : centerbody trailing edge radial position, non-dimensionalized by Rhub
-- `cb_te_z::Float=1.1` : centerbody trailing edge axial position, non-dimensionalized by duct_chord
+- `cb_nc_le::Float=0.125` : center_body nosecone leading edge, non-dimensionalized by duct_chord
+- `cb_nc_stop::Float=0.35` : center_body nosecone stop point, non-dimensionalized by duct_chord
+- `cb_tc_start::Float=1.0` : center_body tailcone start point, non-dimensionalized by duct_chord
+- `cb_ncp_z::Float=0.25` : center_body nosecone spline 2nd control point axial location, non-dimensionalized by duct_chord
+- `cb_tcp_z::Float=0.5` : center_body tailcone spline 2nd control point axial location, non-dimensionalized by duct_chord
+- `cb_te_r::Float=1.0` : center_body trailing edge radial position, non-dimensionalized by Rhub
+- `cb_te_z::Float=1.1` : center_body trailing edge axial position, non-dimensionalized by duct_chord
 - `N::Float=60` : number of points to use in intermediate splines
 """
-function centerbody_geom(
+function center_body_geom(
     Rhub,
     duct_chord;
     cb_nc_le=0.0625,
@@ -315,8 +315,8 @@ end
 # Keyword Arguments:
 
 - `duct_le_z::Float=0.0` : duct leading edge axial position
-- `duct_inlet_stop::Float=0.35` : duct inlet stop point (analogous to centerbody nosecone stop point, also non-dimensionalized by duct_chord)
-- `duct_outlet_start::Float=0.65` : duct outlet start point (analogous to centerbody tailcone start point, also non-dimensionalized by duct_chord)
+- `duct_inlet_stop::Float=0.35` : duct inlet stop point (analogous to center_body nosecone stop point, also non-dimensionalized by duct_chord)
+- `duct_outlet_start::Float=0.65` : duct outlet start point (analogous to center_body tailcone start point, also non-dimensionalized by duct_chord)
 - `duct_outlet_cpz::Float=0.5` : duct casing outlet spline 2nd control point axial location, non-dimensionalized by outlet length
 - `nacelle_cpz::Float=0.5` : duct nacelle (outer side) spline 3rd control point axial location, non-dimensionalized by duct_chord
 - `nacelle_thickness_var::Float=3.0` : duct nacelle (outer side) 2nd and 3rd control point radial position, scaled relative to duct_le_r and non-dimensionalized by Rtip. In other words, setting this to 1.0 will give the same distance from the rotor tip to the duct leading edge as from the duct leading edge to the 2nd and 3rd nacelle control points.  Although this does control the nacelle thickness, it does not direclty set the max thickness point of the nacelle.
@@ -503,7 +503,7 @@ end
 
 """
 
-see centerbody_geom and duct_geom for input descriptions
+see center_body_geom and duct_geom for input descriptions
 """
 function bodies_from_params(
     Rhub,
@@ -532,8 +532,8 @@ function bodies_from_params(
     smooth=false,
 )
 
-    # - Get Centerbody Coordinates - #
-    cbz, cbr, _, _ = centerbody_geom(
+    # - Get center_body Coordinates - #
+    cbz, cbr, _, _ = center_body_geom(
         Rhub,
         duct_chord;
         cb_nc_le=cb_nc_le,

@@ -41,20 +41,20 @@ end
 
 """
 """
-function split_bodies(vec, controlpoint, endpanelidxs; duct=true, centerbody=true)
+function split_bodies(vec, controlpoint, endpanelidxs; duct=true, center_body=true)
     # get type of vector for consistent outputs
     TF = eltype(vec)
 
     #check if duct is used
     if !duct
-        #centerbody only
+        #center_body only
         return TF[], TF[], vec, TF[], TF[], controlpoint[:, 1]
     else
         # split duct into inner and outer
         ndpan = Int(endpanelidxs[2, 1])
         # get duct leading edge index. assumes duct comes first in vector
         _, leidx = findmin(controlpoint[1, 1:ndpan])
-        if !centerbody
+        if !center_body
             #duct only
             return vec[1:leidx, :],
             vec[(leidx + 1):ndpan, :],
@@ -63,7 +63,7 @@ function split_bodies(vec, controlpoint, endpanelidxs; duct=true, centerbody=tru
             controlpoint[1, (leidx + 1):ndpan],
             TF[]
         else
-            #duct and centerbody
+            #duct and center_body
             return vec[1:leidx, :],
             vec[(leidx + 1):ndpan, :],
             vec[(ndpan + 1):end, :],

@@ -311,7 +311,7 @@ function compute_CSOR_residual!(
         wakeK,
         idmaps.wake_node_sheet_be_map,
         idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.wake_node_ids_along_centerbody_wake_interface;
+        idmaps.wake_node_ids_along_center_body_wake_interface;
     )
 
     # - get difference between estimated gamw and old gamw - #

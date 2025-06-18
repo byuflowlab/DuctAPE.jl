@@ -1,7 +1,7 @@
 function withdraw_prepost_body_container_cache(vec, dims)
     zpts = (;
-        centerbody_zpts=reshape(
-            @view(vec[dims.zpts.centerbody_zpts.index]), dims.zpts.centerbody_zpts.shape
+        center_body_zpts=reshape(
+            @view(vec[dims.zpts.center_body_zpts.index]), dims.zpts.center_body_zpts.shape
         ),
         casing_zpts=reshape(
             @view(vec[dims.zpts.casing_zpts.index]), dims.zpts.casing_zpts.shape
@@ -34,9 +34,9 @@ function withdraw_prepost_body_container_cache(vec, dims)
         duct_jump=reshape(
             @view(vec[dims.vtan_tuple.duct_jump.index]), dims.vtan_tuple.duct_jump.shape
         ),
-        centerbody_jump=reshape(
-            @view(vec[dims.vtan_tuple.centerbody_jump.index]),
-            dims.vtan_tuple.centerbody_jump.shape,
+        center_body_jump=reshape(
+            @view(vec[dims.vtan_tuple.center_body_jump.index]),
+            dims.vtan_tuple.center_body_jump.shape,
         ),
         body_jump_term=reshape(
             @view(vec[dims.vtan_tuple.body_jump_term.index]),
@@ -68,13 +68,13 @@ function withdraw_prepost_body_container_cache(vec, dims)
             @view(vec[dims.vtan_tuple.vtan_nacelle_out.index]),
             dims.vtan_tuple.vtan_nacelle_out.shape,
         ),
-        vtan_centerbody_in=reshape(
-            @view(vec[dims.vtan_tuple.vtan_centerbody_in.index]),
-            dims.vtan_tuple.vtan_centerbody_in.shape,
+        vtan_center_body_in=reshape(
+            @view(vec[dims.vtan_tuple.vtan_center_body_in.index]),
+            dims.vtan_tuple.vtan_center_body_in.shape,
         ),
-        vtan_centerbody_out=reshape(
-            @view(vec[dims.vtan_tuple.vtan_centerbody_out.index]),
-            dims.vtan_tuple.vtan_centerbody_out.shape,
+        vtan_center_body_out=reshape(
+            @view(vec[dims.vtan_tuple.vtan_center_body_out.index]),
+            dims.vtan_tuple.vtan_center_body_out.shape,
         ),
     )
 
@@ -94,13 +94,13 @@ function withdraw_prepost_body_container_cache(vec, dims)
             @view(vec[dims.cp_tuple.cp_nacelle_out.index]),
             dims.cp_tuple.cp_nacelle_out.shape,
         ),
-        cp_centerbody_in=reshape(
-            @view(vec[dims.cp_tuple.cp_centerbody_in.index]),
-            dims.cp_tuple.cp_centerbody_in.shape,
+        cp_center_body_in=reshape(
+            @view(vec[dims.cp_tuple.cp_center_body_in.index]),
+            dims.cp_tuple.cp_center_body_in.shape,
         ),
-        cp_centerbody_out=reshape(
-            @view(vec[dims.cp_tuple.cp_centerbody_out.index]),
-            dims.cp_tuple.cp_centerbody_out.shape,
+        cp_center_body_out=reshape(
+            @view(vec[dims.cp_tuple.cp_center_body_out.index]),
+            dims.cp_tuple.cp_center_body_out.shape,
         ),
     )
 
@@ -134,9 +134,9 @@ function withdraw_prepost_container_cache(vec, dims)
     rp_duct_coordinates = reshape(
         @view(vec[dims.rp_duct_coordinates.index]), dims.rp_duct_coordinates.shape
     )
-    rp_centerbody_coordinates = reshape(
-        @view(vec[dims.rp_centerbody_coordinates.index]),
-        dims.rp_centerbody_coordinates.shape,
+    rp_center_body_coordinates = reshape(
+        @view(vec[dims.rp_center_body_coordinates.index]),
+        dims.rp_center_body_coordinates.shape,
     )
     rotor_indices_in_wake = reshape(
         @view(vec[dims.rotor_indices_in_wake.index]), dims.rotor_indices_in_wake.shape
@@ -553,7 +553,7 @@ function withdraw_prepost_container_cache(vec, dims)
     return (;
         # pre
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         wake_grid,
         rotor_indices_in_wake,
         AICn,
@@ -743,17 +743,17 @@ function withdraw_solve_parameter_cache(solver_options::TS, vec, dims) where {TS
     #         @view(vec[dims.idmaps.wake_node_ids_along_casing_wake_interface.index]),
     #         dims.idmaps.wake_node_ids_along_casing_wake_interface.shape,
     #     ),
-    #     wake_node_ids_along_centerbody_wake_interface=reshape(
-    #         @view(vec[dims.idmaps.wake_node_ids_along_centerbody_wake_interface.index]),
-    #         dims.idmaps.wake_node_ids_along_centerbody_wake_interface.shape,
+    #     wake_node_ids_along_center_body_wake_interface=reshape(
+    #         @view(vec[dims.idmaps.wake_node_ids_along_center_body_wake_interface.index]),
+    #         dims.idmaps.wake_node_ids_along_center_body_wake_interface.shape,
     #     ),
     #     id_of_first_casing_panel_aft_of_each_rotor=reshape(
     #         @view(vec[dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.index]),
     #         dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.shape,
     #     ),
-    #     id_of_first_centerbody_panel_aft_of_each_rotor=reshape(
-    #         @view(vec[dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.index]),
-    #         dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.shape,
+    #     id_of_first_center_body_panel_aft_of_each_rotor=reshape(
+    #         @view(vec[dims.idmaps.id_of_first_center_body_panel_aft_of_each_rotor.index]),
+    #         dims.idmaps.id_of_first_center_body_panel_aft_of_each_rotor.shape,
     #     ),
     #     rotorwakenodeid=reshape(
     #         @view(vec[dims.idmaps.rotorwakenodeid.index]), dims.idmaps.rotorwakenodeid.shape
@@ -885,17 +885,17 @@ function withdraw_solve_parameter_cache(
     #         @view(vec[dims.idmaps.wake_node_ids_along_casing_wake_interface.index]),
     #         dims.idmaps.wake_node_ids_along_casing_wake_interface.shape,
     #     ),
-    #     wake_node_ids_along_centerbody_wake_interface=reshape(
-    #         @view(vec[dims.idmaps.wake_node_ids_along_centerbody_wake_interface.index]),
-    #         dims.idmaps.wake_node_ids_along_centerbody_wake_interface.shape,
+    #     wake_node_ids_along_center_body_wake_interface=reshape(
+    #         @view(vec[dims.idmaps.wake_node_ids_along_center_body_wake_interface.index]),
+    #         dims.idmaps.wake_node_ids_along_center_body_wake_interface.shape,
     #     ),
     #     id_of_first_casing_panel_aft_of_each_rotor=reshape(
     #         @view(vec[dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.index]),
     #         dims.idmaps.id_of_first_casing_panel_aft_of_each_rotor.shape,
     #     ),
-    #     id_of_first_centerbody_panel_aft_of_each_rotor=reshape(
-    #         @view(vec[dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.index]),
-    #         dims.idmaps.id_of_first_centerbody_panel_aft_of_each_rotor.shape,
+    #     id_of_first_center_body_panel_aft_of_each_rotor=reshape(
+    #         @view(vec[dims.idmaps.id_of_first_center_body_panel_aft_of_each_rotor.index]),
+    #         dims.idmaps.id_of_first_center_body_panel_aft_of_each_rotor.shape,
     #     ),
     #     rotorwakenodeid=reshape(
     #         @view(vec[dims.idmaps.rotorwakenodeid.index]), dims.idmaps.rotorwakenodeid.shape

@@ -40,7 +40,7 @@ function setup_analysis(
     # - Get type to dispatch caches - #
     TF = promote_type(
         eltype(ducted_rotor.duct_coordinates),
-        eltype(ducted_rotor.centerbody_coordinates),
+        eltype(ducted_rotor.center_body_coordinates),
         eltype(ducted_rotor.rotor.B),
         eltype(ducted_rotor.rotor.Rhub),
         eltype(ducted_rotor.rotor.Rtip),

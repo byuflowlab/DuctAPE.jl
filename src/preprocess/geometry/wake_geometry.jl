@@ -1,7 +1,7 @@
 """
     discretize_wake(
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotorzloc, # rotor axial locations
         wake_length,
         npanels,
@@ -12,15 +12,15 @@ Calculate wake sheet panel node z-coordinates.
 
 # Arguments
 - `duct_coordinates::Matrix{Float}` : Array of input duct coordinates
-- `centerbody_coordinates::Matrix{Float}` : Array of input centerbody_coordinates coordinates
+- `center_body_coordinates::Matrix{Float}` : Array of input center_body_coordinates coordinates
 - `rotorzloc ::Vector{Float}` : rotor axial locations
 - `wake_length::Float` : non-dimensional length of wake to extend beyond aft-most body trailing edge.
 - `npanels::Vector{Int}` : A vector of the number of panels between each discrete point.  For example: [number of panels between the rotors; number of panels between the stator and the first trailing edge; number of panels between the trailing edges; number of panels between the last trailing edge and the end of the wake]
-- `dte_minus_cbte::Float` : indicator as to whether the duct trailing edge minus the centerbody trailing edge is positive, zero, or negative.
+- `dte_minus_cbte::Float` : indicator as to whether the duct trailing edge minus the center_body trailing edge is positive, zero, or negative.
 """
 function discretize_wake(
     duct_coordinates,
-    centerbody_coordinates,
+    center_body_coordinates,
     rotorzloc,
     wake_length,
     npanels,
@@ -52,8 +52,8 @@ function discretize_wake(
     duct_tez = duct_coordinates[1, 1]
 
     # extract hub leading and trailing edge location
-    cb_lez = centerbody_coordinates[1, 1]
-    cb_tez = centerbody_coordinates[end, 1]
+    cb_lez = center_body_coordinates[1, 1]
+    cb_tez = center_body_coordinates[end, 1]
 
     # calculate duct chord
     duct_chord = max(duct_tez, cb_tez) - min(duct_lez, cb_lez)
@@ -69,20 +69,20 @@ function discretize_wake(
     for rzl in rotorzloc
         @assert rzl > duct_lez "Rotor is in front of duct leading edge."
         @assert rzl < duct_tez "Rotor is behind duct trailing edge."
-        @assert rzl > cb_lez "Rotor is in front of centerbody leading edge."
-        @assert rzl < cb_tez "Rotor is behind centerbody trailing edge."
+        @assert rzl > cb_lez "Rotor is in front of center_body leading edge."
+        @assert rzl < cb_tez "Rotor is behind center_body trailing edge."
     end
 
     # combine all discrete locations into one ordered array
     if iszero(dte_minus_cbte)
         zd = vcat(rotorzloc, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 1 "Length of vector `npanels` should be one more than the length of vector `rotorzloc` when the duct and centerbody trailing edges align."
+        @assert length(npanels) == length(rotorzloc) + 1 "Length of vector `npanels` should be one more than the length of vector `rotorzloc` when the duct and center_body trailing edges align."
     elseif dte_minus_cbte < 0 #duct_tez < cb_tez
         zd = vcat(rotorzloc, duct_tez, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and centerbody trailing edges do not align."
+        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and center_body trailing edges do not align."
     else #dte_minus_cbte > 0 # duct_tez < cb_tez
         zd = vcat(rotorzloc, cb_tez, duct_tez, duct_tez + wake_length)
-        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and centerbody trailing edges align."
+        @assert length(npanels) == length(rotorzloc) + 2 "Length of vector `npanels` should be two more than the length of vector `rotorzloc` when the duct and center_body trailing edges align."
     end
 
     # calculate indices for the start of each discrete section
@@ -103,23 +103,23 @@ function discretize_wake(
 end
 
 """
-    initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake)
+    initialize_wake_grid(rp_duct_coordinates, rp_center_body_coordinates, zwake, rwake)
 
 Initialize the wake grid.
 
 # Arguments:
 - `rp_duct_coordinates::Matrix{Float}` : The re-paneled duct coordinates
-- `rp_centerbody_coordinates::Matrix{Float}` : The re-paneled centerbody coordinates
+- `rp_center_body_coordinates::Matrix{Float}` : The re-paneled center_body coordinates
 - `zwake::Vector{Float}` : The axial positions of the wake sheet panel nodes
 - `rwake::Vector{Float}` : The radial positions of the blade elements for the foremost rotor
 
 # Returns:
 - `wake_grid::Array{Float,3}` : 3D Array of axial and radial wake_grid points
 """
-function initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake)
+function initialize_wake_grid(rp_duct_coordinates, rp_center_body_coordinates, zwake, rwake)
     TF = promote_type(
         eltype(rp_duct_coordinates),
-        eltype(rp_centerbody_coordinates),
+        eltype(rp_center_body_coordinates),
         eltype(zwake),
         eltype(rwake),
     )
@@ -134,19 +134,19 @@ function initialize_wake_grid(rp_duct_coordinates, rp_centerbody_coordinates, zw
     wake_grid = zeros(TF, 2, nx, nr)
 
     return initialize_wake_grid!(
-        wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
+        wake_grid, rp_duct_coordinates, rp_center_body_coordinates, zwake, rwake
     )
 end
 
 """
     initialize_wake_grid!(
-        wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
+        wake_grid, rp_duct_coordinates, rp_center_body_coordinates, zwake, rwake
     )
 
 In-place version of `initialize_wake_grid`.
 """
 function initialize_wake_grid!(
-    wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
+    wake_grid, rp_duct_coordinates, rp_center_body_coordinates, zwake, rwake
 )
 
     # get dimensions
@@ -161,18 +161,18 @@ function initialize_wake_grid!(
     # initial x-position of wake
     rzl = zwake[1]
 
-    # centerbody trailing edge
-    cb_tez = rp_centerbody_coordinates[1, end]
+    # center_body trailing edge
+    cb_tez = rp_center_body_coordinates[1, end]
 
     # duct trailing edge
     duct_tez = rp_duct_coordinates[1, 1]
 
     # set inner radial locations
-    _, icenterbody_rotor = findmin(x -> abs(x - rzl), view(rp_centerbody_coordinates, 1, :))
-    _, icenterbody_te = findmin(x -> abs(x - cb_tez), zwake)
+    _, icenter_body_rotor = findmin(x -> abs(x - rzl), view(rp_center_body_coordinates, 1, :))
+    _, icenter_body_te = findmin(x -> abs(x - cb_tez), zwake)
 
-    wake_grid[2, 1:icenterbody_te, 1] .= rp_centerbody_coordinates[2, icenterbody_rotor:end]
-    wake_grid[2, (icenterbody_te + 1):end, 1] .= rp_centerbody_coordinates[2, end]
+    wake_grid[2, 1:icenter_body_te, 1] .= rp_center_body_coordinates[2, icenter_body_rotor:end]
+    wake_grid[2, (icenter_body_te + 1):end, 1] .= rp_center_body_coordinates[2, end]
 
     # set outer radial locations
     _, leidx = findmin(view(rp_duct_coordinates, 1, :))
@@ -191,14 +191,14 @@ function initialize_wake_grid!(
 
     # apply conservation of mass at each wake_grid point
     for ix in 2:nx
-        xcenterbody = wake_grid[1, ix, 1]
-        rcenterbody = wake_grid[2, ix, 1]
+        xcenter_body = wake_grid[1, ix, 1]
+        rcenter_body = wake_grid[2, ix, 1]
 
         xduct = wake_grid[1, ix, end]
         rduct = wake_grid[2, ix, end]
 
         # calculate the area of the annulus at the current streamwise location
-        local_area = pi * (rduct .^ 2 .- rcenterbody .^ 2)
+        local_area = pi * (rduct .^ 2 .- rcenter_body .^ 2)
 
         for ir in 2:(nr - 1)
 
@@ -208,9 +208,9 @@ function initialize_wake_grid!(
                 local_section_area / pi + wake_grid[2, ix, ir - 1]^2
             )
 
-            # linearly interpolate centerbody and duct x-positions
-            frac = (wake_grid[2, ix, ir] - rcenterbody) / (rduct - rcenterbody)
-            wake_grid[1, ix, ir] = xcenterbody + frac * (xduct - xcenterbody)
+            # linearly interpolate center_body and duct x-positions
+            frac = (wake_grid[2, ix, ir] - rcenter_body) / (rduct - rcenter_body)
+            wake_grid[1, ix, ir] = xcenter_body + frac * (xduct - xcenter_body)
         end
     end
 
@@ -221,7 +221,7 @@ end
     generate_wake_grid(
         problem_dimensions,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         Rhub1,
         Rtip1,
         tip_gap1,
@@ -236,7 +236,7 @@ Initialize and solve for elliptic grid on which wake sheets are defined.
 # Arguments
 - `problem_dimensions::` : A ProblemDimensions object
 - `rp_duct_coordinates::` : repaneled duct coordinates
-- `rp_centerbody_coordinates::` : repaneled centerbody coordinates
+- `rp_center_body_coordinates::` : repaneled center_body coordinates
 - `Rhub1::` : Hub radius of first rotor
 - `Rtip1::` : Tip radius of first rotor
 - `tip_gap1::` : Tip gap of first rotor (MUST BE ZERO for now)
@@ -253,7 +253,7 @@ Initialize and solve for elliptic grid on which wake sheets are defined.
 function generate_wake_grid(
     problem_dimensions,
     rp_duct_coordinates,
-    rp_centerbody_coordinates,
+    rp_center_body_coordinates,
     Rhub1,
     Rtip1,
     tip_gap1,
@@ -264,7 +264,7 @@ function generate_wake_grid(
 )
     TF = promote_type(
         eltype(rp_duct_coordinates),
-        eltype(rp_centerbody_coordinates),
+        eltype(rp_center_body_coordinates),
         typeof(Rhub1),
         typeof(Rtip1),
     )
@@ -274,7 +274,7 @@ function generate_wake_grid(
     return generate_wake_grid!(
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         Rhub1,
         Rtip1,
         tip_gap1,
@@ -289,7 +289,7 @@ end
     generate_wake_grid!(
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         Rhub1,
         Rtip1,
         tip_gap1,
@@ -304,7 +304,7 @@ In-place version of `generate_wake_grid`.
 function generate_wake_grid!(
     wake_grid,
     rp_duct_coordinates,
-    rp_centerbody_coordinates,
+    rp_center_body_coordinates,
     Rhub1,
     Rtip1,
     tip_gap1,
@@ -326,7 +326,7 @@ function generate_wake_grid!(
 
     # Initialize wake "grid"
     initialize_wake_grid!(
-        wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, zwake, rwake
+        wake_grid, rp_duct_coordinates, rp_center_body_coordinates, zwake, rwake
     )
 
     # - Relax "Grid" - #

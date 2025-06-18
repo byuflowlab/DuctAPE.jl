@@ -221,7 +221,7 @@ function calculate_wake_vortex_strengths!(
     wakeK,
     wake_node_sheet_be_map,
     wake_node_ids_along_casing_wake_interface,
-    wake_node_ids_along_centerbody_wake_interface;
+    wake_node_ids_along_center_body_wake_interface;
     post=false,
 )
 
@@ -269,16 +269,16 @@ function calculate_wake_vortex_strengths!(
                 )
             )
     end
-    if !isnothing(wake_node_ids_along_centerbody_wake_interface)
-        # gamw[wake_node_ids_along_centerbody_wake_interface] .= 0.0
+    if !isnothing(wake_node_ids_along_center_body_wake_interface)
+        # gamw[wake_node_ids_along_center_body_wake_interface] .= 0.0
 
-        gamw[wake_node_ids_along_centerbody_wake_interface] =
-            gamw[wake_node_ids_along_centerbody_wake_interface[end] + 1] * (
+        gamw[wake_node_ids_along_center_body_wake_interface] =
+            gamw[wake_node_ids_along_center_body_wake_interface[end] + 1] * (
                 1.0 .-
                 (
-                    reverse(wake_node_ids_along_centerbody_wake_interface) .-
-                    wake_node_ids_along_centerbody_wake_interface[1]
-                ) / length(wake_node_ids_along_centerbody_wake_interface)
+                    reverse(wake_node_ids_along_center_body_wake_interface) .-
+                    wake_node_ids_along_center_body_wake_interface[1]
+                ) / length(wake_node_ids_along_center_body_wake_interface)
             )
     end
 
