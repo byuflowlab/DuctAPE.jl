@@ -62,7 +62,7 @@ The DuctAPE Panel Method is formulated with the geometry defined in a clockwise 
 =#
 
 rp_duct_coordinates = reverse(dfdc_duct_coordinates; dims=1)' .* 1.0
-rp_centerbody_coordinates = reverse(dfdc_hub_coordinates; dims=1)' .* 1.0
+rp_center_body_coordinates = reverse(dfdc_hub_coordinates; dims=1)' .* 1.0
 
 Rtips = [dfdc_duct_coordinates[dii, 2]]
 Rhubs = [dfdc_hub_coordinates[hii, 2]]

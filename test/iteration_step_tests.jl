@@ -22,7 +22,7 @@ println("\nITERATION STEP THROUGH TESTS")
     #NOTE, for some reason, julia doesn't recognize that this was defined in the above file...
     operating_point = dt.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
     ducted_rotor = dt.DuctedRotor(
-        rp_duct_coordinates, rp_centerbody_coordinates, rotor, paneling_constants
+        rp_duct_coordinates, rp_center_body_coordinates, rotor, paneling_constants
     )
 
     options = dt.DFDC_options(;
@@ -37,7 +37,7 @@ println("\nITERATION STEP THROUGH TESTS")
     problem_dimensions = dt.get_problem_dimensions(
         dt.generate_all_panels(
             rp_duct_coordinates,
-            rp_centerbody_coordinates,
+            rp_center_body_coordinates,
             paneling_constants.num_wake_sheets,
             rotor_indices_in_wake,
             rotor.rotor_axial_position,
@@ -107,7 +107,7 @@ println("\nITERATION STEP THROUGH TESTS")
         solve_parameter_tuple.wakeK,
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
         rotor,
         paneling_constants,
@@ -294,7 +294,7 @@ println("\nITERATION STEP THROUGH TESTS")
 
     Wm_wake_test = copy(solve_containers.Cm_wake)
     Wm_wake_test[idmaps.wake_panel_ids_along_casing_wake_interface] .= 0.0
-    Wm_wake_test[idmaps.wake_panel_ids_along_centerbody_wake_interface] .= 0.0
+    Wm_wake_test[idmaps.wake_panel_ids_along_center_body_wake_interface] .= 0.0
 
     findmax(abs.(Wm_wake_test .- Wm_wake2))
 
@@ -324,7 +324,7 @@ println("\nITERATION STEP THROUGH TESTS")
         wakeK,
         idmaps.wake_node_sheet_be_map,
         idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.wake_node_ids_along_centerbody_wake_interface;
+        idmaps.wake_node_ids_along_center_body_wake_interface;
     )
 
     @test maximum(abs.(solve_containers.gamw_est .+ gamw2_est)) < 0.75

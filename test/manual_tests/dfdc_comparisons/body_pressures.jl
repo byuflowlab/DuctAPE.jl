@@ -57,9 +57,9 @@ pcpc = plot(;
 )
 plot!(pcpc, hub_ctrlpt, hub_cpdel2; linewidth=2, linestyle=:dash, color=2, label="DFDC")
 plot!(
-    pcpc, outs.bodies.centerbody_zpts, outs.bodies.cp_centerbody_out; color=1, label="DuctAPE"
+    pcpc, outs.bodies.center_body_zpts, outs.bodies.cp_center_body_out; color=1, label="DuctAPE"
 )
-savefig(pcpc, savepath * "initial_centerbody_full_cp_comp.pdf")
+savefig(pcpc, savepath * "initial_center_body_full_cp_comp.pdf")
 
 ##### ----- Compare Steady Cps ----- #####
 
@@ -69,7 +69,7 @@ vt = dt.get_body_tangential_velocities(inputs, -gamw0, sigr0)
 
 casing_cp = dt.steady_cp(vt.vtan_casing_out, Vinf, Vref)
 nacelle_cp = dt.steady_cp(vt.vtan_nacelle_out, Vinf, Vref)
-centerbody_cp = dt.steady_cp(vt.vtan_centerbody_out, Vinf, Vref)
+center_body_cp = dt.steady_cp(vt.vtan_center_body_out, Vinf, Vref)
 
 # - Plot cp comparison - #
 pd = plot(;
@@ -92,5 +92,5 @@ plot!(pd, vt.nacelle_zpts, nacelle_cp; color=1, label="")
 savefig(pd, savepath * "initial_duct_cp_comp.pdf")
 
 plot!(pc, hub_ctrlpt, hub_cpR0; label="DFDC initial", color=2, linestyle=:dash, linewidth=2)
-plot!(pc, vt.centerbody_zpts, centerbody_cp; color=1, label="DuctAPE initial")
-savefig(pc, savepath * "initial_centerbody_cp_comp.pdf")
+plot!(pc, vt.center_body_zpts, center_body_cp; color=1, label="DuctAPE initial")
+savefig(pc, savepath * "initial_center_body_cp_comp.pdf")

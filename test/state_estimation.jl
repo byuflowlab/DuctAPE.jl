@@ -117,7 +117,7 @@ println("\nSTATE ESTIMATION TESTS")
     wakeK = ones(16)
     gamw = zeros(16)
     wake_node_ids_along_casing_wake_interface = nothing
-    wake_node_ids_along_centerbody_wake_interface = nothing
+    wake_node_ids_along_center_body_wake_interface = nothing
     wake_node_sheet_be_map = [
         1 1
         1 1
@@ -149,7 +149,7 @@ println("\nSTATE ESTIMATION TESTS")
         wakeK,
         wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
-        wake_node_ids_along_centerbody_wake_interface;
+        wake_node_ids_along_center_body_wake_interface;
     )
     @test all(gamw[5:12] .== 0.0)
     @test !any(gamw[1:4] .== 0.0)

@@ -13,7 +13,7 @@ num_wake_sheets = 11 # NRPdef in DFDC case file, also 1 more than the nstations 
 
 # - dt additional parameters - #
 Omega = RPM * pi / 30  # convert from RPM to rad/s for dt
-ncenterbody_inlet = 22
+num_center_body_inlet_panels = 22
 num_duct_inlet_panels = 22
 num_panels = [30, 1, 19]
 
@@ -74,7 +74,7 @@ rotor = dt.Rotor(
 # - Paneling Constants - #
 dte_minus_cbte = -1
 paneling_constants = dt.PanelingConstants(
-    num_duct_inlet_panels, ncenterbody_inlet, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
+    num_duct_inlet_panels, num_center_body_inlet_panels, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
 )
 
 # - Reference Parameters used for Post-processing - #

@@ -260,7 +260,7 @@ function PanelingConstants(
     end
 
     if throw_error
-        @error error_messages
+        throw(error_messages)
         return nothing
     else
         return PanelingConstants(
@@ -336,31 +336,42 @@ function Rotor(
     i_know_what_im_doing=false,
 )
 
-    # initialize error messages
-    throw_error = false
-    error_messages = ""
-    error_count = 1
-
+    # - Format Inputs - #
+    # check twists
     if !i_know_what_im_doing && length(findall(t -> t > 1.75, twists)) > 2
         @warn "It looks like your input twist angles may be in degrees. Note that the required units for twist are radians. Converting to radians for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic conversion)."
         twists .*= pi / 180.0
     end
 
-    if length(unique(rotor_axial_position)) == length(rotor_axial_position)
+    # - Check Errors - #
+
+    # initialize error messages
+    throw_error = false
+    error_messages = ""
+    error_count = 1
+
+    # check that rotors aren't coincident
+    if length(unique(rotor_axial_position)) < length(rotor_axial_position)
         throw_error = true
         error_messages *= "\n\tError $(error_count): Cannot place rotors on top of eachother."
         error_count += 1
     end
+
+    # check that tip is larger than hub
     if Rhub > Rtip
         throw_error = true
         error_messages *= "\n\tError $(error_count): `Rtip` must be greater than `Rhub`."
         error_count += 1
     end
+
+    # check that r's defined from hub to tip
     if !all(r[2:end] .> r[1:(end - 1)])
         throw_error = true
         error_messages *= "\n\tError $(error_count): Radial positions, `r`, must be increasing across the blade"
         error_count += 1
     end
+
+    # check that r's aren't negative
     if any(r .<= 0)
         throw_error = true
         error_messages *= "\n\tError $(error_count): Radial positions, `r`, must be postive, non-zero"
@@ -368,7 +379,7 @@ function Rotor(
     end
 
     if throw_error
-        @error error_messages
+        throw(error_messages)
         return nothing
     else
         return Rotor(
@@ -506,19 +517,19 @@ function DuctedRotor(
 
     # check dte_minus_cbte
     if duct_coordinates[1, 1] > center_body_coordinates[end, 1]
-        if dte_minus_cbte <= 0
+        if paneling_constants.dte_minus_cbte <= 0
             throw_error = true
             error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is behind the center body trailing edge, `dte_minus_cbte` should be positive."
             error_count += 1
         end
     elseif duct_coordinates[1, 1] < center_body_coordinates[end, 1]
-        if dte_minus_cbte >= 0
+        if paneling_constants.dte_minus_cbte >= 0
             throw_error = true
             error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is ahead of the center body trailing edge, `dte_minus_cbte` should be negative."
             error_count += 1
         end
     else
-        if dte_minus_cbte != 0
+        if paneling_constants.dte_minus_cbte != 0
             throw_error = true
             error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is aligned with the center body trailing edge, `dte_minus_cbte` should be zero."
             error_count += 1
@@ -527,13 +538,13 @@ function DuctedRotor(
 
     # check number of panels relative to number of rotors and dte_minus_cbte
     if iszero(duct_coordinates[1, 1] == center_body_coordinates[end, 1])
-        if length(num_panels) != length(rotor_axial_position) + 1
+        if length(paneling_constants.num_panels) != length(rotor.rotor_axial_position) + 1
             throw_error = true
             error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
             error_count += 1
         end
     else
-        if length(num_panels) != length(rotor_axial_position) + 2
+        if length(paneling_constants.num_panels) != length(rotor.rotor_axial_position) + 2
             throw_error = true
             error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
             error_count += 1
@@ -542,23 +553,23 @@ function DuctedRotor(
 
     # other checks:
     # - rotor location is inside duct
-    for rzl in rotor_axial_position
-        if rzl < minimum(duct_coordinates[1, 1])
+    for rap in rotor.rotor_axial_position
+        if rap < minimum(duct_coordinates[1, 1])
             throw_error = true
             error_messages *= "\n\tError $(error_count): Rotor is in front of duct leading edge. Rotor must be within duct."
             error_count += 1
         end
-        if rzl > duct_coordinates[end, 1]
+        if rap > duct_coordinates[end, 1]
             throw_error = true
             error_messages *= "\n\tError $(error_count): Rotor is behind duct trailing edge. Rotor must be within duct."
             error_count += 1
         end
-        if rzl < center_body_coordinates[1, 1]
+        if rap < center_body_coordinates[1, 1]
             throw_error = true
             error_messages *= "\n\tError $(error_count): Rotor is in front of center_body leading edge. Rotor must be attached to center body."
             error_count += 1
         end
-        if rzl > center_body_coordinates[end, 1]
+        if rap > center_body_coordinates[end, 1]
             throw_error = true
             error_messages *= "\n\tError $(error_count): Rotor is behind center_body trailing edge. Rotor must be attached to center body."
             error_count += 1
@@ -566,7 +577,7 @@ function DuctedRotor(
     end
 
     if throw_error
-        @error error_messages
+        throw(error_messages)
         return nothing
     else
         return DuctedRotor(

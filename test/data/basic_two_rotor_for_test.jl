@@ -16,7 +16,7 @@ is_stator = [0.0, 0.0]
 
 rotor = dt.Rotor(B, rotor_axial_position, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator)
 
-ncenterbody_inlet = 1
+num_center_body_inlet_panels = 1
 num_duct_inlet_panels = 1
 num_wake_sheets = 3
 wake_length = 1.0
@@ -24,7 +24,7 @@ num_panels = [2, 1, 4]
 dte_minus_cbte = 0
 
 paneling_constants = dt.PanelingConstants(
-    num_duct_inlet_panels, ncenterbody_inlet, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
+    num_duct_inlet_panels, num_center_body_inlet_panels, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
 )
 
 Vinf = [10.0]
@@ -40,8 +40,8 @@ Rref = [Rtip]
 reference_parameters = dt.ReferenceParameters(Vref, Rref)
 
 duct_coordinates = [1.0 2.0; 0.5 1.5; 0.0 2.0; 0.5 2.5; 1.0 2.0]
-centerbody_coordinates = [0.0 0.0; 0.5 0.5; 1.0 0.0]
+center_body_coordinates = [0.0 0.0; 0.5 0.5; 1.0 0.0]
 
 ducted_rotor = dt.DuctedRotor(
-    duct_coordinates, centerbody_coordinates, rotor, paneling_constants
+    duct_coordinates, center_body_coordinates, rotor, paneling_constants
 )

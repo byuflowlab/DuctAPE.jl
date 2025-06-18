@@ -132,7 +132,7 @@ grid[2, :, :] .= reduce(hcat, range(lrs, urs, nr))
 # relax grid
 dt.relax_grid!(grid; max_iterations=100, tol=1e-9, verbose=false)
 
-# save duct and centerbody geometry
+# save duct and center body geometry
 f = open("grid-coord-hub.dat", "w")
 for (x, r) in zip(cb_xs, cb_rs)
     write(f, "$(x) $(r)\n")
