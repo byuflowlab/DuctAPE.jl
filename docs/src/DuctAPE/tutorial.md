@@ -1,4 +1,4 @@
-# Getting Started
+# Quick Start
 
 
 ```@contents
@@ -376,7 +376,7 @@ nothing # hide
 
 ### Single Run Outputs
 
-There are many outputs contained in the named tuple output from the `analyze` function (see the [post_process docstring](@ref DuctAPE.post_process)), but some that may be of immediate interest include:
+There are many outputs contained in the named tuple output from the `analyze` function, but some that may be of immediate interest include:
 
 ```@example tutorial
 # Total Thrust Coefficient

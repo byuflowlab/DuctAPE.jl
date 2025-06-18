@@ -1,4 +1,4 @@
-## Pre-compiling the Caches
+## Precompiled Caches
 
 There are several available caches that can be precompiled to help speed up multiple analyses.
 The first is a cache used for intermediate calculations in the pre- and post-processing phases of the analysis.

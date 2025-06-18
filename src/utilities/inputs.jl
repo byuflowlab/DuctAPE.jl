@@ -204,7 +204,7 @@ Note that unlike other input structures, this one, in general, does not define f
 # Arguments
 
 - `num_duct_inlet_panels::Int` : The number of panels to use for the casing inlet.
-- `num_center_body_inlet_panels::Int` : The number of panels to use for the center_body inlet.
+- `num_center_body_inlet_panels::Int` : The number of panels to use for the center body inlet.
 - `num_panels::AbstractVector{Int}` : A vector containing the number of panels between discrete locations inside the wake. Specifically, the number of panels between the rotors, between the last rotor and the first body trailing edge, between the body trailing edges (if different), and between the last body trailing edge and the end of the wake.  The length of this vector should be N+1 (where N is the number of rotors) if the duct and center_body trailing edges are aligned, and N+2 if not.
 - `dte_minus_cbte::Float` : An indicator concerning the hub and duct trailing edge relative locations. Should be set to -1 if the duct trailing edge axial position minus the center_body trailing edge axial position is negative, +1 if positive (though any positive or negative number will suffice), and zero if the trailing edges are aligned.
 - `num_wake_sheets::Int` : The number of wake sheets to use. Note this will also be setting the number of blade elements to use.
@@ -287,7 +287,7 @@ Note that the actual struct requires the inputs to be arrays, but there is a con
 - `B::AbstractVector{Float}` : The number of blades for each rotor. May not be an integer, but usually is.
 - `rotor_axial_position::AbstractVector{Float}` : Dimensional, axial position of each rotor.
 - `r::AbstractArray{Float}` : Non-dimensional radial locations of each blade element.
-- `Rhub::AbstractVector{Float}` : Dimensional hub radius of rotor. (may be changed if it does not match the radial position of the center_body geometry at the selected `rotor_axial_position`.
+- `Rhub::AbstractVector{Float}` : Dimensional hub radius of rotor. (may be changed if it does not match the radial position of the `center_body` geometry at the selected `rotor_axial_position`.
 - `Rtip::AbstractVector{Float}` : Dimensional tip radius of rotor. Is used to determine the radial position of the duct if the `autoshiftduct` option is selected.
 - `chords::AbstractArray{Float}` : Dimensional chord lengths of the blade elements.
 - `twists::AbstractArray{Float}` : Blade element angles, in radians.
@@ -406,14 +406,20 @@ function Rotor(
 end
 
 """
-    DuctedRotor(duct_coordinates, center_body_coordinates, rotor, paneling_constants)
+    DuctedRotor(
+        duct_coordinates, center_body_coordinates, rotor, paneling_constants; kwargs...
+    )
 
 # Arguments
 
-- `duct_coordinates::AbstractMatrix` : The [z, r] coordinates of the duct geometry beginning at the inner (casing) side trailing edge and proceeding clockwise. Note that the duct geometry absolute radial position does not need to be included here if the `autoshiftduct` option is selected.
-- `center_body_coordinates::AbstractMatrix` : The [z, r] coordinates of the center_body beginning at the leading edge and ending at the trailing edge. Note that the leading edge is assumed to be placed at a radial distance of 0.0 from the axis of rotation.
+- `duct_coordinates::AbstractMatrix` : The [z r] coordinates of the duct geometry beginning at the inner (casing) side trailing edge and proceeding clockwise. Note that the duct geometry absolute radial position does not need to be included here if the `autoshiftduct` option is selected.
+- `center_body_coordinates::AbstractMatrix` : The [z r] coordinates of the center_body beginning at the leading edge and ending at the trailing edge. Note that the leading edge is assumed to be placed at a radial distance of 0.0 from the axis of rotation.
 - `rotor::Rotor` : Rotor (and possibly stator) geometric paramters.
 - `paneling_constants::PanelingConstants` : Constants used in re-paneling the geometry.
+
+# Keyword Arguments
+- `i_know_what_im_doing::Bool=false` : if set to false, performs various checks on the inputs and manually adjusts in some cases with a warning, and errors in cases that cannot be automatically adjusted.
+- `silence_warnings::Bool=false` : if set to false, prints warnings when automatically adjusting inputs.
 """
 struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:PanelingConstants}
     duct_coordinates::Td
@@ -428,19 +434,24 @@ function DuctedRotor(
     rotor,
     paneling_constants;
     i_know_what_im_doing=false,
+    silence_warnings=false,
 )
 
     ### --- FORMAT INPUTS --- ###
 
     # check shape of duct coordinates
     if i_know_what_im_doing && size(duct_coordinates, 1) < size(duct_coordinates, 2)
-        @warn "It appears that the duct coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+        if !silence_warnings
+            @warn "It appears that the duct coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+        end
         duct_coordinates = permutedims(duct_coordinates)
     end
 
     # check clockwise duct coordinates
     if i_know_what_im_doing && duct_coordinates[2, 2] > duct_coordinates[end - 1, 2]
-        @warn "It appears that the duct coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        if !silence_warnings
+            @warn "It appears that the duct coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        end
         reverse!(duct_coordinates; dims=1)
     end
 
@@ -448,21 +459,27 @@ function DuctedRotor(
     if i_know_what_im_doing &&
         abs(-(extrema(duct_coordinates[:, 2])...)) >
        abs(-(extrema(duct_coordinates[:, 1])...))
-        @warn "It appears that the duct coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        if !silence_warnings
+            @warn "It appears that the duct coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        end
         reverse!(duct_coordinates; dims=2)
     end
 
     # check shape of  center body coordinates
     if i_know_what_im_doing &&
         size(center_body_coordinates, 1) < size(center_body_coordinates, 2)
-        @warn "It appears that the center body coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+        if !silence_warnings
+            @warn "It appears that the center body coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+        end
         duct_coordinates = permutedims(center_body_coordinates)
     end
 
     # check clockwise center body coordinates
     if i_know_what_im_doing &&
         center_body_coordinates[1, 1] > center_body_coordinates[end, 1]
-        @warn "It appears that the center body coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        if !silence_warnings
+            @warn "It appears that the center body coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        end
         reverse!(center_body_coordinates; dims=1)
     end
 
@@ -470,7 +487,9 @@ function DuctedRotor(
     if i_know_what_im_doing &&
         abs(-(extrema(center_body_coordinates[:, 2])...)) >
        abs(-(extrema(center_body_coordinates[:, 1])...))
-        @warn "It appears that the center body coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        if !silence_warnings
+            @warn "It appears that the center body coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        end
         reverse!(center_body_coordinates; dims=2)
     end
 
@@ -489,9 +508,9 @@ function DuctedRotor(
 
     # check for negative radial positions in duct_coordinates
     if any(duct_coordinates[:, 2] .< 0.0)
-        throw_error = true
-        error_messages *= "\n\tError $(error_count): Radial coordinates of duct must be positive."
-        error_count += 1
+        if !silence_warnings
+            @warn "Note that duct radial coordinates of duct must be positive. If you have not set the `autoshiftduct` option in the `Options` input to true, you should see an error shortly."
+        end
     end
 
     # check we have the same lengths for duct coordinates

@@ -754,13 +754,12 @@ Type containing (nearly) all the available user options.
 ## General Options
 - `verbose::Bool = false` : flag to print verbose statements
 - `silence_warnings::Bool = true` : flag to silence warnings
-- `multipoint_index::Int = [1]` : holds current index of multi-point solver (no need for user to change this usually)
+- `hard_fail::Bool = true` : flag as to whether DuctAPE should return nothing immediately after a failed initialization of the elliptic grid or a failed decomposition of the body influence matrix.  If set to false, DuctAPE will attempt to return objects of the correct size, but with initialized values only.
 ## Pre-processing Options
-### Geometry interpolation and generation options :
+### Geometry Interpolation and Generation Options
 - `finterp::Interplation Method = FLOWMath.akima` : interpolation method used for re-paneling bodies
 - `autoshiftduct::Bool = true` : flag as to whether duct geometry should be shifted based on rotor tip location
-- `lu_decomp_flag::Bool = false` : flag indicating if panel method LHS matrix factorization was successful
-### paneling options
+### Paneling Options
 - `itcpshift::Float = 0.05` : factor for internal trailing edge psuedo-panel placement (default is DFDC hard-coded value)
 - `axistol::Float = 1e-15` : tolerance for how close the the axis of rotation should be considered on the axis
 - `tegaptol::Float = 1e1 * eps()` : tolerance for how large of a trailing edge gap should be considered a gap
@@ -775,8 +774,9 @@ Type containing (nearly) all the available user options.
 ## Solving Options
 - `grid_solver_options::GridSolverOptionsType = GridSolverOptions()` : elliptic grid solver options
 - `solver_options::SolverOptionsType = ChainSolverOptions()` : solver options
-## Failure Options
-- `hard_fail::Bool = true` : flag as to whether DuctAPE should return nothing immediately after a failed initialization of the elliptic grid or a failed decomposition of the body influence matrix.  If set to false, DuctAPE will attempt to return objects of the correct size, but with initialized values only.
+## Bookkeeping Options
+- `multipoint_index::Int = [1]` : holds current index of multi-point solver (no need for user to change this usually)
+- `lu_decomp_flag::Bool = false` : flag indicating if panel method LHS matrix factorization was successful
 """
 @kwdef struct Options{
     TB,

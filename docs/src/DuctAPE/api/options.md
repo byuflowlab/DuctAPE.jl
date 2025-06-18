@@ -1,3 +1,97 @@
+# Options
+
+There are quite a few options to choose from in DuctAPE.
+As DuctAPE was developed, various options were added as different approaches were considered.
+The current defaults were selected as the best set of options for the studies in the publications metioned in DuctAPE's README.
+However, most of the options implemented during development have been maintained in case of future need.
+The `Options` object contains various general options as well as several more detailed option objects.
+To make the process of setting options easier, the `set_options` method can be used to make only the desired changes from the defaults without having to define everything in the `Options` object.
+Note that the `Options` object is implemented using the `@kwdef` macro, so the `set_options` function doesn't really do anything in the case of a single operating point, but the other dispatch of `set_options` is especially helpful in initializing several of the sub-option objects to defaults of the correct size.
+Note that there are several fields in the options that are used for bookkeeping, especially in the case of multiple operating points.
+
+```@docs
+DuctAPE.Options
+DuctAPE.set_options
+```
+
+The major sub-categories of options include general options, pre-processing options, solver options for both determining the wake sheet positions as well as the overall aerodyanmics solve, post-processing options, and bookkeeping options.
+
+## Bookkeeping Options
+
+These are options that can be changed by the user for development/debugging purposes, but at this point, it would be wise in general usage to not change them. In future revisions, these will likely no longer be accessible to the user.
+
+## General Options
+
+The verbose and silence warnings options are simply about what get's printed as the analysis runs.
+Warnings are printed when some sort of automated adjustment is made to the inputs in order to ensure they conform to the format required.
+The verbose option at this level is for verbose statements that are not within any solvers.  Solver verbosity is constrolled in the individual solver options.
+
+Occasionally, something in the preprocessing will fail, likely the LU decomposition of the linear system defining the bodies' panel system.
+If such a failure occurs, DuctAPE cannot continue to the main solve and will exit.
+The `hard_fail` option dictates what the exit behavior is.
+If true, DuctAPE will just return `nothing` immediately, which is quicker for turn-around on single runs.
+If false, DuctAPE will attempt to return an output object of the correct size and type, which is convenient for some optimization frameworks for which you'll want some output to be available even if passing a failure flag for the specific analysis.
+
+## Preprocess Options
+
+
+
+### Geometry Interpolation and Generation Options
+
+The `autoshiftduct` option may be convenient depending on how the duct coordinates are being input.
+It allows the user to input the duct coordinates at an arbitrary radial location, for example if a standard airfoil is used with leading edge at (0,0).
+In the preprocessing, the duct geometry will be shifted to the radial location at which the rotor tip is coincident with the duct surface at the axial location at which the first rotor is situated.
+If you are already inputting the duct geometry at the correct position, this option may be turned off, but it usually doesn't hurt to be left on.
+
+### Paneling Options
+
+These, in general, do not need to be touched by users; thus we do not include them in the `PanelingConstants`, but we do make them available.
+
+### Integration Options
+
+
+
+```@docs
+DuctAPE.IntegrationOptions
+```
+
+```@docs
+DuctAPE.GaussLegendre
+DuctAPE.GaussKronrod
+DuctAPE.Romberg
+```
+
+## Solver Options
+
+
+
+### Elliptic Grid Solve
+```@docs
+DuctAPE.SLORGridSolverOptions
+DuctAPE.GridSolverOptions
+```
+
+### Aerodynamics Solve
+```@docs
+DuctAPE.ChainSolverOptions
+DuctAPE.CompositeSolverOptions
+DuctAPE.NLsolveOptions
+DuctAPE.NonlinearSolveOptions
+DuctAPE.MinpackOptions
+DuctAPE.SIAMFANLEOptions
+DuctAPE.SpeedMappingOptions
+DuctAPE.FixedPointOptions
+DuctAPE.CSORSolverOptions
+DuctAPE.ModCSORSolverOptions
+```
+
+
+## Postprocess Options
+```@docs
+DuctAPE.BoundaryLayerOptions
+DuctAPE.HeadsBoundaryLayerOptions
+```
+
 # Advanced Option Selection
 
 DuctAPE has been written in an attempt to make as many of the available options exposed to the user as possible.  This means that there are quite a few options to select from if not using the option convenience functions.
