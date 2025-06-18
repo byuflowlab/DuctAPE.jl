@@ -4,7 +4,7 @@
         center_body_coordinates,
         rotor_axial_position, # rotor axial locations
         wake_length,
-        npanels,
+        num_panels,
         dte_minus_cbte;
     )
 
@@ -15,7 +15,7 @@ Calculate wake sheet panel node z-coordinates.
 - `center_body_coordinates::Matrix{Float}` : Array of input center_body_coordinates coordinates
 - `rotor_axial_position ::Vector{Float}` : rotor axial locations
 - `wake_length::Float` : non-dimensional length of wake to extend beyond aft-most body trailing edge.
-- `npanels::Vector{Int}` : A vector of the number of panels between each discrete point.  For example: [number of panels between the rotors; number of panels between the stator and the first trailing edge; number of panels between the trailing edges; number of panels between the last trailing edge and the end of the wake]
+- `num_panels::Vector{Int}` : A vector of the number of panels between each discrete point.  For example: [number of panels between the rotors; number of panels between the stator and the first trailing edge; number of panels between the trailing edges; number of panels between the last trailing edge and the end of the wake]
 - `dte_minus_cbte::Float` : indicator as to whether the duct trailing edge minus the center_body trailing edge is positive, zero, or negative.
 """
 function discretize_wake(
@@ -23,7 +23,7 @@ function discretize_wake(
     center_body_coordinates,
     rotor_axial_position,
     wake_length,
-    npanels,
+    num_panels,
     dte_minus_cbte;
     le_bracket=1,
     fitscale=1e2,
@@ -76,22 +76,22 @@ function discretize_wake(
     # combine all discrete locations into one ordered array
     if iszero(dte_minus_cbte)
         zd = vcat(rotor_axial_position, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotor_axial_position) + 1 "Length of vector `npanels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
+        @assert length(num_panels) == length(rotor_axial_position) + 1 "Length of vector `num_panels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
     elseif dte_minus_cbte < 0 #duct_tez < cb_tez
         zd = vcat(rotor_axial_position, duct_tez, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
+        @assert length(num_panels) == length(rotor_axial_position) + 2 "Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
     else #dte_minus_cbte > 0 # duct_tez < cb_tez
         zd = vcat(rotor_axial_position, cb_tez, duct_tez, duct_tez + wake_length)
-        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
+        @assert length(num_panels) == length(rotor_axial_position) + 2 "Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
     end
 
     # calculate indices for the start of each discrete section
-    sectionid = cumsum(vcat(1, npanels))
+    sectionid = cumsum(vcat(1, num_panels))
 
     # construct x-discretization
-    zwake = similar(zd, sum(npanels) + 1) .= 0.0
+    zwake = similar(zd, sum(num_panels) + 1) .= 0.0
     for i in 1:(length(zd) - 1)
-        zrange = range(zd[i], zd[i + 1]; length=npanels[i] + 1)
+        zrange = range(zd[i], zd[i + 1]; length=num_panels[i] + 1)
         zwake[sectionid[i]:sectionid[i + 1]] .= zrange
     end
 

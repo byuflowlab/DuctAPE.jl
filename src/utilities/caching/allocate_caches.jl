@@ -698,7 +698,7 @@ Allocate caches for airfoil struct fields.
 # Arguments:
 - `airfoils::Vector{Vector{Airfoil}}` : Airfoil objects, where each element of the outer vector is associated with a rotor and the elements of the inner vectors are the input airfoils to be interpolated across each rotor blade. Note that even if only one rotor is being used, the input must still be a vector of vectors.
 - `total_length::Vector{Float}` : updated in-place, used for sizing the overall PreallocationTools cache.
-- `number_of_blade_elements::Int` : number of blade elements for analysis (this is defined from the `nwake_sheets` input in the PanelingConstants input).
+- `number_of_blade_elements::Int` : number of blade elements for analysis (this is defined from the `num_wake_sheets` input in the PanelingConstants input).
 - `number_of_rotors::Int` : the number of rotors (note that a stator is considered a rotor).
 
 # Returns:

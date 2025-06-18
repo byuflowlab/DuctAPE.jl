@@ -15,7 +15,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
         center_body_coordinates,
         rotor.rotor_axial_position, # rotor axial locations
         paneling_constants.wake_length,
-        paneling_constants.npanels,
+        paneling_constants.num_panels,
         paneling_constants.dte_minus_cbte;
         le_bracket=1,
     )
@@ -47,8 +47,8 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
         center_body_coordinates,
         zwake,
         duct_le_coordinates,
-        paneling_constants.ncenter_body_inlet,
-        paneling_constants.nduct_inlet;
+        paneling_constants.num_center_body_inlet_panels,
+        paneling_constants.num_duct_inlet_panels;
         finterp=fm.linear,
     )
 
@@ -83,7 +83,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
     @test all(Rtips .== 1.0)
     @test all(Rhubs .== 0.25)
 
-    rwake = range(Rhubs[1], Rtips[1]; length=paneling_constants.nwake_sheets)
+    rwake = range(Rhubs[1], Rtips[1]; length=paneling_constants.num_wake_sheets)
 
     # Check grid initialization
     grid = dt.initialize_wake_grid(
@@ -162,7 +162,7 @@ println("\nPRECOMPUTED ROTOR & WAKE INPUTS")
 
     # rotor source panel objects
     rotor_source_panels = dt.generate_rotor_panels(
-        rotor.rotor_axial_position, grid, [1, 3], paneling_constants.nwake_sheets
+        rotor.rotor_axial_position, grid, [1, 3], paneling_constants.num_wake_sheets
     )
 
     # rotor blade element objects
@@ -192,9 +192,9 @@ end
 @testset "Bookkeeping Tests" begin
 
     # hub is longer than duct
-    npanels = [2, 1, 1] #npanels
-    ncenter_body_inlet = 2 # paneling_constants.ncenter_body_inlet
-    nwake_sheets = 3 # paneling_constants.nwake_sheets
+    num_panels = [2, 1, 1] #num_panels
+    num_center_body_inlet_panels = 2 # paneling_constants.num_center_body_inlet_panels
+    num_wake_sheets = 3 # paneling_constants.num_wake_sheets
     dte_minus_cbte = -1 # paneling_constants.dte_minus_cbte
     wake_nodemap = [
         1 2 3 4 6 7 8 9 11 12 13 14
@@ -209,9 +209,9 @@ end
     nrotor = 1 # pd.nrotor
 
     idmaps = dt.set_index_maps(
-        npanels,
-        ncenter_body_inlet,
-        nwake_sheets,
+        num_panels,
+        num_center_body_inlet_panels,
+        num_wake_sheets,
         dte_minus_cbte,
         wake_nodemap,
         wake_endnodeidxs,
@@ -242,9 +242,9 @@ end
     @test idmaps.id_of_first_center_body_panel_aft_of_each_rotor == [11]
 
     # hub is shorter than duct
-    npanels = [2, 1, 1] #npanels
-    ncenter_body_inlet = 2 # paneling_constants.ncenter_body_inlet
-    nwake_sheets = 3 # paneling_constants.nwake_sheets
+    num_panels = [2, 1, 1] #num_panels
+    num_center_body_inlet_panels = 2 # paneling_constants.num_center_body_inlet_panels
+    num_wake_sheets = 3 # paneling_constants.num_wake_sheets
     dte_minus_cbte = 1 # paneling_constants.dte_minus_cbte
     wake_nodemape = [
         1 2 3 4 6 7 8 9 11 12 13 14
@@ -259,9 +259,9 @@ end
     nrotor = 1 # pd.nrotor
 
     idmaps = dt.set_index_maps(
-        npanels,
-        ncenter_body_inlet,
-        nwake_sheets,
+        num_panels,
+        num_center_body_inlet_panels,
+        num_wake_sheets,
         dte_minus_cbte,
         wake_nodemap,
         wake_endnodeidxs,
@@ -292,9 +292,9 @@ end
     @test idmaps.id_of_first_center_body_panel_aft_of_each_rotor == [11]
 
     # hub and duct have same TE axial coordinate
-    npanels = [3, 1] #npanels
-    ncenter_body_inlet = 2 # paneling_constants.ncenter_body_inlet
-    nwake_sheets = 3 # paneling_constants.nwake_sheets
+    num_panels = [3, 1] #num_panels
+    num_center_body_inlet_panels = 2 # paneling_constants.num_center_body_inlet_panels
+    num_wake_sheets = 3 # paneling_constants.num_wake_sheets
     dte_minus_cbte = 0 # paneling_constants.dte_minus_cbte
     wake_nodemape = [
         1 2 3 4 6 7 8 9 11 12 13 14
@@ -309,9 +309,9 @@ end
     nrotor = 1 # pd.nrotor
 
     idmaps = dt.set_index_maps(
-        npanels,
-        ncenter_body_inlet,
-        nwake_sheets,
+        num_panels,
+        num_center_body_inlet_panels,
+        num_wake_sheets,
         dte_minus_cbte,
         wake_nodemap,
         wake_endnodeidxs,
@@ -363,15 +363,15 @@ end
         B, rotor_axial_position, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator
     )
 
-    ncenter_body_inlet = 1
-    nduct_inlet = 1
-    nwake_sheets = 3
+    num_center_body_inlet_panels = 1
+    num_duct_inlet_panels = 1
+    num_wake_sheets = 3
     wake_length = 1.0
-    npanels = [2, 1, 4]
+    num_panels = [2, 1, 4]
     dte_minus_cbte = 0
 
     paneling_constants = dt.PanelingConstants(
-        nduct_inlet, ncenter_body_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
+        num_duct_inlet_panels, num_center_body_inlet_panels, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
     )
 
     Vinf = [10.0]

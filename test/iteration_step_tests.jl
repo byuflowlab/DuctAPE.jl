@@ -38,7 +38,7 @@ println("\nITERATION STEP THROUGH TESTS")
         dt.generate_all_panels(
             rp_duct_coordinates,
             rp_centerbody_coordinates,
-            paneling_constants.nwake_sheets,
+            paneling_constants.num_wake_sheets,
             rotor_indices_in_wake,
             rotor.rotor_axial_position,
             wake_grid;

@@ -6,8 +6,8 @@
         center_body_coordinates,
         zwake,
         duct_le_coordinates,
-        ncenter_body_inlet,
-        nduct_inlet,
+        num_center_body_inlet_panels,
+        num_duct_inlet_panels,
         finterp=FLOWMath.akima,
     )
 
@@ -20,8 +20,8 @@ Reinterpolate duct and center_body coordinates in order to make them compatible 
 - `center_body_coordinates::Matrix{Float}` : the input center_body coordinates
 - `zwake::Vector{Float}` : the wake sheet panel node axial positions
 - `duct_le_coordinates::Matrix{Float}` : [z r] coordinates of duct leading edge
-- `ncenter_body_inlet::Int` : the number of panels to use for the center_body inlet
-- `nduct_inlet,::Int` : the number of panels to use for the duct inlet
+- `num_center_body_inlet_panels::Int` : the number of panels to use for the center_body inlet
+- `num_duct_inlet_panels,::Int` : the number of panels to use for the duct inlet
 
 # Keyword Arguments
 - `finterp::Function=FLOWMath.akima` : interpolation method
@@ -33,8 +33,8 @@ function reinterpolate_bodies!(
     center_body_coordinates,
     zwake,
     duct_le_coordinates,
-    ncenter_body_inlet,
-    nduct_inlet;
+    num_center_body_inlet_panels,
+    num_duct_inlet_panels;
     finterp=FLOWMath.akima,
 )
 
@@ -81,7 +81,7 @@ function reinterpolate_bodies!(
 
     # repaneled casing inlet nodes
     casing_inlet_z = scaled_cosine_spacing(
-        nduct_inlet + 1, 2 * duct_inlet_length, duct_le_coordinates[1]; mypi=pi / 2.0
+        num_duct_inlet_panels + 1, 2 * duct_inlet_length, duct_le_coordinates[1]; mypi=pi / 2.0
     )
     casing_inlet_r = finterp(casing_z, casing_r, casing_inlet_z)
 
@@ -98,7 +98,7 @@ function reinterpolate_bodies!(
 
     # repaneled nacelle inlet nodes
     nacelle_inlet_z = scaled_cosine_spacing(
-        nduct_inlet + 1, 2 * duct_inlet_length, duct_le_coordinates[1]; mypi=pi / 2.0
+        num_duct_inlet_panels + 1, 2 * duct_inlet_length, duct_le_coordinates[1]; mypi=pi / 2.0
     )
     nacelle_inlet_r = finterp(nacelle_z, nacelle_r, nacelle_inlet_z)
 
@@ -114,7 +114,7 @@ function reinterpolate_bodies!(
 
     center_body_inlet_length = center_body_in_wake_z[1] - center_body_z[1]
     center_body_inlet_z = scaled_cosine_spacing(
-        ncenter_body_inlet + 1, 2 * center_body_inlet_length, center_body_z[1]; mypi=pi / 2.0
+        num_center_body_inlet_panels + 1, 2 * center_body_inlet_length, center_body_z[1]; mypi=pi / 2.0
     )
     center_body_inlet_r = finterp(center_body_z, center_body_r, center_body_inlet_z)
 

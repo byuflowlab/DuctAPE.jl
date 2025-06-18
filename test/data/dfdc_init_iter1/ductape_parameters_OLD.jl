@@ -11,14 +11,14 @@ rhoinf = 1.226 # Rho in DFDC case file
 asound = 340.0 # Vso in DFDC case file
 muinf = 1.78e-5 # Rmu in DFDC case file
 wake_length = 0.8 # XDwake in DFDC case file
-nwake_sheets = 11 # NRPdef in DFDC case file, also 1 more than the nstations in this case
+num_wake_sheets = 11 # NRPdef in DFDC case file, also 1 more than the nstations in this case
 
 # - DuctAPE additional parameters - #
 Omega = RPM * pi / 30  # convert from RPM to rad/s for DuctAPE
 
 nhub_inlet = 30 # chosen somewhat arbitrarily
-nduct_inlet = 30 # chosen somewhat arbitrarily
-npanels = [30, 1, 30] # chosen somewhat arbitrarily, the 1 is due to the fact that the duct and center body trailing edges are not quite aligned.
+num_duct_inlet_panels = 30 # chosen somewhat arbitrarily
+num_panels = [30, 1, 30] # chosen somewhat arbitrarily, the 1 is due to the fact that the duct and center body trailing edges are not quite aligned.
 
 ##### ----- Airfoil Parameters (AERO in DFDC case file) ----- #####
 afparams = DuctAPE.c4b.DFDCairfoil(;
@@ -71,7 +71,7 @@ airfoils = fill(afparams, length(r)) # specify the airfoil array
 
 # - Rotor Parameters: Vector of NTuples - #
 rotor = [(;
-    nwake_sheets,
+    num_wake_sheets,
     rotor_axial_position,
     r,
     chords,
@@ -86,7 +86,7 @@ rotor = [(;
 )]
 
 # - Paneling Constants - #
-paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
+paneling_constants = (; num_panels, nhub_inlet, num_duct_inlet_panels, wake_length, num_wake_sheets)
 
 # - Freestream (will need to update Vinf when running sweep of advance ratios - #
 # this will need to be redefined in the loop

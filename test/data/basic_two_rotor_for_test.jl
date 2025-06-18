@@ -17,14 +17,14 @@ is_stator = [0.0, 0.0]
 rotor = dt.Rotor(B, rotor_axial_position, r, Rhub, Rtip, chords, twists, tip_gap, airfoils, is_stator)
 
 ncenterbody_inlet = 1
-nduct_inlet = 1
-nwake_sheets = 3
+num_duct_inlet_panels = 1
+num_wake_sheets = 3
 wake_length = 1.0
-npanels = [2, 1, 4]
+num_panels = [2, 1, 4]
 dte_minus_cbte = 0
 
 paneling_constants = dt.PanelingConstants(
-    nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
+    num_duct_inlet_panels, ncenterbody_inlet, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
 )
 
 Vinf = [10.0]

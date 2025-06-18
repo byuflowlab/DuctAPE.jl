@@ -296,29 +296,29 @@ DuctAPE.PanelingConstants
 
 ```@example tutorial
 # number of panels for the duct inlet
-nduct_inlet = 30
+num_duct_inlet_panels = 30
 
 # number of panels for the center body inlet
-ncenter_body_inlet = 30
+num_center_body_inlet_panels = 30
 
 # number of panels from:
 #  - rotor to duct trailing edge
 #  - duct trailing edge to center body trailing edge
 #  - center body trailing edge to end of wake
-npanels = [30, 1, 30]
+num_panels = [30, 1, 30]
 
 # the duct trailing edge is ahead of the center_body trailing edge.
 dte_minus_cbte = -1.0
 
 # number of wake sheets (one more than blade elements to use)
-nwake_sheets = 11
+num_wake_sheets = 11
 
 # non-dimensional wake length aft of rear-most trailing edge
 wake_length = 0.8
 
 # assemble paneling constants
 paneling_constants = DuctAPE.PanelingConstants(
-    nduct_inlet, ncenter_body_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
+    num_duct_inlet_panels, num_center_body_inlet_panels, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
 )
 nothing # hide
 ```

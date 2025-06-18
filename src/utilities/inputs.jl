@@ -189,11 +189,11 @@ end
 
 """
     PanelingConstants(
-        nduct_inlet,
-        ncenter_body_inlet,
-        npanels,
+        num_duct_inlet_panels,
+        num_center_body_inlet_panels,
+        num_panels,
         dte_minus_cbte,
-        nwake_sheets,
+        num_wake_sheets,
         wake_length=1.0,
     )
 
@@ -203,27 +203,27 @@ Note that unlike other input structures, this one, in general, does not define f
 
 # Arguments
 
-- `nduct_inlet::Int` : The number of panels to use for the casing inlet.
-- `ncenter_body_inlet::Int` : The number of panels to use for the center_body inlet.
-- `npanels::AbstractVector{Int}` : A vector containing the number of panels between discrete locations inside the wake. Specifically, the number of panels between the rotors, between the last rotor and the first body trailing edge, between the body trailing edges (if different), and between the last body trailing edge and the end of the wake.  The length of this vector should be N+1 (where N is the number of rotors) if the duct and center_body trailing edges are aligned, and N+2 if not.
+- `num_duct_inlet_panels::Int` : The number of panels to use for the casing inlet.
+- `num_center_body_inlet_panels::Int` : The number of panels to use for the center_body inlet.
+- `num_panels::AbstractVector{Int}` : A vector containing the number of panels between discrete locations inside the wake. Specifically, the number of panels between the rotors, between the last rotor and the first body trailing edge, between the body trailing edges (if different), and between the last body trailing edge and the end of the wake.  The length of this vector should be N+1 (where N is the number of rotors) if the duct and center_body trailing edges are aligned, and N+2 if not.
 - `dte_minus_cbte::Float` : An indicator concerning the hub and duct trailing edge relative locations. Should be set to -1 if the duct trailing edge axial position minus the center_body trailing edge axial position is negative, +1 if positive (though any positive or negative number will suffice), and zero if the trailing edges are aligned.
-- `nwake_sheets::Int` : The number of wake sheets to use. Note this will also be setting the number of blade elements to use.
+- `num_wake_sheets::Int` : The number of wake sheets to use. Note this will also be setting the number of blade elements to use.
 - `wake_length::Float=1.0` : Non-dimensional (based on the length from the foremost body leading edge and the aftmost body trailing edge) length of the wake extending behind the aftmost body trailing edge.
 """
 struct PanelingConstants{TI,TF,TFI}
-    nduct_inlet::TI
-    ncenter_body_inlet::TI
-    npanels::AbstractVector{TI}
+    num_duct_inlet_panels::TI
+    num_center_body_inlet_panels::TI
+    num_panels::AbstractVector{TI}
     dte_minus_cbte::TFI
-    nwake_sheets::TI
+    num_wake_sheets::TI
     wake_length::TF = 1.0
 
     function PanelingConstants(
-        nduct_inlet::TI,
-        ncenter_body_inlet::TI,
-        npanels::AbstractVector{TI},
+        num_duct_inlet_panels::TI,
+        num_center_body_inlet_panels::TI,
+        num_panels::AbstractVector{TI},
         dte_minus_cbte::TFI,
-        nwake_sheets::TI,
+        num_wake_sheets::TI,
         wake_length::TF=1.0,
     ) where {TI,TF,TFI}
 
@@ -232,24 +232,24 @@ struct PanelingConstants{TI,TF,TFI}
         error_messages = ""
         error_count = 1
 
-        if nduct_inlet <= 0
+        if num_duct_inlet_panels <= 0
             throw_error = true
-            error_messages *= "\n\tError $(error_count): `nduct_inlet` cannot be fewer than 1; must have a non-zero, positive number of panels for the duct inlet."
+            error_messages *= "\n\tError $(error_count): `num_duct_inlet_panels` cannot be fewer than 1; must have a non-zero, positive number of panels for the duct inlet."
             error_count += 1
         end
-        if ncenter_body_inlet <= 0
+        if num_center_body_inlet_panels <= 0
             throw_error = true
-            error_messages *= "\n\tError $(error_count): `ncenter_body_inlet` cannot be fewer than 1; must have a non-zero, positive number of panels for the center body inlet"
+            error_messages *= "\n\tError $(error_count): `num_center_body_inlet_panels` cannot be fewer than 1; must have a non-zero, positive number of panels for the center body inlet"
             error_count += 1
         end
-        if any(npanels .<= 0)
+        if any(num_panels .<= 0)
             throw_error = true
-            error_messages *= "\n\tError $(error_count): at least one entry in `npanels` is less than 1; must have non-zero, positive numbers of panels."
+            error_messages *= "\n\tError $(error_count): at least one entry in `num_panels` is less than 1; must have non-zero, positive numbers of panels."
             error_count += 1
         end
-        if nwake_sheets < 3
+        if num_wake_sheets < 3
             throw_error = true
-            error_messages *= "\n\tError $(error_count): `nwake_sheets` must be at least 3."
+            error_messages *= "\n\tError $(error_count): `num_wake_sheets` must be at least 3."
             error_count += 1
         end
         if wake_length < 0
@@ -263,11 +263,11 @@ struct PanelingConstants{TI,TF,TFI}
             return nothing
         else
             return new(
-                nduct_inlet,
-                ncenter_body_inlet,
-                npanels,
+                num_duct_inlet_panels,
+                num_center_body_inlet_panels,
+                num_panels,
                 dte_minus_cbte,
-                nwake_sheets,
+                num_wake_sheets,
                 wake_length,
             )
         end
@@ -465,13 +465,13 @@ struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:Paneli
                  - dte_minus_cbte vs coordinates
                  if iszero(dte_minus_cbte)
         zd = vcat(rotor_axial_position, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotor_axial_position) + 1 "Length of vector `npanels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
+        @assert length(num_panels) == length(rotor_axial_position) + 1 "Length of vector `num_panels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
         elseif dte_minus_cbte < 0 #duct_tez < cb_tez
         zd = vcat(rotor_axial_position, duct_tez, cb_tez, cb_tez + wake_length)
-        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
+        @assert length(num_panels) == length(rotor_axial_position) + 2 "Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
         else #dte_minus_cbte > 0 # duct_tez < cb_tez
         zd = vcat(rotor_axial_position, cb_tez, duct_tez, duct_tez + wake_length)
-        @assert length(npanels) == length(rotor_axial_position) + 2 "Length of vector `npanels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
+        @assert length(num_panels) == length(rotor_axial_position) + 2 "Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
         end
         =#
 

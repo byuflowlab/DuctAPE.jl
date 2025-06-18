@@ -77,13 +77,13 @@ function dt_full_wrapper(inputs)
     Omega = 1000.0 * pi / 30  # convert from RPM to rad/s
     asound = 340.0
     nhub_inlet = 40
-    nduct_inlet = 40
-    nwake_sheets = 11
+    num_duct_inlet_panels = 40
+    num_wake_sheets = 11
     wake_length = 1.0
-    npanels = [30, 20, 40]
+    num_panels = [30, 20, 40]
     rotor_parameters = [(;
         rotor_axial_position,
-        nwake_sheets,
+        num_wake_sheets,
         r=r ./ Rtip, #non-dimensionalize
         chords,
         twists,
@@ -95,7 +95,7 @@ function dt_full_wrapper(inputs)
         Omega,
         is_stator=false,
     )]
-    paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
+    paneling_constants = (; num_panels, nhub_inlet, num_duct_inlet_panels, wake_length, num_wake_sheets)
     freestream = (; rhoinf, muinf, asound, Vinf)
     reference_parameters = (; Vref, Rref=Rtip)
     ductx = [
@@ -332,13 +332,13 @@ function dt_prepost_wrapper(inputs)
     Omega = 1000.0 * pi / 30  # convert from RPM to rad/s
     asound = 340.0
     nhub_inlet = 40
-    nduct_inlet = 40
-    nwake_sheets = 11
+    num_duct_inlet_panels = 40
+    num_wake_sheets = 11
     wake_length = 1.0
-    npanels = [30, 20, 40]
+    num_panels = [30, 20, 40]
     rotor_parameters = [(;
         rotor_axial_position,
-        nwake_sheets,
+        num_wake_sheets,
         r=r ./ Rtip, #non-dimensionalize
         chords,
         twists,
@@ -350,7 +350,7 @@ function dt_prepost_wrapper(inputs)
         Omega,
         is_stator=false,
     )]
-    paneling_constants = (; npanels, nhub_inlet, nduct_inlet, wake_length, nwake_sheets)
+    paneling_constants = (; num_panels, nhub_inlet, num_duct_inlet_panels, wake_length, num_wake_sheets)
     freestream = (; rhoinf, muinf, asound, Vinf)
     reference_parameters = (; Vref, Rref=Rtip)
     ductx = [

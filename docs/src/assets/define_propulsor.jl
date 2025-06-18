@@ -42,15 +42,15 @@ Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
 # utilizing the constructor function to put things in vector types
 operating_point = dt.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)
 
-nduct_inlet = 50
-ncenter_body_inlet = 30
-npanels = [50, 10, 30] # the 1 is due to the fact that the duct and center body trailing edges are not quite aligned.
+num_duct_inlet_panels = 50
+num_center_body_inlet_panels = 30
+num_panels = [50, 10, 30] # the 1 is due to the fact that the duct and center body trailing edges are not quite aligned.
 dte_minus_cbte = 1.0 # the duct trailing edge is ahead of the center_body trailing edge.
-nwake_sheets = 22
+num_wake_sheets = 22
 wake_length = 0.2
 
 paneling_constants = dt.PanelingConstants(
-    nduct_inlet, ncenter_body_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
+    num_duct_inlet_panels, num_center_body_inlet_panels, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
 )
 
 Vref = 50.0 #this turns out to be close to the average axial velocity at the rotor in our case

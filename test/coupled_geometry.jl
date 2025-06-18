@@ -21,19 +21,19 @@
     wake_length = 1.0
 
     # number of wakes for each rotor
-    nwake_sheets = 3
+    num_wake_sheets = 3
 
     # number of panels between discrete points
     # in this case, 2 panels between rotors, 2 panels between last rotor and hub te, and 2 panels from duct TE to end of wake
-    npanels = [2; 2; 2]
+    num_panels = [2; 2; 2]
 
     # discretize the wake
     xwake, rotor_indices = DuctAPE.discretize_wake(
-        duct_coordinates, hub_coordinates, rotor_axial_positions, wake_length, nwake, npanels
+        duct_coordinates, hub_coordinates, rotor_axial_positions, wake_length, nwake, num_panels
     )
 
     # test that the correct number of x-stations are defined in the wake
-    @test length(xwake) == sum(npanels) + 1
+    @test length(xwake) == sum(num_panels) + 1
     # test that the correct placements of the x-stations are defined in the wake
     @test xwake == [0.5, 0.625, 0.75, 0.875, 1.0, 1.5, 2.0]
     # test that the correct wake indices are defined for the rotor locations
@@ -93,7 +93,7 @@
     #              Wake               #
     #---------------------------------#
     # get discretization of wakes at leading rotor position
-    rwake = range(Rhubs[1], Rtips[1], nwake_sheets)
+    rwake = range(Rhubs[1], Rtips[1], num_wake_sheets)
 
     # initialized wake grid
     xgrid, rgrid = DuctAPE.initialize_wake_grid(trans_duct_xr, new_hub_xr, xwake, rwake)

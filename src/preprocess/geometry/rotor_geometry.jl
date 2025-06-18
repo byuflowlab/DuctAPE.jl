@@ -314,7 +314,7 @@ function get_stagger(twists)
 end
 
 """
-    generate_rotor_panels(rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets)
+    generate_rotor_panels(rotor_axial_position, wake_grid, rotor_indices_in_wake, num_wake_sheets)
 
 Generate rotor panel objects.
 
@@ -322,20 +322,20 @@ Generate rotor panel objects.
 - `rotor_axial_position::Vector{Float}` : rotor lifting line axial position
 - `wake_grid::Array{Float,3}` : wake elliptic grid axial and radial locations
 - `rotor_indices_in_wake::Vector{Int}` : indices of where along wake the rotors are placed
-- `nwake_sheets::Int` : number of wake sheets
+- `num_wake_sheets::Int` : number of wake sheets
 
 # Returns
 - `rotor_source_panels::NamedTuple` : A named tuple containing the rotor source panel variables.
 """
-function generate_rotor_panels(rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets)
+function generate_rotor_panels(rotor_axial_position, wake_grid, rotor_indices_in_wake, num_wake_sheets)
     TF = promote_type(eltype(rotor_axial_position), eltype(wake_grid))
 
-    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotor_axial_position)]
+    xr = [zeros(TF, num_wake_sheets, 2) for i in 1:length(rotor_axial_position)]
 
     for irotor in eachindex(rotor_axial_position)
         @views xr[irotor] = [
-            fill(rotor_axial_position[irotor], nwake_sheets)'
-            wake_grid[2, rotor_indices_in_wake[irotor], 1:nwake_sheets]'
+            fill(rotor_axial_position[irotor], num_wake_sheets)'
+            wake_grid[2, rotor_indices_in_wake[irotor], 1:num_wake_sheets]'
         ]
     end
 
@@ -344,22 +344,22 @@ end
 
 """
     generate_rotor_panels!(
-        rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets
+        rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, num_wake_sheets
     )
 
 In-place version of `generate_rotor_panels`.
 """
 function generate_rotor_panels!(
-    rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, nwake_sheets
+    rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, num_wake_sheets
 )
     TF = promote_type(eltype(rotor_axial_position), eltype(wake_grid))
 
-    xr = [zeros(TF, nwake_sheets, 2) for i in 1:length(rotor_axial_position)]
+    xr = [zeros(TF, num_wake_sheets, 2) for i in 1:length(rotor_axial_position)]
 
     for irotor in eachindex(rotor_axial_position)
         @views xr[irotor] = [
-            fill(rotor_axial_position[irotor], nwake_sheets)'
-            wake_grid[2, Int(rotor_indices_in_wake[irotor]), 1:nwake_sheets]'
+            fill(rotor_axial_position[irotor], num_wake_sheets)'
+            wake_grid[2, Int(rotor_indices_in_wake[irotor]), 1:num_wake_sheets]'
         ]
     end
 

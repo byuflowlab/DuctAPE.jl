@@ -53,35 +53,35 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
 
     # - Extract Paneling Constants - #
     (;
-        npanels, ncenter_body_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte
+        num_panels, num_center_body_inlet_panels, num_duct_inlet_panels, wake_length, num_wake_sheets, dte_minus_cbte
     ) = paneling_constants
 
-    # number of rotors is one less than the length of npanels if the duct and hub trailing edges line up, and is two less if they don't
-    nrotor = iszero(dte_minus_cbte) ? length(npanels) - 1 : length(npanels) - 2
+    # number of rotors is one less than the length of num_panels if the duct and hub trailing edges line up, and is two less if they don't
+    nrotor = iszero(dte_minus_cbte) ? length(num_panels) - 1 : length(num_panels) - 2
 
     # number of wake sheets (blade nodes)
-    nws = nwake_sheets
+    nws = num_wake_sheets
 
     # number of blade elements (panels)
     nbe = nws - 1
 
     # number of body panels
-    ncp = nduct_inlet
-    ncbp = ncenter_body_inlet
+    ncp = num_duct_inlet_panels
+    ncbp = num_center_body_inlet_panels
     # add rest of panels mutual between center_body and duct
     if iszero(dte_minus_cbte)
-        ncp += sum(npanels[1:(end - 1)])
-        ncbp += sum(npanels[1:(end - 1)])
+        ncp += sum(num_panels[1:(end - 1)])
+        ncbp += sum(num_panels[1:(end - 1)])
     else
-        ncp += sum(npanels[1:(end - 2)])
-        ncbp += sum(npanels[1:(end - 2)])
+        ncp += sum(num_panels[1:(end - 2)])
+        ncbp += sum(num_panels[1:(end - 2)])
     end
 
     # add additional duct or center_body panels if one extends further back
     if dte_minus_cbte > 0
-        ncp += npanels[end - 1]
+        ncp += num_panels[end - 1]
     elseif dte_minus_cbte < 0
-        ncbp += npanels[end - 1]
+        ncbp += num_panels[end - 1]
     end
 
     # duct panels are casing + nacelle panels
@@ -97,26 +97,26 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
     nbn = ndn + ncbn
 
     # number of panels in each wake sheet
-    nwsp = sum(npanels)
+    nwsp = sum(num_panels)
     # number of nodes in each wake sheet
     nwsn = nwsp + 1
 
-    # number of wake panels is the total number of npanels times the number of wake sheets
-    nwp = sum(npanels) * nwake_sheets
+    # number of wake panels is the total number of num_panels times the number of wake sheets
+    nwp = sum(num_panels) * num_wake_sheets
 
     # number of wake nodes is one more than the number of panels for each wake sheet
-    nwn = nwp + nwake_sheets
+    nwn = nwp + num_wake_sheets
 
     # number of duct-wake and center_body-wake interface nodes
     if iszero(dte_minus_cbte)
-        ndwin = sum(npanels[1:(end - 1)]) + 1
-        ncbwin = sum(npanels[end - 1]) + 1
+        ndwin = sum(num_panels[1:(end - 1)]) + 1
+        ncbwin = sum(num_panels[end - 1]) + 1
     elseif dte_minus_cbte < 0
-        ndwin = sum(npanels[1:(end - 2)]) + 1
-        ncbwin = sum(npanels[end - 1]) + 1
+        ndwin = sum(num_panels[1:(end - 2)]) + 1
+        ncbwin = sum(num_panels[end - 1]) + 1
     else
-        ndwin = sum(npanels[1:(end - 1)]) + 1
-        ncbwin = sum(npanels[end - 2]) + 1
+        ndwin = sum(num_panels[1:(end - 1)]) + 1
+        ncbwin = sum(num_panels[end - 2]) + 1
     end
 
     return ProblemDimensions(;
