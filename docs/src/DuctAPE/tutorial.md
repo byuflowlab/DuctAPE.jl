@@ -22,16 +22,11 @@ nothing # hide
 
 ## Assemble Inputs
 
-The next step is to create the input object of type `DuctedRotor`.
-
-```@docs; canonical=false
-DuctAPE.DuctedRotor
-```
+The next step is to create the input object of type `DuctedRotor`, which contains duct and center body coordinates, rotor inputs, as well as several constants related to paneling the geometry.
 
 ### Body Geometry
 
 We begin by defining a matrix of coordinates for the duct and another for the center body geometries.
-For example:
 
 ```@example tutorial
 duct_coordinates = [
@@ -166,11 +161,6 @@ plot!( # hide
 ### Rotor Geometry
 
 The next step is to assemble an object of type `Rotor` which contains the geometric information required to define the rotor(s) and their respective blade elements.
-
-```@docs; canonical=false
-DuctAPE.Rotor
-```
-
 In this example, we have a single rotor defined as follows.
 
 ```@example tutorial
@@ -251,16 +241,16 @@ airfoils = [fill(afparams, length(r))] # specify the airfoil array
 
 # assemble rotor parameters
 rotor = DuctAPE.Rotor(
-    [B],
-    [rotor_axial_position],
+    B,
+    rotor_axial_position,
     r,
-    [Rhub],
-    [Rtip],
+    Rhub,
+    Rtip,
     chords,
     twists,
-    [0.0], # currently only zero tip gaps work.
+    [0.0], # tip gap: currently only zero tip gaps work.
     airfoils,
-    [0.0], # can flip the cl lookups on the fly if desired, say, for stator sections
+    [0.0], # is_stator: can flip the cl lookups on the fly if desired, say, for stator sections
 )
 nothing # hide
 ```
@@ -277,22 +267,10 @@ plot!( # hide
 ) # hide
 ```
 
-!!! note "Airfoils"
-    Airfoil types for DuctAPE are currently contained in the C4Blade (Cascade Compatible [CCBlade](https://flow.byu.edu/CCBlade.jl/stable/)) sub-module of DuctAPE which is exported as `c4b` and also contains the various airfoil evaluation functions used for the blade element lookups.
-    The available airfoil types include all the airfoil types from CCBlade, as well as `DFDCairfoil` which is an [XROTOR](https://web.mit.edu/drela/Public/web/xrotor/)-like parametric cascade polar used in DFDC.
-    In addition there are untested cascade types with similar structure to CCBlades airfoil types called `DTCascade`.
-    Furthermore, there is an experimental actuator disk model implemented via the `ADM` airfoil type in C4Blade.
-
 ### Paneling Constants
 
 The `PanelingConstants` object contains the constants required for DuctAPE to re-panel the provided geometry into a format compatible with the solve structure.
 Specifically, the DuctAPE solver makes some assumptions on the relative positioning of the body surfaces relative to the wakes and each other; and this is most easily guarenteed by a re-paneling of the provided body surface geometry.
-The `PanelingConstants` object is also used to build all of the preallocated caches inside DuctAPE, which can be done up-front if desired.
-Note that there is some functionality in place for cases when the user wants to keep their own specified geometry, but this functionality should be used with caution and only by users who are certain their provided geometry is in the compatible format.  See the [Examples](@ref "Circumventing the Automated Geometry Re-paneling") for an example.
-
-```@docs; canonical=false
-DuctAPE.PanelingConstants
-```
 
 ```@example tutorial
 # number of panels for the duct inlet
@@ -341,10 +319,6 @@ nothing # hide
 
 Next we will assemble the operating point which contains information about the freestream as well as the rotor rotation rate(s).
 
-```@docs; canonical=false
-DuctAPE.OperatingPoint
-```
-
 ```@example tutorial
 # Freestream
 Vinf = 30.0
@@ -365,10 +339,6 @@ nothing # hide
 
 The reference parameters are used in the post-processing non-dimensionalizations.
 
-```@docs; canonical=false
-DuctAPE.ReferenceParameters
-```
-
 ```@example tutorial
 # reference velocity (close to average axial velocity at rotor in this case)
 Vref = 50.0
@@ -386,10 +356,6 @@ nothing # hide
 
 The default options should be sufficient for just starting out and are set through the `set_options` function.
 
-```@docs; canonical=false
-DuctAPE.set_options
-```
-
 ```@example tutorial
 options = DuctAPE.set_options()
 ```
@@ -398,12 +364,8 @@ For more advanced option selection, see the examples and API reference.
 
 ## Run a Single Analysis
 
-With the ducted_rotor input build, and the options selected, we are now ready to run an analysis.
+With the `ducted_rotor` input build, the operation point set, and the options selected, we are now ready to run an analysis.
 This is done simply with the `analyze` function which dispatches the appropriate analysis, solve, and post-processing functions based on the selected options.
-
-```@docs; canonical=false
-DuctAPE.analyze(::DuctAPE.DuctedRotor, ::DuctAPE.OperatingPoint, ::DuctAPE.ReferenceParameters, ::DuctAPE.Options)
-```
 
 ```@example tutorial
 outs, success_flag = DuctAPE.analyze(
@@ -428,11 +390,6 @@ outs.totals.CQ
 ## Run a Multi-Point Analysis
 
 In the case that one wants to run the same geometry at several different operating points, for example: for a range of advance ratios, there is another dispatch of the `analyze` function that accepts an input, `multipoint`, that is a vector of operating points.
-
-```@docs; canonical=false
-DuctAPE.analyze(ducted_rotor::DuctedRotor,operating_point::AbstractVector{TO},reference_parameters::ReferenceParameters,options::Options) where TO<:OperatingPoint
-```
-
 Running a multi-point analysis on the example geometry given there, it might look something like this:
 
 ```@example tutorial
@@ -528,14 +485,12 @@ And then we can plot the data to compare DFDC and DuctAPE.
 pe = plot(; xlabel="Advance Ratio", ylabel="Efficiency")
 
 # plot DFDC data
-plot!(
+scatter!(
     pe,
     dfdc_J,
     dfdc_eta;
-    seriestype=:scatter,
     markersize=5,
-    markercolor=plotsgray, # hide
-    markerstrokecolor=plotsgray, # hide
+    color=1, # hide
     label="DFDC",
 )
 
@@ -545,7 +500,7 @@ plot!(
     Js,
     eta;
     linewidth=2,
-    color=primary, # hide
+    color=2, # hide
     label="DuctAPE",
 )
 
@@ -553,27 +508,21 @@ plot!(
 ppt = plot(; xlabel="Advance Ratio")
 
 # plot DFDC data
-plot!(
+scatter!(
     ppt,
     dfdc_J,
     dfdc_cp;
-    seriestype=:scatter,
     markersize=5,
-    markercolor=plotsgray, # hide
-    markerstrokecolor=primary, # hide
-    markerstrokewidth=2,
+    color=1, # hide
     label="DFDC Cp",
 )
 
-plot!(
+scatter!(
     ppt,
     dfdc_J,
     dfdc_ct;
-    seriestype=:scatter,
     markersize=5,
-    markercolor=plotsgray, # hide
-    markerstrokecolor=secondary, # hide
-    markerstrokewidth=2,
+    color=2, # hide
     label="DFDC Ct",
 )
 
@@ -583,7 +532,7 @@ plot!(
     Js,
     c_p;
     linewidth=1.5,
-    color=primary, # hide
+    color=2, # hide
     label="DuctAPE c_p",
 )
 
@@ -592,7 +541,7 @@ plot!(
     Js,
     c_t;
     linewidth=1.5,
-    color=secondary, # hide
+    color=1, # hide
     label="DuctAPE Ct",
 )
 

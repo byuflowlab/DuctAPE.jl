@@ -507,7 +507,7 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
 - `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct CompositeSolverOptions{
-    TB,TI,TS<:Union{ExternalSolverOptions,ExternalPolyAlgorithmOptions}
+    TB,TI,TF,TS<:Union{ExternalSolverOptions,ExternalPolyAlgorithmOptions}
 } <: ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
@@ -537,7 +537,7 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 - `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
-@kwdef struct ChainSolverOptions{TB,TI,TS<:ExternalSolverOptions} <:
+@kwdef struct ChainSolverOptions{TB,TI,TF,TS<:ExternalSolverOptions} <:
               ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-10, iteration_limit=200),
