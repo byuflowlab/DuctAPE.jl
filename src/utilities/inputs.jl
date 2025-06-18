@@ -383,7 +383,11 @@ struct Rotor{
         else
             return new(
                 isscalar(B) ? [B] : B,
-                isscalar(rotor_axial_position) ? [rotor_axial_position] : rotor_axial_position,
+                if isscalar(rotor_axial_position)
+                    [rotor_axial_position]
+                else
+                    rotor_axial_position
+                end,
                 isscalar(r) ? [r] : r,
                 isscalar(Rhub) ? [Rhub] : Rhub,
                 isscalar(Rtip) ? [Rtip] : Rtip,
@@ -422,68 +426,154 @@ struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:Paneli
         duct_coordinates::Td,
         center_body_coordinates::Tcb,
         rotor::Trp,
-        paneling_constants::Tpc,
+        paneling_constants::Tpc;
+        i_know_what_im_doing=false,
     ) where {Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:PanelingConstants}
+
+        ### --- FORMAT INPUTS --- ###
+
+        # check shape of duct coordinates
+        if i_know_what_im_doing && size(duct_coordinates, 1) < size(duct_coordinates, 2)
+            @warn "It appears that the duct coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+            duct_coordinates = permutedims(duct_coordinates)
+        end
+
+        # check clockwise duct coordinates
+        if i_know_what_im_doing && duct_coordinates[2, 2] > duct_coordinates[end - 1, 2]
+            @warn "It appears that the duct coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+            reverse!(duct_coordinates; dims=1)
+        end
+
+        # check z and r duct coordinates
+        if i_know_what_im_doing &&
+            abs(-(extrema(duct_coordinates[:, 2])...)) >
+           abs(-(extrema(duct_coordinates[:, 1])...))
+            @warn "It appears that the duct coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+            reverse!(duct_coordinates; dims=2)
+        end
+
+        # check shape of  center body coordinates
+        if i_know_what_im_doing &&
+            size(center_body_coordinates, 1) < size(center_body_coordinates, 2)
+            @warn "It appears that the center body coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+            duct_coordinates = permutedims(center_body_coordinates)
+        end
+
+        # check clockwise center body coordinates
+        if i_know_what_im_doing &&
+            center_body_coordinates[1, 1] > center_body_coordinates[end, 1]
+            @warn "It appears that the center body coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+            reverse!(center_body_coordinates; dims=1)
+        end
+
+        # check z and r duct coordinates
+        if i_know_what_im_doing &&
+            abs(-(extrema(center_body_coordinates[:, 2])...)) >
+           abs(-(extrema(center_body_coordinates[:, 1])...))
+            @warn "It appears that the center body coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+            reverse!(center_body_coordinates; dims=2)
+        end
+
+        ### --- CHECK FOR INPUT ERRORS --- ###
 
         # initialize error messages
         throw_error = false
         error_messages = ""
         error_count = 1
 
+        # - Bodies - #
+
         #= TODO: things to check for duct_coordinates
-                 - correct direction
-                 - all positive
                  - no crossover? (how to check this?)
-                  @assert
         =#
 
+        # check for negative radial positions in duct_coordinates
         if any(duct_coordinates[:, 2] .< 0.0)
             throw_error = true
-            error_messages *= "\n\tError $(error_count): Duct Coordinates must be positive."
+            error_messages *= "\n\tError $(error_count): Radial coordinates of duct must be positive."
             error_count += 1
         end
+
+        # check we have the same lengths for duct coordinates
         if length(duct_coordinates[:, 1]) != length(duct_coordinates[:, 2])
             throw_error = true
             error_messages *= "\n\tError $(error_count): z and r coordinates of duct must have the same length"
             error_count += 1
         end
 
+        # check for negative radial positions in center_body_coordinates
+        if any(center_body_coordinates[:, 2] .< 0.0)
+            throw_error = true
+            error_messages *= "\n\tError $(error_count): Radial coordinates of center body must be positive."
+            error_count += 1
+        end
+
+        # check we have the same lengths for center_body_coordinates
         if length(center_body_coordinates[:, 1]) != length(center_body_coordinates[:, 2])
             throw_error = true
             error_messages *= "\n\tError $(error_count): z and r coordinates of center body must have the same length"
             error_count += 1
         end
 
-        #= TODO: things to check for center_body_coordinates
-                 - correct direction
-                 - all positive
-                  @assert length(x) == length(y) "X and Y vectors must be the same length"
-        =#
-
-        #= TODO: things to check for paneling_constants
-                 - number of rotors and body alignment vs npanel
-                 - dte_minus_cbte vs coordinates
-                 if iszero(dte_minus_cbte)
-        zd = vcat(rotor_axial_position, cb_tez, cb_tez + wake_length)
-        @assert length(num_panels) == length(rotor_axial_position) + 1 "Length of vector `num_panels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
-        elseif dte_minus_cbte < 0 #duct_tez < cb_tez
-        zd = vcat(rotor_axial_position, duct_tez, cb_tez, cb_tez + wake_length)
-        @assert length(num_panels) == length(rotor_axial_position) + 2 "Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
-        else #dte_minus_cbte > 0 # duct_tez < cb_tez
-        zd = vcat(rotor_axial_position, cb_tez, duct_tez, duct_tez + wake_length)
-        @assert length(num_panels) == length(rotor_axial_position) + 2 "Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
+        # check dte_minus_cbte
+        if duct_coordinates[1, 1] > center_body_coordinates[end, 1]
+            if dte_minus_cbte <= 0
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is behind the center body trailing edge, `dte_minus_cbte` should be positive."
+                error_count += 1
+            end
+        elseif duct_coordinates[1, 1] < center_body_coordinates[end, 1]
+            if dte_minus_cbte >= 0
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is ahead of the center body trailing edge, `dte_minus_cbte` should be negative."
+                error_count += 1
+            end
+        else
+            if dte_minus_cbte != 0
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is aligned with the center body trailing edge, `dte_minus_cbte` should be zero."
+                error_count += 1
+            end
         end
-        =#
 
-        # TODO: go find the various asserts and put them here as appropriate
+        # check number of panels relative to number of rotors and dte_minus_cbte
+        if iszero(duct_coordinates[1, 1] == center_body_coordinates[end, 1])
+            if length(num_panels) != length(rotor_axial_position) + 1
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
+                error_count += 1
+            end
+        else
+            if length(num_panels) != length(rotor_axial_position) + 2
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
+                error_count += 1
+            end
+        end
 
         # other checks:
         # - rotor location is inside duct
         for rzl in rotor_axial_position
-            @assert rzl > duct_lez "Rotor is in front of duct leading edge."
-            @assert rzl < duct_tez "Rotor is behind duct trailing edge."
-            @assert rzl > cb_lez "Rotor is in front of center_body leading edge."
-            @assert rzl < cb_tez "Rotor is behind center_body trailing edge."
+            if rzl < minimum(duct_coordinates[1,1])
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): Rotor is in front of duct leading edge. Rotor must be within duct."
+                error_count += 1
+            end
+            if rzl > duct_coordinates[end,1]
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): Rotor is behind duct trailing edge. Rotor must be within duct."
+                error_count += 1
+            end
+            if rzl < center_body_coordinates[1,1]
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): Rotor is in front of center_body leading edge. Rotor must be attached to center body."
+                error_count += 1
+            end
+            if rzl > center_body_coordinates[end,1]
+                throw_error = true
+                error_messages *= "\n\tError $(error_count): Rotor is behind center_body trailing edge. Rotor must be attached to center body."
+                error_count += 1
+            end
         end
 
         if throw_error
@@ -494,4 +584,3 @@ struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:Paneli
         end
     end
 end
-
