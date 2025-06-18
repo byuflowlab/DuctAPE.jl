@@ -463,42 +463,42 @@ function return_failed_boundary_layer_outputs(
     )
 end
 
-"""
-"""
-function return_failed_boundary_layer_outputs(
-    boundary_layer_options::GreensBoundaryLayerOptions,
-    Vtan_duct,
-    Vtot_duct,
-    duct_control_points,
-    duct_panel_lengths,
-    duct_panel_tangents,
-    rotor_tip_radius,
-    operating_point,
-    reference_parameters,
-)
-    TF = eltype(Vtan_duct)
-
-    return (;
-        stagnation_indices=[1; 1],
-        upper_initial_states=zeros(TF, 3),
-        upper_solved_states=zeros(TF, 3),
-        upper_solved_steps=TF[0],
-        lower_initial_states=zeros(TF, 3),
-        lower_solved_states=zeros(TF, 3),
-        lower_solved_steps=TF[0],
-        surface_length_upper=zeros(TF, 2),
-        surface_length_lower=zeros(TF, 2),
-        stag_point=TF[0.5],
-        split_ratio=TF[0.5],
-        separation_point_ratio_upper=TF[0.0],
-        separation_point_ratio_lower=TF[0.0],
-        cdc_upper=TF[0.0],
-        cdc_lower=TF[0.0],
-        vtdotpv=zeros(TF, 2),
-        # boundary_layer_functions_lower,
-        # boundary_layer_functions_upper,
-    )
-end
+# """
+# """
+# function return_failed_boundary_layer_outputs(
+#     boundary_layer_options::GreensBoundaryLayerOptions,
+#     Vtan_duct,
+#     Vtot_duct,
+#     duct_control_points,
+#     duct_panel_lengths,
+#     duct_panel_tangents,
+#     rotor_tip_radius,
+#     operating_point,
+#     reference_parameters,
+# )
+#     TF = eltype(Vtan_duct)
+#
+#     return (;
+#         stagnation_indices=[1; 1],
+#         upper_initial_states=zeros(TF, 3),
+#         upper_solved_states=zeros(TF, 3),
+#         upper_solved_steps=TF[0],
+#         lower_initial_states=zeros(TF, 3),
+#         lower_solved_states=zeros(TF, 3),
+#         lower_solved_steps=TF[0],
+#         surface_length_upper=zeros(TF, 2),
+#         surface_length_lower=zeros(TF, 2),
+#         stag_point=TF[0.5],
+#         split_ratio=TF[0.5],
+#         separation_point_ratio_upper=TF[0.0],
+#         separation_point_ratio_lower=TF[0.0],
+#         cdc_upper=TF[0.0],
+#         cdc_lower=TF[0.0],
+#         vtdotpv=zeros(TF, 2),
+#         # boundary_layer_functions_lower,
+#         # boundary_layer_functions_upper,
+#     )
+# end
 
 function extract_failed_state_variables(
     solver_options::TS, dims, TF

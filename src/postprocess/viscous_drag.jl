@@ -102,38 +102,38 @@ function compute_single_side_drag_coefficient(
     )
 end
 
-function compute_single_side_drag_coefficient(
-    boundary_layer_options::GreensBoundaryLayerOptions,
-    steps,
-    rotor_tip_radius,
-    Vref,
-    boundary_layer_functions,
-    separation_options;
-    verbose=false,
-)
-    return compute_single_side_drag_coefficient(
-        initialize_green_states,
-        solve_green_boundary_layer!,
-        steps,
-        rotor_tip_radius,
-        Vref,
-        boundary_layer_functions,
-        (;
-            boundary_layer_options...,
-            boundary_layer_options.ode,
-            boundary_layer_options.separation_criteria,
-            boundary_layer_options.first_step_size,
-            boundary_layer_options.lambda,
-            boundary_layer_options.longitudinal_curvature,
-            boundary_layer_options.lateral_strain,
-            boundary_layer_options.dilation,
-            boundary_layer_options.terminate,
-            boundary_layer_options.return_last_max_shape_factor,
-            separation_options...,
-        );
-        verbose=verbose,
-    )
-end
+# function compute_single_side_drag_coefficient(
+#     boundary_layer_options::GreensBoundaryLayerOptions,
+#     steps,
+#     rotor_tip_radius,
+#     Vref,
+#     boundary_layer_functions,
+#     separation_options;
+#     verbose=false,
+# )
+#     return compute_single_side_drag_coefficient(
+#         initialize_green_states,
+#         solve_green_boundary_layer!,
+#         steps,
+#         rotor_tip_radius,
+#         Vref,
+#         boundary_layer_functions,
+#         (;
+#             boundary_layer_options...,
+#             boundary_layer_options.ode,
+#             boundary_layer_options.separation_criteria,
+#             boundary_layer_options.first_step_size,
+#             boundary_layer_options.lambda,
+#             boundary_layer_options.longitudinal_curvature,
+#             boundary_layer_options.lateral_strain,
+#             boundary_layer_options.dilation,
+#             boundary_layer_options.terminate,
+#             boundary_layer_options.return_last_max_shape_factor,
+#             separation_options...,
+#         );
+#         verbose=verbose,
+#     )
+# end
 
 function compute_single_side_drag_coefficient(
     initialize_states,
@@ -243,32 +243,32 @@ function compute_viscous_drag_duct(
     )
 end
 
-function compute_viscous_drag_duct(
-    boundary_layer_options::GreensBoundaryLayerOptions,
-    Vtan_duct,
-    Vtot_duct,
-    duct_control_points,
-    duct_panel_lengths,
-    duct_panel_tangents,
-    rotor_tip_radius,
-    operating_point,
-    reference_parameters;
-    verbose=false,
-)
-    return compute_viscous_drag_duct(
-        setup_boundary_layer_functions_green,
-        boundary_layer_options,
-        Vtan_duct,
-        Vtot_duct,
-        duct_control_points,
-        duct_panel_lengths,
-        duct_panel_tangents,
-        rotor_tip_radius,
-        operating_point,
-        reference_parameters;
-        verbose=verbose,
-    )
-end
+# function compute_viscous_drag_duct(
+#     boundary_layer_options::GreensBoundaryLayerOptions,
+#     Vtan_duct,
+#     Vtot_duct,
+#     duct_control_points,
+#     duct_panel_lengths,
+#     duct_panel_tangents,
+#     rotor_tip_radius,
+#     operating_point,
+#     reference_parameters;
+#     verbose=false,
+# )
+#     return compute_viscous_drag_duct(
+#         setup_boundary_layer_functions_green,
+#         boundary_layer_options,
+#         Vtan_duct,
+#         Vtot_duct,
+#         duct_control_points,
+#         duct_panel_lengths,
+#         duct_panel_tangents,
+#         rotor_tip_radius,
+#         operating_point,
+#         reference_parameters;
+#         verbose=verbose,
+#     )
+# end
 
 function compute_viscous_drag_duct(
     setup_boundary_layer_functions,
