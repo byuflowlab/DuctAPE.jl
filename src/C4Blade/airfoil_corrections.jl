@@ -19,19 +19,19 @@
 
 Cuts off coefficient vs alpha curve at min and max coefficient and places rest of curve from -pi to min coeff and max coeff to pi according to user defined cl_cutoff_slope (default 0.1)
 
-# Arguments:
+# Arguments
 - `aoa::AbstractVector{Float}` : input angles of attack, in radians
 - `cl::AbstractVector{Float}` : input lift coefficients
 - `cd::AbstractVector{Float}` : input drag coefficients
 
-# Keyword Arguments:
+# Keyword Arguments
 - `clminid::Float=nothing` : manually set index for minimum cl
 - `clmaxid::Float=nothing` : manually set index for maximum cl
 - `cl_cutoff_slope::Float=0.1` : "post-stall" slope for cl
 - `cd_cutoff_slope::Float=0.1` : "post-stall" slope for cd
 - `blend_hardness::Float=50` : hardenss of blend between nominal polar and post-stall modifications.
 
-# Returns:
+# Returns
 - `aoa_ext::AbstractVector{Float}` : angles of attack for modified polar, in radians
 - `cl_ext::AbstractVector{Float}` : modified lift coefficients
 - `cd_ext::AbstractVector{Float}` : modified drag coefficients
@@ -140,14 +140,20 @@ end
 """
     solidity_and_stagger_factor_smooth(solidity, stagger; blend_hardness=100)
 
-A smoothed version of `solidity_and_stagger_factor`.
+A smoothed version of `solidity_and_stagger_factor`, which computes a correction factor
+based on local blade solidity and stagger angle using a fitted and smoothed quadratic model.
 
-# Arguments:
-- `solidity::Float` : local solidity
-- `stagger::Float` : local stagger (in radians)
+# Arguments
+- `solidity::Float`: Local blade solidity (typically chord/spacing ratio).
+- `stagger::Float`: Local blade stagger angle (in **radians**).
 
-# Keyword Arguments:
-- `blend_hardness::Float=100` : hardness for smoothing blends
+# Keyword Arguments
+- `blend_hardness::Float=100`: Controls the sharpness of blending transitions. Higher values yield sharper transitions between regions of the curve.
+
+# Returns
+- `ssfactor::Float`: A smoothed correction factor based on solidity and stagger. 
+  This factor is derived from empirical fits and smoothed using sigmoid blending 
+  to ensure continuity and differentiability across the full input range.
 """
 function solidity_and_stagger_factor_smooth(solidity, stagger; blend_hardness=100)
 
@@ -227,12 +233,19 @@ Correction for airfoil data used in a high-solidity cascade application.
 Correction is used in DFDC airfoils nominally and come from quadratic fits to curves in fig 6-29 "Axial Flow Fans and Ducts" by Wallis (1983).
 Note that the corrections are really only meant for Wallis' custom airfoil design and specific conditions mentioned in the book.
 
-# Arguments:
+# Arguments
 - `solidity::Float` : local solidity
 - `stagger::Float` : local stagger (in radians)
 
-# Keyword Arguments:
+# Keyword Arguments
 - `blend_hardness::Float=100` : hardness for smoothing blends
+
+# Returns
+- `clfactor::Float`: Correction factor for lift coefficient based on local solidity and stagger. 
+  The factor is computed using a spline-interpolated quadratic fit. 
+  - It is capped at 1.0.
+  - It is flat below a stagger angle of 20° (0.349 rad).
+  - The valid range for best fidelity is between 20° and 90° stagger.
 """
 function solidity_and_stagger_factor(solidity, stagger;)
     # data from table (these are factors for a quadratic fit)
@@ -340,15 +353,15 @@ end
 
 Apply smoothed Wallis' cascade correction (see `solidity_and_stagger_factor_smooth`) to local lift.
 
-# Arguments:
+# Arguments
 - `cl::AbstractVector{Float}` : input lift coefficients
 - `solidity::Float` : local solidity
 - `stagger::Float` : local stagger (in radians)
 
-# Keyword Arguments:
+# Keyword Arguments
 - `blend_hardness::Float=100` : hardness of smoothing blends
 
-# Returns:
+# Returns
 - `cl_corr::AbstractVector{Float}` : corrected lift coefficients.
 """
 function solidity_and_stagger(cl, solidity, stagger; blend_hardness=100)
@@ -384,10 +397,10 @@ end
 
 Smoothed Prandtl-Glauert Mach correction factor
 
-# Arguments:
+# Arguments
 - `mach::Float` : Mach number
 
-# Keyword Arguments:
+# Keyword Arguments
 - `blend_range::Float=0.02` : range for blending factor and max cutoff (allowing Mach >= 1.0 for continuity)
 """
 function prandtl_glauert_factor(mach; blend_range=0.02)
@@ -410,7 +423,7 @@ end
 
 Applies Prandtl-Glauert correction
 
-# Arguments:
+# Arguments
 - `cl::Float` : local lift coefficient
 
 # Returns
@@ -437,15 +450,15 @@ end
 """
     re_drag(cd, re, re_ref; re_exp=0.5)
 
-# Arguments:
+# Arguments
 - `cd::AbstractVector{Float}` : input drag coefficients
 - `re::Float` : Current Reynolds number
 - `re_ref::Float` : Reference Reynolds number (at which the cd's were generated)
 
-# Keyword Arguments:
+# Keyword Arguments
 - `re_exp::Float=0.5` : should be 0.2 for laminar and 0.5 for turbulent flow
 
-# Returns:
+# Returns
 - `cd_corr::AbstractVector{Float}` : Reynolds corrected drag coefficients
 """
 function re_drag(cd, re, re_ref; re_exp=0.5)
@@ -486,10 +499,10 @@ end
 
 Smoothed, vectorized, in-place version of `transonic_lift_limiter`.
 
-# Different Arguments:
+# Different Arguments
 - `cl::AbstractVector{Float}` : vector of lift coefficients
 
-# Additional Keyword Argument:
+# Additional Keyword Argument
 - `blend_hardness::Float=50` : hardenss of smoothing blends
 """
 function transonic_lift_limiter_smooth!(
@@ -588,7 +601,7 @@ end
 Airfoil polar corrections due to transonic effects as found in XROTOR and DFDC.
 Note that this correction is done nominally in the DFDC airfoil evaluation.
 
-# Arguments:
+# Arguments
 - `cl::Float` : input lift coefficient
 - `mach::Float` : Mach number
 - `clcdmin::Float` : lift coefficient at minimum drag coefficient.
@@ -603,7 +616,7 @@ Note that this correction is done nominally in the DFDC airfoil evaluation.
 - `mexp::Float=3.0` : factor hard coded in XROTOR and DFDC
 - `cdmstall::Float=0.1000` : factor hard coded in XROTOR and DFDC
 
-# Returns:
+# Returns
 - `cl_corr:Float` : corrected lift coefficient
 """
 function transonic_lift_limiter(
@@ -666,11 +679,11 @@ end
 
 Smoothed, vecotrized, in-place version of `transonic_drag_addition`.
 
-# Different Arguments:
+# Different Arguments
 - `cd::AbstractVector{Float}` : vector of drag coefficients
 - `cl::AbstractVector{Float}` : vector of lift coefficients
 
-# Additional Keyword Argument:
+# Additional Keyword Argument
 - `blend_hardness::Float=50` : hardenss of smoothing blends
 """
 function transonic_drag_addition!(
@@ -721,7 +734,7 @@ end
 Drag augmentation due to transonic effects as found in XROTOR and DFDC.
 Note this is nominally applied to DFDC airfoil evaluation.
 
-# Arguments:
+# Arguments
 - `cd::Float` : input drag coefficient
 - `cl::Float` : input lift coefficient
 - `clcdmin::Float` : lift coefficient at minimum drag coefficient.
@@ -735,7 +748,7 @@ Note this is nominally applied to DFDC airfoil evaluation.
 - `cdmstall::Float=0.1000` : factor hard coded in XROTOR and DFDC
 - `absdx::Float=0.0625` : smoothing factor for smooth absolute value function
 
-# Returns:
+# Returns
 - `cl_corr:Float` : corrected lift coefficient
 """
 function transonic_drag_addition(
@@ -794,7 +807,7 @@ Evaluates and applies on-the-fly corrections, including Reynolds corrections, fo
 Evaluates cascade lift and drag.
 
 
-# Arguments:
+# Arguments
 **Coefficients**
 - `cl::Float` : local lift coefficient
 - `cd::Float` : local drag coefficient
@@ -819,7 +832,7 @@ or
 - `solidity::Float` : Local solidity
 - `stagger::Float` : Stagger angle, radians
 
-# Keyword Arguments:
+# Keyword Arguments
 - `mcrit::Float`=0.7 : Critical Mach number
 
 **rotorzloc airfoil type parameters for post-stall behavior**
@@ -1061,7 +1074,7 @@ function corrected_clcd!(
     transblendhardness=50,
     # misc
     verbose=false,
-)
+    )
 
     # - Get cl, cd - #
     cl, cd .= afeval(af, alpha, Re, Mach)

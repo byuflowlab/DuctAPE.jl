@@ -1,7 +1,7 @@
 """
     ExternalAirfoil
 
-# Fields:
+# Fields
 - `parameters::Vector` : parameters for geoemtry used in `compute_aero`.
 - `compute_aero::Function` : funciton of the form `f(parameters, angle_of_attack, reynolds_number, mach_number, local_solidity, stagger_angle)`; returns cl and cd
 """
@@ -25,7 +25,7 @@ end
 
 DFDC-like polar function.
 
-# Arguments:
+# Arguments
 - `inflow_magnitude::Float` : Velocity magnitude of inflow
 - `local_reynolds::Float` : local Reynolds number
 - `local_solidity::Float` : local Solidity
@@ -34,11 +34,11 @@ DFDC-like polar function.
 - `airfoil_object::C4Blade.ExternalAirfoil` : ExternalAirfoil object
 - `asound::Float` : speed of sound
 
-# Keyword Arguments:
+# Keyword Arguments
 - `verbose::Bool=false::` : print verbose statements
 - `is_stator::Int=0` : flag to flip lift values (e.g. for stators)
 
-# Returns:
+# Returns
 - `cl::Float` : lift coefficient corrected for compressibility, solidity and stagger as required.
 - `cd::Float` : drag coefficient corrected for compressibility, solidity and stagger as required.
 """

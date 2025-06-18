@@ -1,5 +1,7 @@
 """
-# Fields:
+    DFDCairfoil
+
+# Fields
 - `alpha0::Vector{Float}` : zero lift angle of attack
 - `clmax::Vector{Float}` : maximum cl
 - `clmin::Vector{Float}` : minimum cl
@@ -95,7 +97,7 @@ end
 
 DFDC-like polar function.
 
-# Arguments:
+# Arguments
 - `inflow_magnitude::Float` : Velocity magnitude of inflow
 - `local_reynolds::Float` : local Reynolds number
 - `local_solidity::Float` : local Solidity
@@ -104,11 +106,11 @@ DFDC-like polar function.
 - `afparams::C4Blade.DFDCairfoil` : DFDCairfoil object
 - `asound::Float` : speed of sound
 
-# Keyword Arguments:
+# Keyword Arguments
 - `verbose::Bool=false::` : print verbose statements
 - `is_stator::Int=0` : flag to flip lift values (e.g. for stators)
 
-# Returns:
+# Returns
 - `cl::Float` : lift coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
 - `cd::Float` : drag coefficient corrected for compressibility, transonic regime, solidity and stagger as required.
 - `cmom::Float` : returned from input
@@ -315,9 +317,12 @@ Calculates multi-plane cascade effects on lift slope as a function of solidity a
 
 Comes from a table-driven quadratic fit to a figure 6-29 in Wallis, "Axial Flow Fans and Ducts."
 
-# Arguments:
+# Arguments
 - `solidty::Float` : local solidity: \$\\frac{bc}{2*\\pi*r}\$
 - `stagger::Float` : local stagger angle is from axis (not plane of rotation), in radians
+
+# Returns
+- `clfactor::Float64` : The lift slope correction factor accounting for cascade effects, limited to a maximum of 1.0.
 """
 function getclfactor(solidity, stagger)
 
