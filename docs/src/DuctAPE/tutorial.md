@@ -30,7 +30,7 @@ DuctAPE.DuctedRotor
 
 ### Body Geometry
 
-We begin by defining a matrix of coordinates for the duct and another for the center_body geometries.
+We begin by defining a matrix of coordinates for the duct and another for the center body geometries.
 For example:
 
 ```@example tutorial

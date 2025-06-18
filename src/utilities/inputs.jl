@@ -72,96 +72,96 @@ struct OperatingPoint{
     Ptot::Tp
     Ttot::Tt
     Omega::To
+end
 
-    function OperatingPoint(
-        units::Imperial,
-        Vinf,
-        Omega,
-        rhoinf=nothing,
-        muinf=nothing,
-        asound=nothing,
-        altitude=0.0,
-    )
+function OperatingPoint(
+    units::Imperial,
+    Vinf,
+    Omega,
+    rhoinf=nothing,
+    muinf=nothing,
+    asound=nothing,
+    altitude=0.0,
+)
 
-        # Get thermodynamic properties
-        Tinf, Pinf, rho_inf, mu_inf = standard_atmosphere(units, altitude)
+    # Get thermodynamic properties
+    Tinf, Pinf, rho_inf, mu_inf = standard_atmosphere(units, altitude)
 
-        # freestream density
-        if isnothing(rhoinf)
-            rhoinf = rho_inf
-        end
-
-        # freestream dynamic viscosity
-        if isnothing(muinf)
-            muinf = mu_inf
-        end
-
-        # freestream speed of sound
-        if isnothing(asound)
-            asound = speed_of_sound(Pinf, rhoinf)
-        end
-
-        # freestream Mach
-        Minf = calculate_mach.(Vinf, asound)
-
-        # freestream total pressure and temperature
-        Ptot = total_pressure.(Pinf, Minf)
-        Ttot = total_temperature.(Tinf, Minf)
-
-        return new(
-            Imperial(),
-            isscalar(Vinf) ? [Vinf] : Vinf,
-            isscalar(Minf) ? [Minf] : Minf,
-            isscalar(rhoinf) ? [rhoinf] : rhoinf,
-            isscalar(muinf) ? [muinf] : muinf,
-            isscalar(asound) ? [asound] : asound,
-            isscalar(Ptot) ? [Ptot] : Ptot,
-            isscalar(Ttot) ? [Ttot] : Ttot,
-            isscalar(Omega) ? [Omega] : Omega,
-        )
+    # freestream density
+    if isnothing(rhoinf)
+        rhoinf = rho_inf
     end
 
-    function OperatingPoint(
-        Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
-    )
-
-        # Get thermodynamic properties
-        Tinf, Pinf, rho_inf, mu_inf = standard_atmosphere(altitude)
-
-        # freestream density
-        if isnothing(rhoinf)
-            rhoinf = rho_inf
-        end
-
-        # freestream dynamic viscosity
-        if isnothing(muinf)
-            muinf = mu_inf
-        end
-
-        # freestream speed of sound
-        if isnothing(asound)
-            asound = speed_of_sound(Pinf, rhoinf)
-        end
-
-        # freestream Mach
-        Minf = calculate_mach.(Vinf, asound)
-
-        # freestream total pressure and temperature
-        Ptot = total_pressure.(Pinf, Minf)
-        Ttot = total_temperature.(Tinf, Minf)
-
-        return new(
-            SI(),
-            isscalar(Vinf) ? [Vinf] : Vinf,
-            isscalar(Minf) ? [Minf] : Minf,
-            isscalar(rhoinf) ? [rhoinf] : rhoinf,
-            isscalar(muinf) ? [muinf] : muinf,
-            isscalar(asound) ? [asound] : asound,
-            isscalar(Ptot) ? [Ptot] : Ptot,
-            isscalar(Ttot) ? [Ttot] : Ttot,
-            isscalar(Omega) ? [Omega] : Omega,
-        )
+    # freestream dynamic viscosity
+    if isnothing(muinf)
+        muinf = mu_inf
     end
+
+    # freestream speed of sound
+    if isnothing(asound)
+        asound = speed_of_sound(Pinf, rhoinf)
+    end
+
+    # freestream Mach
+    Minf = calculate_mach.(Vinf, asound)
+
+    # freestream total pressure and temperature
+    Ptot = total_pressure.(Pinf, Minf)
+    Ttot = total_temperature.(Tinf, Minf)
+
+    return OperatingPoint(
+        Imperial(),
+        isscalar(Vinf) ? [Vinf] : Vinf,
+        isscalar(Minf) ? [Minf] : Minf,
+        isscalar(rhoinf) ? [rhoinf] : rhoinf,
+        isscalar(muinf) ? [muinf] : muinf,
+        isscalar(asound) ? [asound] : asound,
+        isscalar(Ptot) ? [Ptot] : Ptot,
+        isscalar(Ttot) ? [Ttot] : Ttot,
+        isscalar(Omega) ? [Omega] : Omega,
+    )
+end
+
+function OperatingPoint(
+    Vinf, Omega, rhoinf=nothing, muinf=nothing, asound=nothing; altitude=0.0
+)
+
+    # Get thermodynamic properties
+    Tinf, Pinf, rho_inf, mu_inf = standard_atmosphere(altitude)
+
+    # freestream density
+    if isnothing(rhoinf)
+        rhoinf = rho_inf
+    end
+
+    # freestream dynamic viscosity
+    if isnothing(muinf)
+        muinf = mu_inf
+    end
+
+    # freestream speed of sound
+    if isnothing(asound)
+        asound = speed_of_sound(Pinf, rhoinf)
+    end
+
+    # freestream Mach
+    Minf = calculate_mach.(Vinf, asound)
+
+    # freestream total pressure and temperature
+    Ptot = total_pressure.(Pinf, Minf)
+    Ttot = total_temperature.(Tinf, Minf)
+
+    return OperatingPoint(
+        SI(),
+        isscalar(Vinf) ? [Vinf] : Vinf,
+        isscalar(Minf) ? [Minf] : Minf,
+        isscalar(rhoinf) ? [rhoinf] : rhoinf,
+        isscalar(muinf) ? [muinf] : muinf,
+        isscalar(asound) ? [asound] : asound,
+        isscalar(Ptot) ? [Ptot] : Ptot,
+        isscalar(Ttot) ? [Ttot] : Ttot,
+        isscalar(Omega) ? [Omega] : Omega,
+    )
 end
 
 """
@@ -216,61 +216,61 @@ struct PanelingConstants{TI,TF,TFI}
     num_panels::AbstractVector{TI}
     dte_minus_cbte::TFI
     num_wake_sheets::TI
-    wake_length::TF = 1.0
+    wake_length::TF
+end
 
-    function PanelingConstants(
-        num_duct_inlet_panels::TI,
-        num_center_body_inlet_panels::TI,
-        num_panels::AbstractVector{TI},
-        dte_minus_cbte::TFI,
-        num_wake_sheets::TI,
-        wake_length::TF=1.0,
-    ) where {TI,TF,TFI}
+function PanelingConstants(
+    num_duct_inlet_panels,
+    num_center_body_inlet_panels,
+    num_panels,
+    dte_minus_cbte,
+    num_wake_sheets,
+    wake_length=1.0,
+)
 
-        # initialize error messages
-        throw_error = false
-        error_messages = ""
-        error_count = 1
+    # initialize error messages
+    throw_error = false
+    error_messages = ""
+    error_count = 1
 
-        if num_duct_inlet_panels <= 0
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): `num_duct_inlet_panels` cannot be fewer than 1; must have a non-zero, positive number of panels for the duct inlet."
-            error_count += 1
-        end
-        if num_center_body_inlet_panels <= 0
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): `num_center_body_inlet_panels` cannot be fewer than 1; must have a non-zero, positive number of panels for the center body inlet"
-            error_count += 1
-        end
-        if any(num_panels .<= 0)
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): at least one entry in `num_panels` is less than 1; must have non-zero, positive numbers of panels."
-            error_count += 1
-        end
-        if num_wake_sheets < 3
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): `num_wake_sheets` must be at least 3."
-            error_count += 1
-        end
-        if wake_length < 0
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): cannont have a negative `wake_length`."
-            error_count += 1
-        end
+    if num_duct_inlet_panels <= 0
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): `num_duct_inlet_panels` cannot be fewer than 1; must have a non-zero, positive number of panels for the duct inlet."
+        error_count += 1
+    end
+    if num_center_body_inlet_panels <= 0
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): `num_center_body_inlet_panels` cannot be fewer than 1; must have a non-zero, positive number of panels for the center body inlet"
+        error_count += 1
+    end
+    if any(num_panels .<= 0)
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): at least one entry in `num_panels` is less than 1; must have non-zero, positive numbers of panels."
+        error_count += 1
+    end
+    if num_wake_sheets < 3
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): `num_wake_sheets` must be at least 3."
+        error_count += 1
+    end
+    if wake_length < 0
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): cannont have a negative `wake_length`."
+        error_count += 1
+    end
 
-        if throw_error
-            @error error_messages
-            return nothing
-        else
-            return new(
-                num_duct_inlet_panels,
-                num_center_body_inlet_panels,
-                num_panels,
-                dte_minus_cbte,
-                num_wake_sheets,
-                wake_length,
-            )
-        end
+    if throw_error
+        @error error_messages
+        return nothing
+    else
+        return PanelingConstants(
+            num_duct_inlet_panels,
+            num_center_body_inlet_panels,
+            num_panels,
+            dte_minus_cbte,
+            num_wake_sheets,
+            wake_length,
+        )
     end
 end
 
@@ -320,89 +320,77 @@ struct Rotor{
     tip_gap::TTg
     airfoils::Taf
     is_stator::Tf
+end
 
-    function Rotor(
-        B::Tb,
-        rotor_axial_position::TRz,
-        r::Tr,
-        Rhub::TRh,
-        Rtip::TRt,
-        chords::Tc,
-        twists::Tt,
-        tip_gap::TTg,
-        airfoils::Taf,
-        is_stator::Tf,
-        i_know_what_im_doing=false,
-    ) where {
-        Tb<:AbstractVector,
-        TRz<:AbstractVector,
-        Tr<:AbstractArray,
-        TRh<:AbstractVector,
-        TRt<:AbstractVector,
-        Tc<:AbstractArray,
-        Tt<:AbstractArray,
-        TTg<:AbstractVector,
-        Taf<:AbstractArray,
-        Tf<:AbstractVector,
-    }
+function Rotor(
+    B,
+    rotor_axial_position,
+    r,
+    Rhub,
+    Rtip,
+    chords,
+    twists,
+    tip_gap,
+    airfoils,
+    is_stator,
+    i_know_what_im_doing=false,
+)
 
-        # initialize error messages
-        throw_error = false
-        error_messages = ""
-        error_count = 1
+    # initialize error messages
+    throw_error = false
+    error_messages = ""
+    error_count = 1
 
-        if !i_know_what_im_doing && length(findall(t -> t > 1.75, twists)) > 2
-            @warn "It looks like your input twist angles may be in degrees. Note that the required units for twist are radians. Converting to radians for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic conversion)."
-            twists .*= pi / 180.0
-        end
+    if !i_know_what_im_doing && length(findall(t -> t > 1.75, twists)) > 2
+        @warn "It looks like your input twist angles may be in degrees. Note that the required units for twist are radians. Converting to radians for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic conversion)."
+        twists .*= pi / 180.0
+    end
 
-        if length(unique(rotor_axial_position)) == length(rotor_axial_position)
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): Cannot place rotors on top of eachother."
-            error_count += 1
-        end
-        if Rhub > Rtip
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): `Rtip` must be greater than `Rhub`."
-            error_count += 1
-        end
-        if !all(r[2:end] .> r[1:(end - 1)])
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): Radial positions, `r`, must be increasing across the blade"
-            error_count += 1
-        end
-        if any(r .<= 0)
-            throw_error = true
-            error_messages *= "\n\tError $(error_count): Radial positions, `r`, must be postive, non-zero"
-            error_count += 1
-        end
+    if length(unique(rotor_axial_position)) == length(rotor_axial_position)
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): Cannot place rotors on top of eachother."
+        error_count += 1
+    end
+    if Rhub > Rtip
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): `Rtip` must be greater than `Rhub`."
+        error_count += 1
+    end
+    if !all(r[2:end] .> r[1:(end - 1)])
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): Radial positions, `r`, must be increasing across the blade"
+        error_count += 1
+    end
+    if any(r .<= 0)
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): Radial positions, `r`, must be postive, non-zero"
+        error_count += 1
+    end
 
-        if throw_error
-            @error error_messages
-            return nothing
-        else
-            return new(
-                isscalar(B) ? [B] : B,
-                if isscalar(rotor_axial_position)
-                    [rotor_axial_position]
-                else
-                    rotor_axial_position
-                end,
-                isscalar(r) ? [r] : r,
-                isscalar(Rhub) ? [Rhub] : Rhub,
-                isscalar(Rtip) ? [Rtip] : Rtip,
-                isscalar(chords) ? [chords] : chords,
-                isscalar(twists) ? [twists] : twists,
-                isscalar(tip_gap) ? [tip_gap] : tip_gap,
-                if typeof(airfoils) <:
-                    Union{c4b.AFType,c4b.DTCascade,c4b.DFDCairfoil,c4b.ADM}
-                    [airfoils]
-                else
-                    airfoils
-                end,
-                isscalar(is_stator) ? [is_stator] : is_stator,
-            )
-        end
+    if throw_error
+        @error error_messages
+        return nothing
+    else
+        return Rotor(
+            isscalar(B) ? [B] : B,
+            if isscalar(rotor_axial_position)
+                [rotor_axial_position]
+            else
+                rotor_axial_position
+            end,
+            isscalar(r) ? [r] : r,
+            isscalar(Rhub) ? [Rhub] : Rhub,
+            isscalar(Rtip) ? [Rtip] : Rtip,
+            isscalar(chords) ? [chords] : chords,
+            isscalar(twists) ? [twists] : twists,
+            isscalar(tip_gap) ? [tip_gap] : tip_gap,
+            if typeof(airfoils) <: Union{c4b.AFType,c4b.DTCascade,c4b.DFDCairfoil,c4b.ADM}
+                [airfoils]
+            else
+                airfoils
+            end,
+            isscalar(is_stator) ? [is_stator] : is_stator,
+        )
     end
 end
 
@@ -421,166 +409,168 @@ struct DuctedRotor{Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:Paneli
     center_body_coordinates::Tcb
     rotor::Trp
     paneling_constants::Tpc
+end
 
-    function DuctedRotor(
-        duct_coordinates::Td,
-        center_body_coordinates::Tcb,
-        rotor::Trp,
-        paneling_constants::Tpc;
-        i_know_what_im_doing=false,
-    ) where {Td<:AbstractMatrix,Tcb<:AbstractMatrix,Trp<:Rotor,Tpc<:PanelingConstants}
+function DuctedRotor(
+    duct_coordinates,
+    center_body_coordinates,
+    rotor,
+    paneling_constants;
+    i_know_what_im_doing=false,
+)
 
-        ### --- FORMAT INPUTS --- ###
+    ### --- FORMAT INPUTS --- ###
 
-        # check shape of duct coordinates
-        if i_know_what_im_doing && size(duct_coordinates, 1) < size(duct_coordinates, 2)
-            @warn "It appears that the duct coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
-            duct_coordinates = permutedims(duct_coordinates)
-        end
+    # check shape of duct coordinates
+    if i_know_what_im_doing && size(duct_coordinates, 1) < size(duct_coordinates, 2)
+        @warn "It appears that the duct coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+        duct_coordinates = permutedims(duct_coordinates)
+    end
 
-        # check clockwise duct coordinates
-        if i_know_what_im_doing && duct_coordinates[2, 2] > duct_coordinates[end - 1, 2]
-            @warn "It appears that the duct coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
-            reverse!(duct_coordinates; dims=1)
-        end
+    # check clockwise duct coordinates
+    if i_know_what_im_doing && duct_coordinates[2, 2] > duct_coordinates[end - 1, 2]
+        @warn "It appears that the duct coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        reverse!(duct_coordinates; dims=1)
+    end
 
-        # check z and r duct coordinates
-        if i_know_what_im_doing &&
-            abs(-(extrema(duct_coordinates[:, 2])...)) >
-           abs(-(extrema(duct_coordinates[:, 1])...))
-            @warn "It appears that the duct coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
-            reverse!(duct_coordinates; dims=2)
-        end
+    # check z and r duct coordinates
+    if i_know_what_im_doing &&
+        abs(-(extrema(duct_coordinates[:, 2])...)) >
+       abs(-(extrema(duct_coordinates[:, 1])...))
+        @warn "It appears that the duct coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        reverse!(duct_coordinates; dims=2)
+    end
 
-        # check shape of  center body coordinates
-        if i_know_what_im_doing &&
-            size(center_body_coordinates, 1) < size(center_body_coordinates, 2)
-            @warn "It appears that the center body coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
-            duct_coordinates = permutedims(center_body_coordinates)
-        end
+    # check shape of  center body coordinates
+    if i_know_what_im_doing &&
+        size(center_body_coordinates, 1) < size(center_body_coordinates, 2)
+        @warn "It appears that the center body coordinates have been provided as rows rather than columns. Permuting dimensions for you (this is an allocating action...). Set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing."
+        duct_coordinates = permutedims(center_body_coordinates)
+    end
 
-        # check clockwise center body coordinates
-        if i_know_what_im_doing &&
-            center_body_coordinates[1, 1] > center_body_coordinates[end, 1]
-            @warn "It appears that the center body coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
-            reverse!(center_body_coordinates; dims=1)
-        end
+    # check clockwise center body coordinates
+    if i_know_what_im_doing &&
+        center_body_coordinates[1, 1] > center_body_coordinates[end, 1]
+        @warn "It appears that the center body coordinates have been provided counter_clockwise rather than clockwise. Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        reverse!(center_body_coordinates; dims=1)
+    end
 
-        # check z and r duct coordinates
-        if i_know_what_im_doing &&
-            abs(-(extrema(center_body_coordinates[:, 2])...)) >
-           abs(-(extrema(center_body_coordinates[:, 1])...))
-            @warn "It appears that the center body coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
-            reverse!(center_body_coordinates; dims=2)
-        end
+    # check z and r duct coordinates
+    if i_know_what_im_doing &&
+        abs(-(extrema(center_body_coordinates[:, 2])...)) >
+       abs(-(extrema(center_body_coordinates[:, 1])...))
+        @warn "It appears that the center body coordinates have been provided as (r,z) rather than (z,r). Reversing direction for you (set the `i_know_what_im_doing` keyword argument to true to disable automatic reversing)."
+        reverse!(center_body_coordinates; dims=2)
+    end
 
-        ### --- CHECK FOR INPUT ERRORS --- ###
+    ### --- CHECK FOR INPUT ERRORS --- ###
 
-        # initialize error messages
-        throw_error = false
-        error_messages = ""
-        error_count = 1
+    # initialize error messages
+    throw_error = false
+    error_messages = ""
+    error_count = 1
 
-        # - Bodies - #
+    # - Bodies - #
 
-        #= TODO: things to check for duct_coordinates
-                 - no crossover? (how to check this?)
-        =#
+    #= TODO: things to check for duct_coordinates
+             - no crossover? (how to check this?)
+    =#
 
-        # check for negative radial positions in duct_coordinates
-        if any(duct_coordinates[:, 2] .< 0.0)
+    # check for negative radial positions in duct_coordinates
+    if any(duct_coordinates[:, 2] .< 0.0)
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): Radial coordinates of duct must be positive."
+        error_count += 1
+    end
+
+    # check we have the same lengths for duct coordinates
+    if length(duct_coordinates[:, 1]) != length(duct_coordinates[:, 2])
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): z and r coordinates of duct must have the same length"
+        error_count += 1
+    end
+
+    # check for negative radial positions in center_body_coordinates
+    if any(center_body_coordinates[:, 2] .< 0.0)
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): Radial coordinates of center body must be positive."
+        error_count += 1
+    end
+
+    # check we have the same lengths for center_body_coordinates
+    if length(center_body_coordinates[:, 1]) != length(center_body_coordinates[:, 2])
+        throw_error = true
+        error_messages *= "\n\tError $(error_count): z and r coordinates of center body must have the same length"
+        error_count += 1
+    end
+
+    # check dte_minus_cbte
+    if duct_coordinates[1, 1] > center_body_coordinates[end, 1]
+        if dte_minus_cbte <= 0
             throw_error = true
-            error_messages *= "\n\tError $(error_count): Radial coordinates of duct must be positive."
+            error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is behind the center body trailing edge, `dte_minus_cbte` should be positive."
             error_count += 1
         end
-
-        # check we have the same lengths for duct coordinates
-        if length(duct_coordinates[:, 1]) != length(duct_coordinates[:, 2])
+    elseif duct_coordinates[1, 1] < center_body_coordinates[end, 1]
+        if dte_minus_cbte >= 0
             throw_error = true
-            error_messages *= "\n\tError $(error_count): z and r coordinates of duct must have the same length"
+            error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is ahead of the center body trailing edge, `dte_minus_cbte` should be negative."
             error_count += 1
         end
-
-        # check for negative radial positions in center_body_coordinates
-        if any(center_body_coordinates[:, 2] .< 0.0)
+    else
+        if dte_minus_cbte != 0
             throw_error = true
-            error_messages *= "\n\tError $(error_count): Radial coordinates of center body must be positive."
+            error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is aligned with the center body trailing edge, `dte_minus_cbte` should be zero."
             error_count += 1
         end
+    end
 
-        # check we have the same lengths for center_body_coordinates
-        if length(center_body_coordinates[:, 1]) != length(center_body_coordinates[:, 2])
+    # check number of panels relative to number of rotors and dte_minus_cbte
+    if iszero(duct_coordinates[1, 1] == center_body_coordinates[end, 1])
+        if length(num_panels) != length(rotor_axial_position) + 1
             throw_error = true
-            error_messages *= "\n\tError $(error_count): z and r coordinates of center body must have the same length"
+            error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
             error_count += 1
         end
-
-        # check dte_minus_cbte
-        if duct_coordinates[1, 1] > center_body_coordinates[end, 1]
-            if dte_minus_cbte <= 0
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is behind the center body trailing edge, `dte_minus_cbte` should be positive."
-                error_count += 1
-            end
-        elseif duct_coordinates[1, 1] < center_body_coordinates[end, 1]
-            if dte_minus_cbte >= 0
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is ahead of the center body trailing edge, `dte_minus_cbte` should be negative."
-                error_count += 1
-            end
-        else
-            if dte_minus_cbte != 0
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): It appears that the dte_minus_cbte value is incorrect. If the duct trailing edge is aligned with the center body trailing edge, `dte_minus_cbte` should be zero."
-                error_count += 1
-            end
+    else
+        if length(num_panels) != length(rotor_axial_position) + 2
+            throw_error = true
+            error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
+            error_count += 1
         end
+    end
 
-        # check number of panels relative to number of rotors and dte_minus_cbte
-        if iszero(duct_coordinates[1, 1] == center_body_coordinates[end, 1])
-            if length(num_panels) != length(rotor_axial_position) + 1
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be one more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges align."
-                error_count += 1
-            end
-        else
-            if length(num_panels) != length(rotor_axial_position) + 2
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): Length of vector `num_panels` should be two more than the length of vector `rotor_axial_position` when the duct and center_body trailing edges do not align."
-                error_count += 1
-            end
+    # other checks:
+    # - rotor location is inside duct
+    for rzl in rotor_axial_position
+        if rzl < minimum(duct_coordinates[1, 1])
+            throw_error = true
+            error_messages *= "\n\tError $(error_count): Rotor is in front of duct leading edge. Rotor must be within duct."
+            error_count += 1
         end
+        if rzl > duct_coordinates[end, 1]
+            throw_error = true
+            error_messages *= "\n\tError $(error_count): Rotor is behind duct trailing edge. Rotor must be within duct."
+            error_count += 1
+        end
+        if rzl < center_body_coordinates[1, 1]
+            throw_error = true
+            error_messages *= "\n\tError $(error_count): Rotor is in front of center_body leading edge. Rotor must be attached to center body."
+            error_count += 1
+        end
+        if rzl > center_body_coordinates[end, 1]
+            throw_error = true
+            error_messages *= "\n\tError $(error_count): Rotor is behind center_body trailing edge. Rotor must be attached to center body."
+            error_count += 1
+        end
+    end
 
-        # other checks:
-        # - rotor location is inside duct
-        for rzl in rotor_axial_position
-            if rzl < minimum(duct_coordinates[1,1])
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): Rotor is in front of duct leading edge. Rotor must be within duct."
-                error_count += 1
-            end
-            if rzl > duct_coordinates[end,1]
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): Rotor is behind duct trailing edge. Rotor must be within duct."
-                error_count += 1
-            end
-            if rzl < center_body_coordinates[1,1]
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): Rotor is in front of center_body leading edge. Rotor must be attached to center body."
-                error_count += 1
-            end
-            if rzl > center_body_coordinates[end,1]
-                throw_error = true
-                error_messages *= "\n\tError $(error_count): Rotor is behind center_body trailing edge. Rotor must be attached to center body."
-                error_count += 1
-            end
-        end
-
-        if throw_error
-            @error error_messages
-            return nothing
-        else
-            return new(Td, Tcb, Trp, Tpc)
-        end
+    if throw_error
+        @error error_messages
+        return nothing
+    else
+        return DuctedRotor(
+            duct_coordinates, center_body_coordinates, rotor, paneling_constants
+        )
     end
 end
