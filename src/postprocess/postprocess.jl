@@ -839,6 +839,29 @@ function run_residual!(
 end
 
 """
+    run_residual!(
+        solver_options::CSORSolverOptions,
+        converged_states,
+        state_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+        multipoint_index
+    )
+
+Run the residual evaluation post-convergence for a CSOR solver. Computes the residuals and fills intermediate solve containers.
+
+# Arguments
+Same as `run_residual!` for `ExternalSolverOptions`.
+
+# Returns
+- `NamedTuple` : Contains `Gamr`, `sigr`, `gamw`, and populated `solve_containers`.
 """
 function run_residual!(
     solver_options::CSORSolverOptions,
@@ -896,6 +919,29 @@ function run_residual!(
 end
 
 """
+    run_residual!(
+        solver_options::ModCSORSolverOptions,
+        converged_states,
+        state_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+        multipoint_index
+    )
+
+Run the residual evaluation post-convergence for a modified CSOR solver. Estimates states and fills solve containers.
+
+# Arguments
+Same as `run_residual!` for `ExternalSolverOptions`.
+
+# Returns
+- `NamedTuple` : Contains `Gamr`, `sigr`, `gamw`, and populated `solve_containers`.
 """
 function run_residual!(
     solver_options::ModCSORSolverOptions,

@@ -557,6 +557,10 @@ Add force induced by trailing edge gap panels to total forces.
 # Keyword Arguments
 - `rhoinf::Float=1.225` : reference density for non-dimensionalization
 - `Vref::Float=1.0` : reference velocity for non-dimensionalization
+
+# Returns
+- `thrust::Vector{Float}` : dimensional axial force
+- `force_coeff::Vector{Float}` : non-dimensional axial force
 """
 function forces_from_TEpanels!(
     thrust, force_coeff, cp_in, cp_out, panels; rhoinf=1.225, Vref=1.0

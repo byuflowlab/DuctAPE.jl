@@ -120,7 +120,7 @@ end
 """
     boundary_layer_residual_head!(dy, y, parameters, s)
 
-Calculate dy give the current states, y, the input position, s, and various parameters.
+Calculate dy given the current states, y, the input position, s, and various parameters.
 """
 function boundary_layer_residual_head!(dy, y, parameters, s; debug=false)
 

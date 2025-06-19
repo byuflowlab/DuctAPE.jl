@@ -31,14 +31,14 @@ end
 
 Split the duct body surface at the leading edge of the duct by locating the stagnation point.
 
-# Arguments:
+# Arguments
 - `duct_panel_lengths::Vector{Float}` : Vector of panel lengths for the duct from casing trailing edge clockwise to nacelle trailing edge.
 - `duct_panel_tangents::Matrix{Float}` : Tangent vectors of each duct panel (dimension 2 × number_of_panels).
 - `Vtot_duct::Matrix{Float}` : Total velocity vectors at each duct panel (dimension 2 × number_of_panels).
 - `Vtan_duct::Vector{Float}` : Tangential velocity magnitude at each duct panel.
 - `first_step_size::Float` : Reference step size used for detecting stagnation location.
 
-# Returns:
+# Returns
 - `s_upper::Union{Vector{Float}, Nothing}` : cumulative panel lengths of the upper (nacelle) side starting at stagnation point, or `nothing` if no stagnation point found.
 - `s_lower::Vector{Float}` : cumulative panel lengths of the lower (casing) side starting at stagnation point.
 - `stag_ids::Vector{Int}` : indices bounding the stagnation point on the duct panel cumulative length vector.

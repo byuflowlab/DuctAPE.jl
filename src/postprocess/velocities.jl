@@ -328,6 +328,9 @@ Calculate tangential velocity for a given net circulation and radial location
 # Arguments
 - `Gamma_tilde::Matrix{Float}` : Sum of upstream circulation values
 - `r::Matrix{Float}` : blade element radial positions
+
+# Returns
+- `vtheta::Vector{Float}` : Tangential velocity at each radial location.
 """
 function calculate_vtheta(Gamma_tilde, r)
     TF = promote_type(eltype(Gamma_tilde), eltype(r))
@@ -362,6 +365,10 @@ Calculate the induced velocities on one of the body wakes (unit velocity inputs 
 - `vr_b::Matrix{Float}` : unit radial induced velocity of the bodies onto the body wake
 - `gamb::Vector{Float}` : body panel strengths
 - `Vinf::Vector{Float}` : one element vector containing the velocity magnitude
+
+# Returns
+- `vz::Vector{Float}` : Total axial velocity at the body wake control points.
+- `vr::Vector{Float}` : Total radial velocity at the body wake control points.
 """
 function calculate_induced_velocities_on_bodywake(
     vz_w, vr_w, gamw, vz_r, vr_r, sigr, vz_b, vr_b, gamb, Vinf

@@ -3,14 +3,13 @@
 
 Writes NamedTuples, specifically for writing out the output of the `post_procces()` function.
 
-# Arguments:
+# Arguments
 - `outs::NamedTuple` : Named tuple to write to file.
 - `filename::String` : file name (including full desired path and file type) for file to write
 
-# Keyword Arguments:
+# Keyword Arguments
 - `output_tuple_name::String` : desired variable name of written NamedTuple
 - `checkoutfileexists::Bool=false` : boolean for whether to check if the outfile already exists and whether or not to overwrite it.
-
 """
 function write_data(
     outs, filename="dfdc_outs.jl"; output_tuple_name="ductape_data", checkoutfileexists=false
