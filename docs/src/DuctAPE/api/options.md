@@ -16,9 +16,13 @@ DuctAPE.set_options
 
 The major sub-categories of options include general options, pre-processing options, solver options for both determining the wake sheet positions as well as the overall aerodyanmics solve, post-processing options, and bookkeeping options.
 
+---
+
 ## Bookkeeping Options
 
 These are options that can be changed by the user for development/debugging purposes, but at this point, it would be wise in general usage to not change them. In future revisions, these will likely no longer be accessible to the user.
+
+---
 
 ## General Options
 
@@ -31,6 +35,9 @@ If such a failure occurs, DuctAPE cannot continue to the main solve and will exi
 The `hard_fail` option dictates what the exit behavior is.
 If true, DuctAPE will just return `nothing` immediately, which is quicker for turn-around on single runs.
 If false, DuctAPE will attempt to return an output object of the correct size and type, which is convenient for some optimization frameworks for which you'll want some output to be available even if passing a failure flag for the specific analysis.
+
+
+---
 
 ## Preprocess Options
 
@@ -85,6 +92,9 @@ integration_options = DuctAPE.IntegrationOptions(;
 # example of calling the set_options function
 options = DuctAPE.set_options(; integration_options=integration_options)
 ```
+
+---
+
 
 ## Solver Options
 
@@ -179,6 +189,9 @@ DuctAPE.set_options(; solver_options=aero_solver_options)
     The `iterations` field (not to be confused with the `iterations_limit` field) in the solver options should generally not be changed.  They automatically save (in-place) the number of iterations the solver performs and can be accessed after the analysis is run.
 
 
+
+---
+
 ## Postprocess Options
 
 Most of the postprocess options have to do with writing the outputs to files, with the default behavior being to not write anything.  These options can be useful for debugging purposes or saving outputs, though it is usually more efficient to manually save a select few outputs rather than all the outputs.
@@ -209,6 +222,9 @@ boundary_layer_options = DuctAPE.HeadsBoundaryLayerOptions(;
 # set all the options
 DuctAPE.set_options(; boundary_layer_options=boundary_layer_options)
 ```
+
+
+---
 
 # Advanced Options for Multi-point analyses
 

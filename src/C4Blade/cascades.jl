@@ -51,10 +51,10 @@ end
 Cascade version of `writecascadefile` function from CCBlade. Writes solidity after Mach number
 """
 function writecascadefile(
-    filename, info, inflow, Re, stagger, solidity, Mach, cl, cd, radians
+    filename, inflow, Re, stagger, solidity, Mach, cl, cd, radians
 )
     open(filename, "w") do f
-        @printf(f, "%s\n", info)
+        @printf(f, "%s\n", "C4Blade Generated Cascade")
         @printf(f, "%.17g\n", stagger)
         @printf(f, "%.17g\n", Re)
         @printf(f, "%.17g\n", Mach)
@@ -432,7 +432,6 @@ abstract type DTCascade end
 #TODO: need tests for these
 
 """
-    InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd, info)
     InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd)
     InReStSoMaCAS(filenames::Matrix{String}; radians=true)
 
@@ -444,14 +443,13 @@ Data is fit recursively with Akima splines.
 - `stagger::Vector{Float64}`: stagger angles
 - `solidity::Vector{Float64}`: local solidity
 - `Mach::Vector{Float64}`: Mach numbers
-- `cl::Array{Float64}`: lift coefficients where cl[i, j, k, ell] corresponds to stagger[i], Re[j], Mach[k], solidity[ell]
-- `cd::Array{Float64}`: drag coefficients where cd[i, j, k, ell] corresponds to stagger[i], Re[j], Mach[k], solidity[ell]
-- `info::String`: a description of this airfoil data (just informational)
+- `cl::Array{Float64}`: lift coefficients where cl[i, j, k, l, m] corresponds to inflow[i],  Re[j], stagger[k], solidity[l], Mach[m]
+- `cd::Array{Float64}`: lift coefficients where cd[i, j, k, l, m] corresponds to inflow[i],  Re[j], stagger[k], solidity[l], Mach[m]
 
 or files with one per Re/Stagger/Solidty/Mach combination
 
 # Arguments:
-- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k, ell] corresponds to Re[i] Stagger[j] Stagger[k] and Solidity[k] with each in ascending order.
+- `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k, l] corresponds to Re[i], Stagger[j], Solidity[k], and Mach[l] with each in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """
 struct InReStSoMaCAS{TF,TS} <: DTCascade
@@ -462,13 +460,6 @@ struct InReStSoMaCAS{TF,TS} <: DTCascade
     Mach::Vector{TF}
     cl::Array{TF}
     cd::Array{TF}
-    info::TS
-end
-
-function InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd)
-    return InReStSoMaCAS(
-        inflow, Re, stagger, solidity, Mach, cl, cd, "DuctAPE written cascade"
-    )
 end
 
 function InReStSoMaCAS(filenames::AbstractArray{String}; radians=true)
@@ -501,7 +492,7 @@ function InReStSoMaCAS(filenames::AbstractArray{String}; radians=true)
         end
     end
 
-    return InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd, info)
+    return InReStSoMaCAS(inflow, Re, stagger, solidity, Mach, cl, cd)
 end
 
 function caseval(cas::InReStSoMaCAS, inflow, Re, stagger, solidity, Mach)
@@ -545,7 +536,6 @@ function writecascadefile(filenames, cas::InReStSoMaCAS; radians=true)
                 for (i, Re) in enumerate(cas.Re)
                     writecascadefile(
                         filenames[i, j, k, ell],
-                        cas.info,
                         Re,
                         stag,
                         sol,
@@ -562,33 +552,6 @@ function writecascadefile(filenames, cas::InReStSoMaCAS; radians=true)
 
     return nothing
 end
-
-# """
-#     get_clcd(af, stagger, inflow, reynolds, mach, )
-
-# Return lift and drag coefficients based on airfoil object type and flow conditions.
-
-# # Arguments:
-#  - `cas::AFType` : Airfoil object either of a CCBlade airfoil type or custom type (custom if solidity information is included).
-#  - `stagger::Vector{Float64}`: stagger angles
-#  - `inflow::Vector{Float64}`: inflow angles
-#  - `reynolds::Float` : Reynolds number
-#  - `mach::Float` : Mach number
-
-# # Returns:
-#  - `cl::Float` : section lift coefficient
-#  - `cd::Float` : section drag coefficient
-# """
-#function get_clcd(af, stagger, inflow, reynolds, mach, solidity)
-
-#    # if solidity undefined, use CCBlade functions
-#    if stagger == nothing
-#        return afeval(af, inflow, reynolds, mach)
-#    else
-#        #if solidity is defined, need to use custom functions
-#        return caseval(af, stagger, inflow, reynolds, mach, solidity)
-#    end
-#end
 
 """
      interp5d(interp1d, x1data, x2data, x3data, x4data, fdata, x1pt, x2pt, x3pt, x4pt)

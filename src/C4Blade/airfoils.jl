@@ -109,45 +109,6 @@ function afeval(af::Function, alpha, Re, Mach)
 end
 # ---------------
 
-# --- Simple paramterization ------
-
-"""
-    SimpleAF(m, alpha0, clmax, clmin, cd0, cd2)
-
-A simple parameterized lift and drag curve.
-- `cl = m (alpha - alpha0)` (capped by clmax/clmin)
-- `cd = cd0 + cd2 * cl^2`
-
-# Arguments:
-- `m::Float64`: lift curve slope
-- `alpha0::Float64`: zero-lift angle of attack
-- `clmax::Float64`: maximum lift coefficient
-- `clmin::Float64`: minimum lift coefficient
-- `cd0::Float64`: zero lift drag
-- `cd2::Float64`: quadratic drag term
-"""
-struct SimpleAF{TF} <: AFType
-    m::TF
-    alpha0::TF
-    clmax::TF
-    clmin::TF
-    cd0::TF
-    cd2::TF
-end
-
-function afeval(af::SimpleAF, alpha, Re, Mach)
-    cl = af.m * (alpha - af.alpha0)
-    cl = min(cl, af.clmax)
-    cl = max(cl, af.clmin)
-
-    cd = af.cd0 + af.cd2 * cl^2
-
-    return cl, cd
-end
-
-# ---------------
-
-# --- Spline Type (just alpha)
 
 """
     AlphaAF(alpha, cl, cd)
