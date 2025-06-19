@@ -1,0 +1,13 @@
+```@docs
+DuctAPE.promote_ducted_rotor_type
+DuctAPE.isscalar
+DuctAPE.dot
+DuctAPE.norm
+DuctAPE.cross2mag
+DuctAPE.linear_transform
+DuctAPE.extract_primals!
+DuctAPE.lfs
+DuctAPE.reset_containers!
+DuctAPE.cache_dims!
+DuctAPE.write_data
+```

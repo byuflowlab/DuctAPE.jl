@@ -30,7 +30,7 @@ internal length is from leading edge to duct trailing edge, assuming hub and duc
 hub chord is ratio to duct chord
 nose_tip_cpx and tail_tip_cpx are also ratio of internal length
 """
-function centerbody_geom(
+function center_body_geom(
     Rhub,
     duct_chord;
     nosecone_start=0.125,
@@ -223,7 +223,7 @@ tail_tip_cpx = 1.0
 cb_te_radius = 0.0
 # cb_te_radius = 1.0
 
-cbx, cbr, cbspline, nosecone_cps, tailcone_cps = centerbody_geom(
+cbx, cbr, cbspline, nosecone_cps, tailcone_cps = center_body_geom(
     Rhub,
     chord;
     nosecone_start=nosecone_start,
