@@ -8,13 +8,14 @@ module DuctAPE
 # NOTE: used for robust state initialziation
 include("C4Blade/C4Blade.jl")
 const c4b = C4Blade
+export c4b
 
 # - Packages for Calculating Unit Induced Velocities - #
 # For Kernels
 using SpecialFunctions # required for elliptic integrals
 
 # For Integration
-using FastGaussQuadrature
+using FastGaussQuadrature # default
 using QuadGK
 
 # - Packages for Code Efficiency - #
@@ -28,7 +29,6 @@ using LinearAlgebra # linear solve and LU decomposition
 
 # General Nonlinear solves
 using SimpleNonlinearSolve # SimpleDFSane and SimpleNewtonRaphson
-# using PolyesterForwardDiff
 
 # Quasi-Newton
 using SIAMFANLEquations
@@ -40,14 +40,13 @@ using FixedPoint
 
 # For using NLsolve
 using NLsolve #Includes Anderson Solver
-using LineSearches # used in newton solver
-using ForwardDiff # used for jacobian for newton solver
+using LineSearches # used in Newton Solver
+using ForwardDiff # used for Jacobian for Newton Solver
 
 # For boundary layer stuff
-using Roots
-using OrdinaryDiffEq:
-    ODEProblem, terminate!, ContinuousCallback, RadauIIA5
-using OrdinaryDiffEq: solve as diffeq_solve
+using Roots # used in finding stagnation point
+using OrdinaryDiffEq: ODEProblem, terminate!, ContinuousCallback, RadauIIA5 # ODE solver
+using OrdinaryDiffEq: solve as diffeq_solve # ODE solver
 
 # - Utility Packages - #
 using FLOWMath # used for various items, mostly interpolation
@@ -55,16 +54,12 @@ using Printf # used when verbose option is selected
 using RecipesBase # for plotting
 
 # - Visualization Packages - #
-import Colors.RGB
-using LaTeXStrings
-using ProgressMeter
+import Colors.RGB # custom colors
+using LaTeXStrings # math labels
 
 #---------------------------------#
 #             EXPORTS             #
 #---------------------------------#
-
-# - Nested Modules - #
-export c4b
 
 # - Types - #
 
@@ -87,10 +82,11 @@ export ChainSolverOptions,
     SIAMFANLEOptions,
     SpeedMappingOptions,
     FixedPointOptions,
-    CSORSolverOptions
+    CSORSolverOptions,
+    ModCSORSolverOptions # default
 export BoundaryLayerOptions
-export RK2, RK4
-export RadauIIA5, RadauIIA3
+export RK2, RK4 # ODE solvers
+export RadauIIA5, RadauIIA3 # ODE solvers
 
 # - Preprocess - #
 export setup_analysis
@@ -132,8 +128,8 @@ include("utilities/thermodynamics.jl")
 include("utilities/ode_solvers.jl")
 
 # Airfoil utility functions
+# TODO: pretty much this whole file should be moved/re-moved, but there's a bunch of tedious changes that need to be  made in the tests and docs before it can be.
 include("utilities/airfoils/airfoil_utilities.jl")
-include("utilities/airfoils/naca_65series.jl")
 
 ##### ----- Analysis ----- #####
 include("analysis/setup.jl")
@@ -203,4 +199,5 @@ include("visualization/convenience_plots.jl")
 
 ##### ----- DEBUGGING ----- #####
 include("../test/test_utils.jl")
+
 end

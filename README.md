@@ -1,10 +1,6 @@
 # DuctAPE.jl [[Duct](#)ed [A](#)xisymmetric [P](#)ropulsor [E](#)valuation]
 
-<!-- Other names to consider -->
-<!-- ADFAN.jl [[A](#)xisymmetric [D](#)ucted [F](#)an [AN](#)alysis] -->
-<!-- (AD)$^2$FAN [[A](#)utomatic [D](#)ifferetiable [A](#)xisymmetric [D](#)ucted [F](#)an [AN](#)alysis] (pronounced "A. D. Fan") -->
-
-<!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://flow.byu.edu/DuctAPE.jl/stable) -->
+ [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://flow.byu.edu/DuctAPE.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://flow.byu.edu/DuctAPE.jl/dev)
 [![Build Status](https://github.com/byuflowlab/DuctAPE.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/byuflowlab/DuctAPE.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
@@ -15,6 +11,12 @@ It is strongly influenced by the underlying [theory](https://web.mit.edu/drela/P
 DuctAPE has been developed specifically for applications in gradient-based optimization settings. <!-- add citations later -->
 The default solver methods have been chosen to balance code efficiency as well as robustness while simultaneously allowing for efficient automatic differentiation through DuctAPE employing [ImplicitAD.jl](https://flow.byu.edu/ImplicitAD.jl/dev/).
 
+
+## Installation
+
+```julia
+pkg> add DuctAPE
+```
 
 ## Publications
 

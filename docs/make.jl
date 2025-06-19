@@ -21,26 +21,16 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "DuctAPE" => [
-            "Getting Started" => "DuctAPE/tutorial.md",
-            "Advanced Usage" => [
-                "Options" => "DuctAPE/advanced_usage/option.md",
-                "Preallocation" => "DuctAPE/advanced_usage/precompilation.md",
-                # "Multi-Rotor Analysis" => "DuctAPE/advanced_usage/multi_rotor.md",
-                "Outputs" => "DuctAPE/advanced_usage/outputs.md",
-                # "Manual Geometry" => "DuctAPE/advanced_usage/manual_repaneling.md",
-            ],
-            "Visualization" => "DuctAPE/visualization.md",
-            "API" => [
-                "Public API Reference" => "DuctAPE/api/public_api.md",
-                "Private API Reference" => [
-                    "Prelims" => "DuctAPE/api/private_prelims.md",
-                    "Preprocess" => "DuctAPE/api/private_preprocess.md",
-                    "Process" => "DuctAPE/api/private_process.md",
-                    "Postprocess" => "DuctAPE/api/private_postprocess.md",
-                    "Utilities" => "DuctAPE/api/private_utilities.md",
-                ],
+            "Quick Start" => "DuctAPE/tutorial.md",
+            "API Reference" => [
+                "Analysis" => "DuctAPE/api/analysis.md",
+                "Required Inputs" => "DuctAPE/api/inputs.md",
+                "Options" => "DuctAPE/api/options.md",
+                "Precompiled Caches" => "DuctAPE/api/caches.md",
+                "Outputs" => "DuctAPE/api/outputs.md",
                 "API Index" => "DuctAPE/api/api_index.md",
             ],
+            "Visualization" => "DuctAPE/visualization.md",
             "Theory" => "DuctAPE/theory.md",
         ],
         "C\$^4\$Blade" => [
@@ -57,7 +47,8 @@ makedocs(;
     ],
     sitename="DuctAPE.jl",
     authors="Judd Mehr <juddmehr@byu.edu>",
-    checkdocs=:exports,
+    # checkdocs=:exports,
+    checkdocs=:none,
 )
 
 deploydocs(; repo="https://github.com/byuflowlab/DuctAPE.jl.git", devbranch="main")

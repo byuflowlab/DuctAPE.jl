@@ -8,7 +8,7 @@ Struct containing dimensions of the problem used throughout the analysis.
 - `nwp`       : number of wake panels
 - `ncp`       : number of casing panels
 - `ndn`       : number of duct nodes
-- `ncbn`      : number of centerbody nodes
+- `ncbn`      : number of center_body nodes
 - `nbn`       : number of body nodes
 - `nbp`       : number of body panels
 - `nws`       : number of wake sheets (also rotor nodes)
@@ -16,7 +16,7 @@ Struct containing dimensions of the problem used throughout the analysis.
 - `nwsn`      : number of nodes in each wake sheet
 - `nwsp`      : number of panels in each wake sheet
 - `ndwin`     : number of duct-wake interfacing nodes
-- `ncbwin`    : number of centerbody-wake interfacing nodes
+- `ncbwin`    : number of center_body-wake interfacing nodes
 - `nbodies=2` : number of bodies (currently hardcoded to 2)
 """
 @kwdef struct ProblemDimensions{TI}
@@ -25,7 +25,7 @@ Struct containing dimensions of the problem used throughout the analysis.
     nwp::TI         # number of wake panels
     ncp::TI         # number of casing panels
     ndn::TI         # number of duct nodes
-    ncbn::TI        # number of centerbody nodes
+    ncbn::TI        # number of center_body nodes
     nbn::TI         # number of body nodes
     nbp::TI         # number of body panels
     nws::TI         # number of wake sheets (also rotor nodes)
@@ -33,7 +33,7 @@ Struct containing dimensions of the problem used throughout the analysis.
     nwsn::TI        # number of nodes in each wake sheet
     nwsp::TI        # number of panels in each wake sheet
     ndwin::TI       # number of duct-wake interfacing nodes
-    ncbwin::TI      # number of centerbody-wake interfacing nodes
+    ncbwin::TI      # number of center_body-wake interfacing nodes
     nbodies::TI = 2 # hard code this for now.
 end
 
@@ -53,35 +53,35 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
 
     # - Extract Paneling Constants - #
     (;
-        npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte
+        num_panels, num_center_body_inlet_panels, num_duct_inlet_panels, wake_length, num_wake_sheets, dte_minus_cbte
     ) = paneling_constants
 
-    # number of rotors is one less than the length of npanels if the duct and hub trailing edges line up, and is two less if they don't
-    nrotor = iszero(dte_minus_cbte) ? length(npanels) - 1 : length(npanels) - 2
+    # number of rotors is one less than the length of num_panels if the duct and hub trailing edges line up, and is two less if they don't
+    nrotor = iszero(dte_minus_cbte) ? length(num_panels) - 1 : length(num_panels) - 2
 
     # number of wake sheets (blade nodes)
-    nws = nwake_sheets
+    nws = num_wake_sheets
 
     # number of blade elements (panels)
     nbe = nws - 1
 
     # number of body panels
-    ncp = nduct_inlet
-    ncbp = ncenterbody_inlet
-    # add rest of panels mutual between centerbody and duct
+    ncp = num_duct_inlet_panels
+    ncbp = num_center_body_inlet_panels
+    # add rest of panels mutual between center_body and duct
     if iszero(dte_minus_cbte)
-        ncp += sum(npanels[1:(end - 1)])
-        ncbp += sum(npanels[1:(end - 1)])
+        ncp += sum(num_panels[1:(end - 1)])
+        ncbp += sum(num_panels[1:(end - 1)])
     else
-        ncp += sum(npanels[1:(end - 2)])
-        ncbp += sum(npanels[1:(end - 2)])
+        ncp += sum(num_panels[1:(end - 2)])
+        ncbp += sum(num_panels[1:(end - 2)])
     end
 
-    # add additional duct or centerbody panels if one extends further back
+    # add additional duct or center_body panels if one extends further back
     if dte_minus_cbte > 0
-        ncp += npanels[end - 1]
+        ncp += num_panels[end - 1]
     elseif dte_minus_cbte < 0
-        ncbp += npanels[end - 1]
+        ncbp += num_panels[end - 1]
     end
 
     # duct panels are casing + nacelle panels
@@ -91,32 +91,32 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
     ndn = ndp + 1
     ncbn = ncbp + 1
 
-    # number of body panels is sum of duct and centerbody panels
+    # number of body panels is sum of duct and center_body panels
     nbp = ndp + ncbp
     # number of body nodes is number of panels + number of bodies
     nbn = ndn + ncbn
 
     # number of panels in each wake sheet
-    nwsp = sum(npanels)
+    nwsp = sum(num_panels)
     # number of nodes in each wake sheet
     nwsn = nwsp + 1
 
-    # number of wake panels is the total number of npanels times the number of wake sheets
-    nwp = sum(npanels) * nwake_sheets
+    # number of wake panels is the total number of num_panels times the number of wake sheets
+    nwp = sum(num_panels) * num_wake_sheets
 
     # number of wake nodes is one more than the number of panels for each wake sheet
-    nwn = nwp + nwake_sheets
+    nwn = nwp + num_wake_sheets
 
-    # number of duct-wake and centerbody-wake interface nodes
+    # number of duct-wake and center_body-wake interface nodes
     if iszero(dte_minus_cbte)
-        ndwin = sum(npanels[1:(end - 1)]) + 1
-        ncbwin = sum(npanels[end - 1]) + 1
+        ndwin = sum(num_panels[1:(end - 1)]) + 1
+        ncbwin = sum(num_panels[end - 1]) + 1
     elseif dte_minus_cbte < 0
-        ndwin = sum(npanels[1:(end - 2)]) + 1
-        ncbwin = sum(npanels[end - 1]) + 1
+        ndwin = sum(num_panels[1:(end - 2)]) + 1
+        ncbwin = sum(num_panels[end - 1]) + 1
     else
-        ndwin = sum(npanels[1:(end - 1)]) + 1
-        ncbwin = sum(npanels[end - 2]) + 1
+        ndwin = sum(num_panels[1:(end - 1)]) + 1
+        ncbwin = sum(num_panels[end - 2]) + 1
     end
 
     return ProblemDimensions(;
@@ -125,7 +125,7 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
         nwp,       # number of wake panels
         ncp,       # number of casing panels
         ndn,       # number of duct nodes
-        ncbn,      # number of centerbody nodes
+        ncbn,      # number of center_body nodes
         nbn,       # number of body nodes
         nbp,       # number of body panels
         nws,       # number of wake sheets (also rotor nodes)
@@ -133,7 +133,7 @@ function get_problem_dimensions(paneling_constants::PanelingConstants)
         nwsn,      # number of nodes in each wake sheet
         nwsp,      # number of panels in each wake sheet
         ndwin,     # number of duct-wake interfacing nodes
-        ncbwin,    # number of centerbody-wake interfacing nodes
+        ncbwin,    # number of center_body-wake interfacing nodes
         nbodies=2, # hard code this for now.
     )
 end
@@ -175,7 +175,7 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
     # number of wake nodes total
     nwn = wake_vortex_panels.totnode[]
 
-    # number of duct-wake and centerbody-wake interface nodes
+    # number of duct-wake and center_body-wake interface nodes
     ndwin = length(
         intersect(
             findall(
@@ -256,7 +256,7 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
         nwp,    # number of wake panels
         ncp,    # number of casing panels
         ndn,    # number of duct nodes
-        ncbn,   # number of centerbody nodes
+        ncbn,   # number of center_body nodes
         nbn,    # number of body nodes
         nbp,    # number of body panels
         nws,    # number of wake sheets (also rotor nodes)
@@ -264,7 +264,7 @@ function get_problem_dimensions(body_vortex_panels, rotor_source_panels, wake_vo
         nwsn,   # number of nodes in each wake sheet
         nwsp,   # number of panels in each wake sheet
         ndwin,  # number of duct-wake interfacing nodes
-        ncbwin, # number of centerbody-wake interfacing nodes
+        ncbwin, # number of center_body-wake interfacing nodes
         nbodies=2, #hardcode for now.
     )
 end

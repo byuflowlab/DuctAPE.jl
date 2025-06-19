@@ -12,9 +12,9 @@
         tangent,
         controlpoints,
         endpanelidxs,
-        wake_panel_ids_along_centerbody_wake_interface,
+        wake_panel_ids_along_center_body_wake_interface,
         wake_panel_ids_along_casing_wake_interface,
-        centerbody_panel_ids_along_centerbody_wake_interface,
+        center_body_panel_ids_along_center_body_wake_interface,
         duct_panel_ids_along_casing_wake_interface,
         num_casing_panels,
     )
@@ -34,9 +34,9 @@ Get the tangential velocities along the body surfaces.
 - `tangent::Matrix{Float}` : unit tangent vectors for each panel
 - `controlpoints::Matrix{Float}` : control point locations for each panel
 - `endpanelidxs::Matrix{Int}` : the indices of the first and last panels for each body
-- `wake_panel_ids_along_centerbody_wake_interface::Vector{Int}` : the indices of the wake panels coincident with the centerbody panels
+- `wake_panel_ids_along_center_body_wake_interface::Vector{Int}` : the indices of the wake panels coincident with the center_body panels
 - `wake_panel_ids_along_casing_wake_interface::Vector{Int}` : the indices of the wake panels coincident with the duct casing (inner surface) panels
-- `centerbody_panel_ids_along_centerbody_wake_interface::Vector{Int}` : the indices of the centerbody panels coincident with the wake panels
+- `center_body_panel_ids_along_center_body_wake_interface::Vector{Int}` : the indices of the center_body panels coincident with the wake panels
 - `duct_panel_ids_along_casing_wake_interface::Vector{Int}` : the indices of the duct panels coincident with the wake panels
 - `num_casing_panels::Int` : the number of panels between the leading and trailing edge of the duct on the duct inner side (casing)
 
@@ -56,9 +56,9 @@ function get_body_tangential_velocities(
     tangent,
     controlpoints,
     endpanelidxs,
-    wake_panel_ids_along_centerbody_wake_interface,
+    wake_panel_ids_along_center_body_wake_interface,
     wake_panel_ids_along_casing_wake_interface,
-    centerbody_panel_ids_along_centerbody_wake_interface,
+    center_body_panel_ids_along_center_body_wake_interface,
     duct_panel_ids_along_casing_wake_interface,
     num_casing_panels,
 )
@@ -77,7 +77,7 @@ function get_body_tangential_velocities(
     Vtot_prejump = similar(Vtot) .= 0
     vtot_body = similar(Vtot) .= 0
     duct_jump = similar(Vtot, (npanel[1],))
-    centerbody_jump = similar(Vtot, (npanel[2],))
+    center_body_jump = similar(Vtot, (npanel[2],))
     body_jump_term = similar(Vtot, totpanel) .= 0.0
     vtot_jump = similar(Vtot) .= 0.0
     vtot_wake = similar(Vtot) .= 0
@@ -88,9 +88,9 @@ function get_body_tangential_velocities(
     nacelle_zpts = zeros(TF, npanel[1] - num_casing_panels)
     vtan_nacelle_in = similar(nacelle_zpts) .= 0
     vtan_nacelle_out = similar(nacelle_zpts) .= 0
-    centerbody_zpts = zeros(TF, npanel[2])
-    vtan_centerbody_in = similar(centerbody_zpts) .= 0
-    vtan_centerbody_out = similar(centerbody_zpts) .= 0
+    center_body_zpts = zeros(TF, npanel[2])
+    vtan_center_body_in = similar(center_body_zpts) .= 0
+    vtan_center_body_out = similar(center_body_zpts) .= 0
 
     vtan_tuple = (;
         # Totals and Components:
@@ -101,7 +101,7 @@ function get_body_tangential_velocities(
         Vtot_prejump,
         vtot_body,
         duct_jump,
-        centerbody_jump,
+        center_body_jump,
         body_jump_term,
         vtot_jump,
         vtot_wake,
@@ -111,8 +111,8 @@ function get_body_tangential_velocities(
         vtan_casing_out,
         vtan_nacelle_in,
         vtan_nacelle_out,
-        vtan_centerbody_in,
-        vtan_centerbody_out,
+        vtan_center_body_in,
+        vtan_center_body_out,
     )
 
     return get_body_tangential_velocities!(
@@ -129,11 +129,11 @@ function get_body_tangential_velocities(
         tangent,
         controlpoints,
         endpanelidxs,
-        wake_panel_ids_along_centerbody_wake_interface,
+        wake_panel_ids_along_center_body_wake_interface,
         wake_panel_ids_along_casing_wake_interface,
-        centerbody_panel_ids_along_centerbody_wake_interface,
+        center_body_panel_ids_along_center_body_wake_interface,
         duct_panel_ids_along_casing_wake_interface,
-        (; casing_zpts, nacelle_zpts, centerbody_zpts),
+        (; casing_zpts, nacelle_zpts, center_body_zpts),
     )
 end
 
@@ -152,9 +152,9 @@ function get_body_tangential_velocities!(
     tangent,
     controlpoints,
     endpanelidxs,
-    wake_panel_ids_along_centerbody_wake_interface,
+    wake_panel_ids_along_center_body_wake_interface,
     wake_panel_ids_along_casing_wake_interface,
-    centerbody_panel_ids_along_centerbody_wake_interface,
+    center_body_panel_ids_along_center_body_wake_interface,
     duct_panel_ids_along_casing_wake_interface,
     zpts,
 )
@@ -162,7 +162,7 @@ function get_body_tangential_velocities!(
 In-place version of `get_body_tangential_velocities`.
 
 # Additional Arguments
-- `zpts::NamedTuple` : a named tuple containing the z-coordinates of the control points of the duct casing, duct nacelle, and centerbody.
+- `zpts::NamedTuple` : a named tuple containing the z-coordinates of the control points of the duct casing, duct nacelle, and center_body.
 """
 function get_body_tangential_velocities!(
     vtan_tuple,
@@ -178,9 +178,9 @@ function get_body_tangential_velocities!(
     tangent,
     controlpoints,
     endpanelidxs,
-    wake_panel_ids_along_centerbody_wake_interface,
+    wake_panel_ids_along_center_body_wake_interface,
     wake_panel_ids_along_casing_wake_interface,
-    centerbody_panel_ids_along_centerbody_wake_interface,
+    center_body_panel_ids_along_center_body_wake_interface,
     duct_panel_ids_along_casing_wake_interface,
     zpts,
 )
@@ -195,9 +195,9 @@ function get_body_tangential_velocities!(
     end
 
     # rename for convenience
-    hwi = wake_panel_ids_along_centerbody_wake_interface
+    hwi = wake_panel_ids_along_center_body_wake_interface
     dwi = wake_panel_ids_along_casing_wake_interface
-    whi = centerbody_panel_ids_along_centerbody_wake_interface
+    whi = center_body_panel_ids_along_center_body_wake_interface
     wdi = duct_panel_ids_along_casing_wake_interface
 
     (;
@@ -209,7 +209,7 @@ function get_body_tangential_velocities!(
         Vtot_prejump,
         vtot_body,
         duct_jump,
-        centerbody_jump,
+        center_body_jump,
         body_jump_term,
         vtot_jump,
         vtot_wake,
@@ -219,11 +219,11 @@ function get_body_tangential_velocities!(
         vtan_casing_out,
         vtan_nacelle_in,
         vtan_nacelle_out,
-        vtan_centerbody_in,
-        vtan_centerbody_out,
+        vtan_center_body_in,
+        vtan_center_body_out,
     ) = vtan_tuple
 
-    (; casing_zpts, nacelle_zpts, centerbody_zpts) = zpts
+    (; casing_zpts, nacelle_zpts, center_body_zpts) = zpts
 
     # TODO also consider including the body wakes here as well.
 
@@ -268,19 +268,19 @@ function get_body_tangential_velocities!(
     end
 
     # center body panels
-    centerbody_jump .= @views (
+    center_body_jump .= @views (
         gamb[(nnode[1] + 1):(totnode - 1)] + gamb[(nnode[1] + 2):(totnode)]
     ) / 2.0
 
     # wake panels interfacing with center body
     if !isnothing(gamw)
-        centerbody_jump[whi] .+= @views (
+        center_body_jump[whi] .+= @views (
             gamw[hwi[1]:(hwi[end] - 1)] + gamw[(hwi[1] + 1):hwi[end]]
         ) / 2.0
     end
 
     body_jump_term[1:length(duct_jump)] .= duct_jump
-    body_jump_term[(length(duct_jump) + 1):end] .= centerbody_jump
+    body_jump_term[(length(duct_jump) + 1):end] .= center_body_jump
 
     for (vt, tan) in zip(eachrow(vtot_jump), eachrow(tangent))
         vt .+= body_jump_term .* tan ./ 2.0
@@ -299,20 +299,20 @@ function get_body_tangential_velocities!(
     split_bodies!(
         vtan_casing_out,
         vtan_nacelle_out,
-        vtan_centerbody_out,
+        vtan_center_body_out,
         casing_zpts,
         nacelle_zpts,
-        centerbody_zpts,
+        center_body_zpts,
         Vtan_out,
         controlpoints,
     )
     split_bodies!(
         vtan_casing_in,
         vtan_nacelle_in,
-        vtan_centerbody_in,
+        vtan_center_body_in,
         casing_zpts,
         nacelle_zpts,
-        centerbody_zpts,
+        center_body_zpts,
         Vtan_in,
         controlpoints,
     )

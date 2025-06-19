@@ -103,7 +103,7 @@ function calculate_rotor_jumps(Gamr, Omega, B, sigr, Cz_rotor)
 end
 
 """
-    calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr, casing_panel_ids_aft_of_rotors, centerbody_panel_ids_aft_of_rotors)
+    calculate_body_delta_cp!(cp, Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr, casing_panel_ids_aft_of_rotors, center_body_panel_ids_aft_of_rotors)
 
 Augment surface pressure by change in pressure coefficient due to rotors specifically on the body panels aft of the rotors.
 
@@ -117,7 +117,7 @@ Augment surface pressure by change in pressure coefficient due to rotors specifi
 - `B::Vector{Float}` : blade count for each rotor (usually integers but could be a float)
 - `cpr::Vector{Float}` : control point radial positions of body panels
 - `casing_panel_ids_aft_of_rotors::Vector{Int}` : duct indices of control point radial positions aft of rotors
-- `centerbody_panel_ids_aft_of_rotors::Vector{Int}` : centerbody indices of control point radial positions aft of rotors
+- `center_body_panel_ids_aft_of_rotors::Vector{Int}` : center_body indices of control point radial positions aft of rotors
 """
 function calculate_body_delta_cp!(
     cp,
@@ -129,7 +129,7 @@ function calculate_body_delta_cp!(
     B,
     cpr,
     casing_panel_ids_aft_of_rotors,
-    centerbody_panel_ids_aft_of_rotors,
+    center_body_panel_ids_aft_of_rotors,
 )
 
     ## -- Calculate change in pressure coefficient -- ##
@@ -146,14 +146,14 @@ function calculate_body_delta_cp!(
         )
         v_theta_hub = calculate_vtheta(
             Gamma_tilde[1, irotor],
-            @view(cpr[centerbody_panel_ids_aft_of_rotors[irotor]:end])
+            @view(cpr[center_body_panel_ids_aft_of_rotors[irotor]:end])
         )
 
         # assemble change in cp due to enthalpy and entropy behind rotor(s)
         cp[1:casing_panel_ids_aft_of_rotors[irotor]] += delta_cp(
             Htilde[end, irotor], Stilde[end, irotor], v_theta_duct, Vref
         )
-        cp[centerbody_panel_ids_aft_of_rotors[irotor]:end] += delta_cp(
+        cp[center_body_panel_ids_aft_of_rotors[irotor]:end] += delta_cp(
             Htilde[1, irotor], Stilde[1, irotor], v_theta_hub, Vref
         )
     end
@@ -176,7 +176,7 @@ Calculate change in pressure coefficient due to rotors specifically on the body 
 - `cpr::Vector{Float}` : control point radial positions of body wake "panels"
 
 # Keyword Arguments
-- `body::String="duct"` : flag as to whether the body in question is a duct or centerbody.
+- `body::String="duct"` : flag as to whether the body in question is a duct or center_body.
 """
 function calculate_bodywake_delta_cp(Gamr, sigr, Cz_rotor, Vref, Omega, B, cpr; body="duct")
 
@@ -215,7 +215,7 @@ get_body_cps(
     B,
     Omega,
     casing_panel_ids_aft_of_rotors,
-    centerbody_panel_ids_aft_of_rotors,
+    center_body_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
     zpts,
@@ -234,10 +234,10 @@ Description
 - `B::Vector{Float}` : blade count for each rotor (usually integers but could be a float)
 - `Omega::Vector{Float}` : rotor rotation rates
 - `casing_panel_ids_aft_of_rotors::Vector{Int}` : duct indices of control point radial positions aft of rotors
-- `centerbody_panel_ids_aft_of_rotors::Vector{Int}` : centerbody indices of control point radial positions aft of rotors
+- `center_body_panel_ids_aft_of_rotors::Vector{Int}` : center_body indices of control point radial positions aft of rotors
 - `controlpoints::Matrix{Float}` : control point locations for each panel
 - `endpanelidxs::Matrix{Int}` : the indices of the first and last panels for each body
-- `zpts::NamedTuple` : a named tuple containing the z-coordinates of the control points of the duct casing, duct nacelle, and centerbody.
+- `zpts::NamedTuple` : a named tuple containing the z-coordinates of the control points of the duct casing, duct nacelle, and center_body.
 
 # Returns
 - `cp_tuple::NamedTuple` : body surface velocities and various useful breakdowns thereof.
@@ -253,7 +253,7 @@ function get_body_cps(
     B,
     Omega,
     casing_panel_ids_aft_of_rotors,
-    centerbody_panel_ids_aft_of_rotors,
+    center_body_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
     zpts;
@@ -265,8 +265,8 @@ function get_body_cps(
     cp_casing_out = similar(Vtan_in, size(zpts.casing_zpts)) .= 0
     cp_nacelle_in = similar(Vtan_in, size(zpts.nacelle_zpts)) .= 0
     cp_nacelle_out = similar(Vtan_in, size(zpts.nacelle_zpts)) .= 0
-    cp_centerbody_in = similar(Vtan_in, size(zpts.centerbody_zpts)) .= 0
-    cp_centerbody_out = similar(Vtan_in, size(zpts.centerbody_zpts)) .= 0
+    cp_center_body_in = similar(Vtan_in, size(zpts.center_body_zpts)) .= 0
+    cp_center_body_out = similar(Vtan_in, size(zpts.center_body_zpts)) .= 0
 
     cp_tuple = (;
         cp_in,
@@ -275,8 +275,8 @@ function get_body_cps(
         cp_casing_out,
         cp_nacelle_in,
         cp_nacelle_out,
-        cp_centerbody_in,
-        cp_centerbody_out,
+        cp_center_body_in,
+        cp_center_body_out,
     )
 
     return get_body_cps!(
@@ -291,7 +291,7 @@ function get_body_cps(
         B,
         Omega,
         casing_panel_ids_aft_of_rotors,
-        centerbody_panel_ids_aft_of_rotors,
+        center_body_panel_ids_aft_of_rotors,
         controlpoints,
         endpanelidxs,
         zpts;
@@ -312,7 +312,7 @@ end
         B,
         Omega,
         duct_panel_ids_aft_of_rotors,
-        centerbody_panel_ids_aft_of_rotors,
+        center_body_panel_ids_aft_of_rotors,
         controlpoints,
         endpanelidxs,
         zpts,
@@ -332,7 +332,7 @@ function get_body_cps!(
     B,
     Omega,
     casing_panel_ids_aft_of_rotors,
-    centerbody_panel_ids_aft_of_rotors,
+    center_body_panel_ids_aft_of_rotors,
     controlpoints,
     endpanelidxs,
     zpts;
@@ -345,13 +345,13 @@ function get_body_cps!(
         cp_out,            # surface pressure along outside of bodies
         cp_casing_in,      # surface pressure along inside of casing
         cp_nacelle_in,     # surface pressure along inside of nacell
-        cp_centerbody_in,  # surface pressure along inside of centerbody
+        cp_center_body_in,  # surface pressure along inside of center_body
         cp_casing_out,     # surface pressure along outside of casing
         cp_nacelle_out,    # surface pressure along outside of nacelle
-        cp_centerbody_out, # surface pressure along outside of centerbody
+        cp_center_body_out, # surface pressure along outside of center_body
     ) = cp_tuple
 
-    (; casing_zpts, nacelle_zpts, centerbody_zpts) = zpts
+    (; casing_zpts, nacelle_zpts, center_body_zpts) = zpts
 
     # - Calculate standard pressure coefficient expression - #
     steady_cp!(cp_in, Vtan_in, Vinf, Vref)
@@ -369,7 +369,7 @@ function get_body_cps!(
         B,
         @view(controlpoints[2, :]),
         casing_panel_ids_aft_of_rotors,
-        centerbody_panel_ids_aft_of_rotors,
+        center_body_panel_ids_aft_of_rotors,
     )
 end
 
@@ -377,20 +377,20 @@ end
     split_bodies!(
         cp_casing_in,
         cp_nacelle_in,
-        cp_centerbody_in,
+        cp_center_body_in,
         casing_zpts,
         nacelle_zpts,
-        centerbody_zpts,
+        center_body_zpts,
         cp_in,
         controlpoints,
     )
     split_bodies!(
         cp_casing_out,
         cp_nacelle_out,
-        cp_centerbody_out,
+        cp_center_body_out,
         casing_zpts,
         nacelle_zpts,
-        centerbody_zpts,
+        center_body_zpts,
         cp_out,
         controlpoints,
     )
@@ -440,7 +440,7 @@ Calculate the pressure coefficient distributions on one of the body wakes
 - `Vref::Vector{Float}` : one element vector with reference velocity used for non-dimensionalization
 
 # Keyword Arguments
-- `body::String="duct"` : flag as to whether the body in question is a duct or centerbody.
+- `body::String="duct"` : flag as to whether the body in question is a duct or center_body.
 """
 function get_bodywake_cps(
     Gamr,

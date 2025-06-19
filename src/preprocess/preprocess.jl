@@ -2,7 +2,7 @@
     reinterpolate_geometry(
         problem_dimensions,
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotor,
         paneling_constants;
         autoshiftduct=true,
@@ -17,7 +17,7 @@ Re-interpolate the body geometry and return compatible body and way geometry.
 # Arguments
 - `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
 - `duct_coordinates::Matrix{Float}` : [z,r] coordinates of duct geometry
-- `centerbody_coordinates::Matrix{Float}` : [z,r] coordinates of centerbody geometry
+- `center_body_coordinates::Matrix{Float}` : [z,r] coordinates of center_body geometry
 - `rotor::Rotor` : A Rotor object
 - `paneling_constants::PanelingConstants` : A PanelingConstants object
 
@@ -31,13 +31,13 @@ Re-interpolate the body geometry and return compatible body and way geometry.
 # Returns
 - `wake_grid::Array{Float}` : array containig the z and r elliptic grid points defning the wake geometry.
 - `rp_duct_coordinates::Matrix{Float}` : matrix containing the re-paneled duct coordinates
-- `rp_centerbody_coordinates::Matrix{Float}` : matrix containing the re-paneled centerbody coordinates
+- `rp_center_body_coordinates::Matrix{Float}` : matrix containing the re-paneled center_body coordinates
 - `rotor_indices_in_wake::Vector{Int}` : vector containing the indices of where in the wake the rotors reside (used later to define the rotor panel edges).
 """
 function reinterpolate_geometry(
     problem_dimensions,
     duct_coordinates,
-    centerbody_coordinates,
+    center_body_coordinates,
     rotor,
     paneling_constants;
     autoshiftduct=true,
@@ -51,7 +51,7 @@ function reinterpolate_geometry(
     (;
         nrotor, # number of rotors
         ndn,    # number of duct nodes
-        ncbn,   # number of centerbody nodes
+        ncbn,   # number of center_body nodes
         nws,    # number of wake sheets (also rotor nodes)
         nwsn,   # number of nodes in each wake sheet
     ) = problem_dimensions
@@ -59,26 +59,26 @@ function reinterpolate_geometry(
     # - Promote Type - #
     TF = promote_type(
         eltype(duct_coordinates),
-        eltype(centerbody_coordinates),
+        eltype(center_body_coordinates),
         eltype(rotor.r),
         eltype(rotor.Rhub),
         eltype(rotor.Rtip),
-        eltype(rotor.rotorzloc),
+        eltype(rotor.rotor_axial_position),
     )
 
     wake_grid = zeros(TF, 2, nwsn, nws)
     rp_duct_coordinates = zeros(TF, 2, ndn)
-    rp_centerbody_coordinates = zeros(TF, 2, ncbn)
+    rp_center_body_coordinates = zeros(TF, 2, ncbn)
     rotor_indices_in_wake = ones(Int, nrotor)
     blade_element_cache = (;Rtip=zeros(TF,nrotor), Rhub=zeros(TF,nrotor))
 
     reinterpolate_geometry!(
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotor,
         blade_element_cache,
         paneling_constants;
@@ -89,7 +89,7 @@ function reinterpolate_geometry(
         silence_warnings=silence_warnings,
     )
 
-    return wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, rotor_indices_in_wake
+    return wake_grid, rp_duct_coordinates, rp_center_body_coordinates, rotor_indices_in_wake
 end
 
 
@@ -98,10 +98,10 @@ end
     reinterpolate_geometry!(
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotor,
         blade_element_cache,
         paneling_constants;
@@ -117,10 +117,10 @@ In-place version of `reinterpolate_geometry`.
 function reinterpolate_geometry!(
     wake_grid,
     rp_duct_coordinates,
-    rp_centerbody_coordinates,
+    rp_center_body_coordinates,
     rotor_indices_in_wake,
     duct_coordinates,
-    centerbody_coordinates,
+    center_body_coordinates,
     rotor,
     blade_element_cache,
     paneling_constants;
@@ -135,15 +135,15 @@ function reinterpolate_geometry!(
     ##### ----- Extract Tuples ----- #####
     (;Rhub, Rtip) = blade_element_cache
 
-    (; B, tip_gap, r, chords, twists, rotorzloc, airfoils, is_stator) =
+    (; B, tip_gap, r, chords, twists, rotor_axial_position, airfoils, is_stator) =
         rotor
 
-    @assert length(unique(rotorzloc)) == length(rotorzloc) "Cannot place rotors on top of eachother: rotorzloc = $rotorzloc"
+    @assert length(unique(rotor_axial_position)) == length(rotor_axial_position) "Cannot place rotors on top of eachother: rotor_axial_position = $rotor_axial_position"
 
     Rhub .= rotor.Rhub
     Rtip .= rotor.Rtip
 
-    (; npanels, ncenterbody_inlet, nduct_inlet, wake_length, nwake_sheets, dte_minus_cbte) =
+    (; num_panels, num_center_body_inlet_panels, num_duct_inlet_panels, wake_length, num_wake_sheets, dte_minus_cbte) =
         paneling_constants
 
     ##### ----- Re-interpolate bodies and rotors ----- #####
@@ -152,10 +152,10 @@ function reinterpolate_geometry!(
     # also returns indices of rotor locations and duct and center body trailng edges in the wake
     zwake, rotor_indices_in_wake[:], duct_le_coordinates = discretize_wake(
         duct_coordinates,
-        centerbody_coordinates,
-        rotorzloc, # rotor axial locations
+        center_body_coordinates,
+        rotor_axial_position, # rotor axial locations
         wake_length,
-        npanels,
+        num_panels,
         dte_minus_cbte;
         le_bracket=le_bracket
     )
@@ -163,13 +163,13 @@ function reinterpolate_geometry!(
     # - Re-interpolate Bodies - #
     reinterpolate_bodies!(
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         zwake,
         duct_le_coordinates,
-        ncenterbody_inlet,
-        nduct_inlet;
+        num_center_body_inlet_panels,
+        num_duct_inlet_panels;
         finterp=finterp,
     )
 
@@ -187,7 +187,7 @@ function reinterpolate_geometry!(
 
     # - Move duct to correct position if user didn't provide coordintes with radial placement - #
     if autoshiftduct
-        place_duct!(rp_duct_coordinates, Rtip[1], rotorzloc[1], tip_gap[1])
+        place_duct!(rp_duct_coordinates, Rtip[1], rotor_axial_position[1], tip_gap[1])
     end
 
     # - Fix any user errors in rotor radius definitons - #
@@ -195,9 +195,9 @@ function reinterpolate_geometry!(
         Rtip,
         Rhub,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         tip_gap,
-        rotorzloc;
+        rotor_axial_position;
         silence_warnings=silence_warnings,
     )
 
@@ -206,7 +206,7 @@ function reinterpolate_geometry!(
     generate_wake_grid!(
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         Rhub[1],
         Rtip[1],
         tip_gap[1],
@@ -216,7 +216,7 @@ function reinterpolate_geometry!(
         silence_warnings=silence_warnings,
     )
 
-    return rp_duct_coordinates, rp_centerbody_coordinates, wake_grid, rotor_indices_in_wake
+    return rp_duct_coordinates, rp_center_body_coordinates, wake_grid, rotor_indices_in_wake
 end
 
 
@@ -224,10 +224,10 @@ end
 """
     generate_all_panels(
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
-        nwake_sheets,
+        rp_center_body_coordinates,
+        num_wake_sheets,
         rotor_indices_in_wake,
-        rotorzloc,
+        rotor_axial_position,
         wake_grid;
         itcpshift=0.05,
         axistol=1e-15,
@@ -239,10 +239,10 @@ Function that calls all of the various panel generation functions are returns a 
 
 # Arguments
 - `rp_duct_coordinates::Matrix{Float}` : matrix containing the re-paneled duct coordinates
-- `rp_centerbody_coordinates::Matrix{Float}` : matrix containing the re-paneled centerbody coordinates
-- `nwake_sheets::Int` : number of wake sheets
+- `rp_center_body_coordinates::Matrix{Float}` : matrix containing the re-paneled center_body coordinates
+- `num_wake_sheets::Int` : number of wake sheets
 - `rotor_indices_in_wake::Vector{Int}` : vector containing the indices of where in the wake the rotors reside (used later to define the rotor panel edges).
-- `rotorzloc:Vector{Float}` : axial locations of rotor lifting lines (contained in Rotor)
+- `rotor_axial_position:Vector{Float}` : axial locations of rotor lifting lines (contained in Rotor)
 - `wake_grid::Array{Float}` : array containig the z and r elliptic grid points defning the wake geometry.
 
 # Keyword Arguments
@@ -259,10 +259,10 @@ Function that calls all of the various panel generation functions are returns a 
 """
 function generate_all_panels(
     rp_duct_coordinates,
-    rp_centerbody_coordinates,
-    nwake_sheets,
+    rp_center_body_coordinates,
+    num_wake_sheets,
     rotor_indices_in_wake,
-    rotorzloc,
+    rotor_axial_position,
     wake_grid;
     itcpshift=0.05,
     axistol=1e-15,
@@ -272,17 +272,17 @@ function generate_all_panels(
 
     ##### ----- Fill Panel Objects ----- #####
     # - Body Panels - #
-    body_vortex_panels = generate_panels([rp_duct_coordinates, rp_centerbody_coordinates])
+    body_vortex_panels = generate_panels([rp_duct_coordinates, rp_center_body_coordinates])
 
     # - Rotor Panels - #
     #TODO: test this function
     rotor_source_panels = generate_rotor_panels(
-        rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+        rotor_axial_position, wake_grid, rotor_indices_in_wake, num_wake_sheets
     )
 
     # - Wake Panels - #
     # TODO: test this function
-    wake_vortex_panels = generate_wake_panels(wake_grid[:, :, 1:nwake_sheets])
+    wake_vortex_panels = generate_wake_panels(wake_grid[:, :, 1:num_wake_sheets])
 
     #TODO; what other panels are actually needed? do you need the body wake panels or no?
     return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
@@ -295,10 +295,10 @@ end
         panels,
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
-        rotorzloc,
-        nwake_sheets;
+        rotor_axial_position,
+        num_wake_sheets;
         itcpshift=0.05,
         axistol=1e-15,
         tegaptol=1e1 * eps(),
@@ -311,10 +311,10 @@ function generate_all_panels!(
     panels,
     wake_grid,
     rp_duct_coordinates,
-    rp_centerbody_coordinates,
+    rp_center_body_coordinates,
     rotor_indices_in_wake,
-    rotorzloc,
-    nwake_sheets;
+    rotor_axial_position,
+    num_wake_sheets;
     itcpshift=0.05,
     axistol=1e-15,
     tegaptol=1e1 * eps(),
@@ -327,17 +327,17 @@ function generate_all_panels!(
     ##### ----- Fill Panel Objects ----- #####
     # - Body Panels - #
     # TODO: test this function
-    generate_panels!(body_vortex_panels, [rp_duct_coordinates, rp_centerbody_coordinates])
+    generate_panels!(body_vortex_panels, [rp_duct_coordinates, rp_center_body_coordinates])
 
     # - Rotor Panels - #
     #TODO: test this function
     generate_rotor_panels!(
-        rotor_source_panels, rotorzloc, wake_grid, rotor_indices_in_wake, nwake_sheets
+        rotor_source_panels, rotor_axial_position, wake_grid, rotor_indices_in_wake, num_wake_sheets
     )
 
     # - Wake Panels - #
     # TODO: test this function
-    generate_wake_panels!(wake_vortex_panels, wake_grid[:, :, 1:nwake_sheets])
+    generate_wake_panels!(wake_vortex_panels, wake_grid[:, :, 1:num_wake_sheets])
 
     #TODO; what other panels are actually needed? do you need the body wake panels or no?
     return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
@@ -919,9 +919,9 @@ end
 
 """
     set_index_maps(
-        npanels,
-        ncenterbody_inlet,
-        nwake_sheets,
+        num_panels,
+        num_center_body_inlet_panels,
+        num_wake_sheets,
         dte_minus_cbte,
         wnm,
         wenids,
@@ -936,9 +936,9 @@ end
 Set values for index map to be used throughout solve and post-process.
 
 # Arguments
-- `npanels : paneling_constants.npanels`
-- `ncenterbody_inlet : paneling_constants.ncenterbody_inlet`
-- `nwake_sheets : paneling_constants.nwake_sheets`
+- `num_panels : paneling_constants.num_panels`
+- `num_center_body_inlet_panels : paneling_constants.num_center_body_inlet_panels`
+- `num_wake_sheets : paneling_constants.num_wake_sheets`
 - `dte_minus_cbte : paneling_constants.dte_minus_cbte`
 - `wnm : wake_vortex_panels.nodemap`
 - `wenids : wake_vortex_panels.endnodeidxs`
@@ -953,9 +953,9 @@ Set values for index map to be used throughout solve and post-process.
 - `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
 """
 function set_index_maps(
-    npanels,
-    ncenterbody_inlet,
-    nwake_sheets,
+    num_panels,
+    num_center_body_inlet_panels,
+    num_wake_sheets,
     dte_minus_cbte,
     wnm,
     wenids,
@@ -984,23 +984,23 @@ function set_index_maps(
     #=
       NOTE: used for setting wake strengths along wake-body interfaces (node maps), or setting the proper jump velocity across the body boundaries (panel maps)
     =#
-    # indices of wake nodes interfacing with the centerbody wall
+    # indices of wake nodes interfacing with the center_body wall
     if iszero(dte_minus_cbte) || dte_minus_cbte < 0
-        index_of_cb_te_along_wake_sheet = sum(npanels[1:(end - 1)]) + 1
+        index_of_cb_te_along_wake_sheet = sum(num_panels[1:(end - 1)]) + 1
     else
-        index_of_cb_te_along_wake_sheet = sum(npanels[1:(end - 2)]) + 1
+        index_of_cb_te_along_wake_sheet = sum(num_panels[1:(end - 2)]) + 1
     end
-    wake_node_ids_along_centerbody_wake_interface = collect(
+    wake_node_ids_along_center_body_wake_interface = collect(
         range(1, index_of_cb_te_along_wake_sheet; step=1)
     )
 
     # indices of wake nodes interfacing with the casing wall
     if iszero(dte_minus_cbte) || dte_minus_cbte > 0
-        index_of_duct_te_along_wake_sheet = sum(npanels[1:(end - 1)]) + 1
-        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - (npanels[end])
+        index_of_duct_te_along_wake_sheet = sum(num_panels[1:(end - 1)]) + 1
+        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - (num_panels[end])
     else
-        index_of_duct_te_along_wake_sheet = sum(npanels[1:(end - 2)]) + 1
-        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - sum(npanels[(end - 1):end])
+        index_of_duct_te_along_wake_sheet = sum(num_panels[1:(end - 2)]) + 1
+        index_of_wake_node_at_duct_te = wake_endnodeidxs[end] - sum(num_panels[(end - 1):end])
     end
 
     wake_node_ids_along_casing_wake_interface = collect(
@@ -1011,21 +1011,21 @@ function set_index_maps(
         ),
     )
 
-    # indices of wake panels interfacing with centerbody wall
+    # indices of wake panels interfacing with center_body wall
     if iszero(dte_minus_cbte) || dte_minus_cbte < 0
-        cb_te_id = sum(npanels[1:(end - 1)])
+        cb_te_id = sum(num_panels[1:(end - 1)])
     else
-        cb_te_id = sum(npanels[1:(end - 2)])
+        cb_te_id = sum(num_panels[1:(end - 2)])
     end
-    wake_panel_ids_along_centerbody_wake_interface = collect(range(1, cb_te_id; step=1))
+    wake_panel_ids_along_center_body_wake_interface = collect(range(1, cb_te_id; step=1))
 
     # indices of wake panels interfacing with casing wall
     if iszero(dte_minus_cbte) || dte_minus_cbte > 0
-        duct_te_id = sum(npanels[1:(end - 1)])
-        ductteinwake = sum(npanels) * nwake_sheets - npanels[end]
+        duct_te_id = sum(num_panels[1:(end - 1)])
+        ductteinwake = sum(num_panels) * num_wake_sheets - num_panels[end]
     else
-        duct_te_id = sum(npanels[1:(end - 2)])
-        ductteinwake = sum(npanels) * nwake_sheets - npanels[end] - 1
+        duct_te_id = sum(num_panels[1:(end - 2)])
+        ductteinwake = sum(num_panels) * num_wake_sheets - num_panels[end] - 1
     end
 
     wake_panel_ids_along_casing_wake_interface = collect(
@@ -1034,27 +1034,27 @@ function set_index_maps(
 
     # indices of duct panels interfacing with wake
     if dte_minus_cbte >= 0
-        duct_panel_ids_along_centerbody_wake_interface = collect(
-            sum([npanels[i] for i in 1:(length(npanels) - 1)]):-1:1
+        duct_panel_ids_along_center_body_wake_interface = collect(
+            sum([num_panels[i] for i in 1:(length(num_panels) - 1)]):-1:1
         )
     else
         dte_minus_cbte < 0
-        duct_panel_ids_along_centerbody_wake_interface = collect(
-            sum([npanels[i] for i in 1:(length(npanels) - 2)]):-1:1
+        duct_panel_ids_along_center_body_wake_interface = collect(
+            sum([num_panels[i] for i in 1:(length(num_panels) - 2)]):-1:1
         )
     end
 
-    # indices of centerbody panels interfacing with wake
+    # indices of center_body panels interfacing with wake
     if dte_minus_cbte <= 0
-        centerbody_panel_ids_along_centerbody_wake_interface = collect(
-            (ncenterbody_inlet + 1):(ncenterbody_inlet .+ sum([
-                npanels[i] for i in 1:(length(npanels) - 1)
+        center_body_panel_ids_along_center_body_wake_interface = collect(
+            (num_center_body_inlet_panels + 1):(num_center_body_inlet_panels .+ sum([
+                num_panels[i] for i in 1:(length(num_panels) - 1)
             ])),
         )
     else
-        centerbody_panel_ids_along_centerbody_wake_interface = collect(
-            (ncenterbody_inlet + 1):(ncenterbody_inlet .+ sum([
-                npanels[i] for i in 1:(length(npanels) - 2)
+        center_body_panel_ids_along_center_body_wake_interface = collect(
+            (num_center_body_inlet_panels + 1):(num_center_body_inlet_panels .+ sum([
+                num_panels[i] for i in 1:(length(num_panels) - 2)
             ])),
         )
     end
@@ -1065,34 +1065,34 @@ function set_index_maps(
     =#
     if dte_minus_cbte < 0
         id_of_first_casing_panel_aft_of_each_rotor = cumsum([
-            npanels[i] for i in (length(npanels) - 2):-1:1
+            num_panels[i] for i in (length(num_panels) - 2):-1:1
         ])
     elseif dte_minus_cbte > 0
         id_of_first_casing_panel_aft_of_each_rotor = cumsum([
-            npanels[i] for i in (length(npanels) - 1):-1:1
+            num_panels[i] for i in (length(num_panels) - 1):-1:1
         ])[2:end]
     else
         id_of_first_casing_panel_aft_of_each_rotor = cumsum([
-            npanels[i] for i in (length(npanels) - 1):-1:1
+            num_panels[i] for i in (length(num_panels) - 1):-1:1
         ])
     end
 
     if iszero(dte_minus_cbte)
-        id_of_first_centerbody_panel_aft_of_each_rotor = [
-            ncenterbody_inlet + 1
-            ncenterbody_inlet .+ cumsum([npanels[i] for i in 1:(length(npanels) - 2)])
+        id_of_first_center_body_panel_aft_of_each_rotor = [
+            num_center_body_inlet_panels + 1
+            num_center_body_inlet_panels .+ cumsum([num_panels[i] for i in 1:(length(num_panels) - 2)])
         ]
     else
-        id_of_first_centerbody_panel_aft_of_each_rotor = [
-            ncenterbody_inlet + 1
-            ncenterbody_inlet .+ cumsum([npanels[i] for i in 1:(length(npanels) - 3)])
+        id_of_first_center_body_panel_aft_of_each_rotor = [
+            num_center_body_inlet_panels + 1
+            num_center_body_inlet_panels .+ cumsum([num_panels[i] for i in 1:(length(num_panels) - 3)])
         ]
     end
-    id_of_first_centerbody_panel_aft_of_each_rotor .+= ndp #add on number of duct panels
+    id_of_first_center_body_panel_aft_of_each_rotor .+= ndp #add on number of duct panels
 
     # - Map of wake panel index to the wake sheet on which it resides and the last rotor ahead of the panel - #
     wake_panel_sheet_be_map = ones(Int, nwp, 2)
-    for i in 1:nwake_sheets
+    for i in 1:num_wake_sheets
         wake_panel_sheet_be_map[(1 + (i - 1) * nwsp):(i * nwsp), 1] .= i
         for (ir, r) in enumerate(
             eachrow(@view(wake_panel_sheet_be_map[(1 + (i - 1) * nwsp):(i * nwsp), :]))
@@ -1104,7 +1104,7 @@ function set_index_maps(
     # - Map of wake node index to the wake sheet on which it resides and the last rotor ahead of the node - #
     nwsn = nwsp + 1
     wake_node_sheet_be_map = ones(Int, Int(wenids[end]), 2)
-    for i in 1:nwake_sheets
+    for i in 1:num_wake_sheets
         wake_node_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), 1] .= i
         for (ir, r) in enumerate(
             eachrow(@view(wake_node_sheet_be_map[(1 + (i - 1) * nwsn):(i * nwsn), :]))
@@ -1119,13 +1119,13 @@ function set_index_maps(
         wake_panel_sheet_be_map,
         wake_node_sheet_be_map,
         wake_node_ids_along_casing_wake_interface,
-        wake_node_ids_along_centerbody_wake_interface,
+        wake_node_ids_along_center_body_wake_interface,
         wake_panel_ids_along_casing_wake_interface,
-        wake_panel_ids_along_centerbody_wake_interface,
-        duct_panel_ids_along_centerbody_wake_interface,
-        centerbody_panel_ids_along_centerbody_wake_interface,
+        wake_panel_ids_along_center_body_wake_interface,
+        duct_panel_ids_along_center_body_wake_interface,
+        center_body_panel_ids_along_center_body_wake_interface,
         id_of_first_casing_panel_aft_of_each_rotor,
-        id_of_first_centerbody_panel_aft_of_each_rotor,
+        id_of_first_center_body_panel_aft_of_each_rotor,
         rotor_indices_in_wake,
         body_totnodes,
     )
@@ -1202,7 +1202,7 @@ function precompute_parameters(
     # - Extract ducted_rotor - #
     (;
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotor,
         paneling_constants,
         operating_point,
@@ -1211,10 +1211,10 @@ function precompute_parameters(
     problem_dimensions = get_problem_dimensions(paneling_constants)
 
     # - Reinterpolate Geometry and Generate Wake Grid - #
-    wake_grid, rp_duct_coordinates, rp_centerbody_coordinates, rotor_indices_in_wake = reinterpolate_geometry(
+    wake_grid, rp_duct_coordinates, rp_center_body_coordinates, rotor_indices_in_wake = reinterpolate_geometry(
         problem_dimensions,
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotor,
         paneling_constants;
         grid_solver_options=grid_solver_options,
@@ -1229,7 +1229,7 @@ function precompute_parameters(
         place_duct!(
             rp_duct_coordinates,
             rotor.Rtip[1],
-            rotor.rotorzloc[1],
+            rotor.rotor_axial_position[1],
             rotor.tip_gap[1],
         )
     end
@@ -1237,14 +1237,14 @@ function precompute_parameters(
     # Get actual Blade end positions from body geometry so there's not odd overlaps
     Rtips, Rhubs = get_blade_ends_from_body_geometry(
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor.tip_gap,
-        rotor.rotorzloc,
+        rotor.rotor_axial_position,
     )
 
     return precompute_parameters(
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         wake_grid,
         rotor_indices_in_wake,
         Rtips,
@@ -1265,7 +1265,7 @@ end
 """
     precompute_parameters(
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         wake_grid,
         rotor_indices_in_wake,
         Rtips,
@@ -1288,7 +1288,7 @@ The first inputs are the outputs of the `reinterpolate_geometry` and `get_blade_
 """
 function precompute_parameters(
     rp_duct_coordinates,
-    rp_centerbody_coordinates,
+    rp_center_body_coordinates,
     wake_grid,
     rotor_indices_in_wake,
     Rtips,
@@ -1308,10 +1308,10 @@ function precompute_parameters(
     # - Panel Everything - #
     body_vortex_panels, rotor_source_panels, wake_vortex_panels = generate_all_panels(
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
-        paneling_constants.nwake_sheets,
+        rp_center_body_coordinates,
+        paneling_constants.num_wake_sheets,
         rotor_indices_in_wake,
-        rotor.rotorzloc,
+        rotor.rotor_axial_position,
         wake_grid;
         itcpshift=itcpshift,
         axistol=axistol,
@@ -1357,9 +1357,9 @@ function precompute_parameters(
 
     # - Save all the index mapping (bookkeeping) - #
     idmaps = set_index_maps(
-        paneling_constants.npanels,
-        paneling_constants.ncenterbody_inlet,
-        paneling_constants.nwake_sheets,
+        paneling_constants.num_panels,
+        paneling_constants.num_center_body_inlet_panels,
+        paneling_constants.num_wake_sheets,
         paneling_constants.dte_minus_cbte,
         wake_vortex_panels.nodemap,
         wake_vortex_panels.endnodeidxs,
@@ -1433,7 +1433,7 @@ function precompute_parameters!(
     # - unpack ducted_rotor - #
     (;
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotor,
         paneling_constants,
     ) = ducted_rotor
@@ -1442,7 +1442,7 @@ function precompute_parameters!(
     (;
      wake_grid,
      rp_duct_coordinates,
-     rp_centerbody_coordinates,
+     rp_center_body_coordinates,
      rotor_indices_in_wake,
     ) = prepost_containers
 
@@ -1451,10 +1451,10 @@ function precompute_parameters!(
     reinterpolate_geometry!(
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
         duct_coordinates,
-        centerbody_coordinates,
+        center_body_coordinates,
         rotor,
         blade_element_cache,
         paneling_constants;
@@ -1470,7 +1470,7 @@ function precompute_parameters!(
         place_duct!(
             rp_duct_coordinates,
             rotor.Rtip[1],
-            rotor.rotorzloc[1],
+            rotor.rotor_axial_position[1],
             rotor.tip_gap[1],
         )
     end
@@ -1483,7 +1483,7 @@ function precompute_parameters!(
         wakeK,
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
         rotor,
         paneling_constants,
@@ -1510,7 +1510,7 @@ end
         wakeK,
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
         rotor,
         paneling_constants,
@@ -1536,7 +1536,7 @@ function precompute_parameters!(
     wakeK,
     wake_grid,
     rp_duct_coordinates,
-    rp_centerbody_coordinates,
+    rp_center_body_coordinates,
     rotor_indices_in_wake,
     rotor,
     paneling_constants,
@@ -1560,13 +1560,13 @@ function precompute_parameters!(
     reset_containers!(wakeK)
     reset_containers!(prepost_containers; exception_keys=[:wake_grid,
      :rp_duct_coordinates,
-     :rp_centerbody_coordinates,
+     :rp_center_body_coordinates,
      :rotor_indices_in_wake])
 
     # - Get Floating Point Type - #
     TF = promote_type(
         eltype(rp_duct_coordinates),
-        eltype(rp_centerbody_coordinates),
+        eltype(rp_center_body_coordinates),
         eltype(operating_point.Vinf),
         eltype(operating_point.Omega),
         eltype(operating_point.rhoinf),
@@ -1575,7 +1575,7 @@ function precompute_parameters!(
         eltype(rotor.B),
         eltype(rotor.Rhub),
         eltype(rotor.Rtip),
-        eltype(rotor.rotorzloc),
+        eltype(rotor.rotor_axial_position),
         eltype(rotor.chords),
         eltype(rotor.twists),
     )
@@ -1595,10 +1595,10 @@ function precompute_parameters!(
         panels,
         wake_grid,
         rp_duct_coordinates,
-        rp_centerbody_coordinates,
+        rp_center_body_coordinates,
         rotor_indices_in_wake,
-        rotor.rotorzloc,
-        paneling_constants.nwake_sheets;
+        rotor.rotor_axial_position,
+        paneling_constants.num_wake_sheets;
         itcpshift=itcpshift,
         axistol=axistol,
         tegaptol=tegaptol,
@@ -1640,9 +1640,9 @@ function precompute_parameters!(
 
     # - Save all the index mapping (bookkeeping) - #
     idmaps = set_index_maps(
-        paneling_constants.npanels,
-        paneling_constants.ncenterbody_inlet,
-        paneling_constants.nwake_sheets,
+        paneling_constants.num_panels,
+        paneling_constants.num_center_body_inlet_panels,
+        paneling_constants.num_wake_sheets,
         paneling_constants.dte_minus_cbte,
         Int.(panels.wake_vortex_panels.nodemap),
         Int.(panels.wake_vortex_panels.endnodeidxs),

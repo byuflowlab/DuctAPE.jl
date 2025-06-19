@@ -93,7 +93,7 @@ function dt_post_wrapper(input_vector)
         debug=false,
     )
 
-    nbe = rotor[1].nwake_sheets - 1
+    nbe = rotor[1].num_wake_sheets - 1
 
     Gamr = zeros(TF, nbe, 1) .= input_vector[1:nbe]
     sigr = zeros(TF, nbe + 1, 1) .= input_vector[(nbe + 1):(nbe * 2 + 1)]

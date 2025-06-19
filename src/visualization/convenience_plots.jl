@@ -6,7 +6,7 @@ struct animatedPlots end
 
 """
     generate_plots(
-        ::staticPlots, (or ::animatedPlots)
+        ::staticPlots, #(or ::animatedPlots)
         Plots,
         ins,
         outs;
@@ -25,7 +25,7 @@ struct animatedPlots end
 Generate standard suite of plots or animations from input and output objects.
 
 # Arguments:
-- `::staticPlots (or ::animatedPlots)` :
+- `::staticPlots (or ::animatedPlots)` : Dispatch type
 - `Plots::` : the Plots package namespace
 - `ins::NamedTuple` : returned inputs from `analyze` function
 - `outs::Vector{NamedTuple}` : retured outputs from `analyze` function

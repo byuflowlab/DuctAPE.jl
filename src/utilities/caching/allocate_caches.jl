@@ -13,7 +13,7 @@ A helper function is assembling the prepost_container_cache.
 function allocate_body_panel_container!(total_length, problem_dimensions::ProblemDimensions)
     (;
         ndn,    # number of duct nodes
-        ncbn,   # number of centerbody nodes
+        ncbn,   # number of center_body nodes
     ) = problem_dimensions
 
     nn = [ndn, ncbn]
@@ -309,15 +309,15 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
 
     s = (ncbn - 1,)
     l = lfs(s)
-    vtan_centerbody_in = cache_dims!(total_length, l, s)
+    vtan_center_body_in = cache_dims!(total_length, l, s)
 
-    vtan_centerbody_out = cache_dims!(total_length, l, s)
+    vtan_center_body_out = cache_dims!(total_length, l, s)
 
-    centerbody_zpts = cache_dims!(total_length, l, s)
+    center_body_zpts = cache_dims!(total_length, l, s)
 
-    cp_centerbody_in = cache_dims!(total_length, l, s)
+    cp_center_body_in = cache_dims!(total_length, l, s)
 
-    cp_centerbody_out = cache_dims!(total_length, l, s)
+    cp_center_body_out = cache_dims!(total_length, l, s)
 
     s = (ndn - 1,)
     l = lfs(s)
@@ -325,7 +325,7 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
 
     s = (ncbn - 1,)
     l = lfs(s)
-    centerbody_jump = cache_dims!(total_length, l, s)
+    center_body_jump = cache_dims!(total_length, l, s)
 
     s = (nbp,)
     l = lfs(s)
@@ -341,7 +341,7 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
 
     body_force_coefficient = cache_dims!(total_length, l, s)
 
-    return (; casing_zpts, nacelle_zpts, centerbody_zpts), #zpts
+    return (; casing_zpts, nacelle_zpts, center_body_zpts), #zpts
     (;
         Vtot_in,
         Vtot_out,
@@ -350,7 +350,7 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
         Vtot_prejump,
         vtot_body,
         duct_jump,
-        centerbody_jump,
+        center_body_jump,
         body_jump_term,
         vtot_jump,
         vtot_wake,
@@ -359,8 +359,8 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
         vtan_casing_out,
         vtan_nacelle_in,
         vtan_nacelle_out,
-        vtan_centerbody_in,
-        vtan_centerbody_out,
+        vtan_center_body_in,
+        vtan_center_body_out,
     ), # vtan_tuple
     (;
         cp_in,
@@ -369,8 +369,8 @@ function allocate_prepost_body_containers!(total_length, nbp, ncp, ndn, ncbn, nb
         cp_casing_out,
         cp_nacelle_in,
         cp_nacelle_out,
-        cp_centerbody_in,
-        cp_centerbody_out,
+        cp_center_body_in,
+        cp_center_body_out,
     ), # cp_tuple
     body_inviscid_thrust,
     body_viscous_drag,
@@ -387,7 +387,7 @@ function allocate_prepost_container_cache(
         nwp,    # number of wake panels
         ncp,    # number of casing panels
         ndn,    # number of duct nodes
-        ncbn,   # number of centerbody nodes
+        ncbn,   # number of center_body nodes
         nbn,    # number of body nodes
         nbp,    # number of body panels
         nws,    # number of wake sheets (also rotor nodes)
@@ -408,7 +408,7 @@ function allocate_prepost_container_cache(
 
     s = (2, ncbn)
     l = lfs(s)
-    rp_centerbody_coordinates = cache_dims!(total_length, l, s)
+    rp_center_body_coordinates = cache_dims!(total_length, l, s)
 
     s = (2, nwsn, nws)
     l = lfs(s)
@@ -544,7 +544,7 @@ function allocate_prepost_container_cache(
         prepost_container_cache_dims=(;
             ### --- PRE --- ###
             rp_duct_coordinates,
-            rp_centerbody_coordinates,
+            rp_center_body_coordinates,
             wake_grid,
             rotor_indices_in_wake,
             panels,
@@ -698,7 +698,7 @@ Allocate caches for airfoil struct fields.
 # Arguments:
 - `airfoils::Vector{Vector{Airfoil}}` : Airfoil objects, where each element of the outer vector is associated with a rotor and the elements of the inner vectors are the input airfoils to be interpolated across each rotor blade. Note that even if only one rotor is being used, the input must still be a vector of vectors.
 - `total_length::Vector{Float}` : updated in-place, used for sizing the overall PreallocationTools cache.
-- `number_of_blade_elements::Int` : number of blade elements for analysis (this is defined from the `nwake_sheets` input in the PanelingConstants input).
+- `number_of_blade_elements::Int` : number of blade elements for analysis (this is defined from the `num_wake_sheets` input in the PanelingConstants input).
 - `number_of_rotors::Int` : the number of rotors (note that a stator is considered a rotor).
 
 # Returns:

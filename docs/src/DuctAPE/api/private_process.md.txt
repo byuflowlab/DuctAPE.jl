@@ -25,7 +25,6 @@ DuctAPE.update_states!
 
 #### CSOR
 ```@docs
-DuctAPE.apply_relaxation_schedule
 DuctAPE.update_CSOR_residual_values!
 DuctAPE.check_CSOR_convergence!
 DuctAPE.relax_Gamr!

@@ -14,26 +14,26 @@
     hub_coordinates = [hub_x hub_r]
 
     # required rotor information
-    rotorzlocs = [0.5; 0.75]
+    rotor_axial_positions = [0.5; 0.75]
     Rtip = 1.5 # leading rotor tip radius
 
     # non-dimensional wake length
     wake_length = 1.0
 
     # number of wakes for each rotor
-    nwake_sheets = 3
+    num_wake_sheets = 3
 
     # number of panels between discrete points
     # in this case, 2 panels between rotors, 2 panels between last rotor and hub te, and 2 panels from duct TE to end of wake
-    npanels = [2; 2; 2]
+    num_panels = [2; 2; 2]
 
     # discretize the wake
     xwake, rotor_indices = DuctAPE.discretize_wake(
-        duct_coordinates, hub_coordinates, rotorzlocs, wake_length, nwake, npanels
+        duct_coordinates, hub_coordinates, rotor_axial_positions, wake_length, nwake, num_panels
     )
 
     # test that the correct number of x-stations are defined in the wake
-    @test length(xwake) == sum(npanels) + 1
+    @test length(xwake) == sum(num_panels) + 1
     # test that the correct placements of the x-stations are defined in the wake
     @test xwake == [0.5, 0.625, 0.75, 0.875, 1.0, 1.5, 2.0]
     # test that the correct wake indices are defined for the rotor locations
@@ -68,7 +68,7 @@
 
     # Move duct geometry into position and get rotor radii
     trans_duct_xr, Rtips, Rhubs = DuctAPE.place_duct(
-        new_duct_xr, new_hub_xr, Rtip, rotorzlocs
+        new_duct_xr, new_hub_xr, Rtip, rotor_axial_positions
     )
 
     # check the duct geometry
@@ -93,7 +93,7 @@
     #              Wake               #
     #---------------------------------#
     # get discretization of wakes at leading rotor position
-    rwake = range(Rhubs[1], Rtips[1], nwake_sheets)
+    rwake = range(Rhubs[1], Rtips[1], num_wake_sheets)
 
     # initialized wake grid
     xgrid, rgrid = DuctAPE.initialize_wake_grid(trans_duct_xr, new_hub_xr, xwake, rwake)
@@ -141,7 +141,7 @@
     rotor1_parameters = (;
         B=2,
         Omega=50,
-        rotorzloc=rotorzlocs[1],
+        rotor_axial_position=rotor_axial_positions[1],
         rblade=[0.0, 1.0],
         chords=[0.25, 0.25],
         twists=[0.0, 0.0],
@@ -149,15 +149,15 @@
     )
 
     # stator parameters
-    rotor2_parameters = (; rotor1_parameters..., rotorzloc=rotorzlocs[2])
+    rotor2_parameters = (; rotor1_parameters..., rotor_axial_position=rotor_axial_positions[2])
 
     # array with rotor and stator parameters
     rotor_parameters = [rotor1_parameters, rotor2_parameters]
 
     # generate rotor source panel objects
     rotor_source_panels = [
-        DuctAPE.generate_rotor_panels(rotorzlocs[i], rgrid[rotor_indices[i], :]) for
-        i in 1:length(rotorzlocs)
+        DuctAPE.generate_rotor_panels(rotor_axial_positions[i], rgrid[rotor_indices[i], :]) for
+        i in 1:length(rotor_axial_positions)
     ]
 
     #test that panel centers are where they should be
@@ -188,7 +188,7 @@
         DuctAPE.generate_blade_elements(
             rotor_parameters[i].B,
             rotor_parameters[i].Omega,
-            rotor_parameters[i].rotorzloc,
+            rotor_parameters[i].rotor_axial_position,
             rotor_parameters[i].rblade,
             rotor_parameters[i].chords,
             rotor_parameters[i].twists,
@@ -196,7 +196,7 @@
             Rtips[i],
             Rhubs[i],
             rotor_source_panels[i].panel_center[:, 2],
-        ) for i in 1:length(rotorzlocs)
+        ) for i in 1:length(rotor_axial_positions)
     ]
 
     #test that things got put together correctly

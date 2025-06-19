@@ -207,9 +207,9 @@ end
 #    outs = dt.post_process(Gamr, sigr, gamw, inputs; write_outputs=false)
 
 #    duct_cp = [outs.bodies.cp_casing_out; outs.bodies.cp_nacelle_out]
-#    centerbody_cp = outs.bodies.cp_centerbody_out
+#    center_body_cp = outs.bodies.cp_center_body_out
 #    @test all(isapprox.(duct_cp, reverse(duct_cpR2), atol=1e-2))
-#    @test all(isapprox.(centerbody_cp, reverse(hub_cpR2), atol=1e-2))
+#    @test all(isapprox.(center_body_cp, reverse(hub_cpR2), atol=1e-2))
 #end
 
 ##TODO: update this test to use DuctAPE.c4b

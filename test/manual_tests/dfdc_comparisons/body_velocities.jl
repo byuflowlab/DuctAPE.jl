@@ -93,7 +93,7 @@ plot!(
 # include jump term and normalize
 casing_cp = dt.steady_cp(vt.vtan_casing, Vinf, Vref)
 nacelle_cp = dt.steady_cp(vt.vtan_nacelle, Vinf, Vref)
-centerbody_cp = dt.steady_cp(vt.vtan_centerbody, Vinf, Vref)
+center_body_cp = dt.steady_cp(vt.vtan_center_body, Vinf, Vref)
 
 # - Plot cp comparison - #
 pd = plot(;
@@ -116,5 +116,5 @@ plot!(pd, vt.nacelle_zpts, nacelle_cp; color=1, label="")
 savefig(pd, savepath * "initial_duct_cp_comp.pdf")
 
 plot!(pc, hub_ctrlpt, hub_cpR2; label="DFDC initial", color=2, linestyle=:dash, linewidth=2)
-plot!(pc, vt.centerbody_zpts, centerbody_cp; color=1, label="DuctAPE initial")
-savefig(pc, savepath * "initial_centerbody_cp_comp.pdf")
+plot!(pc, vt.center_body_zpts, center_body_cp; color=1, label="DuctAPE initial")
+savefig(pc, savepath * "initial_center_body_cp_comp.pdf")

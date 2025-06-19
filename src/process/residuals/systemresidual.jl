@@ -297,7 +297,7 @@ function estimate_states!(
         wakeK,
         idmaps.wake_node_sheet_be_map,
         idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.wake_node_ids_along_centerbody_wake_interface;
+        idmaps.wake_node_ids_along_center_body_wake_interface;
     )
 
     # - Solve Linear System for Body Strengths - #

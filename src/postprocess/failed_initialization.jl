@@ -137,8 +137,8 @@ function failed_initialization(
         vtan_casing_out,     # tangent velocity along casing outside of duct body
         vtan_nacelle_in,     # tangent velocity along nacelle inside of duct body
         vtan_nacelle_out,    # tangent velocity along nacelle outside of duct body
-        vtan_centerbody_in,  # tangent velocity inside of centerbody
-        vtan_centerbody_out, # tangent velocity outside of centerbody
+        vtan_center_body_in,  # tangent velocity inside of center_body
+        vtan_center_body_out, # tangent velocity outside of center_body
     ) = vtan_tuple
 
     # extract surface pressure outputs
@@ -147,10 +147,10 @@ function failed_initialization(
         cp_out,            # surface pressure along outside of bodies
         cp_casing_in,      # surface pressure along inside of casing
         cp_nacelle_in,     # surface pressure along inside of nacell
-        cp_centerbody_in,  # surface pressure along inside of centerbody
+        cp_center_body_in,  # surface pressure along inside of center_body
         cp_casing_out,     # surface pressure along outside of casing
         cp_nacelle_out,    # surface pressure along outside of nacelle
-        cp_centerbody_out, # surface pressure along outside of centerbody
+        cp_center_body_out, # surface pressure along outside of center_body
     ) = cp_tuple
 
     TF = eltype(total_CT)
@@ -270,9 +270,9 @@ function failed_initialization(
             cp_nacelle_in,
             cp_nacelle_out,
             zpts.nacelle_zpts,
-            cp_centerbody_in,
-            cp_centerbody_out,
-            zpts.centerbody_zpts,
+            cp_center_body_in,
+            cp_center_body_out,
+            zpts.center_body_zpts,
             #individual body velocity contributions
             Vtot_in,
             Vtot_out,
@@ -287,8 +287,8 @@ function failed_initialization(
             vtan_casing_out,
             vtan_nacelle_in,
             vtan_nacelle_out,
-            vtan_centerbody_in,
-            vtan_centerbody_out,
+            vtan_center_body_in,
+            vtan_center_body_out,
             # boundary layers
             boundary_layers=boundary_layer_outputs,
         ),
@@ -598,6 +598,7 @@ function return_failed_boundary_layer_outputs(
     )
 end
 
+
 function return_failed_boundary_layer_outputs(
     boundary_layer_options::GreensBoundaryLayerOptions,
     Vtan_duct,
@@ -632,6 +633,7 @@ function return_failed_boundary_layer_outputs(
         # boundary_layer_functions_upper,
     )
 end
+
 
 """
     extract_failed_state_variables(solver_options::TS, dims, TF) where {TS <: AbstractSolverOptions}

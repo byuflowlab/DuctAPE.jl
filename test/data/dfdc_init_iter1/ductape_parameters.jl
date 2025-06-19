@@ -9,13 +9,13 @@ asound = 340.0 # Vso in DFDC case file
 muinf = 1.78e-5 # Rmu in DFDC case file
 RPM = 8000.0 # RPM in DFDC case file
 wake_length = 0.8 # XDwake in DFDC case file
-nwake_sheets = 11 # NRPdef in DFDC case file, also 1 more than the nstations in this case
+num_wake_sheets = 11 # NRPdef in DFDC case file, also 1 more than the nstations in this case
 
 # - dt additional parameters - #
 Omega = RPM * pi / 30  # convert from RPM to rad/s for dt
-ncenterbody_inlet = 22
-nduct_inlet = 22
-npanels = [30, 1, 19]
+num_center_body_inlet_panels = 22
+num_duct_inlet_panels = 22
+num_panels = [30, 1, 19]
 
 ##### ----- Airfoil Parameters (AERO in DFDC case file) ----- #####
 afparams = dt.c4b.DFDCairfoil(;
@@ -36,7 +36,7 @@ afparams = dt.c4b.DFDCairfoil(;
 
 ##### ----- Rotor Parameters (ROTOR in DFDC case file) ----- #####
 
-rotorzloc = 0.12 # Xdisk in DFDC case file
+rotor_axial_position = 0.12 # Xdisk in DFDC case file
 B = 5 # Nblds in DFDC case file
 
 rct = [
@@ -68,13 +68,13 @@ airfoils = [fill(afparams, length(r))] # specify the airfoil array
 
 # - Rotor Parameters: Vector of NTuples - #
 rotor = dt.Rotor(
-    B, rotorzloc, r, Rhub, Rtip, chords, twists, 0.0, airfoils, false
+    B, rotor_axial_position, r, Rhub, Rtip, chords, twists, 0.0, airfoils, false
 )
 
 # - Paneling Constants - #
 dte_minus_cbte = -1
 paneling_constants = dt.PanelingConstants(
-    nduct_inlet, ncenterbody_inlet, npanels, dte_minus_cbte, nwake_sheets, wake_length
+    num_duct_inlet_panels, num_center_body_inlet_panels, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
 )
 
 # - Reference Parameters used for Post-processing - #

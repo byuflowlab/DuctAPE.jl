@@ -75,6 +75,12 @@ abstract type BoundaryLayerOptions end
 Used for selecting boundary layer ODE solver
 """
 struct RK end
+
+"""
+    abstract type DiffEq
+
+Used for selecting boundary layer ODE solver
+"""
 struct DiffEq end
 
 #---------------------------------#
@@ -190,7 +196,7 @@ struct Absolute <: ConvergenceType end
 
 Type containing all the options for the CSOR (controlled successive over relaxation) solver.
 
-Note that the defaults match DFDC with the exception of the relaxation schedule, which is an experimental feature.
+Note that the defaults match DFDC settings.
 
 # Fields
 - `verbose::Bool = false` : flag to print verbose statements
@@ -202,15 +208,15 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
 - `pf2::Float = 0.5` : press forward factor 2
 - `btw::Float = 0.6` : backtracking factor for wake
 - `pfw::Float = 1.2` : press forward factor for wake
-- `relaxation_schedule::TS = [[0.0;1e-14;1e-13;1e10]), [1.0;1.0;0.0;0.0])]` : values used in spline definition for scaling the relaxation factors (second vector) after various convergence values (first vector).
 - `f_circ::Float = 1e-3` : convergence tolerance for rotor circulation
 - `f_dgamw::Float = 2e-4` : convergence tolerance for wake vortex strength
 - `convergence_type::ConvergenceType = Relative()` : dispatch for relative or absolute convergence criteria.
 - `Vconv::AbstractArray{Float} = [1.0]` : velocity used in relative convergence criteria (should be set to Vref).
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
-@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: InternalSolverOptions
+@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI} <: InternalSolverOptions
     # Defaults are DFDC hard-coded values
     verbose::TB = false
     iteration_limit::TI = 1000
@@ -221,15 +227,16 @@ Note that the defaults match DFDC with the exception of the relaxation schedule,
     pf2::TF = 0.5
     btw::TF = 0.6
     pfw::TF = 1.2
-    relaxation_schedule::TS = [
-        reverse!([1e10; 1e-16; 1e-17; 0.0]), reverse!([0.0; 0.0; 1.0; 1.0])
-    ]
+    # relaxation_schedule::TS = [
+    #     reverse!([1e10; 1e-16; 1e-17; 0.0]), reverse!([0.0; 0.0; 1.0; 1.0])
+    # ]
     f_circ::TF = 1e-3
     f_dgamw::TF = 2e-4
     convergence_type::TC = Relative()
     Vconv::AbstractArray{TF} = [1.0]
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 """
@@ -247,7 +254,10 @@ function CSORSolverOptions(multipoint; kwargs...)
     lm = length(multipoint)
 
     return CSORSolverOptions(;
-        converged=fill(false, (1, lm)), iterations=zeros(Int, (1, lm)), kwargs...
+        converged=fill(false, (1, lm)),
+        iterations=zeros(Int, (1, lm)),
+        residuals=-ones(1, lm),
+        kwargs...,
     )
 end
 
@@ -270,16 +280,16 @@ Type containing all the options for the modified CSOR solver.
     ) : parameters for determining relaxation level of states in each iteration.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
-- `residuals::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct ModCSORSolverOptions{TB,TF,TI,TT} <: InternalSolverOptions
     # Defaults are DFDC hard-coded values
     verbose::TB = false
-    iteration_limit::TI = 350
+    iteration_limit::TI = 500
     relaxation_parameters::TT = (;
         nrf=0.4, bt1=0.2, bt2=0.6, pf1=0.4, pf2=0.5, btw=0.6, pfw=1.2
     )
-    atol::TF = 1e-10
+    atol::TF = 5e-10
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
@@ -302,7 +312,7 @@ function ModCSORSolverOptions(multipoint; kwargs...)
     return ModCSORSolverOptions(;
         converged=fill(false, (1, lm)),
         iterations=zeros(Int, (1, lm)),
-        residuals=zeros(1, lm),
+        residuals=-ones(1, lm),
         kwargs...,
     )
 end
@@ -319,14 +329,16 @@ Options for the FixedPoint.jl package solver
 - `atol::Float = 1e-12` : absolute convergence tolerance
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct FixedPointOptions{TB,TF,TI} <: ExternalSolverOptions
     iteration_limit::TI = 1000
     vel::TF = 0.9
     ep::TF = 0.01
-    atol::TF = 1e-12
+    atol::TF = 1e-10
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 """
@@ -335,7 +347,7 @@ end
 Options for the SpeedMapping.jl package solver
 
 # Fields
-- `orders::AbstractArray{Int} = [3, 2]
+- `orders::AbstractArray{Int} = [3, 2]`
 - `sig_min::Int = 0` : maybe set to 1?
 - `stabilize::Bool = false` : stabilizes before extrapolation
 - `check_obj::Bool = false` : checks for inf's and nan's and starts from previous finite point
@@ -348,13 +360,14 @@ Options for the SpeedMapping.jl package solver
 - `Lp::Float = Inf` : p value for p-norm for convergence criteria
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct SpeedMappingOptions{TB,TF,TI,TL,TSm,TU} <: ExternalSolverOptions
     orders::AbstractArray{TI} = [3, 2]
     sig_min::TSm = 0 # maybe set to 1?
     stabilize::TB = false # stabilizes before extrapolation
     check_obj::TB = false # checks for inf's and nan's and starts from previous finite point
-    atol::TF = 1e-12 # convergence tolerance
+    atol::TF = 1e-10 # convergence tolerance
     iteration_limit::TI = 1000 # number of "iterations"
     time_limit::TF = Inf
     lower::TL = nothing # box lower bounds
@@ -363,6 +376,7 @@ Options for the SpeedMapping.jl package solver
     Lp::TF = Inf # p value for p-norm for convergence criteria
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 ##### ----- Quasi-Newton Solvers ----- #####
@@ -374,10 +388,11 @@ Options for the MINPACK's HYBRJ solver
 
 # Fields
 - `algorithm::Symbol = :hybr` : algorithm to use in MINPACK.jl (hybr is HYBRJ when the jacobian is provided)
-- `atol::FLoat = 1e-12` : absolute convergence tolerance
+- `atol::FLoat = 1e-10` : absolute convergence tolerance
 - `iteration_limit::FLoat = 100` : maximum number of iterations
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct MinpackOptions{TB,TF,TI,TSym} <: ExternalSolverOptions
     algorithm::TSym = :hybr
@@ -385,6 +400,7 @@ Options for the MINPACK's HYBRJ solver
     iteration_limit::TI = 100
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 """
@@ -401,6 +417,7 @@ Options for the SIAMFANLEquations pacakge solvers
 - `additional_kwargs = (;)` : any additional keyword arguments for the solver
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct SIAMFANLEOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Options for overall solve
@@ -410,9 +427,9 @@ Options for the SIAMFANLEquations pacakge solvers
     iteration_limit::TI = 1000
     linear_iteration_limit::TI = 5
     additional_kwargs::TK = (;)
-    # additional_kwargs::TK = (; delta0=1e-3)
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 ##### ----- Newton+ Solvers ----- #####
@@ -430,16 +447,18 @@ Options for the SimpleNonlinearSolve pacakge solvers
 - `iteration_limit::Float = 25` : maximum number of iterations
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct NonlinearSolveOptions{TA,TB,TF,TI,TK} <: ExternalSolverOptions
     # Algorithm Options
     algorithm::TA = SimpleNonlinearSolve.SimpleNewtonRaphson
     additional_kwargs::TK = (; autodiff=SimpleNonlinearSolve.AutoForwardDiff())
     # Iteration Controls
-    atol::TF = 1e-12
+    atol::TF = 1e-10
     iteration_limit::TI = 25
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 """
@@ -456,6 +475,7 @@ Options for the NLsolve pacakge solvers
 - `linesearch_kwargs = (;)` : any additional lineseach keyword arguments
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct NLsolveOptions{TB,TF,TI,Tls,Tlsk,TSym} <: ExternalSolverOptions
     # Options for overall solve
@@ -467,6 +487,7 @@ Options for the NLsolve pacakge solvers
     linesearch_kwargs::Tlsk = (;)
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 ##### ----- Poly-Algorithm Solvers ----- #####
@@ -479,78 +500,23 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
 # Fields
 - `solvers::AbstractArray{SolverOptionsType} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
-        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
-    ]' : Vector of solver options to use.
+        NLsolveOptions(; algorithm=:anderson, atol=1e-10),
+    ]` : Vector of solver options to use.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
 @kwdef struct CompositeSolverOptions{
-    TB,TI,TS<:Union{ExternalSolverOptions,ExternalPolyAlgorithmOptions}
+    TB,TI,TF,TS<:Union{ExternalSolverOptions,ExternalPolyAlgorithmOptions}
 } <: ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
-        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
+        NLsolveOptions(; algorithm=:anderson, atol=1e-10),
     ]
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
-
-# """
-#     struct CSORChainSolverOptions <: InternalPolyAlgorithmOptions
-
-# Options for CSOR Chain Solvers (try one solver, if it doesn't converge, try another)
-
-# # Fields
-# - `solvers::AbstractArray{SolverOptionsType} = [
-#         ModCSORSolverOptions(),
-#         CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
-#     ] : Vector of solver options to use.
-# - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
-# - `iterations::AbstractArray{Int} = [0]` : iteration counter
-# """
-# @kwdef struct CSORChainSolverOptions{TB,TI,TS<:InternalSolverOptions} <:
-#               InternalPolyAlgorithmOptions
-#     solvers::AbstractArray{TS} = [
-#         ModCSORSolverOptions(),
-#         CSORSolverOptions(; convergence_type=Absolute(), f_circ=1e-10, f_dgamw=1e-10),
-#     ]
-#     converged::AbstractArray{TB} = [false, false]
-#     iterations::AbstractArray{TI} = [0, 0]
-# end
-
-# """
-#     CSORChainSolverOptions(multipoint)
-
-# Convenience function that set's up CSOR chain solver options from defaults for a given number of multi-points.
-
-# # Arguments
-# - `multipoint::Vector` : doesn't need to be anything but a vector of the length of multipoints.
-
-# # Returns
-# - `solver_options::CSORChainSolverOptions` : A ChainSolverOptions object with arrays for the convergence flags in the overall type as well as inside each of the solver options.
-# """
-# function CSORChainSolverOptions(multipoint; solvers=nothing)
-#     lm = length(multipoint)
-
-#     if isnothing(solvers)
-#         solvers = [
-#             ModCSORSolverOptions(; converged=fill(false, lm), iterations=zeros(Int, lm)),
-#             CSORSolverOptions(;
-#                 convergence_type=Absolute(),
-#                 f_circ=1e-10,
-#                 f_dgamw=1e-10,
-#                 converged=fill(false, lm),
-#                 iterations=zeros(Int, lm),
-#             ),
-#         ]
-#     end
-
-#     return CSORChainSolverOptions(;
-#         solvers=solvers,
-#         converged=fill(false, (length(solvers), lm)),
-#         iterations=zeros(Int, (length(solvers), lm)),
-#     )
-# end
 
 """
     struct ChainSolverOptions <:ExternalPolyAlgorithmOptions
@@ -559,26 +525,28 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
 
 # Fields
 - `solvers::AbstractArray{SolverOptionsType} = [
-        NLsolveOptions(; algorithm=:anderson, atol=1e-12),
-        MinpackOptions(; atol=1e-12),
+        NLsolveOptions(; algorithm=:anderson, atol=1e-10),
+        MinpackOptions(; atol=1e-10),
         NonlinearSolveOptions(;
             algorithm=SimpleNonlinearSolve.SimpleNewtonRaphson,
             atol=1e-12,
             additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
         ),
-    ] : Vector of solver options to use.
+    ]` : Vector of solver options to use.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
+- `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
-@kwdef struct ChainSolverOptions{TB,TI,TS<:ExternalSolverOptions} <:
+@kwdef struct ChainSolverOptions{TB,TI,TF,TS<:ExternalSolverOptions} <:
               ExternalPolyAlgorithmOptions
     solvers::AbstractArray{TS} = [
         NLsolveOptions(; algorithm=:anderson, atol=1e-10, iteration_limit=200),
+        NLsolveOptions(; algorithm=:trust_region, atol=1e-10, iteration_limit=100),
         MinpackOptions(; atol=1e-10, iteration_limit=100),
-        NLsolveOptions(; algorithm=:trust_region, atol=1e-10, iteration_limit=20),
     ]
     converged::AbstractArray{TB} = [false, false, false]
     iterations::AbstractArray{TI} = [0, 0, 0]
+    residuals::AbstractArray{TF} = [-1.0]
 end
 
 """
@@ -619,6 +587,7 @@ function ChainSolverOptions(multipoint; solvers=nothing)
         solvers=solvers,
         converged=fill(false, (length(solvers), lm)),
         iterations=zeros(Int, (length(solvers), lm)),
+        residuals=-ones(1, lm),
     )
 end
 
@@ -678,17 +647,27 @@ end
     struct HeadsBoundaryLayerOptions
 
 # Fields:
-- `model_drag::Tb=false` : flag to turn on viscous drag approximation
-- `n_steps::Int = Int(5e2)` : number of steps to use in boundary layer integration
+- `model_drag::Bool=false` : flag to turn on viscous drag approximation
+- `termiante::Bool=true` : flag to terminate solver when separation criteria is met.
+- `return_last_max_shape_factor::Bool=true` : return the last maximum shape factor to avoid false drops near the trailing edge.
+- `cutoff_Hsep::Bool=false` : Cutoff returned Hsep vector at separation criteria
+- `n_steps::Int = Int(5e3)` : number of steps to use in boundary layer integration
 - `first_step_size::Float = 1e-6` : size of first step in boundary layer integration
+- `upper_step_size::Float=nothing` : uses fixed step size rather than total number of steps.
+- `lower_step_size::Float=nothing` : uses fixed step size rather than total number of steps.
 - `offset::Float = 1e-3` : size of offset for (where to initialize) boundary layer integration
-- `solver_type::Type = DiffEq()` : type of ODE solver (RK() or DiffEq())
-- `ode::Function = RadauIIA5` : solver to use for boundary layer integration (RadauIIA5, RK4, or RK2 available)
+- `solver_type::AbstractODESolverType=RK()` : type of ODE solver (RK() or DiffEq())
+- `ode::Function=RK2` : solver to use for boundary layer integration (RadauIIA5, RK4, or RK2 available)
 - `separation_criteria::Float=3.0` : value of H12 after which separation should happen.
 - `separation_allowance_upper::Int=10` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_allowance_lower::Int=10` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
 - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
 - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
+- `apply_separation_penalty_to_rotor::Bool=false` : flag to apply separation penalty to rotor performance.
+- `dy_eps::Float=0.0` : temporary development parameter.
+- `H1_eps::Float=1e-4`: temporary development parameter.
+- `H_eps::Float=0.0`: temporary development parameter.
+- `verbose::Bool=false` : flag to print verbose statements each iterations (beware; it's a lot)
 """
 @kwdef struct HeadsBoundaryLayerOptions{Tb,Te,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <:
               BoundaryLayerOptions
@@ -696,13 +675,13 @@ end
     terminate::Tb = true
     return_last_max_shape_factor::Tb = true
     cutoff_Hsep::Tb = false
-    n_steps::Ti = Int(5e2)
+    n_steps::Ti = Int(5e3)
     first_step_size::Tf = 1e-6
     upper_step_size::Tssu = nothing
     lower_step_size::Tssl = nothing
     offset::To = 1e-3
-    solver_type::Tsol = DiffEq()
-    ode::Tfun = RadauIIA5
+    solver_type::Tsol = RK()
+    ode::Tfun = RK2
     separation_criteria::Ts = 3.0
     separation_allowance_upper::Ti = 10
     separation_allowance_lower::Ti = 10
@@ -715,52 +694,52 @@ end
     verbose::Tb = false
 end
 
-"""
-    struct GreensBoundaryLayerOptions
-
-NOTE: Green's method is mostly implemented, but there are several bugs still, especially when using Imperial units.
-Known Bugs:
-- Imperial units overestimate momentum thickness.  Likely a unit conversion bug.
-- In some cases of non-separation, the momentum thickens or shape parameter becomes exceedingly large, vastly overestimating the drag coefficient.  Likely the product of one or more of the adjustments to try and make the method more robust.
-
-# Fields:
-- `model_drag::Tb=true` : flag to turn off viscous drag approximation
-- `lambda::Bool = true` : flag to add secondary influences into boundary layer residuals
-- `longitudinal_curvature::Bool = true` : if `lambda`=true, flag to add longitudinal curvature influence into boundary layer residuals
-- `lateral_strain::Bool = true` : if `lambda`=true, flag to add lateral strain influence into boundary layer residuals
-- `dilation::Bool = true` : if `lambda`=true, flag to add dilation influence into boundary layer residuals
-- `n_steps::Int = Int(2e2)` : number of steps to use in boundary layer integration
-- `first_step_size::Float = 1e-3` : size of first step in boundary layer integration
-- `offset::Float = 1e-2` : size of offset for (where to initialize) boundary layer integration
-- `solver_type::Type = DiffEq()` : type of ODE solver (RK() or DiffEq())
-- `ode::Function = RadauIIA5` : solver to use for boundary layer integration (RadauIIA5, RK4, or RK2 available)
-- `separation_allowance_upper::Int=3` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
-- `separation_allowance_lower::Int=3` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
-- `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
-- `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
-"""
-@kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <:
-              BoundaryLayerOptions
-    model_drag::Tb = true
-    terminate::Tb = true
-    lambda::Tb = false
-    longitudinal_curvature::Tb = true
-    lateral_strain::Tb = true
-    dilation::Tb = true
-    n_steps::Ti = Int(2e2)
-    first_step_size::Tf = 1e-6
-    upper_step_size::Tssu = nothing
-    lower_step_size::Tssl = nothing
-    offset::To = 1e-3
-    solver_type::Tsol = DiffEq()
-    ode::Tfun = RadauIIA5
-    separation_criteria::Ts = 0.0
-    separation_allowance_upper::Ti = 25
-    separation_allowance_lower::Ti = 25
-    separation_penalty_upper::Tp = 0.2
-    separation_penalty_lower::Tp = 0.2
-    verbose::Tb = false
-end
+# """
+#     struct GreensBoundaryLayerOptions
+#
+# NOTE: Green's method is mostly implemented, but there are several bugs still, especially when using Imperial units.
+# Known Bugs:
+# - Imperial units overestimate momentum thickness.  Likely a unit conversion bug.
+# - In some cases of non-separation, the momentum thickens or shape parameter becomes exceedingly large, vastly overestimating the drag coefficient.  Likely the product of one or more of the adjustments to try and make the method more robust.
+#
+# # Fields:
+# - `model_drag::Tb=true` : flag to turn off viscous drag approximation
+# - `lambda::Bool = true` : flag to add secondary influences into boundary layer residuals
+# - `longitudinal_curvature::Bool = true` : if `lambda`=true, flag to add longitudinal curvature influence into boundary layer residuals
+# - `lateral_strain::Bool = true` : if `lambda`=true, flag to add lateral strain influence into boundary layer residuals
+# - `dilation::Bool = true` : if `lambda`=true, flag to add dilation influence into boundary layer residuals
+# - `n_steps::Int = Int(2e2)` : number of steps to use in boundary layer integration
+# - `first_step_size::Float = 1e-3` : size of first step in boundary layer integration
+# - `offset::Float = 1e-2` : size of offset for (where to initialize) boundary layer integration
+# - `solver_type::Type = DiffEq()` : type of ODE solver (RK() or DiffEq())
+# - `ode::Function = RadauIIA5` : solver to use for boundary layer integration (RadauIIA5, RK4, or RK2 available)
+# - `separation_allowance_upper::Int=3` : upper side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
+# - `separation_allowance_lower::Int=3` : lower side allowance for how many steps ahead of the trailing edge we'll allow separation without penalty
+# - `separation_penalty_upper::Float=0.2` : upper side maximum penalty value for separation (at leading edge)
+# - `separation_penalty_lower::Float=0.2` : lower side maximum penalty value for separation (at leading edge)
+# """
+# @kwdef struct GreensBoundaryLayerOptions{Tb,Tf,Tfun,Ti,To,Tp,Ts,Tsol,Tssl,Tssu} <:
+#               BoundaryLayerOptions
+#     model_drag::Tb = true
+#     terminate::Tb = true
+#     lambda::Tb = false
+#     longitudinal_curvature::Tb = true
+#     lateral_strain::Tb = true
+#     dilation::Tb = true
+#     n_steps::Ti = Int(2e2)
+#     first_step_size::Tf = 1e-6
+#     upper_step_size::Tssu = nothing
+#     lower_step_size::Tssl = nothing
+#     offset::To = 1e-3
+#     solver_type::Tsol = DiffEq()
+#     ode::Tfun = RadauIIA5
+#     separation_criteria::Ts = 0.0
+#     separation_allowance_upper::Ti = 25
+#     separation_allowance_lower::Ti = 25
+#     separation_penalty_upper::Tp = 0.2
+#     separation_penalty_lower::Tp = 0.2
+#     verbose::Tb = false
+# end
 
 #---------------------------------#
 #         OPTION SET TYPES        #
@@ -775,13 +754,12 @@ Type containing (nearly) all the available user options.
 ## General Options
 - `verbose::Bool = false` : flag to print verbose statements
 - `silence_warnings::Bool = true` : flag to silence warnings
-- `multipoint_index::Int = [1]` : holds current index of multi-point solver (no need for user to change this usually)
+- `hard_fail::Bool = true` : flag as to whether DuctAPE should return nothing immediately after a failed initialization of the elliptic grid or a failed decomposition of the body influence matrix.  If set to false, DuctAPE will attempt to return objects of the correct size, but with initialized values only.
 ## Pre-processing Options
-### Geometry interpolation and generation options :
+### Geometry Interpolation and Generation Options
 - `finterp::Interplation Method = FLOWMath.akima` : interpolation method used for re-paneling bodies
 - `autoshiftduct::Bool = true` : flag as to whether duct geometry should be shifted based on rotor tip location
-- `lu_decomp_flag::Bool = false` : flag indicating if panel method LHS matrix factorization was successful
-### paneling options
+### Paneling Options
 - `itcpshift::Float = 0.05` : factor for internal trailing edge psuedo-panel placement (default is DFDC hard-coded value)
 - `axistol::Float = 1e-15` : tolerance for how close the the axis of rotation should be considered on the axis
 - `tegaptol::Float = 1e1 * eps()` : tolerance for how large of a trailing edge gap should be considered a gap
@@ -796,8 +774,9 @@ Type containing (nearly) all the available user options.
 ## Solving Options
 - `grid_solver_options::GridSolverOptionsType = GridSolverOptions()` : elliptic grid solver options
 - `solver_options::SolverOptionsType = ChainSolverOptions()` : solver options
-## Failure Options
-- `hard_fail::Bool = true` : flag as to whether DuctAPE should return nothing immediately after a failed initialization of the elliptic grid or a failed decomposition of the body influence matrix.  If set to false, DuctAPE will attempt to return objects of the correct size, but with initialized values only.
+## Bookkeeping Options
+- `multipoint_index::Int = [1]` : holds current index of multi-point solver (no need for user to change this usually)
+- `lu_decomp_flag::Bool = false` : flag indicating if panel method LHS matrix factorization was successful
 """
 @kwdef struct Options{
     TB,
@@ -834,7 +813,7 @@ Type containing (nearly) all the available user options.
     output_tuple_name::TSt = ["outs"]
     # - Solving Options - #
     grid_solver_options::WS = GridSolverOptions()
-    solver_options::TSo = ChainSolverOptions()
+    solver_options::TSo = ModCSORSolverOptions()
     # - Failure Options - #
     hard_fail::TB = true
 end
@@ -876,7 +855,7 @@ function set_options(
     end
 
     return set_options(;
-        solver_options=ChainSolverOptions(multipoint),
+        solver_options=ModCSORSolverOptions(multipoint),
         write_outputs=write_outputs,
         outfile=outfile,
         output_tuple_name=output_tuple_name,

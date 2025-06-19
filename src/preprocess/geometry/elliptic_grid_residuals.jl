@@ -586,15 +586,15 @@ function relax_grid!(
     # Get the x positions along the x axis (used later for various ratios compared to internal points as they move)
     xi = [zs[i, 1] for i in 1:nxi]
     # Get the r positions along the inner radial boundary
-    # centerbodyrstations = [rs[i, 1] for i in 1:nxi]
-    centerbodyrstations = view(rs, 1:nxi, 1)
+    # center_bodyrstations = [rs[i, 1] for i in 1:nxi]
+    center_bodyrstations = view(rs, 1:nxi, 1)
 
     # used as scaling for tolerance
     dxy = max(
         zs[1, 1],
         rs[1, 1],
         abs(xi[end] - xi[1]),
-        abs(centerbodyrstations[end] - centerbodyrstations[1]),
+        abs(center_bodyrstations[end] - center_bodyrstations[1]),
     )
 
     #next dfdc goes to AXELL function

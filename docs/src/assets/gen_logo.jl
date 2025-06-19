@@ -28,13 +28,13 @@ ms = 4
 fa = 1 / 3
 
 # blue rotor
-rotorzloc = 0.35 * duct_chord
+rotor_axial_position = 0.35 * duct_chord
 r = range(Rhub + 0.01, Rtip - 0.025, 11)
 c = range(0.35, 0.25, 11) .* Rtip
 t = range(70.0, 30.0, 11)
 
-lez = rotorzloc .- c .* 0.25 .* sind.(t)
-tez = rotorzloc .+ c .* 0.75 .* sind.(t)
+lez = rotor_axial_position .- c .* 0.25 .* sind.(t)
+tez = rotor_axial_position .+ c .* 0.75 .* sind.(t)
 
 plot!(
     lez,
@@ -87,7 +87,7 @@ plot!(
 plot!(nz, nr; label="", color=julia_green, linewidth=lw)
 
 # red center body
-cbz, cbr, _, _, _ = centerbody_geom(
+cbz, cbr, _, _, _ = center_body_geom(
     Rhub,
     duct_chord;
     cb_nc_le=0.125,
@@ -130,7 +130,7 @@ end
 
 # finish rotor bits
 plot!(
-    rotorzloc .* ones(length(wg[2, 1, 2:2:end])),
+    rotor_axial_position .* ones(length(wg[2, 1, 2:2:end])),
     wg[2, 1, 2:2:end];
     label="",
     color=julia_blue,

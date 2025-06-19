@@ -1,7 +1,7 @@
 function wake_streamlines()
 
     # set body streamlines
-    # determine centerbody wake streamline
+    # determine center_body wake streamline
     # determine inner rotor streamlines
     # determine duct wake streamline
 
