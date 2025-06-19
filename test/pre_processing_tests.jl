@@ -393,7 +393,7 @@ end
         duct_coordinates, center_body_coordinates, rotor, paneling_constants
     )
 
-    options = dt.set_options()
+    options = dt.set_options(;solver_options=NLsolveOptions())
 
     # - Get Problem Dimensions - #
     problem_dimensions = dt.get_problem_dimensions(ducted_rotor.paneling_constants)

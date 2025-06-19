@@ -2,7 +2,7 @@
 
 The output tuple contains many items.
 The [`post_process`](@ref "DuctAPE.post_process") function docstring lists them.
-The purpose of showing this function here is not for you to manually run the fuction or apply any advanced usage, but simply rather for you to see what the available outputs are, as several of them may apply to advanced usage cases.
+The purpose of showing this function here is not for you to manually run the fuction, but simply rather for you to see what the available outputs are.
 
 ```@docs
 DuctAPE.post_process

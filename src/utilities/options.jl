@@ -216,7 +216,7 @@ Note that the defaults match DFDC settings.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 - `residuals::AbstractArray{Float} = [-1.0]` : final residual values
 """
-@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI,TS} <: InternalSolverOptions
+@kwdef struct CSORSolverOptions{TB,TC<:ConvergenceType,TF,TI} <: InternalSolverOptions
     # Defaults are DFDC hard-coded values
     verbose::TB = false
     iteration_limit::TI = 1000
