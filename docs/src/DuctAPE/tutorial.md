@@ -400,7 +400,7 @@ Running a multi-point analysis on the example geometry given there, it might loo
 
 ```@example tutorial
 # - Advance Ratio Range - #
-Js = range(0.1, 2.0; step=0.01)
+Js = range(0.0, 2.01; step=0.01)
 
 # - Calculate Vinfs - #
 D = 2.0 * rotor.Rtip[1] # rotor diameter
@@ -487,8 +487,11 @@ nothing #hide
 And then we can plot the data to compare DFDC and DuctAPE.
 
 ```@example tutorial
+using Plots
+using LaTeXStrings
+
 # set up efficiency plot
-pe = plot(; xlabel="Advance Ratio", ylabel="Efficiency")
+pe = plot(; xlabel="Advance Ratio", ylabel=L"\eta")
 
 # plot DFDC data
 scatter!(
@@ -520,7 +523,7 @@ scatter!(
     dfdc_cp;
     markersize=5,
     color=1, # hide
-    label="DFDC Cp",
+    label=L"\mathrm{DFDC}~~c_P",
 )
 
 scatter!(
@@ -529,7 +532,7 @@ scatter!(
     dfdc_ct;
     markersize=5,
     color=2, # hide
-    label="DFDC Ct",
+    label=L"\mathrm{DFDC}~~c_T",
 )
 
 # plot DuctAPE outputs
@@ -539,7 +542,7 @@ plot!(
     c_p;
     linewidth=1.5,
     color=2, # hide
-    label="DuctAPE c_p",
+    label=L"\mathrm{DuctAPE}~~c_P",
 )
 
 plot!(
@@ -548,7 +551,7 @@ plot!(
     c_t;
     linewidth=1.5,
     color=1, # hide
-    label="DuctAPE Ct",
+    label=L"\mathrm{DuctAPE}~~c_T",
 )
 
 plot(
