@@ -1,0 +1,54 @@
+\begin{tikzpicture}[scale=1]
+
+    % Locations of p1 and p2
+    \coordinate (p1) at (0,0);
+    \coordinate (p2) at (2.5,0);
+
+    \coordinate (p1p) at ($(p1) + (0,0.5)$);
+    \coordinate (p2p) at ($(p2) + (0,0.75)$);
+
+    \coordinate (p1x) at ($(p1) + (0,1.0)$);
+    \coordinate (p2x) at ($(p2) + (0,1.0)$);
+
+    \coordinate (p12) at (0.75,0);
+    \coordinate (p12x) at ($(p12) + (0,1.0)$);
+
+
+    % Draw arc
+    \draw[thick, -{Stealth[bend]}, secondary] (p1) [partial ellipse = 20:340:0.25 and 0.25];
+    \node[left, secondary, shift={(-0.25,0)}] at (p1) {$\gamma_j$};
+    \node[below, primary, shift={(0,-0.3)}] at (p1) {0};
+
+    \draw[thick, -{Stealth[bend]}, secondary] (p2) [partial ellipse = 200:520:0.35 and 0.35];
+    \node[right, secondary, shift={(0.4,0)}] at (p2) {$\gamma_{j+1}$};
+    \node[below, primary, shift={(0,-0.3)}] at (p2) {1};
+
+    \draw[fill opacity = 0.1, fill=secondary, secondary] (p1) -- (p1p) -- (p2p) -- (p2);
+
+    % label pbar
+    % \draw (p)node[anchor=north, primary, outer sep=3]{$\overline{\vect{p}_j}$};
+
+    \draw[primary, |-] (p1x) -- (p12x) node[above, pos=0.5]{\(\xi_k\)};
+    \draw[primary, |-|] (p12x) -- (p2x) node[above, pos=0.5]{\(1-\xi_k\)};
+
+    % Draw main line
+    \draw[thick] (p1) -- (p2);
+
+    % Draw circles
+    \filldraw[] (p1) circle (1pt);
+    \filldraw[] (p2) circle (1pt);
+    % \filldraw[primary] (p12) circle (1.5pt) node[below,primary,shift={(0.5,0)}, style={font=\tiny}]{\(w_k f(s(\xi_k))\)};
+    \node[below,primary,shift={(0.5,0)}, style={font=\tiny}] at (p12) {\(w_k f(s(\xi_k))\)};
+    \node[primary, style={font=\tiny}] at (p12){\(\blacklozenge\)};
+
+
+    \draw [
+        decoration={
+            brace,
+            mirror,
+        },
+        decorate
+    ] ($(p1)-(0,0.8)$) -- ($(p2)-(0,0.8)$)
+    node [pos=0.5,below] {\(\Delta s\)};
+
+\end{tikzpicture}

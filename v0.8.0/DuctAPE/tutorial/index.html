@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Quick Start · DuctAPE.jl</title><meta name="title" content="Quick Start · DuctAPE.jl"/><meta property="og:title" content="Quick Start · DuctAPE.jl"/><meta property="twitter:title" content="Quick Start · DuctAPE.jl"/><meta name="description" content="Documentation for DuctAPE.jl."/><meta property="og:description" content="Documentation for DuctAPE.jl."/><meta property="twitter:description" content="Documentation for DuctAPE.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="DuctAPE.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">DuctAPE.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">DuctAPE</span><ul><li class="is-active"><a class="tocitem" href>Quick Start</a><ul class="internal"><li><a class="tocitem" href="#Assemble-Inputs"><span>Assemble Inputs</span></a></li><li><a class="tocitem" href="#Set-Options"><span>Set Options</span></a></li><li><a class="tocitem" href="#Run-a-Single-Analysis"><span>Run a Single Analysis</span></a></li><li><a class="tocitem" href="#Run-a-Multi-Point-Analysis"><span>Run a Multi-Point Analysis</span></a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">API Reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../api/analysis/">Analysis</a></li><li><a class="tocitem" href="../api/inputs/">Required Inputs</a></li><li><a class="tocitem" href="../api/options/">Options</a></li><li><a class="tocitem" href="../api/caches/">Precompiled Caches</a></li><li><a class="tocitem" href="../api/outputs/">Outputs</a></li><li><a class="tocitem" href="../api/api_index/">API Index</a></li></ul></li><li><a class="tocitem" href="../visualization/">Visualization</a></li><li><a class="tocitem" href="../theory/">Theory</a></li></ul></li><li><span class="tocitem">C<span>$^4$</span>Blade</span><ul><li><a class="tocitem" href="../../C4Blade/intro/">Intro</a></li><li><input class="collapse-toggle" id="menuitem-3-2" type="checkbox"/><label class="tocitem" for="menuitem-3-2"><span class="docs-label">Blade Element Types</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../C4Blade/airfoil_types/DFDC/">DFDC Airfoil Type</a></li><li><a class="tocitem" href="../../C4Blade/airfoil_types/CCBlade/">CCBlade Airfoil Types</a></li><li><a class="tocitem" href="../../C4Blade/airfoil_types/actuator_disk/">Actuator Disk Type</a></li><li><a class="tocitem" href="../../C4Blade/airfoil_types/cascade/">Cascade Types</a></li></ul></li><li><a class="tocitem" href="../../C4Blade/api/">API Index</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">DuctAPE</a></li><li class="is-active"><a href>Quick Start</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Quick Start</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/byuflowlab/DuctAPE.jl/blob/{commit}{path}#L{line}" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/byuflowlab/DuctAPE.jl/blob/main/docs/src/DuctAPE/tutorial.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Quick-Start"><a class="docs-heading-anchor" href="#Quick-Start">Quick Start</a><a id="Quick-Start-1"></a><a class="docs-heading-anchor-permalink" href="#Quick-Start" title="Permalink"></a></h1><ul><li><a href="#Quick-Start">Quick Start</a></li><li class="no-marker"><ul><li><a href="#Assemble-Inputs">Assemble Inputs</a></li><li class="no-marker"><ul><li><a href="#Body-Geometry">Body Geometry</a></li><li><a href="#Rotor-Geometry">Rotor Geometry</a></li><li><a href="#Paneling-Constants">Paneling Constants</a></li><li><a href="#Assembling-the-DuctedRotor">Assembling the DuctedRotor</a></li><li><a href="#Operating-Point">Operating Point</a></li><li><a href="#Reference-Parameters">Reference Parameters</a></li></ul></li><li><a href="#Set-Options">Set Options</a></li><li><a href="#Run-a-Single-Analysis">Run a Single Analysis</a></li><li class="no-marker"><ul><li><a href="#Single-Run-Outputs">Single Run Outputs</a></li></ul></li><li><a href="#Run-a-Multi-Point-Analysis">Run a Multi-Point Analysis</a></li><li class="no-marker"><ul><li><a href="#Multi-point-Outputs">Multi-point Outputs</a></li></ul></li></ul></li></ul><p>The following is a basic tutorial on how to set up and run an analysis of a ducted fan in DuctAPE.</p><p>We begin by loading the package:</p><pre><code class="language-julia hljs">using DuctAPE</code></pre><h2 id="Assemble-Inputs"><a class="docs-heading-anchor" href="#Assemble-Inputs">Assemble Inputs</a><a id="Assemble-Inputs-1"></a><a class="docs-heading-anchor-permalink" href="#Assemble-Inputs" title="Permalink"></a></h2><p>The next step is to create the input object of type <code>DuctedRotor</code>, which contains duct and center body coordinates, rotor inputs, as well as several constants related to paneling the geometry.</p><h3 id="Body-Geometry"><a class="docs-heading-anchor" href="#Body-Geometry">Body Geometry</a><a id="Body-Geometry-1"></a><a class="docs-heading-anchor-permalink" href="#Body-Geometry" title="Permalink"></a></h3><p>We begin by defining a matrix of coordinates for the duct and another for the center body geometries.</p><pre><code class="language-julia hljs">duct_coordinates = [
+    0.304466  0.158439
+    0.294972  0.158441
+    0.28113   0.158423
+    0.266505  0.158365
+    0.251898  0.158254
+    0.237332  0.158088
+    0.222751  0.157864
+    0.208123  0.157586
+    0.193399  0.157258
+    0.178507  0.156897
+    0.16349   0.156523
+    0.148679  0.156177
+    0.134222  0.155902
+    0.12      0.155721
+    0.106044  0.155585
+    0.092531  0.155498
+    0.079836  0.155546
+    0.067995  0.155792
+    0.057025  0.156294
+    0.046983  0.157103
+    0.037937  0.158256
+    0.029956  0.159771
+    0.02311   0.161648
+    0.017419  0.163862
+    0.012842  0.166404
+    0.009324  0.169289
+    0.006854  0.172546
+    0.005484  0.176154
+    0.005242  0.180005
+    0.006112  0.184067
+    0.00809   0.188086
+    0.011135  0.192004
+    0.015227  0.19579
+    0.020339  0.199393
+    0.026403  0.202735
+    0.033312  0.205736
+    0.040949  0.208332
+    0.049193  0.210487
+    0.057935  0.212174
+    0.067113  0.21339
+    0.076647  0.214136
+    0.086499  0.214421
+    0.09661   0.214255
+    0.10695   0.213649
+    0.117508  0.212618
+    0.12838   0.211153
+    0.139859  0.209267
+    0.151644  0.207051
+    0.163586  0.204547
+    0.175647  0.201771
+    0.187807  0.198746
+    0.20002   0.19549
+    0.212269  0.192017
+    0.224549  0.188335
+    0.236794  0.18447
+    0.249026  0.180416
+    0.261206  0.176188
+    0.273301  0.171796
+    0.28524   0.16727
+    0.29644   0.162842
+    0.304542  0.159526
+]</code></pre><pre><code class="language-julia hljs">center_body_coordinates = [
+    0.0       0.0
+    0.000586  0.005293
+    0.002179  0.010047
+    0.004736  0.014551
+    0.008231  0.018825
+    0.012632  0.022848
+    0.01788   0.026585
+    0.023901  0.030001
+    0.030604  0.033068
+    0.0379    0.035771
+    0.045705  0.038107
+    0.053933  0.040075
+    0.06254   0.04169
+    0.071451  0.042966
+    0.08063   0.043916
+    0.090039  0.044561
+    0.09968   0.044922
+    0.109361  0.044999
+    0.12      0.044952
+    0.135773  0.04495
+    0.151899  0.04493
+    0.16806   0.044913
+    0.184232  0.044898
+    0.200407  0.044882
+    0.21658   0.044866
+    0.232723  0.044847
+    0.248578  0.044839
+    0.262095  0.044564
+    0.274184  0.043576
+    0.285768  0.041795
+    0.296701  0.039168
+    0.306379  0.035928
+]</code></pre><img src="adfc4687.svg" alt="Example block output"/><div class="admonition is-info" id="Note-866a8ea3e349831d"><header class="admonition-header">Note<a class="admonition-anchor" href="#Note-866a8ea3e349831d" title="Permalink"></a></header><div class="admonition-body"><p>The body geometry coordinates must be input as columns of z (axial) and r (radial) coordinates, in that order.</p></div></div><h3 id="Rotor-Geometry"><a class="docs-heading-anchor" href="#Rotor-Geometry">Rotor Geometry</a><a id="Rotor-Geometry-1"></a><a class="docs-heading-anchor-permalink" href="#Rotor-Geometry" title="Permalink"></a></h3><p>The next step is to assemble an object of type <code>Rotor</code> which contains the geometric information required to define the rotor(s) and their respective blade elements. In this example, we have a single rotor defined as follows.</p><pre><code class="language-julia hljs"># number of rotors
+B = 5
+
+# rotor axial location
+rotor_axial_position = 0.12
+
+# rotor tip radius
+Rtip = 0.15572081487373543
+
+# rotor hub radius
+Rhub = 0.04495252299071941
+
+# non-dimensional blade element radial stations
+r = [
+    0.050491
+    0.061567
+    0.072644
+    0.083721
+    0.094798
+    0.10587
+    0.11695
+    0.12803
+    0.13911
+    0.15018
+] ./ Rtip
+
+# dimensional chord lengths
+chords = [
+    0.089142
+    0.079785
+    0.0713
+    0.063979
+    0.057777
+    0.052541
+    0.048103
+    0.044316
+    0.041061
+    0.038243
+]
+
+# twist angles (from plane of rotation) in radians
+twists = [
+    69.012
+    59.142
+    51.825
+    46.272
+    41.952
+    38.509
+    35.699
+    33.354
+    31.349
+    29.596
+] .* pi / 180.0
+
+# DFDC-type airfoil object
+afparams = DuctAPE.c4b.DFDCairfoil(;
+    alpha0=0.0,
+    clmax=1.5,
+    clmin=-1.0,
+    dclda=6.28,
+    dclda_stall=0.5,
+    dcl_stall=0.2,
+    cdmin=0.012,
+    clcdmin=0.1,
+    dcddcl2=0.005,
+    cmcon=0.0,
+    Re_ref=2e5,
+    Re_exp=0.35,
+    mcrit=0.7,
+)
+
+# all airfoils are the same
+# NOTE: airfoils are inputs as a vector of vectors rather than a matrix
+airfoils = [fill(afparams, length(r))] # specify the airfoil array
+
+# assemble rotor parameters
+rotor = DuctAPE.Rotor(
+    B,
+    rotor_axial_position,
+    r,
+    Rhub,
+    Rtip,
+    chords,
+    twists,
+    [0.0], # tip gap: currently only zero tip gaps work.
+    airfoils,
+    [0.0], # is_stator: can flip the cl lookups on the fly if desired, say, for stator sections
+)</code></pre><img src="ecea84fc.svg" alt="Example block output"/><h3 id="Paneling-Constants"><a class="docs-heading-anchor" href="#Paneling-Constants">Paneling Constants</a><a id="Paneling-Constants-1"></a><a class="docs-heading-anchor-permalink" href="#Paneling-Constants" title="Permalink"></a></h3><p>The <code>PanelingConstants</code> object contains the constants required for DuctAPE to re-panel the provided geometry into a format compatible with the solve structure. Specifically, the DuctAPE solver makes some assumptions on the relative positioning of the body surfaces relative to the wakes and each other; and this is most easily guarenteed by a re-paneling of the provided body surface geometry.</p><pre><code class="language-julia hljs"># number of panels for the duct inlet
+num_duct_inlet_panels = 30
+
+# number of panels for the center body inlet
+num_center_body_inlet_panels = 30
+
+# number of panels from:
+#  - rotor to duct trailing edge
+#  - duct trailing edge to center body trailing edge
+#  - center body trailing edge to end of wake
+num_panels = [30, 1, 30]
+
+# the duct trailing edge is ahead of the center_body trailing edge.
+dte_minus_cbte = -1.0
+
+# number of wake sheets (one more than blade elements to use)
+num_wake_sheets = 11
+
+# non-dimensional wake length aft of rear-most trailing edge
+wake_length = 0.8
+
+# assemble paneling constants
+paneling_constants = DuctAPE.PanelingConstants(
+    num_duct_inlet_panels,
+    num_center_body_inlet_panels,
+    num_panels,
+    dte_minus_cbte,
+    num_wake_sheets,
+    wake_length,
+)</code></pre><h3 id="Assembling-the-DuctedRotor"><a class="docs-heading-anchor" href="#Assembling-the-DuctedRotor">Assembling the DuctedRotor</a><a id="Assembling-the-DuctedRotor-1"></a><a class="docs-heading-anchor-permalink" href="#Assembling-the-DuctedRotor" title="Permalink"></a></h3><p>We are now posed to construct the <code>DuctedRotor</code> input type.</p><pre><code class="language-julia hljs"># assemble ducted_rotor object
+ducted_rotor = DuctAPE.DuctedRotor(
+    duct_coordinates,
+    center_body_coordinates,
+    rotor,
+    paneling_constants,
+)</code></pre><h3 id="Operating-Point"><a class="docs-heading-anchor" href="#Operating-Point">Operating Point</a><a id="Operating-Point-1"></a><a class="docs-heading-anchor-permalink" href="#Operating-Point" title="Permalink"></a></h3><p>Next we will assemble the operating point which contains information about the freestream as well as the rotor rotation rate(s).</p><pre><code class="language-julia hljs"># Freestream
+Vinf = 30.0
+rhoinf = 1.226
+asound = 340.0
+muinf = 1.78e-5
+
+# Rotation Rate
+RPM = 8000.0
+Omega = RPM * pi / 30 # if using RPM, be sure to convert to rad/s
+
+# utilizing the constructor function to put things in vector types
+operating_point = DuctAPE.OperatingPoint(Vinf, Omega, rhoinf, muinf, asound)</code></pre><h3 id="Reference-Parameters"><a class="docs-heading-anchor" href="#Reference-Parameters">Reference Parameters</a><a id="Reference-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Reference-Parameters" title="Permalink"></a></h3><p>The reference parameters are used in the post-processing non-dimensionalizations.</p><pre><code class="language-julia hljs"># reference velocity (close to average axial velocity at rotor in this case)
+Vref = 50.0
+
+# reference radius (usually tip radius of rotor)
+Rref = Rtip
+
+# assemble reference parameters
+reference_parameters = DuctAPE.ReferenceParameters([Vref], [Rref])</code></pre><h2 id="Set-Options"><a class="docs-heading-anchor" href="#Set-Options">Set Options</a><a id="Set-Options-1"></a><a class="docs-heading-anchor-permalink" href="#Set-Options" title="Permalink"></a></h2><p>The default options should be sufficient for just starting out and are set through the <code>set_options</code> function.</p><pre><code class="language-julia hljs">options = DuctAPE.set_options()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Options{Bool, DuctAPE.HeadsBoundaryLayerOptions{Bool, Float64, Float64, typeof(RK2), Int64, Float64, Float64, Float64, DuctAPE.RK, Nothing, Nothing}, Vector{Bool}, Float64, Vector{Int64}, Vector{String}, Vector{String}, DuctAPE.var&quot;#55#60&quot;, IntegrationOptions{GaussLegendre{Vector{Float64}, Vector{Float64}}, GaussLegendre{Vector{Float64}, Vector{Float64}}}, ModCSORSolverOptions{Bool, Float64, Int64, @NamedTuple{nrf::Float64, bt1::Float64, bt2::Float64, pf1::Float64, pf2::Float64, btw::Float64, pfw::Float64}}, GridSolverOptions{Bool, Float64, Int64, Symbol}}(false, true, [1], DuctAPE.var&quot;#55#60&quot;(), true, false, 0.05, 1.0e-15, 2.220446049250313e-15, IntegrationOptions{GaussLegendre{Vector{Float64}, Vector{Float64}}, GaussLegendre{Vector{Float64}, Vector{Float64}}}(GaussLegendre{Vector{Float64}, Vector{Float64}}([0.019855071751231856, 0.10166676129318664, 0.2372337950418355, 0.4082826787521751, 0.591717321247825, 0.7627662049581645, 0.8983332387068134, 0.9801449282487682], [0.05061426814518838, 0.11119051722668723, 0.15685332293894372, 0.18134189168918097, 0.18134189168918097, 0.15685332293894372, 0.11119051722668723, 0.05061426814518838]), GaussLegendre{Vector{Float64}, Vector{Float64}}([0.019855071751231856, 0.10166676129318664, 0.2372337950418355, 0.4082826787521751, 0.591717321247825, 0.7627662049581645, 0.8983332387068134, 0.9801449282487682], [0.05061426814518838, 0.11119051722668723, 0.15685332293894372, 0.18134189168918097, 0.18134189168918097, 0.15685332293894372, 0.11119051722668723, 0.05061426814518838])), DuctAPE.HeadsBoundaryLayerOptions{Bool, Float64, Float64, typeof(RK2), Int64, Float64, Float64, Float64, DuctAPE.RK, Nothing, Nothing}(false, true, true, false, 5000, 1.0e-6, nothing, nothing, 0.001, DuctAPE.RK(), DuctAPE.RK2, 3.0, 10, 10, 0.2, 0.2, false, 0.0, 0.0001, 0.0, false), Bool[0], [&quot;outputs.jl&quot;], false, [&quot;outs&quot;], GridSolverOptions{Bool, Float64, Int64, Symbol}(30, 3.0e-10, :newton, :forward, false, 3, Bool[0], [0], [0.0]), ModCSORSolverOptions{Bool, Float64, Int64, @NamedTuple{nrf::Float64, bt1::Float64, bt2::Float64, pf1::Float64, pf2::Float64, btw::Float64, pfw::Float64}}(false, 500, (nrf = 0.4, bt1 = 0.2, bt2 = 0.6, pf1 = 0.4, pf2 = 0.5, btw = 0.6, pfw = 1.2), 5.0e-10, Bool[0], [0], [-1.0]), true)</code></pre><p>For more advanced option selection, see the examples and API reference.</p><h2 id="Run-a-Single-Analysis"><a class="docs-heading-anchor" href="#Run-a-Single-Analysis">Run a Single Analysis</a><a id="Run-a-Single-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Run-a-Single-Analysis" title="Permalink"></a></h2><p>With the <code>ducted_rotor</code> input build, the operation point set, and the options selected, we are now ready to run an analysis. This is done simply with the <code>analyze</code> function which dispatches the appropriate analysis, solve, and post-processing functions based on the selected options.</p><pre><code class="language-julia hljs">outs, success_flag = DuctAPE.analyze(
+    ducted_rotor, operating_point, reference_parameters, options
+)</code></pre><h3 id="Single-Run-Outputs"><a class="docs-heading-anchor" href="#Single-Run-Outputs">Single Run Outputs</a><a id="Single-Run-Outputs-1"></a><a class="docs-heading-anchor-permalink" href="#Single-Run-Outputs" title="Permalink"></a></h3><p>There are many outputs contained in the named tuple output from the <code>analyze</code> function, but some that may be of immediate interest include:</p><pre><code class="language-julia hljs"># Total Thrust Coefficient
+outs.totals.CT</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.4995120496885003</code></pre><pre><code class="language-julia hljs"># Total Torque Coefficient
+outs.totals.CQ</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.09522170321731735</code></pre><h2 id="Run-a-Multi-Point-Analysis"><a class="docs-heading-anchor" href="#Run-a-Multi-Point-Analysis">Run a Multi-Point Analysis</a><a id="Run-a-Multi-Point-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Run-a-Multi-Point-Analysis" title="Permalink"></a></h2><p>In the case that one wants to run the same geometry at several different operating points, for example: for a range of advance ratios, there is another dispatch of the <code>analyze</code> function that accepts an input, <code>multipoint</code>, that is a vector of operating points. Running a multi-point analysis on the example geometry given there, it might look something like this:</p><pre><code class="language-julia hljs"># - Advance Ratio Range - #
+Js = range(0.0, 2.01; step=0.01)
+
+# - Calculate Vinfs - #
+D = 2.0 * rotor.Rtip[1] # rotor diameter
+n = RPM / 60.0 # rotation rate in revolutions per second
+Vinfs = Js * n * D
+
+# - Set Operating Points - #
+operating_points = [deepcopy(operating_point) for i in 1:length(Vinfs)]
+for (iv, v) in enumerate(Vinfs)
+    operating_points[iv].Vinf[] = v
+end
+
+# - Run Multi-point Analysis - #
+outs_vec, success_flags = DuctAPE.analyze(
+    ducted_rotor,
+    operating_points,
+    reference_parameters,
+    DuctAPE.set_options(operating_points),
+)</code></pre><p>There are a few things to note here.</p><ol><li>We want to make sure that the operating point objects we put into the input vector are unique instances.</li><li>We need to use the dispatch of <code>set_options</code> that accepts the operating point vector to set up the right number of things in the background (like convergence flags for each operating point).</li><li>The outputs of the analysis are vectors of the same outputs for a single analysis.</li></ol><h3 id="Multi-point-Outputs"><a class="docs-heading-anchor" href="#Multi-point-Outputs">Multi-point Outputs</a><a id="Multi-point-Outputs-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-point-Outputs" title="Permalink"></a></h3><p>For multi-point analysis outputs, which are given as a vector of output objects, we might access and plot things as follows. We also take the opportunity to present some verification against DFDC, showing that DuctAPE matches remarkably well (within 0.5%) of DFDC. We therefore first provide data from DFDC analyses of the above example geometry at various advance ratios.</p><pre><code class="language-julia hljs"># Verification Data From DFDC
+
+dfdc_jept = [
+    0.0 0.0 0.64763 0.96692
+    0.1 0.1366 0.64716 0.88394
+    0.2 0.2506 0.6448 0.80785
+    0.3 0.3457 0.64044 0.73801
+    0.4 0.4251 0.63401 0.67382
+    0.5 0.4915 0.62534 0.61468
+    0.6 0.547 0.61428 0.56001
+    0.7 0.5935 0.6006 0.50925
+    0.8 0.6326 0.58411 0.46187
+    0.9 0.6654 0.56452 0.41738
+    1.0 0.693 0.54158 0.37531
+    1.1 0.716 0.51499 0.33522
+    1.2 0.7349 0.48446 0.2967
+    1.3 0.7499 0.44966 0.25937
+    1.4 0.7606 0.41031 0.2229
+    1.5 0.7661 0.36604 0.18694
+    1.6 0.7643 0.31654 0.15121
+    1.7 0.7506 0.26153 0.11547
+    1.8 0.7126 0.20061 0.07941
+    1.9 0.61 0.13355 0.04287
+    2.0 0.1861 0.05993 0.00558
+]
+
+dfdc_J = dfdc_jept[:,1]
+dfdc_eta = dfdc_jept[:,2]
+dfdc_cp = dfdc_jept[:,3]
+dfdc_ct = dfdc_jept[:,4]</code></pre><p>We can then access the various multi-point analysis outputs however is convenient, we choose a broadcasting approach here:</p><pre><code class="language-julia hljs"># - extract efficiency, power, and thrust coefficients - #
+
+# efficiency
+eta = (p-&gt;p.totals.total_efficiency[1]).(outs_vec)
+
+# power
+c_p = (p-&gt;p.totals.CP[1]).(outs_vec)
+
+# thrust
+c_t = (p-&gt;p.totals.CT[1]).(outs_vec)</code></pre><p>And then we can plot the data to compare DFDC and DuctAPE.</p><pre><code class="language-julia hljs">using Plots
+using LaTeXStrings
+
+# set up efficiency plot
+pe = plot(; xlabel=&quot;Advance Ratio&quot;, ylabel=L&quot;\eta&quot;)
+
+# plot DFDC data
+scatter!(
+    pe,
+    dfdc_J,
+    dfdc_eta;
+    markersize=5,
+    label=&quot;DFDC&quot;,
+)
+
+# Plot DuctAPE outputs
+plot!(
+    pe,
+    Js,
+    eta;
+    linewidth=2,
+    label=&quot;DuctAPE&quot;,
+)
+
+# setup c_p/c_t plot
+ppt = plot(; xlabel=&quot;Advance Ratio&quot;)
+
+# plot DFDC data
+scatter!(
+    ppt,
+    dfdc_J,
+    dfdc_cp;
+    markersize=5,
+    label=L&quot;\mathrm{DFDC}~~c_P&quot;,
+)
+
+scatter!(
+    ppt,
+    dfdc_J,
+    dfdc_ct;
+    markersize=5,
+    label=L&quot;\mathrm{DFDC}~~c_T&quot;,
+)
+
+# plot DuctAPE outputs
+plot!(
+    ppt,
+    Js,
+    c_p;
+    linewidth=1.5,
+    label=L&quot;\mathrm{DuctAPE}~~c_P&quot;,
+)
+
+plot!(
+    ppt,
+    Js,
+    c_t;
+    linewidth=1.5,
+    label=L&quot;\mathrm{DuctAPE}~~c_T&quot;,
+)
+
+plot(
+    pe,
+    ppt;
+    size=(700, 350),
+    layout=(1, 2),
+)</code></pre><img src="1e91ae7f.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../api/analysis/">Analysis »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.12.0 on <span class="colophon-date" title="Thursday 19 June 2025 17:50">Thursday 19 June 2025</span>. Using Julia version 1.10.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

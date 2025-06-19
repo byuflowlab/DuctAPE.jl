@@ -1,0 +1,82 @@
+\begin{tikzpicture}[scale=1.0]
+
+    % coordinate system
+    \coordinate (O) at (-1,-1);
+    \coordinate (er) at ($(O) +(0,1)$);
+    \coordinate (ez) at ($(O) +(1,0)$);
+    \draw[-Stealth,] (O) -- (er);
+    \draw[-Stealth,] (O) -- (ez);
+    \draw[] (O) circle (3pt);
+    \filldraw[] (O) circle (1pt);
+    \node[anchor=north east,outer sep=0] at (O) {$\hat{\vect{e}}_\theta$};
+    \node[anchor=west,outer sep=0] at (er) {$\hat{\vect{e}}_r$};
+    \node[anchor=south,outer sep=0] at (ez) {$\hat{\vect{e}}_z$};
+
+    % filaments lines
+    \draw[] (0,0) -- (0.0,0.85);
+    \draw[] (0,0.97) -- (0.0,1.85);
+    \draw[] (0,1.97) -- (0.0,3.0);
+    \draw[] (0.1,3.0) -- (0.1,1.97);
+    \draw[] (0.1,1.85) -- (0.1,1.5);
+    \draw[name path=shedfilament] (0.1,1.5) to [out =0, in =180] (6.4, 1.2);
+    \draw[] (6.5,1.2) -- +(0.2,0);
+    \draw[] (6.8,1.2) -- +(0.2,0);
+    \draw[] (7.1,1.2) -- +(1,0);
+
+    % Velocity lines
+    \coordinate (vt2) at (1.35, 1.65);
+    \coordinate (vt1) at (1.35, 1.3);
+    \coordinate (vt1p) at ($(vt1) + (1.75, -0.1)$);
+    \coordinate (vt2p) at ($(vt2) + (2.5, -0.175)$);
+
+    %vm's
+    \draw[primary,-Stealth, thick] (vt2) to [out=-3, in = 175] (vt2p);
+    \draw[primary,-Stealth, thick] (vt1) to [out=-3, in = 175] (vt1p);
+    \node[above,primary] at (vt2p) {\(\vect{C}_{m_2}\)};
+    \node[below, primary] at (vt1p) {\(\vect{C}_{m_1}\)};
+
+    %vthetas
+    \node[secondary, above, shift={(0.0,0.15)}] at (vt2) {\(\vect{C}_{\theta_2}\)};
+    \draw[secondary, thick] (vt2) circle(3.5pt);
+    \filldraw[secondary] (vt2) circle(1pt);
+    \node[secondary,below, shift={(0.0,-0.15)}] at (vt1) {\(\vect{C}_{\theta_1}\)};
+    \draw[secondary, thick] (vt1) circle(3.5pt);
+    \filldraw[secondary] (vt1) circle(1pt);
+
+    % gamma_theta's
+    \path[name path=gt1] (4.75,2) -- (4.75,0);
+    \path[name path=gt2] (5.25,2) -- (5.25,0);
+    \path[name path=gt3] (5.75,2) -- (5.75,0);
+
+    \draw[-Stealth, name intersections={of=gt1 and shedfilament}](intersection-1) [partial ellipse =15:335:0.2 and 0.2];
+    \draw[-Stealth, name intersections={of=gt2 and shedfilament}](intersection-1) [partial ellipse =15:335:0.2 and 0.2] node[primary, above, shift={(0,0.3)}] {\(\gamma_\theta\)};
+    \draw[-Stealth, name intersections={of=gt3 and shedfilament}](intersection-1) [partial ellipse =15:335:0.2 and 0.2];
+
+
+    % gamma_m's
+    \coordinate (gm1) at (6.5,1.2);
+    \coordinate (gm2) at (6.8,1.2);
+    \coordinate (gm3) at (7.1,1.2);
+
+    \draw[-Stealth]  (gm1) [partial ellipse =7:250:0.05 and 0.25];
+    \draw[] (gm1) [partial ellipse =270:350:0.05 and 0.25];
+
+    \draw[-Stealth] (gm2) [partial ellipse =7:250:0.05 and 0.25] node[secondary, above, shift={(0,0.5)}] {\(\gamma_m\)};
+    \draw[] (gm2) [partial ellipse =270:350:0.05 and 0.25];
+
+    \draw[-Stealth] (gm3) [partial ellipse =7:250:0.05 and 0.25];
+    \draw[] (gm3) [partial ellipse =270:350:0.05 and 0.25];
+
+
+    % Circulation Gammas
+    \coordinate (G2) at (0.0,2.0);
+    \draw[] (G2) [partial ellipse =95:200:0.4 and 0.075];
+    \draw[Stealth-] (G2) [partial ellipse =220:430:0.4 and 0.075];
+    \node[left, shift={(-0.3,0)}] at (G2) {\(\Gamma_2\)};
+
+    \coordinate (G1) at (0.0,1.0);
+    \draw[] (G1) [partial ellipse =95:200:0.4 and 0.075];
+    \draw[Stealth-] (G1) [partial ellipse =220:445:0.4 and 0.075];
+    \node[left, shift={(-0.3,0)}] at (G1) {\(\Gamma_1\)};
+
+\end{tikzpicture}

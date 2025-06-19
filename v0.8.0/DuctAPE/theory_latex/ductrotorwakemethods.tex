@@ -1,0 +1,1742 @@
+\clearpage
+\newpage
+\section{No Duct Solution: Rotor-Wake Lifting Line Model}
+\label{sec:rotorwakemethods}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%                          REFERENCE FRAMES AND VELOCITIES
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Reference Frames}
+\label{ssec:reference_frames}
+To begin, we need to start with an explanation of the various reference frames and velocity decompositions used in the rotor and wake models.
+%
+We introduce multiple reference frames, because we would like to perform our analysis in steady frames.
+%
+The first frame we will use is the absolute reference frame, which is the reference frame of an observer stationed at a static location on the duct wall.
+%
+Since the aerodynamics of a rotor are inherently unsteady, we can't actually perfectly model things as steady.
+%
+If we, however, change our reference frame to be relative to a blade as we pass across the blade, we can reasonably approximate the flow across the blade section as steady.
+%
+In this blade relative, or simply relative, reference frame, the observer is stationed on a blade such that to the observer the blade is stationary.
+
+\subsubsection{Absolute Frame}
+\label{ssec:absoluteframe}
+
+Along with the absolute reference frame, we introduce the absolute coordinate system in \cref{fig:absolutecoordinatesystem}.
+%
+As can be seen, the duct is defined in a right-handed cylindrical coordinate system.
+%
+We define the \(z\) axis to be along the axis of symmetry (also the center line/axis of rotation for the rotor(s)), positive in the downstream direction.
+%
+The \(r\) axis is positive from the center line outward.
+%
+Finally, \(\theta\) is positive about the \(z\)-axis according to the right-handed system.
+%
+% This allows a conventional right-handed rotor to rotate in the positive \(\theta\) direction.\change{keep track of sign changes that happen based on swapping theta direction}
+%
+We choose the origin to be located on the \(z\) axis, aligned with the duct leading edge, or in other words, the inlet plane.
+
+%\begin{figure}[h!]
+%    \centering
+%    \input{./figures/ductreferenceframe.tikz}
+%    \caption{Meridional view showing the duct reference frame ({\color{plotsblue} blue}), with origin ({\color{plotsred} red}), and duct wall and hub ({\color{plotsgray} gray}).}
+%    \label{fig:absolutecoordinatesystem}
+%\end{figure}
+
+\begin{figure}[h!]
+    \centering
+   \input{./figures/absolute-reference-frame.tikz}
+    % \includegraphics[width=\textwidth]{./figures/duct_frame}
+   \caption{Meridional view showing the absolute reference frame. Example duct and center body geometry is shown in \primary{blue}, the origin location is shown in \secondary{red}, and an example blade lifting line location is shown in \tertiary{green}.}
+    \label{fig:absolutecoordinatesystem}
+\end{figure}
+
+
+
+\subsubsection{Relative Frame}
+\label{ssec:relativeframe}
+
+It may be helpful to initially think of the blade element reference frame as orthogonal to the slice of the absolute frame shown in \cref{fig:absolutecoordinatesystem}.
+%
+Imagine standing on the blade looking from the direction of the duct wall toward the rotor hub (in the negative \(r\) direction).
+%
+If you happen to be familiar with turbo-machinery conventions, the \(z\)-\(r\) slice of \cref{fig:absolutecoordinatesystem} is the meridional view, and the \(m\)-\(\theta\) slice of \cref{fig:relativeframe} is the cascade view.
+%
+We can use this cascade view to understand the various velocity decompositions through which we can relate the absolute and relative reference frames.
+%
+The blade rotates in the positive \(\theta\) direction, and the \(m\) axis (where \(dm^2 = dz^2+dr^2\)) is along a streamline passing through the lifting line representing the blade.
+%
+That is to say, the \(m\) axis is the meridional axis, which may or may not be orthogonal to \(r\) for a given blade element.
+
+\begin{figure}[h!]
+    \centering
+    \input{./figures/relative-reference-frame.tikz}
+    \caption{Cascade view showing the blade element relative frame with velocity decompositions.}
+    \label{fig:relativeframe}
+\end{figure}
+
+
+
+\subsubsection{Velocity Decomposition and Definition}
+
+The velocity triangles in \cref{fig:relativeframe} show how the various velocity components are combined into useful quantities.
+%
+The components that give us the absolute local velocity, \(\vect{C}\), include: the freestream velocity, \(\vect{C}_\infty\),\sidenote{We will assume according to \cref{asm:axisymmetric} that \(\vect{C}_\infty=||\vect{C}_\infty|| \hat{z}\).}
+and the velocity induced by the rotors and duct, \(\vect{V}\).
+%
+Together, we have
+
+\begin{equation}
+    \vect{C} = C_\infty \hat{z} + \vect{V}
+\end{equation}
+
+The relative velocity, \(\vect{W}\), is comprised of the absolute velocity, \(\vect{C}\), plus the rotational velocity at the respective radial station along the blade, \(\vect{U} = \Omega r \hat{\theta}\).
+
+\begin{equation}
+    \begin{aligned}
+        \vect{W} &= \vect{C} - \vect{U}\\
+                 &= \vect{C} - \Omega r \hat{\theta}
+    \end{aligned}
+\end{equation}
+
+It will be useful to put both \(\vect{C}\) and \(\vect{W}\) in terms of \(m\) and \(r\).
+%
+We get the velocities in terms of \(m\) and \(r\) by first separating out the various velocity components in the absolute reference frame and applying the definition of the meridional axis.
+%
+The velocity in the absolute frame is broken down into its various components as
+
+\begin{equation}
+    \label{eqn:absolutevelocities}
+    \begin{aligned}
+        C_z &= V_z +  C_\infty \\
+        C_r & = V_r  \\
+        C_\theta &= V_\theta.
+    \end{aligned}
+\end{equation}
+
+Similarly, the relative velocity is broken down as\sidenote{Note that we will use gray boxes to highlight expressions that are not used immediately, but will be vital in later sections of our development.}
+
+\begin{equation}
+    \label{eqn:relativevelocities}
+    \stepbox{
+        \begin{aligned}
+            W_z &= V_z + C_\infty \\
+            W_r & = V_r \\
+            W_\theta &= V_\theta - \Omega r.
+        \end{aligned}
+    }
+\end{equation}
+
+\noindent These decompositions immediately yield the \(\theta\) components of the velocities.
+%
+To obtain the meridional component, we can use the definition of the meridional coordinate, that is, the direction tangent to the mean streamline in the \(z-r\) (meridional) plane, to see that
+
+\begin{equation}
+    \label{eqn:vmwm}
+    % \eqbox{
+        \vect{C}_m = \vect{W}_m = C_z \hat{z} + C_r \hat{r}.
+    % }
+\end{equation}
+
+\noindent Now we have all the pieces to express the relative velocities in terms of the blade element frame (see the right-most velocity triangle in \cref{fig:relativeframe}):
+
+\begin{align}
+    \vect{C} &= ||\vect{C_m}||\hat{m} + C_\theta \hat{\theta} \\
+    \label{eqn:inflowvelocity}
+    \vect{W} &= ||\vect{C_m}||\hat{m} + (C_\theta - \Omega r) \hat{\theta}
+\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                           BLADE MODEL
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Rotor Blade Model}
+\label{ssec:bladeelementmodel}
+
+For the rotor blades, themselves, we model the blade element circulation and profile drag in the following subsections.
+
+\subsubsection{Blade Circulation}
+\label{ssec:bladecirculation}
+
+\smallskip
+
+\begin{assumption}
+\label{asm:liftingline}
+
+    \asm{The rotor can reasonably be modeled as a lifting line such that local blade circulation can be expressed according to the Kutta-Joukowski theorem, which states:}
+
+    \[ \vect{F} = \rho \vect{W} \times \vect{\Gamma} \]
+
+    \limit{We require the blade to be modeled as a single line, and we may not fully capture high solidity effects depending on how the force is obtained.}
+
+    \why{This simplification allows for a more straightforward approach to the rotor-wake modeling, again reducing the computational complexity.}
+
+\end{assumption}
+
+Modeling the rotor blades as lifting lines, if we take the velocity to be the local inflow velocity magnitude, \(W=\left[W_z^2+W_\theta^2\right]^{1/2}\) at the radial point of interest, we can take the perpendicular component of the force to be lift also at the radial point of interest.
+%
+We can then rearrange the expression for the Kutta-Joukowski theorem in \cref{asm:liftingline} for the local circulation magnitude, \(\Gamma(r)\), along the blade as
+
+\begin{equation}
+    \Gamma(r) = \frac{L'}{\rho W}.
+\end{equation}
+
+\noindent For each blade section, we will prescribe an airfoil polar such that the lift coefficient is known for a given angle of attack.
+%
+If we then take the expression for the two-dimensional coefficient of lift---
+
+\begin{equation}
+    c_\ell = \frac{2 L'}{\rho W^2 c},
+\end{equation}
+
+\where \(c\) is the blade element chord length, and \(c_\ell\) is the local blade element lift coefficient--- %, and \(\psi\) is the local blade element work coefficient.
+ and substitute into our expression for circulation (again using the local meridional velocity), we arrive at
+
+\begin{equation}
+    \label{eqn:bladeelementcirculationrotor}
+    \eqbox{
+        \Gamma(r) = \frac{1}{2} W c c_\ell,
+        }
+\end{equation}
+
+
+%\noindent or, equivalently
+%
+%\begin{equation}
+%    \label{eqn:bladeelementcirculationcascade}
+%    \eqbox{
+%    \Gamma(r) = 2 \pi r W \psi,
+%}
+%\end{equation}
+
+\where \(W\), \(c\), and \(c_\ell\) %, and \(\psi\)
+are all functions of the radial position, \(r\), along the rotor.
+
+We use a blade element method approach to model the rotor aerodynamics, in that we use a lookup table to find the lift and drag coefficients based on the local blade element geometry and flow as shown in \cref{fig:bladeelementangles}.
+In the case of a low-solidity rotor, we can simply use airfoil data based on the aerodynamic angle of attack, \(\alpha\), which is the inflow angle, \(\beta_1\) minus the local blade element stagger angle, \(\gamma_{be}\):
+
+\begin{figure}[h!]
+    \centering
+    \input{./figures/airfoil-angles.tikz}%
+    \caption{Velocity decomposition with angles in the blade element frame.}
+    \label{fig:bladeelementangles}
+\end{figure}
+
+\begin{equation}
+    \label{eqn:localangleofattack}
+    \alpha = \beta_1 - \gamma_{be},
+\end{equation}
+
+\where the inflow angle is defined as
+
+\begin{equation}
+    \label{eqn:inflowangle}
+    \eqbox{
+    \beta_1 = \arctan \frac{-W_\theta}{W_z} = \arctan \frac{\Omega r - V_\theta}{C_\infty + V_z},
+}
+\end{equation}
+
+\noindent or in other words, the angle from the axis of rotation to the local inflow velocity vector, \(\vect{W}\), as seen in \cref{fig:bladeelementangles}.
+
+For higher solidity rotors, when cascade data is available, we look up the lift and drag coefficients based on the inflow and stagger angles directly.
+%
+In addition, the section lift and drag coefficients may depend not only on the local angle of attack (or stagger and inflow angles), but may also be a function of the local Reynolds, \(Re_{be}\), and Mach, \(M_{be}\), numbers which we define in the typical manner:
+
+\begin{equation}
+    \label{eqn:re}
+    Re_{be} = \frac{\rho_\infty W c}{\mu_\infty},
+\end{equation}
+
+\noindent and
+
+\begin{equation}
+    \label{eqn:ma}
+    M_{be} = \frac{W}{a_{s_\infty}},
+\end{equation}
+
+\where \(\rho_\infty\), \(\mu_\infty\), and \(a_{s_\infty}\) are the freestream density, dynamic viscosity, and speed of sound, respectively.
+%
+Here again, \(W\) and \(c\) are the local (at a given radial station) inflow magnitude and blade element chord length.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                           ROTOR SOURCES
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Rotor Profile Drag}
+\label{ssec:rotorsourcestrengths}
+
+\smallskip
+
+\begin{assumption}
+    \label{asm:rotorsources}
+
+    \asm{The rotor blade section profile drag can be approximated by the addition of source elements along the rotor blade.}
+
+    \limit{We aren't fully modeling viscous effects in the wake.}
+
+    \why{This allows us to model the wake inviscidly (which allows us to simplify the wake model later), while still approximating the viscous effects of the rotor on the wake velocities.}
+
+\end{assumption}
+
+% Following a similar procedure as for the blade circulation above, we take the component parallel to the inflow velocity to be the rotor blade section profile drag per unit length:
+
+% \begin{equation}
+%     \Sigma(r) = \frac{1}{2} W c c_d
+% \end{equation}
+
+We define the rotor blade section profile drag per unit length in terms of a local airfoil polar drag coefficient using similar logic to how we defined the circulation due to lift.
+%
+Though we are actually attempting to approximate a viscous effect inviscidly, so we are effectively equating the vorticity that would be introduced into the wake due to viscous profile drag with an approximate inviscid source distribution on the blade.
+%
+\Cref{fig:rvf_eif} shows visually this concept.
+%
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \input{./figures/real-viscous.tikz}
+        \caption{The real, viscous formulation has no sources on the rotor blades, but rather sheds vorticity due to viscous effects.}
+        \label{}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{./figures/equivalent-inviscid.tikz}
+        \caption{The equivalent inviscid formulation uses source distributions along the blade to approximate profile drag effects.}
+        \label{}
+     \end{subfigure}
+     \caption{Visual comparison of real, viscous vs. equivalent inviscid formulations.}
+    \label{fig:rvf_eif}
+\end{figure}
+%
+The inviscid approximation of the profile drag per unit length then takes a similar form to the local circulation:
+
+\begin{equation}
+     % \Sigma(r) = \frac{1}{2} \rho W^2 c c_d
+     \Sigma = \frac{1}{2} W c c_d
+\end{equation}
+
+\where \(c_d\) is the blade element drag coefficient at the angle of attack described in \cref{ssec:bladecirculation}, and again, each of the terms on the right hand side are functions of the radial position along the blade.
+%
+To get the total source sheet strength per unit length, we smear the total source strength per unit span of all the blades, \(B\), around the circumference, \(2\pi \):
+
+\begin{equation}
+    % \sigma(r) = \frac{B \Sigma}{2 \pi r}.
+    \sigma = \frac{B \Sigma}{2 \pi}.
+\end{equation}
+
+Therefore the expression for the smeared rotor source strength per unit length along the blade is
+
+% \begin{equation}
+%     \label{eqn:rotorsourcestrengths}
+%     \eqbox{
+%         \sigma(r) = \frac{B}{4 \pi r} W c c_d.
+%     }
+% \end{equation}
+
+\begin{equation}
+    \label{eqn:rotorsourcestrengths}
+    \eqbox{
+        % \sigma(r) = \frac{B}{4 \pi r} \rho W^2 c c_d.
+        \sigma = \frac{B}{4 \pi} W c c_d.
+    }
+\end{equation}
+
+
+%\subsection{Body Induced Velocities}\todo{look back at section 1.4 and update this one accordingly}
+%\label{ssec:bodyinducedvelocities}
+%
+%To obtain the initial \(v_z\) and \(v_r\) for finding the local inflow angle, we use the no-rotor panel method solution to find the body-induced velocities at pertinent locations in the duct.
+%
+%
+%\begin{equation}
+%    \begin{aligned}
+%        v_{z}^{P} &= A_z^{PB} \gamma^{B\infty}  \\
+%        v_{r}^{P} &= A_r^{PB} \gamma^{B\infty}.
+%    \end{aligned}
+%\end{equation}
+%
+%\where \(v_z^P\) and \(v_r^P\) are the axial and radial induced velocities at the points of interest (for example, at the rotor plane(s)), respectively, and \(A^{PB}\) is the vortex coefficient matrix for the bodies influencing the points of interest.
+%The \(A^{PB}\) matrix is generated nearly identically to the \(A^{BB}\) matrix (using the same equations for the coefficients highlighted in blue boxes in \cref{ssec:axisymmetricpaneltheory}), with the exception that the coordinates associated with the \(i\)th index are for the points of interest rather than the body itself.
+%
+%In practice, we can just get \(v_m^P\) (the meridional induced velocity) using the standard coefficient expression from \cref{eqn:vringamn}.
+%
+%\begin{equation}
+%    v_{m}^{P} = A^{PB} \gamma^{B\infty}
+%\end{equation}
+%
+%\where \(A^{PB}\) is comprised of the combined \(z\) and \(r\) coefficients components.
+%
+%For the rest of the velocity components, we either know them as inputs, viz., \(V_\infty\) and \(\Omega r\), or we ignore them as in the case of \(v_\theta\), since we don't yet know the rotor induced velocity relative to the duct.
+%Furthermore, we will assume no other externally induced velocities for the remainder of this chapter, so the \(u_m\) and \(u_\theta\) values will always be set to zero.
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                          WAKE VORTICITY
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Wake Model}
+\label{sec:wakevorticity}
+
+For a given position on a blade producing a circulation change,  \(\Delta \Gamma\), by conservation of circulation, a helical vortex filament of strength \(-\Delta \Gamma\) is shed into the flow.
+
+
+In order to represent 3D vortex filaments in our axisymmetric reference frames, we will also make the approximation that they can be smeared into equivalent axisymmetric vortex sheets in the \(m\) and \(\theta\) directions.
+%
+\begin{assumption}
+
+    \asm{Three-dimensional helical vortex filaments can be represented in a smeared axisymmetric model.}
+
+    \limit{We are not caputuring the full 3D and unsteady effects of the wake.}
+
+    \why{We will see that we can develop a model that works very well with the panel method formulation of the solid body aerodynamics.}
+
+\end{assumption}
+%
+The smeared axisymmetric vortex sheets then have circulation to length ratios (densities) of \(\gamma_m\) and \(\gamma_\theta\) in their respective directions.
+%
+Because we are modeling the wake internal to the duct, we cannot guarantee a cylindrical wake, and therefore cannot simply model the wake with straight vortex cylinders.
+%
+Will will still use the concept of a wake cylinder, however to help us model discrete sections of the wake; so we continue with a description of how we smear a helical vortex filament into a cylindrical sheet.
+
+
+%As we continue in this section, we will use conservation of circulation and velocity jumps across axisymmetric vortex sheets to obtain an expression for the \(\gamma_m\) term.
+%%
+%We will then use a force-free wake requirement to obtain an expression for \(\gamma_\theta\).\sidenote{In practice, we will represent the wake influence in the \(\theta\) direction using a series of vortex panels, similar to how we model the duct and center body surfaces.
+%%
+%Rather than applying boundary conditions and solving a linear system, however, we will develop our expression for the vortex strength (circulation density just mentioned) in terms of a force-free wake requirement and some simplifying assumptions that will be discussed as we continue.}
+
+
+We begin with a shed vortex sheet, the geometry of which we approximate by a left-handed helix such that the helical sheet is defined parametrically in terms of the variable \(\overline{t}\) as
+
+\begin{equation}
+    \begin{aligned}
+        x(\overline{t}) &= r \cos (-\overline{t}) \\
+        y(\overline{t}) &= r \sin (-\overline{t}) \\
+        z(\overline{t}) &=  \overline{t} \ell
+    \end{aligned}
+\end{equation}
+
+\noindent in Cartesian coordinates, and
+
+\begin{equation}
+    \begin{aligned}
+        r(\overline{t}) &= r \\
+        \theta(\overline{t}) &= -\overline{t} \\
+        z(\overline{t}) &=  \overline{t} \ell
+    \end{aligned}
+\end{equation}
+
+\noindent in polar coordinates; where \(\ell\) is the torsional parameter describing the distance traveled in the \(z\) direction relative to the angle traveled in \(\theta\):
+
+ \begin{equation}
+     \ell = \frac{h}{2\pi} = \frac{\d z}{-\d\theta},
+ \end{equation}
+
+ \where  \(h\) is the pitch of the helix, defined as the distance traveled in \(z\) for one rotation of the rotor blade, in other words, the distance traveled in \(z\) after traveling circumferentially \(2\pi r\)
+
+ \begin{equation}
+     h = 2\pi r \frac{\ell}{r} = 2\pi r  \frac{\d z}{-r\d \theta} = 2\pi  \frac{\d z}{-\d \theta}.
+ \end{equation}
+
+Given the polar coordinates, we can define the pitch angle of the helix such that the tangent of that angle is the ratio of the distance traveled in \(z\) to the distance traveled circumferentially
+
+\begin{equation}
+    \tan \phi = \frac{\d z}{-r\d \theta} = \frac{\ell}{r}.
+\end{equation}
+
+It may be good to mention here that typically we see \(\ell\) defined in terms of \(h\) such that the torsional parameter is
+
+\begin{equation}
+    \ell = \frac{h}{2\pi}
+\end{equation}
+
+\noindent From the pitch, we can obtain the apparent pitch, or the distance between the helix sheets created by consecutive blades by dividing the pitch by the number of blades, \(B\),
+
+\begin{equation}
+    h_B = \frac{2\pi}{B}  \frac{\d z}{-\d \theta}.
+\end{equation}
+
+If we now assume that:
+
+\begin{assumption}
+
+    \asm{Vortex filaments are shed parallel to the relative inflow velocity, \(\vect{W}\).}
+
+    \limit{This is a simplified modeling approach that ignores the some of the flow turning of the blade.}
+
+    \why{By using this lifting line approach rather than some other approach, such as a lifting surface, we (like many of our other assumptions) simplify the model, allowing for simpler implementation and faster computation.}
+
+\end{assumption}
+
+\noindent In other words, we assume that the local \(\d z\) is in the direction of \(\hat{\vect{e}}_m\), and likewise \(\d\theta\) in the direction of \(\hat{\vect{e}}_\theta\) as per \cref{fig:relativeframe}, we obtain the non-dimensional length in the \(m\) direction for defining the \(\gamma_\theta\) strength density
+
+\begin{equation}
+    h_B \approx \frac{2\pi}{B} \left(\frac{W_m}{-W_\theta}\right).
+\end{equation}
+
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \input{./figures/wake-screw.tikz}
+        \caption{Wake Screw Geometry.}
+        \label{}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{./figures/smeared-cylinder.tikz}
+        \caption{Axisymmetric Smeared Cylinder.}
+        \label{}
+     \end{subfigure}
+     \caption{2D vortex sheets are generated from ratios of circulation to lengths between vortex sheets.}
+    \label{fig:smearscrew}
+\end{figure}
+
+\Cref{fig:smearscrew} shows graphically the wake screw non-dimensional geometry and orientation of the smeared vorticity.
+%
+To dimensionalize the lengths for a given smeared cylindrical surface, we multiply by the cylinder radius, \(r\), to obtain the dimensional length.
+%
+In addition, as we have defined our tangential vortices (see \cref{sec:axisymmetricpanelmethod}) to be positive in the positive \(\theta\) direction (the negative \(\overline{t}\) direction), we need to apply an additional negative to ensure our vortices are oriented correctly.
+%
+Thus
+
+\begin{equation}
+    \label{eqn:gammat1}
+    \stepbox{
+    \gamma_\theta = -\frac{-\Delta\Gamma}{h_B r} = -\Delta \Gamma \frac{B }{2 \pi r} \left(\frac{W_\theta}{W_m}\right).
+}
+\end{equation}
+
+To obtain an expression for \(\gamma_m\) we look at the distance between blades in the \(\overline{t}\) direction, we know that the non-dimensional distance between the blade sections is the distance about \(\overline{t}\) divided by the number of blades (assuming even blade spacing), \(2\pi/B\).
+%
+For a given smeared cylinder of radius, \(r\), we multiply by \(r\) to obtain the dimensional distance, \(2\pi r/B\).
+%
+To keep the vortices oriented positively in our reference frame, we need to apply an additional negative.% as positive \(\theta\) is in the negative \(\overline{t}\) direction.
+%
+Applying this additional negative the meridional vortex strength density (strength per unit length), \(\gamma_m\), is
+
+\begin{equation}
+    \label{eqn:gammam1}
+    \stepbox{
+    \gamma_m = \Delta\Gamma \frac{B}{2 \pi r}.
+}
+\end{equation}
+
+
+Our expression for \(\gamma_m\) is generally applicable for steady state conditions if we use the local circulation jumps across the wake at any give point.
+%
+Due to conservation of circulation, we know the circulation jumps anywhere downstream.
+%
+On the other hand, \(\gamma_\theta\) would only be generally applicable if we assumed that the \(\Omega r\) component of \(W_\theta\) (see \cref{eqn:relativevelocities}) was constant in the entire wake.
+%
+In actuality, we only know \(\Omega r\) right at the rotor lifting line, but not generally in the remainder of the wake.
+%
+We therefore want to develop a more general expression for \(\gamma_\theta\) based on requiring the wake to be force-free, or in other words, we demand static pressure continuity across the vortex sheets.
+%
+The somewhat lengthy derivation for this more general expression for \(\gamma_\theta\) comprises the rest of \cref{sec:wakevorticity}.
+
+
+\subsubsection{Swirl/Circulation Relation}
+
+The swirl velocity induced by upstream rotor blades, \(V_\theta\), can be determined by applying \index{Stokes' Theorem}Stokes' and \index{Kelvin's Theorem}Kelvin's theorems.
+%
+If we define a control volume around a streamtube as shown in  \cref{fig:circulationsum}, where the first curve is taken about all upstream rotors along a streamline, and the second curve is taken about the axis of rotation, only in the \(r\)-\(\theta\) plane with radius such that the edge of the contour lies on the same streamline upon which the first curve lies (see the dotted line in \cref{fig:circulationsum}), we see by Kelvin's theorem (conservation of circulation), that the circulation due to the upstream rotors can be related to the tangential velocity downstream of the rotors through Stokes' theorem:
+
+\begin{equation}
+    \widetilde{\Gamma} = \oint_0^{2\pi} \vect{V} \cdot r \d \vect{\theta},
+\end{equation}
+
+\where \(\widetilde{\Gamma}\) is the net circulation contribution of all the blades of the upstream rotors:
+
+\begin{equation}
+    \label{eqn:gamma_tilde}
+    \eqbox{
+        \widetilde{\Gamma} = \sum_{i=1}^N B_i \Gamma_i.
+    }
+\end{equation}
+
+
+\begin{figure}[h!]
+    \centering
+    \input{./figures/swirl-velocity-from-circulation.tikz}
+    \caption{Circulation is conserved between the dashed and solid contours, noting the red dotted line indicating the streamline on which the \(\widetilde{\Gamma}\) contours align. The integral over the contour about the axis of rotation yields \(V_\theta\) in terms of \(\widetilde{\Gamma}\).}
+    \label{fig:circulationsum}
+\end{figure}
+
+\noindent Performing the integration for a give radial position and rearranging for \(V_\theta\)\sidenote{Note that the \(\theta\) component of \(V\) is the only component aligned with \(\d \vect{\theta}\) and is circumferentially constant due to our smearing approxmation. In addition the contour is a circle, so the integral is determined immediately.} gives
+
+\begin{equation}
+    \label{eqn:vtheta}
+    \stepbox{
+    V_\theta = C_\theta = \frac{\widetilde{\Gamma}}{2 \pi r},
+}
+\end{equation}
+
+\where \(V_\theta\) in our smeared, axisymmetric model is the circumferentially averaged swirl velocity induced by upstream rotors
+
+For the self-induced case, the contour is placed at the rotor plane.
+%
+This means that the rotor ``sees'' infinite trailing vortices from any upstream rotors, but only semi-infinite trailing vortices for itself.
+%
+Thus the rotor experiences the full swirl induced by upstream rotors, but only half of its own swirl contribution:
+
+\begin{equation}
+    \label{eqn:vthetaself}
+    \eqbox{
+        (V_\theta)_\mathrm{self} = \frac{1}{2 \pi r} \left( \widetilde{\Gamma} + \frac{1}{2} B \Gamma \right),
+    }
+\end{equation}
+
+% \begin{equation}
+%         (V_\theta)_\mathrm{self} = \frac{1}{2 \pi r} \left( \sum_{i=1}^N B_i \Gamma_i + \frac{1}{2} B \Gamma \right)
+% \end{equation}
+
+
+\where \(B \Gamma\) here is the number of blades and circulation of the rotor itself.
+
+
+\subsubsection{Velocity Jumps}
+
+\begin{figure}[h!]
+    \centering
+    \input{./figures/velocity-jumps.tikz}
+    \caption{Circulation density can be related to velocity jump across axisymmetric vortex sheets.}
+    \label{fig:velocityjump}
+\end{figure}
+
+
+The smeared sheet strengths of \cref{eqn:gammam1,eqn:gammat1} can also be defined in terms of velocity jumps across the sheets.\sidenote{Assuming here that the velocities in this subsubsection are the equivalent inviscid flow velocities, \(V_\text{inv}\), implying that no additional vorticity is induced by blade profile drag. We also drop the ``inv'' subscript for simplicity.}
+Starting with \cref{eqn:gammam1}, we can split the \(\Delta\Gamma\) into \(\Gamma_2 - \Gamma_1\) (taking \(\widetilde{\Gamma} = B\Gamma\) for the single rotor) for a given vortex sheet
+
+\begin{equation}
+    \begin{aligned}
+        \gamma_m &= \frac{\Delta \widetilde{\Gamma}}{2 \pi r} \\
+                 &= \frac{B(\Gamma_2-\Gamma_1)}{2 \pi r}.
+    \end{aligned}
+\end{equation}
+
+\noindent Then using \cref{eqn:vtheta}
+
+\begin{equation}
+    \label{eqn:gamma2pre}
+    \begin{aligned}
+        V_{\theta_2} - V_{\theta_1} &= \frac{B\Gamma_2}{2 \pi r}  - \frac{B\Gamma_1}{2 \pi r} \\
+        &= \frac{B(\Gamma_2 - \Gamma_1)}{2 \pi r} ;
+    \end{aligned}
+\end{equation}
+
+\noindent which we can then substitute in to get the sheet strength in terms of the velocity jump:
+
+\begin{equation}
+    \label{eqn:gammam2}
+    \stepbox{
+    \gamma_m  = \frac{B(\Gamma_2-\Gamma_1)}{2 \pi r} = C_{\theta_2} - C_{\theta_1}.
+}
+\end{equation}
+
+As it so happens, in general for inviscid flows, the jump in tangential velocity across a vortex sheet is equal to the sheet vorticity per unit length (what we've previously called the circulation density).
+%
+Therefore we can similarly equate \cref{eqn:gammat1} to a jump in the meridional velocities across the vortex sheet:
+
+\begin{equation}
+    \label{eqn:gammat2}
+    \stepbox{
+    \gamma_\theta  = -\frac{B(\Gamma_2 - \Gamma_1)}{2 \pi r} \frac{W_{\theta_\text{avg}}}{W_{m_\text{avg}}} = C_{m_1} - C_{m_2}.
+}
+\end{equation}
+
+\noindent where, to obtain the relative velocity components on the sheet, we combine the blade relative velocities just to either side of the sheet into averages, \(W_\text{avg}\),  as
+
+\begin{align}
+    \label{eqn:wt}
+    W_{\theta_\text{avg}} &\equiv \frac{1}{2} (W_{\theta_1} + W_{\theta_2}) = \frac{1}{2} (C_{\theta_1} + C_{\theta_2} - 2\Omega r)  \\
+    \label{eqn:wm}
+    W_{m_\text{avg}} &\equiv \frac{1}{2} (W_{m_1} + W_{m_2}) = \frac{1}{2} (C_{m_1} + C_{m_2}).
+\end{align}
+
+
+\noindent If we divide \cref{eqn:gammam2} by \cref{eqn:gammat2}, we get
+
+\begin{equation}
+    \label{eqn:wgam}
+    \begin{aligned}
+        \frac{\gamma_m}{\gamma_\theta} &= -\frac{W_{m_\text{avg}}}{W_{\theta_\text{avg}}} \\
+        \gamma_m W_{\theta_\text{avg}} &= -\gamma_\theta W_{m_\text{avg}} \\
+        W_{m_\text{avg}} \gamma_\theta + W_{\theta_\text{avg}} \gamma_m &= 0.
+    \end{aligned}
+\end{equation}
+
+\noindent Substituting in the average velocities from \cref{eqn:wt,eqn:wm} then gives
+
+\begin{equation}
+    \frac{1}{2}(C_{m_1} + C_{m_2}) \gamma_\theta + \frac{1}{2} (C_{\theta_1} + C_{\theta_2} - 2\Omega r)  \gamma_m = 0.
+\end{equation}
+
+\noindent Then applying the definitions of the vortex strengths from \cref{eqn:gammam2,eqn:gammat2} yields
+
+\begin{equation}
+    \frac{1}{2}(C_{m_1} + C_{m_2}) (C_{m_2} - C_{m_1})  + \frac{1}{2} (C_{\theta_1} + C_{\theta_2} - 2\Omega r)  (C_{\theta_2} - C_{\theta_1}) = 0.
+\end{equation}
+
+\noindent Simplifying
+
+\begin{equation}
+    \begin{aligned}
+        \frac{1}{2}(C_{m_1}^2 - C_{m_2}^2 +\cancel{C_{m_1}C_{m_2}}-\cancel{C_{m_1}C_{m_2}}) &= -\frac{1}{2} (C_{\theta_2}^2 - C_{\theta_1}^2 +\cancel{C_{\theta_1}C_{\theta_2}}-\cancel{C_{\theta_1}C_{\theta_2}}) - \Omega r(C_{\theta_2} - C_{\theta_1}) \\
+        \frac{1}{2} \left(C_{m_1}^2 - C_{m_2}^2 + C_{\theta_1}^2 - C_{\theta_2}^2 \right) &= -(C_{\theta_1} - C_{\theta_2}) \Omega r \\
+        \frac{1}{2} \left((C_{m_1}^2 + C_{\theta_1}^2) - \left(C_{m_2}^2 + C_{\theta_2}^2 \right)  \right) &= - (C_{\theta_1} - C_{\theta_2}) \Omega r \\
+        \frac{1}{2} \left(C_{1}^2 - C_{2}^2 \right) &= -(C_{\theta_1} - C_{\theta_2}) \Omega r
+    \end{aligned}
+\end{equation}
+
+\where \(C^2 = C_m^2 + C_\theta^2\).
+Then applying the definition in \cref{eqn:gamma2pre} (and multiplying both sides by -1),
+
+\begin{equation}
+    \label{eqn:vjumprel}
+    \stepbox{
+    \frac{1}{2} \left(C_{2}^2 - C_{1}^2 \right) =  -\frac{B(\Gamma_2-\Gamma_1)}{2 \pi} \Omega.
+}
+\end{equation}
+
+
+% Referencing \cref{eqn:absolutevelocities,eqn:relativevelocities,eqn:vmwm}
+% we see that the sheet strengths can also be defined in terms of \(W\) as
+
+% \begin{align}
+%     \gamma_m &= W_{\theta_1} - W_{\theta_2} \\
+%     \gamma_\theta &= W_{m_2} - W_{m_1}
+% \end{align}
+
+% \noindent which we can follow a similar process for.
+% Starting with \cref{eqn:wgam}, but substituting in the second terms of \cref{eqn:wm,eqn:wt} we have
+
+% \begin{equation}
+%     \begin{aligned}
+%         \frac{1}{2}(W_{m_1} + W_{m_2}) \gamma_\theta &- \frac{1}{2} (W_{\theta_1} + W_{\theta_2} )  \gamma_m = 0\\
+%         \frac{1}{2}(W_{m_1} + W_{m_2}) (v_{m_2} - v_{m_1})  &- \frac{1}{2} (W_{\theta_1} + W_{\theta_2} )  (v_{\theta_1} - v_{\theta_2}) = 0 \\
+%         \frac{1}{2}(-W_{m_1}^2 + W_{m_2}^2 +\cancel{W_{m_1}W_{m_2}}-\cancel{W_{m_1}W_{m_2}}) &= \frac{1}{2} (W_{\theta_1}^2 - W_{\theta_2}^2 +\cancel{W_{\theta_1}W_{\theta_2}}-\cancel{W_{\theta_1}W_{\theta_2}})  \\
+%         \frac{1}{2} \left(W_{m_2}^2 - W_{m_1}^2 + W_{\theta_2}^2 - W_{\theta_1}^2 \right) &= 0 \\
+%         \frac{1}{2} \left(W_{m_2}^2 + W_{\theta_2}^2 - \left(W_{m_1}^2 + W_{\theta_1}^2 \right)  \right) &=  0. \\
+%     \end{aligned}
+% \end{equation}
+
+% \noindent Thus
+
+% \begin{equation}
+%     \frac{1}{2} \left( W_2^2 - W_1^2 \right) = 0,
+% \end{equation}
+
+% \noindent or in other words,\question{what is the take away here?  it doesn't seem to be used anywhere else.  Does it justify our usage of average velocities?, but that seems self-fulfilling}
+
+% \begin{equation}
+%     \norm{W_2} = \norm{W_1}.
+% \end{equation}
+
+
+
+%As seen in \cref{fig:vortexsheets} the spacing between the \(\gamma_m\) vortex sheets, \(\ell_m\), is the local circumference, divided by the number of blades, in other words, the spacing between blades:
+%
+%\begin{equation}
+%    \ell_m = \frac{2\pi r}{B}.
+%\end{equation}
+%%
+%The circulation to length ratio defining the strength of \(\gamma_m\) is then
+%
+%\begin{equation}
+%    \gamma_m = \frac{-\Delta\Gamma}{\ell_m}=-\frac{B\Delta \Gamma}{2 \pi r}.
+%\end{equation}
+%
+%\noindent We can generalize this to any downstream location by using the total local circulation jump, \(\Delta \widetilde{\Gamma}\), where
+%
+%\begin{equation}
+%    \label{eqn:gammatilde}
+%    \widetilde{\Gamma} = \sum_{i=1}^{N} B_i \Gamma_i,
+%\end{equation}
+%
+%\where \(N\) is the number of upstream rotors, \(B_i\) is the number of blades on the \(i\)th upstream rotor, and \(\Gamma_i\) is the local circulation along one blade on the \(i\)th upstream rotor.
+%%
+%Applying the total local circulation jump for all upstream rotors gives us the general form of \(\gamma_m\):
+%
+%\begin{equation}
+%    \label{eqn:gammam1}
+%    \gamma_m = -\frac{\Delta \widetilde{\Gamma}}{2 \pi r}. \\
+%\end{equation}
+%
+%
+%For \(\gamma_\theta\), the length between sheets can be found by relating what we know about the blade element frame velocity triangle to the lengths between vortex filaments such that
+%
+%\begin{equation}
+%    \frac{-W_\theta}{W_m} = \frac{-\ell_m}{\ell_\theta}.
+%\end{equation}
+%
+%\noindent Thus the length between the \(\gamma_\theta\) vortex sheets is
+%
+%\begin{equation}
+%    \label{eqn:elltheta}
+%    \ell_\theta = \frac{-2 \pi r}{B}\frac{W_m}{-W_\theta}.
+%\end{equation}
+%
+%\noindent Now taking the circulation to length ratio to get the smeared \(\gamma_\theta\) strengths yields (noting the negatives in \cref{eqn:elltheta} cancel, leaving only the negative associated with the \(\Delta\Gamma\))
+%
+%\begin{equation}
+%    \label{eqn:gammat1}
+%    \gamma_\theta = \frac{-\Delta\Gamma}{\ell_\theta} = - \frac{B\Delta \Gamma}{2 \pi r} \frac{W_\theta}{W_m}.
+%\end{equation}
+%
+%We have a problem with this definition for \(\gamma_\theta\), however.
+%Although, \cref{eqn:gammat1} is true immediately behind a rotor, \textbf{it is not generally applicable further downstream} as \(\Omega r\) (and thus \(W_\theta\)) changes outside of the immediate influence of the rotor disk.
+%%
+%It will take a bit more development and consideration of pressure relations\sidenote{Specifically, setting the pressure jump across vortex sheets to zero, rather than assuming a constant \(\Omega r\).} to obtain the general expression for \(\gamma_\theta\).
+%
+%The following explanation is somewhat lengthy, therefore, by way of overview, we will first go through some pressure relations (\cref{ssec:pressure}), including total pressure and static pressure.
+%%
+%We will then look at several jump relations (\cref{ssec:diskjumps,ssec:vortexsheetjumps}), including the disk jumps of enthalpy and entropy and the vortex sheet jumps of velocity and pressure.
+%%
+%All these together will give us the pieces we need to assemble a general expression for the tangential vortex sheet strength (\cref{ssec:vortexsheetstrength}).
+
+
+
+\subsubsection{Thermodynamic Pressure Relationships}
+\label{ssec:pressure}
+
+\paragraph{Total Pressure}
+
+
+To determine the pressure relationships, we begin with the understanding that a rotor induces downstream changes in total enthalpy and entropy which are accompanied by changes in total pressure.
+%
+We can relate these changes in pressure, enthalpy and entropy through the first and second laws of thermodynamics as follows.
+%
+The first law of thermodynamics expressed in terms of enthalpy and in differential form is:
+
+\begin{equation}
+    \label{eqn:firstlaw}
+    \d q = \d h - v\d p_t
+\end{equation}
+
+\where \(q\) is specific heat, \(h\) is specific entropy, \(v\) is specific volume and \(p_t\) is total pressure.
+%
+The second law of thermodynamics, assuming an idealized (reversible) process, is expressed in differential form as:
+
+\begin{equation}
+    \label{eqn:secondlaw}
+    T \d s = \d q
+\end{equation}
+
+\where \(T\) is total temperature, and \(s\) is specific entropy.
+%
+Plugging in the second law (\cref{eqn:secondlaw}) into the first law (\cref{eqn:firstlaw}) gives:
+
+\begin{equation}
+    \label{eqn:tds2}
+    T ds =  \d h - v\d p_t
+\end{equation}
+
+Which is a form of Gibb's equation in terms of enthalpy.
+%
+We now have an expression relating pressure, enthalpy, and entropy.
+%
+We will now use this differential expression (\cref{eqn:tds2}) to arrive at a simpler and more useful expression for our application.
+%
+First, we'll isolate entropy on the left hand side for convenience.
+
+\begin{equation}
+    \label{eqn:tds2b}
+    \d s = \frac{\d h}{T} - \frac{v \d p_t}{T}.
+\end{equation}
+
+\noindent Moving away from using enthalpy briefly, we will assume:
+
+\begin{assumption}
+
+    \asm{The fluid is a calorically perfect gas.}
+
+    \limit{The specific heat capacity is constant.}
+
+    \why{Our application is primarily at low Mach flows in electric ducted fans, for which air can reasonably be modeled as a calorically perfect gas.
+    This allows us to obtain a simple relation between change in enthalpy, entropy and pressure.}
+
+\end{assumption}
+
+\noindent In which case, we can relate enthalpy and temperature in both the following ways:
+
+\begin{eqboxed}{\stepbox}{align}
+\label{eqn:dhdef}
+    \d h = c_p \d T \\
+\label{eqn:hdef}
+    h = c_p T,
+\end{eqboxed}
+
+\where \(c_p\) here is the specific heat.
+%
+Substituting \cref{eqn:dhdef}\sidenote{note that since the rest of the terms are still in differential form, we cannot directly use \cref{eqn:hdef} at this point.} into \cref{eqn:tds2b}, we have
+
+\begin{equation}
+   \d s = \frac{c_p \d T}{T} - \frac{v \d p_t}{T}.
+\end{equation}
+
+\noindent If we also apply the ideal gas law,
+
+\begin{equation}
+    \begin{aligned}
+        p_tv &= RT \\
+        v &= \frac{RT}{p_t}
+    \end{aligned}
+\end{equation}
+
+\noindent to the last term, we have
+
+\begin{equation}
+    \label{eqn:tds2c}
+    \begin{aligned}
+        \d s &= \frac{c_p \d T}{T} - \frac{R\cancel{T} \d p_t}{\cancel{T}p_t} \\
+        \d s &= c_p\frac{\d T}{T} - R\frac{\d p_t}{p_t}. \\
+\end{aligned}
+\end{equation}
+
+We now integrate \cref{eqn:tds2c} from the ambient to local conditions:
+
+\begin{equation}
+    \begin{aligned}
+        \int_{s_\infty}^s \d s &= c_p \int_{T_\infty}^T \frac{\d T}{T} - R \int_{p_{t_\infty}}^{p_t} \frac{\d p_t}{p_t} \\
+        s\big|_{s_\infty}^s &= c_p \ln(T)\big|_{T_\infty}^T - R \ln(p_t)\big|_{p_{t_\infty}}^{p_t} \\
+        s-s_\infty &= c_p \left[\ln(T) - \ln(T_\infty)\right] - R \left[\ln(p_t) - \ln(p_{t_\infty})\right] \\
+        s-s_\infty &= c_p \ln\left(\frac{T}{T_\infty}\right) - R \ln\left(\frac{p_t}{p_{t_\infty}}\right).
+    \end{aligned}
+\end{equation}
+
+% \noindent We can then apply some algebra as follows:
+
+
+% \begin{equation}
+%     \begin{alignedat}{2}
+%         s-s_\infty &= c_p \ln\left(\frac{T}{T_\infty}\right) - R \ln\left(\frac{p_t}{p_{t_\infty}}\right) \\
+%         s-s_\infty &= \ln \left[ \left( \frac{T}{T_\infty} \right)^{c_p} \right]-  \ln \left[ \left( \frac{p_t}{p_{t_\infty}} \right)^R \right] & \text{bring multiples inside logarithms} \\
+%         s-s_\infty &= \ln \left[ \frac{  \left( \frac{T}{T_\infty} \right)^{c_p} }{  \left( \frac{p_t}{p_{t_\infty}} \right)^R }\right] & \text{consolidate logarithm terms} \\
+%         \frac{s-s_\infty}{R} &= \ln \left[ \frac{  \left( \frac{T}{T_\infty} \right)^{c_p} }{  \left( \frac{p_t}{p_{t_\infty}} \right)^R }\right]^{1/R} & \text{divide by } R \\
+%         \frac{s-s_\infty}{R} &= \ln \left[ \frac{  \left( \frac{T}{T_\infty} \right)^\frac{c_p}{R} }{  \left( \frac{p_t}{p_{t_\infty}} \right) }\right] & \text{bring } R \text{ into logarithm} \\
+%         \frac{s-s_\infty}{R} &= \ln \left[ \frac{  \left( \frac{T}{T_\infty} \right)^\frac{c_p}{c_p-c_v}}{  \left( \frac{p_t}{p_{t_\infty}} \right) }\right] & \text{apply specific heat relation}
+%     \end{alignedat}
+% \end{equation}
+
+% \where we have used the specific heat relation: \(c_p = c_v + R\).
+%
+Next, we want to bring enthalpy back into the picture.
+%
+To do so, we now utilize \cref{eqn:hdef}, multiplying the temperatures by \(c_p\) to get back into terms of specific enthalpy
+
+% \begin{equation}
+%     \begin{aligned}
+%         \frac{s-s_\infty}{R} &= \ln \left[ \frac{  \left( \frac{c_pT}{c_pT_\infty} \right)^\frac{c_p}{c_p-c_v}}{  \left( \frac{p_t}{p_{t_\infty}} \right) }\right] \\
+%         \frac{s-s_\infty}{R} &= \ln \left[ \frac{  \left( \frac{h}{h_\infty} \right)^\frac{c_p}{c_p-c_v}}{  \left( \frac{p_t}{p_{t_\infty}} \right) }\right]
+%     \end{aligned}
+% \end{equation}
+
+\begin{equation}
+    \label{eqn:entropy1}
+    \begin{aligned}
+        s-s_\infty &= c_p \ln\left(\frac{c_pT}{c_pT_\infty}\right) - R \ln\left(\frac{p_t}{p_{t_\infty}}\right)\\
+        s-s_\infty &= c_p \ln\left(\frac{h}{h_\infty}\right) - R \ln\left(\frac{p_t}{p_{t_\infty}}\right).
+    \end{aligned}
+\end{equation}
+
+% \noindent We will finish up our algrebra by getting things in terms of the specific heat ratio, \(\gamma = c_p/c_v\).
+
+% \begin{equation}
+%     \begin{aligned}
+%         \frac{c_p}{c_p-c_v} &= \frac{1}{1-\frac{c_v}{c_p}} \\
+%          &= \frac{1}{1-\gamma} \\
+%          &= \frac{\gamma}{\gamma -1},
+%     \end{aligned}
+% \end{equation}
+
+% \noindent substituting this in finally leaves us with
+
+% \begin{equation}
+%     \label{eqn:entropy1}
+%     % \eqbox{
+%     \frac{s- s_\infty}{R} = \ln \left[ \ddfrac{\left(\frac{h}{h_\infty}\right)^{\gamma/(\gamma-1)}}{\frac{p_t}{p_{t_\infty}}} \right].
+% % }
+% \end{equation}
+
+% \where \(s-s_\infty\) is the change in entropy from the freestream to the point in question, \(h/h_\infty\) is the enthalpy ratio, \(p_t/p_{t_\infty}\) is the total pressure ratio, \(R\) is the universal gas constant, and \(\gamma\) here is the specific heat.
+
+If we now define changes relative to the (far upstream) freestream values (\(\infty\) subscripts) as:
+
+\begin{align}
+    \widetilde{p_t} =& p_t - p_{t_\infty} \\
+    \widetilde{h} =& h - h_\infty \\
+    \widetilde{s} =& (s - s_\infty)/R,
+\end{align}
+
+\noindent then we can express \cref{eqn:entropy1} as\sidenote{Remembering that for \(x/y\), subtracting and adding \(1 = y/y\) gives \((x-y)/y + y/y =  (x-y)/y +1\)}
+
+% \begin{equation}
+%     \label{eqn:entropy2}
+%     \widetilde{s} = \ln \left[ \ddfrac{\left( 1 + \frac{ \widetilde{h} }{ h_\infty} \right)^{ \gamma/(\gamma-1) } }{ 1+\frac{ \widetilde{p_t} }{ p_{t_\infty } } } \right].
+% \end{equation}
+
+\begin{equation}
+    \label{eqn:entropy2}
+    \widetilde{s} = \frac{c_p}{R} \ln\left(1+\frac{\widetilde{h}}{\widetilde{h}_\infty}\right) - \ln\left(1+\frac{\widetilde{p}_t}{\widetilde{p}_{t_\infty}}\right).
+\end{equation}
+
+% \noindent Rearranging:
+
+% \begin{equation}
+%     \label{eqn:entropy3}
+%     1 + \frac{\widetilde{p_t}}{p_{t_\infty}} = \left( 1 + \frac{\widetilde{h}}{h_\infty}\right)^{\gamma/(\gamma-1)} e^{-\widetilde{s}}.
+% \end{equation}
+
+Now we will assume that
+
+\begin{assumption}
+    \label{asm:lowmach}
+
+    \asm{The Mach number is sufficiently low such that}
+
+    \begin{align}
+        \frac{\widetilde{p_t}}{p_{t_\infty}}  &\ll  1 \\
+        \frac{\widetilde{h}}{h_\infty} &\ll  1 \\
+        \widetilde{s} &\ll  1,
+    \end{align}
+
+    \limit{We are limited to low mach number regimes.}
+
+    \why{We can simplify the relationship between entropy, enthalpy, and pressure, again allowing for a simpler methodology and faster computation.}
+
+\end{assumption}
+
+\noindent With \cref{asm:lowmach} we can simplify \cref{eqn:entropy2} by noting that the Taylor series expansion for a logarithm is
+
+\begin{equation}
+    \ln(x) = (x-1) + \frac{1}{2}(x-1)^2 + \text{higher order terms},
+\end{equation}
+
+\noindent if \(x\approx1\).
+%
+Therefore, by \cref{asm:lowmach}, we can simplify \cref{eqn:entropy2} using the first term in Taylor series approximations of each of the logarithm terms.
+
+\begin{equation}
+    \begin{alignedat}{2}
+        \widetilde{s} &= \frac{c_p}{R} \ln \left( 1 + \frac{ \widetilde{h} }{ h_\infty} \right) - \ln\left( 1+\frac{ \widetilde{p_t} }{ p_{t_\infty } }\right) \\
+        \widetilde{s} &\simeq \frac{c_p}{R} \frac{ \widetilde{h} }{ h_\infty} - \frac{ \widetilde{p_t} }{ p_{t_\infty} } \\
+        \widetilde{s} &\simeq \frac{\cancel{c_p}}{R} \frac{ \widetilde{h} }{ \cancel{c_p}T_\infty} - \frac{ \widetilde{p_t} }{ p_{t_\infty} } & \text{apply \cref{eqn:hdef}}\\
+        \widetilde{s} &\simeq \frac{\rho_\infty}{p_{t_\infty}}  \widetilde{h}  - \frac{ \widetilde{p_t} }{ p_{t_\infty} } & \text{apply ideal gas law} \\
+        p_{t_\infty} \widetilde{s} &\simeq \rho_\infty \widetilde{h}  -  \widetilde{p_t}.
+    \end{alignedat}
+\end{equation}
+
+\noindent Rearranging leaves us with
+
+\begin{equation}
+   \label{eqn:totalpressure1}
+   \stepbox{
+    \widetilde{p_t} \simeq \rho \left(\widetilde{h}-\widetilde{S} \right),
+}
+\end{equation}
+
+\where
+
+\begin{equation}
+    \widetilde{S} \equiv \frac{p_{t_\infty}}{\rho_\infty} \widetilde{s},
+\end{equation}
+
+
+\where \(\rho\) is the air density, and for our steady, low Mach application, \(p_{t_\infty}/\rho_\infty\) is nearly constant, so we can convect \(\widetilde{S}\) downstream in place of \(\widetilde{s}\).
+%
+Therefore we end up seeing that the total pressure at any point in the rotor wake is the freestream total pressure plus any upstream work or losses:
+
+\begin{equation}
+    \label{eqn:totalpressure}
+    p_t = p_{t_\infty} + \rho \left(\widetilde{h}-\widetilde{S} \right)
+\end{equation}
+
+
+\paragraph{Static Pressure}
+\label{sssec:staticpressure}
+
+The static pressure, \(p_s\), is the total pressure minus the dynamic pressure:
+
+\begin{equation}
+    \label{eqn:bernoulli}
+    p_s = p_{t} - \frac{1}{2}\rho V_{visc}^2.
+\end{equation}
+
+\noindent Substituting in from \cref{eqn:totalpressure} gives us
+
+\begin{equation}
+    \label{eqn:staticpressurevisc}
+    p_s = p_{t_\infty} - \frac{1}{2}\rho V_{visc}^2 + \rho\left(\widetilde{h}-\widetilde{S} \right),
+\end{equation}
+
+\where \(V_{visc}\) is the real viscous flow velocity.
+%
+Rather than finding the full viscous flow field, which (among other things) would require more costly wake treatment,
+we can use the equivalent inviscid flow velocity, \(V_{inv}\),
+through the addition of a source sheet at the drag elements in the flow (see \cref{asm:rotorsources}),
+removing the need for trailing vortex sheets for drag elements.
+%
+See \cref{fig:rvf_eif} for a visual representation of this concept.
+%
+Using the equivalent inviscid flow simply eliminates entropy from \cref{eqn:staticpressurevisc}
+
+\begin{equation}
+    \label{eqn:staticpressure}
+    \stepbox{
+    p_s = p_{t_\infty} - \frac{1}{2}\rho V_{inv}^2 + \rho \widetilde{h}.
+}
+\end{equation}
+
+
+\subsubsection{Disk Jumps}
+\label{ssec:diskjumps}
+
+The specific work, \(w_c\), done by a rotor is related to a jump in enthalpy across the rotor.
+%
+As such, we can obtain \(\widetilde{h}\) as the accumulation of changes in enthalpy across upstream disks.
+
+\begin{equation}
+    \label{eqn:hjump}
+    \eqbox{\widetilde{h} = \sum_{i=1}^N \Delta h_{\text{disk}_m}} \\
+\end{equation}
+
+\where the jump relation \(\Delta h_{\text{disk}}\) is defined according to the Euler turbine equation:
+
+\begin{equation}
+    \label{eqn:hjumprel}
+    \Delta h_{\text{disk}} = w_c = \Omega \Delta(r C_\theta).
+\end{equation}
+
+\noindent We can relate the jump in enthalpy to the circulation by applying our lifting line assumption (\cref{asm:liftingline}),
+which means that there is no radial deviation in flow across the blade, as well as substituting in for \(C_\theta\) from \cref{eqn:vtheta} (for a single disk).
+
+\begin{equation}
+\label{eqn:hjumprel}
+    \begin{aligned}
+    \Delta h_{\text{disk}} &= \Omega r C_\theta \\
+                           &= \Omega \cancel{r} \frac{B\Gamma}{2\pi \cancel{r}} \\
+                           &= \Omega \frac{B\Gamma}{2\pi}.
+    \end{aligned}
+\end{equation}
+
+
+% We can obtain \(\widetilde{S}\) as the accumulation of changes in entropy across upstream disks.
+
+% \begin{equation}
+%     \widetilde{S} = \sum_{i=1}^N \Delta S_{\text{disk}_m}
+% \end{equation}
+
+% \where the jump relation \(\Delta S_{\text{disk}}\) is defined as
+
+% \begin{equation}
+%     \label{eqn:hjumprel}
+%     \Delta S_{\text{disk}} &= \frac{1}{2} V_m^2 C_f
+% \end{equation}
+
+% \where \(C_f\) is the friction coefficient of an equivalent screen representing the friction-producing disk.
+
+
+
+
+
+\paragraph{Pressure Jumps}
+
+Using \cref{eqn:staticpressure}, we see the jump in static pressure across a vortex sheet is
+
+% \begin{align}
+    % p_{s_2} - p_{s_1} &= -\frac{1}{2} \rho \left(V_{{visc}_2}^2 - V_{{visc}_1}^2 \right) + \rho \left( \widetilde{h}_2 - \widetilde{h}_1 - (\widetilde{S}_2 - \widetilde{S}_1)\right) \\
+    % \shortintertext{for the real viscous flow case, or}
+\begin{equation}
+    \label{eqn:pressurejump}
+    p_{s_2} - p_{s_1} = -\frac{1}{2} \rho \left(V_{{inv}_2}^2 - V_{{inv}_1}^2 \right) + \rho \left( \widetilde{h}_2 - \widetilde{h}_1 \right).
+\end{equation}
+
+% \noindent for the equivalent inviscid flow case.
+
+\noindent If we substitute \cref{eqn:hjumprel} in for the enthalpy terms, and \cref{eqn:vjumprel} for the velocity terms in \cref{eqn:pressurejump}, we can simplify as follows
+
+\begin{align}
+    p_{s_2} - p_{s_1} &= -\cancel{\rho \frac{B(\Gamma_2-\Gamma_1)}{2 \pi} \Omega} + \cancel{\rho \frac{B(\Gamma_2-\Gamma_1)}{2 \pi} \Omega} \\
+    p_{s_2} - p_{s_1} &= 0
+\end{align}
+
+\noindent which shows that there is no static pressure jump across the sheet, as would be expected in reality.
+
+
+
+
+
+\subsubsection{Tangential Vortex Sheet Strength}
+\label{ssec:vortexsheetstrength}
+
+As promised at the beginning of \cref{ssec:pressure}, we are finally posed to obtain a general expression for the tangential vortex sheet strength, \(\gamma_\theta\).
+%
+Just as a reminder, we've needed all this preparation because the tangential sheet strength at an arbitrary downstream location is not generally equal to the value just behind the rotor disk.
+%
+This is because we don't automatically know what the \(\Omega r\) portion of the tangential velocity is anywhere except right at the rotor disk.
+%
+Thus we have used the zero static pressure jump across the wake sheet as our condition for finding a general term for \(\gamma_\theta\).
+%
+We'll begin with \cref{eqn:pressurejump}, setting the pressure jump to zero, as is physical, and divide out the density (assumed to be constant in our low Mach case) to obtain
+
+\begin{equation}
+    \frac{1}{2} \left(C_2^2 - C_1^2 \right) = \widetilde{h}_2 - \widetilde{h}_1.
+\end{equation}
+
+\noindent Expanding out the left hand side gives
+
+\begin{equation}
+    C_{m_2}^2 - C_{m_1}^2 + C_{\theta_2}^2 - C_{\theta_1}^2 = 2 \left( \widetilde{h}_2 - \widetilde{h}_1 \right).
+\end{equation}
+
+\noindent Applying \cref{eqn:vtheta} for the \(C_\theta\) terms:
+
+\begin{equation}
+    \label{eqn:gent}
+    C_{m_2}^2 - C_{m_1}^2 = -\left(\frac{1}{2 \pi r}\right)^2 \left(\widetilde{\Gamma}_2^2-\widetilde{\Gamma}_1^2\right) + 2 \left( \widetilde{h}_2 - \widetilde{h}_1 \right).
+\end{equation}
+
+To get the general expression for \(\gamma_\theta\), we have two options: if \(C_{m_2}\) is known, then using \cref{eqn:gammat2}
+
+\begin{equation}
+    \gamma_\theta = C_{m_1} - C_{m_2},
+     \tag{\ref{eqn:gammat2}}
+\end{equation}
+
+\where from \cref{eqn:gent}
+
+\begin{equation}
+\label{eqn:vm1}
+    C_{m_1}^2 = C_{m_2}^2 + \left(\frac{1}{2 \pi r}\right)^2 \left(\widetilde{\Gamma}_2^2-\widetilde{\Gamma}_1^2\right) - 2 \left( \widetilde{h}_2 - \widetilde{h}_1 \right),
+\end{equation}
+
+\noindent gives us our general expression.
+We can march \cref{eqn:vm1} radially inward, starting with \(C_{m_2} = C_\infty\) just outside the outermost vortex sheet.
+%
+On the other hand, if \(C_{m_\text{avg}}\) is known instead, we can still use \cref{eqn:gent} to obtain \(\gamma_\theta\) as follows:
+
+\begin{align}
+    \label{eqn:vmavg}
+    C_{m_\text{avg}} &= \frac{1}{2}\left(C_{m_1} + C_{m_2}\right) \\
+    C_{m_2}^2 - C_{m_1}^2 &= \left(C_{m_1} + C_{m_2}\right)\left(C_{m_2} - C_{m_1}\right).
+\end{align}
+
+\noindent Substituting from \cref{eqn:gammat2}
+
+\begin{equation}
+    C_{m_2}^2 - C_{m_1}^2 = -\left(C_{m_1} + C_{m_2}\right) \gamma_\theta.
+\end{equation}
+
+\noindent Substituting from \cref{eqn:vmavg}
+
+\begin{equation}
+    C_{m_2}^2 - C_{m_1}^2 = -2C_{m_\text{avg}} \gamma_\theta.
+\end{equation}
+
+\noindent Rearranging for \(\gamma_\theta\) and substituting from \cref{eqn:gent}:
+
+\begin{equation}
+    \label{eqn:gamma_theta_general}
+    \eqbox{
+        \gamma_\theta = -\frac{1}{2 C_{m_\text{avg}}} \left(- \left(\frac{1}{2 \pi r}\right)^2 \left(\widetilde{\Gamma}_2^2-\widetilde{\Gamma}_1^2\right) + 2 \left( \widetilde{h}_2 - \widetilde{h}_1 \right) \right).
+    }
+\end{equation}
+
+
+% For initialization purposes, we can approximate the average meridional velocity at the rotors from momentum theory as
+%
+%\begin{equation}
+%    \label{eqn:Vm}
+%    C_{m_\text{avg}} = v_z + V_\infty,
+%\end{equation}
+%
+%\where \(v_z\) is the axially induced velocity of the rotor found from conservation of momentum:
+%
+%\begin{equation}
+%    \begin{aligned}
+%    \rho V_\infty^2 A &= \rho (V_\infty - v_z)^2 + T \\
+%    \rho A [V_\infty^2 - (V_\infty - v_z)^2] &= T \\
+%    \rho A (V_\infty^2 - V_\infty^2 + V_\infty v_z + v_z^2) &= T \\
+%    \rho A ( V_\infty v_z + v_z^2) &= T \\
+%    V_\infty v_z + v_z^2 &= \frac{T}{\rho A} \\
+%    v_z^2 + V_\infty v_z - \frac{T}{\rho A} &= 0
+%    \end{aligned}
+%\end{equation}
+%
+%\noindent then using the quadratic formula, we arrive at
+%
+%\begin{equation}
+%    \label{eqn:vx}
+%    v_z = \left( V_\infty^2  +  \frac{2T}{\rho A_d} \right)^{1/2} - \frac{V_\infty}{2},
+%\end{equation}
+%
+%\where \(\rho\) is the freestream air density and \(A_d=\pi R_\text{tip}^2\) is the disk area. We can get the total thrust, \(T\), for a rotor from a sum of the weighted averaged contributions across the blade panels
+%
+%\begin{equation}
+%T = \frac{\rho A_d \Omega}{2 \pi} \frac{\sum_{i=1}^{nw}    B\overline{\Gamma}_i \Delta A_i}{A_a}
+%\end{equation}
+%
+%\where \(\overline{\Gamma}\) is the average circulation of the blade elements at the edges of the ith blade panel, the wake sheet begin shed from the center thereof (thus the number of wake sheets, \(nw \), is one fewer than the number of blade elements).  \(\Delta A\) is the annular area of the blade section between those blade elements, and \(A_a\) is the total annular area of the rotor.
+%
+%For rotors behind others, \(V_\infty\) in \cref{eqn:Vm,eqn:vx} is increased by the accumulation of \(v_z\) of upstream rotors.
+%
+%After initialization, we can simply use averages of the induced velocities calculated from
+%
+%\begin{equation}
+%    \label{eqn:vm_induced}
+%    \eqbox{
+%    v_{m}^{P} = A^{PB} \gamma^{B} + A^{PW} \gamma_\theta^{W} + B^{PR} \sigma^{R},
+%    }
+%\end{equation}
+%
+%\where \(v_m^P\) are the meridional induced velocities at the points of interest (for example, at the rotor plane(s)), respectively, \(A^{PB}\) is the vortex coefficient matrix for the duct-hub system on the points of interest,  \(A^{PW}\) is the vortex coefficient matrix of the wake influencing the points of interest, and \(B^{PR}\) is the source coefficient matrix for the rotors influencing the points of interest.
+%For the rotor source strengths, \(\sigma^R\), we take the average of the strengths found at the blade element locations using \cref{eqn:rotorsourcestrengths} in order to obtain the strengths at the source panel control points.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                           ROTOR WAKE
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Generating Rotor Wake Geometry}
+\label{sec:rotorwakegeometry}
+
+The question we must now ask ourselves is \textit{where} is \cref{eqn:gamma_theta_general} applied?
+%
+We may first think to model the rotor wake by integrating along streamlines, which could be done.
+%
+An alternative method, however, is to define a ``grid'' defined by the solution of an elliptic partial differential system, using the solid bodies as the boundaries of the grid.
+%
+By wisely choosing the partial differential equations to solve, we can generate a grid that is aligned with the streamlines for the inviscid isolated body system.
+%
+Thompson, Thames, and Mastin\scite{thompson_1974} provide further insights into the benefits of this approach, which we will use for our application.
+
+\begin{assumption}
+
+    \asm{The wake streamlines can be reasonably approximated as lying on an elliptic grid.}
+
+    \limit{We are again ignoring viscous effects of the rotor/wake.}
+
+    \why{This is perhaps one of the greatest reducers of computational cost for the code, as it allows us to pre-compute the potentially large matrices for the induced velocities in the system.}
+
+\end{assumption}
+
+By defining the wake geometry to lie on an elliptic grid, we can discretize the axisymmetric wake lines into axisymmetric vortex panels and apply the circulation density (vortex strength distribution) from \cref{eqn:gamma_theta_general} along the discretized wake panels.
+%
+In order to define our wake geometry, our first task is to define the appropriate partial differential equation.
+%
+As we are seeking to find the streamlines, we begin with the stream function.
+
+
+\subsubsection{Axisymmetric Stream Function}
+
+The \(z\) and \(r\) components of absolute velocity can be defined in terms of the axisymmetric stream function, \(\psi(z,r)\), as
+
+\begin{subequations}
+    \label{eqn:axisymfreestream}
+    \begin{align}
+        C_z &= \frac{1}{\rho r}\pd{\psi}{r} \\
+        C_r &= \frac{-1}{\rho r}\pd{\psi}{z}
+    \end{align}
+\end{subequations}
+
+\where \(\rho \) is the air density.
+%
+Additionally, the circumferential vorticity is defined as
+
+\begin{equation}
+    \label{eqn:omegatheta}
+    \omega_\theta \equiv \pd{C_z}{r} - \pd{C_r}{z}.
+\end{equation}
+
+\noindent If we plug \cref{eqn:axisymfreestream} into \cref{eqn:omegatheta}, and apply the chain rule, we arrive at
+
+\begin{equation}
+    % \pd{V_z}{r} - \pd{V_r}{z} = \frac{1}{\rho r} \left(\psi_{zz} + \psi_{rr} \right) + \psi_z \left( \frac{1}{\rho r} \right)_z + \psi_r \left( \frac{1}{\rho r} \right)_r.
+    \omega_\theta = \frac{1}{\rho r} \left(\pdd{\psi}{z} + \pdd{\psi}{r} \right) + \pd{\psi}{z} \pd{}{z}\left( \frac{1}{\rho r} \right) + \pd{\psi}{r} \pd{}{r}\left( \frac{1}{\rho r} \right).
+\end{equation}
+
+\noindent which we can rearrange into a Poisson equation for \(\psi\):
+
+\begin{equation}
+    \label{eqn:poissonpsi}
+    \begin{alignedat}{2}
+        \omega_\theta =& \frac{1}{\rho r} \left(\pdd{\psi}{z} + \pdd{\psi}{r} \right) + \pd{\psi}{z} \pd{}{z}\left( \frac{1}{\rho r} \right) + \pd{\psi}{r} \pd{}{r}\left( \frac{1}{\rho r} \right) \\
+        \omega_\theta =& \frac{1}{\rho r} \left(\pdd{\psi}{z} + \pdd{\psi}{r} \right) \\
+                       &- \rho r C_r \pd{}{z}\left( \frac{1}{\rho r} \right) + \rho r C_z \pd{}{r}\left( \frac{1}{\rho r} \right) & \text{(sub in \cref{eqn:axisymfreestream})}\\
+        \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} \\
+                              &- \rho^2 r^2 C_r \pd{}{z}\left( \frac{1}{\rho r} \right) + \rho^2 r^2 C_z \pd{}{r}\left( \frac{1}{\rho r} \right) & \text{(remove fraction)}\\
+        \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} \\
+                              &- \rho^2 r^2 C_r \left[\cancelto{0}{\frac{1}{\rho}\pd{}{z}\left( \frac{1}{r} \right)} + \frac{1}{r}\pd{}{z}\left( \frac{1}{\rho} \right)\right] \\
+                              &+ \rho^2 r^2 C_z \left[\frac{1}{\rho}\pd{}{r}\left( \frac{1}{r} \right) + \frac{1}{r}\pd{}{r}\left( \frac{1}{\rho} \right)\right]& \text{(product rule)}\\
+        \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} \\
+                              &- \rho^2 r^2 C_r \frac{-1}{\rho^2 r}\pd{\rho_z}{z} + \rho^2 r^2 C_z \left(\frac{-1}{\rho r^2} + \frac{-1}{\rho^2 r}\pd{\rho_r}{r}\right)& \text{(take derivatives)}\\
+        \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} - r C_r \pd{\rho_z}{z}
+                              + r C_z \pd{\rho_r}{r} - \rho C_z & \text{(simplify)}\\
+        \rho r \omega_\theta =&  \nabla^2\vect{\psi} + r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta - \rho C_z & \text{(condense)}\\
+        \rho r \omega_\theta =&  \nabla^2\vect{\psi} + r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta - \frac{1}{r} \pd{\psi}{r} & \text{(sub in \cref{eqn:axisymfreestream})}\\
+        \nabla^2\vect{\psi} =& \frac{1}{r} \pd{\psi}{r} - r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta + \rho r \omega_\theta.  & \text{(rearrange)}\\
+    % \psi_{zz} + \psi_{rr} = \frac{1}{r} \psi_r + r \left( \vect{V}_m \times \nabla \rho \right) \cdot \left(-\hat{\theta} \right) + \rho r \omega_\theta
+        % \pdd{\psi}{z} + \pdd{\psi}{r} &= \frac{1}{r} \psi_r + r \left( \vect{V}_m \times \nabla \rho \right) \cdot \left(-\hat{\theta} \right) + \rho r \omega_\theta
+\end{alignedat}
+\end{equation}
+
+We do not know what the value is for \(\omega_\theta\) immediately, so we will find an expression for it using terms we do have.
+%
+For an ideal, calorically perfect gas, the Crocco relation applied to our axisymmetric, steady flow in terms of total pressure is
+
+\begin{equation}
+    \label{eqn:vmomegat}
+    \begin{alignedat}{2}
+    \vect{C} \times \vect{\omega} &= v \nabla \widetilde{p}_t \\
+    \vect{C} \times \vect{\omega} &= \frac{1}{\rho} \nabla \widetilde{p}_t & \text{(definition of specific volume)} \\
+    \vect{C} \times \vect{\omega} &\simeq \frac{1}{\rho} \nabla \left[\rho\left(\widetilde{h} - \widetilde{S}\right)\right] & \text{(apply \cref{eqn:totalpressure1})} \\
+    \vect{C} \times \vect{\omega} &\simeq \nabla \left(\widetilde{h} - \widetilde{S}\right)  & \text{(incompressible)} \\
+    \vect{C} \times \vect{\omega} &\simeq \nabla \widetilde{h} - \nabla \widetilde{S} & \text{(distributive property)} \\
+    C_m \omega_\theta - C_\theta \omega_m &\simeq \nabla \widetilde{h} - \nabla \widetilde{S} & \text{(expand LHS)} \\
+    \end{alignedat}
+\end{equation}
+
+\where we have defined \(C_\theta\) in \cref{eqn:vtheta} as
+
+\begin{equation}
+    C_\theta = \frac{\widetilde{\Gamma}}{2 \pi r};
+    \tag{\ref{eqn:vtheta}}
+\end{equation}
+
+\noindent and the \(\omega_m\) component of vorticity is defined as\sidenote{Remembering that \(\vect{\omega} = \nabla \times \vect{C}\).}
+
+\begin{equation}
+\begin{aligned}
+    \omega_m &= - \frac{1}{r} \pd{(r C_\theta)}{n} \\
+             &= - \frac{1}{2 \pi r} \pd{\widetilde{\Gamma}}{n}. && \text{(plug in \cref{eqn:vtheta})}
+\end{aligned}
+\end{equation}
+
+\noindent Thus\sidenote{remembering that \(\pd{A}{n} = \frac{1}{2A}\pd{A^2}{n}\)}
+
+\begin{equation}
+\begin{aligned}
+    C_\theta \omega_m &\simeq - \frac{\widetilde{\Gamma}}{(2 \pi r)^2} \pd{\widetilde{\Gamma}}{n} \\
+                      &\simeq - \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \pd{(\widetilde{\Gamma}^2)}{n},
+\end{aligned}
+\end{equation}
+
+
+\noindent which we can substitute back into \cref{eqn:vmomegat} to get an expression for \(\omega_\theta\)
+
+\begin{equation}
+    \omega_\theta = \frac{- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \nabla\left(\widetilde{\Gamma}^2\right) + \nabla\widetilde{h} - \nabla\widetilde{S}}{C_m}.
+\end{equation}
+
+\noindent We can now replace the \(\omega_\theta\) term in \cref{eqn:poissonpsi} to get a Poisson equation solely in terms that are part of our solution system:
+
+\begin{equation}
+    \nabla^2\vect{\psi} = \frac{1}{r} \pd{\psi}{r} - r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta + \rho r \frac{- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \nabla\left(\widetilde{\Gamma}^2\right) + \nabla\widetilde{h} - \nabla\widetilde{S}}{C_m}.
+\end{equation}
+
+\noindent We also now take advantage of \cref{asm:lowmach} to eliminate the density dilation term, leaving us with
+
+\begin{equation}
+    \label{eqn:poissonpsi1}
+    \nabla^2\vect{\psi} = \frac{1}{r} \pd{\psi}{r} + \frac{\rho r}{C_m} \left(- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \nabla\left(\widetilde{\Gamma}^2\right) + \nabla\widetilde{h} - \nabla\widetilde{S}\right).
+\end{equation}
+
+\noindent We may also express this Poisson equation as
+
+\begin{equation}
+\label{eqn:poissonpsi2}
+\nabla^2 \vect{\psi} = Q_0 + Q_1
+\end{equation}
+
+\where
+
+\begin{align}
+Q_0 =& \frac{\psi_r}{r} \\
+\begin{split}
+    Q_1 =& \frac{\rho r}{C_m^2} \biggr[ - \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \vect{C}_m \times \nabla\left(\widetilde{\Gamma}^2\right) \\
+         &~~+ \vect{C}_m \times \nabla \widetilde{h} - \vect{C}_m \times \nabla \widetilde{S} \biggr]\hat{\vect{e}}_\theta
+\end{split}
+\end{align}
+
+\noindent The \(Q_0\) term is a result of the axisymmetry of the problem.
+%
+The three terms of the source term, \(Q_1\), are first, the transverse circulation gradient, second, the transverse work gradient, and last, the transverse loss gradient.
+%
+% Ignoring the density dilation term for low speed flows gives us our final definition of \(Q_1\):
+
+% \begin{equation}
+%     Q_1 = \frac{\rho r}{V_m^2} \left[- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \vect{C}_m \times \nabla\left(\widetilde{\Gamma}^2\right)
+%     + \vect{C}_m \times \nabla \widetilde{h} - \vect{C}_m \times \nabla \widetilde{S} \right] \cdot \left(-\hat{\theta}\right)
+% \end{equation}
+
+
+\subsubsection{Elliptic Wake Grid}
+\label{ssec:generateellipticgrid}
+
+We are now ready to generate the solution grid, parametrically defined from our global coordinates through Poisson equations:\sidenote{We change our notation style for partial derivatives here as it proves to be easier to read due to the shear number of derivatives in this section.}
+
+\begin{align}
+    \label{eqn:poissonxi}
+    \xi(z,r) &\equiv \nabla^2 \xi = \xi_{zz} + \xi_{rr} = P \\
+    \label{eqn:poissoneta}
+    \eta(z,r) &\equiv \nabla^2\eta = \eta_{zz} + \eta_{rr} = Q.
+\end{align}
+
+
+\where \(\eta =\) constant along streamlines (thus \(\eta\) coordinates correspond to the physical location of streamlines) and \(\xi\) is constant along radial lines as seen in \cref{fig:gridcoordinates}.
+%
+With \(\eta\) corresponding to streamlines, it makes sense to set \cref{eqn:poissoneta} equal to \cref{eqn:poissonpsi2}, such that \(\psi = \eta\) and \(Q = Q_0 + Q_1\).
+%
+Since the \(\xi\) values are arbitrary, we may as well set \(P=0\) which allows \(\xi\) to be arbitrarily chosen.
+%
+Note that we don't have the information available for source term, \(Q_1\), before solving, so for initialization we simply set it to zero.
+%
+Later, after the non-linear solve, we may choose to update the grid and re-solve.
+
+\begin{figure}[h!]
+    \centering
+    \input{figures/elliptic-grid.tikz}
+    \caption{Elliptic grid coordinate system showing lines of constant \(\eta\) (\primary{blue}) coinciding with streamlines, and lines of constant \(\xi\) (\secondary{red}) are constant relative to change in radius when the \(z\)-coordinates of the upper and lower boundaries are aligned.}
+    \label{fig:gridcoordinates}
+\end{figure}
+
+
+In order to solve for the specific \((\xi, \eta)\) coordinates, we need to invert the dependent and independent variables in \cref{eqn:poissonxi,eqn:poissoneta}.
+%
+In order to do so, we use the following derivative transformations:
+
+
+\begin{align}
+    f_z &= \frac{r_\eta f_\xi - r_\xi f_\eta}{J} \\
+    f_r &= \frac{- z_\eta f_\xi + z_\xi f_\eta}{J}
+\end{align}
+
+
+\where \(J = z_\xi r_\eta - z_\eta r_\xi\).
+
+The details of the inversion are included in \cref{app:poissontransform}.
+%
+After the inversion, we are left with expressions for \(z\) and \(r\) with respect to \(\xi\) and \(\eta\).
+
+%THIS IS THE VERSION IN THE DFDC CODE COMMENTS inigrd.f line 654
+\begin{align}
+    \alpha z_{\xi\xi} - 2 \beta z_{\xi\eta} + \gamma z_{\eta\eta}    &= \frac{J}{r} z_\eta z_\xi \\
+    \alpha r_{\xi\xi} - 2 \beta r_{\xi\eta} + \gamma r_{\eta\eta}    &= \frac{J}{r} z_\eta r_\xi
+\end{align}
+
+
+\noindent or equivalently in terms of \(\alpha, \beta, \gamma\) only:
+
+\begin{equation}
+\label{eqn:ellipticgridsystem}
+\eqbox{
+    \begin{aligned}
+        \alpha z_{\xi\xi} - 2 \beta z_{\xi\eta} + \frac{\gamma}{r} \left(r z_{\eta}\right)_\eta - \frac{\beta}{r} r_\xi z_\eta &= 0 \\
+        \alpha r_{\xi\xi} - 2 \beta r_{\xi\eta} + \frac{\gamma}{r} \left(r r_{\eta}\right)_\eta - \frac{\beta}{r}  r_\xi r_\eta &= 0
+    \end{aligned}
+}
+\end{equation}
+
+\where
+
+\begin{align}
+    \alpha &= z_\eta^2 + r_\eta^2 \\
+    \beta &= z_\xi z_\eta + r_\xi r_\eta \\
+    \gamma &= z_\xi^2 + r_\xi^2 \\
+    J &= z_\xi r_\eta - z_\eta r_\xi
+\end{align}
+
+We can obtain expressions for the velocity in terms of \(z\) and \(r\) if we take the differential identities of the transformations
+
+\begin{align}
+    \label{eqn:firstid}
+    \begin{bmatrix}
+        z_\xi & z_\eta \\
+        r_\xi & r_\eta
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        d\xi \\
+        d\eta
+    \end{pmatrix}
+    &=
+    \begin{pmatrix}
+        dz\\
+        dr
+    \end{pmatrix} \\
+    %
+    \begin{bmatrix}
+        \xi_z & \xi_r \\
+        \eta_z & \eta_r
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz \\
+        dr
+    \end{pmatrix}
+    &=
+    \begin{pmatrix}
+        d\xi \\
+        d\eta
+    \end{pmatrix}
+\end{align}
+
+\noindent and invert one, say \cref{eqn:firstid},
+
+\begin{equation}
+    \begin{pmatrix}
+        d\xi \\
+        d\eta
+    \end{pmatrix}
+    =
+    \frac{1}{J}\begin{bmatrix}
+        r_\eta & -z_\eta \\
+        -r_\xi & z_\xi
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz\\
+        dr
+    \end{pmatrix}
+\end{equation}
+
+\noindent then set them equal to each other
+
+\begin{equation}
+    \begin{bmatrix}
+        \xi_z & \xi_r \\
+        \eta_z & \eta_r
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz \\
+        dr
+    \end{pmatrix}
+    =
+    \frac{1}{J}\begin{bmatrix}
+        r_\eta & -z_\eta \\
+        -r_\xi & z_\xi
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz\\
+        dr
+    \end{pmatrix}
+\end{equation}
+
+\noindent we see that
+
+\begin{align}
+    \xi_z &= \frac{r_\eta}{J} \\
+    \xi_r &= \frac{-z_\eta}{J} \\
+    \eta_z &= \frac{-r_\xi}{J} \\
+    \eta_r &= \frac{z_\xi}{J}.
+\end{align}
+
+\noindent Thus the velocities can be computed from \cref{eqn:axisymfreestream} as
+
+\begin{align}
+    C_z = \frac{1}{\rho r} \frac{d\psi}{dr} = \frac{\eta_r}{\rho r} &= \frac{z_\xi}{\rho r J} \\
+    C_r = \frac{-1}{\rho r} \frac{d\psi}{dx} = \frac{-\eta_z}{\rho r} &= \frac{z_\xi}{\rho r J}.
+\end{align}
+
+
+We can now solve for the \(z\) and \(r\) grid node positions by assigning \(\xi\) and \(\eta\) values to each grid line, and solving \cref{eqn:ellipticgridsystem} using the boundary conditions of fixed geometry (\(z,~r\) positions) on solid walls and the inlet plane\sidenote{This is a Dirichlet boundary condition.}, and fixed velocity magnitude (\(C_z^2+C_r^2\)) on streamlines and the outlet plane\sidenote{This is a Neumann boundary condition.}.
+
+
+One final consideration is the end of the wake.
+%
+By Helmholtz` theorems, we cannot just have the vortex filaments of the wake (smeared or otherwise) simply end.
+%
+On the rotor blades, we have lines of circulation [(reference one of the figures)] from which the wake filaments are shed (as would be expected from a lifting line method).
+%
+We have not, however, defined those shed wake filaments to be semi-infinite, but rather to be discretized into smeared vortex panels.
+%
+Therefore we need to either extend them to infinity, or ``close the loop;'' we choose the latter.
+%
+At the end of each wake element, we add a panel similar to the trailing edge panels for the center_body, which extends from the last wake node along the streamline to the axis of rotation.
+%
+In contrast to the center body trailing edge panel, we only apply the vorticity portion of the wake panel strength based on the last wake node along the streamline.
+
+
+\subsection{Verification and Validation of Isolated Rotor+Wake Aerodynamics}
+\label{ssec:rwvv}
+
+\subsubsection{Verification of Induced Velocities}
+
+To verify that the rotor and wake models are behaving as expected, we look at the induced velocities (axial and swirl) at locations ranging from upstream of the rotor to downstream of the rotor.
+%
+We compare to blade element momentum theory (BEMT) using the CCBlade.jl Julia package.
+%
+The rotor we use for comparison is the APC 10x5 propeller; geometry for which is provided in the CCBlade documentation and in the UIUC database.
+%
+\Cref{fig:inducedvelcheck} shows the near- and far-field values from BEMT compared to the DuctAPE values across the range of locations sampled.
+%
+We see that the general trends match well: the upstream velocities are at or near zero, and the far field velocities are approximately double the velocities at the rotor plane.
+%
+Note that the swirl velocity as modeled in DuctAPE is zero upstream of the rotor, and the far-field value at any point aft of the rotor as described by \cref{eqn:vtheta,eqn:vthetaself}.
+
+
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \raisebox{-3em}{\input{./figures/vx-verify.tikz}}
+        \caption{Axial Velocity (\(v_x\))}
+        \label{}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \raisebox{-3em}{\input{./figures/vtheta-verify.tikz}}
+        \caption{Swirl Velocity (\(v_\theta\))}
+        \label{}
+     \end{subfigure}
+     \caption{Comparison of induced velocities from BEMT near and far field with induced velocities from DuctAPE sample at a range from one diameter upstream (\gray{gray}) to the rotor plane (\primary{blue}) and from the rotor plane to one diameter downstream (\secondary{red}).}
+    \label{fig:inducedvelcheck}
+\end{figure}
+
+
+\subsubsection{Validation of Thrust and Power Coefficients}
+
+For one validation case, we compare the thrust and power coefficients as well as efficiency with experimental data provided by UIUC for the APC 10x5.
+%
+We also compare to the BEMT outputs for further context.
+%
+As can be seen in \cref{fig:rotval1}, DuctAPE matches well with BEMT, and both are within expectations when compared to experimental data.
+
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \input{./figures/rotor-only-thrust-and-power-validation.tikz}
+        \caption{Comparison of rotor power (\(C_P\)) and thrust (\(C_T\)) coefficients.}
+        \label{}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{./figures/rotor-only-efficiency-validation.tikz}
+        \caption{Comparison of rotor efficiency (\(\eta\)).}
+        \label{}
+     \end{subfigure}
+     \caption{A comparison of rotor performance metrics across a range of advance ratios (\(J\)) shows good agreement between DuctAPE, BEMT, and experimental data.}
+    \label{fig:rotval1}
+\end{figure}
+

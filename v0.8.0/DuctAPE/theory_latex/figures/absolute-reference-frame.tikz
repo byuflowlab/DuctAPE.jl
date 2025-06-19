@@ -1,0 +1,51 @@
+\begin{tikzpicture}[scale=1.0]
+    % Coordinate system parameters
+    \coordinate (csysO) at (5.5,2.5);
+    \coordinate (er) at ($(csysO) +(0,1)$);
+    \coordinate (zgap1) at ($(csysO) +(0.065,0)$);
+    \coordinate (zgap2) at ($(csysO) +(0.135,0)$);
+    \coordinate (ez) at ($(csysO) +(1,0)$);
+
+    % z-axis
+    \draw[] (csysO) -- (zgap1);
+    \draw[-Stealth,] (zgap2) -- (ez);
+    \node[anchor=south,outer sep=0] at (ez) {$\hat{\vect{e}}_z$};
+
+    % r-axis
+    \draw[-Stealth,] (csysO) -- (er);
+    \node[anchor=west,outer sep=0] at (er) {$\hat{\vect{e}}_r$};
+
+    %theta direction
+    \draw[-Stealth] ($(csysO) + (0.2,0)$) [partial ellipse =7:350:0.1 and 0.5];
+    \node[anchor=north,outer sep=0,shift={(0.0,-0.5)}] at ($(csysO) + (0.2,0)$) {$\hat{\vect{e}}_\theta$};
+
+    % symmetry line
+    \draw[dash pattern=on 1cm off 0.1cm on 0.05cm off 0.1cm on 6.5cm off 0.1cm on 0.05cm off 0.1cm on 1cm] (-2,0) -- (7,0);
+
+    % Origin Marker
+    \coordinate (O) at (0.0,0.0);
+    \coordinate (Orplus) at ($(O) + (0.0,6pt)$);
+    \coordinate (Orminus) at ($(O) - (0.0,6pt)$);
+    \coordinate (Ozplus) at ($(O) + (7pt,0.0)$);
+    \draw[secondary, thick] (O) circle (3pt);
+    \draw[secondary, thick] (Orplus)-- (Orminus);
+    \draw[-{Stealth[length=2pt,width=2pt]}, secondary, thick] (O)-- (Ozplus);
+
+    % blade lifting line
+    \coordinate (rhub) at (2.0,0.5);
+    \coordinate (rtip) at (2.0,2.0);
+    \draw[tertiary,ultra thick] (rhub) -- (rtip);
+
+    %Duct
+    \draw[primary,thick,pattern={Hatch[angle=35,distance=2pt, line width=0.25pt]}, pattern color=plotsgray] plot[smooth] file{figures/absolute-frame-duct.dat};
+
+    %Hub
+    \draw[primary,thick, pattern={Hatch[angle=35,distance=2pt,line width=0.25pt]}, pattern color=plotsgray] plot[smooth] file{figures/absolute-frame-hub.dat};
+
+
+    % circulations
+
+    % blade lifting line label
+
+    % blade circulations label
+\end{tikzpicture}

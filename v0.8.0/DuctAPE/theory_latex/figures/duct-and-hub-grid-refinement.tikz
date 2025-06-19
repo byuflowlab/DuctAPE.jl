@@ -1,0 +1,33 @@
+\begin{tikzpicture}[/tikz/background rectangle/.style={fill={rgb,1:red,1.0;green,1.0;blue,1.0}, fill opacity={1.0}, draw opacity={1.0}}, show background rectangle]
+\begin{axis}[point meta max={nan}, point meta min={nan}, legend cell align={left}, legend columns={1}, title={}, title style={at={{(0.5,1)}}, anchor={south}, font={{\fontsize{14 pt}{18.2 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, align={center}}, legend style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, line width={1}, solid, fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, text opacity={1.0}, font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, text={rgb,1:red,0.0;green,0.0;blue,0.0}, cells={anchor={center}}, at={(1.02, 1)}, anchor={north west}}, axis background/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={0.0}}, anchor={north west}, xshift={0.0mm}, yshift={-0.0mm}, width={71.2mm}, height={57.15mm}, scaled x ticks={false}, xlabel={Total Number of Panels}, x tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, x tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, xlabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{11 pt}{14.3 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, xmode={log}, log basis x={10}, xmajorgrids={false}, xmin={54.84289230065208}, xmax={1312.8410442923314}, xticklabels={{$10^{2.0}$,$10^{2.5}$,$10^{3.0}$}}, xtick={{100.0,316.22776601683796,1000.0}}, xtick align={inside}, xticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, x grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis x line*={left}, x axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, scaled y ticks={false}, ylabel={$\sum_{i=1}^N \left[c_{p_i} \Delta s_i\right]$}, y tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, y tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, ylabel style={{rotate=-90}}, ymajorgrids={false}, ymin={-0.9429372477517319}, ymax={-0.85782247893079}, yticklabels={{$-0.94$,$-0.92$,$-0.90$,$-0.88$,$-0.86$}}, ytick={{-0.9400000000000002,-0.9200000000000002,-0.9000000000000001,-0.8800000000000001,-0.8600000000000002}}, ytick align={inside}, yticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, y grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis y line*={left}, y axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, colorbar={false}]
+    \addplot[color={rgb,1:red,0.0;green,0.1804;blue,0.3647}, name path={362c2a3c-9722-4f14-9bdd-0ff66b2a3e9b}, draw opacity={1.0}, line width={1.0}, dotted, mark={square*}, mark size={2.25 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.0;green,0.3608;blue,0.6706}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            60.0  -0.8602313874823261  \\
+            75.0  -0.8785370757424736  \\
+            90.0  -0.8904351732490723  \\
+            105.0  -0.8985146321873525  \\
+            120.0  -0.9045461440074074  \\
+            135.0  -0.909289814119211  \\
+            150.0  -0.9130238756932144  \\
+            240.0  -0.9248155189300596  \\
+            300.0  -0.9286952833725095  \\
+            450.0  -0.9337868595121043  \\
+            600.0  -0.9364064404197552  \\
+            750.0  -0.9379843024376172  \\
+            900.0  -0.939088404247066  \\
+            1050.0  -0.9399021083529173  \\
+            1200.0  -0.9405283392001957  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.7529;green,0.3255;blue,0.4039}, name path={de665f1a-aba1-4a43-a2af-43d4f9589a30}, only marks, draw opacity={1.0}, line width={0}, solid, mark={square*}, mark size={3.0 pt}, mark repeat={1}, mark options={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, fill={rgb,1:red,0.7529;green,0.3255;blue,0.4039}, fill opacity={1.0}, line width={0.75}, rotate={0}, solid}, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            240.0  -0.9248155189300596  \\
+        }
+        ;
+    \node[right, above, color={rgb,1:red,0.7529;green,0.3255;blue,0.4039}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{10 pt}{13.0 pt}\selectfont}}]  at (axis cs:542,-0.9253155189300596) {240 total panels};
+\end{axis}
+\end{tikzpicture}
