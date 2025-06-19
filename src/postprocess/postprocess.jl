@@ -47,116 +47,128 @@ Post-process a converged nonlinear solve solution.
 
 # Returns
 `outs::NamedTuple` : A named tuple containing all the output values including
-- `bodies`
-  - `panel_strengths`
-  - `inviscid_thrust`
-  - `viscous_drag`
-  - `thrust_comp`
-  - `total_thrust`
-  - `induced_efficiency`
-  - `cp_in`
-  - `cp_out`
-  - `cp_casing_in`
-  - `cp_casing_out`
-  - `casing_zpts`
-  - `cp_nacelle_in`
-  - `cp_nacelle_out`
-  - `nacelle_zpts`
-  - `cp_center_body_in`
-  - `cp_center_body_out`
-  - `center_body_zpts`
-  - `Vtot_in`
-  - `Vtot_out`
-  - `Vtot_prejump`
-  - `vtot_body`
-  - `vtot_jump`
-  - `vtot_wake`
-  - `vtot_rotors`
-  - `Vtan_in`
-  - `Vtan_out`
-  - `vtan_casing_in`
-  - `vtan_casing_out`
-  - `vtan_nacelle_in`
-  - `vtan_nacelle_out`
-  - `vtan_center_body_in`
-  - `vtan_center_body_out`
-  - `boundary_layers`
-    - `stagnation_indices`
-    - `upper_initial_states`
-    - `upper_solved_states`
-    - `upper_solved_steps`
-    - `lower_initial_states`
-    - `lower_solved_states`
-    - `lower_solved_steps`
-    - `surface_length_upper`
-    - `surface_length_lower`
-    - `stag_point`
-    - `split_ratio`
-    - `separation_point_ratio_upper`
-    - `separation_point_ratio_lower`
-    - `cdc_upper`
-    - `cdc_lower`
-    - `vtdotpv`
-    - `boundary_layer_functions_lower`
-    - `boundary_layer_functions_upper`
-- `rotors`
-  - `circulation`
-  - `panel_strengths`
-  - `efficiency`
-  - `inviscid_thrust`
-  - `inviscid_thrust_dist`
-  - `viscous_thrust`
-  - `viscous_thrust_dist`
-  - `thrust`
-  - `CT`
-  - `inviscid_torque`
-  - `inviscid_torque_dist`
-  - `viscous_torque`
-  - `viscous_torque_dist`
-  - `torque`
-  - `CQ`
-  - `inviscid_power`
-  - `inviscid_power_dist`
-  - `viscous_power`
-  - `viscous_power_dist`
-  - `power`
-  - `CP`
-  - `cl`
-  - `cd`
-  - `alpha`
-  - `beta1`
-  - `blade_normal_force_per_unit_span`
-  - `blade_tangential_force_per_unit_span`
-- `wake`
-  - `panel_strengths`
-- `totals`
-  - `thrust`
-  - `torque`
-  - `power`
-  - `CT`
-  - `CQ`
-  - `CP`
-  - `total_efficiency`
-  - `ideal_efficiency`
-- `intermediate_solve_values`
-  - `vz_rotor`
-  - `vtheta_rotor`
-  - `Cm_wake`
-  - `reynolds`
-  - `mach`
-  - `Cz_rotor`
-  - `Ctheta_rotor`
-  - `Cmag_rotor`
-  - `Gamma_tilde`
-  - `H_tilde`
-  - `deltaGamma2`
-  - `deltaH`
-  - `vz_wake`
-  - `vr_wake`
-  - `Cm_avg`
-- `reference_values`
-  - `Vinf`
-  - `Vref`
+
+# Extended help
+
+Full Outputs Information:
+Each for any level of these outputs with sub-levels, the higher level is a NamedTuple comprised of the of items listed below it. For example:
+`outs.bodies.boundary_layers.stagnation_indices`
+
+- `bodies::NamedTuple` : NamedTuple containing outputs related to the duct and center body
+  - `panel_strengths::Vector{Float}` : body vortex panel strengths
+  - `inviscid_thrust::Vector{Float}` : dimensional force in positive axial direction for duct and center body.
+  - `body_force_coefficient::Vector{Float}` : force coefficients associated with dimensional inviscid thrust components
+  - `viscous_drag::Vector{Float}` : dimensional force in negative axial direction for duct and center body (note: zero if boundary layer is turned off, and center body is always zero since no drag method is yet implemented for the center body)
+  - `thrust_comp::Vector{Float}` : `inviscid_thrust` .- `viscous_drag`
+  - `total_thrust::Float` : sum(`thrust_comp`)
+  - `induced_efficiency::Vector{Float}` : body-induced propulsive efficiency
+  - `cp_in::Vector{Float}` : inside pressure distribution for all bodies
+  - `cp_out::Vector{Float}` : inside pressure distribution for all bodies
+  - `cp_casing_in::Vector{Float}` : inside pressure distribution for duct casing
+  - `cp_casing_out::Vector{Float}` : outside pressure distribution for duct casing
+  - `casing_zpts::Vector{Float}` : axial component of casing control points
+  - `cp_nacelle_in::Vector{Float}` : inside pressure distribution for duct nacelle
+  - `cp_nacelle_out::Vector{Float}` : inside pressure distribution for duct nacelle
+  - `nacelle_zpts::Vector{Float}` : axial component of nacelle control points
+  - `cp_center_body_in::Vector{Float}` : inside pressure distribution for center bodies
+  - `cp_center_body_out::Vector{Float}` : inside pressure distribution for center bodies
+  - `center_body_zpts::Vector{Float}` : axial components of center body control points
+  - `Vtot_in::Matrix{Float}` : total inner surface velocity distribution for all bodies. row 1 is vz, row 2 is vr, columns are control points.
+  - `Vtot_out::Matrix{Float}` : total outer surface velocity distribution for all bodies. row 1 is vz, row 2 is vr, columns are control points.
+  - `Vtot_prejump::Matrix{Float}` : total surface velocity distribution before velocity jumps terms are applied for all bodies. row 1 is vz, row 2 is vr, columns are control points.
+  - `vtot_body::Vector{Float}` : body-induced velocity on the body surfaces
+  - `vtot_jump::Vector{Float}` : velocity due to jump terms in Fredholm equation
+  - `vtot_wake::Vector{Float}` : wake-induced velocity on the body surfaces
+  - `vtot_rotors::Vector{Float}` : rotor-induced velocity on the body surfaces
+  - `Vtan_in::Vector{Float}` : inner surface tangential velocity distribution for all bodies
+  - `Vtan_out::Vector{Float}` : outer surface tangential velocity distribution for all bodies
+  - `vtan_casing_in::Vector{Float}` : inner surface tangential velocity distribution for duct casing
+  - `vtan_casing_out::Vector{Float}` : outer surface tangential velocity distribution for duct casing
+  - `vtan_nacelle_in::Vector{Float}` : inner surface tangential velocity distribution for duct nacelle
+  - `vtan_nacelle_out::Vector{Float}` : outer surface tangential velocity distribution for duct nacelle
+  - `vtan_center_body_in::Vector{Float}` : inner surface tangential velocity distribution for center body
+  - `vtan_center_body_out::Vector{Float}` : outer surface tangential velocity distribution for center bodies
+  - `boundary_layers::NamedTuple` : NamedTuple containing information from the boundary layer solve (if `model_drag` in `boundary_layer_options` was set to true).
+    - `stagnation_indices::Vector{Int}` : indices surrounding stagnation point
+    - `upper_initial_states::Vector{Float}` : upper side initial states
+    - `upper_solved_states::Matrix{Float}` : upper side solved states
+    - `upper_solved_steps::Vector{Float}` : final steps associated with upper side solved states
+    - `lower_initial_states::Vector{Float}` : lower side initial states
+    - `lower_solved_states::Matrix{Float}` : lower side solved states
+    - `lower_solved_steps::Vector{Float}` : final steps associated with lower side solved states
+    - `surface_length_upper::Vector{Float}` : cumulative panel lengths on upper side
+    - `surface_length_lower::Vector{Float}` : cumulative panel lengths on lower side
+    - `stag_point::Float` : curve length at which stagnation point is located
+    - `split_ratio::Float` : ratio of lower to total surface length
+    - `separation_point_ratio_upper::Float` : ratio of upper side separation point location relative to upper side surface length
+    - `separation_point_ratio_lower::Float` : ratio of lower side separation point location relative to lower side surface length
+    - `cdc_upper::Float` : drag coefficient times chord length for upper side
+    - `cdc_lower::Float` : drag coefficient times chord length for lower side
+    - `vtdotpv::Vector{Float}` : dot product of tangential velocity and panel vector for duct
+    - `boundary_layer_functions_lower::NamedTuple` : NamedTuple of functions generated for use in boundary layer solution. For Head's method these are:
+      - `edge_velocity::FLOWMath.Akima` : spline of surface velocity relative to surface length
+      - `edge_acceleration::FLOWMath.Akima` : spline of derivatives of `edge_velocity` relative to surface length
+      - `edge_density::FLOWMath.Akima` : spline of density relative to surface length (constant for Head's method)
+      - `edge_viscosity::FLOWMath.Akima` : spline of viscosity relative to surface length (constant for Head's method)
+    - `boundary_layer_functions_upper::NamedTuple` : same as `boundary_layer_functions_lower` but for upper side.
+- `rotors::NamedTuple` : NamedTuple of items related to rotor(s)
+  - `circulation::Matrix{Float}` : blade element circulation values
+  - `panel_strengths::Matrix{Float}` : balde source panel strengths
+  - `efficiency::Vector{Float}` : rotor efficiency
+  - `inviscid_thrust::Vector{Float}` : inviscid componenets of rotor thrust
+  - `inviscid_thrust_dist::Matrix{Float}` : inviscid thrust component for each blade element
+  - `viscous_thrust::Vector{Float}` : viscous componenets of rotor thrust
+  - `viscous_thrust_dist::Martix{Float}` : viscous trhust component for each blade element
+  - `thrust::Vector{Float}` : total rotor thrusts
+  - `CT::Vector{Float}` : rotor thrust coefficients
+  - `inviscid_torque::Vector{Float}` : inviscid components of rotor torque
+  - `inviscid_torque_dist::Matrix{Float}` :inviscid torque component for each blade element
+  - `viscous_torque::Vector{Float}` : viscous components of rotor torque
+  - `viscous_torque_dist::Matrix{Float}` : viscous torque component for each blade element
+  - `torque::Vector{Float}` : total rotor torques
+  - `CQ::Vector{Float}` : rotor torque coefficients
+  - `inviscid_power::Vector{Float}` : inviscid components of rotor power
+  - `inviscid_power_dist::Matrix{Float}` : inviscid power component for each blade element
+  - `viscous_power::Vector{Float}` : viscous components of rotor power
+  - `viscous_power_dist::Matrix{Float}` : viscous power component for each blade element
+  - `power::Vector{Float}` : total rotor powers
+  - `CP::Vector{Float}` : rotor power coefficients
+  - `cl::Matrix{Float}` : lift coefficient values for each blade element
+  - `cd::Matrix{Float}` : drag coefficient values for each blade element
+  - `alpha::Matrix{Float}` : angle of attack values for each blade element
+  - `beta1::Matrix{Float}` : inflow angle values for each blade element
+  - `blade_normal_force_per_unit_span::Matrix{Float}` : normal force per unit span values for each blade element
+  - `blade_tangential_force_per_unit_span::Matrix{Float}` : tangential force per unit span values for each blade element
+- `wake::NamedTuple` : NamedTuple containing items related to the wake
+  - `panel_strengths::Vector{Float}` : wake vortex panel strengths
+- `totals::NamedTuple` : NamedTuple containing total system values
+  - `thrust::Vector{Float}` : total system thrust
+  - `torque::Vector{Float}` : total system torque
+  - `power::Vector{Float}` : total system power
+  - `CT::Float` : total system thrust coefficient
+  - `CQ::Float` : total system torque coefficient
+  - `CP::Float` : total system power coefficient
+  - `total_efficiency::Vector{Float}` : total propulsive efficiency
+  - `ideal_efficiency::Vector{Float}` : ideal propulsive efficiency
+- `intermediate_solve_values::NamedTuple` : NamedTuple containing items used inside the solver at their converged values.
+  - `vz_rotor::Matrix{Float}` : axial velocity induced on rotor blade elements
+  - `vtheta_rotor::Matrix{Float}` : swirl velocity induced on rotor blade elements
+  - `reynolds::Matrix{Float}` : Reynolds numbers at each blade element
+  - `mach::Matrix{Float}` : Mach numbers at each blade element
+  - `Cz_rotor::Matrix{Float}` : absolute frame axial velocity at rotor blade elements
+  - `Ctheta_rotor::Matrix{Float}` : absolute frame swirl velocity at rotor blade elements
+  - `Cmag_rotor::Matrix{Float}` : absolute frame meridional velocity at rotor blade elements
+  - `Gamma_tilde::Matrix{Float}` : net circulation of upstream and current blade elements
+  - `H_tilde::Matrix{Float}` : net enthalpy of upstream and current blade elements
+  - `deltaGamma2::Matrix{Float}` : squared circulation changes between adjacent blade elements
+  - `deltaH::Matrix{Float}` : enthalpy changes between adjacent blade elements
+  - `vz_wake::Vector{Float}` : axial velocity induced on wake control points
+  - `vr_wake::Vector{Float}` : radial velocity induced on wake control oints
+  - `Cm_wake::Vector{Float}` : absolute frame meridional velocity at wake control points
+  - `Cm_avg::Vector{Float}` : absolute frame meridional velocity at wake panel nodes
+- `reference_values::NamedTuple` : NamedTuple containing items used in computing coefficient values
+  - `Vinf::Float` : Freestream velocity used in coefficient definitions
+  - `Vref::Float` : Reference velocity used in coefficient definitions
 """
 function post_process(
     solver_options,
@@ -611,7 +623,7 @@ function post_process(
             body_force_coefficient=body_force_coefficient,
             inviscid_thrust=body_inviscid_thrust,
             viscous_drag=body_viscous_drag,
-            thrust_comp=body_inviscid_thrust .+ body_viscous_drag,
+            thrust_comp=body_inviscid_thrust .- body_viscous_drag,
             total_thrust=sum(body_thrust),
             induced_efficiency,
             # surface pressures
