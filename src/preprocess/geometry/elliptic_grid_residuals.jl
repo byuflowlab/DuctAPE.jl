@@ -420,7 +420,7 @@ function solve_elliptic_grid(x, p)
     # - Call NLsolve - #
     result = NLsolve.nlsolve(
         rwrap!,
-        reshape(@view(wake_grid[2, 2:end, 2:(end - 1)]), :);
+        copy(reshape(@view(wake_grid[2, 2:end, 2:(end - 1)]), :));#NLsolve updates throw an error when you have a reshaped view input, but then ImplicitAD is providing a straight vector...
         method=p.algorithm,
         autodiff=p.autodiff,
         linsolve=(x, A, b) -> x .= ImplicitAD.implicit_linear(A, b),

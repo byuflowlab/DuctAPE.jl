@@ -713,9 +713,11 @@ function solve(
 
     # - Extract Initial Guess Vector for State Variables - #
     if isnothing(initial_guess)
-        initial_guess = extract_initial_guess(
+        initial_guess = copy(extract_initial_guess(
             solver_options, sensitivity_parameters, solve_parameter_cache_dims.state_dims
-        )
+           )) #NLsolve throws a fit if this isn't just a vector during setup since it doesn't like type mismatching between setup and execution.
+    else
+        initial_guess=copy(initial_guess)#NLsolve throws a fit if this isn't just a vector during setup since it doesn't like type mismatching between setup and execution.
     end
 
     # - Wrap residual - #
