@@ -34,8 +34,6 @@ If false, DuctAPE will attempt to return an output object of the correct size an
 
 ## Preprocess Options
 
-
-
 ### Geometry Interpolation and Generation Options
 
 The `autoshiftduct` option may be convenient depending on how the duct coordinates are being input.
@@ -49,94 +47,25 @@ These, in general, do not need to be touched by users; thus we do not include th
 
 ### Integration Options
 
-
+DuctAPE uses numerical integration to determine the influence of axisymmetric vortex and source panels on the restof the system.
+There are several options for numerical integration, and the methods can be mixed and matched with their own specific options for the nominal (panel on other panels) and singular (panel on itself) cases.
+The Gauss-Legendre method is useful in optimization cases to avoid noise in the integration error.
+The Gauss-Kronrod method is implemented via QuadGK.jl and is more accurate, especially in for the singular cases, but is less useful for optimization purposes due to noise in the error from the adaptive nature.
+Similarly, the Romberg method similar to that implemented in DFDC is adaptive and can be fast, but is also not usually the best choice.
+Thus we default to Gauss-Legendre methods.
 
 ```@docs
 DuctAPE.IntegrationOptions
-```
-
-```@docs
 DuctAPE.GaussLegendre
 DuctAPE.GaussKronrod
 DuctAPE.Romberg
 ```
 
-## Solver Options
+#### Example
 
+```@example quadrature
+using DuctAPE
 
-
-### Elliptic Grid Solve
-```@docs
-DuctAPE.SLORGridSolverOptions
-DuctAPE.GridSolverOptions
-```
-
-### Aerodynamics Solve
-```@docs
-DuctAPE.ChainSolverOptions
-DuctAPE.CompositeSolverOptions
-DuctAPE.NLsolveOptions
-DuctAPE.NonlinearSolveOptions
-DuctAPE.MinpackOptions
-DuctAPE.SIAMFANLEOptions
-DuctAPE.SpeedMappingOptions
-DuctAPE.FixedPointOptions
-DuctAPE.CSORSolverOptions
-DuctAPE.ModCSORSolverOptions
-```
-
-
-## Postprocess Options
-```@docs
-DuctAPE.BoundaryLayerOptions
-DuctAPE.HeadsBoundaryLayerOptions
-```
-
-# Advanced Option Selection
-
-DuctAPE has been written in an attempt to make as many of the available options exposed to the user as possible.  This means that there are quite a few options to select from if not using the option convenience functions.
-To help the user, the majority of overarching option types are defined using the `@kwdef` macro and have default values that should be reasonable in most cases.
-We will introduce some of the available options here that may be of common interest.
-
-## General Option Selection
-
-In general, options are all accessed through the `options` argument of the analysis function being called.
-Said options are passed via an `Options` struct.
-
-```@docs; canonical=false
-DuctAPE.Options
-```
-
-Options are selected through the `set_options` function
-
-```@docs; canonical=false
-DuctAPE.set_options
-```
-
-There are three main sub-option objects for quadrature, wake geometry solver, and aerodyanmic solver; these are explained in more detail below.
-In addition, there are various options for pre- and post-processing as well as miscellaneous options for things such as supressing warnings and printing verbose statements throughout the analysis, which can be seen in the docstring above.
-
-
-## Quadrature
-
-There are several implementations for different quadrature approaches depending on user desires; they include:
-- [Gauss-Legendre quadature](@ref "DuctAPE.GaussLegendre") (default),
-- [Gauss-Kronrod Quadrature](@ref "DuctAPE.GaussKronrod"), and
-- [Romberg Quadrature](@ref "DuctAPE.Romberg") methods.
-
-The default method is Gauss-Legendre quadrature using 8 sample points for both the nominal and singular integrals.
-To modify the quadrature methods and settings, an `IntegrationOptions` struct needs to be passed to the `set_options` method.
-
-```@docs; canonical=false
-DuctAPE.IntegrationOptions
-```
-
-The `IntegraionOptions` type takes in two objects of type `IntegrationMethod`, one for the nominal integrals, and one for the singular integrals.
-These methods can be mixed and matched between quadrature methods as well as settings.
-
-For example, if one wanted to use a 10-point Gauss-Legendre method for the nominal integrals, and a order 7 Gauss-Kronrod method with an absolute tolerance of 2e-16 the following would need to be included in the `set_options` call:
-
-```julia
 # set nominal options using a GaussLegendre object (which is an InterationMethod type)
 # note that a convenience method is used here that takes in the number of points and
 #calculates the appropriate sample locations and weights.
@@ -157,67 +86,82 @@ integration_options = DuctAPE.IntegrationOptions(;
 options = DuctAPE.set_options(; integration_options=integration_options)
 ```
 
-## Elliptic Grid Solvers
+## Solver Options
 
-As part of the pre-process, an elliptic grid defining the wake geometry is solved with a system of Poisson equations.
-For this solve there currently two options:
+### Elliptic Grid Solver Options
 
-- [SLOR](@ref "DuctAPE.SLORGridSolverOptions"): DFDC grid solver
-- [Default](@ref "DuctAPE.GridSolverOptions"): Default method compatible with ImplicitAD
+The wake geometry is obtained by solving for approximate streamlines on an elliptic grid with the bodies as boundaries.
+There are two methods available, a successive line over relaxiation (SLOR) method that can be used in isolation or as a preconditioner to a Newton solve method from the NLsolve.jl package.
+The default option is to run a few iterations of SLOR to precondition and smooth out the initial grid, and then finish up with the Newton solve, usually within 3-5 iterations.
+Note that the SLOR method is not implemented using ImplicitAD.jl since there isn't a clean residual definition separate from the solve method.
+The Newton solve is implemented using ImplicitAD.jl which helps speed up automatic differentiation in an optimization setting, but it still benefits from a few iterations of SLOR beforehand.
 
-The SLOR (successive line over relaxation) is the method employed by DFDC.
-
-Selection of solver and solver settings follows the same pattern as with the quadrature settings, in that the user must pass the appropriate `GridSolverOptionsType` into the `set_options` call.
-
-For the SLOR method alone, the type is
-```@docs; canonical=false
+```@docs
 DuctAPE.SLORGridSolverOptions
-```
-
-And for the default method compatible with ImplicitAD, the type is
-```@docs; canonical=false
 DuctAPE.GridSolverOptions
 ```
 
-As an example, this is the input that would be required to use the default method with an absolute convergence tolerance of 1e-10, and also including the quadrature settings from above:
+#### Example
+```@example gridsolve
+using DuctAPE
 
-```julia
 # define wake grid solver settings
 wake_solve_options = DuctAPE.GridSolverOptions(; atol=1e-10)
 
 # set all options
-options = DuctAPE.set_options(;
-    integration_options=integration_options, grid_solver_options=wake_solve_options
-)
+options = DuctAPE.set_options(; grid_solver_options=wake_solve_options)
 ```
 
-!!! note "Convergence Flags"
-    The convergence flags default to false, and in general should be left alone as they are modified in-place in the various solves by the analysis.
+### Aerodynamics Solver Options
 
-## Aerodynamics Solvers
+Quite a few solve methods were explored in the development of DuctAPE which can be separated into three broad categories: Fixed-point iteration solvers, quasi-Newton solvers, and Newton solvers.
+In general, the fixed-point solvers have been faster and more robust than other methods, but all the methods have been kept in case they are desired for future development.
 
-There are two general types of solvers available in DuctAPE, the first is very similar to the solver in DFDC and converges a residual very similar to DFDC's.
-The other type is for external solvers that converge an alternate residual that is default in DuctAPE.
-The various solver options include:
-- [CSOR](@ref "DuctAPE.CSORSolverOptions"): the DFDC solver
-- [ModCSOR](@ref "DuctAPE.ModCSORSolverOptions"): modified DFDC solver for ImplicitAD compatibility
-- [FixedPoint.jl](@ref "DuctAPE.FixedPointOptions")
-- [SpeedMapping.jl](@ref "DuctAPE.SpeedMappingOptions")
-- [MINPACK.jl](@ref "DuctAPE.MinpackOptions")
-- [SIAMFANLEquations.jl](@ref "DuctAPE.SIAMFANLEOptions")
-- [NLsolve.jl](@ref "DuctAPE.NLsolveOptions")
-- [SimpleNonlinearSolve.jl](@ref "DuctAPE.NonlinearSolveOptions")
 
-Note that the CSOR, ModCSOR, FixedPoint.jl, and SpeedMapping.jl are all different fixed-point iteration solvers, MINPACK.jl and SIAMFANLEquations.jl are primarily quasi-newton solvers, and NLsolve.jl and SimpleNonlinearSolve.jl have various solver options.
+There are two methods that are implemented directly in DuctAPE: the CSOR and ModCSOR methods which are the controlled successive over relaxation fixed-point approach taken in DFDC and a modified version compatible with ImplicitAD.jl that is the current default and is currently the best (fastest/most robust) for optimization.
 
-DuctAPE also has some poly-algorithm solvers that employ more than one solver.
-The [Chain Solver](@ref "DuctAPE.ChainSolverOptions") option is the default which starts with a fixed-point iteration, and if it doesn't converge, moves on to a quasi-, then full Newton solver until either convergence is reached, or no convergence is found.
-The other poly-algorithm that is available, but is less robust is the [Composite Solver](@ref "DuctAPE.CompositeSolverOptions") which partially converges with one solver, and finishes with another.
+```@docs
+DuctAPE.CSORSolverOptions
+DuctAPE.ModCSORSolverOptions
+```
 
-Each of the solve methods have a variety of different settings associated with them, detailed in their respective docstrings.
-The following example should contain all the principles required to be able to adapt to the most complex use cases.
+The other methods are implemented via external dependencies and some do better than others.
+In our experience, the other strictly fixed-point methods work relatively well, but are middle of the road.
 
-```julia
+```@docs
+DuctAPE.SpeedMappingOptions
+DuctAPE.FixedPointOptions
+```
+
+The quasi-Newton methods are hit or miss, with Minpack doing well enough to make it into some of the compound solver options discussed below, but we have had very little success wth SIAMFANLEquations up to this point.
+
+```@docs
+DuctAPE.MinpackOptions
+DuctAPE.SIAMFANLEOptions
+```
+
+NonlinearSolve is generally faster than NLsolve if the problem is large enough, but we find it to be significantly less robust.  NLsolve's Anderson method is perhaps the best external method in terms of speed and robustness, but is just barely edged out by the CSOR methods.
+
+```@docs
+DuctAPE.NLsolveOptions
+DuctAPE.NonlinearSolveOptions
+```
+
+Finally, there are several compound solve methods implemented, the first chaining solvers together.  The solver chain can be defined as the user wishes, but the defaults start with the fixed-point Anderson method, move to the Minpack quasi-Newton method if the fixed-point method doesn't converge in the given number of iterations, and then finishes with a full Newton method if the quasi-newton method doesn't converge.
+The other compound solver combines solvers in a composite manner, typically starting with a few iterations of a full Newton method to get the solver going in the right direction and then finishing with a fixed-point method.
+The `ChainSolverOptions` was at one point the default method, but once the modified CSOR method was developed, the compound solvers weren't used much.
+Note that due to the way the solvers are implemented and dispatched, it is currently not possible to mix and match the CSOR methods with any of the external package methods.
+
+```@docs
+DuctAPE.ChainSolverOptions
+DuctAPE.CompositeSolverOptions
+```
+
+#### Example
+```@example
+using DuctAPE
+using LineSearches
+
 # Define settings for NLsolve's newton method
 aero_solver_options = DuctAPE.NLsolveOptions(;
     algorithm=:newton,
@@ -225,33 +169,34 @@ aero_solver_options = DuctAPE.NLsolveOptions(;
     iteration_limit=30,
     linesearch_method=LineSearches.BackTracking, #don't include parentheses on method handle
     linesearch_kwargs=(; order=3, maxstep=1e6),
-    additional_kwargs=(; autoscale=false),
 )
 
 # set all the options
-DuctAPE.set_options(;
-    integration_options=integration_options,
-    grid_solver_options=wake_solve_options,
-    solver_options=aero_solver_options,
-)
+DuctAPE.set_options(; solver_options=aero_solver_options)
 ```
 
 !!! note "Iteration Counters"
     The `iterations` field (not to be confused with the `iterations_limit` field) in the solver options should generally not be changed.  They automatically save (in-place) the number of iterations the solver performs and can be accessed after the analysis is run.
 
-## Boundary Layer Solvers
 
-If desired, a one-way turbulent boundary layer can be modeled, from which an approximate viscous drag can be determined.
-Currently, only the Head's method for turbulent boundary layer computation is working.
-In the case of separation, a separation drag penalty is applied based on values selected in the options.
+## Postprocess Options
 
-```@docs; canonical=false
+Most of the postprocess options have to do with writing the outputs to files, with the default behavior being to not write anything.  These options can be useful for debugging purposes or saving outputs, though it is usually more efficient to manually save a select few outputs rather than all the outputs.
+The one option that is slightly more involved is the boundary layer options.
+Currently, only Head's method is fully implemented, but there has also been some development started on Green's method.
+The boundary layer options include choices regarding type of solver, with a simple 2nd-order Runge-Kutta method being the default (and appears to be best for optimization). There is also a 4th-order Runge-Kutta method implemented as well as the RadauIIA5 method from DifferentialEquations.jl which may be more accurate for single runs.
+Note that the default setting is to not run the boundary layer method.
+The `model_drag` option in the boundary layer options needs to be set to true if it is desired to include the drag model.
+
+```@docs
 DuctAPE.HeadsBoundaryLayerOptions
 ```
 
-Here is an example of a possible boundary layer option setting:
 
-```julia
+#### Example
+```@example boundarylayer
+using DuctAPE
+
 # Define Boundary Layer Settings
 boundary_layer_options = DuctAPE.HeadsBoundaryLayerOptions(;
     model_drag=true,
@@ -262,20 +207,18 @@ boundary_layer_options = DuctAPE.HeadsBoundaryLayerOptions(;
 )
 
 # set all the options
-DuctAPE.set_options(;
-    integration_options=integration_options,
-    grid_solver_options=wake_solve_options,
-    solver_options=aero_solver_options,
-    boundary_layer_options=boundary_layer_options,
-)
+DuctAPE.set_options(; boundary_layer_options=boundary_layer_options)
 ```
 
-## Advanced Options for Multi-point analyses
+# Advanced Options for Multi-point analyses
 
 For using advanced options in multi-point analyses, there are various changes that need to be made to avoid run-time errors.
 Here is an example for setting options with the CSOR solver.
 
-```julia
+
+```@example multipoint
+using DuctAPE
+
 # number of operating points to analyze
 nop = 3
 
@@ -290,9 +233,9 @@ options = DuctAPE.set_options(;
 )
 ```
 
-If using a poly-algorithm with a multi-point solve, then each of the solvers needs to have the multiple `converged` and `iterations` fields for each operating point, and the overall solve type needs to have a `converged` and `iterations` field for each solver and each operating point.
+If using a compound algorithm with a multi-point solve, then each of the solvers needs to have the multiple `converged` and `iterations` fields for each operating point, and the overall solve type needs to have a `converged` and `iterations` field for each solver and each operating point.
 
-```julia
+```@example multipoint
 options = DuctAPE.set_options(;
     solver_options=DuctAPE.ChainSolverOptions(;
         solvers=[ # vector of solvers to use in poly-algorithm

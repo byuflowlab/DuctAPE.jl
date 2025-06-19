@@ -30,8 +30,8 @@ makedocs(;
                 "Outputs" => "DuctAPE/api/outputs.md",
                 "API Index" => "DuctAPE/api/api_index.md",
             ],
-            # "Visualization" => "DuctAPE/visualization.md",
-            # "Theory" => "DuctAPE/theory.md",
+            "Visualization" => "DuctAPE/visualization.md",
+            "Theory" => "DuctAPE/theory.md",
         ],
         "C\$^4\$Blade" => [
             "Intro" => "C4Blade/intro.md",

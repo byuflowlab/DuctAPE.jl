@@ -347,7 +347,7 @@ end
 Options for the SpeedMapping.jl package solver
 
 # Fields
-- `orders::AbstractArray{Int} = [3, 2]
+- `orders::AbstractArray{Int} = [3, 2]`
 - `sig_min::Int = 0` : maybe set to 1?
 - `stabilize::Bool = false` : stabilizes before extrapolation
 - `check_obj::Bool = false` : checks for inf's and nan's and starts from previous finite point
@@ -501,7 +501,7 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
 - `solvers::AbstractArray{SolverOptionsType} = [
         NLsolveOptions(; algorithm=:newton, iteration_limit=3),
         NLsolveOptions(; algorithm=:anderson, atol=1e-10),
-    ]' : Vector of solver options to use.
+    ]` : Vector of solver options to use.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 - `residuals::AbstractArray{Float} = [-1.0]` : final residual values
@@ -532,7 +532,7 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
             atol=1e-12,
             additional_kwargs=(; autodiff=SimpleNonlinearSolve.AutoForwardDiff()),
         ),
-    ] : Vector of solver options to use.
+    ]` : Vector of solver options to use.
 - `converged::AbstractArray{Bool} = [false]` : flag to track if convergence took place.
 - `iterations::AbstractArray{Int} = [0]` : iteration counter
 - `residuals::AbstractArray{Float} = [-1.0]` : final residual values

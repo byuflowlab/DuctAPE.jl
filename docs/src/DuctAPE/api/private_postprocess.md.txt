@@ -3,7 +3,7 @@ Pages = ["private_postprocess.md"]
 Depth = 5
 ```
 
-```@docs
+```@docs; canonical=false
 DuctAPE.post_process
 ```
 

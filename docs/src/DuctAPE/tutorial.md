@@ -296,9 +296,15 @@ wake_length = 0.8
 
 # assemble paneling constants
 paneling_constants = DuctAPE.PanelingConstants(
-    num_duct_inlet_panels, num_center_body_inlet_panels, num_panels, dte_minus_cbte, num_wake_sheets, wake_length
+    num_duct_inlet_panels,
+    num_center_body_inlet_panels,
+    num_panels,
+    dte_minus_cbte,
+    num_wake_sheets,
+    wake_length,
 )
 nothing # hide
+
 ```
 ### Assembling the DuctedRotor
 
