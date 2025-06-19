@@ -1,7 +1,7 @@
 # DuctAPE.jl [[Duct](#)ed [A](#)xisymmetric [P](#)ropulsor [E](#)valuation]
 
  [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://flow.byu.edu/DuctAPE.jl/stable)
-<!--[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://flow.byu.edu/DuctAPE.jl/dev)-->
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://flow.byu.edu/DuctAPE.jl/dev)
 [![Build Status](https://github.com/byuflowlab/DuctAPE.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/byuflowlab/DuctAPE.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
