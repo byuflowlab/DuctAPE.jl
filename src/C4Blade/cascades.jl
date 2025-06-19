@@ -7,9 +7,25 @@ Formatting copied directly from CCBlade source code.
 using Printf: @printf
 
 """
-    parsefile(filename, radians, solidity)
+    parsecascadefile(filename::AbstractString, radians::Bool)
 
-Cascade version of `parsefile` function from CCBlade. Assumes stagger is given before reynolds and Mach number, and solidity is given after
+Parse a cascade-style airfoil data file used in CCBlade-style analysis.  
+This version assumes the file format includes metadata followed by inflow angle and aerodynamic coefficients.
+
+# Arguments
+- `filename::AbstractString`: Path to the data file to be parsed.
+- `radians::Bool`: If `true`, assumes inflow angles are already in radians. If `false`, converts inflow angles from degrees to radians.
+
+# Returns
+A tuple of parsed data:
+- `info::String`: Informational string from the header.
+- `stagger::Float64`: Stagger angle.
+- `Re::Float64`: Reynolds number.
+- `Mach::Float64`: Mach number.
+- `solidity::Float64`: Solidity ratio.
+- `inflow::Vector{Float64}`: Inflow angles (in radians).
+- `cl::Vector{Float64}`: Lift coefficient values.
+- `cd::Vector{Float64}`: Drag coefficient values.
 """
 function parsecascadefile(filename, radians)
     inflow = Float64[]
@@ -438,7 +454,7 @@ abstract type DTCascade end
 
 Data is fit recursively with Akima splines.
 
-# Arguments:
+# Arguments
 - `inflow::Vector{Float64}`: inflow angles
 - `Re::Vector{Float64}`: Reynolds numbers
 - `stagger::Vector{Float64}`: stagger angles
@@ -450,7 +466,7 @@ Data is fit recursively with Akima splines.
 
 or files with one per Re/Stagger/Solidty/Mach combination
 
-# Arguments:
+# Arguments
 - `filenames::Matrix{String}`: name/path of files to read in.  filenames[i, j, k, ell] corresponds to Re[i] Stagger[j] Stagger[k] and Solidity[k] with each in ascending order.
 - `radians::Bool`: true if angle of attack in file is given in radians
 """

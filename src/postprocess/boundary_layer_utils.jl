@@ -3,14 +3,14 @@
 #---------------------------------#
 
 """
-    arc_lengths_from_panel_lengths(duct_panel_lengths, bl_ids)
+    arc_lengths_from_panel_lengths(duct_panel_lengths)
 
 Cumulative sum of panel lengths for the given section of surface associated with the upper or lower boundary layer.
 
-# Arguments:
+# Arguments
 - `duct_panel_lengths::Vector{Float}` : vector of panel lengths (called influence_length in body_vortex_panels) associated with the duct (casing + nacelle).
 
-# Returns:
+# Returns
 - `s::Vector{Float}` : cumulative sum of panel lengths between control points in the given index range, starting from zero.
 """
 function arc_lengths_from_panel_lengths(duct_panel_lengths)
@@ -27,17 +27,24 @@ function arc_lengths_from_panel_lengths(duct_panel_lengths)
 end
 
 """
-   split_at_stagnation_point(duct_panel_lengths, n_panels_casing)
+    split_at_stagnation_point(duct_panel_lengths, duct_panel_tangents, Vtot_duct, Vtan_duct, first_step_size)
 
-Split the duct body surface at the leading edge of the duct.
+Split the duct body surface at the leading edge of the duct by locating the stagnation point.
 
 # Arguments:
 - `duct_panel_lengths::Vector{Float}` : Vector of panel lengths for the duct from casing trailing edge clockwise to nacelle trailing edge.
-- `n_panels_casing::Int` : number of panels comprising the casing side of the duct
+- `duct_panel_tangents::Matrix{Float}` : Tangent vectors of each duct panel (dimension 2 × number_of_panels).
+- `Vtot_duct::Matrix{Float}` : Total velocity vectors at each duct panel (dimension 2 × number_of_panels).
+- `Vtan_duct::Vector{Float}` : Tangential velocity magnitude at each duct panel.
+- `first_step_size::Float` : Reference step size used for detecting stagnation location.
 
 # Returns:
-- `s_upper::Vector{Float}` : cumulative sum of upper side (nacelle) panel lengths
-- `s_lower::Vector{Float}` : cumulative sum of lower side (casing) panel lengths
+- `s_upper::Union{Vector{Float}, Nothing}` : cumulative panel lengths of the upper (nacelle) side starting at stagnation point, or `nothing` if no stagnation point found.
+- `s_lower::Vector{Float}` : cumulative panel lengths of the lower (casing) side starting at stagnation point.
+- `stag_ids::Vector{Int}` : indices bounding the stagnation point on the duct panel cumulative length vector.
+- `stag_point::Float` : arc length coordinate of the stagnation point along the duct surface.
+- `split_ratio::Float` : ratio of stagnation point location relative to total duct length.
+- `dots::Vector{Float}` : dot product values of panel tangents with total velocity vectors (used for stagnation detection).
 """
 function split_at_stagnation_point(
     duct_panel_lengths, duct_panel_tangents, Vtot_duct, Vtan_duct, first_step_size
@@ -186,12 +193,12 @@ end
 
 Sets boundary layer steps based on desired number of steps (must be an Integer), an initial step size, and the total cumulative length of the steps.
 
-# Arguments:
+# Arguments
 - `N::Int` : Number of steps to take
 - `first_step_size::Float` : size of first step (which is `m` in `bl_step_fun`)
 - `total_length::Float` : total surface length to divide up.
 
-# Returns:
+# Returns
 - `steps::Vector{Float}` : steps along surface length satisfying the equation: f(n) = m*n^p with the condition that `m` is the first step size and f(N) = `total_length`
 """
 function set_boundary_layer_steps(N::Int, first_step_size, total_length)

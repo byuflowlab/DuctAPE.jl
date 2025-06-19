@@ -8,14 +8,14 @@
         verbose=false
     )
 
-# Arguments:
+# Arguments
 - `s::Vector{Float}` : cumulative sum of panel lengths between control points in the given index range, starting from zero.
 - `vtan_duct::Vector{Float}` : tangential velocity magnitudes for the entire duct
 - `duct_control_points::Matrix{Float}` : Control point coordinates along the duct surface
 - `operating_point::OperatingPoint` : OperatingPoint object
 - `boundary_layer_options::BoundaryLayerOptions` : BoundaryLayerOptions object
 
-# Returns:
+# Returns
 - `boundary_layer_parameters::NamedTuple` : Namped Tuple containing boundary layer solver parameters:
   - `edge_velocity::FLOWMath.Akima` : spline of edge velocities relative to surface length
   - `edge_acceleration::FLOWMath.Akima` : spline of edge acceleration (dUe/ds) relative to surface length
@@ -189,6 +189,24 @@ function boundary_layer_residual_head!(dy, y, parameters, s; debug=false)
     end
 end
 
+"""
+    initialize_head_states(boundary_layer_functions, s_init; verbose=false)
+
+Initialize the boundary layer state variables at the start of a surface coordinate.
+
+# Arguments
+- `boundary_layer_functions::Tuple`: A tuple containing functions `(edge_density, edge_velocity, edge_viscosity)` that return properties at a given coordinate.
+- `s_init::Float64`: Initial position along the surface where initialization is performed.
+
+# Keyword Arguments
+- `verbose::Bool=false`: If true, enables verbose output for debugging.
+
+# Returns
+- `initial_states::Vector{Float64}`: Initial boundary layer state vector `[d20, H10]`, where:
+  - `d20` is the initial boundary layer momentum thickness Reynolds number estimate.
+  - `H10` is the initial shape factor guess.
+- `H0::Float64`: Calculated boundary layer shape parameter `H` corresponding to `H10`.
+"""
 function initialize_head_states(boundary_layer_functions, s_init; verbose=false)
     (; edge_density, edge_velocity, edge_viscosity) = boundary_layer_functions
 
@@ -206,6 +224,27 @@ function initialize_head_states(boundary_layer_functions, s_init; verbose=false)
     return initial_states, H0
 end
 
+"""
+    find_last_max_H(usol, stepsol)
+
+Find the last maximum value of the shape factor `H` along a solution path and corresponding position.
+
+# Arguments
+- `usol::Matrix{Float64}`: Solution array where the second row corresponds to a variable related to `H` (e.g., `limH1`).
+- `stepsol::Vector{Float64}`: Independent variable vector corresponding to positions along the solution path.
+
+# Returns
+- `usep::Vector{Float64}`: State vector at the last maximum of `H`.
+- `Hsep::Float64`: Value of the shape factor `H` at the last maximum.
+- `s_sep::Float64`: Position along the surface where the last maximum of `H` occurs.
+
+# Notes
+- Computes `H` from the solution using `calculate_H` and `limH1`.
+- If `H` decreases at the end, uses a smoothed Akima spline to find the exact last maximum by identifying where the derivative changes sign.
+- Uses root-finding via `Roots.find_zero` to find the zero derivative point precisely.
+- If no sign change is found, the last point is taken as the maximum.
+- The state vector at the maximum is interpolated/smoothed accordingly.
+"""
 function find_last_max_H(usol, stepsol)
     Hsol = calculate_H.(limH1.(usol[2, :]))
     # check if H drops at the end
@@ -250,12 +289,19 @@ end
 
 Integrate the turbulent boundary layer using a Runge-Kutta method.
 
-# Arguments:
+# Arguments
 - `f::function_handle` : Governing residual equations to integrate
 - `ode::function_handle` : ODE method to use (RK2 or RK4)
 - `initial_states::Float` : initial states
 - `steps::Vector{Float}` : steps for integration
 - `parameters::NamedTuple` : boundary layer solve options and other parameters
+
+# Returns
+- `usep::Vector{Float64}`: State vector at the separation point or last step
+- `Hsep::Float64`: Shape factor value at the separation or last maximum
+- `s_sep::Float64`: Surface coordinate corresponding to separation or last maximum
+- `us::Matrix{Float64}`: Solution states over all integration steps
+- `steps::Vector{Float64}`: Integration step positions along the surface
 """
 function solve_head_boundary_layer!(
     ::RK, ode, initial_states, steps, parameters; verbose=false
@@ -336,6 +382,24 @@ function solve_head_boundary_layer!(
     return usep, Hsep, s_sep, us, steps
 end
 
+"""
+    update_Cf_head(state, step, parameters)
+
+Calculate the skin friction coefficient (`Cf`) at a given boundary layer state and location.
+
+# Arguments
+- `state::Vector{Float64}`: Current boundary layer state vector `[d2, H1]`.
+- `step::Float64`: The current position or step along the surface.
+- `parameters::NamedTuple`: Parameters containing edge velocity, density, viscosity functions and tolerances:
+  - `edge_velocity::Function`: Function returning edge velocity at given step.
+  - `edge_density::Function`: Function returning edge density at given step.
+  - `edge_viscosity::Function`: Function returning edge viscosity at given step.
+  - `H1_eps::Float64`: Small epsilon used in limiting `H1`.
+  - `H_eps::Float64`: Small epsilon used in calculating `H`.
+
+# Returns
+- `cf::Float64`: Calculated skin friction coefficient at the given state and position.
+"""
 function update_Cf_head(state, step, parameters)
 
     # Unpack State
@@ -364,6 +428,13 @@ Integrate the turbulent boundary layer using a Runge-Kutta method.
 - `initial_states::Float` : initial states
 - `steps::Vector{Float}` : steps for integration
 - `parameters::NamedTuple` : boundary layer solve options and other parameters
+
+# Returns
+- `usep::Vector{Float64}`: State vector at the separation point or last step
+- `Hsep::Float64`: Shape factor at separation or last maximum
+- `s_sep::Float64`: Surface coordinate corresponding to separation or last maximum
+- `usol::Matrix{Float64}`: Solution states over all integration steps
+- `stepsol::Vector{Float64}`: Integration step positions from the solver
 """
 function solve_head_boundary_layer!(
     ::DiffEq, ode, initial_states, steps, parameters; verbose=false
