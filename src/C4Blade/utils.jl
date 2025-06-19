@@ -1,4 +1,15 @@
 """
+    quadspline(xdata, ydata, xpoint) -> Real
+
+Perform linear interpolation (a simplified quadratic spline approximation) on a set of data points to estimate the value at a given point.
+
+# Arguments
+- `xdata::Vector{Float}` : Vector of x-coordinates (assumed sorted in ascending order).
+- `ydata::Vector{Float}` : Vector of y-coordinates corresponding to `xdata`.
+- `xpoint::Float` : The x-value at which to interpolate.
+
+# Returns
+- `ypoint::Float` - Interpolated y-value at `xpoint`.
 """
 function quadspline(xdata, ydata, xpoint)
     n = length(xdata)

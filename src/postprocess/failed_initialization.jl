@@ -1,7 +1,43 @@
 """
-    failed_initialization()
+    failed_initialization(
+        ducted_rotor,
+        operating_point,
+        reference_parameters,
+        prepost_containers,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        A_bb_LU,
+        idmaps,
+        problem_dimensions,
+        options;
+        solve_container_caching=nothing,
+    )
 
-Returns output of correct size, but without analysis solution values.
+Constructs a valid, but non-converged output solution for a ducted rotor system. This is typically used when solver convergence fails but a valid output structure (with zeros or initial guesses) is still required.
+
+# Arguments
+- `ducted_rotor` : Problem definition and geometry of the ducted rotor.
+- `operating_point` : Flow properties and operating conditions (e.g., velocity, density, RPM).
+- `reference_parameters` : Non-dimensionalization reference values (e.g., Vref, Rref).
+- `prepost_containers` : Storage containers for results and intermediate variables.
+- `solve_parameter_cache_vector` : Flat cache vector containing solver-specific data.
+- `solve_parameter_cache_dims` : Dimensional metadata used to interpret the solve parameter cache.
+- `A_bb_LU` : LU-decomposed matrix of body-body influence coefficients.
+- `idmaps` : Index maps for system matrices and solution vectors.
+- `problem_dimensions` : Struct containing problem size information.
+- `options` : Solver and physical modeling options.
+- `solve_container_caching=nothing` : Optional preallocated cache of solve container objects.
+
+# Returns
+- `outs::NamedTuple` : Named tuple of simulation outputs with the following fields:
+    - `wake` : Tuple of wake panel strengths.
+    - `bodies` : Dictionary of body-related quantities, including panel strengths, thrusts, efficiencies, surface velocities/pressures, and boundary layer results (if enabled).
+    - `rotors` : Rotor-related quantities including thrust, torque, power, efficiencies, blade element forces, and aerodynamic coefficients.
+    - `totals` : Combined thrust, torque, power, and efficiency metrics.
+    - `intermediate_solve_values` : Miscellaneous intermediate quantities computed by the solver (e.g., induced velocities, circulation deltas, etc.).
+    - `reference_values` : Reference freestream and nondimensionalization values.
+
+All quantities will be physically consistent and correctly shaped, but will not represent a converged flowfield.
 """
 function failed_initialization(
     ducted_rotor,
@@ -324,6 +360,47 @@ function failed_initialization(
     return outs
 end
 
+"""
+    return_failed_residual!(
+        solver_options::TS,
+        TF,
+        state_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+        multipoint_index,
+    ) where {TS<:ExternalSolverOptions}
+
+Returns a tuple of default or fallback residual-related values for a failed solver call, specifically for use in `failed_initialization`. This ensures downstream postprocessing code can still execute by returning zeroed or nominal values consistent in shape and type.
+
+# Arguments
+- `solver_options::TS` : Specific solver configuration (must be a subtype of `ExternalSolverOptions`).
+- `TF` : Floating-point type used throughout the solver (typically `Float64`).
+- `state_dims` : Dimensions of the solver state vector (e.g., number of state variables per component).
+- `solve_container_cache` : Preallocated container cache used to store reusable solver objects.
+- `solve_container_cache_dims` : Metadata about the structure and dimensions of the solve container cache.
+- `operating_point` : Flow conditions (e.g., freestream velocity, density, RPM).
+- `ivr` : Rotor-related solver input variables.
+- `ivw` : Wake-related solver input variables.
+- `linsys` : Linear system data (e.g., LU decompositions, influence matrices).
+- `blade_elements` : Blade geometry and airfoil data used in blade element calculations.
+- `wakeK` : Wake kernel matrix used in unsteady wake modeling.
+- `idmaps` : Identifier maps for connecting variables and system components.
+- `multipoint_index` : Index to identify the current multipoint condition (for multipoint optimization).
+
+# Returns
+Named tuple with the following:
+- `vz_rotor` : Axial induced velocities at rotor control points.
+- `vtheta_rotor` : Tangential induced velocities at rotor control points.
+- `Cm_wake` : Circulation moment (or moment coefficient) of the wake.
+- Additional fields unpacked from `solve_containers`, providing zeroed or reset versions of solver outputs and state estimates.
+"""
 function return_failed_residual!(
     solver_options::TS,
     TF,
@@ -359,6 +436,32 @@ function return_failed_residual!(
 end
 
 """
+    return_failed_residual!(
+        solver_options::CSORSolverOptions,
+        TF,
+        state_dims,
+        solve_container_cache,
+        solve_container_cache_dims,
+        operating_point,
+        ivr,
+        ivw,
+        linsys,
+        blade_elements,
+        wakeK,
+        idmaps,
+        multipoint_index,
+    )
+
+Fallback residual constructor for failed CSOR solver execution.
+
+When a solver of type `CSORSolverOptions` fails to converge, this function assembles a well-structured output with all solver state variables zero-initialized. It ensures postprocessing and analysis routines can still run without breaking due to missing data.
+
+# Returns
+A named tuple containing:
+- `Gamr`: Rotor circulation (zeroed)
+- `sigr`: Rotor source strengths (zeroed)
+- `gamw`: Wake circulation (zeroed)
+- Additional solver container fields from `solve_containers`
 """
 function return_failed_residual!(
     solver_options::CSORSolverOptions,
@@ -392,8 +495,6 @@ function return_failed_residual!(
     return (; Gamr, sigr, gamw, solve_containers...)
 end
 
-"""
-"""
 function return_failed_residual!(
     solver_options::ModCSORSolverOptions,
     TF,
@@ -427,6 +528,40 @@ function return_failed_residual!(
 end
 
 """
+    return_failed_boundary_layer_outputs(
+        boundary_layer_options::AbstractBoundaryLayerOptions,
+        Vtan_duct,
+        Vtot_duct,
+        duct_control_points,
+        duct_panel_lengths,
+        duct_panel_tangents,
+        rotor_tip_radius,
+        operating_point,
+        reference_parameters,
+    )
+
+Generates a zero-filled boundary layer output in the event of solver failure.
+
+This fallback function ensures that the calling interface receives a complete and structurally valid boundary layer solution, even when the boundary layer integration (e.g., HEADS or Green's method) fails to converge or initialize properly.
+
+The dimensionality of state arrays (2 or 3 columns) is determined by the boundary layer model type:
+- `HeadsBoundaryLayerOptions`: 2 states (e.g., momentum thickness and shape factor)
+- `GreensBoundaryLayerOptions`: 3 states (e.g., with additional energy thickness or auxiliary variables)
+
+# Returns
+A named tuple containing zeroed or default values for:
+- `stagnation_indices`
+- `upper_initial_states`, `upper_solved_states`, `upper_solved_steps`
+- `lower_initial_states`, `lower_solved_states`, `lower_solved_steps`
+- `surface_length_upper`, `surface_length_lower`
+- `stag_point`, `split_ratio`
+- `separation_point_ratio_upper`, `separation_point_ratio_lower`
+- `cdc_upper`, `cdc_lower`
+- `vtdotpv`
+
+# Notes
+- Intended for use when boundary layer models fail to initialize or run.
+- Allows postprocessing to continue without raising errors.
 """
 function return_failed_boundary_layer_outputs(
     boundary_layer_options::HeadsBoundaryLayerOptions,
@@ -463,43 +598,71 @@ function return_failed_boundary_layer_outputs(
     )
 end
 
-# """
-# """
-# function return_failed_boundary_layer_outputs(
-#     boundary_layer_options::GreensBoundaryLayerOptions,
-#     Vtan_duct,
-#     Vtot_duct,
-#     duct_control_points,
-#     duct_panel_lengths,
-#     duct_panel_tangents,
-#     rotor_tip_radius,
-#     operating_point,
-#     reference_parameters,
-# )
-#     TF = eltype(Vtan_duct)
-#
-#     return (;
-#         stagnation_indices=[1; 1],
-#         upper_initial_states=zeros(TF, 3),
-#         upper_solved_states=zeros(TF, 3),
-#         upper_solved_steps=TF[0],
-#         lower_initial_states=zeros(TF, 3),
-#         lower_solved_states=zeros(TF, 3),
-#         lower_solved_steps=TF[0],
-#         surface_length_upper=zeros(TF, 2),
-#         surface_length_lower=zeros(TF, 2),
-#         stag_point=TF[0.5],
-#         split_ratio=TF[0.5],
-#         separation_point_ratio_upper=TF[0.0],
-#         separation_point_ratio_lower=TF[0.0],
-#         cdc_upper=TF[0.0],
-#         cdc_lower=TF[0.0],
-#         vtdotpv=zeros(TF, 2),
-#         # boundary_layer_functions_lower,
-#         # boundary_layer_functions_upper,
-#     )
-# end
 
+function return_failed_boundary_layer_outputs(
+    boundary_layer_options::GreensBoundaryLayerOptions,
+    Vtan_duct,
+    Vtot_duct,
+    duct_control_points,
+    duct_panel_lengths,
+    duct_panel_tangents,
+    rotor_tip_radius,
+    operating_point,
+    reference_parameters,
+)
+    TF = eltype(Vtan_duct)
+
+    return (;
+        stagnation_indices=[1; 1],
+        upper_initial_states=zeros(TF, 3),
+        upper_solved_states=zeros(TF, 3),
+        upper_solved_steps=TF[0],
+        lower_initial_states=zeros(TF, 3),
+        lower_solved_states=zeros(TF, 3),
+        lower_solved_steps=TF[0],
+        surface_length_upper=zeros(TF, 2),
+        surface_length_lower=zeros(TF, 2),
+        stag_point=TF[0.5],
+        split_ratio=TF[0.5],
+        separation_point_ratio_upper=TF[0.0],
+        separation_point_ratio_lower=TF[0.0],
+        cdc_upper=TF[0.0],
+        cdc_lower=TF[0.0],
+        vtdotpv=zeros(TF, 2),
+        # boundary_layer_functions_lower,
+        # boundary_layer_functions_upper,
+    )
+end
+
+
+"""
+    extract_failed_state_variables(solver_options::TS, dims, TF) where {TS <: AbstractSolverOptions}
+
+Returns zero-initialized arrays for solver state variables in the event of a failure during the solve process.
+
+This utility provides a consistent fallback mechanism by reshaping zero arrays into the expected shapes of the solver's state variables, based on the provided dimension mappings. It supports both external and internal solver configurations.
+
+# Arguments
+- `solver_options::TS`: The solver configuration type. Determines whether external (e.g., actuator velocities) or internal (e.g., circulation) states are returned.
+- `dims`: A struct containing indexing and reshaping information for all relevant state variables.
+- `TF`: The element type for the arrays (typically a floating point type like `Float64`).
+
+# Returns
+A named tuple of zero-initialized and reshaped state variables:
+- For `ExternalSolverOptions`:
+  - `vz_rotor`: Axial velocity at the rotor.
+  - `vtheta_rotor`: Tangential velocity at the rotor.
+  - `Cm_wake`: Wake momentum coefficient.
+
+- For `InternalSolverOptions`:
+  - `Gamr`: Rotor-bound circulation.
+  - `sigr`: Rotor-bound source strength.
+  - `gamw`: Wake-bound vorticity.
+
+# Notes
+- This function is primarily used when a solve attempt fails and a placeholder state must be returned to avoid further errors.
+- Shapes and indexing come from the `dims` structure, which must match the solver’s internal layout.
+"""
 function extract_failed_state_variables(
     solver_options::TS, dims, TF
 ) where {TS<:ExternalSolverOptions}

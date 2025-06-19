@@ -41,7 +41,7 @@ include("airfoil_corrections.jl") # various airfoil to cascade corrections
 
 Parameters defining the rotor (apply to all sections).
 
-# Arguments:
+# Fields
 - `Rhub::Float64`: hub radius (along blade length)
 - `Rtip::Float64`: tip radius (along blade length)
 - `B::Int64`: number of blades
@@ -98,7 +98,7 @@ end
 
 Define sectional properties for one station along rotor
 
-# Arguments:
+# Fields
 - `r::Float64`: radial location along blade
 - `chord::Float64`: corresponding local chord length
 - `theta::Float64`: corresponding twist angle (radians)
@@ -130,7 +130,7 @@ The x direction is the axial direction, and y direction is the tangential direct
 See Documentation for more detail on coordinate systems.
 `Vx` and `Vy` vary radially at same locations as `r` in the rotor definition.
 
-# Arguments:
+# Fields
 - `Vx::Float64`: velocity in x-direction along blade
 - `Vy::Float64`: velocity in y-direction along blade
 - `pitch::Float64`: pitch angle (radians)
@@ -167,7 +167,7 @@ end
 
 Outputs from the BEM solver along the radius.
 
-# Arguments:
+# Fields
 - `Np::Float64`: normal force per unit length
 - `Tp::Float64`: tangential force per unit length
 - `a::Float64`: axial induction factor
@@ -224,7 +224,52 @@ end
 # ------------ BEM core ------------------
 
 """
-(private) residual function
+    residual_and_outputs(phi, x, p)
+
+Compute the residual for blade element momentum (BEM) theory and return flow/load outputs.
+
+This is a core (private) function for evaluating the mismatch in assumed and resulting flow angles 
+and computing aerodynamic loads on a blade section, including hub/tip loss corrections and optional 
+airfoil correction models.
+
+# Arguments
+- `phi::Float`: Flow angle (rad), the angle between relative velocity and rotor plane.
+- `x::NTuple`: Tuple containing:
+  - `r`: Radial location (m)
+  - `chord`: Chord length (m)
+  - `theta`: Blade angle or stagger (rad)
+  - `Rhub`: Hub radius (m)
+  - `Rtip`: Tip radius (m)
+  - `B`: Number of blades
+  - `Vx`: Axial inflow velocity (m/s)
+  - `Vy`: Tangential inflow velocity (m/s)
+  - `rho`: Air density (kg/m³)
+  - `pitch`: Pitch angle (rad)
+  - `mu`: Dynamic viscosity (Pa·s)
+  - `asound`: Speed of sound (m/s)
+
+- `p::NTuple`: Tuple of parameters:
+  - `af`: Airfoil or cascade definition (e.g., `AFType`, `DFDCairfoil`, etc.)
+  - `turbine::Bool`: Whether operating as a turbine (vs. propeller).
+  - `re_corr`: Optional Reynolds correction model.
+  - `mach_corr`: Optional Mach correction model.
+  - `rotation_corr`: Optional rotational correction model.
+  - `tip_corr`: Optional tip/hub loss model.
+  - `is_stator::Bool`: Whether the blade is a stator (used for certain models).
+
+# Returns
+- `R::Float`: Residual value. Zero indicates consistency in assumed `phi`.
+- `Outputs`: A struct containing:
+  - `Np`, `Tp`: Normal and tangential force per unit span (N/m)
+  - `a`, `ap`: Axial and tangential induction factors
+  - `u`, `v`: Induced axial and tangential velocities (m/s)
+  - `phi`: Flow angle (rad)
+  - `alpha`: Angle of attack (rad)
+  - `W`: Relative velocity magnitude (m/s)
+  - `cl`, `cd`: Lift and drag coefficients
+  - `cn`, `ct`: Normal and tangential force coefficients
+  - `F`: Hub/tip loss factor
+  - `G`: Effective hub/tip loss applied to velocities
 """
 function residual_and_outputs(phi, x, p)  #rotor, section, op)
 
@@ -408,11 +453,24 @@ function residual_and_outputs(phi, x, p)  #rotor, section, op)
 end
 
 """
-(private) Find a bracket for the root closest to xmin by subdividing
-interval (xmin, xmax) into n intervals.
+    firstbracket(f, xmin, xmax, n; backwardsearch=false)
 
-Returns found, xl, xu.
-If found = true a bracket was found between (xl, xu)
+Search for a sign change (root bracket) of a function `f` within the interval `(xmin, xmax)` by 
+subdividing it into `n` sub-intervals.
+
+# Arguments
+- `f::Function`: Function to evaluate.
+- `xmin::Float64`: Lower bound of the interval.
+- `xmax::Float64`: Upper bound of the interval.
+- `n::Int`: Number of sub-intervals to divide `(xmin, xmax)`.
+
+# Keyword Arguments
+- `backwardsearch::Bool=false`: If `true`, search from `xmax` toward `xmin`.
+
+# Returns
+- `found::Bool`: Whether a root bracket was found.
+- `xl::Float64`: Lower bound of the bracketing interval.
+- `xu::Float64`: Upper bound of the bracketing interval.
 """
 function firstbracket(f, xmin, xmax, n, backwardsearch=false)
     xvec = range(xmin, xmax; length=n)
@@ -441,12 +499,12 @@ end
 
 Solve the BEM equations for given rotor geometry and operating point.
 
-# Arguments:
+# Arguments
 - `rotor::Rotor`: rotor properties
 - `section::Section`: section properties
 - `op::OperatingPoint`: operating point
 
-# Returns:
+# Returns
 - `outputs::Outputs`: BEM output data including loads, induction factors, etc.
 """
 function solve(rotor, section, op)
@@ -605,15 +663,23 @@ end
 
 Uniform inflow through rotor.  Returns an OperatingPoint object.
 
-# Arguments:
+# Arguments
 - `Vinf::Float`: freestream speed (m/s)
 - `Omega::Float`: rotation speed (rad/s)
 - `r::Float`: radial location where inflow is computed (m)
 - `rho::Float`: air density (kg/m^3)
-- `pitch::Float`: pitch angle (rad)
-- `mu::Float`: air viscosity (Pa * s)
-- `asounnd::Float`: air speed of sound (m/s)
-- `precone::Float`: precone angle (rad)
+
+# Keyword Arguments
+- `pitch::Float=0.0`: pitch angle (rad)
+- `mu::Float=1.0`: air viscosity (Pa * s)
+- `asounnd::Float=1.0`: air speed of sound (m/s)
+- `precone::Float=0.0`: precone angle (rad)
+
+# Returns
+- `OperatingPoint`: An object describing the flow conditions at a blade section, including:
+  - `Vx`: Axial velocity component (accounting for precone).
+  - `Vy`: Tangential velocity component (due to rotation and precone).
+  - `rho`, `pitch`, `mu`, `asound`: As passed in.
 """
 function simple_op(
     Vinf, Omega, r, rho; pitch=zero(rho), mu=one(rho), asound=one(rho), precone=zero(Vinf)
@@ -638,7 +704,7 @@ end
 Compute relative wind velocity components along blade accounting for inflow conditions
 and orientation of turbine.  See Documentation for angle definitions.
 
-# Arguments:
+# Arguments
 - `Vhub::Float64`: freestream speed at hub (m/s)
 - `Omega::Float64`: rotation speed (rad/s)
 - `pitch::Float64`: pitch angle (rad)
@@ -652,6 +718,12 @@ and orientation of turbine.  See Documentation for angle definitions.
 - `rho::Float64`: air density (kg/m^3)
 - `mu::Float64`: air viscosity (Pa * s)
 - `asound::Float64`: air speed of sound (m/s)
+
+# Returns
+- `OperatingPoint`: An object describing the flow conditions at a blade section, including:
+  - `Vx`: Axial velocity component (accounting for precone).
+  - `Vy`: Tangential velocity component (due to rotation and precone).
+  - `rho`, `pitch`, `mu`, `asound`: As passed in.
 """
 function windturbine_op(
     Vhub,
@@ -714,12 +786,12 @@ end
 integrate the thrust/torque across the blade,
 including 0 loads at hub/tip, using a trapezoidal rule.
 
-# Arguments:
+# Arguments
 - `rotor::Rotor`: rotor object
 - `sections::Vector{Section}`: rotor object
 - `outputs::Vector{Outputs}`: output data along blade
 
-# Returns:
+# Returns
 - `T::Float64`: thrust (along x-dir see Documentation).
 - `Q::Float64`: torque (along x-dir see Documentation).
 """
@@ -747,6 +819,15 @@ end
 Integrate the thrust/torque across the blade given an array of output data.
 Generally used for azimuthal averaging of thrust/torque.
 `outputs[i, j]` corresponds to `sections[i], azimuth[j]`.  Integrates across azimuth
+
+# Arguments
+- `rotor::Rotor`: rotor object
+- `sections::Vector{Section}`: rotor object
+- `outputs::Vector{Outputs}`: output data along blade
+
+# Returns
+- `T::Float64`: thrust (along x-dir see Documentation).
+- `Q::Float64`: torque (along x-dir see Documentation).
 """
 function thrusttorque(rotor, sections, outputs::AbstractMatrix{TO}) where {TO}
     T = 0.0
@@ -767,7 +848,7 @@ end
 
 Nondimensionalize the outputs.
 
-# Arguments:
+# Arguments
 - `T::Float64`: thrust (N)
 - `Q::Float64`: torque (N-m)
 - `Vhub::Float64`: hub speed used in turbine normalization (m/s)
@@ -776,7 +857,7 @@ Nondimensionalize the outputs.
 - `rotor::Rotor`: rotor object
 - `rotortype::String`: normalization type
 
-# Returns:
+# Returns
 
 `if rotortype == "windturbine"`
 - `CP::Float64`: power coefficient
