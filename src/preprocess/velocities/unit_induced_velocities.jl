@@ -184,7 +184,7 @@ Equivalent "smoke" ring self-induced velocity.
 - `r_influence::Float` : radial position of ring (i.e. the ring raidus)
 - `influence_length::Float` : length of influencing panel
 
-# Returs
+# Returns
 - `vz::Float` : axially induced velocity of vortex ring
 """
 function smoke_ring_vz(r_influence, influence_length)
@@ -273,13 +273,13 @@ Axial velocity induced by axisymmetric source ring.
 
 Returns zero if source ring is on axis of rotation (zero radius), the point of influence is on the axis, or if self-inducing velocity.
 
-# Arguments:
+# Arguments
 - `xi::Float` : normalized z-coordinate, (z-zo)/ro
 - `rho::Float` : normalized r-coordinate, r/ro
 - `m::Float` : Elliptic Integral parameter, 4rho/sqrt(xi^2+(rho+1)^2)
 - `r_influence::Float` : radial location of vortex ring, ro
 
-# Returns:
+# Returns
 - `vz::Float` : axially induced velocity of source ring
 """
 function source_ring_vz(xi, rho, m, r_influence)
@@ -336,13 +336,13 @@ Radial velocity induced by axisymmetric source ring.
 
 Returns zero if source ring is on axis of rotation (zero radius), the point of influence is on the axis, or if self-inducing velocity.
 
-# Arguments:
+# Arguments
 - `xi::Float` : normalized z-coordinate, (z-zo)/ro
 - `rho::Float` : normalized r-coordinate, r/ro
 - `m::Float` : Elliptic Integral parameter, 4rho/sqrt(xi^2+(rho+1)^2)
 - `r_influence::Float` : radial location of vortex ring, ro
 
-# Returns:
+# Returns
 - `vr::Float` : radially induced velocity of source ring
 """
 function source_ring_vr(xi, rho, m, r_influence)

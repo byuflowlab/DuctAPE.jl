@@ -92,8 +92,6 @@ function reinterpolate_geometry(
     return wake_grid, rp_duct_coordinates, rp_center_body_coordinates, rotor_indices_in_wake
 end
 
-
-
 """
     reinterpolate_geometry!(
         wake_grid,
@@ -219,8 +217,6 @@ function reinterpolate_geometry!(
     return rp_duct_coordinates, rp_center_body_coordinates, wake_grid, rotor_indices_in_wake
 end
 
-
-
 """
     generate_all_panels(
         rp_duct_coordinates,
@@ -289,7 +285,6 @@ function generate_all_panels(
 end
 
 
-
 """
     generate_all_panels!(
         panels,
@@ -342,7 +337,6 @@ function generate_all_panels!(
     #TODO; what other panels are actually needed? do you need the body wake panels or no?
     return (; body_vortex_panels, rotor_source_panels, wake_vortex_panels)
 end
-
 
 
 """
@@ -603,8 +597,6 @@ function calculate_unit_induced_velocities!(ivr, ivw, ivb, panels, integration_o
     return ivr, ivw, ivb
 end
 
-
-
 """
     initialize_linear_system(
         ivb,
@@ -754,7 +746,6 @@ function initialize_linear_system(
 
     return (; A_bb, b_bf, A_br, A_pr, A_bw, A_pw), A_bb_LU, lu_decomp_flag
 end
-
 
 """
     initialize_linear_system!(
@@ -951,6 +942,23 @@ Set values for index map to be used throughout solve and post-process.
 
 # Returns
 - `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
+
+# Extra information
+- `idmaps::NamedTuple`
+  - `wake_nodemap`: Original nodemap of wake panel connectivity.
+  - `wake_endnodeidxs`: Indices of end nodes for each wake sheet.
+  - `wake_panel_sheet_be_map`: Matrix mapping each wake panel to its sheet and the most recent upstream rotor.
+  - `wake_node_sheet_be_map`: Same as above but for wake nodes.
+  - `wake_node_ids_along_casing_wake_interface`: Indices of wake nodes along the casing interface.
+  - `wake_node_ids_along_center_body_wake_interface`: Indices of wake nodes along the center body interface.
+  - `wake_panel_ids_along_casing_wake_interface`: Indices of wake panels adjacent to the casing.
+  - `wake_panel_ids_along_center_body_wake_interface`: Indices of wake panels adjacent to the center body.
+  - `duct_panel_ids_along_center_body_wake_interface`: Indices of duct panels along the center-body/casing wake interface.
+  - `center_body_panel_ids_along_center_body_wake_interface`: Indices of center-body panels along its wake interface.
+  - `id_of_first_casing_panel_aft_of_each_rotor`: Panel indices just downstream of each rotor on the casing.
+  - `id_of_first_center_body_panel_aft_of_each_rotor`: Panel indices just downstream of each rotor on the center body.
+  - `rotor_indices_in_wake`: Indices of each rotor location in the wake discretization.
+  - `body_totnodes`: Total number of body nodes.
 """
 function set_index_maps(
     num_panels,

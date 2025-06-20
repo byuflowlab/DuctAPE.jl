@@ -171,7 +171,7 @@ Used for getting the unit induced velocities due to the body panels on the rotor
 - `influence_lengths::Vector{Float}` : lengths over which vortex ring influence is applied on the surface.
 - `integration_options::IntegrationOptions` : integration options
 
-# Returns:
+# Returns
 - `VEL::Array{Float}` : N-controlpoint x N-node x [vz, vr] array of induced velocity components
 """
 function induced_velocities_from_source_panels_on_points(

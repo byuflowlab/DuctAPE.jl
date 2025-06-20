@@ -322,6 +322,9 @@ Initialize strength state variables.
 - `wake_node_sheet_be_map::Matrix{Int}` : An index map from the wake nodes to the nearest ahead rotor blade element along the wake sheets
 - `wake_node_ids_along_casing_wake_interface::type` : An index map indicating which wake nodes interface with the duct wall
 - `wake_node_ids_along_center_body_wake_interface::type` : An index map indicating which wake nodes interface with the center_body wall
+
+# Returns
+Updates `Gamr`, `sigr`, `gamw`.
 """
 function initialize_strengths!(
     solver_options,
@@ -599,6 +602,7 @@ induced axial velocity
 - `rlx::Float=0.5` : factor for under-relaxation to reduce transients in CL
 
 # Returns
+Updated `Gamr`, `sigr`, and `gamw`.
 """
 function initialize_strengths!(
     solver_options::CSORSolverOptions,

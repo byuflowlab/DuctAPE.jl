@@ -8,6 +8,8 @@ Performs Richardson extrapolation on an array `fh` for use in Romberg integratio
 - `err::Vector{Float}` : estimated errors in velocity approximation
 - `fh::Tuple` : `(f(h), h)` tuples (in order of decreasing `|h|`)
 
+# Returns
+Modified `V` Matrix and `err` Vector.
 """
 function extrapolate!(V, err, fh; power=2, atol=1e-6)
 
@@ -55,6 +57,20 @@ end
 #             VORTEX              #
 #---------------------------------#
 
+"""
+    nominal_vortex_panel_integration!(
+        integration_options::Romberg,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    ) -> AbstractVector or AbstractMatrix
+
+In place version of `nominal_vortex_panel_integration`.
+"""
 function nominal_vortex_panel_integration!(
     integration_options::Romberg,
     V,
@@ -112,6 +128,20 @@ function nominal_vortex_panel_integration!(
     return V
 end
 
+"""
+    self_vortex_panel_integration!(
+        integration_options::Romberg,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    ) -> AbstractVector or AbstractMatrix
+
+In place version of `self_vortex_panel_integration`.
+"""
 function self_vortex_panel_integration!(
     integration_options::Romberg,
     V,
@@ -183,7 +213,20 @@ end
 #---------------------------------#
 #             SOURCE              #
 #---------------------------------#
+"""
+    nominal_source_panel_integration!(
+        integration_options::Romberg,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    ) -> AbstractVector or AbstractMatrix
 
+In place version of `nominal_source_panel_integration`.
+"""
 function nominal_source_panel_integration!(
     integration_options::Romberg,
     V,
@@ -241,6 +284,20 @@ function nominal_source_panel_integration!(
     return V
 end
 
+"""
+    self_source_panel_integration!(
+        integration_options::Romberg,
+        V,
+        node1,
+        node2,
+        influence_length,
+        controlpoint,
+        containers;
+        debug=false,
+    ) -> AbstractVector or AbstractMatrix
+
+In place version of `self_source_panel_integration`.
+"""
 function self_source_panel_integration!(
     integration_options::Romberg,
     V,
@@ -308,4 +365,3 @@ function self_source_panel_integration!(
         return V
     end
 end
-

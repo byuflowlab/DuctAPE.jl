@@ -140,7 +140,7 @@ Calculate panel method influence coefficients (V dot nhat) for a set of control 
 
 Used for constructing portions of the panel method LHS matrix related to the pseudo control points in the bodies.
 
-# Arguments:
+# Arguments
 - `controlpoint::Matrix{Float}` [z r] coordinates of points being influenced
 - `normal::Matrix{Float}` : unit normal vectors of the panels on which the control points are situated.
 - `node::Matrix{Float}` : [z r] coordinates of panel nodes (edges)
@@ -151,7 +151,7 @@ Used for constructing portions of the panel method LHS matrix related to the pse
 # Keyword Arguments
 - `integration_caches::NamedTuple=nothing` : caches for intermediate values in integration.
 
-# Returns:
+# Returns
 - `AICn::Matrix{Float}` : N controlpoint x N+1 node  array of V dot nhat values
 """
 function vortex_aic_boundary_on_field(
@@ -279,6 +279,7 @@ end
 
 Add Kutta condition (γ_1 + γ_N = 0) to LHS matrix.
 
+# Arguments
 - `LHS::Matrix{Float}` : a pre-allocated (zeros) full size left-hand side matrix
 - `AICn::Matrix{Float}` :  influence coefficients for panels/nodes
 - `kids::Vector{Int}` : [1 2] indices of where to put 1's for kutta condition

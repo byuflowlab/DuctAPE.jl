@@ -1,7 +1,6 @@
 #---------------------------------#
 #             VORTEX              #
 #---------------------------------#
-
 """
     nominal_vortex_panel_integration!(
         integration_options,

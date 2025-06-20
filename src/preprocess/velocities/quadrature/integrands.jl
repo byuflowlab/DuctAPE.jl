@@ -646,4 +646,3 @@ function self_source_induced_velocity_sample!(
 
     return V
 end
-
