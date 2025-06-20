@@ -2,6 +2,7 @@
     solve(sensitivity_parameters, const_cache; initial_guess=nothing)
 
 A compact dispatch of `solve` that automatically dispatches based on the solver_options contained in const_cache.
+Solver options are  CSORSolverOptions, ModCSORSolverOptions, SpeedMappingOptions, FixedPointOptions, MinpackOptions, SIAMFANLEOptions, NonlinearSolveOptions, NLsolveOptions, CompositeSolverOptions, and ChainSolverOptions.
 """
 function solve(sensitivity_parameters, const_cache; initial_guess=nothing)
     return solve(
@@ -36,6 +37,9 @@ Converge the residual, solving for the state variables that do so.
 
 # Returns
 - `converged_states::Vector{Float}` : the states for which the residual has converged.
+
+# Extra Information
+Solver options are  CSORSolverOptions, ModCSORSolverOptions, SpeedMappingOptions, FixedPointOptions, MinpackOptions, SIAMFANLEOptions, NonlinearSolveOptions, NLsolveOptions, CompositeSolverOptions, and ChainSolverOptions.
 """
 function solve(
     solver_options::CSORSolverOptions,
@@ -537,7 +541,7 @@ function solve(
     Note that F is defined in the same scope as this sub-function.
     Also note that the input structure of this function is that required by SIAMFANLEquations.jl
 
-    # Arguments:
+    # Arguments
     - `v::Vector` : the vector v by which F'(x) is multiplied
     - `r::Vector` : unused, but requried by SIAMFANLEquations.jl, it is the storage vector used for an in-place verson of F
     - `x::Vector` : the vector x at which F is evaluated

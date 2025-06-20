@@ -88,6 +88,31 @@ function process(
     )
 end
 
+"""
+    process(
+            solver_options::CSORSolverOptions,
+            solve_parameter_cache_vector,
+            solve_parameter_cache_dims,
+            A_bb_LU,
+            solve_container_caching,
+            idmaps,
+            options,
+        )
+
+Runs the full initialization and nonlinear solve sequence for the CSOR aerodynamic solver.
+
+# Arguments
+- `solver_options::CSORSolverOptions`: Configuration parameters for the CSOR solver.
+- `solve_parameter_cache_vector`: Vector containing cached solve parameters.
+- `solve_parameter_cache_dims`: Dimensions or metadata describing the cache vector structure.
+- `A_bb_LU`: LU factorization of the body-body influence matrix for efficient linear solves.
+- `solve_container_caching`: Additional cached containers needed for the solver.
+- `idmaps`: Named tuple of index maps for panel and wake bookkeeping.
+- `options`: User options including verbosity flags and multipoint indexing.
+
+# Returns
+- `converged_states::Vector{Float}` : the states for which the residual has converged
+"""
 function process(
     solver_options::CSORSolverOptions,
     solve_parameter_cache_vector,
@@ -155,6 +180,39 @@ function process(
     return solve(solver_options, solve_parameter_cache_vector, const_cache)
 end
 
+"""
+    process(
+        solver_options::ModCSORSolverOptions,
+        solve_parameter_cache_vector,
+        solve_parameter_cache_dims,
+        A_bb_LU,
+        solve_container_caching,
+        idmaps,
+        options,
+    )
+
+Runs the full initialization and nonlinear solve sequence for the modified CSOR aerodynamic solver
+using the Implicit Automatic Differentiation (ImplicitAD) framework.
+
+# Description
+This function performs these steps:
+1. Extracts initial flow state variables and parameters from a cached input vector.
+2. Initializes vortex and source strength states for rotor and wake panels.
+3. Combines solver constants, options, and cached data into a single tuple for the solver.
+4. Invokes the nonlinear solver using the ImplicitAD framework with a modified CSOR residual.
+
+# Arguments
+- `solver_options::ModCSORSolverOptions`: Configuration parameters for the modified CSOR solver.
+- `solve_parameter_cache_vector`: Vector holding cached solver parameters and states.
+- `solve_parameter_cache_dims`: Metadata describing the structure of the cached vector.
+- `A_bb_LU`: LU factorization of the body-body influence matrix for efficient solves.
+- `solve_container_caching`: Additional cached containers required by the solver.
+- `idmaps`: Named tuple of index maps for panel and wake bookkeeping.
+- `options`: User-defined options controlling verbosity, multipoint indexing, and warning behavior.
+
+# Returns
+- `converged_states::Vector{Float}` : The output of a call to `ImplicitAD.implicit`
+"""
 function process(
     solver_options::ModCSORSolverOptions,
     solve_parameter_cache_vector,
