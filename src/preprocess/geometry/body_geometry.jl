@@ -25,6 +25,10 @@ Reinterpolate duct and center_body coordinates in order to make them compatible 
 
 # Keyword Arguments
 - `finterp::Function=FLOWMath.akima` : interpolation method
+
+# Returns
+- `rp_duct_coordinates` : The re-paneled duct coordinates matrix `[z; r]`.
+- `rp_center_body_coordinates` : The re-paneled center body coordinates matrix `[z; r]`.
 """
 function reinterpolate_bodies!(
     rp_duct_coordinates,
@@ -154,6 +158,9 @@ Note that this function is called AFTER the repanling function is called, such t
 - `Rtip::Vector{Float}` : Tip radii for the rotor(s)
 - `rotor_axial_position::Vector{Float}` : axial position(s) of the rotor(s)
 - `tip_gap::Vector{Float}` : tip gap for the fore-most rotor (MUST BE ZERO for now)
+
+# Returns
+- `rp_duct_coordinates` : The re-paneled duct coordinates matrix `[z; r]`.
 """
 function place_duct!(rp_duct_coordinates, Rtip, rotor_axial_position, tip_gap)
 

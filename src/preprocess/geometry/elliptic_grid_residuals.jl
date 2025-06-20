@@ -3,11 +3,11 @@
 
 Three-point, backward difference scheme on a non-uniform grid.
 
-# Arguments:
+# Arguments
 - `f::AbstractMatrix{Float}` : f(x) for x_{i-2}:x_{i}
 - `x::AbstractVector{Float}` : [x_{i-2}:x_{i}]
 
-# Returns:
+# Returns
 - `f'(x)::Float` : ∂f/∂x at x_i
 """
 function backward_stencil_1(f, x)
@@ -38,11 +38,11 @@ end
 
 Three-point, central difference scheme on a non-uniform grid, for first derivatives.
 
-# Arguments:
+# Arguments
 - `f::AbstractMatrix{Float}` : f(x) for x_{i-1}:x_{i+1}
 - `x::AbstractVector{Float}` : [x_{i-1}:x_{i+1}]
 
-# Returns:
+# Returns
 - `f'(x)::Float` : ∂f/∂x at x_i
 """
 function center_stencil_1(f, x)
@@ -59,11 +59,11 @@ end
 
 Three-point, central difference scheme on a non-uniform grid, for second derivatives.
 
-# Arguments:
+# Arguments
 - `f::AbstractMatrix{Float}` : f(x) for x_{i-1}:x_{i+1}
 - `x::AbstractVector{Float}` : [x_{i-1}:x_{i+1}]
 
-# Returns:
+# Returns
 - `f''(x)::Float` : ∂^2f/∂x^2 at x_i
 """
 function center_stencil_2(f, x)
@@ -88,12 +88,12 @@ end
 Three-point, central difference scheme on a non-uniform grid, for mixed derivatives.
 Uses a consecutive first derivative central difference (`center_stencil_1`) in the x-dimension then another centeral difference of the f'(x) values in the y-dimension.
 
-# Arguments:
+# Arguments
 - `f::AbstractMatrix{Float}` : f(x,y) for x_{i-1}:x_{i+1} and y_{i-1}:y_{i+1}
 - `x::AbstractVector{Float}` : [x_{i-1}:x_{i+1}]
 - `y::AbstractVector{Float}` : [y_{i-1}:y_{i+1}]
 
-# Returns:
+# Returns
 - `f'(x,y)::Float` : ∂^2f/∂x∂y at x_ij
 """
 function center_stencil_2_mixed(f, x, y)
@@ -240,6 +240,31 @@ function elliptic_grid_residual!(r, y, x, p)
     return r
 end
 
+"""
+    elliptic_grid_residual_dfdc!(r, y, x, p)
+
+Computes the residuals of an elliptic grid equation (typically used in grid generation or adaptation)
+and stores them in `r`. The residuals measure the deviation from satisfying the elliptic PDE at each grid point.
+
+This function works in-place, modifying `r`.
+
+# Arguments
+- `r::Vector{Float}` : Output residual vector (flattened); modified in-place.
+- `y::Vector{Float}` : Flattened state variables representing the interior grid point positions to solve for.
+- `x` : Cached grid parameters and precomputed quantities needed for residual evaluation.
+- `p::NamedTuple` : Parameters containing at least:
+  - `x_caching` : Grid caching info (e.g., dimensions, grid parameters).
+  - `itshape` : Shape tuple for reshaping flattened vectors into grid arrays.
+
+# Returns
+- `r` : The input residual vector `r`, populated with computed residuals.
+
+# Notes
+- Assumes the grid is structured and 2D (streamwise `ξ` and radial `η` coordinates).
+- Applies finite-difference approximations for first and second derivatives on irregular grids.
+- Handles outlet boundary residuals and interior grid points separately.
+- Designed for use in iterative solvers (e.g., Newton-Raphson) where residuals drive grid updates.
+"""
 function elliptic_grid_residual_dfdc!(r, y, x, p)
 
     # - extract parameters - #
@@ -451,17 +476,20 @@ end
 
 Solve for elliptic grid using a non-SLOR approach that is compatible with ImplicitAD
 
-# Arguments:
+# Arguments
 - `wake_grid::Array{Float}` : initial guess for grid points.
 
-# Keyword Arguments:
+# Keyword Arguments
  - `algorithm::Symbol=:trust_region` : NLsolve algorithm type
  - `autodiff::Symbol=:forward` : NLsolve derivatives option
- - `atol::Float=1e-10` : convergence tolerance, default = 1e-9
+ - `atol::Float=1e-14` : convergence tolerance, default = 1e-9
  - `iteration_limit::Int=10` : maximum number of iterations to run, default=100
  - `converged::Vector{Bool}=[false]` : convergence flag
  - `residual_value::Vector{Float}=[0.0]` : final residual value
  - `verbose::Bool=false` : flag to print verbose statements
+
+# Returns
+- `wake_grid::Array{Float}` : grid points
 """
 function solve_elliptic_grid!(
     wake_grid;
@@ -526,12 +554,15 @@ end
 
 Relax wake_grid using elliptic wake_grid solver.
 
-# Arguments:
+# Arguments
 - `wake_grid::Array{Float}` : initial guess for grid points.
 
-# Keyword Arguments:
- - `iteration_limit::Int` : maximum number of iterations to run, default=100
- - `atol::Float` : convergence tolerance, default = 1e-9
+# Keyword Arguments
+- `iteration_limit::Int` : maximum number of iterations to run, default=100
+- `atol::Float` : convergence tolerance, default = 1e-9
+
+# Returns
+- `wake_grid::Array{Float}` : modified in-place grid points
 """
 function relax_grid!(
     wake_grid;

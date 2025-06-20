@@ -17,6 +17,11 @@ Calculate wake sheet panel node z-coordinates.
 - `wake_length::Float` : non-dimensional length of wake to extend beyond aft-most body trailing edge.
 - `num_panels::Vector{Int}` : A vector of the number of panels between each discrete point.  For example: [number of panels between the rotors; number of panels between the stator and the first trailing edge; number of panels between the trailing edges; number of panels between the last trailing edge and the end of the wake]
 - `dte_minus_cbte::Float` : indicator as to whether the duct trailing edge minus the center_body trailing edge is positive, zero, or negative.
+
+# Returns
+- `zwake::Vector{Float64}` : Vector of discretized axial coordinates (z) for the wake panel nodes.
+- `ridx::Vector{Int}` : Indices of the rotor axial positions within the discretized wake coordinates.
+- `duct_LE_info::Vector{Float64}` : Vector containing [duct leading edge axial coordinate, duct leading edge radial coordinate].
 """
 function discretize_wake(
     duct_coordinates,
@@ -359,6 +364,9 @@ Relax/Solve initial wake grid according to elliptic system of equations.
 - `silence_warnings=true::' : flag for supressing warnings
 - `tabchar::String="    "::' : string to use for tabbing over verbose statements.
 - `ntab::Int=1' : number of tabs for printing verbose statements
+
+# Returns
+Returns modified and updated wake grid array.
 """
 function relax_grid!(
     grid_solver_options::GridSolverOptions,
@@ -447,10 +455,10 @@ end
 
 Generate paneling for each wake sheet emanating from the rotor blade elements.
 
-# Arguments:
+# Arguments
 - `wake_grid::Array{Float,3}` : axial and radial locations of each wake_grid point (after relaxation/solution)
 
-# Returns:
+# Returns
 - `wake_vortex_panels::NamedTuple` : A named tuple of panel values describing the wake vortex panels
 """
 function generate_wake_panels(wake_grid)

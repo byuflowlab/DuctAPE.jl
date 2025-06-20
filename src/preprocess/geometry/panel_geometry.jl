@@ -4,20 +4,71 @@
 #                                       #
 #########################################
 """
-avoid issues with single bodies being input not as vectors
+    generate_panels(coordinates::AbstractMatrix{T}; kwargs...)
+    generate_panels(coordinates::Vector{Matrix{T}}; itcpshift=0.05, axistol=1e-15, tegaptol=10 * eps(), isbody=true, isrotor=false) where {T}
+
+Generate a `NamedTuple` containing panel geometry information for one or more bodies.
+
+You may pass either:
+- A single matrix of coordinates (`2×N` where rows are z and r), or
+- A vector of such matrices (for multi-body cases).
+
+Assumes annular (or outermost) airfoil coordinates are provided first in the `coordinates` array (used for Kutta condition tracking).
+
+# Arguments
+- `coordinates::AbstractMatrix{T}` : Coordinates of a single body (2×N, where `coordinates[1,:] = z`, `coordinates[2,:] = r`).
+- `coordinates::Vector{Matrix{T}}` : Coordinates of multiple bodies.
+
+# Keyword Arguments
+- `itcpshift::Float64 = 0.05` : Shift applied to internal control points for stability in panel influence computation.
+- `axistol::Float64 = 1e-15` : Tolerance for detecting nodes on the axis of rotation (used to avoid singularities).
+- `tegaptol::Float64 = 10 * eps()` : Tolerance for detecting gaps at trailing edges.
+- `isbody::Bool = true` : Flag indicating whether the geometry represents a body.
+- `isrotor::Bool = false` : Flag indicating whether the geometry represents a rotor (affects boundary treatment).
+
+# Returns
+A `NamedTuple` containing:
+- `controlpoint` : (2, totpanel) array of panel control point coordinates.
+- `node` : (2, totnode) array of node coordinates.
+- `nodemap` : (2, totpanel) array mapping panels to nodes.
+- `normal` : (2, totpanel) array of panel unit normals.
+- `tangent` : (2, totpanel) array of panel unit tangents.
+- `influence_length` : Vector of panel lengths.
+- `endnodes`, `endnodeidxs`, `endpanelidxs` : Data for leading/trailing edges.
+- `itcontrolpoint`, `itnormal`, `ittangent` : Internal control point geometry.
+- `tenode`, `tenormal`, `teinfluence_length`, `teadjnodeidxs`, `tendotn`, `tencrossn` : Trailing edge gap information.
+- `nbodies`, `nnode`, `npanel`, `totpanel`, `totnode` : Summary counts.
+
+# Notes
+- Coordinates should be ordered consistently (trailing edge to trailing edge or leading edge to leading edge).
+- If a single matrix is passed, it is wrapped internally as a vector of one matrix.
 """
 function generate_panels(coordinates::AbstractMatrix{TF}; kwargs...) where {TF}
     return generate_panels([coordinates]; kwargs...)
 end
 
+"""
+    generate_panels!(panels, coordinates::Vector{Matrix{T}}; kwargs...)
+
+Populates an existing `panels` NamedTuple with panel geometry data in-place.
+
+# Arguments
+- `panels` : A `NamedTuple` as returned by `generate_panels` or pre-allocated manually.
+- `coordinates::Vector{Matrix{T}}` : Vector of body coordinates (2×N each, rows z and r).
+
+# Keyword Arguments
+Same as `generate_panels`.
+
+# Returns
+- The updated `panels` NamedTuple (same object, updated in-place).
+
+# Notes
+Intended for reuse of existing storage to reduce allocations.
+"""
 function generate_panels!(panels, coordinates::AbstractMatrix{TF}; kwargs...) where {TF}
     return generate_panels!(panels, [coordinates]; kwargs...)
 end
 
-"""
-generates NamedTuple of panel geometry items from a vector of matrices of coordinates
-assumes annular airfoils are given first in coordinates array (for tracking kutta conditions)
-"""
 function generate_panels(
     coordinates::Vector{Matrix{TF}};
     itcpshift=0.05,
@@ -115,6 +166,24 @@ function generate_panels(
     )
 end
 
+"""
+    generate_panels!(panels, coordinates::AbstractVector{TF}; kwargs...)
+
+Populates an existing `panels` NamedTuple with panel geometry data in-place.
+
+# Arguments
+- `panels` : A `NamedTuple` as returned by `generate_panels` or pre-allocated manually.
+- `coordinates::AbstractVector{TF}}` : Vector of body coordinates (2×N each, rows z and r).
+
+# Keyword Arguments
+Same as `generate_panels`.
+
+# Returns
+- The updated `panels` NamedTuple (same object, updated in-place).
+
+# Notes
+Intended for reuse of existing storage to reduce allocations.
+"""
 function generate_panels!(
     panels,
     coordinates::AbstractVector{TF};
@@ -271,6 +340,39 @@ function generate_panels!(
     return panels
 end
 
+"""
+    def_it_panel!(
+        itcontrolpoint,
+        itnormal,
+        ittangent,
+        nbodies,
+        node,
+        endnodeidxs,
+        influence_length,
+        itcpshift,
+        axistol,
+    )
+
+Compute internal control point, normal, and tangent vectors for each body in a multi-body panel system.
+
+The internal control point is placed between the body's leading and trailing edge nodes,
+offset slightly along the net tangent vector for stability in influence computations.
+
+# Arguments
+- `itcontrolpoint::AbstractMatrix` : (2, nbodies) array to hold internal control point coordinates (z, r).
+- `itnormal::AbstractMatrix` : (2, nbodies) array to hold internal panel normal unit vectors.
+- `ittangent::AbstractMatrix` : (2, nbodies) array to hold internal panel tangent unit vectors.
+- `nbodies::AbstractArray{<:Integer}` : single-element array holding the number of bodies.
+- `node::AbstractMatrix` : (2, totnode) array of node coordinates (z, r).
+- `endnodeidxs::AbstractMatrix{<:Integer}` : (2, nbodies) array of node indices at body ends.
+- `influence_length::AbstractVector` : panel length for each panel in the system.
+- `itcpshift::Real` : control point offset factor along net tangent direction (default ~0.05).
+- `axistol::Real` : tolerance for detecting proximity to the axis (r = 0).
+
+# Notes
+- Ensures internal control point does not fall exactly on the axis (assigns small r > 0 if needed).
+- Normal and tangent are based on net TE-LE tangent difference.
+"""
 function def_it_panel!(
     itcontrolpoint,
     itnormal,
@@ -315,6 +417,47 @@ function def_it_panel!(
     end
 end
 
+"""
+    def_te_panel!(
+        tenode,
+        tenormal,
+        teinfluence_length,
+        teadjnodeidxs,
+        tendotn,
+        tencrossn,
+        nbodies,
+        normal,
+        tangent,
+        endpanelidxs,
+        endnodes,
+        endnodeidxs,
+    )
+
+Define the trailing edge panel for each body in a multi-body panel system, 
+including geometry, normal, length, and adjacent panel relationships.
+
+Distinguishes between:
+- Duct-like bodies (where TE tangents have opposing axial directions)
+- Solid bodies (where TE closes to axis)
+
+# Arguments
+- `tenode::AbstractArray` : (nbodies, 2, 2) array of TE panel node coordinates (body, node, z/r).
+- `tenormal::AbstractMatrix` : (2, nbodies) array of TE panel normal vectors.
+- `teinfluence_length::AbstractVector` : TE panel lengths.
+- `teadjnodeidxs::AbstractMatrix{<:Integer}` : (2, nbodies) node indices adjacent to TE panel nodes.
+- `tendotn::AbstractMatrix` : (2, nbodies) dot product between TE normal and adjacent normals.
+- `tencrossn::AbstractMatrix` : (2, nbodies) magnitude of cross product between TE normal and adjacent normals.
+- `nbodies::AbstractArray{<:Integer}` : single-element array holding the number of bodies.
+- `normal::AbstractMatrix` : (2, totpanel) array of panel normal vectors.
+- `tangent::AbstractMatrix` : (2, totpanel) array of panel tangent vectors.
+- `endpanelidxs::AbstractMatrix{<:Integer}` : (2, nbodies) panel indices at body ends.
+- `endnodes::AbstractArray` : (nbodies, 2, 2) array of end node coordinates.
+- `endnodeidxs::AbstractMatrix{<:Integer}` : (2, nbodies) node indices at body ends.
+
+# Notes
+- For ducts, connects TE nodes and assigns appropriate normals.
+- For solid bodies, closes TE panel to the axis and sets axial normal.
+"""
 function def_te_panel!(
     tenode,
     tenormal,
@@ -386,11 +529,11 @@ end
 
 Calculate the vector, \$\\mathbf{r}\$, and distance, \$|r|\$, from the node to the evaluation point
 
-# Arguments:
+# Arguments
  - `node::Array{Float}` : [x y] position of node
  - `point::Array{Float}` : [x y] position of point.
 
-# Returns:
+# Returns
  - `r::Vector{Float}` : vector from node to evaluation point
  - `rmag::Float` : length of panel between node and evaluation point
 """
@@ -420,10 +563,9 @@ end
 
 Get unit normal to panel.
 
-# Arguments:
+# Arguments
  - `d::Vector{Float}` : vector from node1 to node2.
  - `dmag::Float` : panel length
-
 """
 function get_panel_normal(d, dmag)
 
@@ -441,10 +583,9 @@ end
 
 Get unit tangent to panel.
 
-# Arguments:
+# Arguments
  - `d::Vector{Float}` : vector from node1 to node2.
  - `dmag::Float` : panel length
-
 """
 function get_panel_tangent(d, dmag)
     return (dmag == 0.0) ? [0.0; 0.0] : (d / dmag)
