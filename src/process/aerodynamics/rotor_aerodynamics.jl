@@ -1,12 +1,34 @@
 """
-    calculate_induced_velocities_on_rotors(blade_elements, Gamr, vz_rb, vr_rb, gamb,
-        vz_rw, vr_rw, gamw)
+    calculate_induced_velocities_on_rotors(
+        Gamr, gamw, sigr, gamb, vz_rw, vz_rr, vz_rb, B, rotor_panel_centers;
+        post=false
+    ) -> Tuple
 
-Calculate axial, radial, and tangential induced velocity on the rotors.
+Wrapper function that calculates the induced axial and tangential velocities on each rotor using precomputed velocity influence matrices and circulation strengths.
 
-`Gamr::Matrix{Float}` : rotor circulation values (must be a matrix, even if only 1 rotor is being used). Size is number of blade elements by number of rotors.
-`vz_rw::Matrix{Matrix{Float}}` : unit axial induced velocities of wakes on rotors. Must be a matrix of size number of rotors by number of wakes made up of matrices of size number of blade elements by number of wake "panels."
-`gamw::Matrix{Float}` : wake circulation values (must be a matrix). Size is number of wake sheets by number of "panels" per sheet.
+# Arguments
+- `Gamr::Matrix{Float}` : Circulation strengths on the rotor blades. Dimensions: (number of blade elements, number of rotors).
+- `gamw::Matrix{Float}` : Wake circulation strengths. Dimensions: (number of wake sheets, panels per sheet).
+- `sigr::Matrix{Float}` : Rotor vortex strengths used for self-induced and mutual induction between rotors.
+- `gamb::Vector{Float}` or `Nothing` : Body vortex strengths (set to `nothing` if not used).
+- `vz_rw::Matrix{Matrix{Float}}` : Axial influence of wakes on the rotors. Matrix of matrices, indexed by (rotor, wake), each with dimensions (blade elements, wake panels).
+- `vz_rr::Matrix{Float}` : Axial influence of rotor vortices on the rotors. Dimensions: ((elements × rotors), (elements+1 × rotors)).
+- `vz_rb::Matrix{Float}` : Axial influence of body vortices on the rotors. Dimensions: ((elements × rotors), number of body panels).
+- `B::Vector{Float}` : Number of blades per rotor.
+- `rotor_panel_centers::Matrix{Float}` : Radial positions of the rotor panels. Dimensions: (blade elements, number of rotors).
+
+# Keyword Arguments
+- `post::Bool=false` : If true, returns additional decomposed axial components (body-induced, wake-induced, rotor-induced).
+
+# Returns
+- If `post=false`:
+  - `vz_rotor::Matrix{Float}` : Axial induced velocities on the rotors.
+  - `vtheta_rotor::Matrix{Float}` : Tangential induced velocities on the rotors.
+- If `post=true`:
+  - Additionally returns:
+    - `vzb_rotor::Matrix{Float}` : Axial velocity induced by the body.
+    - `vzw_rotor::Matrix{Float}` : Axial velocity induced by the wake.
+    - `vzr_rotor::Matrix{Float}` : Axial velocity induced by the rotors.
 """
 function calculate_induced_velocities_on_rotors(
     Gamr, gamw, sigr, gamb, vz_rw, vz_rr, vz_rb, B, rotor_panel_centers; post=false
@@ -35,7 +57,23 @@ function calculate_induced_velocities_on_rotors(
 end
 
 """
-- `ivr:NamedTuple` : induced velocities on rotor
+    calculate_induced_velocities_on_rotors!(
+        vz_rotor,
+        vtheta_rotor,
+        Gamr,
+        gamw,
+        sigr,
+        gamb,
+        vz_rw,
+        vz_rr,
+        vz_rb,
+        B,
+        rotor_panel_centers;
+        post=false,
+    )
+
+In place version of calculate_induced_velocities_on_rotors().
+
 """
 function calculate_induced_velocities_on_rotors!(
     vz_rotor,
@@ -122,6 +160,19 @@ function calculate_induced_velocities_on_rotors!(
 end
 
 """
+    reframe_rotor_velocities!(
+        Cz_rotor,
+        Ctheta_rotor,
+        Cmag_rotor,
+        vz_rotor,
+        vtheta_rotor,
+        Vinf,
+        Omega,
+        rotor_panel_centers,
+    )
+
+In place version of reframe_rotor_velocities.
+
 """
 function reframe_rotor_velocities!(
     Cz_rotor,
@@ -151,6 +202,16 @@ function reframe_rotor_velocities!(
 end
 
 """
+    calculate_rotor_circulation_strengths!(
+        Gamr,
+        Wmag_rotor,
+        chords,
+        cls,
+        blade_elements
+    )
+
+In place version of calculate_rotor_circulation_strengths.
+
 """
 function calculate_rotor_circulation_strengths!(
     Gamr, Wmag_rotor, chords, cls, blade_elements
@@ -173,7 +234,12 @@ function calculate_rotor_circulation_strengths!(
     return Gamr
 end
 
-# function calculate_rotor_source_strengths!(sigr, Wmag_rotor, blade_elements, rho)
+"""
+    calculate_rotor_source_strengths!(sigr, Wmag_rotor, chords, B, cd)
+    
+In place version of calculate_rotor_source_strengths.
+
+"""
 function calculate_rotor_source_strengths!(sigr, Wmag_rotor, chords, B, cd)
 
     # Loop through rotors
@@ -211,16 +277,32 @@ function calc_reynolds(chord, Wmag_rotor, rho, mu)
 end
 
 """
-    calculate_gamma_sigma(blade_elements, Vm, vtheta_rotor)
+    calculate_gamma_sigma(
+        blade_elements,
+        Wz_rotor,
+        Wtheta_rotor,
+        Wmag_rotor,
+        freestream;
+        post=false,
+        verbose=false,
+    ) -> Tuple{Matrix{Float64}, Matrix{Float64}}
 
-Calculate rotor circulation and source strengths using blade element data and inflow velocities.
+Calculate rotor bound circulation (`Gamr`) and source strengths (`sigr`) using blade element geometry and local velocity components at each rotor plane.
 
-# Arguments:
-`Vm::Matrix{Float}` : Meridional velocity (including freestream and induced velocity) at rotor planes. Must be a matrix of size number of blade elements by number of rotors.
+# Arguments
+- `blade_elements::Vector{BladeElement}` : Blade geometry at each radial station. Each element should contain fields such as `chords`, `twists`, and aerodynamic coefficients.
+- `Wz_rotor::Matrix{Float}` : Axial velocity at rotor panels. Dimensions: (number of blade elements, number of rotors).
+- `Wtheta_rotor::Matrix{Float}` : Tangential velocity at rotor panels. Dimensions: (number of blade elements, number of rotors).
+- `Wmag_rotor::Matrix{Float}` : Total velocity magnitude at rotor panels. Dimensions: (number of blade elements, number of rotors).
+- `freestream::NamedTuple` : Freestream conditions (typically includes axial/tangential inflow and rotational speed).
 
-# Returns:
-`Gamr::Matrix{Float}` : Rotor circulations [num blade_elements x num rotors]
-`sigr::Matrix{Float}` : Rotor panel source strengths [num blade_elements x num rotors]
+# Keyword Arguments
+- `post::Bool=false` : If true, enables additional output or diagnostics (in lower-level call).
+- `verbose::Bool=false` : If true, prints additional diagnostic output (in lower-level call).
+
+# Returns
+- `Gamr::Matrix{Float}` : Rotor bound circulation distribution. Dimensions: (blade elements × rotors).
+- `sigr::Matrix{Float}` : Rotor panel source strength distribution. Dimensions: ((blade elements + 1) × rotors).
 """
 function calculate_gamma_sigma(
     blade_elements,
@@ -262,6 +344,24 @@ function calculate_gamma_sigma(
 end
 
 """
+    calculate_blade_element_coefficients!(
+        cl,
+        cd,
+        beta1,
+        alpha,
+        reynolds,
+        mach,
+        blade_elements,
+        Wz_rotor,
+        Wtheta_rtor,
+        Wmag_rotor,
+        operating_point;
+        post=false,
+        verbose=false
+    )
+
+In place version of calculate_blade_element_coefficients.
+
 """
 function calculate_blade_element_coefficients!(
     cl,
@@ -356,6 +456,52 @@ function calculate_blade_element_coefficients!(
     end
 end
 
+"""
+    lookup_clcd(
+        inner_airfoil,
+        outer_airfoil,
+        inner_fraction,
+        chord,
+        B,
+        Wmag,
+        solidity,
+        stagger,
+        alpha,
+        inflow,
+        reynolds,
+        mach,
+        asound;
+        verbose=false,
+        is_stator=0,
+    ) -> Tuple{Float64, Float64}
+
+Interpolates lift (`cl`) and drag (`cd`) coefficients between two airfoil sections for a given operating condition.
+
+This function supports a variety of airfoil model types including DFDC, DTCascade, AFType, ADM, and ExternalAirfoil. It queries lift and drag data from the appropriate backend for both the inner and outer sections, then linearly interpolates between them using `inner_fraction`.
+
+# Arguments
+- `inner_airfoil` : Airfoil model at the inner radial location. Must be one of the supported types.
+- `outer_airfoil` : Airfoil model at the outer radial location.
+- `inner_fraction::Float64` : Fractional location of the current element between inner (0) and outer (1).
+- `chord::Float64` : Chord length of the blade element.
+- `B::Int` : Number of blades (used in ADM formulation).
+- `Wmag::Float64` : Magnitude of relative velocity at the blade element.
+- `solidity::Float64` : Blade solidity at the section (chord / spacing).
+- `stagger::Float64` : Stagger angle in radians or degrees (depending on model convention).
+- `alpha::Float64` : Angle of attack.
+- `inflow` : NamedTuple or Dict of local inflow quantities (used in some models like DTCascade).
+- `reynolds::Float64` : Reynolds number based on chord.
+- `mach::Float64` : Mach number.
+- `asound::Float64` : Speed of sound.
+
+# Keyword Arguments
+- `verbose::Bool=false` : If true, enables detailed output from submodel evaluations.
+- `is_stator::Int=0` : Indicator flag for stator vs. rotor context (passed to airfoil models that support it).
+
+# Returns
+- `cl::Float64` : Interpolated lift coefficient.
+- `cd::Float64` : Interpolated drag coefficient.
+"""
 function lookup_clcd(
     inner_airfoil,
     outer_airfoil,
@@ -466,6 +612,18 @@ function cdfromsigr(sigr, Wmag, c, B)
 end
 
 """
+    calculate_inflow_angles(Cz_rotor, Ctheta_rotor, stagger) -> Tuple{Matrix{Float64}, Matrix{Float64}}
+
+Compute the inflow angle (`β₁`) and angle of attack (`α`) at each rotor panel.
+
+# Arguments
+- `Cz_rotor::Matrix{Float}` : Axial (meridional) velocity component at the rotor, per blade element and rotor.
+- `Ctheta_rotor::Matrix{Float}` : Tangential velocity component at the rotor, per blade element and rotor.
+- `stagger::Matrix{Float}` or `Float` : Stagger angle of the blade (can be scalar or matrix matching the velocity dimensions).
+
+# Returns
+- `beta1::Matrix{Float}` : Inflow angle relative to the axial direction, computed as `atan(-Ctheta / Cz)`.
+- `alpha::Matrix{Float}` : Angle of attack, computed as `beta1 - stagger`.
 """
 function calculate_inflow_angles(Cz_rotor, Ctheta_rotor, stagger)
     #inflow angle
@@ -484,9 +642,19 @@ end
 ######################################################################
 
 """
-    calculate_enthalpy_jumps(Gamr, Omega, num_blades)
+    calculate_enthalpy_jumps(Gamr, Omega, num_blades) -> Matrix{Float64}
 
-Calculate enthalpy jump across each blade.
+Compute the cumulative enthalpy jump across each rotor disk due to bound circulation.
+
+This function wraps the in-place version and returns the enthalpy jump matrix.
+
+# Arguments
+- `Gamr::Matrix{Float}` : Bound circulation on each blade element. Dimensions: (number of blade elements, number of rotors).
+- `Omega::Vector{Float}` : Rotational speed (rad/s) for each rotor.
+- `num_blades::Vector{Int}` : Number of blades for each rotor.
+
+# Returns
+- `H_tilde::Matrix{Float}` : Cumulative enthalpy jump for each blade element and rotor.
 """
 function calculate_enthalpy_jumps(Gamr, Omega, num_blades)
 
@@ -498,6 +666,11 @@ function calculate_enthalpy_jumps(Gamr, Omega, num_blades)
     return H_tilde
 end
 
+"""
+    calculate_enthalpy_jumps!(H_tilde, Gamr, Omega, num_blades)
+
+In place version of calculate_enthalpy_jumps.
+"""
 function calculate_enthalpy_jumps!(H_tilde, Gamr, Omega, num_blades)
 
     # number of blade elements (or radial positions) and rotors
@@ -524,9 +697,18 @@ function calculate_enthalpy_jumps!(H_tilde, Gamr, Omega, num_blades)
 end
 
 """
-    calculate_net_circulation(Gamr, num_blades)
+    calculate_net_circulation(Gamr, num_blades) -> Matrix{Float64}
 
-Calculate net circulation from upstream rotors.
+Compute the cumulative net circulation from all upstream rotors at each blade element.
+
+Wraps the in-place version `calculate_net_circulation!` and returns the result.
+
+# Arguments
+- `Gamr::Matrix{Float}` : Bound circulation at each blade element. Dimensions: (number of blade elements, number of rotors).
+- `num_blades::Vector{Int}` : Number of blades for each rotor.
+
+# Returns
+- `Gamma_tilde::Matrix{Float}` : Net circulation at each blade element and rotor, accounting for all upstream rotors.
 """
 function calculate_net_circulation(Gamr, num_blades)
 
@@ -538,6 +720,11 @@ function calculate_net_circulation(Gamr, num_blades)
     return Gamma_tilde
 end
 
+"""
+    calculate_net_circulation!(Gamma_tilde, Gamr, num_blades)
+
+In place version of calculate_net_circulation.
+"""
 function calculate_net_circulation!(Gamma_tilde, Gamr, num_blades)
 
     # number of blade elements (or radial positions) and rotors

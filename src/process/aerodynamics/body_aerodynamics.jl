@@ -1,8 +1,29 @@
 """
-    calculate_body_strengths_residual(gamb, A_bb_LU, b_bf, vz_bw, vr_bw, gamw)
+    calculate_body_vortex_strengths!(
+        gamb, A_bb_LU, b_bf, gamw, A_bw, A_pw, sigr, A_br, A_pr, A_bb, rhs; post=false
+    ) -> gamb
 
-Calculate body vortex strengths
-kid is kutta indices, where kid[1] is the row/column to keep and kid[2] is the row/column to subtract from kid[1] and then delete (1 is the first duct panel, and 2 is the Nth duct panel)
+Computes the bound vortex strengths (`gamb`) on the body panels by assembling and solving
+a linear system that accounts for contributions from the freestream, wake vortex sheets,
+and rotor source panels.
+
+# Arguments
+- `gamb`: Output vector where the solved body vortex strengths will be stored.
+- `A_bb_LU`: LU factorization of the body-body influence matrix `A_bb` for efficient solving.
+- `b_bf`: Right-hand-side vector contribution from the freestream.
+- `gamw`: Wake vortex strengths.
+- `A_bw`: Influence matrix of the wake vortex sheet on the body.
+- `A_pw`: Influence matrix of the wake vortex sheet on pseudo control points.
+- `sigr`: Source strengths on the rotor surfaces.
+- `A_br`: Influence matrix of the rotor source sheets on the body.
+- `A_pr`: Influence matrix of the rotor source sheets on pseudo control points.
+- `A_bb`: The full body-body influence matrix (used for ImplicitAD system tracing).
+- `rhs`: Preallocated vector for the assembled right-hand side of the system.
+- `post` (keyword, default = `false`): If `true`, stores intermediate residuals for post-processing
+  (via `RHSw` and `RHSr`, though they are not returned from this function).
+
+# Returns
+- `gamb`: The computed body vortex strengths satisfying the linear system.
 """
 function calculate_body_vortex_strengths!(
     gamb, A_bb_LU, b_bf, gamw, A_bw, A_pw, sigr, A_br, A_pr, A_bb, rhs; post=false

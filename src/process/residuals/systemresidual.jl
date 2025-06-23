@@ -184,23 +184,36 @@ end
         verbose=false,
     )
 
-Estimate velocity states.
+Estimate induced velocity states on rotor blades and wakes for aerodynamic calculations.
+
+This function updates velocity-related state containers by:
+- Computing absolute rotor velocities from induced velocities and operating conditions,
+- Calculating aerodynamic blade element coefficients (lift, drag, inflow angles),
+- Computing rotor circulation and source strengths,
+- Averaging wake velocities and estimating wake vortex strengths,
+- Solving the linear system for body vortex strengths,
+- Computing induced velocities on rotor blades and wakes.
 
 # Arguments
-- `solve_containers::NamedTuple` : cache for intermediate values in solve
-- `vz_rotor::Vector{Float}` : axial induced rotor velocity state container
-- `vtheta_rotor::Vector{Float}` : tangential induced rotor velocity state container
-- `Cm_wake::Vector{Float}` : absolute meridional wake control point velocity state container
-- `operating_point::NamedTuple` : Named tuple containing operating_point information
-- `ivr::NamedTuple` : unit induced velocities on rotor(s)
-- `ivw::NamedTuple` : unit induced velocities on wake
-- `linsys::NamedTuple` : vectors and matricies comprising the panel method linear system
-- `blade_elements::NamedTuple` : blade element geometry and airfoil polar information
-- `wakeK::Vector{Float}` : geometric constants used in caculating wake strengths
-- `idmaps::NamedTuple` : index maps used throughout solve
+- `solve_containers::NamedTuple` : Cache holding intermediate aerodynamic values (circulations, velocities, strengths, coefficients).
+- `vz_rotor::AbstractVector` : Axial induced velocity state vector on rotor blades (input).
+- `vtheta_rotor::AbstractVector` : Tangential induced velocity state vector on rotor blades (input).
+- `Cm_wake::AbstractVector` : Meridional absolute velocity at wake control points (input).
+- `operating_point::NamedTuple` : Operating condition parameters (freestream velocity, rotation rate, etc.).
+- `ivr::NamedTuple` : Unit induced velocity influence coefficients on rotor panels.
+- `ivw::NamedTuple` : Unit induced velocity influence coefficients on wake panels.
+- `linsys::NamedTuple` : Panel method linear system matrices and LU decompositions.
+- `blade_elements::NamedTuple` : Blade element geometry and airfoil polar data.
+- `wakeK::AbstractVector` : Geometric constants used for wake strength calculations.
+- `idmaps::NamedTuple` : Index mappings for data structures within the solver.
 
 # Keyword Arguments
-- `verbose::Bool=false` : flag for verbose print statements
+- `verbose::Bool=false` : If true, print detailed solver diagnostics.
+
+# Returns
+- `vz_est::Vector{Float}` : Estimated axial induced velocities on rotor blades.
+- `vtheta_est::Vector{Float}` : Estimated tangential induced velocities on rotor blades.
+- `Cm_est::Vector{Float}` : Estimated absolute meridional velocities at wake control points.
 """
 function estimate_states!(
     solve_containers,

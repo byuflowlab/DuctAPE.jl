@@ -7,20 +7,33 @@
         convergence_tolerance=1e-10,
         iteration_limit=500,
         relaxation_parameters=(; nrf=0.4, bt1=0.2, bt2=0.6, pf1=0.4, pf2=0.5, btw=0.6, pfw=1.2),
+        verbose=false,
     )
 
-Modified DFDC-like CSOR solver that updates all states before relaxing Gamr and gamw.
+Modified DFDC-style Concurrent Successive Over-Relaxation (CSOR) solver that updates all state variables before relaxing circulation states (`Gamr` and `gamw`).
 
-# Arguments:
-- `r_fun!::function handle` : the residual function for the solver to use
-- `initial_states::Vector{Float}` : the inital guess for the states
-- `B::Vector{Float}` : number of blades on each rotor (used in state relaxation)
-- `state_dims::NamedTuple` : dimensions of the states (used in state relaxation)
+# Arguments
+- `r_fun!::Function` : Residual function to compute the current residual vector given the current state.
+- `states::AbstractVector` : Initial guess and current state vector of the solver.
+- `B::AbstractVector` : Number of blades on each rotor, used for circulation relaxation scaling.
+- `state_dims::NamedTuple` : Dimensions and indexing information for the state variables, used in update and relaxation routines.
 
 # Keyword Arguments
-- `convergence_tolerance::type=1e-10` : absolute convergence tolerance
-- `iteration_limit::type=500` : maximum number of iterations
-- `relaxation_parameters::type=(; nrf=0.4, bt1=0.2, bt2=0.6, pf1=0.4, pf2=0.5, btw=0.6, pfw=1.2)` : parameters used in state relaxation
+- `convergence_tolerance::Real=1e-10` : Absolute tolerance for convergence of the residual norm.
+- `iteration_limit::Int=500` : Maximum number of iterations before stopping.
+- `relaxation_parameters::NamedTuple` : Named tuple containing relaxation parameters:
+    - `nrf` : nominal relaxation factor
+    - `bt1`, `bt2` : backtrack factors for relaxation
+    - `pf1`, `pf2` : press forward factors for relaxation
+    - `btw`, `pfw` : relaxation factors specific to wake circulation updates
+- `verbose::Bool=false` : If true, prints iteration progress and residual norms.
+
+# Returns
+A named tuple with fields:
+- `y` : The final converged state vector (modified in place).
+- `converged` : Boolean indicating whether convergence was achieved.
+- `total_iterations` : Number of iterations performed.
+- `residual` : Final maximum absolute residual norm.
 """
 function mod_COR_solver(
     r_fun!,
@@ -85,23 +98,25 @@ end
         bt2=0.6,
         pf1=0.4,
         pf2=0.5,
-        test=false,
     )
 
-Apply relaxed step to Gamr.
+Apply relaxed update step to rotor circulation strengths `Gamr` in place.
 
 # Arguments
-- `Gamr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
-- `B::Vector{Float}` : number of blades on each rotor
-- `r_Gamr_current::Array{Float}` : Array of current iteration's differences in circulation values
-- `r_Gamr_previous::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
+- `Gamr::AbstractMatrix{<:Real}` : Rotor circulation strengths array (rows = blade elements, columns = rotors), updated in place.
+- `r_Gamr_current::AbstractMatrix{<:Real}` : Current iteration circulation differences (Gamr estimate - Gamr current).
+- `r_Gamr_previous::AbstractMatrix{<:Real}` : Previous iteration circulation differences, updated in place.
+- `B::AbstractVector{<:Real}` : Number of blades on each rotor.
 
-# Keyword Arguments:
-- `nrf::Float=0.4` : nominal relaxation factor
-- `bt1::Float=0.2` : backtrack factor 1
-- `bt2::Float=0.6` : backtrack factor 2
-- `pf1::Float=0.4` : press forward factor 1
-- `pf2::Float=0.5` : press forward factor 2
+# Keyword Arguments
+- `nrf::Real=0.4` : Nominal relaxation factor.
+- `bt1::Real=0.2` : Backtrack factor for sign changes on circulation.
+- `bt2::Real=0.6` : Secondary backtrack factor applied per blade element.
+- `pf1::Real=0.4` : Press forward factor for circulation updates.
+- `pf2::Real=0.5` : Secondary press forward factor applied per blade element.
+
+# Returns
+- `Gamr` : Updated `Gamr` array (in place).
 """
 function relax_Gamr_mod!(
     Gamr, B, r_Gamr_current, r_Gamr_previous; nrf=0.4, bt1=0.2, bt2=0.6, pf1=0.4, pf2=0.5
@@ -198,6 +213,9 @@ Apply relaxed step to gamw.
 - `bt2::Float=0.6` : backtrack factor 2
 - `pf1::Float=0.4` : press forward factor 1
 - `pf2::Float=0.5` : press forward factor 2
+
+# Returns
+- `gamw` : Updated `gamw` array (in place).
 """
 function relax_gamw_mod!(gamw, r_gamw_current, r_gamw_previous; nrf=0.4, btw=0.6, pfw=1.2)
 
@@ -230,7 +248,9 @@ Update states using DFDC-like relaxation methods.
 - `B::Vector{Float}` : number of blades for each rotor
 - `relaxation_parameters::NamedTuple` : relaxation parameters
 - `state_dims::NamedTuple` : dimensions of the state variables
-- `solver_options::SolverOptionsType` : used for dispatch
+
+# Returns
+- `states::Vector{Float}` : updates states vector in place.
 """
 function update_states!(states, r_current, r_previous, B, relaxation_parameters, state_dims)
 

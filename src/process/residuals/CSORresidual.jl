@@ -1,16 +1,31 @@
 """
-    CSOR_residual!(resid, state_variables, sensitivity_parameters, constants)
+    CSOR_residual!(
+        resid,
+        state_variables,
+        sensitivity_parameters,
+        constants
+    )
 
-The in-place residual used for the CSOR solve method.
+Compute the in-place residual vector for the CSOR (Coupled Surface and Rotor) solver method.
+
+This function extracts the current state variables (circulations, source strengths, wake strengths),
+updates aerodynamic states and induced velocities, and calculates the nonlinear residual used
+for iterative solution.
 
 # Arguments
-- `resid::Vector{Float}` : In-place residual.
-- `state_variables::Vector{Float}` : The state variables
-- `sensitivity_parameters::Vector{Float}` : The parameters to which the solution is sensitive.
-- `constants::NamedTuple` : Various constants required in the solve
+- `resid::Vector{Float}` : Residual vector to be updated in-place.
+- `state_variables::Vector{Float}` : Current solution state variables (e.g., circulation, source strengths, wake strengths).
+- `sensitivity_parameters::Vector{Float}` : Parameters with respect to which sensitivities or derivatives are computed.
+- `constants::NamedTuple` : Contains solver options, linear system data, geometry, and cache structures needed for evaluation.
 
 # Returns
-- `state_variables::Vector{Float}` : The state variables (modified in place)
+- `resid::Vector{Float}` : The updated residual vector (modified in place).
+
+# Notes
+- Handles type dispatch between forward-mode autodiff variables and standard Float64 state variables.
+- Uses cached memory containers to avoid repeated allocations.
+- Calls `compute_CSOR_residual!` internally to perform the full nonlinear residual evaluation.
+- Supports multipoint or multi-parameter solver setups via `multipoint_index`.
 """
 function CSOR_residual!(resid, state_variables, sensitivity_parameters, constants)
 
@@ -125,29 +140,47 @@ end
         linsys,
         blade_elements,
         wakeK,
-        idmaps;
+        idmaps,
+        multipoint_index;
         verbose=false,
     )
 
-Description
+Compute and update the residual vector for the coupled surface and rotor (CSOR) panel method solver.
+
+This function performs a full update cycle including:
+- Solving for body vortex strengths.
+- Calculating induced velocities on rotors and wakes.
+- Computing blade element aerodynamic coefficients.
+- Estimating and relaxing rotor circulation (`Gamr`) and wake strengths (`gamw`).
+- Updating rotor source strengths (`sigr`).
+- Updating the convergence residual vector.
 
 # Arguments
-- `resid::Vector{Float}` : the residual vector
-- `solver_options::SolverOptionsType` : solver options (used for convergence criteria)
-- `solve_containers::NamedTuple` : cache for intermediate solve values
-- `Gamr::type` : Blade element circulation strengths
-- `sigr::type` : Rotor source panel strengths
-- `gamw::type` : Wake vortex panel strengths
-- `operating_point::NamedTuple` : Named tuple containing operating_point information
-- `ivr::NamedTuple` : unit induced velocities on rotor(s)
-- `ivw::NamedTuple` : unit induced velocities on wake
-- `linsys::NamedTuple` : vectors and matricies comprising the panel method linear system
-- `blade_elements::NamedTuple` : blade element geometry and airfoil polar information
-- `wakeK::Vector{Float}` : geometric constants used in caculating wake strengths
-- `idmaps::NamedTuple` : index maps used throughout solve
+- `resid::Vector{Float}` : Residual vector to be updated, used in solver convergence checks.
+- `solver_options::SolverOptionsType` : Contains solver settings and relaxation parameters.
+- `solve_containers::NamedTuple` : Cache for intermediate solution variables and temporary arrays.
+- `Gamr` : Matrix of blade element circulation strengths.
+- `sigr` : Matrix of rotor source panel strengths.
+- `gamw` : Vector or matrix of wake vortex strengths.
+- `operating_point::NamedTuple` : Operating conditions (e.g., inflow velocity, rotation rate).
+- `ivr::NamedTuple` : Unit induced velocity influence coefficients on rotors.
+- `ivw::NamedTuple` : Unit induced velocity influence coefficients on wakes.
+- `linsys::NamedTuple` : Linear system matrices and vectors for panel method solution.
+- `blade_elements::NamedTuple` : Geometry and aerodynamic data of blade elements.
+- `wakeK::Vector{Float}` : Geometric constants related to wake panels.
+- `idmaps::NamedTuple` : Index maps for body, rotor, and wake panels.
+- `multipoint_index` : Indexing for multipoint or multiphase solver setups.
 
 # Keyword Arguments
-- `verbose::Bool=false` : Flag to print verbose statements
+- `verbose::Bool=false` : Enable verbose debug printing.
+
+# Returns
+- `nothing` (updates residual and related containers in place)
+
+# Notes
+- The function orchestrates a nonlinear iteration step, including relaxation of circulation and wake strengths.
+- Residual updates use the specified convergence criteria from `solver_options`.
+- Intended for use inside a nonlinear solver loop for iterative solution of the coupled rotor-wake-body system.
 """
 function compute_CSOR_residual!(
     resid,
@@ -400,22 +433,31 @@ end
         pf1=0.4,
         pf2=0.5,
         test=false,
-    )
+    ) -> Matrix{Float}
 
-Apply relaxed step to Gamr.
+Apply adaptive relaxation to rotor circulation (`Gamr`) using previous and current update directions. The method supports per-rotor scaling and convergence monitoring via `B * Gamr`.
 
 # Arguments
-- `Gamr::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
-- `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
-- `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
-- `maxBGamr::Array{Float}` : stores value of maximum B*Gamr for each rotor
-- `maxdeltaBGamr::Array{Float}` : stores value of maximum change in B*Gamr for each rotor
-- `B::Vector{Float}` : number of blades on each rotor
-- `nrf::Float=0.4` : nominal relaxation factor
-- `bt1::Float=0.2` : backtrack factor 1
-- `bt2::Float=0.6` : backtrack factor 2
-- `pf1::Float=0.4` : press forward factor 1
-- `pf2::Float=0.5` : press forward factor 2
+- `Gamr::Matrix{Float}` : Rotor circulation matrix, updated in-place. Dimensions: (blade elements × rotors).
+- `delta_prev_mat::Matrix{Float}` : Previous update differences (`ΔΓ`), updated in-place for use in the next iteration.
+- `delta_mat::Matrix{Float}` : Current iteration's update to circulation values.
+- `maxBGamr::Vector{Float}` : Output vector storing the maximum value of `B * Gamr` for each rotor (used for normalization).
+- `maxdeltaBGamr::Vector{Float}` : Output vector storing the maximum change in `B * Gamr` for convergence monitoring.
+- `B::Vector{Float}` : Number of blades per rotor.
+
+# Keyword Arguments
+- `nrf::Float=0.4` : Nominal relaxation factor (base scaling).
+- `bt1::Float=0.2` : Backtrack factor 1 (used to reduce step size when update direction is unstable).
+- `bt2::Float=0.6` : Backtrack factor 2 (used to reduce elementwise update if signs differ).
+- `pf1::Float=0.4` : Press-forward factor 1 (used when update direction is stable).
+- `pf2::Float=0.5` : Press-forward factor 2 (elementwise enhancement if direction remains consistent).
+- `test::Bool=false` : If true, returns additional diagnostic values (`bladeomega`, `omega`).
+
+# Returns
+- If `test=false` (default): returns updated `Gamr`.
+- If `test=true`: returns a tuple `(Gamr, bladeomega, omega)`, where:
+  - `bladeomega::Vector{Float}` : Relaxation factor used per rotor.
+  - `omega::Matrix{Float}` : Relaxation factor used per blade element.
 """
 function relax_Gamr!(
     Gamr,
@@ -521,23 +563,36 @@ end
 
 """
     relax_gamw!(
-        gamw, delta_prev, delta, maxdeltagamw; nrf=0.4, btw=0.6, pfw=1.2, test=false
-    )
+        gamw,
+        delta_prev,
+        delta,
+        maxdeltagamw;
+        nrf=0.4,
+        btw=0.6,
+        pfw=1.2,
+        test=false
+    ) -> Array{Float64}
 
-Apply relaxed step to gamw.
+Apply a relaxed update to the wake circulation strengths (`gamw`) using an adaptive relaxation strategy.
+
+This function modifies `gamw` in place based on the current and previous update directions to improve convergence. It optionally returns the current relaxation factor for testing or diagnostics.
 
 # Arguments
-- `gamw::Array{Float}` : Array of rotor circulations (columns = rotors, rows = blade elements), updated in place
-- `delta_prev_mat::Array{Float}` : Array of previous iteration's differences in circulation values, updated in place
-- `delta_mat::Array{Float}` : Array of current iteration's differences in circulation values
-- `maxdeltagamw::Array{Float}` : Single element array that gets updated with the new maximum change in gamw.
+- `gamw::AbstractArray{<:Real}` : Current wake circulation values, updated in place.
+- `delta_prev::AbstractArray{<:Real}` : Storage of previous update steps. Will be overwritten with the new scaled updates.
+- `delta::AbstractArray{<:Real}` : Current change in `gamw` from solver or residual.
+- `maxdeltagamw::Ref{<:Real}` : A scalar reference holding the maximum change in `gamw`, updated in-place for convergence monitoring.
 
-# Keyword Arguments:
-- `nrf::Float=0.4` : nominal relaxation factor
-- `bt1::Float=0.2` : backtrack factor 1
-- `bt2::Float=0.6` : backtrack factor 2
-- `pf1::Float=0.4` : press forward factor 1
-- `pf2::Float=0.5` : press forward factor 2
+# Keyword Arguments
+- `nrf::Float64=0.4` : Nominal relaxation factor.
+- `btw::Float64=0.6` : Backtracking multiplier (applied when update direction changes).
+- `pfw::Float64=1.2` : Press-forward multiplier (applied when update direction remains consistent).
+- `test::Bool=false` : If true, also returns the final relaxation factor used (`omega`).
+
+# Returns
+- `gamw::Array` : Updated `gamw` array (also modified in place).
+- If `test=true`, also returns:
+  - `omega::SVector{1, Float64}` : Last relaxation factor used (mainly for diagnostics).
 """
 function relax_gamw!(
     gamw, delta_prev, delta, maxdeltagamw; nrf=0.4, btw=0.6, pfw=1.2, test=false
@@ -662,6 +717,11 @@ function update_CSOR_residual_values!(
     return resid
 end
 
+"""
+    update_CSOR_residual_values!(convergence_type::Absolute, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv)
+
+In place version of update_CSOR_residual_values.
+"""
 function update_CSOR_residual_values!(
     convergence_type::Absolute, resid, maxBGamr, maxdeltaBGamr, maxdeltagamw, Vconv
 )
@@ -717,4 +777,3 @@ function check_CSOR_convergence!(
 
     return conv
 end
-

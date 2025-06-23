@@ -1,4 +1,40 @@
 """
+    calculate_induced_velocities_on_wakes(
+        vz_ww,
+        vr_ww,
+        gamw,
+        vz_wr,
+        vr_wr,
+        sigr,
+        vz_wb=nothing,
+        vr_wb=nothing,
+        gamb=nothing;
+        post=false,
+    ) -> Tuple{Matrix{Float64}, Matrix{Float64}}
+
+Compute the induced velocities on the wake panels due to contributions from wakes, rotors, and optionally bodies.
+
+# Arguments
+- `vz_ww::Matrix{Float}` : Axial influence of wakes on wakes.
+- `vr_ww::Matrix{Float}` : Radial influence of wakes on wakes.
+- `gamw::Vector{Float}` : Circulation strength for each wake panel.
+- `vz_wr::Matrix{Float}` : Axial influence of rotor vortex sheets on wakes.
+- `vr_wr::Matrix{Float}` : Radial influence of rotor vortex sheets on wakes.
+- `sigr::Matrix{Float}` : Rotor panel source strengths.
+- `vz_wb::Matrix{Float} (optional)` : Axial influence of body vortices on wakes. Defaults to `nothing`.
+- `vr_wb::Matrix{Float} (optional)` : Radial influence of body vortices on wakes. Defaults to `nothing`.
+- `gamb::Vector{Float} (optional)` : Body vortex strengths. Defaults to `nothing`.
+
+# Keyword Arguments
+- `post::Bool=false` : If true, additional diagnostic terms may be returned (from the in-place version).
+
+# Returns
+- `vz_wake::Matrix{Float}` : Total induced axial velocity on each wake panel.
+- `vr_wake::Matrix{Float}` : Total induced radial velocity on each wake panel.
+
+# Notes
+- This function initializes output matrices and wraps the in-place computation performed by `calculate_induced_velocities_on_wakes!`.
+- Dimensions must be consistent across input influence matrices and strength vectors.
 """
 function calculate_induced_velocities_on_wakes(
     vz_ww,
@@ -33,6 +69,24 @@ function calculate_induced_velocities_on_wakes(
     )
 end
 
+"""
+    calculate_induced_velocities_on_wakes!(
+        vz_wake,
+        vr_wake,
+        vz_ww,
+        vr_ww,
+        gamw,
+        vz_wr,
+        vr_wr,
+        sigr,
+        vz_wb=nothing,
+        vr_wb=nothing,
+        gamb=nothing;
+        post=false,
+    )
+
+In place version of calculate_induced_velocities_on_wakes.
+"""
 function calculate_induced_velocities_on_wakes!(
     vz_wake,
     vr_wake,
@@ -99,6 +153,11 @@ function calculate_induced_velocities_on_wakes!(
     end
 end
 
+"""
+    reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf; post=false)
+
+In place version of reframe_wake_velocities.
+"""
 function reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf; post=false)
     Cm_wake .= sqrt.((vz_wake .+ Vinf) .^ 2 .+ vr_wake .^ 2)
 
@@ -111,6 +170,9 @@ function reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf; post=false)
 end
 
 """
+    calculate_wake_velocities!(Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb, ivw, Vinf)
+
+In place version of calculate_wake_velocities.
 """
 function calculate_wake_velocities!(Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb, ivw, Vinf)
     # - Get induced velocities on wake - #
@@ -132,6 +194,21 @@ function calculate_wake_velocities!(Cm_wake, vz_wake, vr_wake, gamw, sigr, gamb,
     return reframe_wake_velocities!(Cm_wake, vz_wake, vr_wake, Vinf)
 end
 
+"""
+    get_sheet_jumps(Gamma_tilde, H_tilde) -> Tuple{Matrix{Float64}, Matrix{Float64}}
+
+Compute jumps in circulation and enthalpy across wake sheets shed by the rotors.
+
+This function calculates the differences in cumulative rotor circulation (`Γ̃`) and enthalpy jump (`H̃`) between adjacent radial stations. These jumps are used to define wake sheet strengths.
+
+# Arguments
+- `Gamma_tilde::Matrix{Float}` : Net cumulative circulation at each blade element and rotor. Dimensions: (number of blade elements, number of rotors).
+- `H_tilde::Matrix{Float}` : Cumulative enthalpy jump at each blade element and rotor. Dimensions: (number of blade elements, number of rotors).
+
+# Returns
+- `deltaGamma2::Matrix{Float}` : Circulation difference (jump) between successive elements. Dimensions: (number of wake sheets, number of rotors).
+- `deltaH::Matrix{Float}` : Enthalpy difference (jump) between successive elements. Same dimensions as `deltaGamma2`.
+"""
 function get_sheet_jumps(Gamma_tilde, H_tilde)
 
     # get problem size
@@ -150,6 +227,11 @@ function get_sheet_jumps(Gamma_tilde, H_tilde)
     return deltaGamma2, deltaH
 end
 
+"""
+    get_sheet_jumps!(deltaGamma2, deltaH, Gamma_tilde, H_tilde)
+
+In place function of get_sheet_jumps.
+"""
 function get_sheet_jumps!(deltaGamma2, deltaH, Gamma_tilde, H_tilde)
     # get problem size
     nw, nrotor = size(deltaGamma2)
@@ -182,6 +264,9 @@ function get_sheet_jumps!(deltaGamma2, deltaH, Gamma_tilde, H_tilde)
 end
 
 """
+    average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs)
+
+In place version of average_wake_velocities.
 """
 function average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs)
 
@@ -206,7 +291,24 @@ function average_wake_velocities!(Cm_avg, Cm_wake, nodemap, endnodeidxs)
 end
 
 """
-Calculate wake vortex strengths
+    calculate_wake_vortex_strengths!(
+        gamw,
+        Gamma_tilde,
+        H_tilde,
+        deltaGamma2,
+        deltaH,
+        Gamr,
+        Cm_avg,
+        B,
+        Omega,
+        wakeK,
+        wake_node_sheet_be_map,
+        wake_node_ids_along_casing_wake_interface,
+        wake_node_ids_along_center_body_wake_interface;
+        post=false,
+    )
+
+In place version of calculate_wake_vortex_strengths.
 """
 function calculate_wake_vortex_strengths!(
     gamw,

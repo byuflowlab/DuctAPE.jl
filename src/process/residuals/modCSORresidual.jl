@@ -88,20 +88,36 @@ end
         verbose=false,
     )
 
-Estimate states for modified CSOR solver.
+Estimate aerodynamic state variables (circulations, source strengths, wake strengths) for the modified CSOR solver.
 
-# Arguments:
-- `solve_containers::NamedTuple` : cache for intermediate solve values
-- `Gamr::type` : Blade element circulation strengths
-- `sigr::type` : Rotor source panel strengths
-- `gamw::type` : Wake vortex panel strengths
-- `operating_point::NamedTuple` : Named tuple containing operating_point information
-- `ivr::NamedTuple` : unit induced velocities on rotor(s)
-- `ivw::NamedTuple` : unit induced velocities on wake
-- `linsys::NamedTuple` : vectors and matricies comprising the panel method linear system
-- `blade_elements::NamedTuple` : blade element geometry and airfoil polar information
-- `wakeK::Vector{Float}` : geometric constants used in caculating wake strengths
-- `idmaps::NamedTuple` : index maps used throughout solve
+This function performs in-place updates to intermediate solve containers by:
+- Solving the linear system for body vortex strengths,
+- Calculating induced velocities on rotor blades including body effects,
+- Computing blade element aerodynamic coefficients (lift, drag, inflow angles),
+- Estimating updated rotor circulation and wake vortex strengths,
+- Calculating rotor source panel strengths.
+
+# Arguments
+- `solve_containers::NamedTuple` : Cache for intermediate solve values (circulation estimates, induced velocities, aerodynamic coefficients, etc.).
+- `Gamr::AbstractArray` : Blade element circulation strengths (input/output).
+- `sigr::AbstractArray` : Rotor source panel strengths (input/output).
+- `gamw::AbstractArray` : Wake vortex panel strengths (input/output).
+- `operating_point::NamedTuple` : Operating condition information (freestream velocity, rotation speed, etc.).
+- `ivr::NamedTuple` : Unit induced velocities on rotor panels.
+- `ivw::NamedTuple` : Unit induced velocities on wake panels.
+- `linsys::NamedTuple` : Linear system matrices and vectors for the panel method solve.
+- `blade_elements::NamedTuple` : Blade element geometry and airfoil polar data.
+- `wakeK::AbstractVector` : Geometric constants used for calculating wake strengths.
+- `idmaps::NamedTuple` : Index mappings used throughout the solver to locate data.
+
+# Keyword Arguments
+- `verbose::Bool=false` : If true, print detailed solver information.
+
+# Returns
+- `states::Vector{Vector}` : A vector containing the flattened estimates of
+  - Rotor circulation strengths (`Gamr_est`),
+  - Rotor source strengths (`sigr_est`),
+  - Wake vortex strengths (`gamw_est`).
 """
 function estimate_CSOR_states!(
     solve_containers,
