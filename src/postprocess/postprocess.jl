@@ -36,9 +36,9 @@ Post-process a converged nonlinear solve solution.
 - `airfoils::Vector{AFType}` : A matrix of airfoil types associated with each of the blade elements
 - `idmaps::NamedTuple` : A named tuple containing index mapping used in bookkeeping throughout solve and post-process
 - `problem_dimensions::ProblemDimensions` : A ProblemDimensions object
+- `multipoint_index::Vector{Int}` : a one-dimensional vector containing the index of which multipoint analysis operating point is being analyzed.
 
 # Keyword Arguments
-- `multipoint_index::Vector{Int}` : a one-dimensional vector containing the index of which multipoint analysis operating point is being analyzed.
 - `write_outputs=options.write_outputs::Vector{Bool}` : a vector with the same length as number of multipoints indicating if the outputs should be saved.
 - `outfile=options.outfile::Vector{String}` : a vector of file paths/names for where outputs should be written
 - `checkoutfileexists=options.checkoutfileexists::Bool` : a flag for whether existing files should be checked for or if blind overwriting is okay.
@@ -419,21 +419,29 @@ function post_process(
 
     # - Duct Viscous Drag - #
 
-    if boundary_layer_options.model_drag
+    if typeof(boundary_layer_options) <: HeadsBoundaryLayerOptions
+        bl_op = boundary_layer_options
+        model_drag_flag = bl_op.model_drag
+    elseif typeof(boundary_layer_options) <: AbstractVector
+        bl_op = boundary_layer_options[multipoint_index[1]]
+        model_drag_flag = bl_op.model_drag
+    else
+        @warn "boundary layer options are not of a compatible type, skipping duct drag computation"
+        model_drag_flag = false
+    end
+    if model_drag_flag
 
-        #TODO; make this in place once you've finalized outputs
         body_viscous_drag[1], boundary_layer_outputs = compute_viscous_drag_duct(
-            boundary_layer_options,
+            bl_op,
             Vtan_out[1:Int(body_vortex_panels.npanel[1])],
             Vtot_out[:, 1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.controlpoint[:, 1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.influence_length[1:Int(body_vortex_panels.npanel[1])],
             body_vortex_panels.tangent[:, 1:Int(body_vortex_panels.npanel[1])],
-            # body_vortex_panels.node[2, Int(body_vortex_panels.nnode[1])],
             Rref[1],
             operating_point,
             reference_parameters;
-            verbose=boundary_layer_options.verbose,
+            verbose=bl_op.verbose,
         )
 
     else
@@ -516,14 +524,14 @@ function post_process(
     )
 
     # Apply penalty to rotor performance
-    if boundary_layer_options.model_drag &&
-        boundary_layer_options.apply_separation_penalty_to_rotor &&
-        boundary_layer_options.separation_penalty_lower > eps()
+    if bl_op.model_drag &&
+        bl_op.apply_separation_penalty_to_rotor &&
+        bl_op.separation_penalty_lower > eps()
         rotor_penalty = separation_penalty(
             boundary_layer_outputs.s_sep_lower,
             boundary_layer_outputs.lower_steps,
-            boundary_layer_options.separation_allowance_lower,
-            boundary_layer_options.separation_penalty_lower,
+            bl_op.separation_allowance_lower,
+            bl_op.separation_penalty_lower,
         )
 
         rotor_inviscid_torque .*= (1.0 .- rotor_penalty)
