@@ -85,11 +85,8 @@ function calculate_streamlines(
     integration_options=IntegrationOptions(),
     dot_tol=0.999,
     stag_tol=0.4,
+    step_forward=true,
 )
-
-    # TODO;
-    # figure out how to ignore things after a stagnation point is hit, maybe set it to NaN?
-
     TF = promote_type(
         eltype(body_vortex_panels.node),
         eltype(wake_vortex_panels.node),
@@ -98,7 +95,11 @@ function calculate_streamlines(
 
     # Initialize
     points = zeros(TF, 2, step_limit, length(starting_radial_points))
-    points[1, 1, :] .= axial_range[1]
+    if step_forward
+        points[1, 1, :] .= axial_range[1]
+    else
+        points[1, 1, :] .= axial_range[2]
+    end
     points[2, 1, :] = starting_radial_points
     velocities = zeros(TF, step_limit, length(starting_radial_points), 2)
 
@@ -109,6 +110,7 @@ function calculate_streamlines(
 
     # March along each streamline
     for z in 1:step_limit
+        println("step ", z, " of ", step_limit)
         velocities[z, :, 1] .= Vinf
 
         # - Calculate Velocity at Current Point - #
@@ -169,13 +171,22 @@ function calculate_streamlines(
         if z != step_limit
             # - Take Step and Set Next Point - #
             vmag = sqrt.(velocities[z, :, 2] .^ 2 .+ velocities[z, :, 1] .^ 2)
-            points[1, z + 1, :] .=
-                points[1, z, :] .+ velocities[z, :, 1] .* nominal_step_size ./ vmag
-            points[2, z + 1, :] .=
-                points[2, z, :] .+ velocities[z, :, 2] .* nominal_step_size ./ vmag
+            if step_forward
+                points[1, z + 1, :] .=
+                    points[1, z, :] .+ velocities[z, :, 1] .* nominal_step_size ./ vmag
+                points[2, z + 1, :] .=
+                    points[2, z, :] .+ velocities[z, :, 2] .* nominal_step_size ./ vmag
+            else
+                points[1, z + 1, :] .=
+                    points[1, z, :] .- velocities[z, :, 1] .* nominal_step_size ./ vmag
+                points[2, z + 1, :] .=
+                    points[2, z, :] .- velocities[z, :, 2] .* nominal_step_size ./ vmag
+            end
             if z > 1
                 for r in eachindex(starting_radial_points)
-                    if vmag[r] < stag_tol
+                    if vmag[r] < stag_tol ||
+                        axial_range[1] > points[1, z + 1, r] ||
+                        points[1, z + 1, r] > axial_range[2]
                         points[:, z + 1, r] .= NaN
                     end
                 end
