@@ -13,13 +13,19 @@ function find_large_and_nearest_small(residuals)
 end
 
 function find_false_and_nearest_true_sorted(converged)
-    false_indices = findall(!, converged)
-    true_indices = findall(identity, converged)
-    true_array = collect(true_indices)  # make sure it's indexable
+    flat = vec(converged)  # Convert to Vector{Bool}
 
-    pairs = [(fi, true_array[argmin(abs.(true_array .- fi))]) for fi in false_indices]
+    false_indices = findall(!, flat)
+    true_indices = findall(identity, flat)
+
+    pairs = [
+        (
+            fi,
+            true_indices[argmin(abs.(true_indices .- fi))]
+        )
+        for fi in false_indices
+    ]
 
     # Sort by proximity
-    return sort(pairs; by=x -> abs(x[1] - x[2]))
+    sort(pairs, by = x -> abs(x[1] - x[2]))
 end
-
