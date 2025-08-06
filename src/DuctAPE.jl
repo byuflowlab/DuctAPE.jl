@@ -92,7 +92,7 @@ export RadauIIA5, RadauIIA3 # ODE solvers
 export setup_analysis
 
 # - Analyses - #
-export analyze
+export analyze, analyze_with_warm_start
 
 # - Visualization - #
 export generate_plots
@@ -134,6 +134,8 @@ include("utilities/airfoils/airfoil_utilities.jl")
 ##### ----- Analysis ----- #####
 include("analysis/setup.jl")
 include("analysis/analyses.jl")
+include("analysis/warm_start_utilities.jl")
+include("analysis/analysis_with_warm_start.jl")
 
 ##### ----- PREPROCESS ----- #####
 # Pre-solve initializations

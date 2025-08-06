@@ -290,6 +290,7 @@ function analyze(
     solve_parameter_caching=nothing,
     solve_container_caching=nothing,
     return_inputs=false,
+    apply_warm_start=false,
 ) where {TO<:OperatingPoint}
 
     # - Set Up - #
@@ -366,20 +367,38 @@ function analyze(
             end
         end
     end
-    return analyze(
-        ducted_rotor,
-        operating_point,
-        reference_parameters,
-        prepost_containers,
-        solve_parameter_cache_vector,
-        solve_parameter_cache_dims,
-        A_bb_LU,
-        idmaps,
-        problem_dimensions,
-        options;
-        solve_container_caching=solve_container_caching,
-        return_inputs=return_inputs,
-    )
+
+    if apply_warm_start
+        return analyze_with_warm_start(
+            ducted_rotor,
+            operating_point,
+            reference_parameters,
+            prepost_containers,
+            solve_parameter_cache_vector,
+            solve_parameter_cache_dims,
+            A_bb_LU,
+            idmaps,
+            problem_dimensions,
+            options;
+            solve_container_caching=solve_container_caching,
+            return_inputs=return_inputs,
+        )
+    else
+        return analyze(
+            ducted_rotor,
+            operating_point,
+            reference_parameters,
+            prepost_containers,
+            solve_parameter_cache_vector,
+            solve_parameter_cache_dims,
+            A_bb_LU,
+            idmaps,
+            problem_dimensions,
+            options;
+            solve_container_caching=solve_container_caching,
+            return_inputs=return_inputs,
+        )
+    end
 end
 
 """
