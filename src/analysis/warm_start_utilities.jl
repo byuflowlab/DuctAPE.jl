@@ -1,15 +1,21 @@
-function find_large_and_nearest_small(residuals)
-    # Indices of large and small residuals
-    large_indices = findall(>(1), residuals)
-    small_indices = findall(<(1), residuals)
+function find_large_and_nearest_small_sorted(residuals)
+    flat = vec(residuals)  # Convert to Vector{Float64}
 
-    # Precompute for speed
+    large_indices = findall(>(1), flat)
+    small_indices = findall(<(1), flat)
     small_array = collect(small_indices)  # ensure it's indexable
 
-    # Result: tuple of (large_index, closest_small_index)
-    pairs = [(li, small_array[argmin(abs.(small_array .- li))]) for li in large_indices]
+    # Build (large_idx, closest_small_idx) pairs
+    pairs = [
+        (
+            li,
+            small_array[argmin(abs.(small_array .- li))]
+        )
+        for li in large_indices
+    ]
 
-    return sort(pairs; by=x -> abs(x[1] - x[2]))
+    # Sort by proximity
+    sort(pairs, by = x -> abs(x[1] - x[2]))
 end
 
 function find_false_and_nearest_true_sorted(converged)
