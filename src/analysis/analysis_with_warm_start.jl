@@ -129,8 +129,9 @@ function analyze_with_warm_start(
                 # determine cases to re-run and closest reasonable case
                 re_runs = find_large_and_nearest_small(options.solver_options.residuals)
                 println("    re_run check: ", re_runs)
+                re_run_count = [length(re_runs)]
 
-                while !isempty(re_runs)
+                while re_run_count[1] > 0
                     println("      Attempting Re-runs")
                     # loop through re-runs
                     for rr in re_runs
@@ -178,8 +179,11 @@ function analyze_with_warm_start(
                     end
 
                     # re-check (also updates if closer case now exists)
-                    println("      re_run re-check: ", re_runs)
-                    re_runs = find_large_and_nearest_small(options.solver_options.residuals)
+                    re_check = find_large_and_nearest_small(
+                        options.solver_options.residuals
+                    )
+                    println("      re_run re-check: ", re_check)
+                    re_run_count[1] = min(length(re_check), re_run_count[1])
 
                     if all(run_counts[getindex.(re_runs, 2)] .>= 2)
                         break
