@@ -44,6 +44,7 @@ function analyze(
     problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, A_bb_LU, lu_decomp_flag, idmaps = setup_analysis(
         ducted_rotor,
         operating_point,
+        reference_parameters,
         options;
         prepost_container_caching=prepost_container_caching,
         solve_parameter_caching=solve_parameter_caching,
@@ -297,6 +298,7 @@ function analyze(
     problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, A_bb_LU, lu_decomp_flag, idmaps = setup_analysis(
         ducted_rotor,
         operating_point[1],
+        reference_parameters,
         options;
         prepost_container_caching=prepost_container_caching,
         solve_parameter_caching=solve_parameter_caching,
@@ -579,8 +581,6 @@ function analyze_multipoint(
         solve_parameter_tuple.linsys.b_bf,
         prepost_containers.vdnb,
         prepost_containers.vdnpcp,
-        prepost_containers.panels.body_vortex_panels.npanel,
-        prepost_containers.panels.body_vortex_panels.nnode,
         prepost_containers.panels.body_vortex_panels.totpanel,
         prepost_containers.panels.body_vortex_panels.totnode,
         prepost_containers.panels.body_vortex_panels.prescribednodeidxs,

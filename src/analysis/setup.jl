@@ -2,6 +2,7 @@
     setup_analysis(
         ducted_rotor::DuctedRotor,
         operating_point::OperatingPoint,
+        reference_parameters::ReferenceParameters,
         options::Options=set_options();
         prepost_container_caching=nothing,
         solve_parameter_caching=nothing,
@@ -13,6 +14,7 @@ Perform pre-processing and cache setup (as needed) for propuslor analysis.
 # Arguments
 - `ducted_rotor::DuctedRotor` : DuctedRotor input object (see docstring for `DuctedRotor` type)
 - `operating_point::OperatingPoint` : OperatingPoint input object (see docstring for `OperatingPoint` type)
+- `reference_parameters::ReferenceParameters` : ReferenceParameters input object (see docstring for `ReferenceParameters` type)
 - `options::Options=set_options()` : Options object (see `set_options` and related functions)
 
 # Keyword Arguments
@@ -32,6 +34,7 @@ Perform pre-processing and cache setup (as needed) for propuslor analysis.
 function setup_analysis(
     ducted_rotor::DuctedRotor,
     operating_point::OperatingPoint,
+    reference_parameters::ReferenceParameters,
     options=set_options();
     prepost_container_caching=nothing,
     solve_parameter_caching=nothing,
@@ -138,6 +141,7 @@ function setup_analysis(
         solve_parameter_tuple.wakeK,
         ducted_rotor,
         operating_point,
+        reference_parameters,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=options.grid_solver_options,
