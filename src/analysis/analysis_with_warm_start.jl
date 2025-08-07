@@ -90,7 +90,9 @@ function analyze_with_warm_start(
         println("WARM STARTING!!!")
         # If all unconverged, check residuals
         if !any(options.solver_options.converged)
+            println("  All Failed")
             if all(options.solver_options.residuals .> 1.0)
+                println("    None have residuals less than 1.0")
                 # If all residuals greater than 1
                 ##TODO: set up method to skip solve and return values based on initialization
                 options.multipoint_index[] = 0
@@ -117,26 +119,30 @@ function analyze_with_warm_start(
                 break
 
             elseif all(options.solver_options.residuals .<= 1.0)
+                println("    All have residuals less than 1.0")
                 # If all residuals less than 1, return as normal
                 break
             else
+                println("    Some have residuals less than 1.0")
                 # If any residuals less than 1, try running cases with residuals greater than 1 and the output of the less than 1 residuals to see if you can do better.
 
                 # determine cases to re-run and closest reasonable case
                 re_runs = find_large_and_nearest_small(options.solver_options.residuals)
+                println("    re_run check: ", re_runs)
 
                 while !isempty(re_runs)
+                    println("      Attempting Re-runs")
                     # loop through re-runs
                     for rr in re_runs
-                        if run_counts(rr[1]) < 2
+                        if run_counts[rr[1]] < 2
 
                             # run closest case
-                            run_counts[rr[2]] .+= 1
+                            run_counts[rr[2]] += 1
                             options.multipoint_index[] = rr[2] - 1
 
                             _ = analyze_multipoint(
                                 ducted_rotor,
-                                operating_point[rr[1]],
+                                operating_point[rr[2]],
                                 reference_parameters,
                                 prepost_containers,
                                 solve_parameter_cache_vector,
@@ -150,7 +156,7 @@ function analyze_with_warm_start(
                             )
 
                             # run unconverged case
-                            run_counts[rr[1]] .+= 1
+                            run_counts[rr[1]] += 1
                             options.multipoint_index[] = rr[1] - 1
                             options.solver_options.warm_start[rr[1]] = true
 
@@ -172,9 +178,10 @@ function analyze_with_warm_start(
                     end
 
                     # re-check (also updates if closer case now exists)
+                    println("      re_run re-check: ", re_runs)
                     re_runs = find_large_and_nearest_small(options.solver_options.residuals)
 
-                    if all(run_counts .>= 2)
+                    if all(run_counts[getindex.(re_runs, 2)] .>= 2)
                         break
                     end
                 end
@@ -183,23 +190,27 @@ function analyze_with_warm_start(
             end
 
         elseif any(options.solver_options.converged) && all(run_counts .< 2)
+            println("  Some Converged")
             # If some converged, re-run unconverged cases starting at nearest converged case
 
             # determine cases to re-run and closest converged case
             re_runs = find_false_and_nearest_true_sorted(options.solver_options.converged)
+            println("  re_run check: ", re_runs)
+            re_run_count = [length(re_runs)]
 
-            while !isempty(re_runs)
+            while re_run_count[1] > 0
+                println("    Attempting Re-runs")
                 # loop through re-runs
                 for rr in re_runs
-                    if run_counts(rr[1]) < 2
+                    if run_counts[rr[1]] < 2
 
                         # run closest case
-                        run_counts[rr[2]] .+= 1
+                        run_counts[rr[2]] += 1
                         options.multipoint_index[] = rr[2] - 1
 
                         _ = analyze_multipoint(
                             ducted_rotor,
-                            operating_point[rr[1]],
+                            operating_point[rr[2]],
                             reference_parameters,
                             prepost_containers,
                             solve_parameter_cache_vector,
@@ -213,7 +224,7 @@ function analyze_with_warm_start(
                         )
 
                         # run unconverged case
-                        run_counts[rr[1]] .+= 1
+                        run_counts[rr[1]] += 1
                         options.multipoint_index[] = rr[1] - 1
                         options.solver_options.warm_start[rr[1]] = true
 
@@ -235,17 +246,20 @@ function analyze_with_warm_start(
                 end
 
                 # re-check (also updates if closer case now exists)
-                re_runs = find_false_and_nearest_true_sorted(
+                re_check = find_false_and_nearest_true_sorted(
                     options.solver_options.converged
                 )
+                println("  re_run re-check: ", re_check)
+                re_run_count[1] = min(length(re_check), re_run_count[1])
 
-                if all(run_counts .>= 2)
+                if all(run_counts[getindex.(re_runs, 1)] .>= 2)
                     break
                 end
             end
             # After re-running, if any residuals greater than 1 we should hit the else in the largest scope below and it'll skip solve those cases.
 
         else #if any converged and we've tried everything again.
+            println("  Tried. Giving up.")
             # We've already tried things once, so find the still unconverged cases and return what is needed
             for n in 1:nop
                 if !options.solver_options.converged[n]
@@ -254,7 +268,7 @@ function analyze_with_warm_start(
                         options.multipoint_index[] = n - 1
                         options.solver_options.skip_solve[n] = true
                         run_counts[n] += 1
-                        outs[n] = analyze(
+                        outs[n] = analyze_multipoint(
                             ducted_rotor,
                             operating_point[n],
                             reference_parameters,
