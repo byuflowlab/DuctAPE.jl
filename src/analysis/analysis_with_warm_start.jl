@@ -264,6 +264,7 @@ function analyze_with_warm_start(
 
         else #if any converged and we've tried everything again.
             println("  Tried. Giving up.")
+            run_counts .+= 2
             # We've already tried things once, so find the still unconverged cases and return what is needed
             for n in 1:nop
                 if !options.solver_options.converged[n]
@@ -289,6 +290,7 @@ function analyze_with_warm_start(
                     end
                 end
             end
+            break
         end
     end
 
