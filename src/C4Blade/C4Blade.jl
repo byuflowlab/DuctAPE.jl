@@ -228,8 +228,8 @@ end
 
 Compute the residual for blade element momentum (BEM) theory and return flow/load outputs.
 
-This is a core (private) function for evaluating the mismatch in assumed and resulting flow angles 
-and computing aerodynamic loads on a blade section, including hub/tip loss corrections and optional 
+This is a core (private) function for evaluating the mismatch in assumed and resulting flow angles
+and computing aerodynamic loads on a blade section, including hub/tip loss corrections and optional
 airfoil correction models.
 
 # Arguments
@@ -455,7 +455,7 @@ end
 """
     firstbracket(f, xmin, xmax, n; backwardsearch=false)
 
-Search for a sign change (root bracket) of a function `f` within the interval `(xmin, xmax)` by 
+Search for a sign change (root bracket) of a function `f` within the interval `(xmin, xmax)` by
 subdividing it into `n` sub-intervals.
 
 # Arguments
@@ -507,7 +507,7 @@ Solve the BEM equations for given rotor geometry and operating point.
 # Returns
 - `outputs::Outputs`: BEM output data including loads, induction factors, etc.
 """
-function solve(rotor, section, op)
+function solve(rotor, section, op; npts=5000)
 
     # error handling
     if typeof(section) <: AbstractVector
@@ -521,9 +521,6 @@ function solve(rotor, section, op)
         isapprox(section.r, rotor.Rtip; atol=1e-6)
         return Outputs()  # no loads at hub/tip
     end
-
-    # parameters
-    npts = 10  # number of discretization points to find bracket in residual solve
 
     # unpack
     Vx = op.Vx
