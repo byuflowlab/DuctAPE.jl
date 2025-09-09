@@ -127,7 +127,7 @@ function analyze_with_warm_start(
                 # If any residuals less than 1, try running cases with residuals greater than 1 and the output of the less than 1 residuals to see if you can do better.
 
                 # determine cases to re-run and closest reasonable case
-                re_runs = find_large_and_nearest_small(options.solver_options.residuals)
+                re_runs = find_large_and_nearest_small_sorted(options.solver_options.residuals)
                 println("    re_run check: ", re_runs)
                 re_run_count = [length(re_runs)]
 
@@ -179,7 +179,7 @@ function analyze_with_warm_start(
                     end
 
                     # re-check (also updates if closer case now exists)
-                    re_check = find_large_and_nearest_small(
+                    re_check = find_large_and_nearest_small_sorted(
                         options.solver_options.residuals
                     )
                     println("      re_run re-check: ", re_check)
