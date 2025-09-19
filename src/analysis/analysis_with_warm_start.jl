@@ -212,8 +212,8 @@ function analyze_with_warm_start(
                         run_counts[rr[2]] += 1
                         options.multipoint_index[] = rr[2] - 1
 
-                        # Reset Cache so previously converged cases will converge again.
-                        solve_parameter_cache_vector .= 0
+                        # allow re-initialization so previously converged cases will converge again.
+                        options.solver_options.warm_start[rr[2]] = false
 
                         _ = analyze_multipoint(
                             ducted_rotor,
