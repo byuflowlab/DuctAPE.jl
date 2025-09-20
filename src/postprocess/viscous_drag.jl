@@ -374,7 +374,7 @@ function compute_viscous_drag_duct(
             boundary_layer_options,
             upper_steps,
             rotor_tip_radius,
-            reference_parameters.Vref,
+            operating_point.Vinf[],
             boundary_layer_functions_upper,
             (;
                 separation_allowance=boundary_layer_options.separation_allowance_upper,
@@ -396,7 +396,7 @@ function compute_viscous_drag_duct(
         boundary_layer_options,
         lower_steps,
         rotor_tip_radius,
-        reference_parameters.Vref,
+        operating_point.Vinf[],
         boundary_layer_functions_lower,
         (;
             separation_allowance=boundary_layer_options.separation_allowance_lower,
@@ -410,7 +410,7 @@ function compute_viscous_drag_duct(
         cdc_upper,
         cdc_lower,
         rotor_tip_radius,
-        reference_parameters.Vref[],
+        operating_point.Vinf[],
         operating_point.rhoinf[],
     )
 
