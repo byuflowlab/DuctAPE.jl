@@ -55,6 +55,8 @@ function analyze_with_warm_start(
         println("\nRunning Multipoint Analysis")
     end
 
+    verbose = options.verbose
+
     # Set up Solve Container Cache
     if isnothing(solve_container_caching)
         solve_container_caching = allocate_solve_container_cache(
@@ -87,12 +89,12 @@ function analyze_with_warm_start(
     run_counts = ones(nop)
     # If all converged, proceed as normal
     while !all(options.solver_options.converged)
-        println("WARM STARTING!!!")
+        verbose && println("WARM STARTING!!!")
         # If all unconverged, check residuals
         if !any(options.solver_options.converged)
-            println("  All Failed")
+            verbose && println("  All Failed")
             if all(options.solver_options.residuals .> 1.0)
-                println("    None have residuals less than 1.0")
+                verbose && println("    None have residuals less than 1.0")
                 # If all residuals greater than 1
                 ##TODO: set up method to skip solve and return values based on initialization
                 options.multipoint_index[] = 0
@@ -119,20 +121,20 @@ function analyze_with_warm_start(
                 break
 
             elseif all(options.solver_options.residuals .<= 1.0)
-                println("    All have residuals less than 1.0")
+                verbose && println("    All have residuals less than 1.0")
                 # If all residuals less than 1, return as normal
                 break
             else
-                println("    Some have residuals less than 1.0")
+                verbose && println("    Some have residuals less than 1.0")
                 # If any residuals less than 1, try running cases with residuals greater than 1 and the output of the less than 1 residuals to see if you can do better.
 
                 # determine cases to re-run and closest reasonable case
                 re_runs = find_large_and_nearest_small_sorted(options.solver_options.residuals)
-                println("    re_run check: ", re_runs)
+                verbose && println("    re_run check: ", re_runs)
                 re_run_count = [length(re_runs)]
 
                 while re_run_count[1] > 0
-                    println("      Attempting Re-runs")
+                    verbose && println("      Attempting Re-runs")
                     # loop through re-runs
                     for rr in re_runs
                         if run_counts[rr[1]] < 2
@@ -182,7 +184,7 @@ function analyze_with_warm_start(
                     re_check = find_large_and_nearest_small_sorted(
                         options.solver_options.residuals
                     )
-                    println("      re_run re-check: ", re_check)
+                    verbose && println("      re_run re-check: ", re_check)
                     re_run_count[1] = min(length(re_check), re_run_count[1])
 
                     if all(run_counts[getindex.(re_runs, 2)] .>= 2)
@@ -194,16 +196,16 @@ function analyze_with_warm_start(
             end
 
         elseif any(options.solver_options.converged) && all(run_counts .< 2)
-            println("  Some Converged")
+            verbose && println("  Some Converged")
             # If some converged, re-run unconverged cases starting at nearest converged case
 
             # determine cases to re-run and closest converged case
             re_runs = find_false_and_nearest_true_sorted(options.solver_options.converged)
-            println("  re_run check: ", re_runs)
+            verbose && println("  re_run check: ", re_runs)
             re_run_count = [length(re_runs)]
 
             while re_run_count[1] > 0
-                println("    Attempting Re-runs")
+                verbose && println("    Attempting Re-runs")
                 # loop through re-runs
                 for rr in re_runs
                     if run_counts[rr[1]] < 2
@@ -261,7 +263,7 @@ function analyze_with_warm_start(
                 re_check = find_false_and_nearest_true_sorted(
                     options.solver_options.converged
                 )
-                println("  re_run re-check: ", re_check)
+                verbose && println("  re_run re-check: ", re_check)
                 re_run_count[1] = min(length(re_check), re_run_count[1])
 
                 if all(run_counts[getindex.(re_runs, 1)] .>= 2)
@@ -271,7 +273,7 @@ function analyze_with_warm_start(
             # After re-running, if any residuals greater than 1 we should hit the else in the largest scope below and it'll skip solve those cases.
 
         else #if any converged and we've tried everything again.
-            println("  Tried. Giving up.")
+            verbose && println("  Tried. Giving up.")
             run_counts .+= 2
             # We've already tried things once, so find the still unconverged cases and return what is needed
             for n in 1:nop
