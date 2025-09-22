@@ -188,6 +188,14 @@ function split_at_stagnation_point(
         [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
     )
 
+    println("\ndebugging line 191 boundary layer utils")
+    println("stag_point = ", stag_point)
+    println("s_upper[1] = ", s_upper[1])
+    println("s_upper[end] = ", s_upper[end])
+    println("s_lower[1] = ", s_lower[1])
+    println("s_lower[end] = ", s_lower[end])
+    println("\n")
+
     return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
 end
 
@@ -243,6 +251,7 @@ function set_boundary_layer_steps(N::Int, first_step_size, total_length)
         bt = catch_backtrace()
         println("Backtrace:")
         display(stacktrace(bt))
+        @error "error in roots convergence inside set_boundary_layer_steps."
     end
 
     # return steps
