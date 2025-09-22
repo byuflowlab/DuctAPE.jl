@@ -231,6 +231,7 @@ function set_boundary_layer_steps(N::Int, first_step_size, total_length)
         return Roots.find_zero(reswrap, 1.0)
     end
 
+    p = nothing  # declare in outer scope
     try
         # solve for power coefficient
         p = ImplicitAD.implicit(solvewrap, res, [total_length; first_step_size; N])
