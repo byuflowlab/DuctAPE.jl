@@ -76,7 +76,6 @@ function split_at_stagnation_point(
 
             return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
         else
-
             print("in past bug area that is hard to recreate.  ")
             print("min Vt index: ", minvtid)
             println("  length s_tot: ", length(s_tot))
@@ -94,7 +93,7 @@ function split_at_stagnation_point(
             bidr = 1
             bid = 1
             while sign(bracketvals[1]) == sign(bracketvals[2])
-                if bidl ==0
+                if bidl == 0
                     println("not a bracket, incrementing to find bracket")
                 end
                 # not a bracketing interval
@@ -120,8 +119,12 @@ function split_at_stagnation_point(
                 end
             end
 
-            println("if nothing printed between bracket values and this, then should be a bracket")
-            println("if something was printed, then this bracket should be different that the previously printed one")
+            println(
+                "if nothing printed between bracket values and this, then should be a bracket",
+            )
+            println(
+                "if something was printed, then this bracket should be different that the previously printed one",
+            )
             printdebug("(maybe new) bracket:", bracket)
             printdebug("(maybe new) bracketvals:", FLOWMath.derivative.(Ref(vtsp), bracket))
 
@@ -228,8 +231,18 @@ function set_boundary_layer_steps(N::Int, first_step_size, total_length)
         return Roots.find_zero(reswrap, 1.0)
     end
 
-    # solve for power coefficient
-    p = ImplicitAD.implicit(solvewrap, res, [total_length; first_step_size; N])
+    try
+        # solve for power coefficient
+        p = ImplicitAD.implicit(solvewrap, res, [total_length; first_step_size; N])
+    catch
+        println("error in roots convergence inside set_boundary_layer_steps.")
+        println("number_of_steps = ", N)
+        println("first_step_size = ", first_step_size)
+        println("total_length = ", total_length)
+        bt = catch_backtrace()
+        println("Backtrace:")
+        display(stacktrace(bt))
+    end
 
     # return steps
     return bl_step_fun(1:N, first_step_size, p)
