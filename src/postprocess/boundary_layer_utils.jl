@@ -189,11 +189,9 @@ function split_at_stagnation_point(
     )
 
     println("\ndebugging line 191 boundary layer utils")
-    println("stag_point = ", stag_point)
-    println("s_upper[1] = ", s_upper[1])
-    println("s_upper[end] = ", s_upper[end])
-    println("s_lower[1] = ", s_lower[1])
-    println("s_lower[end] = ", s_lower[end])
+    printdebug("stag_point", stag_point)
+    printdebug("s_upper[end]", s_upper[end])
+    printdebug("s_lower[end]", s_lower[end])
     println("\n")
 
     return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
