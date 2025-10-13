@@ -1,0 +1,1042 @@
+\chapter{Detailed derivation of vortex ring induced velocity}
+\label{app:ringvortexinducedvelocities}
+
+This appendix covers the derivation of the induced velocity due to ring vortices, or in other words, axisymmetric free vortices.
+%
+To derive an expression for the unit induced velocity due to a ring vortex, let us begin at \cref{eqn:psi1}, the solution to the Poisson equation for vorticity, to set up the form of the Biot-Savart law that will be convenient for our axisymmetric reference frame.
+
+\begin{equation}
+    \label{eqn:psi1_app}
+    \vect{\psi} = \frac{1}{4\pi} \int_{\mathcal{V}} \frac{\vect{\omega}(\vect{q})}{|\vect{r}|} \d^3s.
+\end{equation}
+
+
+We re-state some assumptions about the vortex ring that follow from our axisymmetric assumption:
+
+\begin{assumption}{}
+    \asm{The vortex ring is circular, such that the ring radius is constant.
+    \[r_o = \text{constant}\]}
+    \vspace*{-\baselineskip}
+\end{assumption}
+
+\begin{assumption}{}
+    \asm{The vortex ring circulation is constant and in the tangential direction
+    \[\vect{\Gamma} = \gamma \hat{\vect{e}}_\theta\]}
+    \vspace*{-\baselineskip}
+\end{assumption}
+
+\noindent These assumptions formalize our axisymmetric assumption, and from them we can conclude that the vortex ring has no influence in the tangential direction, \(\hat{\vect{e}}_\theta\).
+
+\begin{figure}[h!]
+    \centering
+        \input{panel_method/figures/vortex_ring_coordinate_system.tikz}
+        \caption{Coordinate system for vortex ring induced velocity.}
+    \label{fig:vortexringgeom_app}
+\end{figure}
+
+In \cref{fig:vortexringgeom} we show again the coordinate system we will be using going forward.
+%
+Without loss of generality, we will set the field point, \(\vect{p}\), to be on the \(\theta = 0\) plane.
+%
+
+Putting the solution to Poisson's equation in terms of our coordinate system gives
+
+\begin{equation}
+    \label{eqn:psi2}
+    \vect{\psi} = \frac{1}{4\pi} \int_{\mathcal{V}} \frac{\vect{\omega}(\vect{x}')}{|\vect{p}-\vect{p}'|} r_o \d\theta' \d{r'} \d{z'}.
+\end{equation}
+
+For a vortex ring, which is infinitesimally thin in the \(\hat{\vect{e}}_r\) and \(\hat{\vect{e}}_z\) directions, we can define the vorticity of the ring to be
+
+\begin{equation}
+    \vect{\omega}(\vect{p}) = \gamma \delta(z-z_o) \delta(r-r_o) \hat{\vect{e}}_\theta.
+\end{equation}
+
+\where \(\delta\) is the Dirac delta function.
+%
+Plugging this expression in for vorticity, gives
+
+\begin{equation}
+    \label{eqn:psi3}
+    \begin{aligned}
+        \vect{\psi} &= \frac{1}{4\pi} \int_{\mathcal{V}} \frac{\gamma \delta(z-z_o) \delta(r-r_o) \hat{\vect{e}}_\theta(\theta')}{|\vect{p}-\vect{p}'|} r_o \d\theta' \d{r'} \d{z'} \\
+        \vect{\psi} &= \frac{1}{4\pi} \int_{-\pi}^{\pi} \frac{\gamma \hat{\vect{e}}_\theta(\theta')}{|\vect{p}-\vect{p}'|}r_o \d\theta',
+    \end{aligned}
+\end{equation}
+%
+which we can simplify by taking the constants out of the integral:
+
+\begin{equation}
+    \label{eqn:psi4}
+    \vect{\psi} = \frac{\gamma r_o}{4\pi} \int_{-\pi}^{\pi} \frac{ \hat{\vect{e}}_\theta(\theta')}{|\vect{p}-\vect{p}'|} \d\theta'.
+\end{equation}
+
+Next, let us tackle the denominator of the integrand, which is the Euclidean distance between a point on the vortex ring and a point we have chosen to be on the \(\theta=0\) plane.
+%
+We apply the distance formula, for which we need to find the individual differences in each coordinate position.
+%
+To obtain the Euclidean distance, it may be easier to momentarily think in terms of Cartesian coordinates, keeping the \(z\)-direction the same.
+%
+Thus the length in the \(z\)-direction is simply the difference in the \(z\)-coordinates, \(z-z_o\).
+%
+To get the \(x\) and \(y\) distances, we require slightly more consideration.
+%
+If we let the \(y\)-direction be normal to the \(x-z\) plane (the \(\theta = 0\) plane) on which the field point is defined,
+then we let the \(y\) component of the field point be \(y = 0\),
+which means the distance in the \(y\)-direction is simply the position of the point on the ring, \(y_o\).
+%
+At a given \(\theta_o\), the distance in the \(y\)-direction will be \(y_o = r_o \sin\theta_o\); \(\theta\) being right hand positive taken about the \(z\)-axis.
+%
+In the \(x\)-direction, we see that at the field point, the \(x\)-position is simply \(r\), since the point lies on the \(x-z\) plane.
+%
+For the point on the vortex ring, we see that similar to the \(y\)-direction, the \(x\)-position is \(x_o = r_o \cos\theta_o\).
+%
+Before putting everything together, let us apply a normalization that will prove to be convenient in our notation later.
+%
+We will normalize the positions of the points by the vortex ring radius.
+%
+We do this by multiplying by \(\nicefrac{r_o}{r_o}=1\) giving the points in Cartesian coordinates as
+
+\begin{align}
+    \vect{p} &= r_o\left[\frac{z}{r_o} \hat{\vect{e}}_z,~ 0 \hat{\vect{e}}_y,~ \frac{r}{r_o}\hat{\vect{e}}_x\right] \\
+    \vect{p}_o &= r_o\left[\frac{z_o}{r_o} \hat{\vect{e}}_z,~ \sin\theta_o \hat{\vect{e}}_y,~ \cos\theta_o\hat{\vect{e}}_x\right]
+\end{align}
+
+Putting all of these together we have
+
+\begin{equation}
+    \label{eqn:euclideandistance1}
+    |\vect{p}-\vect{p}_o| = r_o \left[\left(\frac{z-z_o}{r_o}\right)^2 + (\sin\theta_o)^2 + \left(\frac{r}{r_o}-\cos\theta_o\right)^2 \right]^{1/2}.
+\end{equation}
+
+To help clean up the notation, we will introduce the following normalized variables.
+
+\begin{align}
+    \xi &= \frac{z - z_o}{r_o} \\
+    \rho &= \frac{r}{r_o}.
+\end{align}
+%
+In addition, we can simplify the radicand of our Euclidean distance expression by expanding the last term and applying the trigonometric identity \(\sin^2\theta + \cos^2\theta =1\):
+
+\begin{equation}
+    \begin{aligned}
+        \xi^2  &+ \sin^2\theta_o + \left(\rho-\cos\theta_o\right)^2 \\
+        \xi^2  &+ \sin^2\theta_o + \rho^2+\cos^2\theta_o-2\rho\cos\theta_o \\
+        \xi^2  &+ \cancelto{1}{\left(\sin^2\theta_o + \cos^2\theta_o\right)} + \rho^2-2\rho\cos\theta_o && (\text{trig identity}) \\
+        \xi^2  &+ \rho^2 + 1 -2\rho\cos\theta_o \\
+    \end{aligned}
+\end{equation}
+%
+With this simplified radicand, \cref{eqn:euclideandistance1} becomes
+
+\begin{equation}
+    \label{eqn:euclideandistance2}
+    |\vect{p}-\vect{p}_o| = r_o \left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta_o \right]^{1/2},
+\end{equation}
+%
+which if we plug back in to our full expression for \(\vect{\psi}\) (\cref{eqn:psi4}) we have
+
+\begin{equation}
+    \label{eqn:psi5}
+    \vect{\psi} = \frac{\gamma}{4\pi} \int_{-\pi}^{\pi} \frac{ \hat{\vect{e}}_\theta(\theta')}{\left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta' \right]^{1/2}} \d\theta'.
+\end{equation}
+
+We now will apply one more advantage of our axisymmetric assumption, which is that both the potential and velocity fields are axisymmetric.
+%
+Because the field point is set, without loss of generality, on the \(x-z\) (or \(\theta=0\)) plane, we can take the radially induced velocity at the field point to be only in the \(x\)-direction, and the tangential component to be only in the \(y\)-direction.
+%
+Therefore we make take \(\hat{\vect{e}}_\theta\) to be its \(y\) component: \(\cos\theta\hat{\vect{e}}_y\).
+%
+Likewise, \(\hat{\vect{e}}_r\) can be replaced with its \(x\)-component: \(\cos\theta\hat{\vect{e}}_x\).
+%
+Conveniently, this allows us to perform one integration over \(\theta\) as the single variable rather than having to perform a double integration of \(x\) and \(y\) thereby reducing our expression for \(\vect{\psi}\) to only the tangential component, \(\psi_\theta\).
+%
+Therefore we replace the \(\hat{\vect{e}}_\theta(\theta')\) in the numerator of \cref{eqn:psi5} with \(\cos(\theta')\) to arrive at the expression for the tangential component of \(\vect{\psi}\),
+
+\begin{equation}
+    \psi_\theta(\vect{x},\vect{x}_o) = \frac{\gamma}{4\pi} \int_{-\pi}^{\pi} \frac{ \cos(\theta')}{\left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta' \right]^{1/2}} \d\theta'.
+\end{equation}
+
+We are now left with a simplified expression for \(\psi\), but that is still a relatively difficult integral to implement numerically, and perhaps more difficult to approach analytically.
+%
+To make our lives easier, we are going to get our expression in terms of elliptic integrals, which are far simpler to implement numerically.
+%
+We can make this transformation by first making a slight change to the bounds of integration, taking advantage of the fact that the integrand is an even function.
+
+\begin{equation}
+    \psi_\theta(\vect{x},\vect{x}_o) = \frac{\gamma}{2\pi} \int_{0}^{\pi} \frac{ \cos(\theta')}{\left[ \xi^2  + \rho^2 + 1 -2\rho\cos\theta' \right]^{1/2}} \d\theta'.
+\end{equation}
+%
+Next, we will apply the substitution
+
+\begin{align}
+    \label{eqn:sub1}
+    \theta' &= 2\varphi \\
+    \d\theta' &= 2\d\varphi,
+\end{align}
+%
+noting the bounds of integration need to be divided by 2 as well, and changed to \([0,~\pi/2]\).
+%
+Applying \cref{eqn:sub1} and the trigonometric identity \(\cos(2\varphi) = 2\cos^2(\varphi)-1\) gives
+
+\begin{equation}
+    \begin{aligned}
+        \psi_\theta(\vect{x},\vect{x}_o) &= \frac{\gamma}{\pi} \int_{0}^{\frac{\pi}{2}} \frac{ 2\cos^2(\varphi)-1}{\left[ \xi^2  + \rho^2 + 1 - 4\rho\cos^2\varphi + 2\rho\right]^{1/2}} \d\varphi \\
+         &= \frac{\gamma}{\pi} \int_{0}^{\frac{\pi}{2}} \frac{ 2\cos^2(\varphi)-1}{\left[ \xi^2  + (\rho + 1)^2 - 4\rho\cos^2\varphi \right]^{1/2}} \d\varphi.
+    \end{aligned}
+\end{equation}
+%
+We will immediately apply another substitution
+
+\begin{equation}
+    \cos\varphi = t
+\end{equation}
+
+\begin{equation}
+    \label{eqn:sub2}
+\begin{aligned}
+    \d\varphi &= \frac{\d{t}}{-\sin{\varphi}} \\
+              &= -\frac{\d{t}}{\sqrt{1-\cos^2{\varphi}}} \\
+              &= -\frac{\d{t}}{\sqrt{1-t^2}},
+\end{aligned}
+\end{equation}
+%
+where \(\cos{(\pi/2)}=0\) and \(\cos(0) = 1\) so we will flip the bounds and cancel out the negative in \cref{eqn:sub2}:
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = \frac{\gamma}{\pi} \int_{0}^{1} \frac{ 2t^2 -1}{\left[ \xi^2  + (\rho + 1)^2 - 4\rho t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+Next we multiply by the top and bottom of the integrand by \(\left[(\rho+1)^2 + \xi^2\right]^{-1/2}\), noting that this term is constant relative to the integral and can therefore be brought outside.
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = \frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \int_{0}^{1} \frac{ 2t^2 -1}{\left[1 - \frac{4\rho t^2}{(\rho+1)^2 + \xi^2} \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+we now let
+
+\begin{equation}
+    \label{eqn:mdef}
+    m = \frac{4\rho}{(\rho+1)^2 + \xi^2}
+\end{equation}
+%
+which cleans things up to be
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = \frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \int_{0}^{1} \frac{ 2t^2 -1}{\left[1 - m t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+Our integrand is now almost matching to elliptic integrals.
+%
+We just need to apply some algebraic manipulations to the numerator to match elliptic integral expressions of the form
+
+\begin{align}
+    \mathcal{K}(m) &= \int_0^1 \frac{\d{t}}{\sqrt{(1-t^2)(1-mt^2)}} \\
+    \mathcal{E}(m) &= \int_0^1 \frac{\sqrt{1-mt^2}}{\sqrt{(1-t^2)}}\d{t}
+\end{align}
+
+\where \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) are elliptic integrals of the first and second kind, respectively.
+%
+Making the required algebraic manipulations yields
+
+\begin{equation}
+\psi_\theta(\vect{p},\vect{p}_o) = -\frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \int_{0}^{1} \frac{ 1 - \frac{2}{m} + \frac{2}{m} (1 - mt^2) }{\left[1 - m t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \d{t}.
+\end{equation}
+%
+Splitting the integrand up we have
+
+\begin{equation}
+    \begin{split}
+        \psi_\theta(\vect{p},\vect{p}_o) = -\frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \bigg[
+        & \left(1-\frac{2}{m}\right) \int_{0}^{1} \frac{\d{t} }{\left[1 - m t^2 \right]^{1/2} \left[1-t^2\right]^{1/2}} \\
+        & +\frac{2}{m} \int_{0}^{1} \frac{ [1 - mt^2]^{1/2} }{\left[1-t^2\right]^{1/2}} \d{t}\bigg].
+    \end{split}
+\end{equation}
+%
+Each of the integrals is now in the form of an elliptic integral.
+%
+Making the substitution for elliptic integrals gives
+
+\begin{equation}
+    \psi_\theta(\vect{p},\vect{p}_o) = -\frac{\gamma}{\pi \left[(\rho+1)^2 + \xi^2\right]^{1/2}} \left[  \frac{2}{m} \mathcal{E}(m) -\left(\frac{2}{m}-1\right)\mathcal{K}(m)  \right].
+\end{equation}
+
+\section{General Form of Induced Velocities}
+
+The next step is to obtain the induced velocity from the vector potential, \(\psi_\theta(\vect{p},\vect{p}_o)\).
+%
+Remember from our basic derivation of the Biot-Savart law that we need to take the curl of the vector potential to get the velocity induced by a vortex filament.  In cylindrical coordinates, \(\vect{V} = \nabla \times \vect{\psi}\) expands to:
+
+\begin{equation}
+    \label{eqn:delxpsicyl}
+    \begin{split}
+        \vect{V} &= \left(\frac{1}{r}\pd{\psi_z}{\theta} - \pd{\psi_\theta}{z}\right)\hat{\vect{e}}_r \\
+                 &+ \left(\pd{\psi_r}{z} - \pd{\psi_z}{r}\right)\hat{\vect{e}}_\theta \\
+                 &+\frac{1}{r} \left(\pd{(r \psi_\theta)}{r} - \frac{\psi_r}{\theta}\right)\hat{\vect{e}}_z.
+    \end{split}
+\end{equation}
+%
+Since our axisymmetric assumption allowed us to eliminate all but the tangential component of the vector potential, all but the \(\psi_\theta\) components in \cref{eqn:delxpsicyl} disappear, leaving us with the following induced velocities in the \(r\)- and \(z\)-directions.
+
+\begin{subequations}
+\begin{align}
+    v_z &= \frac{1}{r}\pd{(r\psi_\theta)}{r}, \\
+    v_r &= -\pd{\psi_\theta}{z}.
+\end{align}
+\end{subequations}
+
+
+Now we need to take these partial derivatives to arrive at our final expressions of induced velocity.
+%
+Because our current vector potential expressions are in terms of \(m\) and normalized values, we will require the application of the chain rule.
+%
+Therefore it will be important to have the expressions for the various partial derivatives along the way.
+%
+The derivative of the elliptic integral of the first kind with respect to \(m\) is
+
+\begin{equation}
+    \label{eqn:dkdm}
+    \pd{\mathcal{K}(m)}{m} = \frac{\mathcal{E}(m)}{2m(1-m)} - \frac{\mathcal{K}(m)}{2m}.
+\end{equation}
+
+\noindent The derivative of the elliptic integral of the second kind is
+
+\begin{equation}
+    \label{eqn:dkdm2}
+    \pd{\mathcal{E}(m)}{m} = \frac{\mathcal{E}(m)}{2m} - \frac{\mathcal{K}(m)}{2m}.
+\end{equation}
+
+\noindent The partial of \(m\) with respect to \(\xi\) is
+
+\begin{equation}
+    \pd{m}{\xi} = - \frac{8 \rho \xi }{\left((\rho+1)^2+\xi^2\right)^2}.
+\end{equation}
+
+\noindent The partial of \(\xi\) with respect to \(z\) is
+
+\begin{equation}
+    \pd{\xi}{z} = \frac{1}{r_o}.
+\end{equation}
+
+
+\noindent The partial of \(m\) with respect to \(\rho\) is
+
+\begin{equation}
+    \pd{m}{\rho} = \frac{4\left(-\rho^2 + \xi^2 + 1\right)}{\left((\rho +1)^2 + \xi^2 \right)^2}.
+\end{equation}
+
+\noindent The partial of \(\rho\) with respect to \(r\) is
+
+\begin{equation}
+    \pd{\rho}{r} = \frac{1}{r_o}.
+\end{equation}
+
+Though simple to write symbolically, the overall derivatives become very cumbersome.
+%
+To keep things manageable, let us separate out the expression for \(\psi_\theta\) into the constant (\(\mathcal{C}\)), numerator (\(\mathcal{N}\)), and denominator (\(\mathcal{D}\)) portions, respectively:
+
+\begin{equation}
+    \label{eqn:cnd}
+\begin{aligned}
+    \mathcal{\mathcal{C}} &= -\frac{\Gamma}{\pi } \\
+    \mathcal{\mathcal{N}} &= \frac{2}{m}\mathcal{E}(m) - \frac{2}{m}\mathcal{K}(m) + \mathcal{K}(m) \\
+    \mathcal{\mathcal{D}} &= \left[(\rho+1)^2+\xi^2\right]^{1/2}.
+\end{aligned}
+\end{equation}
+
+\noindent The partial of the numerator with respect to \(z\) is
+
+\begin{equation}
+    \begin{split}
+        \pd{\mathcal{N}}{z} =& -\pd{m}{\xi}\pd{\xi}{z} \bigg[ \frac{\mathcal{K}(m)+\mathcal{E}(m)}{m^2}\\
+         &- \frac{3\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{m^2(m-1)}\\
+         &+ \frac{\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{2m(m-1)} \bigg].
+    \end{split}
+\end{equation}
+
+\noindent The partial of the denominator with respect to \(z\) is
+
+\begin{equation}
+    \pd{\mathcal{D}}{z} = \pd{\xi}{z} \frac{\xi}{\mathcal{D}} = \frac{\xi}{r_o\mathcal{D}}.
+\end{equation}
+
+\noindent The partial of the numerator with respect to \(r\) is
+
+\begin{equation}
+    \begin{split}
+        \pd{\mathcal{N}}{r} =& \pd{m}{\rho}\pd{\rho}{r} \bigg[ -\frac{3\mathcal{E}(m) + (m-5)\mathcal{K}(m)}{2m(m-1)} \\
+         &+ \frac{2\mathcal{E}(m) - 2\mathcal{K}(m)}{m^2(m-1)} \bigg]\\
+    \end{split}
+\end{equation}
+
+\noindent The partial of the denominator with respect to \(r\) is
+
+\begin{equation}
+    \pd{\mathcal{D}}{r} = \pd{\rho}{r}\frac{\rho+1}{\mathcal{D}} = \frac{\rho+1}{r_o\mathcal{D}}.
+\end{equation}
+
+\noindent Putting things together for \(v_r\) with the quotient rule gives
+
+\begin{equation}
+    \label{eqn:vrlong}
+        v_r = -\pd{\psi_\theta}{z} = -\mathcal{C}\frac{\pd{\mathcal{N}}{z}\mathcal{D} - \mathcal{N}\pd{\mathcal{D}}{z}}{\mathcal{D}^2}.
+\end{equation}
+
+\noindent Putting things together for \(v_z\) we start with the quotient rule, then apply the product rule to arrive at
+
+\begin{equation}
+    \label{eqn:vzlong}
+    \begin{aligned}
+        v_z =& \frac{1}{r}\pd{(r\psi_\theta)}{r} \\
+        =& \frac{\mathcal{C}}{r}\frac{\pd{(\mathcal{N}r)}{r}\mathcal{D} - (\mathcal{N}r)\pd{\mathcal{D}}{r}}{\mathcal{D}^2} \\
+        =& \mathcal{C}\frac{\left(\mathcal{N} + r\pd{\mathcal{N}}{r}\right)\mathcal{D} - (\mathcal{N}r)\pd{\mathcal{D}}{r}}{r\mathcal{D}^2}.
+\end{aligned}
+\end{equation}
+
+\section{Radially Induced Velocity Component}
+
+Now let's see what we can do about simplifying these expressions.
+%
+We'll start with \cref{eqn:vrlong}.
+%
+To get started, we'll split up the fraction, and expand out the partial of \(\mathcal{D}\),
+
+\begin{equation}
+    \label{eqn:vr2}
+    v_r  = -C \left[ \underbrace{\frac{\pd{\mathcal{N}}{z}}{\mathcal{D}}}_\text{Term 1}
+    -\underbrace{\frac{\mathcal{N}\xi}{r_oD^3}}_\text{Term 2}\right]
+\end{equation}
+
+\noindent We are going to look at each term in the brackets of \cref{eqn:vr2} separately first, then bring them together.
+%
+We'll start with Term 2.
+%
+Expanding gives
+
+\begin{equation}
+    \label{eqn:vrt2.1}
+    \frac{N\xi}{r_oD^3} =  \frac{\xi}{r_oD^3} \left[\frac{2}{m}\mathcal{E}(m) + \left(1-\frac{2}{m}\right)\mathcal{K}(m)\right]
+\end{equation}
+
+\noindent Let us address the \(m\)'s in the denominators by realizing that a comparison of \cref{eqn:mdef,eqn:cnd} indicates that
+
+\begin{equation}
+    \mathcal{D}^2 = \frac{4\rho}{m}.
+\end{equation}
+
+\noindent Making this replacement in \cref{eqn:vrt2.1} gives
+
+\begin{equation}
+    \label{eqn:term2simple}
+    \begin{aligned}
+        \frac{N\xi}{r_oD^3} &= \frac{\xi \cancel{m}}{4\rho r_o D} \left[ \frac{2}{\cancel{m}}\mathcal{E}(m) + \left(\cancelto{m}{1} - \frac{2}{\cancel{m}} \right)\mathcal{K}(m) \right] \\
+        &= \frac{\xi/\rho }{4 r_o D} \left[ 2\mathcal{E}(m) + \left(m - 2 \right)\mathcal{K}(m) \right]
+    \end{aligned}
+\end{equation}
+
+Now let's look at Term 1 from \cref{eqn:vrlong}.
+%
+Expanding out gives
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{8\rho \xi}{r_o D \left((\rho+1)^2 + \xi^2\right)^2} \bigg[ \frac{\mathcal{K}(m)+\mathcal{E}(m)}{m^2}\\
+         &- \frac{3\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{m^2(m-1)}\\
+         &+ \frac{\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{2m(m-1)} \bigg].
+    \end{split}
+\end{equation}
+
+\noindent We can see right away that part of the fraction outside of the brackets closely resembles the parameter \(m^2\), all we're missing is \(2\rho\) in the numerator, so we'll multiply and divide by \(2 \rho\).
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{(2\rho)8\rho \xi}{2\rho r_o D \left((\rho+1)^2 + \xi^2\right)^2} \bigg[ \frac{\mathcal{K}(m)+\mathcal{E}(m)}{m^2}\\
+         &- \frac{3\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{m^2(m-1)}\\
+         &+ \frac{\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{2m(m-1)} \bigg].
+    \end{split}
+\end{equation}
+
+\noindent which allows us to remove some of the \(m^2\) denominators inside the brackets
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{\xi\cancel{m^2}}{2\rho r_o D} \bigg[ \frac{\mathcal{K}(m)+\mathcal{E}(m)}{\cancel{m^2}}\\
+         &- \frac{3\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{\cancel{m^2}(m-1)}\\
+         &+ \frac{m(\mathcal{K}(m)(m-1)+\mathcal{E}(m))}{2\cancel{m}(m-1)} \bigg].
+    \end{split}
+\end{equation}
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{\xi/\rho}{2r_o D} \bigg[ \mathcal{K}(m)+\mathcal{E}(m)\\
+         &- \frac{3\mathcal{K}(m)(m-1)+\mathcal{E}(m)}{m-1}\\
+         &+ \frac{m(\mathcal{K}(m)(m-1)+\mathcal{E}(m))}{2(m-1)} \bigg].
+    \end{split}
+\end{equation}
+
+\noindent Splitting up the fractions inside the brackets will let us simplify further.
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{\xi/\rho}{2r_o D} \bigg[ \mathcal{K}(m)+\mathcal{E}(m)\\
+         &- \frac{3\mathcal{K}(m)\cancel{(m-1)}}{\cancel{m-1}} - \frac{\mathcal{E}(m)}{m-1}\\
+         &+ \frac{m\mathcal{K}(m)\cancel{(m-1)}}{2\cancel{(m-1)}} + \frac{m\mathcal{E}(m)}{2(m-1)} \bigg].
+\end{split}
+\end{equation}
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{\xi/\rho}{2r_o D} \bigg[ \mathcal{K}(m)+\mathcal{E}(m) - 3\mathcal{K}(m) - \frac{1}{m-1}\mathcal{E}(m)\\
+         &+ \frac{m}{2}\mathcal{K}(m) + \frac{m}{2(m-1)} \mathcal{E}(m) \bigg].
+\end{split}
+\end{equation}
+
+\noindent Grouping like terms
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{\xi/\rho}{2r_o D} \bigg[ \left(1- \frac{1}{m-1}+ \frac{m}{2(m-1)} \right)\mathcal{E}(m) \\
+         &+ \left(\frac{m}{2}-2\right)\mathcal{K}(m) \bigg].
+\end{split}
+\end{equation}
+
+\noindent Simplifying the gathered terms for \(\mathcal{E}(m)\)
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{\xi/\rho}{2r_o D} \bigg[ \left(\frac{2(m-1)- 2+ m}{2(m-1)} \right)\mathcal{E}(m) \\
+         &- \left(\frac{m}{2}-2\right)\mathcal{K}(m) \bigg].
+\end{split}
+\end{equation}
+
+\begin{equation}
+    \begin{split}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} =& \frac{\xi/\rho}{2r_o D} \bigg[ \left(\frac{3m-4}{2(m-1)} \right)\mathcal{E}(m) \\
+         &- \left(\frac{m}{2}-2\right)\mathcal{K}(m) \bigg].
+\end{split}
+\end{equation}
+
+\noindent Multiplying and dividing by 2
+
+\begin{equation}
+    \label{eqn:term1simple}
+        \frac{\pd{\mathcal{N}}{z}}{\mathcal{D}} = \frac{\xi/\rho}{4 r_o D} \left[ \left(\frac{3m-4}{m-1} \right)\mathcal{E}(m) - (m-4)\mathcal{K}(m) \right].
+\end{equation}
+
+Noting that the fractions outside of the brackets are now the same for both of the simplified expressions for Term 1 (see \cref{eqn:term1simple}) and Term 2 (see \cref{eqn:term2simple}, we'll substitute the expression for Term 2 in \cref{eqn:term2simple} and the expression for Term 1 in \cref{eqn:term1simple} back in to \cref{eqn:vr2}.
+%
+
+\begin{equation}
+    \begin{split}
+\frac{\pd{\mathcal{N}}{z}\mathcal{D} - \mathcal{N}\pd{\mathcal{D}}{z}}{\mathcal{D}^2} = \frac{\xi/\rho}{4 r_o D} \left[ \left(\frac{3m-4}{m-1} \right)\mathcal{E}(m) - (m-4)\mathcal{K}(m) \right] \\
+        - \frac{\xi/\rho }{4 r_o D} \left[ 2\mathcal{E}(m) + \left(m - 2 \right)\mathcal{K}(m) \right].
+    \end{split}
+\end{equation}
+
+\noindent Let's first look at just the difference of the \(\mathcal{K}(m)\) terms:
+
+\begin{equation}
+    \label{eqn:kterms}
+    ((m-1) - (m-2))K = (m - 4 - m + 2)\mathcal{K}(m) = -2\mathcal{K}(m)
+\end{equation}
+
+\noindent Now just looking at the \(\mathcal{E}(m)\) terms:
+
+\begin{equation}
+    \label{eqn:eterms}
+    \begin{aligned}
+        \left(\frac{3m-4}{m-1} - 2\right)\mathcal{E}(m) \\
+        \left(\frac{3m-4-2(m-1)}{m-1} \right)\mathcal{E}(m) && \text{(common denominators)} \\
+        \left(\frac{3m-4-2m+2}{m-1} \right)\mathcal{E}(m) && \text{(expand)} \\
+        \left(\frac{m-2}{m-1} \right)\mathcal{E}(m) && \text{(simplify)}
+    \end{aligned}
+\end{equation}
+
+\noindent Applying the definition of \(m\) in \cref{eqn:mdef}
+
+\begin{equation}
+    \label{eqn:eterms2}
+    \begin{aligned}
+        \left(\frac{\frac{4\rho}{\mathcal{D}^2}-2}{\frac{4\rho}{\mathcal{D}^2}-1} \right)\mathcal{E}(m) \\
+        \left(\frac{\frac{4\rho-2\mathcal{D}^2}{\cancel{\mathcal{D}^2}}}{\frac{4\rho-\mathcal{D}^2}{\cancel{\mathcal{D}^2}}} \right)\mathcal{E}(m) && \text{(common denominators)}\\
+        \left(\frac{4\rho-2\mathcal{D}^2}{4\rho-\mathcal{D}^2} \right)\mathcal{E}(m) && \text{(divide)} \\
+        2\left(\frac{2\rho-\mathcal{D}^2}{4\rho-\mathcal{D}^2} \right)\mathcal{E}(m) && \text{(pull out a 2)}
+    \end{aligned}
+\end{equation}
+
+\noindent Expanding out the \(\mathcal{D}\) terms
+
+\begin{equation}
+    \label{eqn:eterms3}
+    \begin{aligned}
+        2\left(\frac{2\rho-((\rho+1)^2+\xi^2)}{4\rho-((\rho+1)^2+\xi^2)} \right)\mathcal{E}(m) \\
+        2\left(\frac{\cancel{2\rho}-\rho^2-\cancel{2\rho}-1-\xi^2}{\cancelto{2\rho}{4\rho}-\rho^2 - \cancel{2\rho} -1 -\xi^2} \right)\mathcal{E}(m) && \text{(expand and cancel)} \\
+        2\left(\frac{-\rho^2-1-\xi^2}{2\rho-\rho^2 - 1 -\xi^2} \right)\mathcal{E}(m)\\
+        -2\left(\frac{-\rho^2-1-\xi^2}{(\rho- 1)^2 +\xi^2} \right)\mathcal{E}(m) && \text{(multiply by -1 and simplify)} \\
+        -2\left(\frac{-\rho^2-1-\xi^2 + 2\rho - 2\rho}{(\rho- 1)^2 +\xi^2} \right)\mathcal{E}(m) && \text{(add and subtract }2\rho)\\
+        2\left(\frac{(\rho-1)^2+\xi^2 + 2\rho}{(\rho- 1)^2 +\xi^2} \right)\mathcal{E}(m) && \text{(consolidate numerator)}\\
+        2\left(\cancelto{1}{\frac{(\rho-1)^2+\xi^2 }{(\rho- 1)^2 +\xi^2}} +\frac{ 2\rho}{(\rho- 1)^2 +\xi^2} \right)\mathcal{E}(m) && \text{(split fraction and cancel)} \\
+        2\left(1 + \frac{2\rho}{\xi^2 + (\rho- 1)^2} \right)\mathcal{E}(m) \\
+    \end{aligned}
+\end{equation}
+
+\noindent Now putting the \(\mathcal{K}(m)\) terms from \cref{eqn:kterms} and the \(\mathcal{E}(m)\) terms from \cref{eqn:eterms3} together in the difference, remembering the fraction out front of both Term 1 and Term 2:
+
+\begin{equation}
+    v_r = -\mathcal{C} \left[\frac{\xi/\rho}{\cancelto{2}{4}\mathcal{D}r_o} \left(-\cancel{2}\mathcal{K}(m)+\cancel{2}\left[1+\frac{2\rho}{\xi^2+(\rho-1)^2}\right]\mathcal{E}(m) \right) \right]
+\end{equation}
+
+\noindent And finally expanding out \(\mathcal{C}\) and \(\mathcal{D}\) as well as some minor cleanup and rearranging we have the expression presented in \cref{eqn:ringvortexinducedvelocityradial}:
+
+\begin{equation}
+    \eqbox{
+    v_r = -\frac{\Gamma}{2\pi r_o}\frac{\xi/\rho}{[\xi^2+(\rho+1)^2]^{1/2}} \left(\mathcal{K}(m)-\left[1+\frac{2\rho}{\xi^2+(\rho-1)^2}\right]\mathcal{E}(m) \right)
+}
+\end{equation}
+
+
+\section{Axially Induced Velocity Component}
+
+Next let's simplify \cref{eqn:vzlong}
+
+\begin{equation}
+v_z = \mathcal{C}\left[\underbrace{\frac{\mathcal{N}\mathcal{D}}{r\mathcal{D}^2}}_\text{Term 1} + \underbrace{\frac{r\pd{\mathcal{N}}{r}\mathcal{D}}{rD^2}}_\text{Term 2} - \underbrace{\frac{(\mathcal{N}r)\pd{\mathcal{D}}{r}}{r\mathcal{D}^2}}_\text{Term 3}\right].
+\end{equation}
+
+\noindent We'll first expand the partials.
+%
+Term 1 has no partials to expand:
+
+\begin{equation}
+    \text{Term 1} = \frac{\mathcal{N}\mathcal{D}}{r\mathcal{D}^2}.
+\end{equation}
+
+\noindent Term 2 has several sets of partials to expand:
+
+\begin{equation}
+    \begin{split}
+    \text{Term 2} =& \frac{r\mathcal{D}}{r\mathcal{D}^2} \pd{m}{\rho}\pd{\rho}{r} \bigg[ -\frac{3\mathcal{E}(m) + (m-5)\mathcal{K}(m)}{2m(m-1)} \\
+         &+ \frac{2\mathcal{E}(m) - 2\mathcal{K}(m)}{m^2(m-1)} \bigg],
+    \end{split}
+\end{equation}
+
+\begin{equation}
+    \begin{split}
+        \text{Term 2} =& \frac{r\mathcal{D}}{r\mathcal{D}^2} \frac{4(-\rho^2+\xi^2 +1)}{\mathcal{D}^4}\frac{1}{r_o} \bigg[ -\frac{3\mathcal{E}(m) + (m-5)\mathcal{K}(m)}{2m(m-1)} \\
+         &+ \frac{2\mathcal{E}(m) - 2\mathcal{K}(m)}{m^2(m-1)} \bigg].
+    \end{split}
+\end{equation}
+
+\noindent Term 3 also has a couple sets of partials to expand:
+
+\begin{equation}
+        \text{Term 3} = -\frac{\mathcal{N}r}{r\mathcal{D}^2}\pd{\rho}{r}\frac{\rho+1}{\mathcal{D}},
+\end{equation}
+
+\begin{equation}
+        \text{Term 3} = -\frac{\mathcal{N}r}{r\mathcal{D}^2}\frac{1}{r_o}\frac{\rho+1}{\mathcal{D}}.
+\end{equation}
+
+Next let's expand out the \(\mathcal{N}\)'s.
+%
+For Term 1
+
+\begin{equation}
+    \text{Term 1} = \frac{\mathcal{D}}{r\mathcal{D}^2}\left[\frac{2}{m}\mathcal{E}(m) + \frac{m-2}{m}\mathcal{K}(m)\right].
+\end{equation}
+
+\noindent Term 2 is already expanded, but let us gather the \(\mathcal{E}(m)\) and \(\mathcal{K}(m)\) terms.
+
+\begin{equation}
+    \begin{split}
+        \text{Term 2} = \frac{r\mathcal{D}}{r\mathcal{D}^2} \frac{4(-\rho^2+\xi^2 +1)}{\mathcal{D}^4}\frac{1}{r_o} \bigg[ -&\frac{3m-4}{2m^2(m-1)}\mathcal{E}(m) \\
+                   &- \frac{(m-4)(m-1)}{2m^2(m-1)}\mathcal{K}(m) \bigg].
+    \end{split}
+\end{equation}
+
+\noindent For Term 3:
+
+\begin{equation}
+        \text{Term 3} = -\frac{r}{r\mathcal{D}^2}\frac{1}{r_o}\frac{\rho+1}{\mathcal{D}}\left[\frac{2}{m}\mathcal{E}(m) + \frac{m-2}{m}\mathcal{K}(m)\right].
+\end{equation}
+
+In order to add the terms together, we require a common denominator.
+%
+Let us gather the multipliers of each of the terms to see what we're working with and decide what common denominator to choose.
+
+\begin{align}
+    \text{Term 1 Multiplier} &= \frac{\mathcal{D}}{r\mathcal{D}^2m}; \\
+    \text{Term 2 Multiplier} &= \frac{4r\mathcal{D}(-\rho^2+\xi^2+1)}{2rr_o\mathcal{D}^6m^2(m-1)}; \\
+    \text{Term 3 Multiplier} &= \frac{r(\rho+1)}{rr_o\mathcal{D}^3m}.
+\end{align}
+
+%
+\noindent We may expect our final expression to look similar to the expression for \(v_r\), so we may want to make sure to keep a \(r_oD\) in the denominator as we go forward.
+%
+Therefore we'll start by multiplying Term 1 by \(r_o/r_o\):
+
+\begin{align}
+    \text{Term 1 Multiplier} &= \frac{\mathcal{D}r_o}{rr_o\mathcal{D}^2m}; \\
+    \text{Term 2 Multiplier} &= \frac{4r\mathcal{D}(-\rho^2+\xi^2+1)}{2rr_o\mathcal{D}^6m^2(m-1)}; \\
+    \text{Term 3 Multiplier} &= \frac{r(\rho+1)}{rr_o\mathcal{D}^3m}.
+\end{align}
+
+\noindent Term 2 seems to have some extraneous values, so let's divide out the 2 and one of the \(\mathcal{D}\)'s,
+
+\begin{align}
+    \text{Term 1 Multiplier} &= \frac{\mathcal{D}r_o}{rr_o\mathcal{D}^2m}; \\
+    \text{Term 2 Multiplier} &= \frac{2r(-\rho^2+\xi^2+1)}{rr_o\mathcal{D}^5m^2(m-1)}; \\
+    \text{Term 3 Multiplier} &= \frac{r(\rho+1)}{rr_o\mathcal{D}^3m}.
+\end{align}
+
+\noindent Now we just need to multiply the top and bottom of Term 1 by \(\mathcal{D}^3m(m-1)\) and the top and bottom of Term 3 by \(\mathcal{D}^2m(m-1)\) to get a common denominator between the terms.
+
+\begin{align}
+    \label{eqn:vzt1m}
+    \text{Term 1 Multiplier} &= \frac{r_o\mathcal{D}^4m(m-1)}{rr_o\mathcal{D}^5m^2(m-1)}; \\
+    \label{eqn:vzt2m}
+    \text{Term 2 Multiplier} &= \frac{2r(-\rho^2+\xi^2+1)}{rr_o\mathcal{D}^5m^2(m-1)}; \\
+    \label{eqn:vzt3m}
+    \text{Term 3 Multiplier} &= \frac{r(\rho+1)\mathcal{D}^2m(m-1)}{rr_o\mathcal{D}^5m^2(m-1)}.
+\end{align}
+
+With a common denominator in place, we can start to add the various terms together.
+%
+Let us try to begin with the \(\mathcal{K}(m)\) terms:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{rr_o\mathcal{D}^5m^2(m-1)} \bigg[&  r_o\mathcal{D}^4m(m-1)(m-2)  && \text{(from Term 1)} \\
+      &- 2r(-\rho^2+\xi^2+1)(m-4)(m-1) && \text{(from Term 2)} \\
+      &- r(\rho+1)\mathcal{D}^2m(m-1)(m-2) \bigg]. && \text{(from Term 3)} \\
+    \end{aligned}
+\end{equation}
+
+\noindent We see immediately that we can cancel out the \((m-1)\) from all the terms.
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{rr_o\mathcal{D}^5m^2} \bigg[&  r_o\mathcal{D}^4m(m-2)  && \text{(from Term 1)} \\
+      &- 2r(-\rho^2+\xi^2+1)(m-4) && \text{(from Term 2)} \\
+      &- r(\rho+1)\mathcal{D}^2m(m-2) \bigg]. && \text{(from Term 3)} \\
+    \end{aligned}
+\end{equation}
+
+\noindent Unfortunately, that appears to be the only obvious cancellation to make right away.
+%
+Perhaps expanding things out more will help.
+%
+Let us expand the \(m\)'s out next, remembering that \(m=4\rho/\mathcal{D}^2\).
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)\cancel{\mathcal{D}^4}}{rr_o\mathcal{D}^{\cancel{5}} \cancelto{4}{16}\rho^2} \bigg[&  r_o\mathcal{D}^{\cancelto{2}{4}}\frac{\cancel{4}\rho}{\cancel{\mathcal{D}^2}}\left(\frac{4\rho}{\mathcal{D}^2}-2\right)  && \text{(from Term 1)} \\
+        &- 2r(-\rho^2+\xi^2+1)\left(\frac{\cancel{4}\rho}{\mathcal{D}^2}-\cancel{4}\right) && \text{(from Term 2)} \\
+        &- r(\rho+1)\cancel{\mathcal{D}^2}\frac{\cancel{4}\rho}{\cancel{\mathcal{D}^2}}\left(\frac{4\rho}{\mathcal{D}^2}-2\right) \bigg]; && \text{(from Term 3)} \\
+    \end{aligned}
+\end{equation}
+
+\noindent then canceling out the obvious items and cleaning up:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{4\rho^2 rr_o\mathcal{D} } \bigg[&  \rho r_o\mathcal{D}^2\left(\frac{4\rho}{\mathcal{D}^2}-2\right)  && \text{(from Term 1)} \\
+      &- 2r(-\rho^2+\xi^2+1)\left(\frac{\rho}{\mathcal{D}^2}-1\right) && \text{(from Term 2)} \\
+      &- \rho r(\rho+1)\left(\frac{4\rho}{\mathcal{D}^2}-2\right) \bigg]. && \text{(from Term 3)} \\
+    \end{aligned}
+\end{equation}
+
+\noindent We see that \(r_o\rho=r\), which gives us a mutual \(r\) that we can cancel out of all the terms.
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{4\rho^2 r_o\mathcal{D} } \bigg[&  \mathcal{D}^2 \left(\frac{4\rho}{\mathcal{D}^2}-2\right)  && \text{(from Term 1)} \\
+      &- 2(-\rho^2+\xi^2+1)\left(\frac{\rho}{\mathcal{D}^2}-1\right) && \text{(from Term 2)} \\
+      &- \rho (\rho+1)\left(\frac{4\rho}{\mathcal{D}^2}-2\right) \bigg]. && \text{(from Term 3)} \\
+    \end{aligned}
+\end{equation}
+
+\noindent We also see that we can cancel out an additional 2 from everything.
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{2\mathcal{D}r_o \rho^2} \bigg[&  \mathcal{D}^2 \left(\frac{2\rho}{\mathcal{D}^2}-1\right)  && \text{(from Term 1)} \\
+      &- (-\rho^2+\xi^2+1)\left(\frac{\rho}{\mathcal{D}^2}-1\right) && \text{(from Term 2)} \\
+      &- \rho (\rho+1)\left(\frac{2\rho}{\mathcal{D}^2}-1\right) \bigg]. && \text{(from Term 3)} \\
+    \end{aligned}
+\end{equation}
+
+We've found ourselves with some more uncommon denominators, so let's expand and gather terms.
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{2\mathcal{D}r_o \rho^2 } \bigg[&   2\rho-\mathcal{D}^2  && \text{(from Term 1)} \\
+        &- \frac{-\rho^3+\rho\xi^2+\rho}{\mathcal{D}^2}-\rho^2+\xi^2+1 && \text{(from Term 2)} \\
+      &- \frac{2\rho^3 +2\rho^2}{\mathcal{D}^2}+\rho^2 + \rho \bigg]; && \text{(from Term 3)} \\
+    \end{aligned}
+\end{equation}
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{2\mathcal{D}r_o \rho^2 } \bigg[&   2\rho-\mathcal{D}^2 -\cancel{\rho^2} +\xi^2 +1 +\cancel{\rho^2} + \rho \\
+        &- \frac{-\rho^3+\rho\xi^2+\rho}{\mathcal{D}^2} - \frac{2\rho^3 +2\rho^2}{\mathcal{D}^2} \bigg].
+    \end{aligned}
+\end{equation}
+
+\noindent Expanding out the \(\mathcal{D}\) in the numerator:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{K}(m)}{2\mathcal{D}r_o \rho^2 } \bigg[&   \cancel{3}\rho+\cancel{\xi^2} +\cancel{1} -(\rho^2 +\cancel{2\rho} +\cancel{1} +\cancel{\xi})  \\
+        &- \frac{-\rho^3+\rho\xi^2+\rho}{\mathcal{D}^2} - \frac{2\rho^3 +2\rho^2}{\mathcal{D}^2} \bigg].
+    \end{aligned}
+\end{equation}
+
+\noindent Now let's get a common denominator again, pulling the \(\rho^2\) inside the brackets.
+
+\begin{equation}
+    \frac{\mathcal{K}(m)}{2\mathcal{D}r_o } \left[\frac{\rho\mathcal{D}^2 -\rho^2\mathcal{D}^2 + \cancel{\rho^3}-\rho\xi^2-\rho - \cancel{2}\rho^3 -2\rho^2}{\mathcal{D}^2\rho^2} \right].
+\end{equation}
+
+\noindent We can immediately cancel out a \(\rho\):
+
+\begin{equation}
+    \frac{\mathcal{K}(m)}{2\mathcal{D}r_o } \left[ \frac{\mathcal{D}^2 -(\rho^2 +2\rho +1 +\xi^2)-\rho\mathcal{D}^2}{\mathcal{D}^2\rho} \right].
+\end{equation}
+
+\noindent We also see that \(\mathcal{D}^2 = \rho^2 + 2\rho +1 +\xi^2\), which cancels in the numerator.
+
+\begin{equation}
+    \frac{\mathcal{K}(m)}{2\mathcal{D}r_o } \left[\frac{-\rho\mathcal{D}^2}{\rho\mathcal{D}^2} \right].
+\end{equation}
+
+\noindent We are finally left with
+\begin{equation}
+    \label{eqn:vzksimple}
+    -\frac{\mathcal{K}(m)}{2\mathcal{D}r_o }.
+\end{equation}
+
+Now let's look at the \(\mathcal{E}(m)\) terms start back with the term multipliers with common denominators: \cref{eqn:vzt1m,eqn:vzt2m,eqn:vzt3m}.
+
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{rr_o\mathcal{D}^5m^2(m-1)} \bigg[&  2r_o\mathcal{D}^4m(m-1)  && \text{(from Term 1)} \\
+      &- 2r(-\rho^2+\xi^2+1)(3m-4) && \text{(from Term 2)} \\
+      &- 2r(\rho+1)\mathcal{D}^2m(m-1) \bigg]. && \text{(from Term 3)}
+    \end{aligned}
+\end{equation}
+
+\noindent Unlike the \(\mathcal{K}(m)\) terms, it doesn't appear as though anything will cancel out immediately.
+%
+Let's take a similar approach as before and expand out the \(m\) terms.
+%
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{rr_o\mathcal{D}^5m^2(m-1)} \bigg[&  2r_o\mathcal{D}^4\left(\frac{4\rho}{\mathcal{D}^2}\right)\left(\frac{4\rho}{\mathcal{D}^2}\right)-1)  && \text{(from Term 1)} \\
+      &- 2r(-\rho^2+\xi^2+1)\left(3\left(\frac{4\rho}{\mathcal{D}^2}\right)-4\right) && \text{(from Term 2)} \\
+      &- 2r(\rho+1)\mathcal{D}^2\left(\frac{4\rho}{\mathcal{D}^2}\right)\left(\frac{4\rho}{\mathcal{D}^2}\right)-1) \bigg]. && \text{(from Term 3)}
+    \end{aligned}
+\end{equation}
+
+\noindent Again noting that \(r_o\rho = r\), we can cancel out an \(r\).
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{r_o\mathcal{D}^5m^2(m-1)} \bigg[&  2\mathcal{D}^4\left(\frac{4}{\mathcal{D}^2}\right)\left(\frac{4\rho}{\mathcal{D}^2}\right)-1)  && \text{(from Term 1)} \\
+      &- 2(-\rho^2+\xi^2+1)\left(3\left(\frac{4\rho}{\mathcal{D}^2}\right)-4\right) && \text{(from Term 2)} \\
+      &- 2(\rho+1)\mathcal{D}^2\left(\frac{4\rho}{\mathcal{D}^2}\right)\left(\frac{4\rho}{\mathcal{D}^2}\right)-1) \bigg]. && \text{(from Term 3)}
+    \end{aligned}
+\end{equation}
+
+\noindent We may also want to expand the \(m^2\) on the outside---
+
+\begin{equation}
+    \frac{1}{r_o\mathcal{D}^5m^2(m-1)} = \frac{\cancel{\mathcal{D}^4}}{r_o\mathcal{D}^{\cancel{5}}16\rho^2(m-1)}
+\end{equation}
+
+\noindent ---which leaves us with
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{r_o\mathcal{D}16\rho^2(m-1)} \bigg[&  2\mathcal{D}^4\left(\frac{4}{\mathcal{D}^2}\right)\left(\frac{4\rho}{\mathcal{D}^2}\right)-1)  && \text{(from Term 1)} \\
+      &- 2(-\rho^2+\xi^2+1)\left(3\left(\frac{4\rho}{\mathcal{D}^2}\right)-4\right) && \text{(from Term 2)} \\
+      &- 2(\rho+1)\mathcal{D}^2\left(\frac{4\rho}{\mathcal{D}^2}\right)\left(\frac{4\rho}{\mathcal{D}^2}\right)-1) \bigg]. && \text{(from Term 3)}
+    \end{aligned}
+\end{equation}
+
+\noindent We can now take an 8 out of everything:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{2\mathcal{D}r_o\rho^2(m-1)} \bigg[&  \mathcal{D}^{\cancelto{2}{4}}\cancel{\left(\frac{1}{\mathcal{D}^2}\right)}\left(\frac{4\rho}{\mathcal{D}^2}\right)-1)  && \text{(from Term 1)} \\
+      &- (-\rho^2+\xi^2+1)\left(3\left(\frac{\rho}{\mathcal{D}^2}\right)-1\right) && \text{(from Term 2)} \\
+      &- (\rho+1)\cancel{\mathcal{D}^2}\left(\frac{\rho}{\cancel{\mathcal{D}^2}}\right)\left(\frac{4\rho}{\mathcal{D}^2}\right)-1) \bigg]. && \text{(from Term 3)}
+    \end{aligned}
+\end{equation}
+
+\noindent Cleaning up a bit:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{2\mathcal{D}r_o\rho^2(m-1)} \bigg[&  \mathcal{D}^2\left(\frac{4\rho}{\mathcal{D}^2}\right)-1)  && \text{(from Term 1)} \\
+      &- (-\rho^2+\xi^2+1)\left(3\left(\frac{\rho}{\mathcal{D}^2}\right)-1\right) && \text{(from Term 2)} \\
+      &- (\rho+1)\rho\left(\frac{4\rho}{\mathcal{D}^2}\right)-1) \bigg]. && \text{(from Term 3)}
+    \end{aligned}
+\end{equation}
+
+\noindent Let's next expand out the multiplications.
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{2\mathcal{D}r_o\rho^2(m-1)} \bigg[&  4\rho-\mathcal{D}^2  && \text{(from Term 1)} \\
+      &- \frac{-3\rho^3+3\rho\xi^2+3\rho}{\mathcal{D}^2} -\cancel{\rho^2}+\xi^2 +1 && \text{(from Term 2)} \\
+      &- \frac{4\rho^3 + 4\rho^2}{\mathcal{D}^2}+\cancel{\rho^2}+\rho \bigg]. && \text{(from Term 3)}
+    \end{aligned}
+\end{equation}
+
+\noindent Gathering terms:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{2\mathcal{D}r_o\rho^2(m-1)} \bigg[&  5\rho+\xi+1-\mathcal{D}^2
+      &- \frac{-3\rho^3+3\rho\xi^2+3\rho}{\mathcal{D}^2}- \frac{4\rho^3 + 4\rho^2}{\mathcal{D}^2} \bigg].
+    \end{aligned}
+\end{equation}
+
+\noindent Expanding the \(\mathcal{D}\) in the numerator:
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{2\mathcal{D}r_o\rho^2(m-1)} \bigg[&  \cancelto{3}{5}\rho+\cancel{\xi}+\cancel{1}-(\rho^2 + \cancel{2\rho} + \cancel{1} +\cancel{\xi})
+      &- \frac{-\cancel{3\rho^3}+3\rho\xi^2+3\rho+\cancel{4}\rho^3 + 4\rho^2}{\mathcal{D}^2} \bigg].
+    \end{aligned}
+\end{equation}
+
+\noindent We can take a \(\rho\) out of everything now as well.
+
+\begin{equation}
+    \begin{aligned}
+        \frac{\mathcal{E}(m)}{2\mathcal{D}r_o\rho(m-1)} \bigg[&  3-\rho
+      &- \frac{3\xi^2+3+\rho^2 + 4\rho}{\mathcal{D}^2} \bigg].
+    \end{aligned}
+\end{equation}
+
+\noindent Let's move the 3 into the fraction and expand the \(\mathcal{D}\) that will appear in the numerator.
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o\rho(m-1)} \left[  -\rho - \frac{-\cancelto{2}{3}\rho^2 - \cancelto{2}{6}\rho - \cancel{3} -\cancel{3\xi} + \cancel{3\xi^2}+\cancel{3}+\cancel{\rho^2} + \cancel{4\rho}}{\mathcal{D}^2} \right].
+\end{equation}
+
+\noindent After cleaning up the various cancelations, we can take another \(\rho\) out of everything.
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o(m-1)} \left[ -1 + \frac{2(\rho + 1) }{\mathcal{D}^2} \right].
+\end{equation}
+
+\noindent Now let's move the \((m-1)\) into the inside and expand out the \(m\) and \(\mathcal{D}\) terms.
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{-1}{\frac{4\rho}{(\rho+1)^2+\xi^2}-1} + \frac{2(\rho + 1) }{\left(\frac{4\rho}{(\rho+1)^2+\xi^2}-1\right)\left((\rho+1)^2+\xi^2\right)} \right].
+\end{equation}
+
+\noindent Combining fractions:
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{2\rho + 2  -(\rho+1)^2 - \xi^2}{\left(\frac{4\rho}{(\rho+1)^2+\xi^2}-1\right)\left((\rho+1)^2+\xi^2\right)} \right].
+\end{equation}
+
+\noindent Expanding the numerator:
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{\cancel{2\rho} + \cancelto{1}{2}  -\rho^2-\cancel{2\rho}-\cancel{1} - \xi^2}{\left(\frac{4\rho}{(\rho+1)^2+\xi^2}-1\right)\left((\rho+1)^2+\xi^2\right)} \right];
+\end{equation}
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{1  -\rho^2 - \xi^2}{\left(\frac{4\rho}{(\rho+1)^2+\xi^2}-1\right)\left((\rho+1)^2+\xi^2\right)} \right].
+\end{equation}
+
+\noindent Getting a common denominator in the denominator:
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{1  -\rho^2 - \xi^2}{4\rho-(\rho+1)^2-\xi^2} \right].
+\end{equation}
+
+\noindent Expanding then simplifying the denominator:
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{1  -\rho^2 - \xi^2}{\cancelto{2}{4}\rho-\rho^2-\cancel{2\rho}-1-\xi^2} \right];
+\end{equation}
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{\rho^2 - 1 + \xi^2}{(\rho-1)^2+\xi^2} \right].
+\end{equation}
+
+\noindent Adding and subtracting \(2\rho + 1\) to the numerator:
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{\rho^2 -2\rho + 1 + \xi^2 + 2\rho - 2}{(\rho-1)^2+\xi^2} \right].
+\end{equation}
+
+\noindent Simplifying:
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \frac{(\rho- 1)^2 + \xi^2 + 2(\rho - 1)}{(\rho-1)^2+\xi^2} \right].
+\end{equation}
+
+\noindent Splitting the fraction:
+
+\begin{equation}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ \cancel{\frac{(\rho- 1)^2 + \xi^2 }{(\rho-1)^2+\xi^2}} + \frac{2(\rho - 1)}{(\rho-1)^2+\xi^2} \right].
+\end{equation}
+
+\noindent Finally, we are left with
+
+\begin{equation}
+    \label{eqn:vzesimple}
+    \frac{\mathcal{E}(m)}{2\mathcal{D}r_o} \left[ 1 + \frac{2(\rho - 1)}{(\rho-1)^2+\xi^2} \right].
+\end{equation}
+
+Now combining our \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) terms from \cref{eqn:vzksimple} and \cref{eqn:vzesimple}, respectively, we arrive at
+
+\begin{equation}
+    v_z = \mathcal{C}\frac{1}{2\mathcal{D}r_o}\left[-\mathcal{K}(m) +\left(1 + \frac{2(\rho - 1)}{(\rho-1)^2+\xi^2}\right)\mathcal{E}(m)\right].
+\end{equation}
+
+\noindent Expanding out \(\mathcal{C}\) and \(\mathcal{D}\) gives us our final expression as presented in \cref{eqn:ringvortexinducedvelocityaxial}:
+
+\begin{equation}
+    \eqbox{
+        v_z = \frac{\Gamma}{2\pi r_o}\frac{1}{\left[\xi^2+(\rho+1)^2\right]^{1/2}}\left[\mathcal{K}(m) -\left(1 + \frac{2(\rho - 1)}{\xi^2 + (\rho-1)^2}\right)\mathcal{E}(m)\right].
+}
+\end{equation}
+
+After some tedious algebra (see \cref{app:ringvortexinducedvelocities}),
+we arrive at the following expressions for the unit\sidenote{In other words, we have set \(\gamma=1\)} induced velocity due to a vortex ring.
+\begin{subequations}
+    \label{eqn:ringvortexinducedvelocity}
+\begin{eqboxed}{\eqbox}{align}
+    \label{eqn:ringvortexinducedvelocityaxial}
+        v_{z}^\gamma &=  \frac{1}{2 \pi r_o} \frac{1}{D_1} \left[ \mathcal{K}(m) - \left( 1 + \frac{2(\rho-1)}{D_2} \right) \mathcal{E}(m) \right] \\
+    \label{eqn:ringvortexinducedvelocityradial}
+        v_{r}^\gamma &= -\frac{1}{2 \pi r_o} \frac{\xi/\rho}{D_1}  \left[ \mathcal{K}(m) - \left( 1 + \frac{2\rho}{D_2} \right) \mathcal{E}(m) \right]
+\end{eqboxed}
+\end{subequations}
+
+\where the superscript, \(\gamma\), indicates a unit vortex induced velocity.
+%
+In addition, \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) are complete elliptic integrals of the first and second kind, respectively, and
+
+\begin{eqboxed}{\eqbox}{align}
+% \begin{equation}
+    % \label{eqn:normalizedgeom}
+    % \begin{aligned}
+        m &= \left( \frac{4\rho}{\xi^2 + (\rho+1)^2} \right) \\% = k^2 = \sin^2(\phi)\\
+        \xi &= \frac{z - z_o}{r_o} \\
+        \rho &= \frac{r}{r_o} \\
+        D_1 &= \left[\xi^2 + (\rho+1)^2\right]^{1/2} \\
+        D_2 &= \xi^2 + (\rho - 1)^2.
+    % \end{aligned}
+% \end{equation}
+\end{eqboxed}

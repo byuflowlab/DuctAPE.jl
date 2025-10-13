@@ -1,0 +1,235 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                           BLADE MODEL
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{A Blade Element Model}
+\label{ssec:bladeelementmodel}
+
+To model the rotor, we use a blade element based model in which we look at elements, or sections, of the blade individually.
+%
+We take average 2-D section properties for each of these blade elements in order to determine the blade circulation distribution as well as approximate profile drag.
+%
+For each 2-D section, we use typically use a lookup table (though direct computation is possible) to determine the lift and drag coefficients based on the local blade element geometry and flow as shown in \cref{fig:bladeelementangles}.
+%
+In the case of a low-solidity blade element, we can simply use airfoil data based on the aerodynamic angle of attack, \(\alpha\), which is the inflow angle, \(\beta_1\) minus the local blade element stagger angle, \(\gamma_{be}\):
+
+\begin{figure}[h!]
+    \centering
+    \input{./rotor_wake_method/figures/airfoil_angles.tikz}%
+    \caption{Velocity decomposition with angles in the blade element frame.}
+    \label{fig:bladeelementangles}
+\end{figure}
+
+\begin{equation}
+    \label{eqn:localangleofattack}
+    \alpha = \beta_1 - \gamma_{be},
+\end{equation}
+
+\where the inflow angle is defined as
+
+\begin{equation}
+    \label{eqn:inflowangle}
+    \eqbox{
+    \beta_1 = \arctan \frac{-W_\theta}{W_z} = \arctan \frac{\Omega r - V_\theta}{C_\infty + V_z},
+}
+\end{equation}
+
+\noindent or in other words, the angle from the axis of rotation to the local inflow velocity vector, \(\vect{W}\), as seen in \cref{fig:bladeelementangles}.
+
+For higher solidity rotors, when cascade data is available, we look up the lift and drag coefficients based on the inflow and stagger angles directly.
+%
+In addition, the section lift and drag coefficients may depend not only on the local angle of attack (or stagger and inflow angles), but may also be a function of the local solidity (\(\sigma_{be}\)), Reynolds number (\(Re_{be}\)), and Mach (\(M_{be}\)) number which we define in the typical manner:
+
+
+\begin{equation}
+    \label{eqn:solidity}
+    \sigma_{be} = \frac{Bc}{2\pi r},
+\end{equation}
+
+\begin{equation}
+    \label{eqn:re}
+    Re_{be} = \frac{\rho_\infty W c}{\mu_\infty},
+\end{equation}
+
+\noindent and
+
+\begin{equation}
+    \label{eqn:ma}
+    M_{be} = \frac{W}{a_{s_\infty}},
+\end{equation}
+
+\where \(B\) is the number of rotor blades, and \(\rho_\infty\), \(\mu_\infty\), and \(a_{s_\infty}\) are the freestream density, dynamic viscosity, and speed of sound, respectively.
+%
+Also, \(W\) and \(c\) are the local (at a given radial station, \(r\)) inflow magnitude and blade element chord length.
+
+
+
+\subsection{Blade Circulation}
+\label{ssec:bladecirculation}
+
+To get circulation for each blade element, we treat the rotor blade as a lifting line and assume that:
+
+\begin{assumption}
+\label{asm:liftingline}
+
+    \asm{The rotor can reasonably be modeled as a lifting line such that local blade circulation can be expressed according to the Kutta-Joukowski theorem, which states:}
+
+    \[ \vect{F} = \rho \vect{W} \times \vect{\Gamma} \]
+
+    \limit{We require the blade to be modeled as a single line, and therefore we don't quite capture the full detail of flow turning across the blades.}
+
+    \why{This simplification allows for a more straightforward approach to the rotor-wake modeling, again reducing the computational complexity.}
+
+\end{assumption}
+
+Modeling the rotor blades as lifting lines, if we take the velocity to be the local inflow velocity magnitude, \(W=\left[W_z^2+W_\theta^2\right]^{1/2}\) at the radial point of interest, we can take the perpendicular component of the force to be lift also at the radial point of interest.
+%
+We can then rearrange the expression for the Kutta-Joukowski theorem in \cref{asm:liftingline} for the local circulation magnitude, \(\Gamma(r)\), along the blade as
+
+\begin{equation}
+    \Gamma(r) = \frac{L'}{\rho W}.
+\end{equation}
+
+\noindent As mentioned, for each blade section we prescribe an airfoil polar such that the lift coefficient is known for a given angle of attack.
+%
+If we then take the expression for the two-dimensional coefficient of lift---
+
+\begin{equation}
+    c_\ell = \frac{2 L'}{\rho W^2 c},
+\end{equation}
+
+\where \(c\) is the blade element chord length, and \(c_\ell\) is the local blade element lift coefficient--- %, and \(\psi\) is the local blade element work coefficient.
+ and substitute into our expression for circulation (again using the local meridional velocity), we arrive at
+
+\begin{equation}
+    \label{eqn:bladeelementcirculationrotor}
+    \eqbox{
+        \Gamma(r) = \frac{1}{2} W c c_\ell,
+        }
+\end{equation}
+
+
+%\noindent or, equivalently
+%
+%\begin{equation}
+%    \label{eqn:bladeelementcirculationcascade}
+%    \eqbox{
+%    \Gamma(r) = 2 \pi r W \psi,
+%}
+%\end{equation}
+
+\where \(W\), \(c\), and \(c_\ell\) %, and \(\psi\)
+are all functions of the radial position, \(r\), along the rotor.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                           ROTOR SOURCES
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Rotor Profile Drag}
+\label{ssec:rotorsourcestrengths}
+
+We define the rotor blade section profile drag per unit length in terms of a local airfoil polar drag coefficient using similar logic to how we defined the circulation due to lift.
+%
+Though we are actually attempting to approximate a viscous effect inviscidly, so we are effectively equating the vorticity that would be introduced into the wake due to viscous profile drag with an approximate inviscid source distribution on the blade.
+
+\begin{assumption}
+    \label{asm:rotorsources}
+
+    \asm{The rotor blade section profile drag can be approximated by the addition of source elements along the rotor blade.}
+
+    \limit{We aren't fully modeling viscous effects in the wake.}
+
+    \why{This allows us to model the wake inviscidly (which allows us to simplify the wake model later), while still approximating the viscous effects of the rotor on the wake velocities. It also enables the use of source panels, providing straightforward coupling with the bodies modeled with panel methods.}
+
+\end{assumption}
+
+% \Cref{fig:rvf_eif} visually shows this concept where instead of modeling a viscous decrease in velocity aft of the rotor, we apply a distribution of sources that
+% %
+% \begin{figure}[htb]
+%      \centering
+%      \begin{subfigure}[t]{0.45\textwidth}
+%         \centering
+%         \input{./rotor_wake_method/figures/real_viscous.tikz}
+%         \caption{The real, viscous formulation has no sources on the rotor blades, but rather sheds vorticity due to viscous effects.}
+%         \label{}
+%      \end{subfigure}
+%      \hfill
+%      \begin{subfigure}[t]{0.45\textwidth}
+%          \centering
+%         \input{./rotor_wake_method/figures/equivalent_inviscid.tikz}
+%         \caption{The equivalent inviscid formulation uses source distributions along the blade to approximate profile drag effects.}
+%         \label{}
+%      \end{subfigure}
+%      \caption{Visual comparison of real, viscous vs. equivalent inviscid formulations.}
+%     \label{fig:rvf_eif}
+% \end{figure}
+
+The inviscid approximation of the profile drag per unit length takes a similar form to the local circulation:
+
+\begin{equation}
+     % \Sigma(r) = \frac{1}{2} \rho W^2 c c_d
+     \Sigma = \frac{1}{2} W c c_d
+\end{equation}
+
+\where \(c_d\) is the blade element drag coefficient at the angle of attack described in \cref{ssec:bladecirculation}, and again, each of the terms on the right hand side are functions of the radial position along the blade.
+%
+To get the total source sheet strength per unit length, we smear the total source strength per unit span of all the blades, \(B\), around the circumference, \(2\pi \):
+
+\begin{equation}
+    % \sigma(r) = \frac{B \Sigma}{2 \pi r}.
+    \sigma = \frac{B \Sigma}{2 \pi}.
+\end{equation}
+
+Therefore the expression for the smeared rotor source strength per unit length along the blade is
+
+% \begin{equation}
+%     \label{eqn:rotorsourcestrengths}
+%     \eqbox{
+%         \sigma(r) = \frac{B}{4 \pi r} W c c_d.
+%     }
+% \end{equation}
+
+\begin{equation}
+    \label{eqn:rotorsourcestrengths}
+    \eqbox{
+        % \sigma(r) = \frac{B}{4 \pi r} \rho W^2 c c_d.
+        \sigma = \frac{B}{4 \pi} W c c_d.
+    }
+\end{equation}
+
+
+%\subsection{Body Induced Velocities}\todo{look back at section 1.4 and update this one accordingly}
+%\label{ssec:bodyinducedvelocities}
+%
+%To obtain the initial \(v_z\) and \(v_r\) for finding the local inflow angle, we use the no-rotor panel method solution to find the body-induced velocities at pertinent locations in the duct.
+%
+%
+%\begin{equation}
+%    \begin{aligned}
+%        v_{z}^{P} &= A_z^{PB} \gamma^{B\infty}  \\
+%        v_{r}^{P} &= A_r^{PB} \gamma^{B\infty}.
+%    \end{aligned}
+%\end{equation}
+%
+%\where \(v_z^P\) and \(v_r^P\) are the axial and radial induced velocities at the points of interest (for example, at the rotor plane(s)), respectively, and \(A^{PB}\) is the vortex coefficient matrix for the bodies influencing the points of interest.
+%The \(A^{PB}\) matrix is generated nearly identically to the \(A^{BB}\) matrix (using the same equations for the coefficients highlighted in blue boxes in \cref{ssec:axisymmetricpaneltheory}), with the exception that the coordinates associated with the \(i\)th index are for the points of interest rather than the body itself.
+%
+%In practice, we can just get \(v_m^P\) (the meridional induced velocity) using the standard coefficient expression from \cref{eqn:vringamn}.
+%
+%\begin{equation}
+%    v_{m}^{P} = A^{PB} \gamma^{B\infty}
+%\end{equation}
+%
+%\where \(A^{PB}\) is comprised of the combined \(z\) and \(r\) coefficients components.
+%
+%For the rest of the velocity components, we either know them as inputs, viz., \(V_\infty\) and \(\Omega r\), or we ignore them as in the case of \(v_\theta\), since we don't yet know the rotor induced velocity relative to the duct.
+%Furthermore, we will assume no other externally induced velocities for the remainder of this chapter, so the \(u_m\) and \(u_\theta\) values will always be set to zero.
+
+
+
+
+
+

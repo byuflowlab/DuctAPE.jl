@@ -1,0 +1,7 @@
+\begin{tikzpicture}[scale=5]
+        %Airfoil
+        \draw[ thick,primary, pattern={Hatch[angle=35,distance=2pt,xshift=.1pt, line width=0.25pt]}, pattern color=plotsgray] plot[smooth] file{ductape/figures/isolated_hub_coordinates.dat};
+        % \draw[dashed] (-0.1,0) -- (1.1,0);
+        \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt on 4cm] (-0.2,0) -- (0.65,0);
+        \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt on 4cm ] (1.5,0) -- (0.65,0);
+\end{tikzpicture}

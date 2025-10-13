@@ -1,0 +1,10 @@
+\begin{tikzpicture}
+    % Center dot
+    \filldraw[primary] (0,0) circle (2pt);
+    % Radial lines and arrows
+    \foreach \angle in {0,30,60,90,120,150,180,210,240,270,300,330} {
+        % Draw outer arrow lines
+        \draw[primary, ultra thick, {Stealth[length=2mm, width=2mm]}-] (\angle:0.25cm) -- (\angle:1.25cm);
+    }
+\end{tikzpicture}
+

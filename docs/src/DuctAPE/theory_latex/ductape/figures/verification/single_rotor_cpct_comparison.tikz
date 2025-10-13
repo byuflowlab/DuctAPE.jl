@@ -1,0 +1,136 @@
+% Recommended preamble:
+% \usetikzlibrary{arrows.meta}
+% \usetikzlibrary{backgrounds}
+% \usepgfplotslibrary{patchplots}
+% \usepgfplotslibrary{fillbetween}
+% \pgfplotsset{%
+%     layers/standard/.define layer set={%
+%         background,axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground%
+%     }{
+%         grid style={/pgfplots/on layer=axis grid},%
+%         tick style={/pgfplots/on layer=axis ticks},%
+%         axis line style={/pgfplots/on layer=axis lines},%
+%         label style={/pgfplots/on layer=axis descriptions},%
+%         legend style={/pgfplots/on layer=axis descriptions},%
+%         title style={/pgfplots/on layer=axis descriptions},%
+%         colorbar style={/pgfplots/on layer=axis descriptions},%
+%         ticklabel style={/pgfplots/on layer=axis tick labels},%
+%         axis background@ style={/pgfplots/on layer=axis background},%
+%         3d box foreground style={/pgfplots/on layer=axis foreground},%
+%     },
+% }
+
+\begin{tikzpicture}[/tikz/background rectangle/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, draw opacity={0.0}}, show background rectangle]
+\begin{axis}[point meta max={nan}, point meta min={nan}, legend cell align={left}, legend columns={1}, title={}, title style={at={{(0.5,1)}}, anchor={south}, font={{\fontsize{14 pt}{18.2 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, align={center}}, legend style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, line width={1}, solid, fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, text opacity={1.0}, font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, text={rgb,1:red,0.0;green,0.0;blue,0.0}, cells={anchor={center}}, at={(1.02, 1)}, anchor={north west}}, axis background/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={0.0}}, anchor={north west}, xshift={1.0mm}, yshift={-1.0mm}, width={50.912mm}, height={41.434mm}, scaled x ticks={false}, xlabel={$\mathrm{Advance~Ratio}~\left(\frac{V_\infty}{nD}\right)$}, x tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, x tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, xlabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{10 pt}{13.0 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, xmajorgrids={false}, xmin={-0.06000000000000005}, xmax={2.06}, xticklabels={{$0.0$,$0.5$,$1.0$,$1.5$,$2.0$}}, xtick={{0.0,0.5,1.0,1.5,2.0}}, xtick align={inside}, xticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, x grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis x line*={left}, x axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, scaled y ticks={false}, ylabel={}, y tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, y tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, ylabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{10 pt}{13.0 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={-90}}, ymajorgrids={false}, ymin={-0.023343528272928904}, ymax={0.998621137370558}, yticklabels={{$0.0$,$0.2$,$0.4$,$0.6$,$0.8$}}, ytick={{0.0,0.2,0.4,0.6000000000000001,0.8}}, ytick align={inside}, yticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, y grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis y line*={left}, y axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, colorbar={false}]
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={25}, draw opacity={1.0}, line width={2}, dashed, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.64763  \\
+            0.1  0.64716  \\
+            0.2  0.6448  \\
+            0.3  0.64044  \\
+            0.4  0.63401  \\
+            0.5  0.62534  \\
+            0.6  0.61428  \\
+            0.7  0.6006  \\
+            0.8  0.58411  \\
+            0.9  0.56452  \\
+            1.0  0.54158  \\
+            1.1  0.51499  \\
+            1.2  0.48446  \\
+            1.3  0.44966  \\
+            1.4  0.41031  \\
+            1.5  0.36604  \\
+            1.6  0.31654  \\
+            1.7  0.26153  \\
+            1.8  0.20061  \\
+            1.9  0.13355  \\
+            2.0  0.05993  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={26}, draw opacity={1.0}, line width={1}, solid, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.6476232693318368  \\
+            0.1  0.6473876999741079  \\
+            0.2  0.645223396867024  \\
+            0.3  0.6410554822134223  \\
+            0.4  0.6347771075241228  \\
+            0.5  0.6262486262176963  \\
+            0.6  0.6152985286985281  \\
+            0.7  0.6017255299308976  \\
+            0.8  0.5853013716817291  \\
+            0.9  0.565774020833215  \\
+            1.0  0.5428710389531392  \\
+            1.1  0.5163029742415465  \\
+            1.2  0.4857666851477117  \\
+            1.3  0.450948545287784  \\
+            1.4  0.4115275048279814  \\
+            1.5  0.3671779997070438  \\
+            1.6  0.31757271315966  \\
+            1.7  0.2623852091721547  \\
+            1.8  0.2012924784040493  \\
+            1.9  0.13397746604473199  \\
+            2.0  0.06013168991432941  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.7451;green,0.298;blue,0.302}, name path={27}, draw opacity={1.0}, line width={2}, dashed, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.96692  \\
+            0.1  0.88394  \\
+            0.2  0.80785  \\
+            0.3  0.73801  \\
+            0.4  0.67382  \\
+            0.5  0.61468  \\
+            0.6  0.56001  \\
+            0.7  0.50925  \\
+            0.8  0.46187  \\
+            0.9  0.41738  \\
+            1.0  0.37531  \\
+            1.1  0.33522  \\
+            1.2  0.2967  \\
+            1.3  0.25937  \\
+            1.4  0.2229  \\
+            1.5  0.18694  \\
+            1.6  0.15121  \\
+            1.7  0.11547  \\
+            1.8  0.07941  \\
+            1.9  0.04287  \\
+            2.0  0.00558  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.7451;green,0.298;blue,0.302}, name path={28}, draw opacity={1.0}, line width={1}, solid, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.969697609097629  \\
+            0.1  0.8863124580605151  \\
+            0.2  0.8098829777198646  \\
+            0.3  0.7397777054433095  \\
+            0.4  0.675375306296922  \\
+            0.5  0.6160702074311029  \\
+            0.6  0.5612773559215414  \\
+            0.7  0.510436116487112  \\
+            0.8  0.4630132685847573  \\
+            0.9  0.4185050919231352  \\
+            1.0  0.37643858770925404  \\
+            1.1  0.336371934917212  \\
+            1.2  0.2978943116844979  \\
+            1.3  0.26062522049037534  \\
+            1.4  0.22421344840651933  \\
+            1.5  0.1883357785589809  \\
+            1.6  0.1526955527679134  \\
+            1.7  0.11702117229808859  \\
+            1.8  0.08106461573627896  \\
+            1.9  0.04460005083213458  \\
+            2.0  0.007422620945541893  \\
+        }
+        ;
+    \node[left, , color={rgb,1:red,0.7451;green,0.298;blue,0.302}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{10 pt}{13.0 pt}\selectfont}}]  at (axis cs:1.0,0.3) {$C_T$};
+    \node[left, , color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, draw opacity={1.0}, rotate={0.0}, font={{\fontsize{10 pt}{13.0 pt}\selectfont}}]  at (axis cs:1.0,0.7) {$C_P$};
+\end{axis}
+\end{tikzpicture}

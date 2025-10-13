@@ -1,0 +1,21 @@
+\begin{tikzpicture}[scale=1.0]
+
+    \coordinate (O) at (0.0,0.0);
+    \coordinate (B) at ($(O) + (2.0,2.0)$);
+    \coordinate (A) at ($(O) + (3.0,0.0)$);
+    \coordinate (H) at ($(O) + (2.0,0.0)$);
+
+    \coordinate (B2) at ($(B) + (A)$);
+    \coordinate (A2) at ($(A) + (B)$);
+
+    \draw [-Stealth,thick, primary] (O) -- (B) node [pos=0.5, above left] {\(\vect{B}\)};
+    \draw [-Stealth,thick, secondary] (O) -- (A) node [pos=0.5, below] {\(\vect{A}\)};
+
+    \draw [thick, densely dotted, secondary] (B) -- (A2);
+    \draw [thick, densely dotted, primary] (A) -- (B2);
+
+    \draw [tertiary, dashed] (H) -- (B) node[pos=0.8, right, black] {\(\tertiary{h}=|\primary{\vect{B}}|\sin{\color{plotsgray}\theta}\)};
+
+    \draw[plotsgray] (O) [partial ellipse = 0:45:1.5 and 1.5] node [pos=0.6, right, plotsgray] {\(\theta\)};
+
+\end{tikzpicture}

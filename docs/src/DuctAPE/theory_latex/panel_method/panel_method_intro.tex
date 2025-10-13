@@ -1,0 +1,199 @@
+%---------------------------------#
+%   Boundary Integral Equations   #
+%---------------------------------#
+
+In \cref{ssec:potentialflow} we introduced potential flow theory.
+%
+The elementary flows we introduced have limited use on their own, but in this chapter we will show how applying the theory beyond simple cases becomes a powerful tool in modeling the flow about aerodynamic bodies.
+%
+As mentioned in \cref{ssec:potentialflow}, the major key making potential flow theory particularly useful is the fact that elementary flows are solutions to the Laplace equation and can therefore be superimposed to represent relatively complex geometry.
+%
+In particular, the superposition of any number of elementary flows of unknown strength can be assimilated into a single linear system of equations and the strengths can be solved for directly.
+%
+In our application, we are mostly concerned with determining the strengths of elementary flows distributed along imaginary boundaries we define based on useful shapes (such as the surfaces of ducts and center bodies) that induce a potential flow field that matches what we would see for an actual solid body in reality.\sidenote{In reality, flow is neither irrotational, nor incompressible, but we find that in many cases it is close enough that potential flow theory provides a good approximation.}
+%
+We call problems dealing with values on boundaries boundary value problems (for obvious reasons).
+%
+A common way to approach the solution of boundary value problem is with a boundary integral equation.
+
+\section{Beyond the Basics of Potential Flow Theory: \index{Boundary Integral Equations}A Boundary Integral Equation}
+
+For a given aerodynamic body, representable by a simply connected contour (for example, \(\mathcal{S}\) as shown in \cref{fig:simplyconnectedairfoil}) we want to be able to find the velocity distribution on that body surface as well as its influence on the remainder of the flow field.
+%
+To do so, we can construct a boundary integral equation describing the influence of distributions of elementary flows along a given boundary.
+%
+We can then use this boundary integral equation with appropriate boundary conditions to solve the boundary value problem for the unknown distribution.
+%
+Fortunately, Erik Ivar Fredholm developed a set of integral equations for application to boundary value problems\scite{Fredholm_1903}.
+%
+For our application, we will use a Fredholm integral equation of the second kind:
+
+\begin{equation}
+    \label{eqn:fredholm1}
+    % f(t) = \varphi(t) + \lambda \oint_\mathcal{S} K(s,t) \varphi(s) \d s.
+    f(t) = \vartheta(t) + \oint_\mathcal{S} K(s,t) \varphi(s) \d s.
+\end{equation}
+
+\begin{figure}[h!]
+    \centering
+        \input{prelims/figures/simply_connected_airfoil.tikz}
+        \caption[An airfoil as a simply connected contour.]{An example of a simply connected contour, \(\mathcal{S}\), representing, in this case, an airfoil. The dashed arrow represent the direction about which the contour is traversed, with \(\hat{\vect{n}}\) being the unit surface normal associated with the direction of travel.}
+    \label{fig:simplyconnectedairfoil}
+\end{figure}
+
+We will construct this integral equation using vortex distributions and a Neumann boundary condition often referred to as the ``no flow through'' condition.
+%
+We choose vortices since they inherently allow us to obtain circulation, and therefore lift about the bodies we model.
+%
+In contrast sources do not provide the same benefit.
+%
+A Neumann boundary condition is also not the only option, a Dirichlet condition could also be used, but the Neumann condition tends to be more intuitive and straightforward to apply.
+%
+Given that context, let us look at each term individually.
+%
+Starting with the integral term, which represents the influence of a distribution of elementary flows\sidenote{Such as those introduced in \cref{ssec:potentialflow}} along the boundary, we have the kernel \(K\) which in our case will be the expression for the unit induced velocities of vorticies distributed along the surface segment, \(\d s\), acting normal to the surface at point \(t\).
+%
+Mathematically, we can state this as
+
+\begin{equation}
+    \begin{aligned}
+        K(s,t) &= \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}_t} \\
+               &= \nabla \hat{\vect{\phi}}(s,t) \cdot \hat{\vect{n}}(t) \\
+               &= \hat{\vect{V}}(s,t) \cdot \hat{\vect{n}}(t).
+    \end{aligned}
+\end{equation}
+
+\where \(\hat{\vect{\phi}}\) is the unit velocity potential, \(\hat{\vect{V}}\) is the unit velocity, and \(\hat{\vect{n}}\) is the unit normal to the surface (see \cref{fig:simplyconnectedairfoil}).
+%
+The other term in the integrand, \(\varphi(s)\), is the distribution of strengths of elementary flows along the boundary.
+%
+As mentioned, we choose to use free vortices as our elementary flows and we represent their strengths with the symbol \(\gamma\) going forward.
+%
+%The \(\lambda\) in front of the integral determines where we are applying our conditions.
+%%
+%In our case, we want to apply things external to the body, or inside the volume, \(\mathcal{V}\) as shown in \cref{fig:simplyconnectedairfoil}.
+%%
+%Therefore \(\lambda = +1\).\scite{Kellogg_1929}
+
+The other term on the right hand side, \(\vartheta(t)\) represents the jump in velocity across the boundary.
+%
+It can be shown that the jump in tangential velocity associated with a vortex distribution along the boundary is \(\vartheta(t) = -\gamma/2\).\scite{Lewis_1991, Martensen_1971, Courant_1962}
+%
+And for the orthogonal case of the normal velocity (which we are concerned with at this point), the jump term is zero.%\toadd{probably need to find a source supporting this. it's intuitive since it's just the reverse of sources, but some explanation or citation should be added.}%\scite{cite}
+%
+
+Lastly, the term on the left hand side, \(f(t)\), represents any externally induced velocity in the negative normal direction\sidenote{Remember that we want the total normal velocity at the boundary to be zero, so adding this term to both sides should give us zero.} on the boundary at point \(t\).
+%
+The typical externally induced velocity is due to (but not limited to) a uniform free stream.\sidenote{Note that a uniform flow is another of the elementary flows satisfying the Laplace equation.}
+%
+Mathematically we state the externally induced velocity as
+
+\begin{equation}
+    \begin{aligned}
+    \varphi(t) &= \pd{\vect{\phi}_\text{ext}}{\hat{\vect{n}}_t} \\
+               &= \nabla \vect{\phi}_\text{ext} \cdot \hat{\vect{n}}(t) \\
+               &= \vect{V}_\text{ext} \cdot \hat{\vect{n}}(t).
+    \end{aligned}
+\end{equation}
+
+All together our Fredholm integral equation of the second kind, applied to the Neumann problem for an unknown distribution of free vortices along a chosen boundary is
+
+\begin{subequations}
+    \label{eqn:fredholm2}
+    \begin{align}
+        \oint_\mathcal{S} \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}} \d s  &= -\pd{\vect{\phi}_\infty}{\hat{\vect{n}}} \\
+        \text{-- or --} \notag\\
+        \oint_\mathcal{S} \gamma(s) \hat{\vect{V}}(s,t)\cdot\hat{\vect{n}} \d s  &= -\vect{V}_\text{ext}\cdot\hat{\vect{n}}.
+    \end{align}
+\end{subequations}
+
+\noindent We now have a boundary integral equation that we want to use to solve for the unknown distribution of vortex strengths, \(\gamma(s)\).
+
+
+
+Before moving on, we should define the coordinate system as well as the fundamental boundary induced velocities we will be using to develop our solution method.
+%
+The bodies which we would like to model in our application are axisymmetric bodies of revolution (such as the center body) and annular airfoils (such as the duct comprised of a casing and nacelle) of a ducted rotor.
+%
+This means that rather than using the planar free vortex from \cref{ssec:potentialflow}, we will need to use axisymmetric ring vortices.
+%
+This does not particularly complicate the method, but does require a different equation for the induced velocity than would be derived from \cref{eqn:vortexflow}.
+%
+For a ring vortex, we'll first assume that:
+
+\begin{assumption}{}
+    \asm{The vortex ring is circular, such that the ring radius is constant.
+    \[r_o = \text{constant}\]}
+    \vspace*{-\baselineskip}
+\end{assumption}
+
+\begin{assumption}{}
+    \label{asm:axisymmetric}
+    \asm{The vortex ring circulation is constant and in the tangential direction
+    \[\vect{\Gamma} = \gamma \hat{\vect{e}}_\theta\]}
+    \vspace*{-\baselineskip}
+\end{assumption}
+%
+These assumptions formalize our axisymmetric assumption somewhat, and from them we can conclude that the vortex ring has no influence in the tangential direction, \(\hat{\vect{e}}_\theta\).
+
+\begin{figure}[h!]
+    \centering
+        \input{panel_method/figures/vortex_ring_coordinate_system.tikz}
+        \caption{Coordinate system for vortex ring induced velocity.}
+    \label{fig:vortexringgeom}
+\end{figure}
+
+In \cref{fig:vortexringgeom} we see the coordinate system we will be using going forward.
+%
+Given this coordinate system, the unit induced velocity components from a ring vortex located coincident with point \(\vect{p}_o\) (analogous to \(s\) in \cref{eqn:fredholm2}) on a point \(\vect{p}\) (analogous to \(t\) in \cref{eqn:fredholm2}) lying on the \(r\)-\(z\) plane are\sidenote{In this and the next chapter, we will use blue shaded boxes around expressions that are major results of the derivations in these chapters and/or that are used directly in code implementations.}
+
+\begin{subequations}
+    \label{eqn:ringvortexinducedvelocity}
+\begin{eqboxed}{\eqbox}{align}
+    \label{eqn:ringvortexinducedvelocityaxial}
+        v_{z}^\gamma &=  \frac{1}{2 \pi r_o} \frac{1}{D_1} \left[ \mathcal{K}(m) - \left( 1 + \frac{2(\rho-1)}{D_2} \right) \mathcal{E}(m) \right] \\
+    \label{eqn:ringvortexinducedvelocityradial}
+        v_{r}^\gamma &= -\frac{1}{2 \pi r_o} \frac{\xi/\rho}{D_1}  \left[ \mathcal{K}(m) - \left( 1 + \frac{2\rho}{D_2} \right) \mathcal{E}(m) \right]
+\end{eqboxed}
+\end{subequations}
+
+\where the superscript, \(\gamma\), indicates a unit vortex induced velocity.\scite{Ryall_1967,Lewis_1991}
+%
+In addition, \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) are complete elliptic integrals of the first and second kind, respectively, and
+
+\begin{eqboxed}{\eqbox}{align}
+% \begin{equation}
+    % \label{eqn:normalizedgeom}
+    % \begin{aligned}
+        m &= \left( \frac{4\rho}{\xi^2 + (\rho+1)^2} \right) \\% = k^2 = \sin^2(\phi)\\
+        \xi &= \frac{z - z_o}{r_o} \\
+        \rho &= \frac{r}{r_o} \\
+        D_1 &= \left[\xi^2 + (\rho+1)^2\right]^{1/2} \\
+        D_2 &= \xi^2 + (\rho - 1)^2.
+    % \end{aligned}
+% \end{equation}
+\end{eqboxed}
+
+\noindent A detailed derivation of these ring vortex induced velocities built on the Biot-Savart law introduced in \cref{sec:biot-savart} is provided in \cref{app:ringvortexinducedvelocities}.
+
+
+For easy reference, we also include here the unit induced velocities of ring sources, though we won't need them until a later chapter:
+
+\begin{subequations}
+    \label{eqn:ringsourceinducedvelocity}
+\begin{eqboxed}{\eqbox}{align}
+    \label{eqn:ringsourceinducedvelocityaxial}
+        v_{z}^\sigma &= \frac{1}{2 \pi r_o}\frac{\xi}{ D_1} \left(\frac{2 }{D_2} \mathcal{E}(m)\right) \\
+        % v_{z}^\sigma &=  \frac{1}{2 \pi r_o} \frac{1}{D_1} \left[ \mathcal{K}(m) - \left( 1 + \frac{2(\rho-1)}{D_2} \right) \mathcal{E}(m) \right] \\
+    \label{eqn:ringsourceinducedvelocityradial}
+        v_{r}^\sigma &= \frac{1}{2 \pi r_o}\frac{1/\rho}{ D_1}  \left[ \mathcal{K}(m) -   \left( 1 - \frac{2\rho(\rho-1)}{D_2} \right) \mathcal{E}(m)  \right],
+        % v_{r}^\sigma &= -\frac{1}{2 \pi r_o} \frac{\xi/\rho}{D_1}  \left[ \mathcal{K}(m) - \left( 1 + \frac{2\rho}{D_2} \right) \mathcal{E}(m) \right]
+\end{eqboxed}
+\end{subequations}
+
+\where the superscript, \(\sigma\), indicates a unit source induced velocity.\scite{Ryall_1967,Lewis_1991}
+%
+The other variables in \cref{eqn:ringsourceinducedvelocity} are as defined for the vortex ring expressions.
+
+
+

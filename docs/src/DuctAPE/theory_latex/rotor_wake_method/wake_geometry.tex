@@ -1,0 +1,452 @@
+\section{A Streamlined Elliptic Grid}
+\label{sec:rotorwakegeometry}
+
+The question we must now ask ourselves is \textit{where} is \cref{eqn:gamma_theta_general} applied?
+%
+We may first think to model the rotor wake by integrating \cref{eqn:gamma_theta_general} along streamlines, which could be done.
+%
+Though in each iteration of the solve, the streamline location would need to be determined and then the circulation along the streamline would need to be integrated.
+%
+An alternative method, which we take, is to determine the approximate locations of the streamlines as a pre-process before the solve and place discretized wake sheets along them, forming a set of vortex panels with strengths determined from \cref{eqn:gamma_theta_general}.
+%
+By so doing, we complete a large portion of the computation related to the wake outside of the iterative solver, greatly reducing computational cost.
+%
+We utilize a method from \citeauthor{thompson_1974} to determine approximate streamline locations based on the duct and centerbody geometries and blade element positions along the rotor lifting line.
+
+In the method of \citeauthor{thompson_1974} a transformation is defined between rectangular and arbitrary shaped regions, with the arbitrary shaped region lying on a physical plane.\scite{thompson_1974}
+%
+By taking the coordinates of the rectangular region to be the solutions of an appropriate elliptic boundary value problem, with one of the coordinates being constant along the boundaries, we can obtain a transformation from a grid in the rectangular space to a useful grid in the physical space.
+%
+In our case, we will define a Poisson equation based on the axisymmetric stream function and set one of the rectangular coordinates to be constant along the body boundaries, and therefore the streamlines.
+%
+% Thus we can obtain approximations of the streamlines in a pre-computation step, greatly reducing computational cost.
+
+%\begin{assumption}
+
+%    \asm{The wake streamlines can be reasonably approximated as lying on an elliptic grid.}
+
+%    \limit{We are again ignoring viscous effects of the rotor/wake.}
+
+%    \why{This is perhaps one of the greatest reducers of computational cost for the code, as it allows us to pre-compute the potentially large matrices for the induced velocities in the system.}
+
+%\end{assumption}
+
+%By defining the wake geometry to lie on an elliptic grid, we can discretize the axisymmetric wake lines into axisymmetric vortex panels and apply the circulation density (vortex strength distribution) from \cref{eqn:gamma_theta_general} along the discretized wake panels.
+%%
+%In order to define our wake geometry, our first task is to define the appropriate partial differential equation.
+%%
+%As we are seeking to find the streamlines, we begin with the stream function.
+
+
+\subsection{A Poisson Equation from the Axisymmetric Stream Function}
+
+The \(z\) and \(r\) components of absolute velocity can be defined in terms of the axisymmetric stream function, \(\psi(z,r)\), as
+
+\begin{subequations}
+    \label{eqn:axisymfreestream}
+    \begin{align}
+        C_z &= \frac{1}{\rho r}\pd{\psi}{r} \\
+        C_r &= \frac{-1}{\rho r}\pd{\psi}{z}
+    \end{align}
+\end{subequations}
+
+\where \(\rho \) is the air density.
+%
+Additionally, the circumferential vorticity is defined as
+
+\begin{equation}
+    \label{eqn:omegatheta}
+    \omega_\theta \equiv \pd{C_z}{r} - \pd{C_r}{z}.
+\end{equation}
+
+\noindent If we plug \cref{eqn:axisymfreestream} into \cref{eqn:omegatheta}, and apply the chain rule, we arrive at
+
+\begin{equation}
+    % \pd{V_z}{r} - \pd{V_r}{z} = \frac{1}{\rho r} \left(\psi_{zz} + \psi_{rr} \right) + \psi_z \left( \frac{1}{\rho r} \right)_z + \psi_r \left( \frac{1}{\rho r} \right)_r.
+    \omega_\theta = \frac{1}{\rho r} \left(\pdd{\psi}{z} + \pdd{\psi}{r} \right) + \pd{\psi}{z} \pd{}{z}\left( \frac{1}{\rho r} \right) + \pd{\psi}{r} \pd{}{r}\left( \frac{1}{\rho r} \right).
+\end{equation}
+
+\noindent which we can rearrange into a Poisson equation for \(\psi\):
+
+% \begin{equation}
+%     \label{eqn:poissonpsi}
+%     \begin{alignedat}{2}
+%         \omega_\theta =& \frac{1}{\rho r} \left(\pdd{\psi}{z} + \pdd{\psi}{r} \right) + \pd{\psi}{z} \pd{}{z}\left( \frac{1}{\rho r} \right) + \pd{\psi}{r} \pd{}{r}\left( \frac{1}{\rho r} \right) \\
+%         \omega_\theta =& \frac{1}{\rho r} \left(\pdd{\psi}{z} + \pdd{\psi}{r} \right) \\
+%                        &- \rho r C_r \pd{}{z}\left( \frac{1}{\rho r} \right) + \rho r C_z \pd{}{r}\left( \frac{1}{\rho r} \right) & \text{(sub in \cref{eqn:axisymfreestream})}\\
+%         \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} \\
+%                               &- \rho^2 r^2 C_r \pd{}{z}\left( \frac{1}{\rho r} \right) + \rho^2 r^2 C_z \pd{}{r}\left( \frac{1}{\rho r} \right) & \text{(remove fraction)}\\
+%         \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} \\
+%                               &- \rho^2 r^2 C_r \left[\cancelto{0}{\frac{1}{\rho}\pd{}{z}\left( \frac{1}{r} \right)} + \frac{1}{r}\pd{}{z}\left( \frac{1}{\rho} \right)\right] \\
+%                               &+ \rho^2 r^2 C_z \left[\frac{1}{\rho}\pd{}{r}\left( \frac{1}{r} \right) + \frac{1}{r}\pd{}{r}\left( \frac{1}{\rho} \right)\right]& \text{(product rule)}\\
+%         \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} \\
+%                               &- \rho^2 r^2 C_r \frac{-1}{\rho^2 r}\pd{\rho_z}{z} + \rho^2 r^2 C_z \left(\frac{-1}{\rho r^2} + \frac{-1}{\rho^2 r}\pd{\rho_r}{r}\right)& \text{(take derivatives)}\\
+%         \rho r \omega_\theta =&  \pdd{\psi}{z} + \pdd{\psi}{r} - r C_r \pd{\rho_z}{z}
+%                               + r C_z \pd{\rho_r}{r} - \rho C_z & \text{(simplify)}\\
+%         \rho r \omega_\theta =&  \nabla^2\vect{\psi} + r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta - \rho C_z & \text{(condense)}\\
+%         \rho r \omega_\theta =&  \nabla^2\vect{\psi} + r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta - \frac{1}{r} \pd{\psi}{r} & \text{(sub in \cref{eqn:axisymfreestream})}\\
+%         \nabla^2\vect{\psi} =& \frac{1}{r} \pd{\psi}{r} - r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta + \rho r \omega_\theta.  & \text{(rearrange)}\\
+%     % \psi_{zz} + \psi_{rr} = \frac{1}{r} \psi_r + r \left( \vect{V}_m \times \nabla \rho \right) \cdot \left(-\hat{\theta} \right) + \rho r \omega_\theta
+%         % \pdd{\psi}{z} + \pdd{\psi}{r} &= \frac{1}{r} \psi_r + r \left( \vect{V}_m \times \nabla \rho \right) \cdot \left(-\hat{\theta} \right) + \rho r \omega_\theta
+% \end{alignedat}
+% \end{equation}
+
+\begin{equation}
+    \label{eqn:poissonpsi}
+        \nabla^2\vect{\psi} = \frac{1}{r} \pd{\psi}{r} - r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta + \rho r \omega_\theta.
+\end{equation}
+
+% We do not know what the value is for \(\omega_\theta\) immediately, so we will find an expression for it using terms we do have.
+% %
+% For an ideal, calorically perfect gas, the Crocco relation applied to our axisymmetric, steady flow in terms of total pressure is
+%
+% \begin{equation}
+%     \label{eqn:vmomegat}
+%     \begin{alignedat}{2}
+%     \vect{C} \times \vect{\omega} &= v \nabla \widetilde{p}_t \\
+%     \vect{C} \times \vect{\omega} &= \frac{1}{\rho} \nabla \widetilde{p}_t & \text{(definition of specific volume)} \\
+%     \vect{C} \times \vect{\omega} &\simeq \frac{1}{\rho} \nabla \left[\rho\left(\widetilde{h} - \widetilde{S}\right)\right] & \text{(apply \cref{eqn:totalpressure1})} \\
+%     \vect{C} \times \vect{\omega} &\simeq \nabla \left(\widetilde{h} - \widetilde{S}\right)  & \text{(incompressible)} \\
+%     \vect{C} \times \vect{\omega} &\simeq \nabla \widetilde{h} - \nabla \widetilde{S} & \text{(distributive property)} \\
+%     C_m \omega_\theta - C_\theta \omega_m &\simeq \nabla \widetilde{h} - \nabla \widetilde{S} & \text{(expand LHS)} \\
+%     \end{alignedat}
+% \end{equation}
+%
+% \where we have defined \(C_\theta\) in \cref{eqn:vtheta} as
+%
+% \begin{equation}
+%     C_\theta = \frac{\widetilde{\Gamma}}{2 \pi r};
+%     \tag{\ref{eqn:vtheta}}
+% \end{equation}
+%
+% \noindent and the \(\omega_m\) component of vorticity is defined as\sidenote{Remembering that \(\vect{\omega} = \nabla \times \vect{C}\).}
+%
+% \begin{equation}
+% \begin{aligned}
+%     \omega_m &= - \frac{1}{r} \pd{(r C_\theta)}{n} \\
+%              &= - \frac{1}{2 \pi r} \pd{\widetilde{\Gamma}}{n}. && \text{(plug in \cref{eqn:vtheta})}
+% \end{aligned}
+% \end{equation}
+%
+% \noindent Thus\sidenote{remembering that \(\pd{A}{n} = \frac{1}{2A}\pd{A^2}{n}\)}
+%
+% \begin{equation}
+% \begin{aligned}
+%     C_\theta \omega_m &\simeq - \frac{\widetilde{\Gamma}}{(2 \pi r)^2} \pd{\widetilde{\Gamma}}{n} \\
+%                       &\simeq - \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \pd{(\widetilde{\Gamma}^2)}{n},
+% \end{aligned}
+% \end{equation}
+%
+%
+% \noindent which we can substitute back into \cref{eqn:vmomegat} to get an expression for \(\omega_\theta\)
+%
+% \begin{equation}
+%     \omega_\theta = \frac{- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \nabla\left(\widetilde{\Gamma}^2\right) + \nabla\widetilde{h} - \nabla\widetilde{S}}{C_m}.
+% \end{equation}
+%
+% \noindent We can now replace the \(\omega_\theta\) term in \cref{eqn:poissonpsi} to get a Poisson equation solely in terms that are part of our solution system:
+%
+% \begin{equation}
+%     \nabla^2\vect{\psi} = \frac{1}{r} \pd{\psi}{r} - r \left(\vect{C}_m \times \nabla\rho\right) \hat{\vect{e}}_\theta + \rho r \frac{- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \nabla\left(\widetilde{\Gamma}^2\right) + \nabla\widetilde{h} - \nabla\widetilde{S}}{C_m}.
+% \end{equation}
+%
+% \noindent We also now take advantage of \cref{asm:lowmach} to eliminate the density dilation term, leaving us with
+%
+% \begin{equation}
+%     \label{eqn:poissonpsi1}
+%     \nabla^2\vect{\psi} = \frac{1}{r} \pd{\psi}{r} + \frac{\rho r}{C_m} \left(- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \nabla\left(\widetilde{\Gamma}^2\right) + \nabla\widetilde{h} - \nabla\widetilde{S}\right).
+% \end{equation}
+
+\noindent We may also express this Poisson equation as
+
+\begin{equation}
+\label{eqn:poissonpsi2}
+\nabla^2 \vect{\psi} = Q_0 + Q_1
+\end{equation}
+
+\where
+
+% \begin{align}
+%     Q_0 =& \frac{1}{r} \pd{\psi}{r} \\
+% \begin{split}
+%     Q_1 =& \frac{\rho r}{C_m^2} \biggr[ - \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \vect{C}_m \times \nabla\left(\widetilde{\Gamma}^2\right) \\
+%          &~~+ \vect{C}_m \times \nabla \widetilde{h} - \vect{C}_m \times \nabla \widetilde{S} \biggr]\hat{\vect{e}}_\theta
+% \end{split}
+% \end{align}
+
+\begin{equation}
+    Q_0 = \frac{1}{r} \pd{\psi}{r}
+\end{equation}
+
+\noindent The \(Q_0\) term is a result of the axisymmetry of the problem.
+%
+The remaining terms can be expanded into the transverse circulation gradient, the transverse work gradient, and the transverse loss gradient.
+%
+For our purposes of initialization, we do not have any information a priori concerning the terms not a part of \(Q_0\) so we set them to zero.
+%
+Later, after the non-linear solve, we may choose to update the streamlines and resolve; though at that point there are more direct methods of determining streamlines from the velocity field that may be more desirable to use.
+
+% The three terms of the source term, \(Q_1\), are first, the transverse circulation gradient, second, the transverse work gradient, and last, the transverse loss gradient.
+%
+% Ignoring the density dilation term for low speed flows gives us our final definition of \(Q_1\):
+
+% \begin{equation}
+%     Q_1 = \frac{\rho r}{V_m^2} \left[- \frac{1}{2} \left(\frac{1}{2 \pi r}\right)^2 \vect{C}_m \times \nabla\left(\widetilde{\Gamma}^2\right)
+%     + \vect{C}_m \times \nabla \widetilde{h} - \vect{C}_m \times \nabla \widetilde{S} \right] \cdot \left(-\hat{\theta}\right)
+% \end{equation}
+
+
+\subsection{Generation of an Elliptic Grid for Streamline Approximation}
+\label{ssec:generateellipticgrid}
+
+We are now ready to generate the solution grid, parametrically defined from our global coordinates through Poisson equations:\sidenote{We change our notation style for partial derivatives here as it proves to be easier to read due to the shear number of derivatives in this section.}
+
+\begin{align}
+    \label{eqn:poissonxi}
+    \xi(z,r) &\equiv \nabla^2 \xi = \xi_{zz} + \xi_{rr} = P \\
+    \label{eqn:poissoneta}
+    \eta(z,r) &\equiv \nabla^2\eta = \eta_{zz} + \eta_{rr} = Q.
+\end{align}
+
+
+\where \(\eta\) and \(\xi\) are the coordinates of the rectangular region and \(z\) and \(r\) are the coordinates of physical space.
+%
+We will set \(Q = Q_0\) and therefore \cref{eqn:poissoneta} is equivalent to \cref{eqn:poissonpsi2} and thus \(\eta \equiv \psi\).
+%
+We then let \(\eta\) be the coordinate that is constant on the body boundaries.
+%
+Thus lines of constant \(\eta\) correspond to physical streamlines as seen in \cref{fig:gridcoordinates}.
+%
+The \(\xi\) values have no physical interpretation, so we set \(P=0\) which allows \(\xi\) to be arbitrarily chosen as indicated by \citeauthor{thompson_1974}
+%
+For convenience, we will set \(\xi=\)constant along radial lines, also seen in \cref{fig:gridcoordinates}.
+%
+% Note that during the pre-computation stage, we won't yet have information available for source term, \(Q_1\), so we simply set it to zero to begin with.
+%
+% Later, after the non-linear solve, we may choose to update the streamlines and resolve; though at that point there are more direct methods of determining streamlines from the velocity field that may be more desirable to use.
+
+\begin{figure}[h!]
+    \centering
+    \input{rotor_wake_method/figures/elliptic_grid.tikz}
+    \caption[Elliptic grid coordinate system.]{Elliptic grid coordinate system showing lines of constant \(\eta\) (blue) coinciding with streamlines, and lines of constant \(\xi\) (red) are constant relative to change in radius when the \(z\)-coordinates of the upper and lower boundaries are aligned.}
+    \label{fig:gridcoordinates}
+\end{figure}
+
+
+In order to solve for the \((z,r)\) coordinates associated with physical streamlines, we need to invert the dependent and independent variables in \cref{eqn:poissonxi,eqn:poissoneta}.
+%
+In order to do so, we use the following derivative transformations:\scite{thompson_1974}
+
+\begin{subequations}
+\begin{align}
+    f_z &= \frac{\pd{(f,r)}{(\xi,\eta)}}{\pd{(z,r)}{(\xi,\eta)}} =\frac{r_\eta f_\xi - r_\xi f_\eta}{z_\xi r_\eta - z_\eta r_\xi} \\
+    f_r &= \frac{\pd{(z,f)}{(\xi,\eta)}}{\pd{(z,r)}{(\xi,\eta)}} =\frac{- z_\eta f_\xi + z_\xi f_\eta}{z_\xi r_\eta - z_\eta r_\xi}
+\end{align}
+\end{subequations}
+
+
+% \where \(J\) is the Jacobian of the transformation \(J = \pd{(x,y)}{(\xi,\eta)} = \).
+
+The details of the inversion are included in \cref{app:poissontransform}.
+%
+After the inversion, we are left with expressions for \(z\) and \(r\) with respect to \(\xi\) and \(\eta\).%\todo{need to decide which of these to include or if another is better, both of these are in the DFDC comments, but neither is actually used in the actual residual calculation.}
+
+%THIS IS THE VERSION IN THE DFDC CODE COMMENTS inigrd.f line 654
+\begin{align}
+    \alpha z_{\xi\xi} - 2 \beta z_{\xi\eta} + \gamma z_{\eta\eta}    &= \frac{J}{r} z_\eta z_\xi \\
+    \alpha r_{\xi\xi} - 2 \beta r_{\xi\eta} + \gamma r_{\eta\eta}    &= \frac{J}{r} z_\eta r_\xi
+\end{align}
+
+
+\noindent or equivalently in terms of \(\alpha, \beta, \gamma\) only:
+
+%THIS IS THE VERSION IN THE DFDC CODE COMMENTS inigrid.f line 670
+\begin{equation}
+\label{eqn:ellipticgridsystem}
+    \begin{aligned}
+        \alpha z_{\xi\xi} - 2 \beta z_{\xi\eta} + \frac{\gamma}{r} \left(r z_{\eta}\right)_\eta - \frac{\beta}{r} r_\xi z_\eta &= 0 \\
+        \alpha r_{\xi\xi} - 2 \beta r_{\xi\eta} + \frac{\gamma}{r} \left(r r_{\eta}\right)_\eta - \frac{\beta}{r}  r_\xi r_\eta &= 0
+    \end{aligned}
+\end{equation}
+
+\where
+
+\begin{align}
+    \alpha &= z_\eta^2 + r_\eta^2 \\
+    \beta &= z_\xi z_\eta + r_\xi r_\eta \\
+    \gamma &= z_\xi^2 + r_\xi^2 \\
+    J &= z_\xi r_\eta - z_\eta r_\xi
+\end{align}
+
+\noindent If we set constant \(\xi\) and \(\eta\) values on each grid line, we can solve \cref{eqn:ellipticgridsystem} for the desired \(z\) and \(r\) positions.
+
+% \subsubsection{Boundary Conditions}
+For boundary conditions, we will set fixed geometry (\(z,~r\) positions) on solid walls and the rotor plane\sidenote{This is a Dirichlet boundary condition.}, and require that the velocity be aligned with streamlines at the outlet plane.
+%
+The solid boundary and rotor plane geometry will be known from the user inputs.
+%
+We can obtain expressions for the velocity in terms of \(z\) and \(r\) only\sidenote{Therefore the outlet boundary condition is a Neumann type.} if we take the differential identities of the transformations
+
+\begin{align}
+    \label{eqn:firstid}
+    \begin{bmatrix}
+        z_\xi & z_\eta \\
+        r_\xi & r_\eta
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        d\xi \\
+        d\eta
+    \end{pmatrix}
+    &=
+    \begin{pmatrix}
+        dz\\
+        dr
+    \end{pmatrix} \\
+    %
+    \begin{bmatrix}
+        \xi_z & \xi_r \\
+        \eta_z & \eta_r
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz \\
+        dr
+    \end{pmatrix}
+    &=
+    \begin{pmatrix}
+        d\xi \\
+        d\eta
+    \end{pmatrix}
+\end{align}
+
+\noindent and invert one, say \cref{eqn:firstid},
+
+\begin{equation}
+    \begin{pmatrix}
+        d\xi \\
+        d\eta
+    \end{pmatrix}
+    =
+    \frac{1}{J}\begin{bmatrix}
+        r_\eta & -z_\eta \\
+        -r_\xi & z_\xi
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz\\
+        dr
+    \end{pmatrix}
+\end{equation}
+
+\noindent then set them equal to each other
+
+\begin{equation}
+    \begin{bmatrix}
+        \xi_z & \xi_r \\
+        \eta_z & \eta_r
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz \\
+        dr
+    \end{pmatrix}
+    =
+    \frac{1}{J}\begin{bmatrix}
+        r_\eta & -z_\eta \\
+        -r_\xi & z_\xi
+    \end{bmatrix}
+    %
+    \begin{pmatrix}
+        dz\\
+        dr
+    \end{pmatrix}
+\end{equation}
+
+\noindent we see that
+
+\begin{align}
+    \xi_z &= \frac{r_\eta}{J} \\
+    \xi_r &= \frac{-z_\eta}{J} \\
+    \eta_z &= \frac{-r_\xi}{J} \\
+    \eta_r &= \frac{z_\xi}{J}.
+\end{align}
+
+\noindent Thus the velocities can be computed from \cref{eqn:axisymfreestream} as
+
+\begin{align}
+    C_z = \frac{1}{\rho r} \frac{d\psi}{dr} = \frac{\eta_r}{\rho r} &= \frac{z_\xi}{\rho r J} \\
+    C_r = \frac{-1}{\rho r} \frac{d\psi}{dx} = \frac{-\eta_z}{\rho r} &= \frac{r_\xi}{\rho r J}.
+\end{align}
+
+In practice, we set the outlet boundary condition as
+
+\begin{equation}
+\eqbox{
+    \hat{\eta}_z C_z + \hat{\eta}_r C_r  = 0.
+}
+\end{equation}
+
+\where \(\hat{\eta}_{(\cdot)}\) indicates a component of the \(\eta\) unit vector.
+%
+In other words, we require that there be no component of velocity in the \(\eta\) direction.\sidenote{Said another way, this condition simply requires that the grid be along a streamline at the outlet boundary.}
+
+
+\subsection{Solution Approach}
+
+In the actual implementation, we initialize the grid to have radial lines with constant axial position as shown in \cref{fig:gridcoordinates}.
+%
+This is a by-product of repaneling the body geometries in such a way that we can ensure a constant number of panels between discrete locations in the wake\sidenote{Such as rotor planes, body trailing edges, etc.} so that we can avoid any discontinuities if rotor position or body lengths are included as optimization design variables.
+%
+Because the initial grid points lie on constant radial lines, and we choose to set the \(\xi\) values to align with the initial grid \(z\) coordinates, the derivatives of \(z\) with respect to \(\eta\), as well as the second derivative of \(z\) with respect to \(\xi\), go to zero, which allows us to simplify our residual expression such that only the radial positions of the grid points need be changed to approximate streamlines.
+%
+Therefore, \cref{eqn:ellipticgridsystem} becomes
+
+\begin{equation}
+\label{eqn:simplified_ellipticgridsystem}
+\eqbox{
+        \alpha r_{\xi\xi} - 2 \beta r_{\xi\eta} + \frac{\gamma}{r} \left(r r_{\eta}\right)_\eta - \frac{\beta}{r}  r_\xi r_\eta = 0,
+}
+\end{equation}
+
+\where
+
+\begin{align}
+    \alpha &= r_\eta^2, \\
+    \beta &= r_\xi r_\eta, \\
+    \gamma &= 1.0 + r_\xi^2.
+\end{align}
+
+To solve, we initialize the grid based on simple conservation of mass, setting the radial positions at the rotor plane to coincide with blade element edges, and then apply a non-linear solver to converge the residual of \cref{eqn:simplified_ellipticgridsystem}.
+
+
+\subsection{Discretizing the Wake into Panels}
+
+The process of discretization into panels follows immediately from the solution of this elliptic grid.
+%
+We already input discrete ``grid'' points and after the solver places them at their final locations, we simply take the lines between points along the streamlines to be panels.
+%
+For each panel, we can compute the vortex strength distribution using \cref{eqn:gamma_theta_general}.
+%
+Note that even though we use linear vortex panels in the wake, just like on the bodies, we solve for the wake strengths directly from the rotor circulation and induced velocities rather than having to develop a linear system like we do for the bodies.
+
+
+% \subsubsection{Treating the "End" of the Wake Filaments}
+
+% One final consideration is the end of the wake.\todo{Move this subsubsection to somewhere it makes more sense. it doesn't fit in the wake geometry section}
+% %
+% By Helmholtz` theorems, we cannot just have the vortex filaments of the wake (smeared or otherwise) simply end.
+% %
+% On the rotor blades, we have lines of circulation [(reference one of the figures)] from which the wake filaments are shed (as would be expected from a lifting line method).
+% %
+% We have not, however, defined those shed wake filaments to be semi-infinite, but rather to be discretized into smeared vortex panels.
+% %
+% Therefore we need to either extend them to infinity, or ``close the loop;'' we choose the latter.
+% %
+% At the end of each wake element, we add a panel similar to the trailing edge panels for the centerbody, which extends from the last wake node along the streamline to the axis of rotation.
+% %
+% In contrast to the centerbody trailing edge panel, we only apply the vorticity portion of the wake panel strength based on the last wake node along the streamline.
+%
+%
+%
+%

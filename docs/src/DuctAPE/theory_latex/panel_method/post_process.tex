@@ -1,0 +1,207 @@
+\section{Post-processing the Panel Method Solution}
+
+\subsection{Velocity Tangent to the Body Surface}
+\label{sssec:vtanbody}
+
+After we have solved for the node strengths, \(\vect{\gamma}\), that coincide with our selected body geometry, we desire to use those strengths to find the velocity somewhere in the field.
+%
+We are especially interested in finding the surface velocity on the body and using it to determine the pressure distribution on the body surface.
+%
+In order to obtain the surface velocity, we need to find the velocity induced tangent to the panels.
+%
+We can do so by applying the same kind of Fredholm integral expression, but this time taking the tangential derivative, and remembering that the jump term across the boundary for the tangential velocity is \(-\gamma/2\) outward and \(\gamma/2\) inward\scite{Martensen_1971}:
+
+\begin{subequations}
+    \label{eqn:fredholmtan}
+    \begin{align}
+        v_\text{tan}(t) = \pm \frac{\gamma(t)}{2} + \oint_\mathcal{S}& \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{t}}_t} \d s  +\pd{\vect{\phi}_\text{ext}}{\hat{\vect{t}}_t} \\
+                                               & \text{-- or --} \notag\\
+        v_\text{tan}(t) = \pm \frac{\gamma(t)}{2} + \oint_\mathcal{S} &\gamma(s) \hat{\vect{V}}(s,t)\cdot\hat{\vect{t}}(t) \d s + \vect{V}_\text{ext}\cdot\hat{\vect{t}}(t).
+   \end{align}
+\end{subequations}
+
+We can therefore use the same discretization scheme and induced velocity expressions as we did to create our linear system.
+%
+To simplify things further, we can also simply take the sum of the full induced velocities on the control points and the magnitude will be the surface velocity.
+%
+This is due to the fact that we solved for the vortex strengths based on the boundary condition of zero flow normal to the control points; therefore when all the velocity components are summed, all that is left is the velocity tangent to the surface.\sidenote{Remember that the jump term is a jump in tangential velocity and the linear system solution only gave us a magnitude, so before adding the jump term in, we need to make sure to separate it into components tangent to the panel.}
+
+\begin{equation}
+    v_{\text{tan}_i} = \left| \pm\frac{\overline{\gamma}_i}{2}\hat{\vect{t}}_i + \sum_{j=1}^{N+1} \left[\gamma_j\vect{M}_{ij}\right]  + \vect{V}_\text{ext} \right|,
+\end{equation}
+
+\where
+
+\begin{equation}
+    \overline{\gamma}_i = \frac{\gamma_i + \gamma_{i+1}}{2},
+\end{equation}
+%
+and
+
+\begin{equation}
+\vect{M}_{ij}=
+    \begin{cases}
+        IC^t_{ij}        \hfill & \text{for }j=1,N+1 \\
+        IC^t_{ij} + IC^t_{i(j-1)} & \text{for }2 \leq j \leq N,
+           % \hfill IC_{i(j-1)} & \text{for }j = N+1. \\
+    \end{cases}
+\end{equation}
+
+\where for the nominal case, the components of the influence coefficients are defined identically to \cref{eqn:nominalic}, but we keep them in vector format for simplicity:
+
+\begin{equation}
+    \eqbox{
+    \begin{alignedat}{2}
+        IC^t_{ij} &= \left(\Delta s_j\sum_k^N  w_k v_z(s(\zeta_k),t) (1-\zeta_k)\right)  &&+ \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) (1-\zeta_k)\right) \\
+        IC^t_{i(j+1)} &=  \left(\Delta s_j\sum_k^N w_k v_z(s(\zeta_k),t) \zeta_k\right)  &&+  \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) \zeta_k\right) .
+    \end{alignedat}
+}
+\end{equation}
+
+\noindent For the self-induced case, again, the expressions are identical to \cref{eqn:panelselfic},  but again we keep things in vector format rather than dotting with the normal:
+
+\begin{equation}
+    \eqbox{
+    \begin{aligned}
+        IC^t_{ii} =& \left(\Delta s_i\sum_k^N  w_k \left[v_z(s(\zeta_k),\overline{\vect{p}}_i)-S_z(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_z(\overline{\vect{p}}_i)}{\Delta s_i}\right] (1-\zeta_k)\right)  \\
+            &+ \left(\Delta s_i\sum_k^N  w_k \left[v_r(s(\zeta_k),\overline{\vect{p}}_i)-S_r(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_r(\overline{\vect{p}}_i)}{\Delta s_i}\right] (1-\zeta_k) \right)  \\
+        IC^t_{i(i+1)} =& \left(\Delta s_i\sum_k^N  w_k \left[v_z(s(\zeta_k),\overline{\vect{p}}_i)-S_z(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_z(\overline{\vect{p}}_i)}{\Delta s_i}\right] \zeta_k \right)  \\
+            &+ \left(\Delta s_i\sum_k^N  w_k \left[v_r(s(\zeta_k),\overline{\vect{p}}_i)-S_r(s(\zeta_k),\overline{\vect{p}}_i)+\frac{A_r(\overline{\vect{p}}_i)}{\Delta s_i}\right] \zeta_k \right) .
+    \end{aligned}
+}
+\end{equation}
+%
+Note that the coefficients, \(\vect{M}\), along with the system influence coefficients, \(\vect{G}^*\), can be precomputed and stored, although there is really no need for an LU-decomposition for \(\vect{M}\) as there is no linear solve, but rather a direct matrix-vector multiplication to calculate the tangential velocity.
+%
+In addition, the procedure in the presence of a trailing edge gap panel is identical to that presented for the normal induced velocities, with the exception already discussed here: that no dot product need be taken.
+
+\subsection{Velocity at Arbitrary Points in Space}
+
+For arbitrary points in space, the procedure for obtaining velocities is nearly identical, with the exceptions that there will be no self-induced or jump terms off the body surface, and we need not dot the components with any unit vector, as we typically want to know the velocity components in the global reference frame.
+
+\begin{subequations}
+    \label{eqn:fredholmarbitrary}
+    \begin{align}
+        \vect{V}_\text{field}(\vect{q}) = \oint_\mathcal{S}& \gamma(s) \nabla \vect{\phi}(s,\vect{q}) \d s  + \nabla \vect{\phi}_\text{ext} \\
+                                               & \text{-- or --} \notag\\
+        \vect{V}_\text{field}(\vect{q}) = \oint_\mathcal{S} &\gamma(s) \vect{V}(s,\vect{q}) \d s + \vect{V}_\text{ext}.
+   \end{align}
+\end{subequations}
+
+We can still use the same discretization scheme and induced velocity expressions as we did to create our linear system, and body surface velocity calculations, but this time, instead of dotting the velocity vector with some vector, we will keep things in a vector format.
+%
+In other words, we will keep the axial and radial components of induced velocity separate:
+
+\begin{equation}
+    \vect{V}_\text{field}(\vect{q}) = \vect{M}\vect{\gamma}  + \vect{V}_\text{ext}.
+\end{equation}
+
+\where
+
+\begin{equation}
+\vect{M}_{j}=
+    \begin{cases}
+        IC^f_{j}        \hfill & \text{for }j=1,N+1 \\
+        IC^f_{j} + IC^f_{j-1} & \text{for }2 \leq j \leq N,
+    \end{cases}
+\end{equation}
+
+\where
+
+\begin{equation}
+    \eqbox{
+    \begin{aligned}
+        IC^f_{j} &= \left[\Delta s_j\sum_k^N  w_k v_z(s(\zeta_k),\vect{q}) (1-\zeta_k),   \Delta s_j\sum_k^N w_k v_r(s(\zeta_k),\vect{q}) (1-\zeta_k)\right] \\
+    IC^f_{j+1} &=\left[ \Delta s_j\sum_k^N w_k v_z(s(\zeta_k),\vect{q}) \zeta_k,  \Delta s_j\sum_k^N w_k v_r(s(\zeta_k),\vect{q}) \zeta_k\right].
+    \end{aligned}
+}
+\end{equation}
+
+
+\subsection{Body Forces}
+
+Due to \cref{asm:axisymmetric}, the net radial pressure forces on the body cancel; we also assume there are no tangential forces induced due to the bodies.
+%
+We therefore sum the forces due to pressure in the axial direction to obtain drag (or thrust) of the bodies.
+
+\begin{equation}
+    T_\text{bod} = \frac{1}{2}\rho_\infty V_\text{ref}^2 f_z
+\end{equation}
+
+\where the non-dimensional force coefficient, \(f_z\), is the integral of the pressure force coefficient in the axial direction about the body surfaces:
+
+\begin{equation}
+    \label{eqn:fzbody}
+    f_z = \sum_{i=1}^{N_b} 2 \pi \int_{S_i} r(s_i) c_p(s_i) \hat{\vect{n}}_{z}(s_i) \d s_i.
+    % f_z = \sum_{i=1}^{N_b} 2 \pi \int_{S_i} r(s_i) (c_{p_\text{out}}-c_{p_\text{in}}) (s_i) \hat{\vect{n}}_{z}(s_i) \d s_i.
+\end{equation}
+%
+In the case of a blunt trailing edge, the trailing edge gap panel is also included in the integral for the total axial force coefficient, though the pressure coefficient values used in that case are simply the average of the adjoining panels in the duct case, and the last panel in the center body case.
+%
+% Since the trailing edge gap panels are in general pointing in the positive axial direction, this provides a rough approximation of profile drag due to the blunt trailing edges.
+
+% Note that in \cref{eqn:fzbody} we integrate the difference in surface pressure between the outer and inner sides of the body surface.
+% %
+% This is due to the fact that there is a non-zero induced velocity on the inner side of the body boundaries as mentioned in \cref{sssec:vtanbody}.
+% %
+% To obtain the thrust due to a pressure difference, then, we require to net pressure induced on the body surfaces rather than just the externally induced surface pressure.
+% %
+% Internally, there is no additional effects on the surface pressure by the rotor and wake.
+% %
+% Externally however, there is a jump in pressure aft of the rotor(s) inside the duct.
+
+For a ducted rotor, the pressure coefficient on the body surface changes aft of any rotor planes due to the enthalpy and entropy jumps across the rotor plane as well as the addition of swirl velocity.
+%
+We will see in the next chapter (specifically \cref{eqn:totalpressure1}) that the steady state pressure coefficient changes due to the disk jumps across the rotor as
+
+\begin{equation}
+    \begin{aligned}
+        \Delta c_{p_{hs}} &= \frac{\widetilde{p_t}}{\frac{1}{2} \rho V_\text{ref}^2} \\
+                          &= \frac{\rho \left(\widetilde{h}-\widetilde{S} \right)}{\frac{1}{2} \rho V_\text{ref}^2} \\
+                          &= \frac{\widetilde{h}-\widetilde{S}}{\frac{1}{2} V_\text{ref}^2}
+    \end{aligned}
+\end{equation}
+
+\noindent The pressure is also altered by the addition of swirl velocity due to the rotor.
+%
+We treat this in the same manner as we do for the nominal, steady pressure coefficient based on the surface velocity.
+%
+For the nominal case, we only look at the velocity in the axial and radial directions, obtaining the velocity tangent to the body surfaces.
+%
+The pressure coefficient, is given by
+
+\begin{equation}
+    c_p = \frac{p - p_\infty}{\frac{1}{2} \rho V_\text{ref}^2}
+\end{equation}
+%
+By \cref{asm:incompressible}, we can apply Bernoulli's equation
+
+\begin{align}
+    p_\infty + \frac{1}{2} \rho V_\infty^2 &= p + \frac{1}{2} \rho V_\text{tan}^2 \\
+    p-p_\infty &= \frac{1}{2} \rho V_\infty^2 - \frac{1}{2} \rho V_\text{tan}^2
+\end{align}
+
+\where \(V_\text{tan}\) is the velocity tangent to the body surface, and substitute into the numerator and cancel to obtain
+
+\begin{equation}
+    c_p = \frac{V_\infty^2 - V_\text{tan}^2}{V_\text{ref}^2}
+\end{equation}
+%
+Aft of the rotor, inside the duct, and on the outer side of the body surfaces \(V_\text{tan}\) contains a swirl component that is not present upstream of the rotor.
+%
+Since the \(V_{\theta_\infty}=0\), the change in pressure coefficient aft of the rotor due to the addition of swirl velocity is simply
+
+\begin{equation}
+    \Delta c_{p_\theta} = -\frac{V_\theta^2}{V_\text{ref}^2}
+\end{equation}
+%
+All together the outer surface pressure coefficient rise aft of a rotor is then:
+
+\begin{equation}
+    \eqbox{
+    \begin{aligned}
+        \Delta c_p &= \Delta c_{p_{hs}} + \Delta c_{p_\theta} \\
+     &= \frac{2 (\widetilde{h} - \widetilde{S}) - V_\theta^2}{V_\text{ref}^2}.
+    \end{aligned}
+}
+\end{equation}

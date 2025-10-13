@@ -8,18 +8,27 @@
     \scriptsize\itshape\alphalph{\value{snote}}} #1}}
 % ---------------------------------------
 
+% turn off links for citeauthor
+\newcommand*{\nolink}[1]{%
+  {\protect\NoHyper#1\protect\endNoHyper}%
+}
+
 % ------------------ tikz ------------
 %%tikz
 \RequirePackage{pgf,tikz}
 \usepackage{pgfplots}
+\usepackage{pgfmath}
 \pgfplotsset{compat=newest}
 \usetikzlibrary{arrows.meta}
 \usetikzlibrary{arrows}
+\usetikzlibrary{calc}
+\usetikzlibrary{fit}
 \usetikzlibrary{shapes.geometric}
 \usetikzlibrary{shapes.misc}
 \usetikzlibrary{backgrounds}
 \usetikzlibrary{bending}
 \usetikzlibrary{shadows}
+\usetikzlibrary{decorations.pathmorphing, decorations.markings}
 \usetikzlibrary{patterns}
 \usetikzlibrary{patterns.meta}
 \usetikzlibrary{intersections}
@@ -51,6 +60,10 @@
     partial ellipse/.style args={#1:#2:#3}{
         insert path={+ (#1:#3) arc (#1:#2:#3)}
     }
+}
+
+\newcommand\ImageNode[3][]{
+  \node[#1] (#2) {\includegraphics[width=1.5cm,height=1.5cm]{#3}};
 }
 
 \RequirePackage{nicefrac}
@@ -95,6 +108,19 @@
 % ----------------------------------------
 
 
+\renewcommand*\epigraph{%
+	\cleardoublepage
+	\thispagestyle{empty}
+		\setlrmarginsandblock{1.75in}{1.75in}{*}
+		\checkandfixthelayout
+	\if@twocolumn
+	\onecolumn
+	\@tempswatrue
+	\else
+	\@tempswafalse
+	\fi
+	\null\vfil
+}
 
 % --------------- Part Page Format ---------------
 \renewcommand*\part{%
@@ -120,10 +146,10 @@
 % \renewcommand*{\thepart}{}
 \renewcommand*{\partnamefont}{\normalfont\LARGE\sffamily\bfseries\colorchaptitle}
 \renewcommand*{\partnumfont}{\normalfont\LARGE\sffamily\bfseries\colorchaptitle}
-\renewcommand*{\parttitlefont}{\normalfont\LARGE\sffamily\itshape\colorchaptitle}
+\renewcommand*{\parttitlefont}{\normalfont\Huge\sffamily\itshape\colorchaptitle}
 % don't print the part number or word part
-\renewcommand*{\printpartname}{}
-\renewcommand*{\printpartnum}{}
+\renewcommand*{\printpartname}{\partnamefont Part}
+\renewcommand*{\printpartnum}{\thepart}
 % \renewcommand*{\cftpartfont}{\cftchapterfont}
 % \renewcommand*{\cftpartpagefont}{\cftchapterpagefont}
 \renewcommand{\cftpartpresnum}{Part }
@@ -166,7 +192,7 @@
 			\node[
 				anchor=east,
 				rectangle,
-				rounded corners=0.1cm,
+				rounded corners=5pt,
 				fill=primary,
 				text=white,
                 font=\normalfont\sffamily
@@ -182,7 +208,8 @@
 		linecolor=primary,%
 		linewidth=0.75pt,%
 		topline=true,%
-		frametitleaboveskip=\dimexpr-\ht\strutbox\relax,%
+		frametitleaboveskip=\dimexpr-0.5\ht\strutbox\relax,%
+        % frametitlealignment=\raggedright,
    }
  \goodbreak
    \begin{mdframed}[]\relax%
@@ -195,6 +222,8 @@
 \labelformat{assumption}{\color{primary}\thechapter.#1}
 
 % ----------------------------------------------------
+% better break url
+\usepackage{xurl}
 
 
 % % ------- Other option for Assumptions --------------
@@ -235,49 +264,49 @@
 
 % ---------------- summary Box --------------------
 
-\newcounter{summary}[chapter]
-\setcounter{summary}{0}
-\makeatletter
-\newenvironment{summary}%
-{%
-	\refstepcounter{summary}
-	\renewcommand{\label}[1]{\ltx@label{{##1}}}
-	\mdfsetup{%
-		frametitle={%
-			\tikz[
-				baseline=(current bounding box.east),
-				outer sep=0pt,
-				inner sep=5pt,
-			]
-			\node[
-				anchor=east,
-				rectangle,
-				rounded corners=0.1cm,
-				fill=byutan,
-				text=black,
-                font=\normalfont\sffamily
-			]
-			{Summary~\thechapter.\theassumption};
-		}
-	}
-%
-	\mdfsetup{
-		roundcorner=5pt,
-		innertopmargin=1pt,
-		innerbottommargin=10pt,
-		linecolor=byutan,%
-		linewidth=0.75pt,%
-		topline=true,%
-		frametitleaboveskip=\dimexpr-\ht\strutbox\relax,%
-	}
-	\begin{mdframed}[]\relax%
-	}%
-	{\end{mdframed}}
-\makeatother
+% \newcounter{summary}[chapter]
+% \setcounter{summary}{0}
+% \makeatletter
+% \newenvironment{summary}%
+% {%
+% 	\refstepcounter{summary}
+% 	\renewcommand{\label}[1]{\ltx@label{{##1}}}
+% 	\mdfsetup{%
+% 		frametitle={%
+% 			\tikz[
+% 				baseline=(current bounding box.east),
+% 				outer sep=0pt,
+% 				inner sep=5pt,
+% 			]
+% 			\node[
+% 				anchor=east,
+% 				rectangle,
+% 				rounded corners=0.1cm,
+% 				fill=byutan,
+% 				text=black,
+%                 font=\normalfont\sffamily
+% 			]
+% 			{Summary~\thechapter.\theassumption};
+% 		}
+% 	}
+% %
+% 	\mdfsetup{
+% 		roundcorner=5pt,
+% 		innertopmargin=1pt,
+% 		innerbottommargin=10pt,
+% 		linecolor=byutan,%
+% 		linewidth=0.75pt,%
+% 		topline=true,%
+% 		frametitleaboveskip=\dimexpr-\ht\strutbox\relax,%
+% 	}
+% 	\begin{mdframed}[]\relax%
+% 	}%
+% 	{\end{mdframed}}
+% \makeatother
 
-\crefname{summary}{summary}{summaries}
-\Crefname{Summary}{Summary}{Summaries}
-\labelformat{summary}{\color{primary}\thechapter.#1}
+% \crefname{summary}{summary}{summaries}
+% \Crefname{Summary}{Summary}{Summaries}
+% \labelformat{summary}{\color{primary}\thechapter.#1}
 
 % % ---------------- Summary Box --------------------
 % \newcounter{summary}[chapter]
@@ -352,17 +381,41 @@
 \makeatother
 
 % ------------- Misc Cleveref Formatting ----------------
-\crefname{figure}{figure}{figures}
-\Crefname{figure}{Figure}{Figures}
-\renewcommand{\thefigure}{\arabic{chapter}.\arabic{figure}}
-\labelformat{figure}{\color{primary}\normalfont#1}
+% format the inline \cref text: #2 #1 #3 are cleveref's hook pieces
+\crefformat{figure}{figure~\textcolor{primary}{#2#1#3}}
+\Crefformat{figure}{Figure~\textcolor{primary}{#2#1#3}}
 
+\crefformat{subfigure}{figure~\textcolor{primary}{#2#1#3}}
+\Crefformat{subfigure}{Figure~\textcolor{primary}{#2#1#3}}
 
-% try getting subfigs reference color
-% \newcommand{\thesubfigure}{\thefigure(\alph{subfigure})}
-\crefname{subfigure}{figure}{figures}
-\Crefname{subfigure}{Figure}{Figures}
-\labelformat{subfigure}{\color{primary}\normalfont\thefigure#1}
+% optional: also color ranges and multiple refs consistently
+\crefrangeformat{figure}{figures~\textcolor{primary}{#3#1#4--#5#2#6}}
+\crefrangeformat{subfigure}{figures~\textcolor{primary}{#3#1#4--#5#2#6}}
+
+% multiple references (a,b)
+\crefmultiformat{figure}{figures~\textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}%
+  {, \textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}
+\Crefmultiformat{figure}{Figures~\textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}%
+  {, \textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}
+
+\crefmultiformat{subfigure}{figures~\textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}%
+  {, \textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}
+\Crefmultiformat{subfigure}{Figures~\textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}%
+  {, \textcolor{primary}{#2#1#3}}%
+  { and~\textcolor{primary}{#2#1#3}}
+
+% ranges (a--b)
+\crefrangeformat{figure}{figures~\textcolor{primary}{#3#1#4--#5#2#6}}
+\Crefrangeformat{figure}{Figures~\textcolor{primary}{#3#1#4--#5#2#6}}
+\crefrangeformat{subfigure}{figures~\textcolor{primary}{#3#1#4--#5#2#6}}
+\Crefrangeformat{subfigure}{Figures~\textcolor{primary}{#3#1#4--#5#2#6}}
 
 \crefname{section}{section}{sections}
 \Crefname{section}{Section}{Sections}
@@ -386,7 +439,7 @@
 
 % ---------- Additional Colors -------------------------
 % \definecolor{lightblue}{HTML}{64AFFA}
-% % \definecolor{navyred}{HTML}{9b0000}
+\definecolor{navyred}{HTML}{9b0000}
 % % \definecolor{royalred}{HTML}{B82B00}
 % % \definecolor{lightred}{HTML}{FA4B4B}
 
@@ -405,6 +458,7 @@
 
 % -------------- easy coloring of things ----------------
 \newcommand{\navy}[1]{{\color{navy}#1}}
+\newcommand{\navyred}[1]{{\color{navyred}#1}}
 \newcommand{\primary}[1]{{\color{primary}#1}}
 \newcommand{\secondary}[1]{{\color{secondary}#1}}
 \newcommand{\tertiary}[1]{{\color{tertiary}#1}}
@@ -520,13 +574,12 @@
 
 
 %paper 1 packages
-
 \RequirePackage{subcaption}
 % \captionsetup[sub]{font=normalsize,labelfont={bf,sf}}
 \captionsetup[subfigure]{subrefformat=simple,labelformat=simple}
-    \renewcommand\thesubfigure{(\alph{subfigure})}
+\renewcommand\thesubfigure{(\alph{subfigure})}
 \newdimen\figrasterwd
-\figrasterwd\textwidth
+\figrasterwd=\dimexpr\textwidth+2.0in\relax
 \usepackage{placeins}
 \usepackage{overpic}
 
@@ -584,7 +637,7 @@ heading_suffix "}\n"
 
 
 %%%%%%%%%%% set table of contents dept %%%%%%%%%%%%%%
-\setcounter{tocdepth}{2}
+\setcounter{tocdepth}{1}
 
 %%%%% ------  add some breathing room between entries and brackets of matrices
 \makeatletter
@@ -603,20 +656,17 @@ heading_suffix "}\n"
 %%%%% ------ allow newlines inside table cells with the \makecell{} environment
 \usepackage{makecell}
 
+% custom line colors for tables
+\usepackage{colortbl}
+\arrayrulecolor{mediumgray}
 
-% fancy table alignment
-\usepackage{array}
-\newcommand{\PreserveBackslash}[1]{\let\temp=\\#1\let\\=\temp}
-\newcolumntype{C}[1]{>{\PreserveBackslash\centering}m{#1}}
-\newcolumntype{R}[1]{>{\PreserveBackslash\raggedleft}m{#1}}
-
-\usepackage{multirow}
-\usepackage{array, makecell}
- \renewcommand\theadfont{}
-\renewcommand\theadalign{tc}
-\renewcommand\cellalign{tr}
-\setcellgapes{5pt}
-\newcolumntype{/}{!{\color{plotsgray!50}\vrule width 0.001pt}}
-
-% decimal aligned columns in table
+% S column type in tables
 \usepackage{siunitx}  % for 'S' column type
+
+%%%%% ------ Nomenclature Groups ----- %%%%%
+\usepackage{etoolbox}
+\renewcommand\nomgroup[1]{%
+  \item[\bfseries
+  \ifstrequal{#1}{P}{Physics Constants}{%
+      }
+]}

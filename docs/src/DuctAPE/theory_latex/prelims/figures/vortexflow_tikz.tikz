@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+    % Center dot
+    \filldraw[primary] (0,0) circle (2pt);
+    % Radial arrows, placed on the top-right part of the circles
+    \foreach \r in {0.5, 0.75, 1, 1.25} {
+        \draw[primary, ultra thick, -{Stealth[length=2mm, width=2mm]}] (0,\r) arc[start angle=90, end angle=440, radius=\r];
+    }
+\end{tikzpicture}
+

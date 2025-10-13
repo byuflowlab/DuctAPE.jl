@@ -1,4 +1,4 @@
-FNAME=theory
+FNAME=main
 
 # OPTION `build.sh genall`: Generate all auxiliary files
 if [ ${1:-not} = genall ]
@@ -7,8 +7,8 @@ then
     # Remove all auxiliary files
     sh clean.sh
 
-    # # Remove biber cache because it gets corrupted now and then.
-    # rm -rf $(biber --cache)
+    # Remove biber cache because it gets corrupted now and then.
+    rm -rf $(biber --cache)
 
     # Pre-compilation
     pdflatex ${FNAME}.tex
@@ -29,4 +29,4 @@ pdflatex ${FNAME}.tex
 pdflatex ${FNAME}.tex
 
 # Remove auxiliary files
-sh clean.sh
+sh clean.sh keepaux

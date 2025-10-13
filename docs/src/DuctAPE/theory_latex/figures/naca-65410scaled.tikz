@@ -1,4 +1,0 @@
-\begin{tikzpicture}[scale=7]
-        %Airfoil
-        \draw[ultra thick,primary] plot[smooth] file{figures/naca-65410scaled.dat};
-\end{tikzpicture}

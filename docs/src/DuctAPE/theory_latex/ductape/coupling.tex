@@ -1,0 +1,45 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%                          COUPLING
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Coupling the Body, Rotor, and Rotor-Wake Aerodynamics}
+
+We have introduced the constituent models of which DuctAPE is comprised in \cref{ch:panel_method,ch:rotor_wake}.
+%
+We now discuss how these individual models are coupled together to make DuctAPE.
+%
+Coupling the body and rotor-wake aerodynamics is, for the most part, a straightforward process, with only a few particular concerns.
+%
+Essentially, the coupling takes place through mutually induced velocities.
+%
+Specifically, the duct bodies, rotor(s), and wake sheets, all induce velocities on themselves and each other.
+%
+Accounting for these induced velocities is nearly the totality of the coupling methodology.
+
+
+For the duct bodies, we subtract the induced velocities normal to the panels to the right hand side of the linear system, just as we do for the freestream velocities.\sidenote{These are included in the \(\vect{V}_\text{ext}\) term throughout \cref{ch:panel_method}, and it is for this reason we use the 'ext' subscript rather than the more commonly see \(\infty\) subscript used in other panel method derivations.}
+%
+In addition, at the wake-body interfaces, or in other words, for the wake elements shed from the rotor hub and tip (assuming the rotor tip ``touches'' the duct wall), the wake panels lie directly on the boundary being solved by the linear system.
+%
+This requires the use of the separation of singularity integration when applying the induced velocity of the wake panels onto the body panels on which they lie.
+%
+In order ease the coupling of wake panels coincident with body surfaces, the geometry is defined from the outset to have the nodes and control points of the overlapping regions of wake and body panels to be exactly coincident.
+%
+This way we can use exactly the same approach for the body self-induced velocity cases explained in \cref{ch:panel_method}, to compute the wake-on-body and body-on-wake induced velocities across the overlaps.
+%
+In addition, since the wake panels lie on the boundary being solved, they will also induce a jump in tangential velocity across the boundary which must be accounted for the post-processing step to calculate the body surface velocity, pressure, and thereby thrust/drag.
+%
+Since the rotor tip and hub wakes interact with the body surfaces, additional consideration is also required for considering the strengths to define along the wake elements inside the duct.
+%
+In reality, this is a complex, viscous interaction that we cannot properly capture given the inviscid methodologies of DuctAPE.
+%
+As an approximation, we take the approach used in DFDC and apply a linear interpolation from the body trailing edge, which gets the full rotor wake strength at that point, to the intersection of the rotor plane and wall, which we set to zero just ahead of the rotor.
+%
+% [look into what happens experimentally/in reality/in cfd.  is the wake vorticity suppressed by the body and then pops back up outside the duct?]
+
+For the rotor(s) we simply add the induced axial and radial velocities from the bodies and wakes to the relative axial and radial velocities used in determining the inflow angles and magnitudes across the blades.
+%
+Similarly for the wake, we combine all the induced velocities together to obtain the average meridional velocities required to compute the wake node strengths.
+%
+As noted in \cref{ch:rotor_wake}, the wake sheets are informed from the rotor blade section circulation as well, this being the only non-induced velocity term used in coupling the various models together.

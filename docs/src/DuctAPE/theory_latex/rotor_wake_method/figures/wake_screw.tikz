@@ -1,0 +1,72 @@
+\begin{tikzpicture}[scale=1.0]
+
+    \coordinate (s0) at (0.0,0.05);
+    \coordinate (s1) at (0.0,1.25);
+    \coordinate (s2) at (0.0,2.5);
+    \coordinate (s3) at (0.0,3.75);
+    \coordinate (ds) at (55:0.25cm);
+
+    %airfoil
+    \draw[shift={(s3)},plotsgray, pattern={Hatch[angle=80,distance=1.5pt,xshift=.1pt]}, pattern color=plotsgray] plot[smooth] file{rotor_wake_method/figures/wake-screw-airfoil.dat};
+
+    %airfoil
+    \draw[shift={(s2)},plotsgray, pattern={Hatch[angle=80,distance=1.5pt,xshift=.1pt]}, pattern color=plotsgray] plot[smooth] file{rotor_wake_method/figures/wake-screw-airfoil.dat};
+
+    %airfoil
+    \draw[shift={(s1)},plotsgray, pattern={Hatch[angle=80,distance=1.5pt,xshift=.1pt]}, pattern color=plotsgray] plot[smooth] file{rotor_wake_method/figures/wake-screw-airfoil.dat};
+
+    %airfoil
+    \draw[plotsgray, pattern={Hatch[angle=80,distance=1.5pt,xshift=.1pt]}, pattern color=plotsgray] plot[smooth] file{rotor_wake_method/figures/wake-screw-airfoil.dat};
+
+    % \draw[-Stealth, secondary] ($(s0)+(ds)$) [partial ellipse =75:380:0.4 and 0.4] node[pos=0.5,left,shift={(-0.05,0.0)}] {\(\Gamma\)};
+
+    \draw[-Stealth, primary,rotate around={-45:(55:1.75cm)}] (55:1.75cm) [partial ellipse =-70:255:0.3 and 0.1] node[pos=0.25,right,shift={(-0.05,0.0)}] {\(\Delta \Gamma\)};
+
+
+    \draw[shift={($(s3)+(s0)+(ds)$)},primary,thick] (0,0) -- (55:1.25cm);
+    \draw[shift={($(s2)+(s0)+(ds)$)},primary,thick] (0,0) -- (55:2.75cm);
+    \draw[shift={($(s1)+(s0)+(ds)$)},primary,thick] (0,0) -- (55:3cm);
+    \draw[shift={($(s0)+(ds)$)},primary,thick] (0,0) -- (55:1.525cm);
+    \draw[shift={($(s0)+(ds)$)},primary,thick] (55:1.6cm) -- (55:3cm);
+
+    \filldraw[shift={($(s3)+(s0)+(ds)$)},primary,thick] (0,0) circle (1pt);
+    \filldraw[shift={($(s2)+(s0)+(ds)$)},primary,thick] (0,0) circle (1pt);
+    \filldraw[shift={($(s1)+(s0)+(ds)$)},primary,thick] (0,0) circle (1pt);
+    \filldraw[shift={($(s0)+(ds)$)},primary,thick] (0,0) circle (1pt);
+
+
+    % Coordinate system parameters
+    \coordinate (ow) at ($(s0)+(ds)+(55:4cm)$);
+    \coordinate (wm) at ($(ow)+(0.574,0)$);
+    \coordinate (wt) at ($(ow)+(0,0.819)$);
+    \coordinate (wv) at ($(ow)+(55:1.0)$);
+
+    \draw[densely dotted] (wm) -- (wv);
+    \draw[densely dotted] (wt) -- (wv);
+    \draw[shift={($(s0)+(ds)$)},primary,thick, dotted] (55:3cm) -- (ow);
+
+    \draw[-Stealth] (ow) -- (wv);
+    \node[anchor=south west,style={font=\tiny},shift={(-0.05,-0.05)}] at (wv) {$\vect{W}$};
+    \draw[-Stealth] (ow) -- (wm);
+    \node[anchor=west,style={font=\tiny}] at (wm) {$W_m$};
+    \draw[-Stealth] (ow) -- (wt);
+    \node[anchor=south,style={font=\tiny}] at (wt) {$-W_\theta$};
+
+    % non-dim distances
+    \draw[shift={($(s1)+(s0)+(ds)$)},{Stealth[length=4pt,width=3pt]}-{Stealth[length=4pt,width=3pt]},shorten >=2.5pt, shorten <=2.5pt] (0,0) -- node[midway,style={font=\tiny},left,shift={(0.1, 0.0)}] {\(\frac{2\pi}{B}\)} (0,1.25cm);
+
+    \draw[shift={($(s2)+(s0)+(ds)+(55:1)$)},{Stealth[length=4pt,width=3pt]}-{Stealth[length=4pt,width=3pt]},shorten >=1pt, shorten <=1pt] (0,0) -- node[midway,style={font=\tiny},above,shift={(0.0,-0.075)}] {\(h_B\)} (0.875,0);
+
+
+    % Coordinate system parameters
+    \coordinate (csysO) at (2.5,1.25);
+    \coordinate (et) at ($(csysO) +(0,-1)$);
+    \coordinate (em) at ($(csysO) +(1,0)$);
+    % z-axis
+    \draw[-Stealth,] (csysO) -- (em);
+    \node[anchor=south,outer sep=0] at (em) {$\hat{\vect{e}}_m$};
+    % r-axis
+    \draw[-Stealth,] (csysO) -- (et);
+    \node[anchor=west,outer sep=0] at (et) {$\hat{\vect{e}}_\theta$};
+
+\end{tikzpicture}

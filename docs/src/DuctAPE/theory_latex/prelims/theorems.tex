@@ -1,0 +1,143 @@
+\section{Fundamental Theorems, Relations, etc.}
+\label{ch:background_sec:theorems}
+
+\subsection{\index{Stokes' Theorem}Stokes' Theorem}
+
+Sir George Gabriel Stokes' fundamental theorem for curls is that the integral of the curl of the vector field, \(\vect{V}\) over some surface, \(\mathcal{S}\), is equal to the line integral of the vector field around the boundary of the surface, \(\delta\mathcal{S}\).
+Mathematically, this  is stated as
+
+\begin{equation}
+    \label{eqn:stokes}
+	\iint_\mathcal{S} \nabla \times \vect{V} \d^2 \mathcal{S} = \oint_{\delta\mathcal{S}} \vect{V} \d s
+\end{equation}
+
+
+
+
+
+\subsection{\index{Circulation}Relationship between Velocity and Circulation}
+
+Another name for the curl of the velocity just seen in Stokes' theorem (in addition to vorticity) is the circulation density.
+%
+Thus the left hand side of Stokes' theorem as written in \cref{eqn:stokes} is equivalent to the circulation, \(\Gamma\), on the surface:
+
+\begin{equation}
+    \label{eqn:stokescirc}
+	\Gamma = \oint_{\delta\mathcal{S}} \vect{V} \d s
+\end{equation}
+
+
+
+
+
+\subsection{\index{Kelvin's Theorem}Kelvin's Circulation Theorem}
+
+William Thomson, 1st Baron Kelvin's circulation theorem (which can be taken from the general conservation of circulation) states that:
+In a barotropic (we often consider incompressible cases, a special case of a barotropic fluid), ideal (the special case here we typically consider is the inviscid case) fluid with conservative body forces (no Coriolis affect, shear stresses, turbulence, etc.), the circulation around a closed curve moving with the fluid (and enclosing the same fluid elements through time) remains constant with time.
+%
+In perhaps more understandable terms, if you follow a closed contour over time (by following all the contents of the contour), the circulation of that contour stays constant as long as the fluid is, for our purposes, incompressible and inviscid.
+%
+To state it mathematically, the material derivative of circulation is zero for an incompressible, inviscid fluid:
+
+\begin{equation}
+	\frac{D\Gamma}{Dt} = \pd{\Gamma}{t} + \vect{V} \boldsymbol{\cdot} \nabla \Gamma = 0.
+\end{equation}
+
+
+
+
+
+\subsection{\index{Helmholtz's Theorems}Helmholtz's Vortex Theorems}
+
+Hermann von Helmholtz' three vortex theorems are commonly described as:
+
+\begin{enumerate}
+	\item The strength of a vortex line is constant along its length.
+	\item A vortex line cannot end in a fluid; it must extend to the boundaries of the fluid or form a closed path.
+	\item A fluid element that is initially irrotational remains irrotational.
+\end{enumerate}
+
+
+
+
+
+\subsection{\index{Biot-Savart Law}The Biot-Savart Law}
+
+Based on experiments by Jean-Baptiste Biot and F\'elix Savart, the Biot-Savart law describes the magnetic field induced by a constant electric current.
+%
+Applied to aerodynamic applications, it describes the velocity induced by a filament of constant vorticity.
+%
+A basic derivation of the Biot-Savart law is informative as we will see various pieces of it throughout this dissertation.
+
+Let us begin by defining some vector potential, \(\vect{\psi}\), such that\sidenote{remembering the vector identity \(\nabla \cdot \nabla \times \vect{\psi} = 0\).}
+
+\begin{equation}
+    \label{eqn:velfromstream}
+    \vect{V} = \nabla \times \vect{\psi},
+\end{equation}
+%
+and
+
+\begin{equation}
+    \label{eqn:divfree}
+    \nabla \cdot \vect{\psi} = 0,
+\end{equation}
+%
+or in other words, \(\vect{\psi}\) is a divergence free vector field.\sidenote{Therefore automatically satisfying continuity.}
+
+Next we take the definition of vorticity (\cref{eqn:vorticitydef}) and plug in our expression for \(\vect{\psi}\):
+
+\begin{equation}
+    \begin{aligned}
+        \vect{\omega} &= \nabla \times \vect{V} \\
+         &= \nabla \times \left( \nabla \times \vect{\psi} \right) \\
+         &= \nabla \left(\nabla \cdot \vect{\psi} \right) - \nabla^2 \vect{\psi} && \text{(vector identity)}.
+    \end{aligned}
+\end{equation}
+%
+Since we defined \(\vect{\psi}\) to be divergence free (see \cref{eqn:divfree}), our expression for vorticity simplifies to the Poisson equation
+
+\begin{equation}
+    \vect{\omega} = - \nabla^2 \vect{\psi}.
+\end{equation}
+
+We can apply a Green's function in order to solve for \(\vect{\psi}\) in three dimensions, where the known Green's function\sidenote{See nearly any math text covering partial differential equation solution methods.} takes the form of
+
+\begin{equation}
+    \mathcal{G} = \frac{-1}{4\pi |\vect{r}|},
+\end{equation}
+
+\where \(|\vect{r}| = |\vect{q} - \vect{s}|\) is the Euclidean distance from the point along the vortex filament of influence, \(\vect{s}\), and the point of interest, \(\vect{q}\).
+%
+Applying this Green's function to the solution of \(\vect{\psi}\) yields
+
+\begin{equation}
+    \label{eqn:psi1}
+    \vect{\psi} = \frac{1}{4\pi} \iiint_{\mathcal{V}} \frac{\vect{\omega}(\vect{q})}{|\vect{r}|} \d^3s.
+\end{equation}
+
+If we now apply \cref{eqn:velfromstream}, by taking the curl of \cref{eqn:psi1}, we arrive at the Biot-Savart law:
+
+\begin{equation}
+    \label{eqn:biotsavart}
+    \begin{aligned}
+        \vect{V} &=\nabla \times \frac{1}{4\pi} \iiint_{\mathcal{V}} \frac{\vect{\omega}(\vect{q})}{|\vect{r}|} \d^3s \\
+                 &= \frac{1}{4\pi} \iiint_{\mathcal{V}} \frac{\vect{\omega}(\vect{q}) \times \vect{r}}{|\vect{r}|^3} \d^3s.
+    \end{aligned}
+\end{equation}
+
+
+
+
+
+
+
+\subsection{\index{Kutta-Joukowski Theorem}Kutta-Joukowski Theorem}
+
+The Kutta-Joukowski theorem, name for Martin Kutta and Nikolai Zhukovsky, relates circulation, \(\vect{\Gamma}\), and velocity, \(\vect{V}\), to the force generated, which is lift, \(\vect{L}\), (due to being the force perpendicular to the flow by definition).
+
+\begin{equation}
+	\vect{L} = \rho_\infty \vect{V} \times \vect{\Gamma}
+\end{equation}
+
+\where \(\rho_\infty\) is the freestream density.
