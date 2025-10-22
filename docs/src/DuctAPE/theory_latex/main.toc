@@ -28,73 +28,69 @@
 \contentsline {subsection}{\numberline {1.6.2}ImplicitAD.jl}{11}{subsection.1.6.2}%
 \contentsline {subsubsection}{Non-linear Solves}{12}{subsection.1.6.2}%
 \contentsline {subsubsection}{Linear Solves}{13}{equation.1.6.48}%
-\contentsline {section}{Chapter 1~References}{13}{section*.6}%
-\contentsline {chapter}{\chapternumberline {2}A Vortex-based Axisymmetric Panel Method}{15}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Beyond the Basics of Potential Flow Theory: A Boundary Integral Equation}{15}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Discretizing Fredholm's Equation}{19}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Discretizing bodies into panels}{19}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}Applying boundary conditions}{20}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Calculating Panel Induced Velocities}{21}{subsection.2.2.3}%
-\contentsline {section}{\numberline {2.3}Assembling and Solving the Linear System}{25}{section.2.3}%
-\contentsline {subsection}{\numberline {2.3.1}The Kutta Condition}{25}{subsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.3.2}Additional Considerations for Open Bodies}{27}{subsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.3.3}Additional Considerations for Nodes on the Axis of Revolution}{29}{subsection.2.3.3}%
-\contentsline {subsection}{\numberline {2.3.4}Solving the linear system}{30}{subsection.2.3.4}%
-\contentsline {section}{\numberline {2.4}Post-processing the Panel Method Solution}{30}{section.2.4}%
-\contentsline {subsection}{\numberline {2.4.1}Velocity Tangent to the Body Surface}{30}{subsection.2.4.1}%
-\contentsline {subsection}{\numberline {2.4.2}Velocity at Arbitrary Points in Space}{32}{subsection.2.4.2}%
-\contentsline {subsection}{\numberline {2.4.3}Body Forces}{33}{subsection.2.4.3}%
-\contentsline {section}{\numberline {2.5}Beyond the Inviscid Assumption: An Integral Boundary Layer Model for Viscous Drag}{34}{section.2.5}%
-\contentsline {subsection}{\numberline {2.5.1}Head's Turbulent Boundary Layer Model}{36}{subsection.2.5.1}%
-\contentsline {subsection}{\numberline {2.5.2}Solving the turbulent boundary layer}{37}{subsection.2.5.2}%
-\contentsline {subsection}{\numberline {2.5.3}Viscous Drag}{37}{subsection.2.5.3}%
-\contentsline {subsubsection}{Squire-Young Formula}{37}{subsection.2.5.3}%
-\contentsline {subsubsection}{Total Drag Force}{38}{equation.2.5.76}%
-\contentsline {subsection}{\numberline {2.5.4}A Simplified Drag Model for Center Bodies}{38}{subsection.2.5.4}%
-\contentsline {section}{Chapter 2~References}{39}{section*.16}%
-\contentsline {chapter}{\chapternumberline {3}A Vortex-based Rotor and Wake Model}{40}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Reference Frames}{40}{section.3.1}%
-\contentsline {subsection}{\numberline {3.1.1}Absolute Frame}{40}{subsection.3.1.1}%
-\contentsline {subsection}{\numberline {3.1.2}Relative Frame}{41}{subsection.3.1.2}%
-\contentsline {subsection}{\numberline {3.1.3}Velocity Decomposition and Definition}{41}{subsection.3.1.3}%
-\contentsline {section}{\numberline {3.2}A Blade Element Model}{42}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Blade Circulation}{43}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Rotor Profile Drag}{44}{subsection.3.2.2}%
-\contentsline {section}{\numberline {3.3}A Smeared Vortex Sheet Model}{45}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Starting with a Standard Wake Screw}{46}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {3.3.2}Piece 1: Swirl/Circulation Relation}{48}{subsection.3.3.2}%
-\contentsline {subsection}{\numberline {3.3.3}Piece 2: Velocity Jumps}{49}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {3.3.4}Piece 3: Thermodynamic Pressure Relationships}{51}{subsection.3.3.4}%
-\contentsline {paragraph}{Total Pressure}{51}{subsection.3.3.4}%
-\contentsline {paragraph}{Static Pressure}{54}{equation.3.3.63}%
-\contentsline {subsection}{\numberline {3.3.5}Piece 4: Disk and Sheet Jumps}{54}{subsection.3.3.5}%
-\contentsline {paragraph}{Enthalpy Jumps}{54}{subsection.3.3.5}%
-\contentsline {paragraph}{Pressure Jumps}{55}{equation.3.3.69}%
-\contentsline {subsection}{\numberline {3.3.6}Putting the Pieces Together: The Tangential Vortex Sheet Strength}{55}{subsection.3.3.6}%
-\contentsline {section}{\numberline {3.4}A Streamlined Elliptic Grid}{56}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}A Poisson Equation from the Axisymmetric Stream Function}{57}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}Generation of an Elliptic Grid for Streamline Approximation}{58}{subsection.3.4.2}%
-\contentsline {subsection}{\numberline {3.4.3}Solution Approach}{60}{subsection.3.4.3}%
-\contentsline {subsection}{\numberline {3.4.4}Discretizing the Wake into Panels}{61}{subsection.3.4.4}%
-\contentsline {section}{Chapter 4 References}{61}{section*.27}%
-\contentsline {chapter}{\chapternumberline {4}DuctAPE: A steady-state, axisymmetric ducted fan analysis code designed for gradient-based optimization}{62}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Coupling the Body, Rotor, and Rotor-Wake Aerodynamics}{62}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}Solution Method Exploration and Comparison}{63}{subsection.4.1.1}%
-\contentsline {subsubsection}{DFDC-like Solve Approach}{63}{subsection.4.1.1}%
-\contentsline {subsubsection}{Additional Solve Approach in DuctAPE}{66}{equation.4.1.10}%
-\contentsline {subsubsection}{Differences in Approaches}{66}{ALG@line.4}%
-\contentsline {subsubsection}{Benchmarking Solver Implementations}{67}{ALG@line.4}%
-\contentsline {subsection}{\numberline {4.1.2}Final Solve Approach}{69}{subsection.4.1.2}%
-\contentsline {subsubsection}{State Initialization}{69}{subsection.4.1.2}%
-\contentsline {subsubsection}{Solver Method}{70}{subsection.4.1.2}%
-\contentsline {subsubsection}{Summary of Novelty}{70}{ALG@line.4}%
-\contentsline {section}{\numberline {4.2}Verification and Validation}{71}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Verification Against DFDC}{71}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Validation with Experimental Data}{73}{subsection.4.2.2}%
-\contentsline {section}{Chapter 4~References}{75}{section*.35}%
-\contentsline {chapter}{References}{77}{section*.37}%
-\contentsline {appendix}{\chapternumberline {A}Detailed derivation of vortex ring induced velocity}{79}{appendix.A}%
-\contentsline {section}{\numberline {A.1}General Form of Induced Velocities}{84}{section.A.1}%
-\contentsline {section}{\numberline {A.2}Radially Induced Velocity Component}{86}{section.A.2}%
-\contentsline {section}{\numberline {A.3}Axially Induced Velocity Component}{90}{section.A.3}%
-\contentsline {appendix}{\chapternumberline {B}Transformation of Poisson Equations for Wake Elliptic Grid Residual}{100}{appendix.B}%
+\contentsline {chapter}{\chapternumberline {2}A Vortex-based Axisymmetric Panel Method}{14}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Beyond the Basics of Potential Flow Theory: A Boundary Integral Equation}{14}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Discretizing Fredholm's Equation}{18}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Discretizing bodies into panels}{18}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Applying boundary conditions}{19}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Calculating Panel Induced Velocities}{20}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}Assembling and Solving the Linear System}{24}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}The Kutta Condition}{24}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Additional Considerations for Open Bodies}{26}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Additional Considerations for Nodes on the Axis of Revolution}{28}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Solving the linear system}{29}{subsection.2.3.4}%
+\contentsline {section}{\numberline {2.4}Post-processing the Panel Method Solution}{29}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}Velocity Tangent to the Body Surface}{29}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}Velocity at Arbitrary Points in Space}{31}{subsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.4.3}Body Forces}{32}{subsection.2.4.3}%
+\contentsline {section}{\numberline {2.5}Beyond the Inviscid Assumption: An Integral Boundary Layer Model for Viscous Drag}{33}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Head's Turbulent Boundary Layer Model}{35}{subsection.2.5.1}%
+\contentsline {subsection}{\numberline {2.5.2}Solving the turbulent boundary layer}{36}{subsection.2.5.2}%
+\contentsline {subsection}{\numberline {2.5.3}Viscous Drag}{36}{subsection.2.5.3}%
+\contentsline {subsubsection}{Squire-Young Formula}{36}{subsection.2.5.3}%
+\contentsline {subsubsection}{Total Drag Force}{37}{equation.2.5.76}%
+\contentsline {subsection}{\numberline {2.5.4}A Simplified Drag Model for Center Bodies}{37}{subsection.2.5.4}%
+\contentsline {chapter}{\chapternumberline {3}A Vortex-based Rotor and Wake Model}{39}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Reference Frames}{39}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Absolute Frame}{39}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Relative Frame}{40}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Velocity Decomposition and Definition}{40}{subsection.3.1.3}%
+\contentsline {section}{\numberline {3.2}A Blade Element Model}{41}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Blade Circulation}{42}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Rotor Profile Drag}{43}{subsection.3.2.2}%
+\contentsline {section}{\numberline {3.3}A Smeared Vortex Sheet Model}{44}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Starting with a Standard Wake Screw}{45}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Piece 1: Swirl/Circulation Relation}{47}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Piece 2: Velocity Jumps}{48}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.3.4}Piece 3: Thermodynamic Pressure Relationships}{50}{subsection.3.3.4}%
+\contentsline {paragraph}{Total Pressure}{50}{subsection.3.3.4}%
+\contentsline {paragraph}{Static Pressure}{53}{equation.3.3.63}%
+\contentsline {subsection}{\numberline {3.3.5}Piece 4: Disk and Sheet Jumps}{53}{subsection.3.3.5}%
+\contentsline {paragraph}{Enthalpy Jumps}{53}{subsection.3.3.5}%
+\contentsline {paragraph}{Pressure Jumps}{54}{equation.3.3.69}%
+\contentsline {subsection}{\numberline {3.3.6}Putting the Pieces Together: The Tangential Vortex Sheet Strength}{54}{subsection.3.3.6}%
+\contentsline {section}{\numberline {3.4}A Streamlined Elliptic Grid}{55}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}A Poisson Equation from the Axisymmetric Stream Function}{56}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Generation of an Elliptic Grid for Streamline Approximation}{57}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Solution Approach}{59}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}Discretizing the Wake into Panels}{60}{subsection.3.4.4}%
+\contentsline {chapter}{\chapternumberline {4}DuctAPE: A steady-state, axisymmetric ducted fan analysis code designed for gradient-based optimization}{61}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Coupling the Body, Rotor, and Rotor-Wake Aerodynamics}{61}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Solution Method Exploration and Comparison}{62}{subsection.4.1.1}%
+\contentsline {subsubsection}{DFDC-like Solve Approach}{62}{subsection.4.1.1}%
+\contentsline {subsubsection}{Additional Solve Approach in DuctAPE}{65}{equation.4.1.10}%
+\contentsline {subsubsection}{Differences in Approaches}{65}{ALG@line.4}%
+\contentsline {subsubsection}{Benchmarking Solver Implementations}{66}{ALG@line.4}%
+\contentsline {subsection}{\numberline {4.1.2}Final Solve Approach}{68}{subsection.4.1.2}%
+\contentsline {subsubsection}{State Initialization}{68}{subsection.4.1.2}%
+\contentsline {subsubsection}{Solver Method}{69}{subsection.4.1.2}%
+\contentsline {subsubsection}{Summary of Novelty}{69}{ALG@line.4}%
+\contentsline {section}{\numberline {4.2}Verification and Validation}{70}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Verification Against DFDC}{70}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Validation with Experimental Data}{72}{subsection.4.2.2}%
+\contentsline {chapter}{References}{75}{section*.29}%
+\contentsline {appendix}{\chapternumberline {A}Detailed derivation of vortex ring induced velocity}{77}{appendix.A}%
+\contentsline {section}{\numberline {A.1}General Form of Induced Velocities}{82}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Radially Induced Velocity Component}{84}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Axially Induced Velocity Component}{88}{section.A.3}%
+\contentsline {appendix}{\chapternumberline {B}Transformation of Poisson Equations for Wake Elliptic Grid Residual}{98}{appendix.B}%
