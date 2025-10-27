@@ -465,6 +465,7 @@ end
         solve_parameter_tuple.wakeK,
         ducted_rotor,
         operating_point,
+        reference_parameters,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=options.grid_solver_options,
@@ -579,6 +580,7 @@ end
         solve_parameter_tuple.wakeK,
         ducted_rotor,
         operating_point,
+        reference_parameters,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=options.grid_solver_options,

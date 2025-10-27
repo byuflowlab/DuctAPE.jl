@@ -82,8 +82,6 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
     RHS = dt.assemble_rhs_matrix(
         vdnb,
         vdnpcp,
-        panels.npanel,
-        panels.nnode,
         panels.totpanel[],
         panels.totnode[],
         panels.prescribednodeidxs,
@@ -166,8 +164,6 @@ println("\nLINEAR SYSTEM ASSEMBLY TESTS")
     RHS = dt.assemble_rhs_matrix(
         vdnb,
         vdnpcp,
-        panels.npanel,
-        panels.nnode,
         panels.totpanel[],
         panels.totnode[],
         panels.prescribednodeidxs,
