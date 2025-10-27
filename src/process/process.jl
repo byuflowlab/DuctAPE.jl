@@ -46,20 +46,30 @@ function process(
         solve_parameter_tuple
 
     # initialize velocities
-    # TODO; add some sort of unit test for this function
-    initialize_velocities!(
-        solver_options,
-        vz_rotor,
-        vtheta_rotor,
-        Cm_wake,
-        solve_parameter_tuple.operating_point,
-        solve_parameter_tuple.blade_elements,
-        (; solve_parameter_tuple.linsys..., A_bb_LU),
-        solve_parameter_tuple.ivr,
-        solve_parameter_tuple.ivw,
-        idmaps.body_totnodes,
-        idmaps.wake_panel_sheet_be_map,
-    )
+    if !solver_options.warm_start[options.multipoint_index[]]
+        initialize_velocities!(
+            solver_options,
+            vz_rotor,
+            vtheta_rotor,
+            Cm_wake,
+            solve_parameter_tuple.operating_point,
+            solve_parameter_tuple.blade_elements,
+            (; solve_parameter_tuple.linsys..., A_bb_LU),
+            solve_parameter_tuple.ivr,
+            solve_parameter_tuple.ivw,
+            idmaps.body_totnodes,
+            idmaps.wake_panel_sheet_be_map,
+        )
+
+        # if skip solve, just return states from initialization
+        if solver_options.skip_solve[options.multipoint_index[]]
+            return extract_initial_guess(
+                solver_options,
+                solve_parameter_cache_vector,
+                solve_parameter_cache_dims.state_dims,
+            )
+        end
+    end
 
     # - combine cache and constants - #
     const_cache = (;
@@ -110,25 +120,36 @@ function process(
         solve_parameter_tuple
 
     # - Initialize States - #
-    initialize_strengths!(
-        solver_options,
-        Gamr,
-        sigr,
-        gamw,
-        operating_point,
-        blade_elements,
-        (; linsys..., A_bb_LU),
-        ivr,
-        ivw,
-        wakeK,
-        idmaps.body_totnodes,
-        idmaps.wake_nodemap,
-        idmaps.wake_endnodeidxs,
-        idmaps.wake_panel_sheet_be_map,
-        idmaps.wake_node_sheet_be_map,
-        idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.wake_node_ids_along_center_body_wake_interface,
-    )
+    if !solver_options.warm_start[options.multipoint_index[]]
+        initialize_strengths!(
+            solver_options,
+            Gamr,
+            sigr,
+            gamw,
+            operating_point,
+            blade_elements,
+            (; linsys..., A_bb_LU),
+            ivr,
+            ivw,
+            wakeK,
+            idmaps.body_totnodes,
+            idmaps.wake_nodemap,
+            idmaps.wake_endnodeidxs,
+            idmaps.wake_panel_sheet_be_map,
+            idmaps.wake_node_sheet_be_map,
+            idmaps.wake_node_ids_along_casing_wake_interface,
+            idmaps.wake_node_ids_along_center_body_wake_interface,
+        )
+
+        # if skip solve, just return states from initialization
+        if solver_options.skip_solve[options.multipoint_index[]]
+            return extract_initial_guess(
+                solver_options,
+                solve_parameter_cache_vector,
+                solve_parameter_cache_dims.state_dims,
+            )
+        end
+    end
 
     # - combine cache and constants - #
     const_cache = (;
@@ -179,25 +200,36 @@ function process(
         solve_parameter_tuple
 
     # - Initialize States - #
-    initialize_strengths!(
-        solver_options,
-        Gamr,
-        sigr,
-        gamw,
-        operating_point,
-        blade_elements,
-        (; linsys..., A_bb_LU),
-        ivr,
-        ivw,
-        wakeK,
-        idmaps.body_totnodes,
-        idmaps.wake_nodemap,
-        idmaps.wake_endnodeidxs,
-        idmaps.wake_panel_sheet_be_map,
-        idmaps.wake_node_sheet_be_map,
-        idmaps.wake_node_ids_along_casing_wake_interface,
-        idmaps.wake_node_ids_along_center_body_wake_interface,
-    )
+    if !solver_options.warm_start[options.multipoint_index[]]
+        initialize_strengths!(
+            solver_options,
+            Gamr,
+            sigr,
+            gamw,
+            operating_point,
+            blade_elements,
+            (; linsys..., A_bb_LU),
+            ivr,
+            ivw,
+            wakeK,
+            idmaps.body_totnodes,
+            idmaps.wake_nodemap,
+            idmaps.wake_endnodeidxs,
+            idmaps.wake_panel_sheet_be_map,
+            idmaps.wake_node_sheet_be_map,
+            idmaps.wake_node_ids_along_casing_wake_interface,
+            idmaps.wake_node_ids_along_center_body_wake_interface,
+        )
+
+        # if skip solve, just return states from initialization
+        if solver_options.skip_solve[options.multipoint_index[]]
+            return extract_initial_guess(
+                solver_options,
+                solve_parameter_cache_vector,
+                solve_parameter_cache_dims.state_dims,
+            )
+        end
+    end
 
     # - combine cache and constants - #
     const_cache = (;
@@ -218,6 +250,20 @@ function process(
     # - Solve with ImplicitAD - #
     if options.verbose
         println("\nSolving Nonlinear System using Modified CSOR Method")
+    end
+
+    # println("checking for inf's and nan's in inputs to solver in process.jl line 223:")
+    if any(isinf.(solve_parameter_cache_vector))
+        print(
+            "Infs found in solve parameter cache vector at indices: ",
+            findall(isinf, solve_parameter_cache_vector),
+        )
+    end
+    if any(isnan.(solve_parameter_cache_vector))
+        print(
+            "NaNs found in solve parameter cache vector at indices: ",
+            findall(isnan, solve_parameter_cache_vector),
+        )
     end
 
     return ImplicitAD.implicit(

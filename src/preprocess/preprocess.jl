@@ -709,7 +709,7 @@ function initialize_linear_system(
     vdnb = [dot(vinfvec, nhat) for nhat in eachcol(normal)]
     vdnpcp = [dot(vinfvec, nhat) for nhat in eachcol(itnormal)]
     b_bf = assemble_rhs_matrix(
-       vdnb, vdnpcp, npanel, nnode, totpanel[], totnode[], prescribednodeidxs
+       vdnb, vdnpcp, totpanel[], totnode[], prescribednodeidxs
     )
 
     ##### ----- Rotor AIC ----- #####
@@ -764,6 +764,7 @@ end
         rotor_source_panels,
         wake_vortex_panels,
         Vinf,
+        Vref,
         intermediate_containers,
         integration_options,
     )
@@ -777,6 +778,7 @@ function initialize_linear_system!(
     rotor_source_panels,
     wake_vortex_panels,
     Vinf,
+    Vref,
     intermediate_containers,
     integration_options,
 )
@@ -865,11 +867,15 @@ function initialize_linear_system!(
     lu_decomp_flag = eltype(A_bb)(issuccess(A_bb_LU))
 
     # - Freestream RHS - #
-    vinfvec = [Vinf; 0.0]
+    if iszero(Vinf)
+        vinfvec = [Vref; 0.0]
+    else
+        vinfvec = [Vinf; 0.0]
+    end
     vdnb[:] .= [dot(vinfvec, nhat) for nhat in eachcol(normal)]
     vdnpcp[:] .= [dot(vinfvec, nhat) for nhat in eachcol(itnormal)]
     assemble_rhs_matrix!(
-        b_bf, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+        b_bf, vdnb, vdnpcp, totpanel, totnode, prescribednodeidxs
     )
 
     ##### ----- Rotor AIC ----- #####
@@ -1394,6 +1400,7 @@ end
         wakeK,
         ducted_rotor,
         operating_point,
+        reference_parameters,
         prepost_containers,
         problem_dimensions;
         grid_solver_options=GridSolverOptions(),
@@ -1417,6 +1424,7 @@ function precompute_parameters!(
     wakeK,
     ducted_rotor,
     operating_point,
+    reference_parameters,
     prepost_containers,
     problem_dimensions;
     grid_solver_options=GridSolverOptions(),
@@ -1488,6 +1496,7 @@ function precompute_parameters!(
         rotor,
         paneling_constants,
         operating_point,
+        reference_parameters,
         prepost_containers,
         problem_dimensions;
         integration_options=integration_options,
@@ -1515,6 +1524,7 @@ end
         rotor,
         paneling_constants,
         operating_point,
+        reference_parameters,
         prepost_containers,
         problem_dimensions=nothing;
         integration_options=IntegrationOptions(),
@@ -1541,6 +1551,7 @@ function precompute_parameters!(
     rotor,
     paneling_constants,
     operating_point,
+    reference_parameters,
     prepost_containers,
     problem_dimensions=nothing;
     integration_options=IntegrationOptions(),
@@ -1623,6 +1634,7 @@ function precompute_parameters!(
         panels.rotor_source_panels,
         panels.wake_vortex_panels,
         operating_point.Vinf[1],
+        reference_parameters.Vref[],
         (; AICn, AICpcp, vdnb, vdnpcp),
         integration_options,
     )

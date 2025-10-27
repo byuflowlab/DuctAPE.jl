@@ -1,0 +1,24 @@
+[0] Config.pm:308> INFO - This is Biber 2.20
+[0] Config.pm:311> INFO - Logfile is 'main.blg'
+[74] biber-darwin:340> INFO - === Mon Oct 13, 2025, 11:45:56
+[93] Biber.pm:420> INFO - Reading 'main.bcf'
+[185] Biber.pm:994> INFO - Found 26 citekeys in bib section 0
+[200] Biber.pm:4463> INFO - Processing section 0
+[212] Biber.pm:4654> INFO - Looking for bibtex file 'prelims/ref.bib' for section 0
+[214] bibtex.pm:1713> INFO - LaTeX decoding ...
+[225] bibtex.pm:1519> INFO - Found BibTeX data source 'prelims/ref.bib'
+[292] Biber.pm:4654> INFO - Looking for bibtex file 'panel_method/ref.bib' for section 0
+[294] bibtex.pm:1713> INFO - LaTeX decoding ...
+[312] bibtex.pm:1519> INFO - Found BibTeX data source 'panel_method/ref.bib'
+[358] Biber.pm:4654> INFO - Looking for bibtex file 'rotor_wake_method/ref.bib' for section 0
+[360] bibtex.pm:1713> INFO - LaTeX decoding ...
+[363] bibtex.pm:1519> INFO - Found BibTeX data source 'rotor_wake_method/ref.bib'
+[371] Biber.pm:4654> INFO - Looking for bibtex file 'ductape/ref.bib' for section 0
+[373] bibtex.pm:1713> INFO - LaTeX decoding ...
+[396] bibtex.pm:1519> INFO - Found BibTeX data source 'ductape/ref.bib'
+[524] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[524] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[525] Biber.pm:4283> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'en-US'
+[525] Biber.pm:4289> INFO - No sort tailoring available for locale 'en-US'
+[544] bbl.pm:676> INFO - Writing 'main.bbl' with encoding 'UTF-8'
+[567] bbl.pm:779> INFO - Output to main.bbl

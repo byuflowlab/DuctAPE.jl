@@ -700,14 +700,12 @@ end
 #---------------------------------#
 """
     assemble_rhs_matrix(
-        vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+        vdnb, vdnpcp, totpanel, totnode, prescribednodeidxs
     )
 
 # Arguments
 - `vdnb::Vector{Float}` : V dot nhat for body panels
 - `vdnpcp::Vector{Float}` : V dot nhat for pseudo control points
-- `npanel::Vector{Int}` : number of panels comprising each body
-- `nnode::Vector{Int}` : number of nodes comprising each body
 - `totpanel::Int` : total number of body panels
 - `totnode::Int` : total number of body nodes
 - `prescribednodeidxs::Vector{Int}` : indices of nodes with prescribed strengths (those on the axis of rotation)
@@ -716,7 +714,7 @@ end
 - `RHS::Vector{Float}` : the RHS vector of the panel method.
 """
 function assemble_rhs_matrix(
-    vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+    vdnb, vdnpcp, totpanel, totnode, prescribednodeidxs
 )
 
     # get type
@@ -726,7 +724,7 @@ function assemble_rhs_matrix(
     RHS = zeros(TF, totnode + 2)
 
     assemble_rhs_matrix!(
-        RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+        RHS, vdnb, vdnpcp, totpanel, totnode, prescribednodeidxs
     )
 
     return RHS
@@ -734,13 +732,13 @@ end
 
 """
     assemble_rhs_matrix!(
-        RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+        RHS, vdnb, vdnpcp, totpanel, totnode, prescribednodeidxs
     )
 
 In-place version of `assemble_rhs_matrix`.
 """
 function assemble_rhs_matrix!(
-    RHS, vdnb, vdnpcp, npanel, nnode, totpanel, totnode, prescribednodeidxs
+    RHS, vdnb, vdnpcp, totpanel, totnode, prescribednodeidxs
 )
 
     # - Place standard influence coefficients - #

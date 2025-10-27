@@ -1,0 +1,1229 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global/global}
+    \entry{Wengert_1964}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=a9cf5e57e1d68a2f34a4aee6e0d53f71}{%
+           family={Wengert},
+           familyi={W\bibinitperiod},
+           given={R.\bibnamedelimi E.},
+           giveni={R\bibinitperiod\bibinitdelim E\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {New York, NY, USA}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \strng{fullhash}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \strng{fullhashraw}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \strng{bibnamehash}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \strng{authorbibnamehash}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \strng{authornamehash}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \strng{authorfullhash}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \strng{authorfullhashraw}{a9cf5e57e1d68a2f34a4aee6e0d53f71}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{A procedure for automatic evaluation of total/partial derivatives of arbitrary algebraic functions is presented. The technique permits computation of numerical values of derivatives without developing analytical expressions for the derivatives. The key to the method is the decomposition of the given function, by introduction of intermediate variables, into a series of elementary functional steps. A library of elementary function subroutines is provided for the automatic evaluation and differentiation of these new variables. The final step in this process produces the desired function's derivative.The main feature of this approach is its simplicity. It can be used as a quick-reaction tool where the derivation of analytical derivatives is laborious and also as a debugging tool for programs which contain derivatives.}
+      \field{issn}{0001-0782}
+      \field{journaltitle}{Commun. ACM}
+      \field{month}{8}
+      \field{number}{8}
+      \field{title}{A simple automatic derivative evaluation program}
+      \field{volume}{7}
+      \field{year}{1964}
+      \field{pages}{463\bibrangedash 464}
+      \range{pages}{2}
+      \verb{doi}
+      \verb 10.1145/355586.364791
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/355586.364791
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/355586.364791
+      \endverb
+      \keyw{prelims}
+    \endentry
+    \entry{Martins_2020}{book}{}{}
+      \name{author}{2}{}{%
+        {{hash=f78019558101a841974c5f3b5a885657}{%
+           family={Martins},
+           familyi={M\bibinitperiod},
+           given={Joaquim\bibnamedelimb R.\bibnamedelimi R.\bibnamedelimi A.},
+           giveni={J\bibinitperiod\bibinitdelim R\bibinitperiod\bibinitdelim R\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+        {{hash=93ca2cb81a3707f9a26c8b4c7425e445}{%
+           family={Ning},
+           familyi={N\bibinitperiod},
+           given={Andrew},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Cambridge University Press}%
+      }
+      \strng{namehash}{2a130306428dac798dc1651f9d11bbfe}
+      \strng{fullhash}{55dc6cf10b12287e88ed45c38cbd30af}
+      \strng{fullhashraw}{55dc6cf10b12287e88ed45c38cbd30af}
+      \strng{bibnamehash}{55dc6cf10b12287e88ed45c38cbd30af}
+      \strng{authorbibnamehash}{55dc6cf10b12287e88ed45c38cbd30af}
+      \strng{authornamehash}{2a130306428dac798dc1651f9d11bbfe}
+      \strng{authorfullhash}{55dc6cf10b12287e88ed45c38cbd30af}
+      \strng{authorfullhashraw}{55dc6cf10b12287e88ed45c38cbd30af}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{isbn}{9781108833417}
+      \field{month}{1}
+      \field{title}{Engineering Design Optimization}
+      \field{year}{2022}
+      \verb{doi}
+      \verb 10.1017/9781108980647
+      \endverb
+      \keyw{prelims}
+    \endentry
+    \entry{Ning_2023}{misc}{}{}
+      \name{author}{2}{}{%
+        {{hash=93ca2cb81a3707f9a26c8b4c7425e445}{%
+           family={Ning},
+           familyi={N\bibinitperiod},
+           given={Andrew},
+           giveni={A\bibinitperiod}}}%
+        {{hash=d08491881bb27df50b0a71ea321a8d5c}{%
+           family={McDonnell},
+           familyi={M\bibinitperiod},
+           given={Taylor},
+           giveni={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{43e14a8184964b0cd24d4e04c81854ca}
+      \strng{fullhash}{76e782a4766563c346b451fa4773770f}
+      \strng{fullhashraw}{76e782a4766563c346b451fa4773770f}
+      \strng{bibnamehash}{76e782a4766563c346b451fa4773770f}
+      \strng{authorbibnamehash}{76e782a4766563c346b451fa4773770f}
+      \strng{authornamehash}{43e14a8184964b0cd24d4e04c81854ca}
+      \strng{authorfullhash}{76e782a4766563c346b451fa4773770f}
+      \strng{authorfullhashraw}{76e782a4766563c346b451fa4773770f}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{math.OC}
+      \field{eprinttype}{arXiv}
+      \field{title}{Automating Steady and Unsteady Adjoints: Efficiently Utilizing Implicit and Algorithmic Differentiation}
+      \field{year}{2023}
+      \verb{eprint}
+      \verb 2306.15243
+      \endverb
+      \verb{urlraw}
+      \verb https://arxiv.org/abs/2306.15243
+      \endverb
+      \verb{url}
+      \verb https://arxiv.org/abs/2306.15243
+      \endverb
+      \keyw{lit_review,prelims}
+    \endentry
+    \entry{Fredholm_1903}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=2c467db7669c31884fbd8078e0d23b83}{%
+           family={Fredholm},
+           familyi={F\bibinitperiod},
+           given={Ivar},
+           giveni={I\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Institut Mittag-Leffler}%
+      }
+      \strng{namehash}{2c467db7669c31884fbd8078e0d23b83}
+      \strng{fullhash}{2c467db7669c31884fbd8078e0d23b83}
+      \strng{fullhashraw}{2c467db7669c31884fbd8078e0d23b83}
+      \strng{bibnamehash}{2c467db7669c31884fbd8078e0d23b83}
+      \strng{authorbibnamehash}{2c467db7669c31884fbd8078e0d23b83}
+      \strng{authornamehash}{2c467db7669c31884fbd8078e0d23b83}
+      \strng{authorfullhash}{2c467db7669c31884fbd8078e0d23b83}
+      \strng{authorfullhashraw}{2c467db7669c31884fbd8078e0d23b83}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Acta Mathematica}
+      \field{number}{none}
+      \field{title}{{Sur une classe d'équations fonctionnelles}}
+      \field{volume}{27}
+      \field{year}{1903}
+      \field{pages}{365\bibrangedash 390}
+      \range{pages}{26}
+      \verb{doi}
+      \verb 10.1007/BF02421317
+      \endverb
+      \keyw{prelims,ductape}
+    \endentry
+    \entry{Lewis_1991}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=68b23fdd339c9a90e7dd81c310699d21}{%
+           family={Lewis},
+           familyi={L\bibinitperiod},
+           given={R.\bibnamedelimi I.},
+           giveni={R\bibinitperiod\bibinitdelim I\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Cambridge ; New York}%
+      }
+      \list{publisher}{1}{%
+        {Cambridge University Press}%
+      }
+      \strng{namehash}{68b23fdd339c9a90e7dd81c310699d21}
+      \strng{fullhash}{68b23fdd339c9a90e7dd81c310699d21}
+      \strng{fullhashraw}{68b23fdd339c9a90e7dd81c310699d21}
+      \strng{bibnamehash}{68b23fdd339c9a90e7dd81c310699d21}
+      \strng{authorbibnamehash}{68b23fdd339c9a90e7dd81c310699d21}
+      \strng{authornamehash}{68b23fdd339c9a90e7dd81c310699d21}
+      \strng{authorfullhash}{68b23fdd339c9a90e7dd81c310699d21}
+      \strng{authorfullhashraw}{68b23fdd339c9a90e7dd81c310699d21}
+      \field{sortinit}{6}
+      \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{isbn}{9780521360104}
+      \field{number}{1}
+      \field{series}{Cambridge engine technology series}
+      \field{title}{Vortex Element Methods for Fluid Dynamic Analysis of Engineering Systems}
+      \field{year}{1991}
+      \keyw{prelims,ductape}
+    \endentry
+    \entry{Martensen_1971}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=6defc84c569c33f31d2b1ec1cd631512}{%
+           family={Martensen},
+           familyi={M\bibinitperiod},
+           given={Erich},
+           giveni={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{6defc84c569c33f31d2b1ec1cd631512}
+      \strng{fullhash}{6defc84c569c33f31d2b1ec1cd631512}
+      \strng{fullhashraw}{6defc84c569c33f31d2b1ec1cd631512}
+      \strng{bibnamehash}{6defc84c569c33f31d2b1ec1cd631512}
+      \strng{authorbibnamehash}{6defc84c569c33f31d2b1ec1cd631512}
+      \strng{authornamehash}{6defc84c569c33f31d2b1ec1cd631512}
+      \strng{authorfullhash}{6defc84c569c33f31d2b1ec1cd631512}
+      \strng{authorfullhashraw}{6defc84c569c33f31d2b1ec1cd631512}
+      \field{sortinit}{6}
+      \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Archive for Rational Mechanics and Analysis}
+      \field{title}{Die Berechnung der Druckverteilung an dicken Gitterprofilen mit Hilfe von Fredholmschen Integralgleichungen zweiter Art}
+      \field{volume}{3}
+      \field{year}{1959}
+      \field{pages}{235\bibrangedash 270}
+      \range{pages}{36}
+      \keyw{lit_review,prelims,ductape}
+    \endentry
+    \entry{Courant_1962}{book}{}{}
+      \name{author}{2}{}{%
+        {{hash=f9d1c33cfe5873767fb913f40640ee7b}{%
+           family={Courant},
+           familyi={C\bibinitperiod},
+           given={R.},
+           giveni={R\bibinitperiod}}}%
+        {{hash=a90edfe4f8771c84ef54f396e472f7be}{%
+           family={Hilbert},
+           familyi={H\bibinitperiod},
+           given={D.},
+           giveni={D\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Interscience Publishers}%
+      }
+      \strng{namehash}{829dcd27f092834c955d557e14394a1b}
+      \strng{fullhash}{e619b4f3850826d10f4fb89002884797}
+      \strng{fullhashraw}{e619b4f3850826d10f4fb89002884797}
+      \strng{bibnamehash}{e619b4f3850826d10f4fb89002884797}
+      \strng{authorbibnamehash}{e619b4f3850826d10f4fb89002884797}
+      \strng{authornamehash}{829dcd27f092834c955d557e14394a1b}
+      \strng{authorfullhash}{e619b4f3850826d10f4fb89002884797}
+      \strng{authorfullhashraw}{e619b4f3850826d10f4fb89002884797}
+      \field{sortinit}{6}
+      \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Methods of Mathematical Physics}
+      \field{volume}{2}
+      \field{year}{1962}
+      \keyw{prelims,ductape}
+    \endentry
+    \entry{Ryall_1967}{report}{}{}
+      \name{author}{2}{}{%
+        {{hash=88b6339a915f5cfb631aa3fb903495de}{%
+           family={Ryall},
+           familyi={R\bibinitperiod},
+           given={D.\bibnamedelimi L.},
+           giveni={D\bibinitperiod\bibinitdelim L\bibinitperiod}}}%
+        {{hash=214f31bff6bff3113843f66cc4d814f4}{%
+           family={Collins},
+           familyi={C\bibinitperiod},
+           given={I.\bibnamedelimi F.},
+           giveni={I\bibinitperiod\bibinitdelim F\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Ministry of Technology Aeronautical Research Council}%
+      }
+      \strng{namehash}{bb694e291a660d7b3cef18a1d484c7cc}
+      \strng{fullhash}{650b3e5e0bbcc9b7b71a8e7c818b9cbb}
+      \strng{fullhashraw}{650b3e5e0bbcc9b7b71a8e7c818b9cbb}
+      \strng{bibnamehash}{650b3e5e0bbcc9b7b71a8e7c818b9cbb}
+      \strng{authorbibnamehash}{650b3e5e0bbcc9b7b71a8e7c818b9cbb}
+      \strng{authornamehash}{bb694e291a660d7b3cef18a1d484c7cc}
+      \strng{authorfullhash}{650b3e5e0bbcc9b7b71a8e7c818b9cbb}
+      \strng{authorfullhashraw}{650b3e5e0bbcc9b7b71a8e7c818b9cbb}
+      \field{sortinit}{7}
+      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{03}
+      \field{number}{3492}
+      \field{title}{Design and Test of a Series of Annular Aerofoils}
+      \field{type}{Reports and Memoranda}
+      \field{year}{1967}
+      \keyw{panel}
+    \endentry
+    \entry{Katz_2001}{book}{}{}
+      \name{author}{2}{}{%
+        {{hash=feda1dbc23fcb366eb9285d06e8b5d55}{%
+           family={Katz},
+           familyi={K\bibinitperiod},
+           given={Joseph},
+           giveni={J\bibinitperiod}}}%
+        {{hash=2caa384b3ededd4f51eeec74d82f9944}{%
+           family={Plotkin},
+           familyi={P\bibinitperiod},
+           given={Allen},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Cambridge, UK}%
+      }
+      \list{publisher}{1}{%
+        {Cambridge University Press Cambridge, UK}%
+      }
+      \strng{namehash}{41e9940a43882779d4c24725139a045a}
+      \strng{fullhash}{95abd890f92187a812a7f582c8c7fef6}
+      \strng{fullhashraw}{95abd890f92187a812a7f582c8c7fef6}
+      \strng{bibnamehash}{95abd890f92187a812a7f582c8c7fef6}
+      \strng{authorbibnamehash}{95abd890f92187a812a7f582c8c7fef6}
+      \strng{authornamehash}{41e9940a43882779d4c24725139a045a}
+      \strng{authorfullhash}{95abd890f92187a812a7f582c8c7fef6}
+      \strng{authorfullhashraw}{95abd890f92187a812a7f582c8c7fef6}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{2nd ed}
+      \field{isbn}{9780521665520}
+      \field{title}{Low speed aerodynamics}
+      \field{year}{2001}
+      \keyw{panel}
+    \endentry
+    \entry{DFDC}{software}{}{}
+      \name{author}{3}{}{%
+        {{hash=8cc73a22e53e2130a5b6a2adda4df288}{%
+           family={Drela},
+           familyi={D\bibinitperiod},
+           given={Mark},
+           giveni={M\bibinitperiod}}}%
+        {{hash=b3c958956dc694726c6c48e8c0a1588f}{%
+           family={Youngren},
+           familyi={Y\bibinitperiod},
+           given={Harold},
+           giveni={H\bibinitperiod}}}%
+        {{hash=8b726f2665efeb80ebd70a7d11ee7af2}{%
+           family={Sanders},
+           familyi={S\bibinitperiod},
+           given={Scott},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{85b4fd5c39982e2aa3ab830b0bc70e26}
+      \strng{fullhash}{0167f20a4f7818107684f550b471bb7c}
+      \strng{fullhashraw}{0167f20a4f7818107684f550b471bb7c}
+      \strng{bibnamehash}{0167f20a4f7818107684f550b471bb7c}
+      \strng{authorbibnamehash}{0167f20a4f7818107684f550b471bb7c}
+      \strng{authornamehash}{85b4fd5c39982e2aa3ab830b0bc70e26}
+      \strng{authorfullhash}{0167f20a4f7818107684f550b471bb7c}
+      \strng{authorfullhashraw}{0167f20a4f7818107684f550b471bb7c}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{day}{10}
+      \field{month}{12}
+      \field{title}{Ducted Fan Design Code (DFDC)}
+      \field{version}{0.70}
+      \field{year}{2005}
+      \field{dateera}{ce}
+      \verb{urlraw}
+      \verb https://web.mit.edu/drela/Public/web/dfdc/
+      \endverb
+      \verb{url}
+      \verb https://web.mit.edu/drela/Public/web/dfdc/
+      \endverb
+      \keyw{panel,rotorwake}
+    \endentry
+    \entry{Xfoil}{inproceedings}{}{}
+      \name{author}{1}{}{%
+        {{hash=8cc73a22e53e2130a5b6a2adda4df288}{%
+           family={Drela},
+           familyi={D\bibinitperiod},
+           given={Mark},
+           giveni={M\bibinitperiod}}}%
+      }
+      \name{editor}{1}{}{%
+        {{hash=e75f4a932f6ebc7fc24394d0e5fdf4fc}{%
+           family={Mueller},
+           familyi={M\bibinitperiod},
+           given={Thomas\bibnamedelima J.},
+           giveni={T\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Berlin, Heidelberg}%
+      }
+      \list{publisher}{1}{%
+        {Springer Berlin Heidelberg}%
+      }
+      \strng{namehash}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{fullhash}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{fullhashraw}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{bibnamehash}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{authorbibnamehash}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{authornamehash}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{authorfullhash}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{authorfullhashraw}{8cc73a22e53e2130a5b6a2adda4df288}
+      \strng{editorbibnamehash}{e75f4a932f6ebc7fc24394d0e5fdf4fc}
+      \strng{editornamehash}{e75f4a932f6ebc7fc24394d0e5fdf4fc}
+      \strng{editorfullhash}{e75f4a932f6ebc7fc24394d0e5fdf4fc}
+      \strng{editorfullhashraw}{e75f4a932f6ebc7fc24394d0e5fdf4fc}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Low Reynolds Number Aerodynamics}
+      \field{isbn}{978-3-642-84010-4}
+      \field{title}{XFOIL: An Analysis and Design System for Low Reynolds Number Airfoils}
+      \field{year}{1989}
+      \field{pages}{1\bibrangedash 12}
+      \range{pages}{12}
+      \keyw{lit_review,panel,ductape,mdo}
+    \endentry
+    \entry{mfoil}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=aad56249529efea307a5275a2e7a7fbc}{%
+           family={Fidkowski},
+           familyi={F\bibinitperiod},
+           given={Krzysztof\bibnamedelima J.},
+           giveni={K\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \list{language}{1}{%
+        {en}%
+      }
+      \strng{namehash}{aad56249529efea307a5275a2e7a7fbc}
+      \strng{fullhash}{aad56249529efea307a5275a2e7a7fbc}
+      \strng{fullhashraw}{aad56249529efea307a5275a2e7a7fbc}
+      \strng{bibnamehash}{aad56249529efea307a5275a2e7a7fbc}
+      \strng{authorbibnamehash}{aad56249529efea307a5275a2e7a7fbc}
+      \strng{authornamehash}{aad56249529efea307a5275a2e7a7fbc}
+      \strng{authorfullhash}{aad56249529efea307a5275a2e7a7fbc}
+      \strng{authorfullhashraw}{aad56249529efea307a5275a2e7a7fbc}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{0001-1452, 1533-385X}
+      \field{journaltitle}{AIAA Journal}
+      \field{month}{5}
+      \field{number}{5}
+      \field{title}{A {Coupled} {Inviscid}--{Viscous} {Airfoil} {Analysis} {Solver}, {Revisited}}
+      \field{urlday}{23}
+      \field{urlmonth}{10}
+      \field{urlyear}{2023}
+      \field{volume}{60}
+      \field{year}{2022}
+      \field{urldateera}{ce}
+      \field{pages}{2961\bibrangedash 2971}
+      \range{pages}{11}
+      \verb{doi}
+      \verb 10.2514/1.J061341
+      \endverb
+      \verb{urlraw}
+      \verb https://arc.aiaa.org/doi/10.2514/1.J061341
+      \endverb
+      \verb{url}
+      \verb https://arc.aiaa.org/doi/10.2514/1.J061341
+      \endverb
+      \keyw{panel}
+    \endentry
+    \entry{Head_1958}{report}{}{}
+      \name{author}{1}{}{%
+        {{hash=8478653bfe75583d74ab322c965b04a2}{%
+           family={Head},
+           familyi={H\bibinitperiod},
+           given={M.\bibnamedelimi R.},
+           giveni={M\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Aeronautical Research Council}%
+      }
+      \strng{namehash}{8478653bfe75583d74ab322c965b04a2}
+      \strng{fullhash}{8478653bfe75583d74ab322c965b04a2}
+      \strng{fullhashraw}{8478653bfe75583d74ab322c965b04a2}
+      \strng{bibnamehash}{8478653bfe75583d74ab322c965b04a2}
+      \strng{authorbibnamehash}{8478653bfe75583d74ab322c965b04a2}
+      \strng{authornamehash}{8478653bfe75583d74ab322c965b04a2}
+      \strng{authorfullhash}{8478653bfe75583d74ab322c965b04a2}
+      \strng{authorfullhashraw}{8478653bfe75583d74ab322c965b04a2}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{09}
+      \field{number}{3152}
+      \field{title}{Entrainment in the Turbulent Boundary Layer}
+      \field{type}{Reports and Memoranda}
+      \field{year}{1958}
+      \keyw{panel}
+    \endentry
+    \entry{Squire_1937}{report}{}{}
+      \name{author}{2}{}{%
+        {{hash=f7b4a0fa9bca7f1d2043de96749efef6}{%
+           family={Squire},
+           familyi={S\bibinitperiod},
+           given={H.\bibnamedelimi B.},
+           giveni={H\bibinitperiod\bibinitdelim B\bibinitperiod}}}%
+        {{hash=96db7686faf2756b6b0b149b95e6ef9e}{%
+           family={Young},
+           familyi={Y\bibinitperiod},
+           given={A.\bibnamedelimi D.},
+           giveni={A\bibinitperiod\bibinitdelim D\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Aeronautical Research Committee}%
+      }
+      \strng{namehash}{88c38cb50a446e5a8fbe6cb1a7a4c565}
+      \strng{fullhash}{232fdfe1269066da05b5917668e6e74c}
+      \strng{fullhashraw}{232fdfe1269066da05b5917668e6e74c}
+      \strng{bibnamehash}{232fdfe1269066da05b5917668e6e74c}
+      \strng{authorbibnamehash}{232fdfe1269066da05b5917668e6e74c}
+      \strng{authornamehash}{88c38cb50a446e5a8fbe6cb1a7a4c565}
+      \strng{authorfullhash}{232fdfe1269066da05b5917668e6e74c}
+      \strng{authorfullhashraw}{232fdfe1269066da05b5917668e6e74c}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{11}
+      \field{number}{1838}
+      \field{title}{The Calculation of the Profile Drag of Aerofoils}
+      \field{type}{Reports and Memoranda}
+      \field{year}{1937}
+      \keyw{panel}
+    \endentry
+    \entry{Shevell_1983}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=f69cf0af18911ee337c31f4fad44a8d6}{%
+           family={Shevell},
+           familyi={S\bibinitperiod},
+           given={Richard\bibnamedelima S.},
+           giveni={R\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Englewood Cliffs, N.J.}%
+      }
+      \list{publisher}{1}{%
+        {Prentice-Hall}%
+      }
+      \strng{namehash}{f69cf0af18911ee337c31f4fad44a8d6}
+      \strng{fullhash}{f69cf0af18911ee337c31f4fad44a8d6}
+      \strng{fullhashraw}{f69cf0af18911ee337c31f4fad44a8d6}
+      \strng{bibnamehash}{f69cf0af18911ee337c31f4fad44a8d6}
+      \strng{authorbibnamehash}{f69cf0af18911ee337c31f4fad44a8d6}
+      \strng{authornamehash}{f69cf0af18911ee337c31f4fad44a8d6}
+      \strng{authorfullhash}{f69cf0af18911ee337c31f4fad44a8d6}
+      \strng{authorfullhashraw}{f69cf0af18911ee337c31f4fad44a8d6}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{chapter}{xxiv, 405 pages : illustrations ; 25 cm}
+      \field{isbn}{9780133390933}
+      \field{title}{Fundamentals of flight}
+      \field{year}{1983}
+      \keyw{panel}
+    \endentry
+    \entry{thompson_1974}{article}{}{}
+      \name{author}{3}{}{%
+        {{hash=f02e649ecb08ce26739d17b27f771bc7}{%
+           family={Thompson},
+           familyi={T\bibinitperiod},
+           given={Joe\bibnamedelima F},
+           giveni={J\bibinitperiod\bibinitdelim F\bibinitperiod}}}%
+        {{hash=e2e9639e18a28e0a86767c149c193f01}{%
+           family={Thames},
+           familyi={T\bibinitperiod},
+           given={Frank\bibnamedelima C},
+           giveni={F\bibinitperiod\bibinitdelim C\bibinitperiod}}}%
+        {{hash=a1c940269bfff78a9d28eab81aa4a38d}{%
+           family={Mastin},
+           familyi={M\bibinitperiod},
+           given={C.Wayne},
+           giveni={C\bibinitperiod}}}%
+      }
+      \list{language}{1}{%
+        {en}%
+      }
+      \strng{namehash}{cb73ed161f5d1790079628389bbfe607}
+      \strng{fullhash}{dd27e6712e04f8050fb818f8c33b24f0}
+      \strng{fullhashraw}{dd27e6712e04f8050fb818f8c33b24f0}
+      \strng{bibnamehash}{dd27e6712e04f8050fb818f8c33b24f0}
+      \strng{authorbibnamehash}{dd27e6712e04f8050fb818f8c33b24f0}
+      \strng{authornamehash}{cb73ed161f5d1790079628389bbfe607}
+      \strng{authorfullhash}{dd27e6712e04f8050fb818f8c33b24f0}
+      \strng{authorfullhashraw}{dd27e6712e04f8050fb818f8c33b24f0}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{00219991}
+      \field{journaltitle}{Journal of Computational Physics}
+      \field{month}{7}
+      \field{number}{3}
+      \field{title}{Automatic numerical generation of body-fitted curvilinear coordinate system for field containing any number of arbitrary two-dimensional bodies}
+      \field{urlday}{9}
+      \field{urlmonth}{1}
+      \field{urlyear}{2023}
+      \field{volume}{15}
+      \field{year}{1974}
+      \field{urldateera}{ce}
+      \field{pages}{299\bibrangedash 319}
+      \range{pages}{21}
+      \verb{doi}
+      \verb 10.1016/0021-9991(74)90114-4
+      \endverb
+      \verb{urlraw}
+      \verb https://linkinghub.elsevier.com/retrieve/pii/0021999174901144
+      \endverb
+      \verb{url}
+      \verb https://linkinghub.elsevier.com/retrieve/pii/0021999174901144
+      \endverb
+      \keyw{rotorwake,ductape}
+    \endentry
+    \entry{CCBlade}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=93ca2cb81a3707f9a26c8b4c7425e445}{%
+           family={Ning},
+           familyi={N\bibinitperiod},
+           given={Andrew},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{language}{1}{%
+        {en}%
+      }
+      \strng{namehash}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \strng{fullhash}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \strng{fullhashraw}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \strng{bibnamehash}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \strng{authorbibnamehash}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \strng{authornamehash}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \strng{authorfullhash}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \strng{authorfullhashraw}{93ca2cb81a3707f9a26c8b4c7425e445}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{1615-147X, 1615-1488}
+      \field{journaltitle}{Structural and Multidisciplinary Optimization}
+      \field{month}{08}
+      \field{number}{2}
+      \field{title}{Using blade element momentum methods with gradient-based design optimization}
+      \field{volume}{64}
+      \field{year}{2021}
+      \field{pages}{991\bibrangedash 1014}
+      \range{pages}{24}
+      \verb{doi}
+      \verb 10.1007/s00158-021-02883-6
+      \endverb
+      \keyw{ductape}
+    \endentry
+    \entry{Mogensen_2020}{software}{}{}
+      \name{author}{25}{}{%
+        {{hash=1b6d453f168f7ade106ab2cbda2f5a8e}{%
+           family={Mogensen},
+           familyi={M\bibinitperiod},
+           given={Patrick\bibnamedelima Kofod},
+           giveni={P\bibinitperiod\bibinitdelim K\bibinitperiod}}}%
+        {{hash=f7e379a414c73e5db3fbf98b693a257e}{%
+           family={Carlsson},
+           familyi={C\bibinitperiod},
+           given={Kristoffer},
+           giveni={K\bibinitperiod}}}%
+        {{hash=ab45ea592d16c5bbe662b4a4023a7ca0}{%
+           family={Villemot},
+           familyi={V\bibinitperiod},
+           given={Sébastien},
+           giveni={S\bibinitperiod}}}%
+        {{hash=1d26bdd70f1f6847b230cb6ada7cbfae}{%
+           family={Lyon},
+           familyi={L\bibinitperiod},
+           given={Spencer},
+           giveni={S\bibinitperiod}}}%
+        {{hash=4e244a1552f8a961e7be98bf11f29701}{%
+           family={Gomez},
+           familyi={G\bibinitperiod},
+           given={Matthieu},
+           giveni={M\bibinitperiod}}}%
+        {{hash=c454e867cc51042dbb2c4a284006599f}{%
+           family={Rackauckas},
+           familyi={R\bibinitperiod},
+           given={Christopher},
+           giveni={C\bibinitperiod}}}%
+        {{hash=0c4ce70cb293baa540cb8e4ca14a2133}{%
+           family={Holy},
+           familyi={H\bibinitperiod},
+           given={Tim},
+           giveni={T\bibinitperiod}}}%
+        {{hash=c674de46a98c97eaa7da3631301e8bc5}{%
+           family={Widmann},
+           familyi={W\bibinitperiod},
+           given={David},
+           giveni={D\bibinitperiod}}}%
+        {{hash=a87df581945290ba88e42fd622beb273}{%
+           family={Kelman},
+           familyi={K\bibinitperiod},
+           given={Tony},
+           giveni={T\bibinitperiod}}}%
+        {{hash=53d585e564d0f8a93840f4634030e441}{%
+           family={Karrasch},
+           familyi={K\bibinitperiod},
+           given={Daniel},
+           giveni={D\bibinitperiod}}}%
+        {{hash=502a4f09ba093bd8fa0d495bcca59024}{%
+           family={Levitt},
+           familyi={L\bibinitperiod},
+           given={Antoine},
+           giveni={A\bibinitperiod}}}%
+        {{hash=54c3fff0bd060b64b6ffa47f9d978492}{%
+           family={Riseth},
+           familyi={R\bibinitperiod},
+           given={Asbj{ø}rn\bibnamedelima Nilsen},
+           giveni={A\bibinitperiod\bibinitdelim N\bibinitperiod}}}%
+        {{hash=d242bf0e259a1d25deed621dc7fefe31}{%
+           family={Lucibello},
+           familyi={L\bibinitperiod},
+           given={Carlo},
+           giveni={C\bibinitperiod}}}%
+        {{hash=eba1780e48fabe616638eb6ac424df01}{%
+           family={Kwon},
+           familyi={K\bibinitperiod},
+           given={Changhyun},
+           giveni={C\bibinitperiod}}}%
+        {{hash=fd46d17ffbd782630869a934ac2604c7}{%
+           family={Barton},
+           familyi={B\bibinitperiod},
+           given={David},
+           giveni={D\bibinitperiod}}}%
+        {{hash=ab76de3b00cae6f92f1fa0fcf8bd74e6}{%
+           family={TagBot},
+           familyi={T\bibinitperiod},
+           given={Julia},
+           giveni={J\bibinitperiod}}}%
+        {{hash=a5cf2b0544ac563410255f91d67a98ff}{%
+           family={Baran},
+           familyi={B\bibinitperiod},
+           given={Mateusz},
+           giveni={M\bibinitperiod}}}%
+        {{hash=ae562f612365bfa1287b8268e8b021df}{%
+           family={Lubin},
+           familyi={L\bibinitperiod},
+           given={Miles},
+           giveni={M\bibinitperiod}}}%
+        {{hash=715e6df6c0f8d45e9d02add075cd6343}{%
+           family={Choudhury},
+           familyi={C\bibinitperiod},
+           given={Sarthak},
+           giveni={S\bibinitperiod}}}%
+        {{hash=5251f1a0e695f0e0d885ec2633b5d085}{%
+           family={Byrne},
+           familyi={B\bibinitperiod},
+           given={Simon},
+           giveni={S\bibinitperiod}}}%
+        {{hash=cbe81bb64892c32c2e680645e4b28937}{%
+           family={Christ},
+           familyi={C\bibinitperiod},
+           given={Simon},
+           giveni={S\bibinitperiod}}}%
+        {{hash=1153af45c5c0ca9eb1abf22b67b3187e}{%
+           family={Arakaki},
+           familyi={A\bibinitperiod},
+           given={Takafumi},
+           giveni={T\bibinitperiod}}}%
+        {{hash=ad91e1e71113e3b14ee5ec73d023b4b1}{%
+           family={Bojesen},
+           familyi={B\bibinitperiod},
+           given={Troels\bibnamedelima Arnfred},
+           giveni={T\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+        {{hash=92a61e9c5f810c32567c703117ce5907}{%
+           family={benneti},
+           familyi={b\bibinitperiod}}}%
+        {{hash=52ed6a279f7d13bf3f3db64184efb21b}{%
+           family={Macedo},
+           familyi={M\bibinitperiod},
+           given={Miguel\bibnamedelimb Raz\bibnamedelima Guzmán},
+           giveni={M\bibinitperiod\bibinitdelim R\bibinitperiod\bibinitdelim G\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Zenodo}%
+      }
+      \strng{namehash}{6c0dae555e3d04a16bd2923a65b94d8b}
+      \strng{fullhash}{a43931c850e4f51152f2b65664f1126c}
+      \strng{fullhashraw}{a43931c850e4f51152f2b65664f1126c}
+      \strng{bibnamehash}{a43931c850e4f51152f2b65664f1126c}
+      \strng{authorbibnamehash}{a43931c850e4f51152f2b65664f1126c}
+      \strng{authornamehash}{6c0dae555e3d04a16bd2923a65b94d8b}
+      \strng{authorfullhash}{a43931c850e4f51152f2b65664f1126c}
+      \strng{authorfullhashraw}{a43931c850e4f51152f2b65664f1126c}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{12}
+      \field{title}{JuliaNLSolvers/NLsolve.jl: v4.5.1}
+      \field{version}{v4.5.1}
+      \field{year}{2020}
+      \verb{doi}
+      \verb 10.5281/zenodo.4404703
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.5281/zenodo.4404703
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.5281/zenodo.4404703
+      \endverb
+      \keyw{ductape}
+    \endentry
+    \entry{Walker_2011}{article}{}{}
+      \name{author}{2}{}{%
+        {{hash=68de9bf937666e3f214e9f6884d4313f}{%
+           family={Walker},
+           familyi={W\bibinitperiod},
+           given={Homer\bibnamedelima F.},
+           giveni={H\bibinitperiod\bibinitdelim F\bibinitperiod}}}%
+        {{hash=01462f103b263693c27b098894913599}{%
+           family={Ni},
+           familyi={N\bibinitperiod},
+           given={Peng},
+           giveni={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{69878ba1dda08019be06d5046284c917}
+      \strng{fullhash}{29088b7e969074f99e0532888c7c6d9d}
+      \strng{fullhashraw}{29088b7e969074f99e0532888c7c6d9d}
+      \strng{bibnamehash}{29088b7e969074f99e0532888c7c6d9d}
+      \strng{authorbibnamehash}{29088b7e969074f99e0532888c7c6d9d}
+      \strng{authornamehash}{69878ba1dda08019be06d5046284c917}
+      \strng{authorfullhash}{29088b7e969074f99e0532888c7c6d9d}
+      \strng{authorfullhashraw}{29088b7e969074f99e0532888c7c6d9d}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{SIAM Journal on Numerical Analysis}
+      \field{number}{4}
+      \field{title}{Anderson Acceleration for Fixed-Point Iterations}
+      \field{volume}{49}
+      \field{year}{2011}
+      \field{pages}{1715\bibrangedash 1735}
+      \range{pages}{21}
+      \verb{doi}
+      \verb 10.1137/10078356X
+      \endverb
+      \verb{eprint}
+      \verb https://doi.org/10.1137/10078356X
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1137/10078356X
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1137/10078356X
+      \endverb
+      \keyw{ductape}
+    \endentry
+    \entry{Lepage_2021}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=c5115e87a71509c4f4cbea12c5efec19}{%
+           family={Lepage-Saucier},
+           familyi={L\bibinithyphendelim S\bibinitperiod},
+           given={Nicolas},
+           giveni={N\bibinitperiod}}}%
+      }
+      \strng{namehash}{c5115e87a71509c4f4cbea12c5efec19}
+      \strng{fullhash}{c5115e87a71509c4f4cbea12c5efec19}
+      \strng{fullhashraw}{c5115e87a71509c4f4cbea12c5efec19}
+      \strng{bibnamehash}{c5115e87a71509c4f4cbea12c5efec19}
+      \strng{authorbibnamehash}{c5115e87a71509c4f4cbea12c5efec19}
+      \strng{authornamehash}{c5115e87a71509c4f4cbea12c5efec19}
+      \strng{authorfullhash}{c5115e87a71509c4f4cbea12c5efec19}
+      \strng{authorfullhashraw}{c5115e87a71509c4f4cbea12c5efec19}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{math.OC}
+      \field{eprinttype}{arXiv}
+      \field{title}{Alternating cyclic extrapolation methods for optimization algorithms}
+      \field{year}{2021}
+      \verb{eprint}
+      \verb 2104.04974
+      \endverb
+      \keyw{ductape}
+    \endentry
+    \entry{Powell_1970}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=72711b560d72d1d359efeade35f39d09}{%
+           family={D.},
+           familyi={D\bibinitperiod},
+           given={POWELL\bibnamedelimb M.\bibnamedelimi J.},
+           giveni={P\bibinitperiod\bibinitdelim M\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \list{publisher}{2}{%
+        {Gordon}%
+        {Breach}%
+      }
+      \strng{namehash}{72711b560d72d1d359efeade35f39d09}
+      \strng{fullhash}{72711b560d72d1d359efeade35f39d09}
+      \strng{fullhashraw}{72711b560d72d1d359efeade35f39d09}
+      \strng{bibnamehash}{72711b560d72d1d359efeade35f39d09}
+      \strng{authorbibnamehash}{72711b560d72d1d359efeade35f39d09}
+      \strng{authornamehash}{72711b560d72d1d359efeade35f39d09}
+      \strng{authorfullhash}{72711b560d72d1d359efeade35f39d09}
+      \strng{authorfullhashraw}{72711b560d72d1d359efeade35f39d09}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Numerical Methods for Nonlinear Algebraic Equations}
+      \field{title}{A hybrid method for nonlinear equations}
+      \field{year}{1970}
+      \field{pages}{87\bibrangedash 161}
+      \range{pages}{75}
+      \verb{urlraw}
+      \verb https://cir.nii.ac.jp/crid/1571135650078362496
+      \endverb
+      \verb{url}
+      \verb https://cir.nii.ac.jp/crid/1571135650078362496
+      \endverb
+      \keyw{ductape}
+    \endentry
+    \entry{More_1994}{article}{}{}
+      \name{author}{2}{}{%
+        {{hash=a9a66b314c9ad619a4bdf7ae4261f894}{%
+           family={Moré},
+           familyi={M\bibinitperiod},
+           given={Jorge\bibnamedelima J.},
+           giveni={J\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+        {{hash=d19053b5df44813cbd906ed8d8ce26e0}{%
+           family={Thuente},
+           familyi={T\bibinitperiod},
+           given={David\bibnamedelima J.},
+           giveni={D\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {New York, NY, USA}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{3e67bc78a9dc46893a87c920b470a38f}
+      \strng{fullhash}{f77f0437811de86e6e69c68a6489f0ed}
+      \strng{fullhashraw}{f77f0437811de86e6e69c68a6489f0ed}
+      \strng{bibnamehash}{f77f0437811de86e6e69c68a6489f0ed}
+      \strng{authorbibnamehash}{f77f0437811de86e6e69c68a6489f0ed}
+      \strng{authornamehash}{3e67bc78a9dc46893a87c920b470a38f}
+      \strng{authorfullhash}{f77f0437811de86e6e69c68a6489f0ed}
+      \strng{authorfullhashraw}{f77f0437811de86e6e69c68a6489f0ed}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{0098-3500}
+      \field{journaltitle}{ACM Trans. Math. Softw.}
+      \field{month}{09}
+      \field{number}{3}
+      \field{title}{Line search algorithms with guaranteed sufficient decrease}
+      \field{volume}{20}
+      \field{year}{1994}
+      \field{pages}{286\bibrangedash 307}
+      \range{pages}{22}
+      \verb{doi}
+      \verb 10.1145/192115.192132
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/192115.192132
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/192115.192132
+      \endverb
+      \keyw{ductape}
+    \endentry
+    \entry{pal2024}{article}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{8}{}{%
+        {{hash=134a81db66d28409c28b746b1a92d9c3}{%
+           family={Pal},
+           familyi={P\bibinitperiod},
+           given={Avik},
+           giveni={A\bibinitperiod}}}%
+        {{hash=1fbcca0bd57c5519996cdaa55c277024}{%
+           family={Holtorf},
+           familyi={H\bibinitperiod},
+           given={Flemming},
+           giveni={F\bibinitperiod}}}%
+        {{hash=b73619a208de9b0b29c8d02aa15af69f}{%
+           family={Larsson},
+           familyi={L\bibinitperiod},
+           given={Axel},
+           giveni={A\bibinitperiod}}}%
+        {{hash=309daca2fc882041bca980b4a36bae7c}{%
+           family={Loman},
+           familyi={L\bibinitperiod},
+           given={Torkel},
+           giveni={T\bibinitperiod}}}%
+        {{hash=d7796e3f37bfdcac537eca5d54bddcb8}{%
+           family={Schaefer},
+           familyi={S\bibinitperiod},
+           given={Frank},
+           giveni={F\bibinitperiod}}}%
+        {{hash=d5bb66aa6498fe32a2e7c2a157f0d04e}{%
+           family={Qu},
+           familyi={Q\bibinitperiod},
+           given={Qingyu},
+           giveni={Q\bibinitperiod}}}%
+        {{hash=01a6ca61fcd12a3a071ec49304df57f8}{%
+           family={Edelman},
+           familyi={E\bibinitperiod},
+           given={Alan},
+           giveni={A\bibinitperiod}}}%
+        {{hash=fd809a034dacfb5b1098d3a976c4539c}{%
+           family={Rackauckas},
+           familyi={R\bibinitperiod},
+           given={Chris},
+           giveni={C\bibinitperiod}}}%
+      }
+      \strng{namehash}{375aae7ea64a92d239ccf3a787cbad15}
+      \strng{fullhash}{08ae7a265fa115b3564f6b63c8009eed}
+      \strng{fullhashraw}{08ae7a265fa115b3564f6b63c8009eed}
+      \strng{bibnamehash}{08ae7a265fa115b3564f6b63c8009eed}
+      \strng{authorbibnamehash}{08ae7a265fa115b3564f6b63c8009eed}
+      \strng{authornamehash}{375aae7ea64a92d239ccf3a787cbad15}
+      \strng{authorfullhash}{08ae7a265fa115b3564f6b63c8009eed}
+      \strng{authorfullhashraw}{08ae7a265fa115b3564f6b63c8009eed}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{arXiv preprint arXiv:2403.16341}
+      \field{title}{NonlinearSolve. jl: High-Performance and Robust Solvers for Systems of Nonlinear Equations in Julia}
+      \field{year}{2024}
+      \keyw{ductape}
+    \endentry
+    \entry{HS_1968}{report}{}{}
+      \name{author}{3}{}{%
+        {{hash=93c9078c07614842428e17ea76f92458}{%
+           family={Rohrbach},
+           familyi={R\bibinitperiod},
+           given={Carl},
+           giveni={C\bibinitperiod}}}%
+        {{hash=3ccceb5b26b5f4c0f77f133f4b734a19}{%
+           family={Fortmann},
+           familyi={F\bibinitperiod},
+           given={William},
+           giveni={W\bibinitperiod}}}%
+        {{hash=788d78a9441d5bcbc394f8ecc90f85bb}{%
+           family={Croxall},
+           familyi={C\bibinitperiod},
+           given={Al},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {United Aircraft Research Laboratories}%
+      }
+      \strng{namehash}{2c5ed665b24681059e67a2ab46b90ffc}
+      \strng{fullhash}{73200b49c4d6cc1e03a8d186dbc78c5a}
+      \strng{fullhashraw}{73200b49c4d6cc1e03a8d186dbc78c5a}
+      \strng{bibnamehash}{73200b49c4d6cc1e03a8d186dbc78c5a}
+      \strng{authorbibnamehash}{73200b49c4d6cc1e03a8d186dbc78c5a}
+      \strng{authornamehash}{2c5ed665b24681059e67a2ab46b90ffc}
+      \strng{authorfullhash}{73200b49c4d6cc1e03a8d186dbc78c5a}
+      \strng{authorfullhashraw}{73200b49c4d6cc1e03a8d186dbc78c5a}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{05}
+      \field{number}{AD835090}
+      \field{title}{Variable Geometry ducted Propeller Test Program: Final Report, Volume II}
+      \field{type}{Report}
+      \field{year}{1968}
+      \keyw{ductape}
+    \endentry
+    \entry{DuSelig_1998}{inbook}{}{}
+      \name{author}{2}{}{%
+        {{hash=d8c6f9a7c3e6b74671a8870da56ee298}{%
+           family={Du},
+           familyi={D\bibinitperiod},
+           given={Zhaohui},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=88c33d866dd3d583fb5f47c2c96f8c81}{%
+           family={Selig},
+           familyi={S\bibinitperiod},
+           given={Michael},
+           giveni={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{fa6e13e46a749c5315ff7bb307b45284}
+      \strng{fullhash}{687af270f8d19e9a603b3254e0ff4c52}
+      \strng{fullhashraw}{687af270f8d19e9a603b3254e0ff4c52}
+      \strng{bibnamehash}{687af270f8d19e9a603b3254e0ff4c52}
+      \strng{authorbibnamehash}{687af270f8d19e9a603b3254e0ff4c52}
+      \strng{authornamehash}{fa6e13e46a749c5315ff7bb307b45284}
+      \strng{authorfullhash}{687af270f8d19e9a603b3254e0ff4c52}
+      \strng{authorfullhashraw}{687af270f8d19e9a603b3254e0ff4c52}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{labeldatesource}{nodate}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{1998 ASME Wind Energy Symposium}
+      \field{title}{A 3-D stall-delay model for horizontal axis wind turbine performance prediction}
+      \verb{doi}
+      \verb 10.2514/6.1998-21
+      \endverb
+      \verb{eprint}
+      \verb https://arc.aiaa.org/doi/pdf/10.2514/6.1998-21
+      \endverb
+      \verb{urlraw}
+      \verb https://arc.aiaa.org/doi/abs/10.2514/6.1998-21
+      \endverb
+      \verb{url}
+      \verb https://arc.aiaa.org/doi/abs/10.2514/6.1998-21
+      \endverb
+      \keyw{ductape}
+    \endentry
+    \entry{Eggers_2003}{inproceedings}{}{}
+      \name{author}{3}{}{%
+        {{hash=4c9442635bc39a28005af22802eac1db}{%
+           family={Eggers},
+           familyi={E\bibinitperiod},
+           given={A.},
+           giveni={A\bibinitperiod}}}%
+        {{hash=bb9ed3513ec772f58b3240c65ad78ca3}{%
+           family={Chaney},
+           familyi={C\bibinitperiod},
+           given={K.},
+           giveni={K\bibinitperiod}}}%
+        {{hash=23ba48b5ca3573ab3c50ce0a87e90409}{%
+           family={Digumarthi},
+           familyi={D\bibinitperiod},
+           given={R.},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{5bc69cf969a90362370487762169cc27}
+      \strng{fullhash}{c18fd763fd40967f13d6cbfbb169381f}
+      \strng{fullhashraw}{c18fd763fd40967f13d6cbfbb169381f}
+      \strng{bibnamehash}{c18fd763fd40967f13d6cbfbb169381f}
+      \strng{authorbibnamehash}{c18fd763fd40967f13d6cbfbb169381f}
+      \strng{authornamehash}{5bc69cf969a90362370487762169cc27}
+      \strng{authorfullhash}{c18fd763fd40967f13d6cbfbb169381f}
+      \strng{authorfullhashraw}{c18fd763fd40967f13d6cbfbb169381f}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{41st aerospace sciences meeting and exhibit, 6-9 January 2003, Reno, Nevada, AIAA 2003-0868}
+      \field{month}{01}
+      \field{title}{An Assessment of Approximate Modeling of Aerodynamic Loads on the UAE Rotor}
+      \field{year}{2003}
+      \verb{doi}
+      \verb 10.1115/WIND2003-868
+      \endverb
+      \keyw{ductape}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

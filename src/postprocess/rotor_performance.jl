@@ -525,12 +525,12 @@ function get_blade_loads!(
         for ir in 1:nr
             if iszero(is_stator[irotor])
                 # rename for convenience
-                cache.cphi[ir, irotor] = cos(beta1[ir, irotor])
-                cache.sphi[ir, irotor] = sin(beta1[ir, irotor])
+                cache.cphi[ir, irotor] = cos(pi/2.0-beta1[ir, irotor])
+                cache.sphi[ir, irotor] = sin(pi/2.0-beta1[ir, irotor])
             else
                 # rename for convenience
-                cache.cphi[ir, irotor] = cos(-beta1[ir, irotor])
-                cache.sphi[ir, irotor] = sin(-beta1[ir, irotor])
+                cache.cphi[ir, irotor] = cos(pi/2.0+beta1[ir, irotor])
+                cache.sphi[ir, irotor] = sin(pi/2.0+beta1[ir, irotor])
             end
 
             # resolve lift and drag into normal and tangential coefficients

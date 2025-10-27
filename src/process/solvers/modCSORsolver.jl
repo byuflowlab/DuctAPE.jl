@@ -53,6 +53,10 @@ function mod_COR_solver(
         # Update States
         # Note: you can't pass intermediate computation caches here, unless you allow the solver to take in its own cache
         update_states!(states, r_current, r_previous, B, relaxation_parameters, state_dims)
+        if any(abs.(r_previous) .> 1e6) && any(abs.(r_current) .> 1e6)
+            verbose && print("exploding states: breaking")
+            break
+        end
 
         # Check if residuals are converged
         converged[] = maximum(smooth_abs(r_current)) <= convergence_tolerance
@@ -70,7 +74,10 @@ function mod_COR_solver(
     end
 
     return (;
-            y=states, converged=converged[1], total_iterations=iter[1], residual=maximum(smooth_abs(r_current))
+        y=states,
+        converged=converged[1],
+        total_iterations=iter[1],
+        residual=maximum(smooth_abs(r_current)),
     )
 end
 

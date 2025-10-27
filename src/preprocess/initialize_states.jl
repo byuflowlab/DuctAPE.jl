@@ -208,7 +208,7 @@ function initialize_velocities!(
         ]
 
         # solve CCBlade problem for this rotor
-        out = c4b.solve.(Ref(rotor), sections, c4bop)
+        out = c4b.solve.(Ref(rotor), sections, c4bop; npts=5000)
 
         ##### ----- Assign Initial vz_rotor, vtheta_rotor, and Cm_wake ----- #####
 

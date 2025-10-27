@@ -1,0 +1,185 @@
+\section{Automatic Differentiation}
+\label{sec:ad}
+
+There are several modern tools that help in the implementation of gradient-based optimization methods.
+%
+One such type of tool is automatic differentiation (AD), also called algorithmic differentiation among other names.
+%
+AD allows for the computation of exact (relative to the function tolerance) derivatives through a given code, assuming the code is compatible with the AD tool being used.\sidenote{AD typically requires some up front development work to ensure that the code being differentiated is compatible with the AD tool being used.  Such development work is part of the contributions of the work described in this dissertation as mentioned in \cref{sec:contributions}.}
+%
+The fundamental principle of AD is the application of the chain rule to composite functions in order to multiplicatively accumulate intermediate partial derivatives and obtain the final derivatives of the overall function outputs relative to the inputs.
+
+\subsection{Forward-mode AD}
+
+There are several methods for obtaining derivatives with AD, one of which is known as forward-mode AD an was introduced as a computational method in 1964\scite{Wengert_1964}.
+%
+In forward-mode AD, we accumulate partial derivatives of expressions as we move forward through the computations.
+%
+Any complex computational function is a composite of some number elementary functions with known derivatives.
+%
+For a given function, \(f(x_1,x_2,\ldots)\), the partial derivative of the output(s) with respect to an input can be determined through the accumulation of partials through the chain rule.
+%
+Written out, \(\partial f / \partial x_i\) would be:
+
+\begin{equation}
+\begin{aligned}
+    \pd{f}{x_i} &= \pd{f}{w_{n-1}} \frac{\d w_{n-1}}{\d x_i} \\
+                &= \pd{f}{w_{n-1}} \left(\pd{w_{n-1}}{w_{n-2}} \frac{\d w_{n-2}}{\d x_i} \right) \\
+                &= \pd{f}{w_{n-1}} \left(\pd{w_{n-1}}{w_{n-2}} \left(\pd{w_{n-2}}{w_{n-3}} \frac{\d w_{n-3}}{\d x_i} \right)\right) \\
+                &= \cdots,
+\end{aligned}
+\end{equation}
+
+\where \(w_{n-j}\) indicate sub-functions of the composite function, \[f(w_{n-1}(w_{n-2}(w_{n-3}(...(x))))).\]
+%
+For multiple independent variables, we can generalize this process as the matrix products of Jacobians.
+
+\subsubsection{Dual Numbers}
+
+In practice, forward-mode AD is accomplished along side the nominal computations.
+%
+This can be done when variables are defined as dual types which are based on dual numbers taking the form
+
+\begin{equation}
+    a + b\epsilon,
+\end{equation}
+
+\where \(\epsilon\) satisfies the condition \(\epsilon^2 = 0\) where \(\epsilon \neq 0\).
+%
+In practice, we define a dual type that contains a primal (\(a\)) and partial (\(b\)) component, \(\langle a, b \rangle\).
+%
+For each elementary (addition, multiplication, trigonometric, exponential, logarithmic, etc.) operations, dual numbers are treated with an augmentation of the algebra of real numbers where the primal value of the dual is calculated with nominal arithmetic, and the partial component is calculated with first order differentiation.
+%
+Thus the operations on the dual number type behave as:
+
+\begin{equation}
+    f(a + b\epsilon) = f(a) + f'(a)  b \epsilon.
+\end{equation}
+
+
+
+\subsection{ImplicitAD.jl}
+
+There are several shortcuts that can be used to make the computation of derivatives with AD more efficient\scite{Martins_2020}.
+%
+The most-used of these in this work is implemented in the ImplicitAD.jl package\scite{Ning_2023}, and is a method for obtaining the derivatives of the outputs of a solver without having to pass AD derivatives through the actual solver.
+%
+This becomes especially advantageous for iterative solvers and large linear systems that would otherwise require a great deal of computational effort to obtain derivatives through every step using a direct method.
+%
+In the following subsections, we follow closely the methodologies laid out by \citeauthor{Ning_2023} for efficiently obtaining derivatives of non-linear and linear system solves.
+
+\subsubsection{Non-linear Solves}
+
+We apply this AD shortcut to any non-linear system solver expressed in residual form as
+
+\begin{equation}
+    \label{eqn:genresid}
+    r(x,y(x)) = 0
+\end{equation}
+
+\where the function, \(r\) is the residual, \(y\) are the state variables, and \(x\) are the input variables.
+%
+In the context of AD, we are looking for the derivatives
+
+\begin{equation}
+    \dot{y} = \frac{\d y}{\d x} \dot{x}.
+\end{equation}
+
+\noindent Applying the chain rule to \cref{eqn:genresid} we see that
+
+\begin{equation}
+    \label{eqn:diffresid}
+    \frac{\d r}{\d x} = \pd{r}{x} + \pd{r}{y} \frac{\d y}{\d x} = 0,
+\end{equation}
+
+\noindent which we rearrange to get
+
+\begin{equation}
+    \frac{\d y}{\d x} = \left(\pd{r}{y}\right)^{-1} \pd{r}{x}.
+\end{equation}
+
+Now we don't actually want to compute \(\d y/\d x\) as this would require passing AD through all of the solver iterations, so we want to determine a way to obtain \(\dot{y}\) in a shortcut manner.
+%
+We will do so by first multiplying both sides of \cref{eqn:diffresid} by \(\dot{x}\):
+
+\begin{equation}
+    \begin{aligned}
+        \pd{r}{y}\frac{\d y}{\d x}\dot{x} &= -\pd{r}{x}\dot{x}, \\
+        \pd{r}{y}\dot{y} &= -\pd{r}{x}\dot{x}.
+    \end{aligned}
+\end{equation}
+
+\noindent For the right-hand side Jacobian vector product (JVP), \(b = -(\partial r/ \partial x) \dot{x}\), we can use the fact that it is equivalent to the directional derivative in the direction of \(-\dot{x}\) and apply a single pass of forward-mode AD, using \(-\dot{x}\) as the seed vector.\sidenote{In the actual implementation, a single evaluation of the residual at the converged solution \(y\) is done using the dual typed input, \(x \equiv \langle x, \dot{x} \rangle\). Then \(b\) is set to be the partial of the result.}
+
+With the right-hand side computed, we simply need to obtain \(\partial r/ \partial y\)---which is either already available from the solver if it is a jacobian-based method, or can be had quickly with AD.
+%
+We can then determine \(\dot{y}\) through a linear solve of
+
+\begin{equation}
+    \pd{r}{y} \dot{y} = b,
+\end{equation}
+
+\noindent which is much more direct than attempting to pass AD through all of the solver iterations.
+
+
+\subsubsection{Linear Solves}
+
+For a given linear system, \(Ay=b\) where \(A\) and/or b are functions of inputs, \(x\), and have known derivatives, we can solve the system for \(y\) generally by
+
+\begin{equation}
+    \label{eqn:linsolve}
+    y = A^{-1}b
+\end{equation}
+
+\where we will want to solve for \(y\) by applying some factorization to \(A\), say LU decomposition.
+%
+To obtain a shortcut expression for the derivative, \(\dot{y}\), we will start by applying the chain rule to \cref{eqn:linsolve}:
+
+\begin{equation}
+    \label{eqn:linderivative}
+    \dot{y} = \dot{A}^{-1}b + A^{-1}\dot{b}.
+\end{equation}
+
+\noindent Note that we already have \(\dot{b}\) from AD at the time it was computed, so we just need \(\dot{A}^{-1}\).
+%
+If we take the definition of a matrix inverse, \(AA^{-1} = I\), where \(I\) is the identity matrix, and differentiate both sides, we have
+
+\begin{equation}
+    \dot{A}A^{-1}+A\dot{A}^{-1} = 0;
+\end{equation}
+
+\noindent which we can solve for the derivative of the matrix inverse
+
+\begin{equation}
+    \dot{A}^{-1}=-A^{-1}\dot{A}A^{-1}.
+\end{equation}
+
+\noindent Substituting into \cref{eqn:linderivative} we have
+
+\begin{equation}
+    \dot{y} = -A^{-1}\dot{A}A^{-1}b + A^{-1}\dot{b};
+\end{equation}
+
+\where which we can simplify\sidenote{remembering that \(y = A^{-1}b\).} to
+
+\begin{equation}
+    \dot{y} = A^{-1}\left(\dot{b}-\dot{A}y\right).
+\end{equation}
+
+\noindent Remembering that we already have \(y\) and a factorization for \(A^{-1}\) from the primal solve, as well as the values for \(\dot{b}\) and \(\dot{A}\) from AD at their original computation, we can easily compute the derivative, \(\dot{y}\), without having to do more passes through the original linear system solve.
+%
+This becomes more advantageous the larger the linear system becomes.
+
+
+% \subsubsection{External Codes}
+%
+% As it turns out, the ImplicitAD.jl framework also extends to easily incorporating external codes into the AD chain.
+% %
+% The vast majority of the work documented in this dissertation was done using the Julia language, but we will see in \cref{ch:mdo_models}, that we occasionally use convenient packages in the Python language.
+% %
+% In our case, the Python package in question is able to provide the jacobian vector product.
+% %
+% It becomes a simple matter then, provide the input value and partials and then compute the output partials using the external code's jacobian vector product method.
+% %
+% We can therefore include external codes in the AD chain without having to pass derivatives through the external code, making the combination of excellent, but not immediately compatible tool sets much more manageable.
+%

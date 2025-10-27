@@ -1,0 +1,714 @@
+\section{Beyond the Inviscid Assumption: An Integral Boundary Layer Model for Viscous Drag}
+
+Since panel methods are developed on an assumption of inviscid flow, they are inherently unable to model viscous drag effects on the boundaries they model.
+Fortunately, we can combine inviscid panel methods with additional boundary layer models in order to capture viscous drag along the body surfaces.
+To do so, we will need to assume that:
+
+\begin{assumption}{}
+    \label{asm:large_re}
+
+    \asm{The Reynolds number of the inviscid flow is large.}
+
+    \limit{We can't model very slow flows.}
+
+    \why{For all the applications in this work, we will have large Reynolds numbers.}
+
+\end{assumption}
+
+\noindent By \cref{asm:large_re} we can split the flow into an approximate invisicd outer flow and a viscous layer close to the body surface (or boundary of the boundary element method), which we call the boundary layer.
+The typical approach to modeling boundary layers in conjunction with panel methods is to use three models: a laminar boundary layer model, a turbulent boundary layer model, and a model for transition from laminar to turbulent.
+For our purposes here, we will assume:
+
+\begin{assumption}{}
+    \asm{The boundary layer can be modeled as fully turbulent.}
+
+    \limit{We are over-predicting the viscous drag as we are not modeling any laminar region in the boundary layer.}
+
+    \why{It is beyond the scope of this work to develop a continuous boundary layer transition model, and our over-prediction should be relatively small.}
+
+\end{assumption}
+
+\noindent We will also assume the following:
+
+% Assumptions:
+% - adiabatic wall conditions
+% - Prandtl number = 1 ("no weird wall temps" says Youngren)
+% - Isentropic flow
+% - viscosity is evaluated by Sutherland's law
+
+\begin{assumption}{}
+    \label{asm:adiabatic_walls}
+
+    \asm{There is no heat transfer across the body surfaces; in other words, an adiabatic wall condition.}
+
+    \limit{We will not be modeling thermal effects on the boundary layer, which may be somewhat important especially for the center body which houses the motor.}
+
+    \why{We are not including a motor/heat model in this work anyway, and due to the presence of the rotor, boundary layer transition would likely occur before thermal effects influence the boundary layer.}
+
+\end{assumption}
+
+\begin{assumption}{}
+    \label{asm:isentropic_flow}
+
+    \asm{The flow is isentropic.}
+
+    \limit{Again, we won't be including any heat transfer, and no energy transformations due to friction or viscosity.}
+
+    \why{This is a suitable simplifying assumption for the level of fidelity of the models in this work, especially since we don't have any thermal models.}
+
+\end{assumption}
+
+
+In modeling the boundary layer, we will want to think in terms of several idealized thicknesses.
+We first define the boundary layer thickness to be the length from the body surface to the point normal to the surface where the velocity equals the inviscid velocity.
+We will call this the boundary layer thickness, \(\delta\).
+The idealized thickness with equivalent mass flow is called the displacement thickness, \(\delta_1\) (many use the symbol \(\delta^*\)).
+Mathematically, the displacement thickness is defined at a specific location along the surface as
+
+\begin{equation}
+    \delta_1 = \int_0^\infty \left(1-\frac{\rho u}{\rho_e U_e}\right)dy,
+\end{equation}
+
+\where \(\rho u\) is the density and velocity inside the boundary layer,
+\(\rho_e U_e\) is the density and velocity at the edge of the boundary layer,
+and \(y\) is in the direction normal to the surface.
+Another idealized thickness with equivalent momentum flow rate is called the momentum thickness, \(\delta_2\) (many use the symbol \(\theta\)).
+Mathematically, the momentum thickness is defined as
+
+\begin{equation}
+    \delta_2 = \int_0^\infty \frac{\rho u}{\rho_e U_e} \left(1-\frac{u}{U_e}\right) dy.
+\end{equation}
+
+% \noindent The last idealized thickness we will consider is the energy thickness, \(\delta_3\), which has an equivalent energy flow rate.
+% Mathematically, the energy thickness is defined as
+
+% \begin{equation}
+%     \delta_3 = \int_0^\infty \frac{\rho u}{\rho_e U_e} \left[1-\left(\frac{u}{U_e}\right)^2\right] dy
+% \end{equation}
+
+Based on these idealized thicknesses, we can define shape parameters that will determine the ``health'' of the boundary layer:
+
+% Based on these idealized thicknesses, we can define several shape parameters that will determine the ``health'' of the boundary layer.
+% The shape parameters are
+
+\begin{align}
+    H_1 &= \frac{\delta-\delta_1}{\delta_2}; \\
+    H_{12} &= \frac{\delta_1}{\delta_2}.
+\end{align}
+
+
+% \begin{align}
+%     H_1 &= \frac{\delta-\delta_1}{\delta_2}; \\
+%     H_{12} &= \frac{\delta_1}{\delta_2}; \\
+%     \overline{H}_{12} &= \frac{\int_0^\infty \frac{\rho}{\rho_e}\left(1-\frac{u}{U_e}\right)}{\delta_2}; \\
+%     H_{32} &= \frac{\delta_3}{\delta_2};
+% \end{align}
+
+% \where \(\overline{H}_{12}\) is a compressible analogue to \(H_{12}\).
+% We also define an entrainment coefficient, \(C_E\):
+
+% \begin{equation}
+%     \begin{aligned}
+%         C_E &= \frac{1}{r\rho_eU_e}\frac{d}{ds}\left(r\int_0^\delta \rho U dy\right)\\
+%             &= \frac{1}{r\rho_eU_e}\frac{d}{ds}\left(r \rho_e U_e H_1 \delta_2\right)
+%     \end{aligned}
+% \end{equation}
+
+% \where \(r\) is the body radius in axisymmetric flows (set to 1 for planar a model),
+% and
+% \(s\) is the direction along the surface.
+
+Viscous effects are very difficult to model analytically, so most boundary layer models are semi-empirical in nature.
+For this work, we will be using a well-known, widely used, semi-empirical method for our boundary layer model.
+
+% \section{A Laminar Boundary Layer Model}
+
+% % Laminar model taken more or less directly from Eppler's panel method code (2 equation momentum/energy method correlations for H23-H12) (compare about line 1247 in blcalc.f and about line 1284 in eppler's polar.f90 code)
+% To model the laminar portion of the boundary layer, we take Eppler and Somers' approach\scite{Eppler_1980}, which is an integral method using momentum and energy equations.
+% The two integral equations we will use are
+
+% \begin{align}
+%     \frac{d \delta_2}{ds} &= C_f + \frac{v_{\hat{n}}}{U_e} - \frac{2+H_{12}}{U_e}\frac{dU_e}{ds}\delta_2 && \mathrm{(momentum)}\\
+%     \frac{d \delta_3}{ds} &= C_\mathcal{D} + \frac{v_{\hat{n}}}{U_e} - 3\frac{dU_e}{ds}\delta_3 && \mathrm{(energy)}
+% \end{align}
+
+% \where \(U_e\) is the boundary layer edge velocity we assume to be the surface velocity determined from the panel method,
+% \(x\) is the length along the surface boundary from the stagnation point,
+% \(v_{\hat{n}}\) is any velocity normal to the surface, for example suction (negative) or blowing (positive),
+% and the remaining terms are defined as follows:
+% The skin-friction coefficient, \(C_f\) is approximated as
+
+% \begin{equation}
+%     C_f = \frac{\epsilon^*}{Re_\ell \frac{U_e}{U_\infty}\frac{\delta_2}{\ell}}
+% \end{equation}
+
+% \where \(\ell\) is the reference length (e.g. surface chord length), \(U_\infty\) is the reference (freestream) velocity, \(Re_\ell\) is the reference Reynolds number
+
+% \begin{equation}
+%     Re_\ell = \frac{\rho_\infty U_\infty \ell}{\mu_\infty},
+% \end{equation}
+
+% \noindent and
+
+% \begin{equation}
+%     \epsilon^* =
+%     \begin{cases}
+%         \begin{aligned}
+%             2.512589-1.686095H_{12}+&0.391541H^2_{12}-0.031729H^3_{12} \\
+%                                     & \mathrm{for}~~1.51509 \leq H_{32} < 1.57258, \\
+%             1.372391-4.226253H_{32} +& 2.221687H^2_{32} \\
+%                                      & \mathrm{for}~~ H_{32}\geq1.57258.
+%     \end{aligned}
+%     \end{cases}
+% \end{equation}
+
+% The dissipation factor, \(C_\mathcal{D}\) is approximated as
+
+% \begin{equation}
+%     C_\mathcal{D} = \frac{2D^*}{Re_\ell \frac{U_e}{U_\infty}\frac{\delta_2}{\ell}}
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     D^* = 7.853976 - 10.260551H_{32} + 3.418898H^2_{32}
+% \end{equation}
+
+% The shape factor, \(H_{12}\) is approximated as
+
+% \begin{equation}
+%     H_{12} =
+%     \begin{cases}
+%         \begin{aligned}
+%             4.&02922 - \left(583.60182 - 724.55916H_{32} \right.\\
+%             +&\left. 227.1822H^2_{32}\right) \left(H_{32}-1.51509\right)^{1/2}\\
+%              &~~~~~~~~~~~~~~~~\mathrm{for}~~1.51509 \leq H_{32} < 1.57258\\
+%             79.&870845 - 89.582142H_{32} + 25.715786H^2_{32} \\
+%                &~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\mathrm{for}~~H_{32} \geq 1.57258
+%         \end{aligned}
+%     \end{cases}
+% \end{equation}
+
+% \where \(H_{32} = 1.51509\) is the laminar separation limit (where \(\pd{u}{y(0)} = 0\)).
+
+
+% \subsection{Solving the laminar boundary layer}
+
+% We can use a standard ODE solver to determine the solution to the laminar boundary layer.
+% For initial values for \(\delta_2\) and \(\delta_3\) we can set the first step from a stagnation point, such as on the duct or a round-nosed center body, to be
+
+% \begin{align}
+%     \delta_{2_{\Delta x}} &= 0.29004\ell \left(\frac{U_\infty \Delta x}{Re_\ell U_{e_{\Delta x}} \ell}\right)^{1/2}, \\
+%     \delta_3 &= 1.61998 \delta_2;
+% \end{align}
+
+% \where the subscript \(\Delta x\) indicates the value at the end of the first step.
+% For a sharp edge, in the case of a sharp center body nose cone, we can use the Blasius solution (for flat plates) to initialize the thickness values:
+
+% \begin{align}
+%     \delta_{2_{\Delta_x}} &= 0.66411\ell \left(\frac{U_\infty \Delta x}{Re_\ell U_{e_{\Delta x}} \ell}\right)^{1/2}, \\
+%     \delta_3 &= 1.57258 \delta_2.
+% \end{align}
+
+
+
+\subsection{Head's Turbulent Boundary Layer Model}
+
+For the turbulent boundary layer, we use Head's well-known entrainment method\scite{Head_1958}.
+%
+The governing equations of the method are:
+
+\begin{subequations}
+\begin{eqboxed}{\eqbox}{align}
+    \label{eqn:heads_turbulent_bl}
+    \frac{\d H_1}{\d s} &= \frac{0.0306}{\delta_2}\left(H_1-3\right)^{-0.6169} - \frac{\d U_e}{\d s}\frac{H_1}{U_e} - \frac{\d \delta_2}{\d s}\frac{H_1}{\delta_2} \\
+    \frac{\d \delta_2}{\d s} &= \frac{c_f}{2} - \frac{\d U_e}{\d s}\frac{\delta_2}{U_e}\left(H_{12}+2\right)
+\end{eqboxed}
+\end{subequations}
+
+\where \(H_{12}\) is a function of \(H_1\) such that
+
+\begin{equation}
+    \eqbox{
+    H_{12} = \begin{cases}
+        0.86 \left(H_1 - 3.3\right)^{-0.777} + 1.1 & H_1 \geq 5.3 \\
+        1.1538 \left(H_1 - 3.3\right)^{-0.326} + 0.6778 & H_1 < 5.3.
+    \end{cases}
+}
+\end{equation}
+
+\noindent Also, \(c_f\) is defined to be
+
+\begin{equation}
+    \eqbox{
+    c_f = 0.246 \times 10^{-0.678 H_{12}} Re_{\delta_2}^{-0.268}
+}
+\end{equation}
+
+\where \(Re_{\delta_2}\) is the Reynolds number based on local edge velocity and momentum thickness.
+
+
+
+
+
+
+% % Turbulent flow comes from Green's lag entrainment formulation (3 equations)
+
+
+% For the turbulent boundary layer, we use the compressible lag-entrainment turbulent boundary layer model presented by \citeauthor{Green_1977}\scite{Green_1977}.
+% In their report, they discuss the details of where various constants for this semi-empirical model come from and their reasoning for choosing the values they do.
+% The following equations are taken directly from their summary of their method.
+% We begin with the three differential equations comprising the model:
+
+% \begin{subequations}
+% \label{eqn:turbulent_boundary_system}
+% \begin{align}
+%     \label{eqn:greens_turbulent_bl}
+%     \frac{d(r\delta_2)}{ds} =& \frac{r C_f}{2} - \left(H_{12}+2-M_e^2\right)\frac{\left(r\delta_2\right)}{U_e}\frac{dU_e}{ds} ; \\
+%     \label{eqn:greens_turbulent_bl2}
+%     \frac{d\overline{H}_{12}}{ds} =& \frac{1}{\delta_2}\frac{d \overline{H}_{12}}{dH_1} \left[C_E-H_1\left(\frac{C_f}{2} - \left[H_{12}+1\right]\frac{\delta_2}{U_e}\frac{dU_e}{ds}\right)\right] ; \\
+%     \label{eqn:greens_turbulent_bl3}
+%     \begin{split}
+%         \frac{dC_E}{ds} =& \frac{F}{\delta_2}\left[\frac{2.8}{H_{12}+H_1} \left(\left[C_\tau\right]^{1/2}_{EQ_0} - \lambda C_\tau^{1/2} \right) + \left(\frac{\delta_2}{U_e} \frac{dU_e}{ds}\right)_{EQ} \right. \\
+%            &- \left.\frac{\delta_2}{U_e}\frac{dU_e}{ds}\left(1+0.075M_e^2 \left[\frac{1+0.2M_e^2}{1+0.1M_e^2}\right]\right)\right].
+%     \end{split}
+% \end{align}
+% \end{subequations}
+
+% \where \cref{eqn:greens_turbulent_bl} is the momentum equation (note that the \(r\delta_2\) terms are grouped in the differential in order to avoid the need for computing \(dr/ds\) in the flat plate case), \cref{eqn:greens_turbulent_bl2} is the entrainment equation, and \cref{eqn:greens_turbulent_bl3} is the lag equation.
+% The subscript \(EQ_0\) indicates equilibrium flow features unchanged by secondary influences,
+% the subscript \(EQ\) indicates equilibrium flow features susceptible to secondary influences,
+% % \(r\) is the body radius in axisymmetric flows (set to 1 for planar model),
+% % \(x\) is the arc length position along the surface,
+% and
+% \(C_f\) is the skin friction coefficient.
+% % \(\delta_2\) is the momentum thickness,
+% % \(H_1\) is the mass-flow shape parameter (\((\delta-\delta^*)/\delta_2\)),
+% % \(\overline{H}_{12}\) is the compressible shape parameter,
+% % \(C_E\) is the entrainment coefficient,
+% % and
+% % \(U_e\) is the boundary layer edge velocity.
+% The mathematical definitions/approximates for these various terms are somewhat lengthy and comprise the remainder of this section.
+
+
+% \paragraph{For \(C_f\):}
+
+% Note that separation occurs when \(C_f=0\) as this is when the shear stress is zero which is the physical condition resulting in separation.
+
+% \begin{equation}
+%     C_f = C_{f_0} \left[0.9\left(\frac{\overline{H}_{12}}{\overline{H}_{{12}_0}}-0.4\right)^{-1} - 0.5 \right];
+% \end{equation}
+
+% \where we determine \(\overline{H}_{{12}_0}\) from
+
+% \begin{equation}
+%     \label{eqn:H12naught}
+%     \overline{H}_{{12}_0} = \left(1-6.55\left[\frac{C_{f_0}}{2} \left(1+0.04M_e^2\right)\right]^{1/2}\right)^{-1},
+% \end{equation}
+
+% \noindent and \(C_{f_0}\) from
+
+% \begin{equation}
+%     C_{f_0} = \frac{1}{F_c}\left(\frac{0.01013}{\log_{10}\left(F_R Re_{\delta_2}\right) - 1.02} - 0.00075\right);
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     F_c = \left(1+0.2M_e^2\right)^{1/2},
+% \end{equation}
+
+% \begin{equation}
+%     F_R = 1+0.056M_e^2,
+% \end{equation}
+
+% \noindent and
+
+% \begin{equation}
+%     Re_{\delta_2} = \frac{\rho_e U_e \delta_2}{\mu_e}.
+% \end{equation}
+
+% The values for \(M_e\), \(U_e\), and \(\rho_e\) come from the local surface pressure, free stream, and isentropic gas dynamics relations (note \cref{asm:isentropic_flow}); and \(\mu_e\) comes from Sutherland's law:
+% % isentropic relations: https://www.grc.nasa.gov/www/k-12/airplane/isentrop.html
+% We first assume that
+
+% \begin{assumption}{}
+
+%     \asm{The boundary layer edge velocity is approximately the velocity surface velocity obtained by the inviscid panel method: \[U_e \approx V_\mathrm{tan}.\]}
+
+%     \limit{Without some sort of iterative method coupling the boundary layer model and panel method, the inviscid velocities found by the panel method will be slightly inaccurate.}
+
+%     \why{As the boundary layer is so small, this approximation should be fine for our purposes.}
+
+% \end{assumption}
+
+% To get the local Mach and Reynolds numbers, we will start by taking in the altitude as a user input to the model.
+% With the altitude, we will use a standard atmosphere approximation to get the freestream static temperature, pressure, and density.
+% With the freestream static temperature and density we can get a reference speed of sound using isentropic\sidenote{By \cref{asm:isentropic_flow}.} relations and assuming the specific heat of air is \(\gamma_\mathrm{air} = 1.4\).
+
+% \begin{equation}
+%     a_\infty = \left(\frac{\gamma_\mathrm{air} p_{s_\infty}}{\rho_\infty}\right)^{1/2}.
+% \end{equation}
+
+% \noindent From the speed of sound and the surface velocities, we can find the Mach number distribution at the edge of the boundary layer.
+
+% \begin{equation}
+%     M_e = \frac{U_e}{a_\infty}.
+% \end{equation}
+
+% To obtain the local Reynolds number we need to get a local density and viscosity also from isentropic relations.
+% We start with the stagnation pressure and temperature in the freestream and assume they stay constant:
+
+% \begin{equation}
+%     p_0 = p_{s_\infty} \left(1 + \frac{\gamma_\mathrm{air}-1}{2}M_\infty^2\right)^{\frac{\gamma_\mathrm{air}}{\gamma_\mathrm{air}-1}},
+% \end{equation}
+
+% \noindent and
+
+% \begin{equation}
+%     T_0 = T_{s_\infty} \left(1 + \frac{\gamma_\mathrm{air}-1}{2}M_\infty^2\right).
+% \end{equation}
+
+% \noindent Then we can get the local static pressures from
+
+% \begin{equation}
+%      p_e = p_0 \left(1 + \frac{\gamma_\mathrm{air}-1}{2}M_e^2\right)^{\frac{-\gamma_\mathrm{air}}{\gamma_\mathrm{air}-1}},
+% \end{equation}
+
+% \noindent and the local static temperatures from
+
+% \begin{equation}
+%     T_e = \frac{T_0}{1 + \frac{\gamma_\mathrm{air}-1}{2}M_e^2}.
+% \end{equation}
+
+% With the local static pressure and Mach number, we can determine density from the dynamic pressure definition:
+
+% \begin{equation}
+%     \begin{aligned}
+%         q = \frac{1}{2} \rho_e U_e^2 &= \frac{1}{2} \gamma_\mathrm{air} p_e M_e^2 \\
+%         \rho_e &= \frac{\gamma_\mathrm{air} p_e }{a_\infty^2}.
+%     \end{aligned}
+% \end{equation}
+
+% With the local static temperature, we can determine the viscosity using Sutherland's law:
+
+% \begin{equation}
+%     \mu_e = \mu_\mathrm{sl} \left(\frac{T_e}{T_\mathrm{sl}}\right)^{3/2} \frac{T_\mathrm{sl} + S_\mathrm{air}}{T_e+S_\mathrm{air}};
+% \end{equation}
+
+% \where the ``sl'' subscript indicates values at sea level, and \(S_\mathrm{air}\) is the Sutherland temperature which we take to be 110.4 Kelvin for air.
+
+% \paragraph{For \(H_{12}\):}
+
+% \begin{equation}
+%     H_{12} = \left(\overline{H}_{12}+1\right)\left(1+\frac{\left(Pr\right)^{1/3}M_e^2}{5}\right)-1,
+% \end{equation}
+
+% \where we approximate the temperature recovery factor as \(\left(Pr\right)^{1/3}\), in which \(Pr\) is the Prandtl number.
+% In practice, we assume the Prandtl number is unity as recommended by Green\scite{Green_1977}.
+
+% \paragraph{For \(H_1\) and \(\frac{d\overline{H}_{12}}{dH_1}\):}
+
+% \begin{equation}
+%     H_1 = 3.15+\frac{1.72}{\overline{H}_{12}-1} - 0.01\left(\overline{H}_{12}-1\right)^2.
+% \end{equation}
+
+% \begin{equation}
+%     \frac{d\overline{H}_{12}}{dH_1} = -\frac{\left(\overline{H}_{12}-1\right)^2}{1.72+0.02\left(\overline{H}_{12}-1\right)^3}.
+% \end{equation}
+
+
+% \paragraph{For \(C_\tau\) and \(F\):}
+
+% \begin{equation}
+%     C_\tau = \left(0.024C_E + 1.2C_E^2+0.32C_{f_0}\right) \left(1+0.1M_e^2\right).
+% \end{equation}
+
+% \begin{equation}
+%     F = \frac{0.02C_E + C_E^2 + 0.8\frac{C_{f_0}}{3}}{0.01+C_E}.
+% \end{equation}
+
+
+% \paragraph{For secondary influences:}
+
+% Secondary influences are contained in the \(\lambda\) term, where \(\lambda = \lambda_1 \lambda_2 \lambda_3 ...\).
+% In this case, we include three secondary influences: longitudinal curvature, lateral strain, and dilation as provided by Green\scite{Green_1977}.
+
+% For longitudinal curvature, we have
+
+% \begin{equation}
+%     \lambda_1 = 1+\beta \left(1+\frac{M_e^2}{5}\right) Ri
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     \beta =
+%     \begin{cases}
+%         7 &\mathrm{for} ~~ Ri>0\\
+%         4.5 &\mathrm{for} ~~ Ri<0
+%     \end{cases}
+% \end{equation}
+
+% \noindent and \(Ri\) is the Richardson number defined as
+
+% \begin{equation}
+%     Ri = \frac{2}{3} \frac{\delta_2}{R}\left(H_{12}+H_1\right)\left(\frac{H_1}{\overline{H}_{12}}+0.3\right),
+% \end{equation}
+
+% \where we take \(R\) to be the radius of longitudinal curvature (convex positive).
+
+% For lateral strain we have
+
+% \begin{equation}
+%     \lambda_2 = 1-\frac{7}{3}\left(\frac{H_1}{\overline{H}_{12}}+0.3\right)\left(H_{12}+H_1\right)\frac{\delta_2}{r}\frac{dr}{ds}.
+% \end{equation}
+
+% For dilation we have
+
+% \begin{equation}
+%     \lambda_3 = 1+\frac{7}{3}M_e^2\left(\frac{H_1}{\overline{H}_{12}}+1\right)\left(H_{12}+H_1\right)\frac{\delta_2}{U_e}\frac{dU_e}{ds}.
+% \end{equation}
+
+% Note that for these secondary influences, Green suggests including them as user options and also only applying them when \(0.4 > \lambda > 2.5\).
+
+
+% \paragraph{For equilibrium quantities:}
+
+% In \cref{eqn:greens_turbulent_bl3} we have the equilibrium quantities \(\left(C_\tau\right)_{EQ_0}\) and \(\left(\frac{\delta_2}{U_e}\frac{dU_e}{ds}\right)_{EQ}\) defined as follows:
+
+% \begin{equation}
+%     \left(C_\tau\right)_{EQ_0} = \left[0.24\left(C_E\right)_{EQ_0} +1.2\left(C_E\right)_{EQ_0}^2 +0.32C_{f_0}\right]\left(1+0.1M_e^2\right),
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     \left(C_E\right)_{EQ_0} = H_1 \left[\frac{C_f}{2}-\left(H_{12}+1\right)\left(\frac{\delta_2}{U_e}\frac{dU_e}{ds}\right)_{EQ_0}\right],
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     \label{eqn:deq0}
+%     \left(\frac{\delta_2}{U_e}\frac{dU_e}{ds}\right)_{EQ_0} = \frac{1.25}{H_{12}}\left[\frac{C_f}{2} - \left(\frac{\overline{H}_{12}-1}{6.432 \overline{H}_{12}}\right)^2 \left(1+0.04M_e^2\right)^{-1}\right].
+% \end{equation}
+
+% \noindent And
+
+% \begin{equation}
+%     \left(\frac{\delta_2}{U_e}\frac{dU_e}{ds}\right)_{EQ} = \frac{\frac{C_f}{2} - \frac{\left(C_E\right)_{EQ}}{H_1}}{H_{12}+1},
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     \label{eqn:ceeq}
+%     \left(C_E\right)_{EQ} = \left(\frac{C}{1.2}+0.0001\right)^{1/2} - 0.01,
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     C = \left(C_\tau\right)_{EQ_0} \left(1+0.1M_e^2\right)^{-1} \lambda^{-2} - 0.32 C_{f_0}.
+% \end{equation}
+
+\subsection{Solving the turbulent boundary layer}
+
+We can use a standard ODE solver to determine the solution of the turbulent boundary layer system of equations, for example a 2nd order Runge-Kutta method.
+%
+We determine initial conditions by starting with the momentum thickness value from the Schlichting empirical fit for a flat plate:
+
+\begin{equation}
+    \eqbox{
+    \delta_2 = \frac{0.036 s}{Re_s^{1/5}}
+}
+\end{equation}
+
+\noindent We initialize \(H_{12}\) to the value for a turbulent flat plate, 1.28, which gives us an initial \(H_1\) of 10.6.
+%
+Separation takes place as \(H_{12}\) becomes large, so a typical cutoff value for separation is 3, at which point the ODE solve is terminated.
+
+% \noindent Using the momentum thickness, we can get an estimate for \(\overline{H}_{12_0}\) from \cref{eqn:H12naught} if we assume a flat plate velocity profile at the start of the turbulent section.
+% % Another option for initializing \(\overline{H}_{12_0}\) is to assume local equilibrium and apply a root finder to \cref{eqn:deq0}.
+% Once \(\overline{H}_{12_0}\) is determined, \(C_E\) can be initialized from \cref{eqn:ceeq}, letting \(\lambda=1\).
+
+% \section{A Boundary Layer Transition Model}
+
+% % transition is from an $e^n$ method
+% % Somewhere an amplification rate equation from Drela is used (about line 1274 in blcalc.f)
+% To model the transition from a laminar to turbulent boundary layer, we use the \(e^n\) method which is based on empirical fits to stability envelopes of Tollmien-Schlichting waves in the boundary layer.\todo{revisit this explanation of the en method after you read the paper on in}
+% In slightly more detail, the \(e^n\) model sets a threshold on the amplification of instabilities in the boundary layer and estimates transition based on when the maximum amplitude of the instabilities reaches the threshold.
+% Values near, but less than 10 (say, 7-9) are common for clean configurations in open air, while smaller values (say, 3-5) are more common for wind tunnel conditions where more turbulence is likely to be present in the freestream.
+
+% An empirical approximation of the \(e^n\) method is provided by Drela and Giles\scite{Drela_1987}, where we approximate \(n\) with \(\widetilde{n}\) as
+
+% \begin{equation}
+%     \widetilde{n} \approx \pd{\widetilde{n}}{Re_{\delta_2}} \left(Re_{\delta_2} - Re_{\delta_{2_\mathrm{crit}}}\right);
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+% \pd{\widetilde{n}}{Re_{\delta_2}}  = 0.01\left[\left(2.4H_{12} -3.7 +2.5\tanh\left[1.5H_{12}-4.65\right]\right)^2+0.25\right]^{1/2}
+% \end{equation}
+
+% \noindent and
+
+% \begin{equation}
+%     Re_{\delta_{2_\mathrm{crit}}} = 10^{\left(\frac{1.415}{H_{12}-1}-0.489\right)\tanh\left(\frac{20}{H_{12}-1}-12.9\right)+\frac{3.295}{H_{12}-1}+0.44}.
+% \end{equation}
+
+% \noindent Transition can occur when \(Re_{\delta_{2}} > Re_{\delta_{2_\mathrm{crit}}}\).
+
+% Though more recent approximations are used in new versions XFoil, presumably because they are better either for accuracy or computation.  They are:
+
+% \begin{equation}
+%     \pd{\widetilde{n}}{Re_{\delta_2}}  = 0.028\left(H_{12}-1\right) - 0.0345 e^{-\left(\frac{3.87}{H_{12}-1}-2.52\right)^2}
+% \end{equation}
+
+% \begin{equation}
+%     Re_{\delta_{2_\mathrm{crit}}} = 10^{0.7*\tanh\left(\frac{14}{H_{12}-1}-9.24\right)+2.492\left(\frac{1}{H_{12}-1}\right)^{0.43}+0.62}
+% \end{equation}
+
+% \where the last constant could be chosen to be anything between 0.62 and 0.7 (or so it has varied in different versions of XFoil).
+
+
+% Transition can be tripped manually with the application of rough strips applied to the physical bodies, and we can model those by simply manually setting the transition point.
+% In addition, for ducted rotor applications, we assume that if transition has not occurred in front of the rotor, the rotor trips turbulence.
+
+
+\subsection{Viscous Drag}
+% Profile drag is computed by applying a compressible version of the Squire/Young formula using values of BL parameters from the trailing edge extrapolated to unity H12 in wake (from Eppler).
+
+\subsubsection{Squire-Young Formula}
+
+The Squire-Young formula\scite{Squire_1937} is a well-known method for approximating the 2D viscous drag of airfoils.
+They show that the airfoil viscous drag coefficient can be determined from the momentum thickness of the wake far downstream of the airfoil trailing edge as
+
+\begin{equation}
+\label{eqn:sqcd}
+    c_d = \frac{2 \delta_{2_\mathrm{wake}}}{c}.
+\end{equation}
+
+\noindent They then derive an expression for the downstream wake momentum thickness based on values at the airfoil trailing edge:
+
+\begin{equation}
+\label{eqn:sqd2w}
+    \delta_{2_\mathrm{wake}} = \delta_{2_{TE}} \left(\frac{U_{e_{TE}}}{U_\infty}\right)^{\frac{5+H_{12_{TE}}}{2}}.
+\end{equation}
+
+\noindent Putting \cref{eqn:sqcd,eqn:sqd2w} together, we have the Squire-Young formula:
+
+\begin{equation}
+\label{eqn:squire-young}
+\eqbox{
+    c_d = \frac{2 \delta_{2_{TE}}}{c} \left(\frac{U_{e_{TE}}}{U_\infty}\right)^{\frac{5+H_{12_{TE}}}{2}}.
+}
+\end{equation}
+
+% Eppler\scite{Eppler_1980} notes that the Squire-Young formula over-predicts the drag coefficient for cases where the boundary layer is near separation.
+
+% \begin{equation}
+% \label{eqn:squire-young_eppler-mod}
+%     c_d = \frac{2 \delta_{2_{TE}}}{c} \left(\frac{U_{e_{TE}}}{U_\infty}\right)^{\frac{5+H^*_{12_{TE}}}{2}};
+% \end{equation}
+
+% \where
+
+% \begin{equation}
+%     H^*_{12_{TE}} =
+%     \begin{cases}
+%         H_{12_{TE}}  & \mathrm{for}~~ H_{12_{TE}} \leq 2.5 \\
+%         2.5  & \mathrm{for}~~ H_{12_{TE}} > 2.5.
+%     \end{cases}
+% \end{equation}
+
+\noindent Note that \cref{eqn:squire-young} applies to just one side of the airfoil at a time, so we add the values associated with the top and bottom together to obtain the complete drag estimate.
+
+% \subsubsection{Separation Treatment}
+%
+% In order to allow, but discourage separation in an optimization context, we apply additional drag if separation occurs before a user-defined allowance.
+% We apply additional drag from a linear distribution beginning at the start of the boundary layer and ending at the user-defined allowance point, with a maximum value at the start of the boundary layer being another user-defined option, and tapering to zero additional drag at the selected allowance point.
+% Thus, if separation occurs early, a large drag penalty is applied; and if separation occurs very near the trailing edge, little to no penalty is applied.
+% The user can set the separation distance allowance and maximum penalty as desired to further discourage or allow the optimizer to select designs with some separation.
+% Note that this treatment is used for optimization purposes and does not represent any sort of physically accurate modeling of post-separation drag.
+
+\subsubsection{Total Drag Force}
+
+To obtain the total, dimensional drag force on the duct, we apply the definition of drag coefficient to get the dimensional drag per unit length:
+
+\begin{equation}
+    \eqbox{
+    D' = \frac{1}{2} \rho V_\infty^2 c \left(c_{d_\text{upper}} + c_{d_\text{lower}}\right)
+}
+\end{equation}
+
+\where \(c\) is the chord length of the duct.
+%
+We then integrate the drag per unit length about the circumference of the duct, using the duct exit diameter as the characteristic length
+
+\begin{equation}
+    \eqbox{
+    D = D' \pi d_\text{exit}
+}
+\end{equation}
+
+% \subsection{Separating skin friction and pressure drag}
+
+% The Squire-Young formula approximates the combination of the skin friction and pressure drag.
+% If we would like to separate these, we need to have another method for determining either the skin friction drag or the pressure drag.
+% Fortunately, part of our boundary layer calculations includes the calculation of the skin friction coefficient, which we can integrate across the surface to obtain the total skin friction drag.
+
+% \subsection{Post-separation treatment}
+% integrates separated boundary layer using a nameless empirical relation (TODO: look up methods for this to see if there is a typical/well known one being used)
+% (see line 1057 in blcalc.f for equations used.)
+
+
+% \section{Boundary Layer Solution}
+% ode solver in dfdc is a 2nd order Runge-Kutta scheme
+% change in H23 (for laminar) and H12 (for turbulent) are used as error measures.
+
+
+\subsection{A Simplified Drag Model for Center Bodies}
+
+Since integral boundary layer methods are developed on the assumption of 2-D bodies, those assumptions break down when we consider relatively narrow bodies of revolution such as the center body of a ducted fun.
+%
+Therefore, we will use a different model for such cases.
+%
+For the center body, we instead utilize a method similar to those used to approximate fuselage drag on aircraft.
+%
+We take the drag coefficient for the center body (\(C_D\)) to be
+
+\begin{equation}
+    \begin{aligned}
+        C_D &= \frac{D}{0.5 \rho V_\infty^2 S_\text{ref}}, \\
+            &= C_f f_\text{form} \frac{S_\text{wet}}{S_\text{ref}};
+    \end{aligned}
+\end{equation}
+
+\where \(\rho_\infty\) is the freestream density, \(V_\infty\) is the freestream velocity, \(C_f\) is the flat-plate skin-friction coefficient, \(f_\text{form}\) is a form factor correction, \(S_\text{wet}\) is the wetted area of the center body, and \(S_\text{ref}\) is a reference area.
+%
+Setting the two expressions equal, we solve for drag as
+
+\begin{equation}
+    \eqbox{
+    D = 0.5 \rho_\infty V_\infty^2 C_f f_\text{form} S_\text{wet}.
+}
+\end{equation}
+
+\noindent We use the form factor expression from \nolink{\citeauthor{Shevell_1983}} \scite{Shevell_1983} based on fineness-ratio (\(l/d\)):
+
+\begin{equation}
+    \eqbox{
+    f_\text{form} = 1 + \frac{2.8}{\left(l/d\right)^{1.5}} + \frac{3.8}{\left(l/d\right)^3}.
+}
+\end{equation}
+
+\noindent We take \(C_f\) to be the skin friction coefficient from Schlichting for a flat plate of length equal to the length of the center body and the velocity at the body trailing edge:
+
+\begin{equation}
+    \eqbox{
+    C_f = \frac{0.074}{Re_l^{0.2}}.
+}
+\end{equation}

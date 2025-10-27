@@ -1,0 +1,169 @@
+\section{Numerical Integration (quadrature)}
+\label{sec:quadrature}
+
+In general, quadrature is a process by which the calculus problem of determining the integral of a curve is cast as a linear algebra problem whereby a weighted sum of intelligently chosen samples approximates the true value of the integral.
+
+\begin{equation}
+    \label{eqn:quadrature}
+    \int_{a}^{b} f(x) \mathrm{d}x \approx \sum_{k=1}^N w_k f(x_k)
+\end{equation}
+
+\where the main task of the any quadrature method is to decide where along the integration interval to place the sample points, \(x_k\), and what weights, \(w_k\), to apply to those samples.
+%
+Undergraduate calculus and numerical methods courses often cover rectangle, trapezoid, and simpson's quadrature schemes, and will therefore not be covered here.
+%
+We will focus on the basics of Gauss-Legendre quadrature, a powerful method allowing the exact approximation of polynomial functions.
+
+\subsection{Basic Theory of Gauss-Legendre quadrature}
+In Gauss-Legendre quadrature, we obtain the abscissae at which we sample the curve in question using points derived from the Legendre polynomials, and weights chosen wisely to get the best possible approximation given a certain number of degrees of freedom.
+
+\subsubsection{Legendre polynomials}
+
+Legendre polynomials are a set of polynomials forming a basis of the polynomial space up to degree \(n\), where \(n\) is the order of the highest order polynomial in the set.
+%
+To obtain the Legendre polynomials we start with the orthogonal set:
+
+\begin{equation}
+    \{ 1, x, x^2, \ldots , x^n \};
+\end{equation}
+
+\noindent and through the Gram-Schmidt orthogonalization process, with respect to the inner product,
+
+\begin{equation}
+    \label{eqn:inner_product}
+    \langle p,q \rangle = \int^1_{-1} p(x) q(x) \mathrm{d}x,
+\end{equation}
+
+\noindent we obtain a new set of orthogonal polynomials that spans the same function space.
+%
+We then apply constant scalings to the polynomials so that \(p_n(1) = 1\).
+%
+These polynomials (scaling included) can also be calculated using Rodrigues' formula:
+
+\begin{equation}
+    p_n(x) = \frac{1}{2^n n!} \frac{\mathrm{d}^n}{\mathrm{d}x^n} \left(x^2 - 1 \right)^n.
+\end{equation}
+
+Legendre polynomials have several attractive properties.
+%
+Here we mention just a few that will be shown to be important momentarily.
+%
+First, Legendre polynomials of degree \(n\) have exactly \(n\) real roots.
+%
+Second, all the roots of Legendre polynomials fall in the range \((-1,1)\).
+
+\subsubsection{Gaussian Weights}
+
+Given a polynomial, \(p(x)\), of degree \(2n-1\), we express \(p(x)\) in terms of a polynomial division:
+
+\begin{equation}
+    p(x) = q(x) L_n(x) + r(x),
+\end{equation}
+
+\where \(L_n(x)\) is the \(n\)th degree Legendre polynomial, and \(q(x)\) is some polynomial of degree \(\leq n-1\); and \(r(x)\) is the remainder of the division of \(q\) and \(L\) and is also of degree \(\leq n-1\).
+%
+Integrating, we have
+
+\begin{equation}
+    \int_{-1}^{1} p(x) \mathrm{d}x = \int_{-1}^{1} q(x) L_n(x) \mathrm{d}x + \int_{-1}^{1} r(x) \mathrm{d}x.
+\end{equation}
+
+\noindent Note that the definition of our inner product (\cref{eqn:inner_product}) has appeared.
+%
+Because \(q\) and \(L\) are, by definition, orthogonal, this first term on the right side equals zero.
+%
+We can therefore approximate the first term \textit{exactly} by choosing the abscissae at which to sample the curve to be the roots of the Legendre polynomial of degree \(n\)  which are all real and conveniently fall between the bounds of integration.
+
+Next, we can also approximate the second term on the right side \emph{exactly} by intelligently choosing weights.
+%
+With \(n\) degrees of freedom, we can approximate exactly any polynomial of order \(\leq n-1\) (noting that the order of \(r\) is \(n-1\)).
+%
+We do this by applying the Vandermonde matrix in this manner:
+
+\begin{equation}
+\begin{bmatrix}
+1    & 1 &  \dots &1 \\
+x_1      & x_2 &  \dots & x_n \\
+x_1^2      & x_2^2 & \dots & x_n \\
+\vdots & \vdots & \vdots & \vdots\\
+x_1^{n-1}      & x_2^{n-1} & \dots & x_n^{n-1}\\
+\end{bmatrix}
+\begin{bmatrix}
+w_1 \\
+w_2 \\
+w_3 \\
+\vdots \\
+w_n \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+2  \\
+0  \\
+\frac{2}{3}  \\
+\vdots \\
+\int_{-1}^1 x^{n-1}  \\
+\end{bmatrix}
+\end{equation}
+
+\where \(x_{n}\) are the \(n\)th roots of the \(n\)th degree Legendre polynomial, \(w_n\) is the \(n\)th weighting value, and the right hand side are the true values of the integrals with bounds \([-1, 1]\) from degree zero up to \(n-1\).
+
+We can also calculate the weights using the following formula:
+
+\begin{equation}
+    w_i = \frac{2(1-x_i^2)}{(n+1)^2 [p_{n+1}(x_i)]^2 },
+\end{equation}
+
+\where again \(x_i\) are the roots of the \(n\)th degree Legendre polynomial.
+%
+Thus with the intelligent choice of both abscissae and weights, we can approximate \textit{exactly} any polynomial of degree \(2n-1\) with only \(n\) points. This is the power of Gaussian quadrature.
+
+\subsubsection{Transforming the Bounds of Integration}
+
+Above we have shown that the integral of any polynomial of degree \(2n-1\) with bounds \([-1,1]\) can be approximated exactly using \(n\) points.
+%
+With a simple transformation, we can evaluate the integral with arbitrary bounds \([a,b]\) in the following manner:
+
+\begin{equation}
+    \int_{a}^{b} f(x) \mathrm{d}x \approx \frac{b-a}{2} \sum_{i=1}^n w_n f(\xi_n).
+\end{equation}
+
+\where
+
+\begin{equation}
+    \xi_n = \frac{b-a}{2}x_n + \frac{a+b}{2}.
+\end{equation}
+
+
+
+
+\subsection{Application to Strongly Singular Integrals}
+
+When applying quadrature to boundary element methods (as will be done in this dissertation), we often find ourselves evaluating singular integrals.
+%
+Even though evaluating strongly singular integrals is impossible directly, we can get a very good approximation by evaluating the Cauchy principal value using a subtraction of singularity technique.
+%
+The definition with the Cauchy principal value denoted by \(\fint\) is given as
+
+\begin{equation}
+    \fint_{\Gamma} f(s) \d s = \lim_{ \varepsilon \rightarrow 0^+} \left[ \int_{s_i}^{s_p -\varepsilon} f(s) \d s + \int_{s_p + \varepsilon}^{s_f}  f(s) \d s \right].
+\end{equation}
+
+\noindent As we can see, this allows us to approximate the integral over a range \(\Gamma\) from \(s_i\) to \(s_f\) with a singularity present at \(s_p\) where \(s\) are curvilinear abscissae along a curve, \(\Gamma\).
+
+The main thrust of the subtraction of singularity technique is to subtract from the integrand the value at its singular point and then add an analytic solution for the singular point back on to the final integral.
+%
+In the general case, we could take a function, \(G(s)/s\), which is singular at the point \(s=0\), and re-write it as
+
+\begin{equation}
+    \frac{G(s)}{s} = \frac{G(s)-G(0)}{s} + \frac{G(0)}{s}
+\end{equation}
+
+\noindent Then, having removed the singularity from the first term, we could integrate the first term numerically using techniques covered earlier in this section.
+%
+We could also integrate analytically (or determine an analytic approximation for) the integral of the singular second term, and add the results together:
+
+\begin{equation}
+    \fint_{s_i}^{s_f} \frac{G(s)}{s} \d s \approx \int_{s_i}^{s_f} \frac{G(s) - G(0)}{s} \d s  + G(0) \log\left|\frac{s_f}{s_i}\right|
+\end{equation}
+
+In practice, the integrand may not be as simple as the general case shown here, but as long as the singular parts of the integral can be subtracted out and analytically evaluated, this subtraction of singularity method is easily applied.

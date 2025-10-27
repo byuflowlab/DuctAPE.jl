@@ -1,0 +1,17 @@
+\begin{tikzpicture}[scale=1.0]
+
+    \coordinate (O11) at (0.0,0.0);
+    \coordinate (O12) at ($(O11) + (3.0,1.0)$);
+    \coordinate (O13) at ($(O11) + (4.0,0.0)$);
+    \coordinate (O14) at ($(O11) + (3.0,0.0)$);
+
+    \draw [-Stealth,thick, primary] (O11) -- (O12) node [pos=0.85, above left] {\(\vect{A}\)};
+    \draw [-Stealth,thick, secondary] (O11) -- (O13) node [pos=0.85, below] {\(\vect{B}\)};
+
+    \draw[|-|, ultra thick, tertiary] ($(O11)-(0.0, 0.25)$) -- ($(O14)-(0.0,0.25)$) node [pos=0.5, below, black] {\(\tertiary{\frac{\vect{A}\cdot\vect{B}}{|\vect{B}|}}=|\primary{\vect{A}}| \cos {\color{plotsgray}\theta}\)};
+
+    \draw [plotsgray, dashed] (O12) -- (O14);
+
+    \draw[plotsgray] (O11) [partial ellipse = 0:18:1.5 and 1.5] node [pos=0.6, right, plotsgray] {\(\theta\)};
+
+\end{tikzpicture}

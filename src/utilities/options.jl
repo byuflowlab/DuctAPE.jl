@@ -237,6 +237,8 @@ Note that the defaults match DFDC settings.
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 """
@@ -257,6 +259,8 @@ function CSORSolverOptions(multipoint; kwargs...)
         converged=fill(false, (1, lm)),
         iterations=zeros(Int, (1, lm)),
         residuals=-ones(1, lm),
+        warm_start=fill(false, (1, lm)),
+        skip_solve=fill(false, (1, lm)),
         kwargs...,
     )
 end
@@ -293,6 +297,8 @@ Type containing all the options for the modified CSOR solver.
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 """
@@ -313,6 +319,8 @@ function ModCSORSolverOptions(multipoint; kwargs...)
         converged=fill(false, (1, lm)),
         iterations=zeros(Int, (1, lm)),
         residuals=-ones(1, lm),
+        warm_start=fill(false, (1, lm)),
+        skip_solve=fill(false, (1, lm)),
         kwargs...,
     )
 end
@@ -339,6 +347,8 @@ Options for the FixedPoint.jl package solver
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 """
@@ -377,6 +387,8 @@ Options for the SpeedMapping.jl package solver
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 ##### ----- Quasi-Newton Solvers ----- #####
@@ -401,6 +413,8 @@ Options for the MINPACK's HYBRJ solver
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 """
@@ -430,6 +444,8 @@ Options for the SIAMFANLEquations pacakge solvers
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 ##### ----- Newton+ Solvers ----- #####
@@ -459,6 +475,8 @@ Options for the SimpleNonlinearSolve pacakge solvers
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 """
@@ -488,6 +506,8 @@ Options for the NLsolve pacakge solvers
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 ##### ----- Poly-Algorithm Solvers ----- #####
@@ -516,6 +536,8 @@ Options for Composite Solvers (start with a partial solve of one solve, then fin
     converged::AbstractArray{TB} = [false]
     iterations::AbstractArray{TI} = [0]
     residuals::AbstractArray{TF} = [-1.0]
+    warm_start::AbstractArray{TB} = [false]
+    skip_solve::AbstractArray{TB} = [false]
 end
 
 """
@@ -546,7 +568,9 @@ Options for Chain Solvers (try one solver, if it doesn't converge, try another)
     ]
     converged::AbstractArray{TB} = [false, false, false]
     iterations::AbstractArray{TI} = [0, 0, 0]
-    residuals::AbstractArray{TF} = [-1.0]
+    residuals::AbstractArray{TF} = [-1.0, -1.0, -1.0]
+    warm_start::AbstractArray{TB} = [false, false, false]
+    skip_solve::AbstractArray{TB} = [false, false, false]
 end
 
 """
@@ -570,15 +594,26 @@ function ChainSolverOptions(multipoint; solvers=nothing)
                 atol=1e-10,
                 converged=fill(false, lm),
                 iterations=zeros(Int, lm),
+                residuals=-ones(Float64, lm),
+                warm_start=fill(false, lm),
+                skip_solve=fill(false, lm),
             ),
             NLsolveOptions(;
                 algorithm=:trust_region,
                 atol=1e-10,
                 converged=fill(false, lm),
                 iterations=zeros(Int, lm),
+                residuals=-ones(Float64, lm),
+                warm_start=fill(false, lm),
+                skip_solve=fill(false, lm),
             ),
             MinpackOptions(;
-                atol=1e-10, converged=fill(false, lm), iterations=zeros(Int, lm)
+                atol=1e-10,
+                converged=fill(false, lm),
+                iterations=zeros(Int, lm),
+                residuals=-ones(Float64, lm),
+                warm_start=fill(false, lm),
+                skip_solve=fill(false, lm),
             ),
         ]
     end

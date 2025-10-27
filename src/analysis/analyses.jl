@@ -44,6 +44,7 @@ function analyze(
     problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, A_bb_LU, lu_decomp_flag, idmaps = setup_analysis(
         ducted_rotor,
         operating_point,
+        reference_parameters,
         options;
         prepost_container_caching=prepost_container_caching,
         solve_parameter_caching=solve_parameter_caching,
@@ -275,6 +276,7 @@ Analyze `ducted_rotor`, including preprocessing, for a set of operating points.
 - `solve_parameter_caching=nothing` : Output of `allocate_solve_parameter_container_cache`
 - `solve_container_caching=nothing` : Output of `allocate_solve_container_cache`
 - `return_inputs=false` : flag as to whether or not to return the pre-processed inputs
+- `apply_warm_start=false` : flag as to whether or not to apply a warm-start re-run of unconverged operating points from nearby converged ones.
 
 # Returns
 - `outs::Vector{NamedTuple}` : Vector of named tuples of various analysis outputs (see docstring for postprocess for details), note, if linear system decomposition fails, no solve is performed and an empty vector is returned.
@@ -290,12 +292,14 @@ function analyze(
     solve_parameter_caching=nothing,
     solve_container_caching=nothing,
     return_inputs=false,
+    apply_warm_start=false,
 ) where {TO<:OperatingPoint}
 
     # - Set Up - #
     problem_dimensions, prepost_containers, solve_parameter_cache_vector, solve_parameter_cache_dims, A_bb_LU, lu_decomp_flag, idmaps = setup_analysis(
         ducted_rotor,
         operating_point[1],
+        reference_parameters,
         options;
         prepost_container_caching=prepost_container_caching,
         solve_parameter_caching=solve_parameter_caching,
@@ -366,20 +370,38 @@ function analyze(
             end
         end
     end
-    return analyze(
-        ducted_rotor,
-        operating_point,
-        reference_parameters,
-        prepost_containers,
-        solve_parameter_cache_vector,
-        solve_parameter_cache_dims,
-        A_bb_LU,
-        idmaps,
-        problem_dimensions,
-        options;
-        solve_container_caching=solve_container_caching,
-        return_inputs=return_inputs,
-    )
+
+    if apply_warm_start
+        return analyze_with_warm_start(
+            ducted_rotor,
+            operating_point,
+            reference_parameters,
+            prepost_containers,
+            solve_parameter_cache_vector,
+            solve_parameter_cache_dims,
+            A_bb_LU,
+            idmaps,
+            problem_dimensions,
+            options;
+            solve_container_caching=solve_container_caching,
+            return_inputs=return_inputs,
+        )
+    else
+        return analyze(
+            ducted_rotor,
+            operating_point,
+            reference_parameters,
+            prepost_containers,
+            solve_parameter_cache_vector,
+            solve_parameter_cache_dims,
+            A_bb_LU,
+            idmaps,
+            problem_dimensions,
+            options;
+            solve_container_caching=solve_container_caching,
+            return_inputs=return_inputs,
+        )
+    end
 end
 
 """
@@ -560,8 +582,6 @@ function analyze_multipoint(
         solve_parameter_tuple.linsys.b_bf,
         prepost_containers.vdnb,
         prepost_containers.vdnpcp,
-        prepost_containers.panels.body_vortex_panels.npanel,
-        prepost_containers.panels.body_vortex_panels.nnode,
         prepost_containers.panels.body_vortex_panels.totpanel,
         prepost_containers.panels.body_vortex_panels.totnode,
         prepost_containers.panels.body_vortex_panels.prescribednodeidxs,

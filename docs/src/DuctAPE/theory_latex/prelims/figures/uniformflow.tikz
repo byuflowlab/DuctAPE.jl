@@ -1,0 +1,138 @@
+% Recommended preamble:
+% \usetikzlibrary{arrows.meta}
+% \usetikzlibrary{backgrounds}
+% \usepgfplotslibrary{patchplots}
+% \usepgfplotslibrary{fillbetween}
+% \pgfplotsset{%
+%     layers/standard/.define layer set={%
+%         background,axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground%
+%     }{
+%         grid style={/pgfplots/on layer=axis grid},%
+%         tick style={/pgfplots/on layer=axis ticks},%
+%         axis line style={/pgfplots/on layer=axis lines},%
+%         label style={/pgfplots/on layer=axis descriptions},%
+%         legend style={/pgfplots/on layer=axis descriptions},%
+%         title style={/pgfplots/on layer=axis descriptions},%
+%         colorbar style={/pgfplots/on layer=axis descriptions},%
+%         ticklabel style={/pgfplots/on layer=axis tick labels},%
+%         axis background@ style={/pgfplots/on layer=axis background},%
+%         3d box foreground style={/pgfplots/on layer=axis foreground},%
+%     },
+% }
+
+\begin{tikzpicture}[/tikz/background rectangle/.style={fill={rgb,1:red,1.0;green,1.0;blue,1.0}, fill opacity={1.0}, draw opacity={1.0}}, show background rectangle]
+\begin{axis}[point meta max={nan}, point meta min={nan}, legend cell align={left}, legend columns={1}, title={}, title style={at={{(0.5,1)}}, anchor={south}, font={{\fontsize{14 pt}{18.2 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, align={center}}, legend style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, line width={1}, solid, fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, text opacity={1.0}, font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, text={rgb,1:red,0.0;green,0.0;blue,0.0}, cells={anchor={center}}, at={(1.02, 1)}, anchor={north west}}, axis background/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={0.0}}, anchor={north west}, xshift={5.0mm}, yshift={-5.0mm}, width={40.8mm}, height={40.8mm}, scaled x ticks={false}, xlabel={}, x tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, x tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, xlabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{11 pt}{14.3 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, xmajorticks={false}, xmajorgrids={false}, xmin={0}, xmax={2}, axis x line*={left}, separate axis lines, x axis line style={{draw opacity = 0}}, scaled y ticks={false}, ylabel={}, y tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, y tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, ylabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{11 pt}{14.3 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, ymajorticks={false}, ymajorgrids={false}, ymin={0}, ymax={3}, axis y line*={left}, y axis line style={{draw opacity = 0}}, colorbar={false}]
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={865}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  0.05  2.0  0.2  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={865}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.05  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={866}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  0.39999999999999997  2.0  0.2  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={866}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.39999999999999997  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={867}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  0.75  2.0  0.19999999999999996  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={867}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  0.75  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={868}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  1.0999999999999999  2.0  0.19999999999999996  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={868}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  1.0999999999999999  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={869}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  1.45  2.0  0.19999999999999996  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={869}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  1.45  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={870}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  1.8  2.0  0.19999999999999996  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={870}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  1.8  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={871}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  2.1499999999999995  2.0  0.20000000000000018  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={871}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  2.1499999999999995  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={872}, draw opacity={1.0}, line width={2.0}, solid, quiver={u={\thisrow{u}}, v={\thisrow{v}}, every arrow/.append style={-{Stealth[length = 7.0pt, width = 7.0pt]}}}]
+        table[row sep={\\}]
+        {
+            x  y  u  v  \\
+            0.0  2.4999999999999996  2.0  0.20000000000000018  \\
+        }
+        ;
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={872}, forget plot, draw opacity={1.0}, line width={2.0}, solid]
+        table[row sep={\\}]
+        {
+            \\
+            0.0  2.4999999999999996  \\
+        }
+        ;
+\end{axis}
+\end{tikzpicture}
