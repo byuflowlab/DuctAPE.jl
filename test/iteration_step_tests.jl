@@ -112,6 +112,7 @@ println("\nITERATION STEP THROUGH TESTS")
         rotor,
         paneling_constants,
         operating_point,
+        reference_parameters,
         prepost_containers,
         problem_dimensions;
         integration_options=options.integration_options,
