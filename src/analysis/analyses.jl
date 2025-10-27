@@ -276,6 +276,7 @@ Analyze `ducted_rotor`, including preprocessing, for a set of operating points.
 - `solve_parameter_caching=nothing` : Output of `allocate_solve_parameter_container_cache`
 - `solve_container_caching=nothing` : Output of `allocate_solve_container_cache`
 - `return_inputs=false` : flag as to whether or not to return the pre-processed inputs
+- `apply_warm_start=false` : flag as to whether or not to apply a warm-start re-run of unconverged operating points from nearby converged ones.
 
 # Returns
 - `outs::Vector{NamedTuple}` : Vector of named tuples of various analysis outputs (see docstring for postprocess for details), note, if linear system decomposition fails, no solve is performed and an empty vector is returned.

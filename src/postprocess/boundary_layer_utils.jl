@@ -76,26 +76,26 @@ function split_at_stagnation_point(
 
             return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
         else
-            print("in past bug area that is hard to recreate.  ")
-            print("min Vt index: ", minvtid)
-            println("  length s_tot: ", length(s_tot))
-            println("  length Vtan_duct: ", length(Vtan_duct))
+            # print("in past bug area that is hard to recreate.  ")
+            # print("min Vt index: ", minvtid)
+            # println("  length s_tot: ", length(s_tot))
+            # println("  length Vtan_duct: ", length(Vtan_duct))
 
             # - Check Bracket actually brackets - #
             bracket = (s_tot[max(minvtid - 1, 1)], s_tot[min(minvtid + 1, length(s_tot))])
             bracketvals = FLOWMath.derivative.(Ref(vtsp), bracket)
 
-            printdebug("bracket: ", bracket)
-            printdebug("bracket values: ", bracketvals)
+            # printdebug("bracket: ", bracket)
+            # printdebug("bracket values: ", bracketvals)
 
             # if not, get a bracket
             bidl = 0
             bidr = 1
             bid = 1
             while sign(bracketvals[1]) == sign(bracketvals[2])
-                if bidl == 0
-                    println("not a bracket, incrementing to find bracket")
-                end
+                # if bidl == 0
+                #     println("not a bracket, incrementing to find bracket")
+                # end
                 # not a bracketing interval
                 lb = max(minvtid - bidl, 1)
                 ub = min(minvtid + bidr, length(s_tot))
@@ -104,7 +104,7 @@ function split_at_stagnation_point(
                 bracketvals = FLOWMath.derivative.(Ref(vtsp), bracket)
 
                 if lb == 1 && ub == length(s_tot)
-                    println("bracket not found, moving on")
+                    # println("bracket not found, moving on")
                     break
                 else
                     if bid % 2 == 0
@@ -119,18 +119,18 @@ function split_at_stagnation_point(
                 end
             end
 
-            println(
-                "if nothing printed between bracket values and this, then should be a bracket",
-            )
-            println(
-                "if something was printed, then this bracket should be different that the previously printed one",
-            )
-            printdebug("(maybe new) bracket:", bracket)
-            printdebug("(maybe new) bracketvals:", FLOWMath.derivative.(Ref(vtsp), bracket))
+            # println(
+            #     "if nothing printed between bracket values and this, then should be a bracket",
+            # )
+            # println(
+            #     "if something was printed, then this bracket should be different that the previously printed one",
+            # )
+            # printdebug("(maybe new) bracket:", bracket)
+            # printdebug("(maybe new) bracketvals:", FLOWMath.derivative.(Ref(vtsp), bracket))
 
             # if still no bracket found, then try one last attempt without bracketing method
             if sign(bracketvals[1]) == sign(bracketvals[2])
-                println("still not a bracket, using non bracket method")
+                # println("still not a bracket, using non bracket method")
 
                 # println("using non-brent search")
 
@@ -139,7 +139,7 @@ function split_at_stagnation_point(
                 )
                 # use bracketing method if you can
             else
-                println("this should be a bracket and should not error\n\n")
+                # println("this should be a bracket and should not error\n\n")
 
                 # println("using brent search")
 
@@ -188,11 +188,11 @@ function split_at_stagnation_point(
         [abs(partial_panel_lengths[1]); duct_panel_lengths[stag_ids[1]:-1:1]]
     )
 
-    println("\ndebugging line 191 boundary layer utils")
-    printdebug("stag_point", stag_point)
-    printdebug("s_upper[end]", s_upper[end])
-    printdebug("s_lower[end]", s_lower[end])
-    println("\n")
+    # println("\ndebugging line 191 boundary layer utils")
+    # printdebug("stag_point", stag_point)
+    # printdebug("s_upper[end]", s_upper[end])
+    # printdebug("s_lower[end]", s_lower[end])
+    # println("\n")
 
     return s_upper, s_lower, stag_ids, stag_point, split_ratio, dots
 end
@@ -238,19 +238,19 @@ function set_boundary_layer_steps(N::Int, first_step_size, total_length)
     end
 
     p = nothing  # declare in outer scope
-    try
+    # try
         # solve for power coefficient
         p = ImplicitAD.implicit(solvewrap, res, [total_length; first_step_size; N])
-    catch
-        println("error in roots convergence inside set_boundary_layer_steps.")
-        println("number_of_steps = ", N)
-        println("first_step_size = ", first_step_size)
-        println("total_length = ", total_length)
-        bt = catch_backtrace()
-        println("Backtrace:")
-        display(stacktrace(bt))
-        @error "error in roots convergence inside set_boundary_layer_steps."
-    end
+    # catch
+    #     println("error in roots convergence inside set_boundary_layer_steps.")
+    #     println("number_of_steps = ", N)
+    #     println("first_step_size = ", first_step_size)
+    #     println("total_length = ", total_length)
+    #     bt = catch_backtrace()
+    #     println("Backtrace:")
+    #     display(stacktrace(bt))
+    #     @error "error in roots convergence inside set_boundary_layer_steps."
+    # end
 
     # return steps
     return bl_step_fun(1:N, first_step_size, p)
