@@ -1,0 +1,78 @@
+% Recommended preamble:
+% \usetikzlibrary{arrows.meta}
+% \usetikzlibrary{backgrounds}
+% \usepgfplotslibrary{patchplots}
+% \usepgfplotslibrary{fillbetween}
+% \pgfplotsset{%
+%     layers/standard/.define layer set={%
+%         background,axis background,axis grid,axis ticks,axis lines,axis tick labels,pre main,main,axis descriptions,axis foreground%
+%     }{
+%         grid style={/pgfplots/on layer=axis grid},%
+%         tick style={/pgfplots/on layer=axis ticks},%
+%         axis line style={/pgfplots/on layer=axis lines},%
+%         label style={/pgfplots/on layer=axis descriptions},%
+%         legend style={/pgfplots/on layer=axis descriptions},%
+%         title style={/pgfplots/on layer=axis descriptions},%
+%         colorbar style={/pgfplots/on layer=axis descriptions},%
+%         ticklabel style={/pgfplots/on layer=axis tick labels},%
+%         axis background@ style={/pgfplots/on layer=axis background},%
+%         3d box foreground style={/pgfplots/on layer=axis foreground},%
+%     },
+% }
+
+\begin{tikzpicture}[/tikz/background rectangle/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, draw opacity={0.0}}, show background rectangle]
+\begin{axis}[point meta max={nan}, point meta min={nan}, legend cell align={left}, legend columns={1}, title={}, title style={at={{(0.5,1)}}, anchor={south}, font={{\fontsize{14 pt}{18.2 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}, align={center}}, legend style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.0}, line width={1}, solid, fill={rgb,1:red,0.0;green,0.0;blue,0.0}, fill opacity={0.0}, text opacity={1.0}, font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, text={rgb,1:red,0.0;green,0.0;blue,0.0}, cells={anchor={center}}, at={(1.02, 1)}, anchor={north west}}, axis background/.style={fill={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={0.0}}, anchor={north west}, xshift={1.0mm}, yshift={-1.0mm}, width={50.912mm}, height={41.434mm}, scaled x ticks={false}, xlabel={Required Thrust (N)}, x tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, x tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, xlabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{10 pt}{13.0 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, xmajorgrids={false}, xmin={0}, xmax={27}, xticklabels={{$0$,$5$,$10$,$15$,$20$,$25$}}, xtick={{0.0,5.0,10.0,15.0,20.0,25.0}}, xtick align={inside}, xticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, x grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis x line*={left}, x axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, scaled y ticks={false}, ylabel={$\frac{E}{E_{T=1}}$}, y tick style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}}, y tick label style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, opacity={1.0}, rotate={0}}, ylabel style={at={(ticklabel cs:0.5)}, anchor=near ticklabel, at={{(ticklabel cs:0.5)}}, anchor={near ticklabel}, font={{\fontsize{10 pt}{13.0 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={-90}}, ymajorgrids={false}, ymin={0}, ymax={18.110883139526834}, yticklabels={{$0$,$5$,$10$,$15$}}, ytick={{0.0,5.0,10.0,15.0}}, ytick align={inside}, yticklabel style={font={{\fontsize{8 pt}{10.4 pt}\selectfont}}, color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, rotate={0.0}}, y grid style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={0.1}, line width={0.5}, solid}, axis y line*={left}, y axis line style={color={rgb,1:red,0.0;green,0.0;blue,0.0}, draw opacity={1.0}, line width={1}, solid}, colorbar={false}]
+    \addplot[color={rgb,1:red,0.0;green,0.3608;blue,0.6706}, name path={42}, draw opacity={1.0}, line width={1}, solid, forget plot]
+        table[row sep={\\}]
+        {
+            \\
+            2.9430000000000005  2.041531984319161  \\
+            3.4335000000000004  2.3044611857131643  \\
+            3.9240000000000004  2.569846747512135  \\
+            4.4145  2.837879547590463  \\
+            4.905  3.1084244505290592  \\
+            5.395500000000001  3.3813732737169735  \\
+            5.886000000000001  3.656567121711667  \\
+            6.376500000000001  3.9338373048608917  \\
+            6.867000000000001  4.213050655818373  \\
+            7.3575  4.494132391476103  \\
+            8.338500000000002  5.0615468069800675  \\
+            8.829  5.3477562336509505  \\
+            9.319500000000001  5.6355268117975275  \\
+            9.81  5.924836808971651  \\
+            10.300500000000001  6.215668248425319  \\
+            10.791000000000002  6.507950044348808  \\
+            11.281500000000001  6.801601126037348  \\
+            11.772000000000002  7.096590584579043  \\
+            12.262500000000001  7.39287406598352  \\
+            12.753000000000002  7.6904355212526525  \\
+            13.243500000000001  7.989251624733191  \\
+            13.734000000000002  8.289279375253667  \\
+            14.224500000000003  8.590542733776324  \\
+            14.715  8.892948829153378  \\
+            15.2055  9.196471070512514  \\
+            15.696000000000002  9.501102494061916  \\
+            16.186500000000002  9.806805715292937  \\
+            16.677000000000003  10.113609824671393  \\
+            17.1675  10.42151062237091  \\
+            17.658  10.730463736543715  \\
+            18.148500000000002  11.040473035024297  \\
+            18.639000000000003  11.351597817725358  \\
+            19.129500000000004  11.663741263187601  \\
+            19.62  11.976894258596326  \\
+            20.601000000000003  12.60627841474874  \\
+            21.0915  12.922458701983008  \\
+            21.582000000000004  13.239633343335875  \\
+            22.0725  13.557775540516882  \\
+            22.563000000000002  13.8768981558819  \\
+            23.053500000000003  14.196993377513564  \\
+            23.544000000000004  14.518058022300128  \\
+            24.0345  14.840092727062071  \\
+            24.525000000000002  15.163072161350643  \\
+            25.506000000000004  15.811891713869478  \\
+            25.996500000000005  16.137669829690562  \\
+            26.487000000000002  16.464439217751664  \\
+        }
+        ;
+\end{axis}
+\end{tikzpicture}

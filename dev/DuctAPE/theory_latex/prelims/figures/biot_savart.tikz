@@ -1,0 +1,24 @@
+\begin{tikzpicture}[]
+
+\draw[ultra thick, plotsgray] (-2,-1) -- (2,1);
+\coordinate (s) at (0.0,0.0);
+\filldraw[primary] (s) circle (2pt) node[above left=-2pt] {\(\vect{s}\)};
+% ds vector
+\draw[arrows ={-Stealth[harpoon]}, shorten <=3pt, primary, thick] (0,0.075) -- (1,0.575) node[above=-1pt] {\(\text{d}s\)};
+
+% Point q
+\coordinate (q) at (2.0,-0.5);
+\filldraw[secondary] (q) circle (2pt) node[above right=-2pt, secondary] {\(\vect{q}\)};
+
+% r vector from dl to P
+\draw[-Stealth,shorten >=2pt, shorten <=2pt, thick] (s) -- (q) node[midway, above right=-2pt] {\(\vect{r}\)};
+
+% dV vector at P
+\draw[-Stealth, shorten <=2pt, thick, tertiary] (q) -- ++(0,-0.75) node[below right=-2pt] {\(\vect{V}\)};
+
+\draw[Stealth-, plotsgray] (-1.0,-0.5) [partial ellipse =-135:185:0.15 and 0.2] node[below right=+2pt, plotsgray] {\(\vect{\omega}(\vect{s})\)};
+\draw[Stealth-, plotsgray] (-1.5,-0.75) [partial ellipse =-135:185:0.15 and 0.2];
+\draw[Stealth-, plotsgray] (-0.5,-0.25) [partial ellipse =-135:185:0.15 and 0.2];
+
+\end{tikzpicture}
+

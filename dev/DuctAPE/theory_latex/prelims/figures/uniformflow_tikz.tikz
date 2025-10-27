@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+    % Draw parallel lines with arrows at the end
+    \foreach \y in {0,0.3,...,2.1} {
+        \draw[primary, ultra thick, -{Stealth[length=2mm,width=2mm]}] (0,\y) -- (2.5,\y+0.2);
+    }
+\end{tikzpicture}
+

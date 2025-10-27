@@ -1,0 +1,338 @@
+%---------------------------------#
+%          Panel Method         #
+%---------------------------------#
+\section{Discretizing Fredholm's Equation}
+\label{ssec:panelmethodology}
+
+
+\subsection{Discretizing bodies into panels}
+
+Despite the seeming simplicity of \cref{eqn:fredholm2}, solving the boundary integral equation over an entire boundary all at once is not usually a tractable approach.
+%
+Instead, we approximate the boundary as a series of segments and sum the integrals over those individual segments.
+%
+We often approximate the boundary as a polygon, discretizing the boundary using flat segments over which the surface integral is simplified.
+%
+These flat segments are often referred to as panels, thus the name ``panel method.''
+
+Our first step in discretization is to look at the surface over which we want to take the boundary integral.
+%
+We begin with the assumption that:
+
+\begin{assumption}{}
+    \label{asm:panels}
+
+    \asm{Smooth bodies can be reasonably represented by a discrete number of flat panels.}
+
+    \limit{By approximating the geometry as a polygon, rather than a single continuous curve, we lose some accuracy in our computation.}
+
+    \why{As mentioned, it is much easier to solve the problem through the sum of individual components of the boundary, and especially if we simplify those sections into pieces over which the integral is simpler to solve. In addition, with a sufficient number of panels, we obtain a close approximation of the body curvature and therefore the solution of the continuous integral over the entire boundary.}
+
+\end{assumption}
+
+
+According to \cref{asm:panels,asm:axisymmetric} we can model the geometry as axisymmetric bands, as shown in \cref{fig:flatbandgeometry}.
+%
+Furthermore, we may reduce the geometry for analysis to two dimensions without loss of generality after applying axisymmetry, modeling the geometry with representative cross sections in the \(r\)-\(z\) plane in cylindrical coordinates.%\toadd{create a figure showing the 3D geometry faded with a solid cross-sectional slice on the r-z plane}
+%
+The discretized boundary in our implementation then takes the form of 2D panels (representing the axisymmetric bands).
+%
+\Cref{fig:flatbandgeometry} shows what is intended by a flat, axisymmetric band, and \cref{fig:flatpanelgeometry} shows the panel representation of said band.
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+        \input{panel_method/figures/flatbandgeometry.tikz}
+        \caption{Axisymmetric Band Coordinate System.}
+        \label{fig:flatbandgeometry}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[t]{0.45\textwidth}
+         \centering
+         \raisebox{2em}{\input{panel_method/figures/flatpanelgeometry.tikz}}
+        \caption{Panel representing axisymmetric band; \(\hat{\vect{e}}_\theta\) out of the page.}
+        \label{fig:flatpanelgeometry}
+     \end{subfigure}
+    \caption{Axisymmetric band and panel geometry definitions.}
+    \label{fig:axisymmetricbandpanelgeometry}
+\end{figure}
+
+One of the convenient traits of a panel method is that we simply need to know the geometry and relative position of each of the panels to calculate the unit induced velocities presented in \cref{eqn:ringvortexinducedvelocity}.
+%
+As an overview of the panel geometry we need to know, we refer to \cref{fig:flatpanelgeometry} in which we see a panel defined from the point, {\(\vect{p}_j\)}, to the point, {\(\vect{p}_{j+1}\)}.
+%
+We take the midpoint of the panel to be \({\overline{\vect{p}}_j}={(\vect{p}_{j}+\vect{p}_{j+1})}/2\); and we define the unit normal, {\(\hat{\vect{n}}_j\)}, as shown in \cref{fig:flatpanelgeometry},
+such that \(\hat{\vect{n}}_j=\hat{\vect{e}}_\theta\times\hat{\vect{t}}_j\),
+where \(\hat{\vect{e}}_\theta\) is the unit vector tangent to the vortex band in the positive \(\theta\)-direction according to the right hand rule,
+and {\(\hat{\vect{t}}_j\)} is the unit tangent to the panel from {\(\vect{p}_j\)} to {\(\vect{p}_{j+1}\)}
+such that \(\hat{\vect{t}}_j = (\vect{p}_{j+1}-\vect{p}_j)/||\vect{p}_{j+1}-\vect{p}_j||\).
+%
+In other words, we will assume that the discretized panels are defined such that increasing panel indices lead to the curve being traversed in a clockwise direction.
+
+%---------------------------------#
+%       Boundary Conditions       #
+%---------------------------------#
+\subsection{Applying boundary conditions}
+
+As mentioned, we will be using a Neumann boundary condition.
+%
+Looking at \cref{eqn:fredholm2}, we do not integrate over \(t\); rather, we apply \cref{eqn:fredholm2} (and therefore the boundary condition) at a set of control points along the boundary.
+%
+% We choose to place one control point at the center of each panel.
+%
+% We can therefore assemble a system of integral equations for each of the control points, summing the integral of the influence of all the panels on each control point and use that system of equations to solve for the unknown vortex strength distribution required to match the flow field to our prescribed geometry.
+%
+% In order to set up a system of equations, we first need to discretize the boundary into panels.
+%
+Specifically, we will apply the boundary condition at control points placed at the midpoint of each panel (\(\overline{\vect{p}}\) in \cref{fig:flatpanelgeometry}).
+%
+Since the boundary condition states that the normal velocity, due to all contributions, is zero at the control points, we also need to include the freestream contribution to our boundary condition.
+%
+Putting the surface influence and external influences together, we can, for the \(i\)th control point, state our approximate boundary integral equation as
+
+\begin{equation}
+    \label{eqn:neumanndiscrete}
+    \sum_{j=1}^N \left[ \vect{K}_{ij} \cdot \hat{\vect{n}}_i \right]\varphi_j + \vect{V}_\text{ext} \cdot \hat{\vect{n}}_i = 0,
+\end{equation}
+
+\noindent Though we often put the external velocity component on the right hand side for convenience, leaving us with
+
+\begin{equation}
+    \label{eqn:neumann2}
+    \eqbox{
+    \sum_{j=1}^N \left[\vect{K}_{ij}\cdot \hat{\vect{n}}_i \right] \varphi_j= -\vect{V}_\text{ext} \cdot \hat{\vect{n}}_i
+}
+\end{equation}
+
+\where \(\vect{K}\) is comprised of what the unit induced velocities on the \(i\)th control point\sidenote{Note that the \(i\)th control point here is synonymous with the point represented by the variable \(t\) in \cref{eqn:fredholm2}.} from the \(j\)th segment of the surface (the \(j\)th panel in our case).
+%
+Similarly, \(\varphi_j\) are the strengths of the vortices distributed along the \(j\)th panel.
+%
+It is the set of \cref{eqn:neumann2} for each of the control points that will comprise the bulk of of the system of equations we are assembling to solve the boundary value problem.
+
+% \begin{equation}
+%     \vect{K}_{ij} =||\vect{p}_{j+1} - \vect{p}_j|| \frac{\gamma_j\hat{\vect{V}}(\vect{p}_j, \overline{\vect{p}}_i) + \gamma_{j+1}\hat{\vect{V}}(\vect{p}_{j+1}, \overline{\vect{p}}_i)}{2}.
+% \end{equation}
+%
+% \Cref{eqn:neumanndiscrete} states that at the \(i\)th control point we add together the panel induced velocities normal to the surface as well as the freestream velocity normal to the surface; according to our boundary condition, that summation comes to zero.
+%
+
+
+%------------------------------------#
+% Calculating Influence Coefficients #
+%------------------------------------#
+\subsection{Calculating Panel Induced Velocities}
+
+
+In order to calculate the panel induced velocities, we want to discretize the vortex distribution along the boundary in a similar fashion to our discretization of the geometry above.
+%
+In fact, as mentioned, we will split the integral of our boundary integral equation into segments---integrating over each panel.
+%
+Along each panel then, we need to define a distribution of vortex strengths.
+%
+There are several options for how we might choose to discretize the vortex distributions along each panel.
+%
+For example, we may choose to not distribute the strengths and simply use discrete ring vortices along the boundary.
+%
+Alternatively, we may select the strength of the distribution to be constant along each panel.
+%
+We may instead select the strength of the distribution to vary linearly along each panel.
+%
+We could even choose a higher order distribution.
+%
+For our use case, we will select a linear distribution scheme along each panel, with the panel end points acting as ``nodes'' between which we will integrate.
+%
+Discretizing the vorticity distribution along the surface into linear segments then gives us an unknown vorticity magnitude, \(\gamma_j\), at each panel endpoint (node).
+
+We choose a linear distribution along each panel primarily because discrete distributions and constant distributions have or introduce issues\sidenote{Specifically, as mentioned by Katz and Plotkin, discrete distributions are ``inadequate near the stagnation points of a thick airfoil,'' and in practice are used for zero thickness airfoils rather than for closed surfaces. Additionally, constant vortex distributions introduce several issues also discussed by Katz and Plotkin that are solved by moving to a linear distribution scheme.} that are solved by moving to a linear distribution\scite{Katz_2001}.
+%
+An added benefit is that a linear distribution allows a more accurate solution for a coarser discretization of the geometry than constant strength panels do.
+%
+We choose not to utilize a higher order method mainly due to the diminishing returns of going to higher order panels.
+
+Because the surface integrals of velocities induced by axisymmetric vortex rings are exceptionally difficult to solve analytically, we will take a numerical approach.
+%
+Specifically, we will utilize Gauss-Legendre quadrature which was introduced in \cref{sec:quadrature}.
+% Specifically, we will utilize Gauss-Kronrod quadrature via the QuadGK.jl\sidenote{\url{https://juliamath.github.io/QuadGK.jl/stable/gauss-kronrod/}}
+% package in the Julia\scite{Julia_2017} language.
+% %
+% In general, quadrature is the process of approximating an integral of a function using a sum of weighted samples of the function:
+%
+% \begin{equation}
+%     \int_a^b f(x) \d x \approx \sum_k^N w_k f(x_k),
+% \end{equation}
+%
+% \where the main task of the setup is to decide where along the integration interval to place the sample points, \(x_k\), and what weights, \(w_k\), to apply to those samples.
+% %
+% Gauss-Kronrod quadrature is based on Gauss-Legendre quadrature, which uses orthogonal polynomial theory to select sample points and weights that allow for exact integration of polynomials up to degree \(2N-1\) (where \(N\) is the number of sample points), and other sufficiently smooth functions remarkably well.
+% %
+% Despite being based on Gauss-Legendre quadrature, however, Gauss-Kronrod quadrature is not quite as accurate as pure Gauss-Legendre quadrature in a one-to-one comparison.
+% %
+% Gauss-Kronrod quadrature can exactly integrate polynomials up to \(3N+1\) for \(2N+1\) sample points.
+% %
+% The decrease in accuracy for the same conditions is the trade off required to be able to both calculate the integral approximation and the error in the integral approximation.
+% %
+% The ability to quickly estimate error directly leads to capabilities for \(h\)-adaptive quadrature, which is an adaptive method that refines the integration range along portions that require further refinement for accuracy (such as sharp peaks, or perhaps discontinuities).
+% %
+% So although not as accurate out of the box, obtaining more accurate integrals over domains that would be difficult for pure Gauss-Legendre quadrature becomes relatively simple, and a worthwhile trade.
+%
+In the nominal case when a panel induces velocity on the surface, but not on itself, we set things up as follows for a given panel and surface point, \(t\):
+%
+We start with the portion of the surface integral associated with the \(j\)th panel
+
+\begin{equation}
+    \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}_t} \d s.
+\end{equation}
+
+Because the unit normal applies at \(t\), it is a constant in this integral.
+%
+As such, we can express the integral in terms of the integration of velocities only, which are then multiplied by the components of the normal vector after integration.
+
+\begin{equation}
+    \begin{aligned}
+        \vect{v}_{tj} =&\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \pd{\hat{\vect{\phi}}(s,t)}{\hat{\vect{n}}_t} \d s \\
+        =\bigg(&\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \nabla \hat{\vect{\phi}}(s,t) \d s\bigg)\cdot \hat{\vect{n}}_t \\
+        =\bigg(&\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) \hat{\vect{V}}(s,t) \d s\bigg)\cdot \hat{\vect{n}}_t.
+    \end{aligned}
+\end{equation}
+
+%
+To get the integral in terms of components of velocity, we can split up the integral into its components
+
+\begin{subequations}
+    \begin{align}
+        v_{z_{tj}} &=\left(\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) v_z(s,t) \d s \right)n_{i_z},\\
+        v_{r_{tj}} &=\left(\int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) v_r(s,t) \d s\right)n_{i_r}.
+    \end{align}
+\end{subequations}
+
+Since we are working toward assembling a system of equations, and we have introduced the unknown vortex magnitudes, \(\gamma_j\), which define the vorticity distribution along the boundary, we need to obtain the integrals over the panels in terms of each of the panel node strengths (\(\gamma_j\)).
+%
+As we perform our numerical integration, the quadrature procedure selects sample points along the range of integration as already mentioned.
+%
+To make things easier to implement, we will transform our integrals such that the integrator will integrate on the range (0,1) and we will introduce the transformed variable \(\zeta\) as the variable of integration.
+
+\begin{subequations}
+    \begin{align}
+        v_{z_{tj}} &=\left(\Delta s \int_{0}^{1}\gamma(s(\zeta)) v_z(s(\zeta),t) \d \zeta \right)n_{i_z},\\
+        v_{r_{tj}} &=\left(\Delta s \int_{0}^{1}\gamma(s(\zeta)) v_r(s(\zeta),t) \d \zeta \right)n_{i_r}.
+    \end{align}
+\end{subequations}
+
+\where \(\Delta s\) is the length of the range of integration, or panel length.
+%
+Referencing \cref{fig:integrationsplitmargin}, we see that the quadrature function samples can be split into the influences of each of the panel nodes by a simple geometric weighting:\sidenote{This is made possible due to the linear vortex distribution along a flat panel.}
+
+\begin{subequations}
+    \label{eqn:integrationpieces}
+    \begin{align}
+        f_j(x_k) &= w_k f(s(\zeta_k),t)&(1-\zeta_k) && \text{due to } \gamma_j \\
+        f_{j+1}(x_k) &= w_k f(s(\zeta_k),t)&\zeta_k && \text{due to } \gamma_{j+1}.
+    \end{align}
+\end{subequations}
+
+\begin{marginfigure}
+	\input{panel_method/figures/integration_split_margin.tikz}
+    \caption[Node strength contributions.]{Visual representation of splitting the integral into the portions for each panel node.}
+	\label{fig:integrationsplitmargin}
+\end{marginfigure}
+
+\noindent In other words, we return a piece of the integral weighted according to the sample point location along the range of integration.
+%
+Because we transformed the range of integration to (0,1), we can simply take these geometrically proportional weights to be \(1-\zeta\) and \(\zeta\) where \(\zeta\in (0,1)\) for the \(j\)th and \((j+1)\)th nodes, respectively.
+%
+Note that the \(\gamma_j\) values are also constant relative to \(\zeta\) and are therefore not included in the integrand expressions of \cref{eqn:integrationpieces}.
+%
+This allows us to pull out all of the \(\gamma_j\) terms which are the unknowns for which we want to solve using the system of equations we are assembling.
+%
+All together, the unit velocities normal to the \(i\)th panel, induced by the \(j\)th panel (defined by the \(j\)th and \((j+1)\)th nodes), or what we term the influence coefficients, \(IC\), are
+
+\begin{equation}
+    \label{eqn:nominalic}
+    \eqbox{
+    \begin{alignedat}{2}
+        IC_{ij} &= \left(\Delta s_j\sum_k^N  w_k v_z(s(\zeta_k),t) (1-\zeta_k)\right) n_{i_z} &&+ \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) (1-\zeta_k)\right) n_{i_r}\\
+        IC_{i(j+1)} &=  \left(\Delta s_j\sum_k^N w_k v_z(s(\zeta_k),t) \zeta_k\right) n_{i_z} &&+  \left(\Delta s_j\sum_k^N w_k v_r(s(\zeta_k),t) \zeta_k\right) n_{i_r},\\
+    \end{alignedat}
+}
+\end{equation}
+%
+for the \(j\)th and \((j+1)\)th nodes, respectively.
+
+
+In the singular case, where the panel induces velocity on itself, more consideration is required.
+%
+We first need to remember that we chose the midpoint of each panel to be the control point.
+%
+Because the expression for induced velocity is singular when the distance between the point of influence and the point being influenced is zero, there is a singularity at the panel midpoint of a panel inducing velocity on its own control point.
+%
+Knowing beforehand exactly where the singularity lies makes things somewhat easier to approach, but we still need to address the singularity.
+%
+We will take the separation of singularity approach also introduced in \cref{sec:quadrature} to calculate the self-induced case.
+%
+The separation of singularity method is, in brief, to subtract out the singular piece of the integral while solving the integral, then afterward adding back in the singular piece solved analytically to avoid the computational issues associated with the computer attempting to divide by zero.
+%
+Basically, as the integral tends to positive and negative infinity on either side of the singular point, we cancel out the non-convergent values on either side of the singular point and replace them with an analytic approximation.
+%
+Mathematically we have the integral
+
+\begin{equation}
+    \vect{v}_{jj} = \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(s) I(s) \d s,
+\end{equation}
+
+\where \[I(s)  = \pd{\hat{\vect{\phi}}(s,\overline{\vect{p}}_j)}{\hat{\vect{n}}_j}\]
+%
+We need to subtract off the singular part, \(S\), (inside the integral), and then add back an analytical expression, \(A\), for the integral of subtracted singular part (outside the integral).
+%
+% The other thing we need to do is to tell the quadrature package where the singular point is so that it can avoid placing sample points right on the singularity.
+% %
+To avoid evaluating the integral at the singular point, we also will need to split the integration range in two, integrating from the start of the integration range to the singular point, then from the singular point to the end of the integration range.\sidenote{Note that the sample points associated with the Gauss-Legendre polynomials do not actually sample the integration range at its endpoints.}
+
+\begin{equation}
+    \vect{v}_{jj} = \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(\zeta)(\left(I(s(\zeta),\overline{\vect{p}}_j) - S(s(\zeta),\overline{\vect{p}}_j) \right)\d \zeta + \gamma A(\overline{\vect{p}}_j).
+\end{equation}
+%
+% In practice, we actually want to account for the analytic approximation in the error estimate when using our quadrature approach.
+%
+% In order to do so, we actually add the analytic part to the integrand, but divide the analytic part by the range of integration in order to not double count it:
+
+% \begin{equation}
+%     \int_{\vect{p}_j}^{\vect{p}_{j+1}} \gamma(\zeta) \left(I(s(\zeta),\overline{\vect{p}}_j) - S(s(\zeta),\overline{\vect{p}}_j) + \frac{A(\overline{\vect{p}}_j)}{\Delta s}\right) \d \zeta.
+% \end{equation}
+
+\noindent After these modifications to account for the singularity, the procedure for applying the quadrature is the same as before giving us the influence coefficients for the panel on itself to be
+
+\begin{equation}
+    \label{eqn:panelselfic}
+    \eqbox{
+    \begin{aligned}
+    IC_{ii} =& \Delta s_i\left(\sum_k^N  w_k \left[\left(v_z(s(\zeta_k),\overline{\vect{p}}_i)\right)(1-\zeta_k)-\frac{1}{2}S_z(s(\zeta_k),\overline{\vect{p}}_i)\right]+\frac{1}{2}A_z(\overline{\vect{p}}_i) \right) n_{i_z} \\
+     &+ \Delta s_i\left(\sum_k^N  w_k \left[\left(v_r(s(\zeta_k),\overline{\vect{p}}_i)\right)(1-\zeta_k)-\frac{1}{2}S_r(s(\zeta_k),\overline{\vect{p}}_i)\right] +\frac{1}{2}A_r(\overline{\vect{p}}_i) \right) n_{i_r} \\
+    IC_{i(i+1)} =& \Delta s_i\left(\sum_k^N  w_k \left[\left(v_z(s(\zeta_k),\overline{\vect{p}}_i)\right)\zeta-\frac{1}{2}S_z(s(\zeta_k),\overline{\vect{p}}_i)\right]+\frac{1}{2}A_z(\overline{\vect{p}}_i) \right) n_{i_z} \\
+     &+ \Delta s_i\left(\sum_k^N  w_k \left[\left(v_r(s(\zeta_k),\overline{\vect{p}}_i)\right)\zeta-\frac{1}{2}S_r(s(\zeta_k),\overline{\vect{p}}_i)\right]+\frac{1}{2}A_r(\overline{\vect{p}}_i)  \right) n_{i_r} \\
+    \end{aligned}
+}
+\end{equation}
+
+\where %\sidenote{Details for how the singular and analytic expressions are derived are provided in \ref{app:separationofsingularity}.}
+
+\begin{equation}
+    \begin{aligned}
+    S_z(\vect{p}_o,\vect{p}) =& \frac{r_o-r}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right] }
+    -\frac{1}{8\pi r_o} \left[\ln\left(\frac{\left(z-z_o\right)^2 + \left(r-r_o\right)^2}{64r_o^2}\right)\right] \\
+    S_r(\vect{p}_o,\vect{p}) =& \frac{z-z_o}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right]},
+    \end{aligned}
+\end{equation}
+
+\noindent and
+
+\begin{equation}
+    \begin{aligned}
+    A_z(\vect{p}) =& \frac{1}{4\pi r} \left( 1 + \ln\frac{8 r}{\Delta s}\right) \\
+    A_r(\vect{p}) =& 0;
+    \end{aligned}
+\end{equation}
+
+\noindent and the multiplication by \(1/2\) on the singular and analytic terms is due to the fact that the singular point is half way between the nodes, so each node is responsible for exactly half of the influence.
+

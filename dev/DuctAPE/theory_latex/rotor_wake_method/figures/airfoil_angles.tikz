@@ -1,0 +1,43 @@
+\begin{tikzpicture}[scale=1.0]
+
+    % velocity vector points
+    \coordinate (O11) at (0.0,0.0);
+    \coordinate (O12) at ($(O11) + (-4.0,0.0)$);
+    \coordinate (O13) at ($(O11) + (-3.0,2.5)$);
+    \coordinate (O14) at ($(O11) + (-4.0,2.5)$);
+    \coordinate (O15) at ($(O11) + (-4.0,1.35)$);
+
+    % velocity components
+    \draw [-Stealth,thick,shorten >=2pt] (O12) -- (O11) node [pos=0.4, below] {\(-\Omega r\)};
+    \draw [-Stealth,thick,shorten >=2pt] (O13) -- (O11) node [pos=0.1, above right, shift={(-0.05,-0.05)}] {\(\vect{W}\)};
+    \draw [-Stealth,densely dotted,] (O13) -- (O14) node [pos=0.5, above , shift={(0.0,0.0)}] {\(V_\theta\)};
+    \draw [-Stealth,densely dotted,] (O14) -- (O15) node [midway, left , shift={(0.0,0.0)}] {\(V_z\)};
+    \draw [-Stealth,thick,shorten >=2pt] (O13) -- (O15) node [midway, below right , shift={(-0.05,0.05)}] {\(\vect{V}\)};
+    \draw [-Stealth,thick,] (O15) -- (O12) node [midway, left , shift={(0.0,0.0)}] {\(C_\infty\)};
+    \draw [dotted,thick] (O11) -- (125:2.5);
+    \draw [dotted,thick] (O11) -- (90:2);
+
+    % Inflow Angle
+    \draw[-{Stealth[bend]}] (O11) [partial ellipse = 90:140:0.75 and 0.75] node [pos=0.4, above] {\(\beta_1\)};
+    %twist angle
+    % \draw[-{Stealth[bend]}] (O11) [partial ellipse = 180:125:1.9 and 1.9] node [pos=0.4, left] {\(\theta_{be}\)};
+    %angle of attack
+    \draw[-{Stealth[bend]}] (O11) [partial ellipse = 140:125:1.2 and 1.2] node [midway, above left, shift={(0.05,0.0)}] {\(\alpha\)};
+    %angle of attack
+    \draw[-{Stealth[bend]}] (O11) [partial ellipse = 90:125:1.7 and 1.7] node [midway, above, shift={(0.0,0.0)}] {\(\gamma_{be}\)};
+
+    % Coordinate system parameters
+    \coordinate (csysO) at ($(O11) + (1.5,3.0)$);
+    \coordinate (em) at ($(csysO) +(0,-1)$);
+    \coordinate (et) at ($(csysO) +(-1,0)$);
+    % m-axis
+    \draw[-Stealth,] (csysO) -- (em);
+    \node[anchor=north,outer sep=0] at (em) {$\hat{\vect{e}}_z$};
+    % theta-axis
+    \draw[-Stealth,] (csysO) -- (et);
+    \node[anchor=east,outer sep=0] at (et) {$\hat{\vect{e}}_\theta$};
+
+    %Duct
+    \draw[primary, pattern={Hatch[angle=80,distance=1.5pt,xshift=.1pt]}, pattern color=plotsgray] plot[smooth] file{rotor_wake_method/figures/bladeelement-angles.dat};
+
+\end{tikzpicture}

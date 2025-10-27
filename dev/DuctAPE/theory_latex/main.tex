@@ -1,0 +1,80 @@
+\documentclass[fancy,phd]{byuthesis}
+
+\input{customcommands}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define Title Page Elements %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% You must manually add the line breaks in the title to conform to univeristy standards (see README.md for guidelines)
+\customtitle{{\bfseries Duct}ed\\{\bfseries A}xisymmetric\\{\bfseries P}ropulsor\\{\bfseries E}valuation\\{\bfseries(DuctAPE)}\\Theory Document}
+
+% Your name goes here:
+\author{Judd Mehr}
+
+% This is the date of?
+\date{\today}
+
+% Include any keywords you would like for your thesis/dissertation
+\keywords{
+    Vortex Methods,
+    Panel Methods,
+    Interactional Aerodynamics,
+    Electric Ducted Fans,
+    Gradient-based Optimization,
+}
+
+% Read in bibliography files here
+\addbibresource{prelims/ref.bib}
+\addbibresource{panel_method/ref.bib}
+\addbibresource{rotor_wake_method/ref.bib}
+\addbibresource{ductape/ref.bib}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- Begin Document --- %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\frontmatter
+\customtitlepage
+\clearpage
+
+\tableofcontents*
+\clearpage
+
+\listoffigures
+\clearpage
+
+\listoftables
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%
+% --- Main Body --- %
+%%%%%%%%%%%%%%%%%%%%%
+
+\mainmatter
+
+\input{prelims/prelims}
+
+\input{panel_method/panel_method}
+
+\input{rotor_wake_method/rotor_wake_method}
+
+\input{ductape/ductape}
+
+% - Whole Bibliography at End - %
+\printbibliography[
+heading=bibintoc,
+title={References}
+]
+
+%%%%%%%%%%%%%%%%%%%%%%
+% --- Appendices --- %
+%%%%%%%%%%%%%%%%%%%%%%
+\input{parts/appendices}
+
+
+%%%%%%%%%%%%%%%
+% --- End --- %
+%%%%%%%%%%%%%%%
+\end{document}

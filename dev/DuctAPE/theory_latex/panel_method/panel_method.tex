@@ -1,0 +1,19 @@
+\chapter{A Vortex-based Axisymmetric Panel Method}
+\label{ch:panel_method}
+
+One of the major pieces of the DuctAPE solver is an axisymmetric panel method.
+The implementation for an axisymmetric panel method is similar to the implementation of typical planar panel methods, but there are a few differences.
+We include here details for the axisymmetric panel method used.
+
+\input{panel_method/panel_method_intro.tex}
+%
+\input{panel_method/discretizing_fredholm.tex}
+%
+\input{panel_method/system_and_solve.tex}
+%
+\input{panel_method/post_process.tex}
+%
+\input{panel_method/viscous_drag.tex}
+
+%%% --- Bibliography --- %%%
+% \printbibliography[keyword={panel},heading=subbibintoc,title=Chapter \thechapter~References]

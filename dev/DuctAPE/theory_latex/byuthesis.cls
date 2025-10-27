@@ -196,9 +196,9 @@
 
 %% change title style for toc, lof, lot
 % Bold face, size LARGE titles
-%\renewcommand{\printtoctitle}[1]{\LARGE\bfseries #1}
-%\renewcommand{\printloftitle}[1]{\LARGE\bfseries #1}
-%\renewcommand{\printlottitle}[1]{\LARGE\bfseries #1}
+\renewcommand{\printtoctitle}[1]{\LARGE\bfseries #1}
+\renewcommand{\printloftitle}[1]{\LARGE\bfseries #1}
+\renewcommand{\printlottitle}[1]{\LARGE\bfseries #1}
 
 % Color, sans serif titles
 \renewcommand{\printtoctitle}[1]{\normalfont\LARGE\sffamily\colorchaptitle\itshape #1}
@@ -209,7 +209,7 @@
 % how to do this without overwriting \thechapter, etc. which messes up the assumption box coloring?
 
 % remove the dots between titles and page numbers
-\renewcommand{\cftdot}{}
+\renewcommand{\cftdot}{\color{mediumgray}.}
 
 % % or you can put the numbers right after
 % % put page number right after in toc, lof, lot
@@ -312,9 +312,21 @@
 
 
 % -------------- hyperlinks -------------
-%\RequirePackage[colorlinks,bookmarks,bookmarksnumbered,allcolors=royal,breaklinks]{hyperref}  % make hyperlinks royal
+% \RequirePackage[colorlinks,bookmarks,bookmarksnumbered,allcolors=royal,breaklinks]{hyperref}  % make hyperlinks royal
 %\RequirePackage[colorlinks,bookmarks,bookmarksnumbered,allcolors=black,breaklinks]{hyperref}	   % make hyperlinks black
-%\RequirePackage[colorlinks,bookmarks,bookmarksnumbered,allcolors=mediumgray,breaklinks]{hyperref}	   % make hyperlinks mediumgray
+% \RequirePackage[colorlinks,bookmarks,bookmarksnumbered,allcolors=mediumgray,breaklinks]{hyperref}	   % make hyperlinks mediumgray
+% \RequirePackage[
+% colorlinks=true,
+% bookmarks=true,
+% bookmarksnumbered=true,
+% citecolor=mediumgray,
+% linkcolor=primary,
+% anchorcolor=black,
+% filecolor=black,
+% menucolor=black,
+% runcolor=black,
+% urlcolor=secondary,
+% breaklinks=true]{hyperref}
 \RequirePackage[colorlinks,bookmarks,bookmarksnumbered,hidelinks,breaklinks]{hyperref}	   % make hyperlinks same color as surrounding text
 
 % hack to suppress annoying hyperref warnings related to \listoffigures, \listoftables, and \printnomenclature
@@ -390,7 +402,7 @@
 		\setlrmarginsandblock{1.75in}{1.75in}{*}
 		\checkandfixthelayout
 	\fi
-	\pdfbookmark{BYU TITLE PAGE}{titlepage}
+	\pdfbookmark{TITLE PAGE}{titlepage}
 	\pagestyle{empty}
 	\begin{Spacing}{2.0}
 		\begin{center}
@@ -399,9 +411,6 @@
 			\@author \\
 			\vspace{\fill}
 			\begin{SingleSpace}
-				A \if@phd dissertation \else thesis \fi submitted to the faculty of \\
-				\@institution \\
-				in partial fulfillment of the requirements for the degree of \\
 			\end{SingleSpace}
 			\@degree \\
 			\vspace{\fill}
@@ -440,19 +449,18 @@
 	\begin{Spacing}{2.2}
 		\vspace*{116pt}
 		\noindent
-		{\color{royal}\Huge\sffamily\itshape\@customtitle} \\
+		{\color{royal}\Huge\sffamily\@customtitle} \\
 		\vspace{\fill}
 	\end{Spacing}
 	\begin{Spacing}{1.4}
 		{\Large
 		\noindent
 		\@author \\
-		\@department \\
-		\@degree} \\
+        \@date
+		% \@department \\
+		% \@degree
+    } \\
 		\vspace{\fill}
-		\begin{figure}[htbp]
-			\includegraphics[width=3.5in]{college_logo}
-		\end{figure}
 	\end{Spacing}
 }
 % ----------------------------------------
@@ -514,12 +522,12 @@
 	\clearpage
 	\pdfbookmark[0]{EPIGRAPH}{epigraph}
 	\setlength{\parskip}{\baselineskip}
-	\vspace*{35pt}	% spacing set to match chapter header spacing
+	% \vspace*{35pt}	% spacing set to match chapter header spacing
 	% \begin{flushleft}
 	% 	% {\normalfont\LARGE\bfseries Acknowledgments}    						% black serif boldface
 	% 	{\normalfont\LARGE\sffamily\colorchaptitle\itshape{Epigraph}}    	% royal sans serif italics
 	% \end{flushleft}
-	\vspace*{24pt}  % spacing set to match chapter header spacing
+	% \vspace*{24pt}  % spacing set to match chapter header spacing
 }
 % ----------------------------------------
 
@@ -682,7 +690,7 @@
 	{\lowercase{\href{https://doi.org/#1}{\nolinkurl{#1}}}}
 	{\lowercase{\nolinkurl{#1}}}}
 
-\DeclareFieldFormat{labelnumberwidth}{\color{primary}#1}%
+\DeclareFieldFormat{labelnumberwidth}{\color{black}#1}%
 \setlength{\biblabelsep}{10pt}%
 \renewbibmacro{in:}{}
 
@@ -723,7 +731,7 @@
 \newbibmacro{sidecite}{%
   \printtext[sidecite]{%
      \raggedright%
-     \printtext[bibhyperref]{\textcolor{primary}{\printfield{labelnumber}}\:}
+     \printtext[bibhyperref]{\textcolor{mediumgray}{\printfield{labelnumber}}\:}
      \textcolor{mediumgray}{%
 	    \printnames{labelname}%
 	    \unspace, %
@@ -736,6 +744,15 @@
 		}%
      }%
   \setunit{}}
+
+% allowed for manually shifting of citations in margin
+\newcommand{\shiftedscite}[2][0pt]{%
+  \DeclareFieldFormat{sidecite}{%
+    \marginpar{\vspace*{#1}\linespread{1.0}\scriptsize##1}%
+  }%
+  \scite{#2}%
+  \DeclareFieldFormat{sidecite}{\marginpar{\linespread{1.0}\scriptsize##1}}% restore default
+}
 % ---------------------------------------
 
 % ---------- for testing ---------------

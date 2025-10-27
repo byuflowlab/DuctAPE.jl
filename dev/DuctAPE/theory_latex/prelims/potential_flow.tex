@@ -1,0 +1,150 @@
+%---------------------------------#
+%      Potential Flow Theory      #
+%---------------------------------#
+\section{Potential Flow Theory}
+\label{ssec:potentialflow}
+
+The vortex methods developed and/or used in this work are built on concepts rooted in potential flow theory.
+%
+Potential flow theory deals with the analysis of flow fields that are simplified representations of real fluid flows.
+%
+The simplifications only approximate real flows, but allow for much better computational efficiency than high fidelity computational fluid dynamic methods.
+%
+Despite the approximate nature of potential flow fields, there are many realistic cases in which the approximation is quite good.
+%
+In this section we will cover the basics of potential flow theory and introduce several elementary flows used in this work upon which we will continue to build the concepts underpinning the analysis methods of this work.
+
+Potential flow refers to velocity fields that can be expressed as the gradient of a scalar function called the velocity potential,\sidenote{Thus the name potential flow theory} \(\phi\):
+
+\begin{equation}
+    \label{eqn:velocity_potential}
+    \vect{V} = \nabla \phi.
+\end{equation}
+
+Do define the velocity in terms of a scalar potential, we require the field to differentiable and irrotational.
+
+\begin{assumption}{}
+    \label{asm:irrotational}
+
+    \asm{The velocity field is irrotational, such that \[\vect{\omega} = \nabla \times \vect{V} = 0 \] everywhere in the field except for the axes of free vortices.}
+
+    \limit{We cannot directly model viscous effects in the flow such as boundary layers and viscous wake phenomena}.
+
+    \why{For the ranges of Reynolds numbers seen in this work, the majority of the flow field is accurately approximated as inviscid.}
+
+\end{assumption}
+
+\noindent Here, \(\omega\) represents the vorticity, which is the curl of the velocity vector.
+%
+The assumption of irrotational flow by definition results in inviscid flow.\sidenote{An irrotational flow is always inviscid, but an inviscid flow is not necessarily irrotational}
+%
+For this work, we will work with incompressible potential flow theory, which also requires an assumption of incompressible flow.
+
+\begin{assumption}{}
+    \label{asm:incompressible}
+
+    \asm{The velocity field is incompressible, such that
+    \[\nabla \cdot \vect{V} = 0. \]}
+    \vspace*{-\baselineskip}
+
+    \limit{This excludes highly compressible flows, such as those with strong shocks or Mach numbers well above 0.3.}
+
+    \why{In the external aerodynamics analyses in this work, the Mach number is low enough that density changes are negligible.}
+
+\end{assumption}
+
+Substituting in the definition of velocity from \cref{eqn:velocity_potential} into the expression in \cref{asm:incompressible}, we get:
+
+\begin{equation}
+    \label{eqn:laplace}
+    \nabla \cdot \nabla \phi = \nabla^2 \phi = 0,
+\end{equation}
+%
+which is the Laplace equation.
+%
+Along with the implication of \cref{asm:irrotational} that our flow is inviscid, the fact that the Laplace equation is a linear operator is a major key to the reduction in required computational expense for potential flow methods.
+%
+Because the Laplace equation is a linear operator, we can model relatively complicated flow features (such as a duct and center body) using a superposition of well-studied solutions to the Laplace equation.
+%
+In an aerodynamic context, we call these solutions to the Laplace equation: elementary flows.
+
+\subsection{Elementary Flows}
+\label{ssec:elemflows}
+
+The following are a handful of useful elementary flows we will use in this work.
+
+\subsubsection{Uniform Flow}
+\begin{marginfigure}
+    \input{./prelims/figures/uniformflow_tikz.tikz}
+\end{marginfigure}
+Uniform flow is precisely that, a flow that uniformly moves in a single direction without variation in the flow field.
+%
+Often, the free stream is modeled as a uniform flow.
+%
+Mathematically, we describe the potential of a uniform flow as
+
+\begin{equation}
+\label{eqn:uniformflow}
+    \phi_{u} = V_\infty \hat{r}
+\end{equation}
+
+\noindent where \(V_\infty\) is the magnitude of the flow and \(\hat{r}\) in a vector indicating the direction of the flow.
+
+
+\subsubsection{Source/Sink Flow}
+
+\begin{marginfigure}
+    \input{./prelims/figures/sourceflow_tikz.tikz}
+\end{marginfigure}
+\begin{marginfigure}
+    \input{./prelims/figures/sinkflow_tikz.tikz}
+\end{marginfigure}
+
+Source and sink flows are mathematically identical, with the exception of sign.
+%
+The defining characteristics of these flows are that they have only radial, and no tangential, components, with sources oriented radially outward, and sinks oriented radially inward.
+%
+Expressed mathematically, the velocity potential for source/sink flow is
+
+\begin{equation}
+\label{eqn:sourceflow}
+    \phi_s = \frac{\pm\Lambda}{2\pi} \ln(r)
+\end{equation}
+
+\where \(\Lambda\) is the strength of the source (positive) or sink (negative), and \(r\) is the radial distance from the origin of the source/sink.
+
+
+% \subsubsection{Doublet Flow}
+
+% \begin{marginfigure}
+%     \input{./prelims/figures/doubletflow.tikz}
+% \end{marginfigure}
+
+% Taking a source and sink with equal strengths and moving them toward each other until infinitesimally close together does not cancel them out, but rather induces a twin-lobbed flow field.
+% Rather than treating them separately, this combination creates it's own elementary flow that we call a doublet.
+% The velocity potential for a doublet is described by
+
+% \begin{equation}
+% \label{eqn:doubletflow}
+%     \phi_d = \frac{\kappa}{2\pi} \frac{\cos\theta}{r}
+% \end{equation}
+
+% \noindent, where \(\kappa\) is the doublet strength and \(\theta\) is the angle relative to the doublet axis.
+
+\subsubsection{Vortex Flow}
+
+\begin{marginfigure}
+    \input{./prelims/figures/vortexflow_tikz.tikz}
+\end{marginfigure}
+The final elementary flow that we will discuss here is the free vortex.
+%
+Vortex flow characteristics have the opposite characteristic of source/sink flows in that there is no radial, only tangential components to the flow.
+%
+The mathematical expression for the free vortex velocity potential is:
+
+\begin{equation}
+    \label{eqn:vortexflow}
+    \phi_v = \frac{\Gamma}{2\pi} \theta
+\end{equation}
+
+\noindent where \(\Gamma\) is the vortex strength and \(\theta\) is the polar angle.

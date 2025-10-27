@@ -1,0 +1,46 @@
+\begin{tikzpicture}[scale=1]
+
+    %Airfoil
+    \draw[ ultra thick, plotsgray, pattern={Hatch[angle=35,distance=2pt,xshift=.1pt, line width=0.25pt]}, pattern color=plotsgray] plot[] file{rotor_wake_method/figures/grid-coord-hub.dat};
+    \draw[ ultra thick, plotsgray, pattern={Hatch[angle=35,distance=2pt,xshift=.1pt, line width=0.25pt]}, pattern color=plotsgray] plot[] file{rotor_wake_method/figures/grid-coord-duct.dat};
+
+
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline1.dat};
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline2.dat};
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline3.dat};
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline4.dat};
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline5.dat};
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline6.dat};
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline7.dat};
+    \draw[secondary] plot[] file{rotor_wake_method/figures/xiline8.dat};
+    \draw[primary] plot[] file{rotor_wake_method/figures/etaline1.dat};
+    \draw[primary] plot[] file{rotor_wake_method/figures/etaline2.dat};
+    \draw[primary] plot[] file{rotor_wake_method/figures/etaline3.dat};
+    \draw[primary] plot[] file{rotor_wake_method/figures/etaline4.dat};
+    \draw[primary] plot[] file{rotor_wake_method/figures/etaline5.dat};
+    \draw[primary] plot[] file{rotor_wake_method/figures/etaline6.dat};
+
+    \draw[-Stealth, thick, secondary] plot[] file{rotor_wake_method/figures/xiarrow.dat} node[above, secondary]{\(\xi\)};
+    \draw[-Stealth, thick, primary] plot[] file{rotor_wake_method/figures/etaarrow.dat} node[right, primary]{\(\eta\)};
+
+    % % Coordinate system parameters
+    % \coordinate (csysO) at (-1.5,3.0);
+    % \coordinate (er) at ($(csysO) +(0,1)$);
+    % \coordinate (zgap1) at ($(csysO) +(0.065,0)$);
+    % \coordinate (zgap2) at ($(csysO) +(0.135,0)$);
+    % \coordinate (ez) at ($(csysO) +(1,0)$);
+
+    % % z-axis
+    % \draw[] (csysO) -- (zgap1);
+    % \draw[-Stealth] (zgap2) -- (ez);
+    % \node[anchor=south,outer sep=0] at (ez) {$\hat{\vect{e}}_z$};
+
+    % % r-axis
+    % \draw[-Stealth,] (csysO) -- (er);
+    % \node[anchor=west,outer sep=0] at (er) {$\hat{\vect{e}}_r$};
+
+    %%theta direction
+    %\draw[-Stealth] ($(csysO) + (0.2,0)$) [partial ellipse =7:350:0.1 and 0.5];
+    %\node[anchor=north,outer sep=0,shift={(0.0,-0.5)}] at ($(csysO) + (0.2,0)$) {$\hat{\vect{e}}_\theta$};
+
+\end{tikzpicture}

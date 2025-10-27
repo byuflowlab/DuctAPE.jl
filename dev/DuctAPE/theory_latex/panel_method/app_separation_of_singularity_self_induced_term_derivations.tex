@@ -1,0 +1,464 @@
+\section{Detailed Derivation of Singular Portions of the Panel Surface Integral and Their Analytic Solutions}
+\label{app:separationofsingularity}
+
+\subsection{Unit Axial Velocity Induced by a Vortex Ring}
+
+We start with the expression for the axial induced velocity from \cref{eqn:ringvortexinducedvelocity}.
+
+\begin{equation}
+    v_{z} =  \frac{1}{2 \pi r_o} \frac{1}{D_1} \left[ \mathcal{K}(m) - \left( 1 + \frac{2(\rho-1)}{D_2} \right) \mathcal{E}(m) \right]
+    \tag{\ref{eqn:ringvortexinducedvelocityaxial}}
+\end{equation}
+
+\where \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) are complete elliptic integrals of the first and second kind, respectively, and
+
+\[
+    \begin{aligned}
+    m &= \left( \frac{4\rho}{\xi^2 + (\rho+1)^2} \right) \\% = k^2 = \sin^2(\phi)\\
+    \xi &= \frac{z - z_o}{r_o} \\
+    \rho &= \frac{r}{r_o} \\
+    D_1 &= \left[\xi^2 + (\rho+1)^2\right]^{1/2} \\
+    D_2 &= \xi^2 + (\rho - 1)^2.
+    \end{aligned}
+\]
+
+\noindent Expaning everything out we can begin to see where the singular portions of the integral over the panel lie:
+
+\begin{equation}
+    \begin{split}
+        v_{z}^\gamma =&\int_{(z_{1},r_{1})}^{(z_{2},r_{2})}
+%
+    \left[
+    %
+    \frac{\int_0^{1}\frac{1}{
+    \left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}
+    }d\theta}
+    {2\pi r_o \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}} \right. \\
+    %
+    &-
+    %
+    \frac{\int_0^{\pi/2}\left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}} \\
+    %
+    &-
+    \left. \frac{\int_0^{\pi/2}\left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}}
+    %
+    \left(\frac{2 \left(\frac{r}{r_o}-1\right)}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}-1\right)^2}\right) \right] ds.
+    \end{split}
+\end{equation}
+
+
+Let's plug in \(z_o = z\) and \(r_o = r\) and simplify to show more explicitly where the singularities in the integrand lie
+
+\begin{equation}
+    \begin{aligned}
+&
+    \frac{\int_0^{\pi/2}\frac{1}{\left[1-\left(\frac{4}{\left(0\right)^2 + \left(1+1\right)^2}\right)\sin^2\theta\right]^{1/2}}d\theta}
+        {2\pi r_o \left[\left(0\right)^2 + \left(1+1\right)^2 \right]^{1/2}} &&\text{(Term 1)} \\
+&-
+        \frac{\int_0^{\pi/2}\left[1-\left(\frac{4}{\left(0\right)^2 + \left(1+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left[\left(0\right)^2 + \left(1+1\right)^2 \right]^{1/2}} &&\text{(Term 2)}\\
+&-
+    \frac{\int_0^{\pi/2}\left[1-\left(\frac{4}{\left(0\right)^2 + \left(1+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left[\left(0\right)^2 + \left(1+1\right)^2 \right]^{1/2}}
+    %
+        \left(\frac{2 \left(1 - 1\right)}{\left(0\right)^2 + \left(1-1\right)^2}\right). && \text{(Term 3)}
+\end{aligned}
+\end{equation}
+
+\noindent We first note that the elliptic integral of the second kind (in Terms 1 and 3) goes to 1, so we can simplify to
+
+\begin{equation}
+    \underbrace{\frac{\int_0^{\pi/2}\frac{1}{\left[1-\sin^2\theta\right]^{1/2}}d\theta}{4\pi r_o}}_{\text{Term 1}}  -
+    %
+    \underbrace{\frac{1}{4\pi r_o}}_{\text{Term 2}}  -
+    %
+    \underbrace{\frac{1}{4\pi r_o}
+    \left(\frac{0}{0}\right)}_{\text{Term 3}}.
+\end{equation}
+
+\noindent We immediately see that Term 2 is not singular, and therefore we can ignore it going forward.
+%
+Term 3 on the other hand, is singular.
+%
+Going back to the full expression for Term 3, we have:
+
+\begin{equation}
+\frac{-1}{2\pi r_o \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2\right]^{1/2}}
+%
+\left(\frac{2 \left(\frac{r-r_o}{r_o}\right)}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r-r_o}{r_o}\right)^2}\right).
+\end{equation}
+
+\noindent At the singular point, the outer denominator here isn't singular, so we can simplify it to 2 when \(z=z_o\) and \(r=r_o\);
+
+\begin{equation}
+\frac{-1}{4\pi r_o }
+%
+\left(\frac{2 \left(\frac{r-r_o}{r_o}\right)}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r-r_o}{r_o}\right)^2}\right).
+\end{equation}
+
+\noindent We can simplify further by noting that both a 2 and \(r_o^2\) cancel.
+
+\begin{equation}
+    \frac{r_o-r}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right] }
+\end{equation}
+
+We will leave Term 3 for now, and go back and address Term 1.
+%
+For the first term, we need to address the non-convergence of the elliptic integral of the first kind.
+%
+The asymptotic behavior of the complete elliptic integral of the first kind (\(\mathcal{K}(m)\)) as \(m\) approaches 1---where \[ m = \frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2} \]
+---is well known to be
+
+\begin{equation}
+\mathcal{K}(m) \approx \ln \frac{4}{\sqrt{1-\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}}}.
+\end{equation}
+
+\noindent So the whole singular Term 1 can be approximated as
+
+\begin{equation}
+\frac{1}{4\pi r_o} \ln \frac{4}{\sqrt{1-\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}}}.
+\end{equation}
+
+\noindent We can use logarithm rules to pull out the square root and the 4 for now
+
+\begin{equation}
+\frac{1}{4\pi r_o} \left[\ln(4) - 0.5 \ln\left(1-\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\right].
+\end{equation}
+
+\noindent Simplifying inside the second logarithm term
+
+\begin{equation}
+\begin{aligned}
+& 1-\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2} \\
+%
+    =& \frac{{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}-4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2} && \text{getting a common denominator}\\
+%
+    =& \frac{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}\right)^2+2\frac{r}{r_o}+1-4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2} && \text{expanding} \\
+%
+    =& \frac{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}\right)^2-2\frac{r}{r_o}+1}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2} && \text{simplifying}\\
+%
+=& \frac{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}-1\right)^2}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\\
+%
+=& \frac{\left(z-z_o\right)^2 + \left(r-r_o\right)^2}{\left(z-z_o\right)^2 + \left(r+r_o\right)^2}. && \text{canceling common denominators}
+\end{aligned}
+\end{equation}
+
+\noindent Plugging this into the full expression gives us
+
+\begin{equation}
+\frac{1}{4\pi r_o} \left[\ln(4) - 0.5 \ln\left(\frac{\left(z-z_o\right)^2 + \left(r-r_o\right)^2}{\left(z-z_o\right)^2 + \left(r+r_o\right)^2}\right)\right].
+\end{equation}
+
+\noindent Let's now bring the 4 back inside the logarithm (noting the negative out front, so it goes into the denominator now), and resolving the non-singular denominator at \(z_o=z\) and \(r_o=r\),
+
+\begin{equation}
+    \begin{aligned}
+        \frac{1}{4\pi r} \left[ - 0.5 \ln\left(\frac{\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right]}{16\left(0^2 + (2r)^2\right)}\right)\right] \\
+        =-\frac{1}{8\pi r} \left[ \ln\left(\frac{\left(z-z_o\right)^2 + \left(r-r_o\right)^2}{64r^2}\right)\right].
+    \end{aligned}
+\end{equation}
+
+Now we have both of the singular pieces (Terms 1 and 3) that we need to subtract from the vortex ring induced axial velocity in our subtraction of singularity method. Together they are:
+
+\begin{equation}
+\eqbox{
+    \frac{r_o-r}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right] }
+    %
+    -\frac{1}{8\pi r} \left[\ln\left(\frac{\left(z-z_o\right)^2 + \left(r-r_o\right)^2}{64r^2}\right)\right].
+}
+\end{equation}
+
+
+\subsection{Unit Radial Velocity Induced by a Vortex Ring}
+
+For the radial component of velocity induced by a vortex ring, we again start with our expression from \cref{eqn:ringvortexinducedvelocity}
+
+\begin{equation}
+    v_{r} = -\frac{1}{2 \pi r_o} \frac{\xi/\rho}{D_1}  \left[ \mathcal{K}(m) - \left( 1 + \frac{2\rho}{D_2} \right) \mathcal{E}(m) \right],
+    \tag{\ref{eqn:ringvortexinducedvelocityradial}}
+\end{equation}
+
+\where again, \(\mathcal{K}(m)\) and \(\mathcal{E}(m)\) are complete elliptic integrals of the first and second kind, respectively, and
+
+\[
+    \begin{aligned}
+    m &= \left( \frac{4\rho}{\xi^2 + (\rho+1)^2} \right) \\% = k^2 = \sin^2(\phi)\\
+    \xi &= \frac{z - z_o}{r_o} \\
+    \rho &= \frac{r}{r_o} \\
+    D_1 &= \left[\xi^2 + (\rho+1)^2\right]^{1/2} \\
+    D_2 &= \xi^2 + (\rho - 1)^2.
+    \end{aligned}
+\]
+
+\noindent Expanding things out as before:
+
+\begin{equation}
+\begin{aligned}
+    v_{r}^\gamma =& \int_{(z_{1},r_{1})}^{(z_{2},r_{2})}
+\left[
+%
+\left(\frac{z-z_o}{r_o}\right) \frac{\int_0^{\pi/2}\frac{1}{\left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}}d\theta}
+{2\pi r_o \left(\frac{r}{r_o}\right) \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}}  \right. \\
+&-
+\left(\frac{z-z_o}{r_o}\right) \frac{\int_0^{\pi/2}\left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left(\frac{r}{r_o}\right) \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}} \\
+&-
+\left. \left(\frac{z-z_o}{r_o}\right) \frac{\int_0^{\pi/2}\left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left(\frac{r}{r_o}\right) \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}}
+%
+\left(\frac{2 \left(\frac{r}{r_o}\right)}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r-r_o}{r_o}\right)^2}\right) \right] ds.
+\end{aligned}
+\end{equation}
+
+\noindent Again plugging in \(z=z_o\) and \(r=r_o\) to clearly see the singularities
+
+\begin{equation}
+\begin{aligned}
+&\left(\frac{0}{r_o}\right) \frac{\int_0^{\pi/2}\frac{1}{\left[1-\left(\frac{4}{\left(\frac{0}{r_o}\right)^2 + \left(1+1\right)^2}\right)\sin^2\theta\right]^{1/2}}d\theta}
+{2\pi r_o \left(1\right) \left[\left(\frac{0}{r_o}\right)^2 + \left(1+1\right)^2 \right]^{1/2}}  && \text{Term 1} \\
+&-
+\left(\frac{0}{r_o}\right) \frac{\int_0^{\pi/2}\left[1-\left(\frac{4}{\left(\frac{0}{r_o}\right)^2 + \left(1+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left(1\right) \left[\left(\frac{0}{r_o}\right)^2 + \left(1+1\right)^2 \right]^{1/2}} && \text{Term 2} \\
+&-
+ \left(\frac{0}{r_o}\right) \frac{\int_0^{\pi/2}\left[1-\left(\frac{4}{\left(\frac{0}{r_o}\right)^2 + \left(1+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o \left(1\right) \left[\left(\frac{0}{r_o}\right)^2 + \left(1+1\right)^2 \right]^{1/2}}
+%
+\left(\frac{2 \left(1\right)}{\left(\frac{0}{r_o}\right)^2 + \left(\frac{0}{r_o}\right)^2}\right). && \text{Term 3}
+\end{aligned}
+\end{equation}
+
+\noindent As before, we'll start with the second term and third terms.
+%
+Again, the elliptic integral of the second kind will go to 1, meaning Term 2 is non-singular.
+%
+For Term 3, we go back to the original expression and have
+
+\begin{equation}
+\left(\frac{z-z_o}{r_o}\right) \frac{1}{2\pi r_o \left(\frac{r}{r_o}\right) \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}}
+%
+\left(\frac{2 \left(\frac{r}{r_o}\right)}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r-r_o}{r_o}\right)^2}\right)
+\end{equation}
+
+\noindent Here a $r/r_o$ will cancel along with a $r_o^2$; futhermore, the non-singular outer denominator again goes to 2 (which also cancels), so we are left with
+
+\begin{equation}
+    \label{eqn:sepsingvrt3}
+    \frac{z_o-z}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right]}
+\end{equation}
+
+For Term 1, we have from the original expression
+
+\begin{equation}
+    \left(\frac{z-z_o}{r_o}\right) \frac{\mathcal{K}(m)}
+    {2\pi r_o \left(\frac{r}{r_o}\right) \left[\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}}.
+\end{equation}
+
+\noindent Simplifying the denominator leaves
+
+\begin{equation}
+    \frac{z-z_o}{4\pi r_o^2}\mathcal{K}(m).
+\end{equation}
+
+\noindent Applying the asymptotic approximation for \(\mathcal{K}(m)\),
+
+\begin{equation}
+\frac{z-z_o}{4\pi r_o^2}\ln \frac{4}{\sqrt{1-\frac{4\frac{r}{r_o}}{\left(\frac{z-z_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}}}.
+\end{equation}
+
+\noindent Note that as \(z \rightarrow z_o\) and \(r\rightarrow r_o\) the \(r\) terms actually don't induce any singularity, simplifying out these terms (setting \(r=r_o\)) leaves
+
+\begin{equation}
+\frac{z-z_o}{4\pi r_o^2}\ln \frac{4}{\sqrt{1-\frac{4}{\left(\frac{z-z_o}{r_o}\right)^2 + 4}}}.
+\end{equation}
+
+\noindent Getting a common denominator in the radicand gives
+
+\begin{equation}
+    \frac{z-z_o}{4\pi r_o^2}\ln \frac{4}{\sqrt{\frac{\left(\frac{z-z_o}{r_o}\right)^2}{\left(\frac{z-z_o}{r_o}\right)^2 + 4}}}.
+\end{equation}
+
+\noindent Again applying logarithm rules to pull out the radical and 4, then noting that the \(\log(4)\) is non-singular we ignore it going forward, we have
+
+\begin{equation}
+    \frac{z-z_o}{8\pi r_o^2}\ln \frac{\left(\frac{z-z_o}{r_o}\right)^2}{\left(\frac{z-z_o}{r_o}\right)^2 + 4}.
+\end{equation}
+
+\noindent Applying logarithm rules again we see
+
+\begin{equation}
+\frac{z-z_o}{8\pi r_o^2}\left(\ln \left(\frac{z-z_o}{r_o}\right)^2 - \ln \left[\left(\frac{z-z_o}{r_o}\right)^2 + 4\right]\right).
+\end{equation}
+
+\noindent At this point (if not already) we can see that this term is analogous to a sum of expressions taking the form \(x \ln(x)\) which is not, in fact, singular.
+%
+Therefore Term 1 is not singular and we can ignore it.
+%
+Thus the singular expression which we need to subtract from the radially induced velocity due a vortex ring is simply that from Term 3 (\cref{eqn:sepsingvrt3}):
+
+\begin{equation}
+\eqbox{
+    \frac{z-z_o}{2\pi\left[\left(z-z_o\right)^2 + \left(r-r_o\right)^2\right]}
+}
+\tag{\ref{eqn:sepsingvrt3}}
+\end{equation}
+
+
+\subsection{Analytic Solutions of Singular Portions of Integrals to Add Back in}
+
+Now that we have all the singular parts that are subtracted, we need to take the integrals analytically.
+%
+We will integrate along the panel lengths, noting that the panel length, \(\Delta s = |\vect{p}_2 - \vect{p}_1|\).
+%
+Therefore, all of the non-logarithmic terms will cancel in the integral since the distances from the end points to the midpoint is equal, but with opposite sign, from the endpoints.
+%
+This just leaves the logarithmic terms which we integrate as follows:\sidenote{Note that in the integration step, \(\vect{s}_i-\overline{\vect{p}} = \pm \Delta s\) depending on which side of the panel the subtraction is taking place.}
+
+% \begin{align}
+% &\frac{-1}{8\pi r_o} \int_s\left[ \ln\left(\frac{\Delta s^2}{64r_o^2}\right)\right] ds\\
+% =&
+% \frac{-1}{4\pi r_o} \left(\Delta s \ln\frac{\Delta s^2}{\left(8 r_o\right)^2}\right)\\
+% =&
+% \frac{\Delta s}{2\pi r_o} \ln\frac{8 r_o}{\Delta s}.
+% \end{align}
+
+\begin{align}
+&\frac{-1}{8\pi r} \iint\left[ \ln\left(\frac{(z-z_o)^2 + (r-r_o)^2}{64r^2}\right)\right] \d z_o \d r_o\\
+&=
+    \frac{-1}{8\pi r} \int_{\vect{p}_1}^{\vect{p}_2}\left[ \ln\left(\frac{|\overline{\vect{p}}-\vect{s}|^2}{64r^2}\right)\right] \d\vect{s} && \text{get in terms of single variable}\\
+=&
+\frac{-1}{4\pi r} \int_{\vect{p}_1}^{\vect{p}_2}\left[ \ln\left(\frac{|\overline{\vect{p}}-\vect{s}|}{8r}\right)\right] \d\vect{s} && \text{pull the power of 2 out of the log}\\
+=&
+\frac{-1}{4\pi r} \left( \Delta s \ln\frac{\Delta s}{16 r} - \Delta s\right) && \text{integrate}\\
+=&
+\frac{1}{4\pi r} \left( \Delta s \ln\frac{16 r}{\Delta s} + \Delta s\right) && \text{cancel a negative}\\
+=&
+\frac{\Delta s}{4\pi r} \left( 1 + \ln\frac{16 r}{\Delta s}\right). && \text{gather terms}
+\end{align}
+%this is close to what DFDC has, except they have a 16 and 2 rather than an 8 in the logrithm numerators.  they also do not multiply by the panel length, but perhaps this is because they need to non-dimenionalize this term as they multiply everything by the dimensional panel length later.
+
+
+
+
+
+
+\subsection{Unit Axial Velocity Induced by a Source Ring}%\toadd{add in the source ring derivations at some point}
+
+Since we've already determined the singular parts we'll encounter here, we won't expand everything out completely. Especially since this induced velocity expression does not include an elliptic integral of the first kind, things will proceed smoothly.
+
+$$
+\begin{equation}
+v_{x_{ij}}^\sigma =\int_{(x_{i_1},r_{i_1})}^{(x_{i_2},r_{i_2})}
+%
+\left[
+\frac{2\left(\frac{x-x_o}{r_o}\right)E}{2\pi r_o \left[\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r-r_o}{r_o}\right)^2}
+\right] ds
+\end{equation}
+$$
+
+Following similar procedures as before, we let $x=x_o$ and $r=r_o$ for non-singular pieces and remember that E goes to 1 in that case, and the $r_o^2$ cancels leaving us with the singular term:
+
+$$\frac{x-x_o}{2\pi\left[\left(x-x_o\right)^2 + \left(r-r_o\right)^2\right]} $$
+
+
+
+
+\subsection{Unit Radial Velocity Induced by a Source Ring}
+Once again, let's start from the full, mostly expanded expression for the velocity so we can more clearly see what's goiing on.
+
+$$
+\begin{equation}
+v_{r_{ij}}^\sigma =\int_{(x_{i_1},r_{i_1})}^{(x_{i_2},r_{i_2})}
+%
+\left[
+%
+\frac{\int_0^{\pi/2}\frac{1}{\left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}}d\theta}
+{2\pi r_o \left(\frac{r}{r_o}\right) \left[\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}}  -
+%
+\frac{\int_0^{\pi/2}\left[1-\left(\frac{4\frac{r}{r_o}}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\sin^2\theta\right]^{1/2}d\theta}{2\pi r_o  \left(\frac{r}{r_o}\right) \left[\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2 \right]^{1/2}}
+%
+\left(1-\frac{2 \left[\left(\frac{r}{r_o}\right)^2-\left(\frac{r}{r_o}\right)\right]}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r-r_o}{r_o}\right)^2}\right) \right] ds
+\end{equation}
+$$
+
+
+proceeding as before, we let $x=x_o$ and $r=r_o$ to help identify the sigularities
+
+
+$$
+\frac{\int_0^{\pi/2}\frac{1}{\left[1-\sin^2\theta\right]^{1/2}}d\theta}
+{4\pi r_o }  -
+%
+\frac{1}{4\pi r_o }
+%
+\left(1-\frac{0}{ 0}\right)
+$$
+
+For the second term, the singular part is
+
+$$
+\frac{1}{2\pi r_o \left(\frac{r}{r_o}\right)}
+%
+\left(\frac{\left(\frac{r}{r_o}\right)^2-\left(\frac{r}{r_o}\right)}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r-r_o}{r_o}\right)^2}\right) $$
+
+canceling out an $\frac{r}{r_o}$ and an $r_o^2$
+
+$$
+\frac{1}{2\pi}
+%
+\left(\frac{r-r_o}{\left(x-x_o\right)^2 + \left(r-r_o\right)^2}\right) $$
+
+Now going back to the first singular term, and using the same asypmtotic approximation as before for the elliptic integral of the first kind:
+
+$$
+\frac{1}{4\pi r_o \left(\frac{r}{r_o}\right)} \ln \frac{4}{\sqrt{1-\frac{4\frac{r}{r_o}}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}}}
+$$
+
+using logrithm rules to pull out the square root and the 4 for now
+
+$$
+\frac{1}{4\pi r_o\left(\frac{r}{r_o}\right)} \left[\ln(4) - 0.5 \ln\left(1-\frac{4\frac{r}{r_o}}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\right)\right]
+$$
+
+simplifying inside the second logrithm
+
+$$
+\begin{aligned}
+& 1-\frac{4\frac{r}{r_o}}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2} \\
+%
+=& \frac{{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}-4\frac{r}{r_o}}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\\
+%
+=& \frac{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}\right)^2+2\frac{r}{r_o}+1-4\frac{r}{r_o}}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\\
+%
+=& \frac{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}\right)^2-2\frac{r}{r_o}+1}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\\
+%
+=& \frac{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}-1\right)^2}{\left(\frac{x-x_o}{r_o}\right)^2 + \left(\frac{r}{r_o}+1\right)^2}\\
+%
+=& \frac{\left(x-x_o\right)^2 + \left(r-r_o\right)^2}{\left(x-x_o\right)^2 + \left(r+r_o\right)^2}
+\end{aligned}
+$$
+
+plugging this into the full expression
+
+$$
+\frac{1}{4\pi r_o\left(\frac{r}{r_o}\right)} \left[\ln(4) - 0.5 \ln\left(\frac{\left(x-x_o\right)^2 + \left(r-r_o\right)^2}{\left(x-x_o\right)^2 + \left(r+r_o\right)^2}\right)\right]
+$$
+
+bringing the 4 back in, and resolving the non-singular denominator at $x=x_o$ and $r=r_o$
+
+$$
+\frac{1}{4\pi r_o\left(\frac{r}{r_o}\right)} \left[ - 0.5 \ln\left(\frac{\left[\left(x-x_o\right)^2 + \left(r-r_o\right)^2\right]}{16\left(4r_o^2\right)}\right)\right]
+$$
+
+$$
+\frac{1}{4\pi r_o\left(\frac{r}{r_o}\right)} \left[ - 0.5 \ln\left(\frac{\left(x-x_o\right)^2 + \left(r-r_o\right)^2}{64r_o^2}\right)\right]
+$$
+
+and the outside denominator fraction is non-singular with $r/r_o = 1$
+
+$$
+\frac{1}{4\pi r_o} \left[ - 0.5 \ln\left(\frac{\left(x-x_o\right)^2 + \left(r-r_o\right)^2}{64r_o^2}\right)\right]
+$$
+
+so all together we have:
+
+$$
+\frac{1}{2\pi}
+%
+\left(\frac{r-r_o}{\left(x-x_o\right)^2 + \left(r-r_o\right)^2}\right)
+%
+-\frac{1}{4\pi r_o} \left[ 0.5 \ln\left(\frac{\left(x-x_o\right)^2 + \left(r-r_o\right)^2}{64r_o^2}\right)\right]
+$$

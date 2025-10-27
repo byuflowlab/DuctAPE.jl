@@ -1,7 +1,0 @@
-\begin{tikzpicture}[scale=15]
-        %Airfoil
-        \draw[ thick,primary,pattern={Hatch[angle=35,distance=2pt,xshift=.1pt, line width=0.25pt]}, pattern color=plotsgray ] plot[] file{figures/isolated_dfdc_duct_coordinates.dat};
-        \draw[ thick,primary, pattern={Hatch[angle=35,distance=2pt,xshift=.1pt, line width=0.25pt]}, pattern color=plotsgray] plot[] file{figures/isolated_dfdc_hub_coordinates.dat};
-        \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt on 5cm] (-0.1,0) -- (0.25,0);
-        \draw[dash pattern=on 12pt off 2pt on 1pt off 2pt on 5cm ] (0.4,0) -- (0.25,0);
-\end{tikzpicture}

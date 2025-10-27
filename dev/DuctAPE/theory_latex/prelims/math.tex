@@ -1,0 +1,139 @@
+\section{Fundamental Mathematics}
+
+We will see the following mathematical concepts and/or those built upon them used often throughout this dissertation.
+%
+Despite these being relatively basic concepts (covered in undergraduate mathematics courses), a review never hurts.
+
+\subsection{\index{Dot Product}The Dot (Scalar) Product}
+
+\begin{marginfigure}
+    \centering
+        \input{prelims/figures/dotproduct.tikz}
+        \caption[Visual dot and scalar product.]{Visual representation of the relationship between the dot product and a scalar projection.}
+    \label{fig:dotproduct}
+\end{marginfigure}
+The dot product of two vectors is related to the length of the projection of one onto the other (it doesn't matter which due to the commutative nature of the dot product).
+%
+Note that the dot product takes in vectors and returns a scalar, thus it is sometimes called a scalar product.
+%
+We state the dot product mathematically as
+
+\begin{equation}
+    \label{eqn:dotproduct}
+    \vect{A} \cdot \vect{B} = |\vect{A}||\vect{B}| \cos \theta;
+\end{equation}
+
+\where \(\vect{A}\) and \(\vect{B}\) are two vectors and \(\theta\) is the angle between them (see \cref{fig:dotproduct} for an example).
+
+\subsection{\index{Cross Product}The Cross (Vector) Product}
+
+\begin{marginfigure}
+    \centering
+        \input{prelims/figures/crossproduct.tikz}
+        \caption[Visual cross product.]{Physical interpretation of the magnitude of the cross product; where the area is equal to base times height, or \(|\vect{A}| h\). Note that in this figure, the direction of the cross product is out of the page according to the right hand rule.}
+    \label{fig:crossproduct}
+\end{marginfigure}
+Unlike the dot product, the cross product is a vector-valued function, thus it is sometimes called a vector product.
+%
+The cross product of two vectors is the vector orthogonal to those two vectors with a magnitude equal to the area of a parallelogram with the sides being the two vectors of the cross product (thus it is also sometimes called a directed area product).
+%
+Note that in this case, the order of the vectors matters; the cross product is not commutative, but rather anticommutative (\(\vect{A} \times \vect{B} = - \vect{B} \times \vect{A}\)).
+%
+We state the cross product mathematically as
+
+\begin{equation}
+    \label{eqn:crossproduct}
+    \vect{A} \times \vect{B} = |\vect{A}||\vect{B}| \sin (\theta) \hat{\vect{n}}
+\end{equation}
+
+\where \(\hat{\vect{n}}\) is the unit normal vector orthogonal to the plane on which \(\vect{A}\) and \(\vect{B}\) lie.
+
+
+\subsection{\index{Gradient}The Gradient}
+
+For a given differentiable scalar field (or scalar-valued function) of multiple variables, \(f(x_1, x_2, \ldots x_n)\), the gradient at some point, \(\vect{p} = (\xi_1, \xi_2, \ldots, \xi_n)\) is the vector field (or vector-valued function) that indicates the direction of greatest increase from \(p\) as well as the rate of increase in that direction.
+%
+Mathematically, we state the gradient as the vector of partial derivatives of the field or function at point \(p\):
+
+\begin{equation}
+    \label{eqn:gradient}
+    \begingroup
+    \renewcommand*{\arraystretch}{1.5}
+    \nabla f(p) =
+    \begin{bmatrix}
+    \pd{f}{x_1}(p) \\
+    \pd{f}{x_2}(p) \\
+    \vdots \\
+    \pd{f}{x_n}(p) \\
+    \end{bmatrix}
+    \endgroup
+\end{equation}
+
+\where the symbol, \(\nabla\) indicates the gradient operator.
+
+\subsection{\index{Divergence}Divergence}
+
+The divergence is a vector operator which operates on a vector field and produces a scalar field describing the magnitude of the source of the vector field at a give point.
+%
+In other words, the strength of the departure (or divergence) from a point in the vector field.
+%
+In the context of this dissertation, we will mathematically state the divergence as the dot product of the gradient operator with the vector field:
+
+\begin{equation}
+    \label{eqn:divergence}
+    \begin{aligned}
+        \nabla \cdot \vect{V} &= \left(\pd{}{x}, \pd{}{y}, \pd{}{z}\right) \cdot \left( V_x, V_y, V_x \right) \\
+                              &= \pd{V_x}{x} + \pd{V_y}{y} + \pd{V_z}{z}
+    \end{aligned}
+\end{equation}
+
+\subsection{\index{Curl}Curl}
+
+The curl is a vector operator which operates on a vector field and describes the amount of rotation taking place in the vector field.
+%
+There are several, precise ways to state the curl mathematically, but for the sake of this dissertation, we will describe it as the cross product of the gradient operator and the vector field, \(\vect{V}\):
+
+\begin{equation}
+    \label{eqn:curl}
+    \begingroup
+    \renewcommand*{\arraystretch}{1.5}
+    \setlength{\arraycolsep}{7pt}
+    \nabla \times \vect{V} =
+    \begin{vmatrix}
+        \hat{\vect{e}}_x & \hat{\vect{e}}_y & \hat{\vect{e}}_z \\
+        \pd{}{x} & \pd{}{z} & \pd{}{z} \\
+        V_x & V_y & V_z
+    \end{vmatrix}
+    \endgroup
+\end{equation}
+
+\where we will limit ourselves to three dimensions in this dissertation as shown in \cref{eqn:curl}.
+
+Perhaps the most important application of the curl operator in the context of this dissertation is the definition of vorticity.
+%https://www2.cgd.ucar.edu/staff/islas/teaching/3_Circulation_Vorticity_PV.pdf
+\index{Vorticity}Vorticity, \(\vect{\omega}\), (or local spin of a fluid element) is defined as the curl of the velocity, \(\vect{V}\) (a vector field).
+
+\begin{equation}
+    \label{eqn:vorticitydef}
+	\vect{\omega} = \nabla \times \vect{V}
+\end{equation}
+
+\noindent Interestingly, this is perhaps the best physical interpretation of the curl operator.
+
+\subsection{Material Derivative}
+
+The material derivative just used is defined as
+
+\begin{equation}
+	\frac{D\Gamma}{Dt} = \pd{\Gamma}{t} + \vect{V} \boldsymbol{\cdot} \nabla \Gamma
+\end{equation}
+
+\where the first term (sometimes called the advective term) is the partial derivative of the ``material'' with respect to time.
+The second term (sometimes call the convective term) is the gradient (or more formally the covariant derivative) of the ``material'' dotted with, in our case, the velocity of the fluid flow.
+
+
+
+
+
+
+

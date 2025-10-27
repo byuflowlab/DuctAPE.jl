@@ -1,0 +1,109 @@
+\section{The Biot-Savart Law}
+\label{sec:biot-savart}
+
+While potential flow theory is quite useful, on its own it is insufficient for most of the interesting external aerodynamic phenomena which typically require the presence of circulation to model things like lift.
+%
+Circulation is a measure of vorticity\sidenote{see \cref{asm:irrotational}} in a fluid volume.
+%
+In order to incorporate the effects of vorticity into our irrotational potential flow field, we introduce the Biot-Savart law.
+
+Based on experiments by Jean-Baptiste Biot and F\'elix Savart, the Biot-Savart law describes the magnetic field induced by a constant electric current.
+%
+With a few changes in nomenclature from electro-magnetics to fluid dynamics, the Biot-Savart law describes the velocity induced by a filament of constant vorticity.
+%
+In words, the Biot-Savart law tells us the magnitude and direction of the velocity induced at a field point from a give vortex filament in 3-D space.
+%
+\Cref{fig:biot_savart} shows a visual example of this process and then we proceed with a quick derivation of the Biot-Savart law in a format that is useful for applications in this work.
+
+\begin{figure}[h!]
+    \centering
+        \input{prelims/figures/biot_savart.tikz}
+        \caption[Visual example of Biot-Savart Law.]{A vortex filament with a vorticity distribution \(\vect{\omega}(\vect{s})\) induces a velocity at a field point, \(\vect{q}\), from points, \(\vect{s}\). The induced velocity is orthogonal to the filament vorticity and the vector \(\vect{r}\) = \(\vect{q}\)-\(\vect{s}\) according to the right-hand rule.}
+    \label{fig:biot_savart}
+\end{figure}
+
+
+
+To understand how vorticity induces velocity, we introduce a vector potential, \(\vect{\psi}\), such that the curl of the vector potential is velocity:
+
+\begin{equation}
+    \label{eqn:velfromstream}
+    \vect{V} = \nabla \times \vect{\psi},
+\end{equation}
+%
+and the vector potential is defined on a divergence-free field (in other words, continuity is satisfied):
+
+\begin{equation}
+    \label{eqn:divfree}
+    \nabla \cdot \vect{\psi} = 0.
+\end{equation}
+
+
+Next we take the definition of vorticity (see \cref{asm:irrotational}) and plug in our expression for \(\vect{\psi}\):
+
+\begin{equation}
+    \begin{aligned}
+        \vect{\omega} &= \nabla \times \vect{V} \\
+         &= \nabla \times \left( \nabla \times \vect{\psi} \right) \\
+    \end{aligned}
+\end{equation}
+
+\noindent Applying a vector identity, we are left with:
+
+\begin{equation}
+    \vect{\omega} = \nabla \left(\nabla \cdot \vect{\psi} \right) - \nabla^2 \vect{\psi}.
+\end{equation}
+%
+Since we defined \(\vect{\psi}\) to be divergence free (see \cref{eqn:divfree}), our expression for vorticity simplifies to the Poisson equation
+
+\begin{equation}
+    \vect{\omega} = - \nabla^2 \vect{\psi}.
+\end{equation}
+
+We can apply a Green's function in order to solve for \(\vect{\psi}\) in three dimensions.
+%
+For a source point, \(\vect{s}\) along a vortex filament, and a field point, \(\vect{q}\), being influenced, we use a well known Green's function\sidenote{See nearly any math text covering partial differential equation solution methods.} in terms of the vector from \(\vect{s}\) to \(\vect{q}\):
+
+\begin{equation}
+    \mathcal{G} = \frac{-1}{4\pi |\vect{r}|},
+\end{equation}
+
+\where \(\vect{r} = \vect{q} - \vect{s}\) is the vector from the source point to the field point and \(|\vect{r}|\) is the Euclidean distance from the point along the vortex filament of influence, \(\vect{s}\), and the point of interest, \(\vect{q}\).
+%
+Applying this Green's function to the solution of \(\vect{\psi}\) yields
+
+\begin{equation}
+    \label{eqn:psi1}
+    \vect{\psi} = \frac{1}{4\pi} \iiint_{\mathcal{V}} \frac{\vect{\omega}(\vect{s})}{|\vect{r}|} \d^3s.
+\end{equation}
+
+\where the integral is taken over a finite volume, or in our applications, a filament.
+
+If we now apply \cref{eqn:velfromstream}, by taking the curl of \cref{eqn:psi1}, we arrive at
+
+\begin{equation}
+        \vect{V} =\nabla \times \frac{1}{4\pi} \iiint_{\mathcal{V}} \frac{\vect{\omega}(\vect{s})}{|\vect{r}|} \d^3s.
+\end{equation}
+
+\noindent Applying the identity:
+
+\begin{equation}
+    \nabla \times \frac{\vect{\omega}(\vect{s})}{|\vect{r}|} = \frac{\vect{\omega}(\vect{s})\times \vect{r}}{|\vect{r}|^3}
+\end{equation}
+
+\where \(\vect{\omega}(\vect{s})\) is constant relative to the differential operator,
+%
+we arrive at an expression for the velocity induced at point \(\vect{q}\) from a vortex filament integrated along \(s\), in other words, the form of the Biot-Savart law especially useful in this work.
+
+\begin{equation}
+    \label{eqn:biotsavart}
+        \vect{V} = \frac{1}{4\pi} \iiint_{\mathcal{V}} \frac{\vect{\omega}(\vect{s}) \times \vect{r}}{|\vect{r}|^3} \d^3s.
+\end{equation}
+
+\noindent This relationship between vorticity and induced velocity is foundational to nearly all of the aerodynamic analysis methods in this work, especially the vortex particle method and vortex panel method discussed in the next few chapters.
+
+
+
+
+
+

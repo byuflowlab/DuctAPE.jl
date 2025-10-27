@@ -1,0 +1,147 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%                          REFERENCE FRAMES AND VELOCITIES
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Reference Frames}
+\label{ssec:reference_frames}
+
+To begin , we need to start with an explanation of the various reference frames and velocity decompositions used in the rotor and wake models.
+%
+We introduce multiple reference frames, because we would like to perform our analysis in steady frames.
+%
+The first frame we will use is the absolute reference frame, which is the reference frame of an observer stationed at a static location on the duct wall (the same reference frame introduced briefly in \cref{ch:panel_method}).
+%
+Since the aerodynamics of rotors are inherently unsteady, we cannot perfectly model things as steady.
+%
+If we change our reference frame to be relative to a blade as we pass across the rotor disk, however, we can reasonably approximate the flow across the blade section as steady.
+%
+In this blade relative---or simply relative---reference frame, the observer is stationed on a blade such that to the observer the blade is stationary.
+
+\subsection{Absolute Frame}
+\label{ssec:absoluteframe}
+
+Along with the absolute reference frame, we re-iterate the absolute coordinate system introduced in the previous chapter in \cref{fig:absolutecoordinatesystem} showing a meridional view of the ducted rotor.
+%
+As can be seen, the duct is defined in a right-handed cylindrical coordinate system.
+%
+We define the \(z\)-axis to be along the axis of symmetry (also the center line/axis of rotation for the rotor(s)), positive in the downstream direction.
+%
+The \(r\)-axis is positive from the center line outward.
+%
+Finally, \(\theta\) is positive about the \(z\)-axis according to the right-handed system.
+%
+% This allows a conventional right-handed rotor to rotate in the positive \(\theta\) direction.\change{keep track of sign changes that happen based on swapping theta direction}
+%
+We choose the origin to be located on the \(z\) axis, aligned with the foremost rotor plane.
+%\begin{figure}[h!]
+%    \centering
+%    \input{./rotor_wake_method/figures/duct_reference_frame.tikz}
+%    \caption{Meridional view showing the duct reference frame ({\color{plotsblue} blue}), with origin ({\color{plotsred} red}), and duct wall and hub ({\color{plotsgray} gray}).}
+%    \label{fig:absolutecoordinatesystem}
+%\end{figure}
+
+\begin{figure}[h!]
+    \centering
+   \input{./rotor_wake_method/figures/absolute_reference_frame.tikz}
+    % \includegraphics[width=\textwidth]{./rotor_wake_method/figures/duct_frame}
+   \caption[Absolute reference frame.]{Meridional view showing the absolute reference frame. Example duct and center body geometry is shown in blue, the origin location is shown in red, and an example blade lifting line location is shown in green.}
+    \label{fig:absolutecoordinatesystem}
+\end{figure}
+
+
+
+\subsection{Relative Frame}
+\label{ssec:relativeframe}
+
+%
+It may be helpful to initially think of the relative reference frame as orthogonal to the slice of the absolute frame shown in \cref{fig:absolutecoordinatesystem}.
+%
+Imagine standing on the blade looking from the direction of the duct wall toward the rotor hub (in the negative \(r\) direction).
+%
+In turbo-machinery conventions, the \(z\)-\(r\) slice of \cref{fig:absolutecoordinatesystem} is the meridional view, and the \(m\)-\(\theta\) slice of \cref{fig:relativeframe} is the cascade view.
+%
+We can use this cascade view to understand the various velocity decompositions through which we can relate the absolute and relative reference frames.
+%
+The blade rotates in the positive \(\theta\) direction, and the \(m\) axis (where \(dm^2 = dz^2+dr^2\)) is along a streamline passing through the lifting line representing the blade.
+%
+That is to say, the \(m\) axis is the meridional axis, which may or may not be orthogonal to \(r\) for a given blade element.
+
+\begin{figure}[h!]
+    \centering
+    \input{./rotor_wake_method/figures/relative_reference_frame.tikz}
+    \caption[Relative Frame.]{Cascade view showing the blade element relative frame with velocity decompositions.}
+    \label{fig:relativeframe}
+\end{figure}
+
+
+
+\subsection{Velocity Decomposition and Definition}
+
+The velocity triangles in \cref{fig:relativeframe} show how the various velocity components are combined into useful quantities.
+%
+The components that give us the absolute local velocity, \(\vect{C}\), include: the freestream velocity, \(\vect{C}_\infty\),\sidenote{We will assume according to axisymmetry that \(\vect{C}_\infty=||\vect{C}_\infty|| \hat{z}\).}
+and the velocity induced by the rotors and duct, \(\vect{V}\).
+%
+Together, we have
+
+\begin{equation}
+    \vect{C} = C_\infty \hat{z} + \vect{V}
+\end{equation}
+
+The relative velocity, \(\vect{W}\), is comprised of the absolute velocity, \(\vect{C}\), plus the rotational velocity at the respective radial station along the blade, \(\vect{U} = \Omega r \hat{\theta}\);
+
+\begin{equation}
+    \begin{aligned}
+        \vect{W} &= \vect{C} - \vect{U}\\
+                 &= \vect{C} - \Omega r \hat{\theta}.
+    \end{aligned}
+\end{equation}
+
+It will be useful to put both \(\vect{C}\) and \(\vect{W}\) in terms of \(m\) and \(r\).
+%
+We get the velocities in terms of \(m\) and \(r\) by first separating out the various velocity components in the absolute reference frame and applying the definition of the meridional axis.
+%
+The velocity in the absolute frame is broken down into its various components as
+
+\begin{equation}
+    \label{eqn:absolutevelocities}
+    \begin{aligned}
+        C_z &= V_z +  C_\infty \\
+        C_r & = V_r  \\
+        C_\theta &= V_\theta.
+    \end{aligned}
+\end{equation}
+
+Similarly, the relative velocity is broken down as\sidenote{In addition to the blue shaded boxes introduced in the last chapter, we will additionally use gray boxes for orientation in this chapter. The gray boxes indicate expressions that are not used immediately in the derivations of this chapter, but will be referenced in later sections of our development. Note that expressions used immediately will not be boxed unless they are also needed later.}
+
+\begin{equation}
+    \label{eqn:relativevelocities}
+    \stepbox{
+        \begin{aligned}
+            W_z &= V_z + C_\infty \\
+            W_r & = V_r \\
+            W_\theta &= V_\theta - \Omega r.
+        \end{aligned}
+    }
+\end{equation}
+
+\noindent These decompositions immediately yield the \(\theta\) components of the velocities.
+%
+To obtain the meridional component, we can use the definition of the meridional coordinate, that is, the direction tangent to the mean streamline in the \(z-r\) (meridional) plane, to see that
+
+\begin{equation}
+    \label{eqn:vmwm}
+    % \eqbox{
+        \vect{C}_m = \vect{W}_m = C_z \hat{z} + C_r \hat{r}.
+    % }
+\end{equation}
+
+\noindent Now we have all the pieces to express the relative velocities in terms of the blade element frame (see the right-most velocity triangle in \cref{fig:relativeframe}):
+
+\begin{align}
+    \vect{C} &= ||\vect{C_m}||\hat{m} + C_\theta \hat{\theta} \\
+    \label{eqn:inflowvelocity}
+    \vect{W} &= ||\vect{C_m}||\hat{m} + (C_\theta - \Omega r) \hat{\theta}
+\end{align}

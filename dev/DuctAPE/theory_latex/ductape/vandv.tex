@@ -1,0 +1,292 @@
+%---------------------------------#
+%              V & V              #
+%---------------------------------#
+\section{Verification and Validation}
+\label{sec:vv}
+
+In this section we present verification and validation of DuctAPE, showing outputs compared to DFDC, as well as characterizing some of the limitations of DuctAPE through a comparison with experimental data.
+
+\subsection{Verification Against DFDC}
+\label{ssec:verification}
+
+As we have established, the methodology behind DuctAPE is based heavily on DFDC.
+%
+Therefore, we present a set of comparisons between DuctAPE and DFDC.
+%
+We compare with an example available in the DFDC source code using a single ducted rotor across a range of operating conditions, specifically across a range of advance ratios including a hover condition.
+
+The geometry used is shown in \cref{fig:singlerotorgeom}.
+%
+% The various geometry details, as well as DFDC run files and DuctAPE analysis scripts are available in the \href{https://github.com/byuflowlab/ductape-2025-companion-repository}{companion repository}\footnote{\url{https://github.com/byuflowlab/ductape-2025-companion-repository}} to the journal article based on the work in this chapter.\scite{Mehr_DuctAPE_2025}
+%
+For this verification case, we used a rotor with tip radius of 0.15572 meters located 0.12 meters aft of the center body leading edge.
+%
+The wake extended 0.8 times the length of the duct (roughly 0.25 meters) past the duct trailing edge.
+%
+We used 10 blade elements associated with 11 wake sheets to model the rotor.
+%
+We set the rotor rotation rate constant at 8000 revolutions per minute and adjusted the freestream velocity in order to sweep across advance ratios from 0.0 to 2.0 by increments of 0.1.
+%
+%We assumed sea level conditions for reference values.
+\begin{figure}[h!]
+     \centering
+%\tikzsetnextfilename{verification/verification_geometry}
+     \input{./ductape/figures/verification/verification_geometry.tikz}%\hspace*{5em}
+     \caption[DuctAPE verification geometry.]{Single rotor verification case geometry generated in DuctAPE. Duct and center body geometry in blue, rotor lifting line location in red, and approximate wake streamlines in green, where markers indicate panel egdes.}
+    \label{fig:singlerotorgeom}
+\end{figure}
+
+\noindent As part of the myriad minor implementation variations enabling smooth gradients, we note here that DuctAPE differs from DFDC in the geometry re-paneling approach as part of the pre-processing of inputs.
+%
+The DuctAPE geometry re-paneling approach aligns the duct, center body, and wake panels aft of the rotor and distributes them linearly.
+%
+We align the panels so that there is a consistent number of panels between discrete locations (such as rotor positions and body trailing edges) in the geometry, thereby avoiding discontinuities that would be incompatible with a gradient-based optimizer.
+%
+For example, the number of center body and duct panels ahead of and behind the rotor need to stay constant if the rotor position is selected as a design variable in an optimization.
+%
+Without the number of panels ahead of and behind the rotor staying constant, there would be discontinuities as the rotor passed over panels along the solid bodies.
+
+
+Scanning \cref{tab:dfdccompsinglerotor}, we see that the differences between DFDC and DuctAPE are generally less than 1/2\% for major output values for both a hover and a cruise case.
+%
+\Cref{fig:singlerotorcpcteta} shows comparisons of total thrust and power coefficients (\cref{fig:singlerotorcpct}) and total efficiency (\cref{fig:singlerotoreta}), across the range of advance ratios, showing excellent matching across the entire range.
+%
+
+\begin{table}[h!]
+    \centering
+    \caption[DuctAPE verification value comparison.]{Comparison of solver outputs for a cruise (\(J=1.0\)) and hover (\(J=0.0\)) case. Errors relative to DFDC.}
+    \begin{subtable}[t]{\textwidth}
+        \begin{center}
+            \input{ductape/figures/verification/single_rotor_J1_verification_table.tex}
+        \end{center}
+    \end{subtable}
+
+    \vspace{1em}
+
+    \begin{subtable}[t]{\textwidth}
+        \begin{center}
+            \input{ductape/figures/verification/single_rotor_J0_verification_table.tex}
+        \end{center}
+    \end{subtable}
+    \label{tab:dfdccompsinglerotor}
+\end{table}
+
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{0.49\textwidth}
+         \centering
+%\tikzsetnextfilename{verification/single_rotor_cpct_comparison}
+        \input{ductape/figures/verification/single_rotor_cpct_comparison.tikz}
+        \caption{Power (blue) and thrust (red) comparison.}
+        \label{fig:singlerotorcpct}
+     \end{subfigure}
+\hfill
+     \begin{subfigure}[t]{0.49\textwidth}
+         \centering
+%\tikzsetnextfilename{verification/single_rotor_efficiency_comparison}
+         \input{ductape/figures/verification/single_rotor_efficiency_comparison.tikz}
+         \caption{Efficiency comparison.}
+        \label{fig:singlerotoreta}
+     \end{subfigure}
+     \caption[DuctAPE power and thrust verification plots.]{Comparison of power and thrust coefficients and efficiency for DFDC (dashed) and the DuctAPE implementation (solid) across a range of advance ratios.}
+    \label{fig:singlerotorcpcteta}
+\end{figure}
+
+
+
+
+
+%#####################################################################
+%                                                                    #
+%                             VALIDATION                             #
+%                                                                    #
+%#####################################################################
+
+\newpage
+\subsection{Validation with Experimental Data}
+\label{ssec:validation}
+
+\begin{quote}
+    \emph{\color{mediumgray}Note that the data digitization and validation analysis in this subsection was performed by Nathan Lehnhof using the analysis and plotting code from Judd Mehr and the uncertainty analysis code of Ayden Bennett.}
+\end{quote}
+
+For validation, we compare DuctAPE outputs with data from a series of experiments performed by Hamilton Standard in the late 1960s \cite{HS_1968}.
+%
+% The geometries for the high-speed and low-speed data sets are shown in \cref{fig:highspeedgeom} and \cref{fig:lowspeedgeom}, respectively.
+The geometry for the experiments is shown in \cref{fig:highspeedgeom}.
+%
+Coordinates for the duct and center body, as well as the location of the rotor are provided in the Hamilton Standard report \cite{HS_1968}.
+%
+Details on the axial location of the center body leading edge are missing, so we have somewhat arbitrarily chosen the geometry shown here based on photographs in the report.
+%
+We determined, however, that the location of the center body leading edge has negligible impact on the results of the DuctAPE analysis for this case.
+%
+We discretized the geometry and wake to allow both for numerical stability (avoiding too many panels), while also being sufficiently refined to keep relative changes in thrust and power coefficients below 1\%.
+%
+As with the verification case above, the specific geometry details and run scripts for this validation case---as well as digitized versions of the data tabulated in the Hamilton Standard report---are available in the companion repository to this work.
+
+\begin{figure}[h!]
+     \centering
+%\tikzsetnextfilename{validation/high_speed_validation_geometry}
+     \setlength{\sidecapraise}{-2.5cm}
+     \begin{sidecaption}[DuctAPE validation geometry.]{High-speed validation case geometry generated in DuctAPE. Duct and center body geometry in blue, rotor lifting line location in red, and approximate wake streamlines in green, where markers indicate panel edges.}[fig:highspeedgeom]
+     \input{./ductape/figures/validation/high_speed_validation_geometry.tikz}%\hspace*{5em}
+ \end{sidecaption}
+ \vskip -3cm
+\end{figure}
+
+
+% \begin{figure}[h!]
+%      \centering
+% %\tikzsetnextfilename{validation/validation_geometry}
+%      \input{ductape/figures/validation/validation_geometry.tikz}%\hspace*{5em}
+%      \caption{Low-speed validation case geometry generated in DuctAPE. Duct and center body geometry in blue, rotor lifting line location in red, and approximate wake streamlines in green, where markers indicate panel edges.}
+%     \label{fig:lowspeedgeom}
+% \end{figure}
+%
+% \begin{figure}[h!]
+%      \centering
+% %\tikzsetnextfilename{validation/reduced_exit_validation_geometry}
+%      \input{ductape/figures/validation/reduced_exit_validation_geometry.tikz}%\hspace*{5em}
+%      \caption{Validation case geometry generated in DuctAPE. Duct and center body geometry in blue, rotor lifting line location in red, and approximate wake streamlines in green, where markers indicate panel edges.}
+%     \label{fig:lowspeedgeom}
+% \end{figure}
+
+We present here a comparison with one of the more complete test sets from the Hamilton Standard Report.
+%
+For each test in this portion of the campaign, the ratio of the exit area to propeller area was 1.0.
+%
+The tests were performed at Mach 0.2 with a narrow-tip, 3-blade propeller with a 3/4 radius twist angle of 43 degrees.
+%
+Detailed rotor blade geometry information is also provided in the Hamilton Standard report for each of the cases, but some details are lacking in the definition of the blade section airfoil geometry.
+%
+Based on the provided thickness and ideal lift coefficient distributions, we determined sets of NACA 16-series airfoils for which we ran XFOIL analyses.
+%
+We then applied rotational (Du-Selig\cite{DuSelig_1998} and Eggers\cite{Eggers_2003}) corrections to the resulting lift and drag polars which we also smoothed using B-Spline regressions to smooth out non-physical artifacts in the polars.
+%
+Since the exact airfoil is unknown, we took minor liberties in applying additional pitch (within 2 degrees) to the rotor blades in an attempt to better match the rotor power.
+
+We begin with rotor power and thrust coefficients compared in \cref{fig:highspeedcpct_rotor}.
+%
+We use faded markers for cases in which the rotor tip speed exceeded a critical Mach number of 0.7, and may therefore experience transonic effects not captured by XFOIL.
+%
+We also include first-order uncertainty approximations based on measurement uncertainty and variable definitions provided in the Hamilton Standard report.\scite{HS_1968}
+%
+We see generally good matching of DuctAPE outputs compared with the experimental rotor data.
+%
+Comparing with the average experimental values, we have an average absolute error of 3.7\% for power coefficient and 1.5\% error for thrust coefficient.
+%
+\Cref{fig:highspeedcpct_total} shows comparisons of the total power and thrust coefficients (including duct forces).
+%
+We note that general good matching remains.
+%
+Specifically, the power coefficients are identical and the total thrust coefficient has an average absolute error of 2.1\%.
+%
+This indicates that our viscous drag model approximates the duct drag sufficiently well; which in this case balances almost completely with the duct-induced thrust.
+%
+Thus very little difference is seen in the thrust between the rotor and total thrust.
+
+
+These results are encouraging as we see DuctAPE able to capture the aerodynamics of ducted rotor systems well, even when stretching the underlying low Mach assumption of the methods.
+%
+Though as noted, the low Mach assumption can only be stretched so far, as the accuracy is shown here to be dependent on the blade element polars provided to DuctAPE.
+%
+If blade sections see transonic effects, it may still be possible for DuctAPE to model those cases accurately, provided that the polars are generated with a tool suitable for capturing transonic aerodynamics.
+
+\begin{figure}[h!]
+     \centering
+     \begin{subfigure}[t]{0.49\textwidth}
+         \centering
+%\tikzsetnextfilename{validation/high_speed_ctcp_rotor_43}
+        \input{ductape/figures/validation/high_speed_ctcp_rotor_43.0.tikz}
+        \caption{Rotor power (blue) and thrust (red) comparison.}
+        \label{fig:highspeedcpct_rotor}
+     \end{subfigure}
+\hfill
+     \begin{subfigure}[t]{0.49\textwidth}
+         \centering
+%\tikzsetnextfilename{validation/high_speed_ctcp_43}
+         \input{ductape/figures/validation/high_speed_ctcp_43.0.tikz}
+         \caption{Total (rotor + duct) power (blue) and thrust (red) comparison.}
+        \label{fig:highspeedcpct_total}
+     \end{subfigure}
+     \caption[DuctAPE validation power and thrust plots.]{Comparison of rotor and rotor + duct power and thrust coefficients for DuctAPE (solid lines) and Hamilton Standard data (markers), where the cases with tip Mach number above 0.7 are faded.}
+\label{fig:highspeedcpct}
+\end{figure}
+
+
+The Hamilton-Standard experiments also included lower speed experiments with a bell-mouth inlet duct geometry.
+%
+We found that DuctAPE struggled to match the experimental data in this case, notably due to large separation of the nacelle at higher speeds.
+%
+This failure to model cases where viscous effects dominate highlights one of the limitations of DuctAPE---namely, the aerodynamic models are inviscid and therefore cannot model the coupled effects of separated flows, even when the integral boundary layer of \cref{ssec:viscous_drag_model} is applied.
+%
+Therefore DuctAPE analyses become increasingly inaccurate the more severe separation becomes.
+%
+This point will become important later in \cref{sec:optimization}.
+
+% We next look at a comparison of the total power, thrust, and efficiency for the low-speed case is shown in \cref{fig:lowspeedcpcteta}.
+% %
+% It is immediately seen in \cref{fig:lowspeedcpct} that major deviations from the experimental data occur for the upper end of the advance ratio range tested.
+% %
+% The increasingly poor matching to the experimental data as advance ratio increases is likely due to separation that occurs on the duct nacelle shortly after the leading edge.
+% %
+% Specifically, nacelle separation would induce a low-pressure region near the duct exit, affecting the rotor performance---a coupled effect that DuctAPE is not capable of capturing.
+% %
+% To support this claim, we explored artificially adjusting the duct exit pressure by increasing the center body radius toward the exit, thereby reducing the exit area for all operating points, which lead to better matching in the rotor performance across the range of advance ratios (though somewhat worse at lower advance ratios since we are still not properly capturing the coupled viscous effects) as contrasted in \cref{fig:rotorcpctexitcomp}.
+% %
+% Note that we adjusted the exit area until the outputs of DuctAPE lined up better with the experimental data, and this exit area reduction approach is neither rigorous, nor viable for actual analysis.
+% %
+% We simply include it here to help categorize DuctAPE's limitations.
+
+% In summary, we see that DuctAPE performs very well for fully attached flow cases (e.g. the high-speed case).
+% %
+% On the other hand, these results also highlight one of the limitations of DuctAPE---namely, the aerodynamic models are inviscid and therefore cannot model the coupled effects of separated flows, even when the integral boundary layer of \cref{ssec:viscous_drag_model} is applied.
+% %
+% Therefore DuctAPE analyses become increasingly inaccurate the more severe separation becomes.
+% %
+% This point will become important later in \cref{sec:optimization}.
+%
+
+% \begin{figure}[h!]
+%      \centering
+%      \begin{subfigure}[t]{0.49\textwidth}
+%          \centering
+% %\tikzsetnextfilename{validation/low_speed_ctcp_36}
+%         \input{ductape/figures/validation/low_speed_ctcp_36.0.tikz}
+%         \caption{Total power (blue) and thrust (red) comparison.}
+%         \label{fig:lowspeedcpct}
+%      \end{subfigure}
+%      \hfill
+%      \begin{subfigure}[t]{0.49\textwidth}
+%          \centering
+% %\tikzsetnextfilename{validation/low_speed_eta_36}
+%          \input{ductape/figures/validation/low_speed_eta_36.0.tikz}
+%          \caption{Efficiency comparison.}
+%         \label{fig:lowspeedeta}
+%      \end{subfigure}
+%      \caption{Comparison of total power and thrust coefficients and efficiency for DuctAPE (solid lines) and Hamilton Standard data (markers), where the cases with tip Mach number above 0.7 are faded.}
+% \label{fig:lowspeedcpcteta}
+% \end{figure}
+%
+%
+% \begin{figure}[h!]
+%      \centering
+%      \begin{subfigure}[t]{0.49\textwidth}
+%          \centering
+% %\tikzsetnextfilename{validation/low_speed_ctcp_rotor_36}
+%         \input{ductape/figures/validation/low_speed_ctcp_rotor_36.0.tikz}
+%         \caption{Rotor power (blue) and thrust (red) comparison with nominal geometry.}
+%         \label{fig:lowspeedcpctrotor}
+%      \end{subfigure}
+%      \hfill
+%      \begin{subfigure}[t]{0.49\textwidth}
+%          \centering
+% %\tikzsetnextfilename{validation/low_speed_reduced_exit_ctcp_rotor_36}
+%          \input{ductape/figures/validation/low_speed_reduced_exit_ctcp_rotor_36.0.tikz}
+%         \caption{Rotor power (blue) and thrust (red) comparison with adjusted exit area.}
+%         \label{fig:pressureadjustcpct}
+%      \end{subfigure}
+%      \caption{Comparison of rotor power and thrust coefficients for the experimental geometry (\cref{fig:lowspeedcpctrotor}) and geometry adjusted to approximate the pressure ratio induced by large separation of the duct nacelle (\cref{fig:pressureadjustcpct}). Again, cases with a tip Mach number over 0.7 are faded.}
+%     \label{fig:rotorcpctexitcomp}
+% \end{figure}
