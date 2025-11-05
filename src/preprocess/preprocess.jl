@@ -242,7 +242,7 @@ Function that calls all of the various panel generation functions are returns a 
 - `rp_center_body_coordinates::Matrix{Float}` : matrix containing the re-paneled center_body coordinates
 - `num_wake_sheets::Int` : number of wake sheets
 - `rotor_indices_in_wake::Vector{Int}` : vector containing the indices of where in the wake the rotors reside (used later to define the rotor panel edges).
-- `rotor_axial_position:Vector{Float}` : axial locations of rotor lifting lines (contained in Rotor)
+- `rotor_axial_position:Vector{Float}` : axial locations of rotor actuator lines (contained in Rotor)
 - `wake_grid::Array{Float}` : array containig the z and r elliptic grid points defning the wake geometry.
 
 # Keyword Arguments
