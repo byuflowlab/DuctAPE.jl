@@ -199,7 +199,7 @@ Obtain rotor hub and tip radii based on duct and center_body geometry.
 - `rp_duct_coordinates::Matrix{Float}` : re-paneled duct coordinates
 - `rp_center_body_coordinates::Matrix{Float}` : re-paneled center_body coordinates
 - `tip_gaps::Vector{Float}` : gaps between blade tips and duct surface (MUST BE ZEROS for now)
-- `rotor_axial_position::Vector{Float}` : rotor lifting line axial positions.
+- `rotor_axial_position::Vector{Float}` : rotor actuator line axial positions.
 
 # Returns
 - `Rtips::Vector{Float}` : rotor tip radii
@@ -319,7 +319,7 @@ end
 Generate rotor panel objects.
 
 # Arguments
-- `rotor_axial_position::Vector{Float}` : rotor lifting line axial position
+- `rotor_axial_position::Vector{Float}` : rotor actuator line axial position
 - `wake_grid::Array{Float,3}` : wake elliptic grid axial and radial locations
 - `rotor_indices_in_wake::Vector{Int}` : indices of where along wake the rotors are placed
 - `num_wake_sheets::Int` : number of wake sheets

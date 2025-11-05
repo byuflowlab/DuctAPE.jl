@@ -94,7 +94,7 @@ If we now assume that:
 
     \limit{This is a simplified modeling approach that ignores the some of the flow turning of the blade.}
 
-    \why{By using this lifting line approach rather than some other approach, such as a lifting surface, we (like many of our other assumptions) simplify the model, allowing for simpler implementation and faster computation.}
+    \why{By using this actuator line approach rather than some other approach, such as a lifting surface, we (like many of our other assumptions) simplify the model, allowing for simpler implementation and faster computation.}
 
 \end{assumption}
 
@@ -160,7 +160,7 @@ Due to conservation of circulation, we know the circulation jumps anywhere downs
 %
 On the other hand, \(\gamma_\theta\) would only be generally applicable if we assumed that the \(\Omega r\) component of \(W_\theta\) (see \cref{eqn:relativevelocities}) was constant in the entire wake.
 %
-In actuality, we only know \(\Omega r\) right at the rotor lifting line, but not generally in the remainder of the wake.
+In actuality, we only know \(\Omega r\) right at the rotor actuator line, but not generally in the remainder of the wake.
 %
 We therefore want to develop a more general expression for \(\gamma_\theta\) based on requiring the wake to be force-free, or in other words, we demand static pressure continuity across the vortex sheets.
 %
@@ -790,7 +790,7 @@ As such, we can obtain \(\widetilde{h}\) as the accumulation of changes in entha
     \Delta h_{\text{disk}} = w_c = \Omega \Delta(r C_\theta).
 \end{equation}
 
-\noindent We can relate the jump in enthalpy to the circulation by applying our lifting line assumption (\cref{asm:liftingline}),
+\noindent We can relate the jump in enthalpy to the circulation by applying our actuator line assumption (\cref{asm:liftingline}),
 which means that there is no radial deviation in flow across the blade, as well as substituting in for \(C_\theta\) from \cref{eqn:vtheta} (for a single disk).
 
 % \begin{equation}

@@ -69,12 +69,12 @@ Also, \(W\) and \(c\) are the local (at a given radial station, \(r\)) inflow ma
 \subsection{Blade Circulation}
 \label{ssec:bladecirculation}
 
-To get circulation for each blade element, we treat the rotor blade as a lifting line and assume that:
+To get circulation for each blade element, we treat the rotor blade as an actuator line and assume that:
 
 \begin{assumption}
 \label{asm:liftingline}
 
-    \asm{The rotor can reasonably be modeled as a lifting line such that local blade circulation can be expressed according to the Kutta-Joukowski theorem, which states:}
+    \asm{The rotor can reasonably be modeled as an actuator line such that local blade circulation can be expressed according to the Kutta-Joukowski theorem, which states:}
 
     \[ \vect{F} = \rho \vect{W} \times \vect{\Gamma} \]
 
@@ -84,7 +84,7 @@ To get circulation for each blade element, we treat the rotor blade as a lifting
 
 \end{assumption}
 
-Modeling the rotor blades as lifting lines, if we take the velocity to be the local inflow velocity magnitude, \(W=\left[W_z^2+W_\theta^2\right]^{1/2}\) at the radial point of interest, we can take the perpendicular component of the force to be lift also at the radial point of interest.
+Modeling the rotor blades as actuator lines, if we take the velocity to be the local inflow velocity magnitude, \(W=\left[W_z^2+W_\theta^2\right]^{1/2}\) at the radial point of interest, we can take the perpendicular component of the force to be lift also at the radial point of interest.
 %
 We can then rearrange the expression for the Kutta-Joukowski theorem in \cref{asm:liftingline} for the local circulation magnitude, \(\Gamma(r)\), along the blade as
 

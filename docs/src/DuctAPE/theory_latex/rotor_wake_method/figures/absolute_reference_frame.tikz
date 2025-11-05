@@ -31,7 +31,7 @@
     \draw[secondary, thick] (Orplus)-- (Orminus);
     \draw[-{Stealth[length=2pt,width=2pt]}, secondary, thick] (O)-- (Ozplus);
 
-    % blade lifting line
+    % blade actuator line
     \coordinate (rhub) at (0.0,0.5);
     \coordinate (rtip) at (0.0,2.0);
     \draw[tertiary,ultra thick] (rhub) -- (rtip);
@@ -49,7 +49,7 @@
 
     % circulations
 
-    % blade lifting line label
+    % blade actuator line label
 
     % blade circulations label
 \end{tikzpicture}
