@@ -32,6 +32,7 @@ makedocs(;
             ],
             "Visualization" => "DuctAPE/visualization.md",
             "Theory" => "DuctAPE/theory.md",
+            "Python" => "DuctAPE/python_tutorial.md",
         ],
         "C\$^4\$Blade" => [
             "Intro" => "C4Blade/intro.md",
