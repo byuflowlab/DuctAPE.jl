@@ -164,7 +164,7 @@ The next step is to assemble an object of type `Rotor` which contains the geomet
 In this example, we have a single rotor defined as follows.
 
 ```@example tutorial
-# number of rotors
+# number of rotor blades
 B = 5
 
 # rotor axial location
