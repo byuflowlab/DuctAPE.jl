@@ -23,6 +23,9 @@ include("test_utils.jl")
 
 println("Running Tests...")
 
+# - Run tutorial - #
+include("tutorial.jl")
+
 # - pre-process related tests - #
 include("afcorrections.jl")
 include("panel_generation_tests.jl")
