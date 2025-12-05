@@ -24,7 +24,11 @@ include("test_utils.jl")
 println("Running Tests...")
 
 # - Run tutorial - #
-include("tutorial.jl")
+if Sys.WORD_SIZE == 32
+    @info "Skipping full tutorial on 32-bit environment due to memory limits"
+else
+    include("tutorial.jl")
+end
 
 # - pre-process related tests - #
 include("afcorrections.jl")
