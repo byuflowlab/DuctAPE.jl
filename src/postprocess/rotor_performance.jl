@@ -422,7 +422,7 @@ function get_ideal_efficiency(total_thrust, rhoinf, Vinf, Rref)
         # TC = total_thrust / (0.5 * rhoinf * Vinf^2 * pi * Rref^2)
         return 2.0 / (
             1.0 +
-            sqrt(max((total_thrust / (0.5 * rhoinf * Vinf^2 * pi * Rref^2)), -1.0) + 1.0)
+            sqrt(max((total_thrust / (0.5 * rhoinf * Vinf^2 * pi * Rref[1]^2)), -1.0) + 1.0)
         )
     else
         return 0.0
@@ -472,13 +472,13 @@ function tqpcoeff!(CT, CQ, CP, thrust, torque, power, rhoinf, Omega, Rref)
             # n = o / (2.0 * pi)
 
             # thrust coefficient
-            CT[i] = thrust[i] / (rhoinf * (o / (2.0 * pi))^2 * (2.0 * Rref)^4)
+            CT[i] = thrust[i] ./ (rhoinf * (o / (2.0 * pi))^2 * (2.0 * Rref[i])^4)
 
             # torque coefficient
-            CQ[i] = torque[i] / (rhoinf * (o / (2.0 * pi))^2 * (2.0 * Rref)^5)
+            CQ[i] = torque[i] ./ (rhoinf * (o / (2.0 * pi))^2 * (2.0 * Rref[i])^5)
 
             # power coefficient
-            CP[i] = power[i] / (rhoinf * (o / (2.0 * pi))^3 * (2.0 * Rref)^5)
+            CP[i] = power[i] ./ (rhoinf * (o / (2.0 * pi))^3 * (2.0 * Rref[i])^5)
         end
     end
 
