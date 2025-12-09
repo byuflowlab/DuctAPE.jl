@@ -11,6 +11,7 @@ module C4Blade
 using FLOWMath
 const fm = FLOWMath
 using ImplicitAD
+using StructArrays: StructArray
 
 # export Rotor, Section, OperatingPoint, Outputs
 # export simple_op, windturbine_op
@@ -117,10 +118,9 @@ end
 #     return Section(r, chord, theta, af)
 # end
 
-# convenience function to access fields within an array of structs
-function Base.getproperty(obj::AbstractVector{<:Section}, sym::Symbol)
-    return getfield.(obj, sym)
-end # This is not always type stable b/c we don't know if the return type will be float or af function.
+function Base.similar(bc::Broadcast.Broadcasted{Broadcast.DefaultArrayStyle{N}}, ::Type{Section{TF,TAF}}) where {N,TF,TAF}
+    return StructArray{Section{TF,TAF}}(undef, size(bc))
+end
 
 """
     OperatingPoint(Vx, Vy, rho; pitch=0.0, mu=1.0, asound=1.0)
@@ -157,9 +157,8 @@ function OperatingPoint(Vx, Vy, rho; pitch=zero(rho), mu=one(rho), asound=one(rh
     return OperatingPoint(Vx, Vy, rho, pitch, mu, asound)
 end
 
-# convenience function to access fields within an array of structs
-function Base.getproperty(obj::AbstractVector{<:OperatingPoint}, sym::Symbol)
-    return getfield.(obj, sym)
+function Base.similar(bc::Broadcast.Broadcasted{Broadcast.DefaultArrayStyle{N}}, ::Type{OperatingPoint{TF}}) where {N,TF}
+    return StructArray{OperatingPoint{TF}}(undef, size(bc))
 end
 
 """
@@ -214,9 +213,8 @@ function Outputs()
     )
 end
 
-# convenience function to access fields within an array of structs
-function Base.getproperty(obj::AbstractVector{<:Outputs}, sym::Symbol)
-    return getfield.(obj, sym)
+function Base.similar(bc::Broadcast.Broadcasted{Broadcast.DefaultArrayStyle{N}}, ::Type{Outputs{TF}}) where {N,TF}
+    return StructArray{Outputs{TF}}(undef, size(bc))
 end
 
 # -------------------------------
