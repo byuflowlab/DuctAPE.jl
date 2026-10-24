@@ -77,7 +77,7 @@ function analyze(
             outs = failed_initialization(
                 ducted_rotor,
                 operating_point,
-                reference_parametersr,
+                reference_parameters,
                 prepost_containers,
                 solve_parameter_cache_vector,
                 solve_parameter_cache_dims,
